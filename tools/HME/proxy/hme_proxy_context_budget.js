@@ -94,6 +94,7 @@ function parseProxyContextEnv(env = process.env) {
     compactGear2Target: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR2_TARGET'),
     compactGear3Target: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR3_TARGET'),
     compactTrace: _envBool(env, 'HME_PROXY_COMPACT_TRACE'),
+    omoPruningBridge: _envBool(env, 'HME_OMO_PRUNING_BRIDGE'),
     localSummary: _envBool(env, 'HME_PROXY_LOCAL_SUMMARY') ? '1' : '0',
     omniLocalSummary: _envBool(env, 'HME_PROXY_OMNI_LOCAL_SUMMARY') ? '1' : '0',
   };
