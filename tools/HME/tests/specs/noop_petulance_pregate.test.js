@@ -99,3 +99,43 @@ test('petulance pregate matches `true`, empty printf, empty echo variants', () =
     assert.ok(out.stdout.includes('SPIRALLING_PETULANCE'), `expected deny for cmd='${cmd}', got: ${out.stdout}`);
   }
 });
+
+test('petulance pregate denies repeated real Bash command within 3 minutes without edit', () => {
+  const cmd = 'i/hme admin action=health';
+  const out = runHook({
+    cmd,
+    transcriptEntries: [userMsg(), bashEvent(cmd)],
+  });
+  assert.ok(out.stdout.includes('SPIRALLING_PETULANCE'), `expected repeat deny, got: ${out.stdout}`);
+  assert.match(out.stdout, /within 3 minutes with no intervening edit/);
+});
+
+test('petulance pregate allows repeated command after an edit tool', () => {
+  const cmd = 'i/hme admin action=health';
+  const out = runHook({
+    cmd,
+    transcriptEntries: [userMsg(), bashEvent(cmd), editEvent()],
+  });
+  assert.ok(out.ok, `expected allow after edit, got: ${out.stdout}`);
+  assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'edit must reset repeat chain');
+});
+
+test('petulance pregate allows repeated command outside 3 minute window', () => {
+  const cmd = 'i/hme admin action=health';
+  const out = runHook({
+    cmd,
+    transcriptEntries: [userMsg(), bashEvent(cmd, { ts: 1 })],
+  });
+  assert.ok(out.ok, `expected allow for stale repeat, got: ${out.stdout}`);
+  assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'stale command must not block');
+});
+
+test('petulance pregate escalates repeated command to level 3 all-caps message', () => {
+  const cmd = 'i/hme admin action=health';
+  const out = runHook({
+    cmd,
+    transcriptEntries: [userMsg(), bashEvent(cmd), bashEvent(cmd), bashEvent(cmd)],
+  });
+  assert.ok(out.stdout.includes('SPIRALLING_PETULANCE LEVEL 3'), `expected level 3, got: ${out.stdout}`);
+  assert.ok(out.stdout.includes('CASTING OUT THE DEVIL FOR PATHETIC DDOS COWARDICE'), `expected level 3 exorcism text, got: ${out.stdout}`);
+});
