@@ -568,6 +568,24 @@ const _SLOP_PATTERNS = [
   { name: 'caveman_compression',
     re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|you\s+are|you['’]re|your|has|need|too|is|the|now)\b\s*/gi,
     repl: '' },
+  {
+    name: 'abbreviations',
+    // Replaces common words with their standard short-form abbreviations
+    re: /\b(?:without|with|between|before|amount|government|people|because)\b/gi,
+    repl: (match) => {
+      switch (match.toLowerCase()) {
+        case 'without': return 'w/o';
+        case 'with': return 'w/';
+        case 'between': return 'b/w';
+        case 'before': return 'b4';
+        case 'amount': return 'amt';
+        case 'government': return 'govt';
+        case 'people': return 'ppl';
+        case 'because': return 'b/c';
+        default: return match;
+      }
+    }
+  },
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
     re: null,  // handled in _stripExcessiveBold below
