@@ -44,17 +44,25 @@ function handleMidResponseError({
   emitFn = emit,
   log = console.error,
   projectRoot = PROJECT_ROOT,
+  model = 'claude-proxy',
 }) {
   safeRelease(releaseOpusSlot);
   const errCode = err.code || 'mid_response';
   const label = pathLabel(isInteractivePath);
   const errMsg = `upstream ${errCode} mid-response [${label}]: ${err.message}`;
   log(`upstream read error: ${errMsg}`);
-  if (isInteractivePath) recordFailure(errMsg);
+  const recoverableInteractiveAbort = isInteractivePath && (errCode === 'ECONNRESET' || err.message === 'aborted');
+  if (isInteractivePath && !recoverableInteractiveAbort) recordFailure(errMsg);
   try {
-    writeMidResponseLog({ errCode, label, errMsg, projectRoot });
+    if (!recoverableInteractiveAbort) writeMidResponseLog({ errCode, label, errMsg, projectRoot });
   } catch (_e) { /* lifesaver write best-effort; console log already surfaced it */ }
-  emitFn({ event: 'upstream_midresponse_error', code: errCode, message: err.message, path_label: label });
+  emitFn({ event: recoverableInteractiveAbort ? 'upstream_midresponse_recovered' : 'upstream_midresponse_error', code: errCode, message: err.message, path_label: label });
+  if (recoverableInteractiveAbort) {
+    if (!clientRes.headersSent) clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+    try { writeAnthropicStopSse(clientRes, model); } catch (_e) { /* client may have closed */ }
+    try { clientRes.end(); } catch (_e) { /* already closed */ }
+    return;
+  }
   if (!clientRes.headersSent) {
     clientRes.writeHead(502, { 'Content-Type': 'application/json' });
     clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream_midresponse', code: errCode, message: err.message } }));
