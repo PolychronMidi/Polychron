@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-"""Fail on newly introduced inline fallbacks for keys declared in .env.example.
-
-Existing legacy fallbacks are grandfathered by comparing the working tree to
-HEAD. This keeps pre-commit strict without a giant waiver manifest.
-"""
+"""Fail on every inline fallback for keys declared in .env.example."""
 from __future__ import annotations
 
-from collections import Counter
 import re
-import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -54,77 +48,37 @@ def candidate_files(root: Path):
         yield path, rel
 
 
-def _head_text(rel: str) -> str:
-    try:
-        out = subprocess.run(
-            ["git", "show", f"HEAD:{rel}"],
-            cwd=ROOT,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-    except OSError:
-        return ""
-    return out.stdout if out.returncode == 0 else ""
-
-
-def _scan_text(rel: str, text: str, keys: set[str]) -> list[dict]:
-    out: list[dict] = []
-    for lineno, line in enumerate(text.splitlines(), 1):
-        if "env-fallback-ok" in line:
-            continue
-        for pattern in PATTERNS:
-            for match in pattern.finditer(line):
-                key = match.group(1)
-                if key in keys:
-                    stripped = line.strip()
-                    out.append({
-                        "rel": rel,
-                        "lineno": lineno,
-                        "key": key,
-                        "line": stripped,
-                    })
-    return out
-
-
 def findings() -> list[dict]:
     keys = declared_env_keys()
     out: list[dict] = []
     for path, rel in candidate_files(ROOT):
-        out.extend(_scan_text(rel, path.read_text(encoding="utf-8", errors="replace"), keys))
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if "env-fallback-ok" in line:
+                continue
+            for pattern in PATTERNS:
+                for match in pattern.finditer(line):
+                    key = match.group(1)
+                    if key in keys:
+                        out.append({
+                            "rel": rel,
+                            "lineno": lineno,
+                            "key": key,
+                            "line": line.strip(),
+                        })
     return out
-
-
-def baseline_findings() -> list[dict]:
-    keys = declared_env_keys()
-    out: list[dict] = []
-    for _path, rel in candidate_files(ROOT):
-        out.extend(_scan_text(rel, _head_text(rel), keys))
-    return out
-
-
-def _signature(row: dict) -> tuple[str, str, str]:
-    return (str(row["rel"]), str(row["key"]), str(row["line"]))
 
 
 def main() -> int:
     rows = findings()
-    baseline = Counter(_signature(row) for row in baseline_findings())
-    seen: Counter[tuple[str, str, str]] = Counter()
-    problems: list[str] = []
-    for row in rows:
-        sig = _signature(row)
-        seen[sig] += 1
-        if seen[sig] <= baseline.get(sig, 0):
-            continue
-        problems.append(
-            f"{row['rel']}:{row['lineno']}: new inline fallback for declared env key {row['key']}: {row['line']}"
-        )
-    if problems:
-        print("\n".join(problems))
+    if rows:
+        for row in rows:
+            print(
+                f"{row['rel']}:{row['lineno']}: inline fallback for declared env key "
+                f"{row['key']}: {row['line']}"
+            )
         return 1
-    print(f"env fail-fast ok: {len(rows)} legacy fallback(s) grandfathered from HEAD, 0 new")
+    print("env fail-fast ok: 0 inline fallbacks for declared keys")
     return 0
 
 

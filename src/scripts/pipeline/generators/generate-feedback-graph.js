@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // generate-feedback-graph: auto-generates metrics/feedback_graph.json by
 // scanning closedLoopController.create() + feedbackRegistry.registerLoop()
 // calls, merging with curated annotations. New loops scaffolded with TODOs.
@@ -9,7 +10,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const SRC  = path.join(ROOT, 'src');
 const METRICS  = path.join(METRICS_DIR);
 const GRAPH_PATH = path.join(METRICS, 'feedback_graph.json');

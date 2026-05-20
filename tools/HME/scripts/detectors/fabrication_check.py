@@ -129,10 +129,10 @@ def main() -> int:
     import os.path as _osp
     _tp_abs = _osp.abspath(sys.argv[1])
     _allowed_roots = []
-    _home = os.environ.get("HOME", "")
+    _home = os.environ['HOME']
     if _home:
         _allowed_roots.append(_osp.abspath(_osp.join(_home, ".claude", "projects")))
-    _proot = os.environ.get("PROJECT_ROOT", "")
+    _proot = os.environ['PROJECT_ROOT']
     if _proot:
         _allowed_roots.append(_osp.abspath(_osp.join(_proot, "tmp")))
     if _allowed_roots and not any(

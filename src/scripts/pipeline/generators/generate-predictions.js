@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/generate-predictions.js
 //
 // Phase 3.4 -- generate cascade predictions for this round's changed files.
@@ -17,9 +18,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const DEPGRAPH = path.join(METRICS_DIR, 'dependency-graph.json');
-const HME_METRICS_DIR = process.env.HME_METRICS_DIR || path.join(ROOT, 'tools', 'HME', 'runtime', 'metrics');
+const HME_METRICS_DIR = _hmeRequireEnv('HME_METRICS_DIR');
 const OUT = path.join(HME_METRICS_DIR, 'hme-predictions.jsonl');
 // R12: depth 2 overpredicted (382 modules for 2 actual shifts = 0.5% accuracy).
 // BFS at depth 1 = direct dependents only, typically 5-30 modules per source.

@@ -1,9 +1,10 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 // Rewrite (was: block) content with 3+ consecutive non-annotation comment lines.
 // Truncate long comment lines and emit ultra-terse DDoC notes via rewrite envelope.
 
-const THRESHOLD = parseInt(process.env.COMMENT_BLOAT_WARN || '3', 10);
-const LONG_LINE = parseInt(process.env.COMMENT_BLOAT_LONG_LINE || '90', 10);
+const THRESHOLD = parseInt(_hmeRequireEnv('COMMENT_BLOAT_WARN'), 10);
+const LONG_LINE = parseInt(_hmeRequireEnv('COMMENT_BLOAT_LONG_LINE'), 10);
 
 const _ANNOTATION_TAGS = ['silent-ok:', 'FIX'+'ME:', 'noqa', 'pylint:', 'pyright:', 'type:', 'eslint-'];
 

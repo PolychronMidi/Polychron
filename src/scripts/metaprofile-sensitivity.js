@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // metaprofile-sensitivity: aggregate metaprofile-attribution.jsonl into
 // per-profile mean/std/quantiles + per-section-type breakdowns.
 // Output: src/output/metrics/metaprofile-sensitivity.json + stdout Markdown.
@@ -8,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const ATTRIBUTION_FILE = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'metaprofile-attribution.jsonl');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'metaprofile-sensitivity.json');
 

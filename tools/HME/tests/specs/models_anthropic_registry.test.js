@@ -1,11 +1,12 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const repo = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const repo = _hmeRequireEnv('PROJECT_ROOT');
 
 function loadModels() {
   const text = fs.readFileSync(path.join(repo, 'config', 'models.json'), 'utf8');

@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
@@ -7,7 +8,7 @@ const { servicePort } = require('../service_registry');
 const WORKER_PORT = servicePort('worker');
 const LLAMACPP_DAEMON_PORT = servicePort('llamacpp_daemon');
 
-const PYTHONPATH = process.env.PYTHONPATH || '';
+const PYTHONPATH = _hmeRequireEnv('PYTHONPATH');
 const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/service');
 
 function mcpEnv() {
@@ -19,7 +20,7 @@ function mcpEnv() {
     TRANSFORMERS_OFFLINE: '1',
     HME_WORKER_PORT: String(WORKER_PORT),
     // Must be set BEFORE PyTorch's first cuda init or it's ignored.
-    PYTORCH_CUDA_ALLOC_CONF: process.env.PYTORCH_CUDA_ALLOC_CONF || 'expandable_segments:True',
+    PYTORCH_CUDA_ALLOC_CONF: _hmeRequireEnv('PYTORCH_CUDA_ALLOC_CONF'),
   };
 }
 

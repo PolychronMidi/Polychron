@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../proxy/shared/load_env.js');
 // Cross-substrate consensus: 7 substrates (HCI, invariants, predictions,
 // fingerprint, axis rebalance, CLAP, listening verdict) each map to [-1,+1].
 // Mean = consensus, stdev = divergence (often more actionable than any single
@@ -12,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const ROOT = (process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..'));
+const ROOT = (_hmeRequireEnv('PROJECT_ROOT'));
 const OUT = metricPath('hme-consensus.json');
 const DIVERGENCE_THRESHOLD = 0.4;  // stdev above this triggers divergence alert
 

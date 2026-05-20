@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -6,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-const repo = process.env.PROJECT_ROOT || process.cwd();
+const repo = _hmeRequireEnv('PROJECT_ROOT');
 const proxyDir = path.join(repo, 'tools/HME/proxy');
 
 function lineCount(rel) {

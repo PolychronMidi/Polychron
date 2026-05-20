@@ -7,16 +7,16 @@
 _HME_CURL_STREAK_WARN="${HME_CURL_STREAK_WARN:-5}"
 # Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"
 _hme_curl_streak_path() {
-  if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
+  if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
     echo "$PROJECT_ROOT/tmp/hme-curl-fail.streak"
   else
-    echo "/tmp/hme-curl-fail.streak"
+    echo "$PROJECT_ROOT/tools/HME/runtime/hme-curl-fail.streak"
   fi
 }
 # During a planned proxy/worker restart (proxy-maintenance.sh start), the
 _hme_maintenance_active() {
-  local flag="${PROJECT_ROOT:-}/tmp/hme-proxy-maintenance.flag"
-  [ -z "${PROJECT_ROOT:-}" ] && return 1
+  local flag="${PROJECT_ROOT}/tmp/hme-proxy-maintenance.flag"
+  [ -z "${PROJECT_ROOT}" ] && return 1
   [ ! -f "$flag" ] && return 1
   local ts ttl start_epoch now
   ts=$(sed -n '1p' "$flag" 2>/dev/null)
@@ -46,7 +46,7 @@ _safe_curl() {
   fi
   # FAIL-LOUD: capture curl stderr; if non-zero exit AND stderr written,
   local curl_err
-  curl_err=$(mktemp 2>/dev/null || echo "/tmp/_safe_curl_err_$$")
+  curl_err=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_safe_curl_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_safe_curl_err_$$")
   if [ -n "$body" ]; then
     out=$(curl -s --max-time "$max_time" -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>"$curl_err")
     rc=$?
@@ -66,7 +66,7 @@ _safe_curl() {
     streak=$((streak + 1))
     echo "$streak" > "$streak_file"
     # FAIL-LOUD: log EVERY failure, not just streak >= threshold. Previously
-    if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
       local curl_msg=""
       [ -s "$curl_err" ] && curl_msg=$(head -c 200 "$curl_err" | tr '\n' ' ')
       # Severity classification: tag with WARN (observation) below

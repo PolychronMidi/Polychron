@@ -2,7 +2,7 @@
 # registry.json entries with `pre_tool_use_mirror` and applies each predicate.
 
 [ -n "${INPUT:-}" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
-_RPR_ROOT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
+_RPR_ROOT="${PROJECT_ROOT}"
 [ -n "$_RPR_ROOT" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
 _RPR_PAYLOAD=$(printf '%s' "$INPUT" | jq -c '{transcript_path, tool_name, tool_input}' 2>/dev/null)

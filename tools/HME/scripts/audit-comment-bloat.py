@@ -55,9 +55,9 @@ _DEFAULT_ROOTS = [
 _SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", "output"}
 _EXTS = {".py", ".sh", ".js", ".ts"}
 
-WARN_LINES = int(os.environ.get("COMMENT_BLOAT_WARN", "3"))
-FAIL_LINES = int(os.environ.get("COMMENT_BLOAT_FAIL", "5"))
-LONG_LINE_CHARS = int(os.environ.get("COMMENT_BLOAT_LONG_LINE", "90"))
+WARN_LINES = int(os.environ['COMMENT_BLOAT_WARN'])
+FAIL_LINES = int(os.environ['COMMENT_BLOAT_FAIL'])
+LONG_LINE_CHARS = int(os.environ['COMMENT_BLOAT_LONG_LINE'])
 # File-top header exemption: every file gets ONE comment block at the
 TOP_EXEMPT_MAX = 30
 

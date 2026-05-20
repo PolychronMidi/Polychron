@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
-PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
+PROJECT = Path(os.environ['PROJECT_ROOT'])
 DASHBOARD = PROJECT / "tools" / "HME" / "runtime" / "team-dashboard.json"
 ROLES = {
  "driver": {"team": "command", "tier": "E5"}, "blue_lead": {"team": "blue", "tier": "E5"}, "blue_purple": {"team": "blue", "tier": "E4"},

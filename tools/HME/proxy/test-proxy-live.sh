@@ -85,7 +85,7 @@ test_provider() {
 # Anthropic
 echo " Anthropic (default upstream) "
 ANTHROPIC_KEY_VALUE="${ANTHROPIC_KEY:-}"
-if [ "${OVERDRIVE_MODE:-0}" = "1" ]; then
+if [ "${OVERDRIVE_MODE}" = "1" ]; then
   echo "  SKIP: OVERDRIVE_MODE=${OVERDRIVE_MODE} (Anthropic-free -- live Anthropic test suppressed)"
 elif [ -z "$ANTHROPIC_KEY_VALUE" ]; then
   echo "  SKIP: no ANTHROPIC_API_KEY in env (Claude Code manages its own key)"
@@ -99,7 +99,7 @@ fi
 
 # Groq (OpenAI compat)
 echo " Groq "
-if [ -z "${GROQ_API_KEY:-}" ]; then
+if [ -z "${GROQ_API_KEY}" ]; then
   echo "  SKIP: no GROQ_API_KEY"
 else
   test_provider "groq" "https://api.groq.com/openai" \
@@ -111,7 +111,7 @@ fi
 
 # OpenRouter (OpenAI compat)
 echo " OpenRouter "
-if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+if [ -z "${OPENROUTER_API_KEY}" ]; then
   echo "  SKIP: no OPENROUTER_API_KEY"
 else
   test_provider "openrouter" "https://openrouter.ai/api" \
@@ -123,7 +123,7 @@ fi
 
 # Cerebras (OpenAI compat)
 echo " Cerebras "
-if [ -z "${CEREBRAS_API_KEY:-}" ]; then
+if [ -z "${CEREBRAS_API_KEY}" ]; then
   echo "  SKIP: no CEREBRAS_API_KEY"
 else
   test_provider "cerebras" "https://api.cerebras.ai" \
@@ -135,7 +135,7 @@ fi
 
 # Mistral (OpenAI compat)
 echo " Mistral "
-if [ -z "${MISTRAL_API_KEY:-}" ]; then
+if [ -z "${MISTRAL_API_KEY}" ]; then
   echo "  SKIP: no MISTRAL_API_KEY"
 else
   test_provider "mistral" "https://api.mistral.ai" \
@@ -147,7 +147,7 @@ fi
 
 # NVIDIA NIM (OpenAI compat)
 echo " NVIDIA "
-if [ -z "${NVIDIA_API_KEY:-}" ]; then
+if [ -z "${NVIDIA_API_KEY}" ]; then
   echo "  SKIP: no NVIDIA_API_KEY"
 else
   test_provider "nvidia" "https://integrate.api.nvidia.com" \
@@ -159,7 +159,7 @@ fi
 
 # Gemini (non-OpenAI format -- uses query param auth, different path)
 echo " Gemini "
-if [ -z "${GEMINI_API_KEY:-}" ]; then
+if [ -z "${GEMINI_API_KEY}" ]; then
   echo "  SKIP: no GEMINI_API_KEY"
 else
   TESTED=$((TESTED + 1))
@@ -187,7 +187,7 @@ fi
 
 # Local llama.cpp (if running)
 echo " Local llama.cpp arbiter "
-ARBITER_URL="${HME_LLAMACPP_ARBITER_URL:-http://127.0.0.1:8080}"
+ARBITER_URL="${HME_LLAMACPP_ARBITER_URL}"
 if curl -sf --max-time 3 "${ARBITER_URL}/health" > /dev/null 2>&1; then
   test_provider "llamacpp-arbiter" "$ARBITER_URL" \
     "" \

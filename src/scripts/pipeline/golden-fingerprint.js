@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/golden-fingerprint.js
 // Computes statistical fingerprints of composition output for regression detection.
 // After each run, compares the current output's character against the previous
@@ -28,7 +29,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const COMPOSITION_DIR = path.join(ROOT, 'src', 'output');
 const FINGERPRINT_PATH = path.join(METRICS_DIR, 'golden-fingerprint.json');
 const PREV_PATH = path.join(METRICS_DIR, 'golden-fingerprint.prev.json');

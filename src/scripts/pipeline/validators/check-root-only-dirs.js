@@ -1,11 +1,12 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 
 // Enforces canonical log/tmp plus approved project and HME metrics roots.
 // Any instance elsewhere indicates a path bug writing runtime output to a non-standard location.
 
 const fs   = require('fs');
 const path = require('path');
-const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const { execSync } = require('child_process');
 
 // log/ and tmp/ stay root-only; metrics has project and HME roots.

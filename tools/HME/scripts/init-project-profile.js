@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
 
 const fs = require('fs');
@@ -11,7 +12,7 @@ function arg(name, fallback) {
 }
 
 function main() {
-  const root = path.resolve(arg('root', process.env.PROJECT_ROOT || process.cwd()));
+  const root = path.resolve(arg('root', _hmeRequireEnv('PROJECT_ROOT')));
   const name = arg('name', path.basename(root));
   const id = arg('id', name.toLowerCase().replace(/[^a-z0-9_.-]+/g, '-').replace(/^-|-$/g, '') || 'project');
   const source = arg('source', 'src');

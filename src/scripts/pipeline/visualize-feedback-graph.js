@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/visualize-feedback-graph.js
 // Generates an interactive HTML visualization of the feedback topology
 // from feedback_graph.json. Pure zero-dependency SVG rendering.
@@ -12,7 +13,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const GRAPH_PATH = path.join(METRICS_DIR, 'feedback_graph.json');
 const OUTPUT_DIR = METRICS_DIR;
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');

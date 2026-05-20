@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
 
 const fs = require('fs');
@@ -14,7 +15,7 @@ function readStdin() {
 }
 
 function projectRoot() {
-  return process.env.PROJECT_ROOT || process.env.CLAUDE_PROJECT_DIR || path.resolve(__dirname, '..', '..', '..');
+  return _hmeRequireEnv('PROJECT_ROOT');
 }
 
 function latestClassifier(root) {
@@ -32,9 +33,11 @@ function latestClassifier(root) {
 
 function maybeSnapshot(root, usedPct) {
   if (usedPct < 70) return;
-  const sentinel = '/tmp/hme-chain-snapshot-fired';
+  const runtimeDir = path.join(root, 'tools', 'HME', 'runtime');
+  const sentinel = path.join(runtimeDir, 'hme-chain-snapshot-fired');
   const script = path.join(root, 'tools', 'HME', 'scripts', 'chain-snapshot.py');
   if (fs.existsSync(sentinel) || !fs.existsSync(script)) return;
+  fs.mkdirSync(runtimeDir, { recursive: true });
   fs.writeFileSync(sentinel, String(Math.floor(Date.now() / 1000)));
   const child = spawn('python3', [script, '--imminent'], {
     cwd: root,
@@ -47,13 +50,17 @@ function maybeSnapshot(root, usedPct) {
 
 async function main() {
   const input = await readStdin();
-  try { fs.writeFileSync('/tmp/claude-statusline-raw.json', input); } catch (_e) { /* best effort */ }
+  let root = '';
+  try { root = projectRoot(); } catch (_e) { /* best effort */ }
+  if (root) {
+    try { fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'claude-statusline-raw.json'), input); } catch (_e) { /* best effort */ }
+  }
   if (!input) {
     process.stdout.write('ctx:?\n');
     return;
   }
   try {
-    const root = projectRoot();
+    if (!root) root = projectRoot();
     const data = JSON.parse(input);
     const ctx = data.context_window || {};
     const model = data.model || {};
@@ -66,7 +73,7 @@ async function main() {
       model_id: model.id || '',
       model_name: model.display_name || '',
     };
-    fs.writeFileSync(process.env.HME_CTX_FILE || '/tmp/claude-context.json', JSON.stringify(out));
+    fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'claude-context.json'), JSON.stringify(out));
     maybeSnapshot(root, usedPct);
     const label = model.display_name || model.id || '';
     process.stdout.write(`ctx:${remainingPct}%${label ? ` | ${label}` : ''}${latestClassifier(root)}\n`);

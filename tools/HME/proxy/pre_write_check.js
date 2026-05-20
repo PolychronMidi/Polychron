@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -123,8 +124,8 @@ function _commentBloatDecision(file, content, writeVerb) {
   const fp = String(file || '').toLowerCase();
   const prefixes = /\.(js|ts|jsx|tsx|mjs|cjs)$/.test(fp) ? ['//'] : /\.(py|sh|bash|yaml|yml|toml)$/.test(fp) ? ['#'] : [];
   if (!prefixes.length) return null;
-  const threshold = Number(process.env.COMMENT_BLOAT_WARN || 3);
-  const longLine = Number(process.env.COMMENT_BLOAT_LONG_LINE || 90);
+  const threshold = Number(_hmeRequireEnv('COMMENT_BLOAT_WARN'));
+  const longLine = Number(_hmeRequireEnv('COMMENT_BLOAT_LONG_LINE'));
   const annotations = ['# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa'];
   let run = 0;
   const lines = String(content || '').split('\n');
@@ -175,7 +176,7 @@ function _moduleName(file) { return path.basename(String(file || '')).replace(/\
 function _workerValidate(moduleName, timeoutMs = 600) {
   return new Promise((resolve) => {
     if (!moduleName) return resolve(null);
-    const port = process.env.HME_WORKER_PORT || '9098';
+    const port = _hmeRequireEnv('HME_WORKER_PORT');
     const body = JSON.stringify({ query: moduleName });
     const req = http.request({ hostname: '127.0.0.1', port, path: '/validate', method: 'POST', timeout: timeoutMs, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => {
       const chunks = [];

@@ -9,9 +9,9 @@ set +e
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _SV_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _SV_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 else
   _sv_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
@@ -44,10 +44,10 @@ if [ -f "$_SV_ROOT/.env" ]; then
   set +a
 fi
 
-_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
+_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
 _SV_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_PORT")"  # silent-ok: optional fallback path.
 _SV_PID_FILE="$_SV_ROOT/tools/HME/runtime/proxy-supervisor.pid"
-_SV_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
+_SV_MAINT_FLAG="$_SV_ROOT/tools/HME/runtime/hme-proxy-maintenance.flag"
 _SV_LIFECYCLE_LOG="$_SV_ROOT/log/hme-proxy-lifecycle.log"
 _SV_ERROR_LOG="$_SV_ROOT/log/hme-errors.log"
 _SV_PROXY_SCRIPT="$_SV_ROOT/tools/HME/proxy/hme_proxy.js"
@@ -134,10 +134,10 @@ _sv_spawn_and_verify() {
   # Ensure OmniRoute when required, spawn proxy, wait for bundle health.
 
   # -- OmniRoute pre-flight (OVERDRIVE_MODE=1 translator) --
-  local _or_port="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
+  local _or_port="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: optional fallback path.
   local _or_url="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_or_port")"  # silent-ok: optional fallback path.
   local _or_dir="$_SV_ROOT/tools/omniroute"
-  if [ "${OVERDRIVE_MODE:-0}" = "1" ]; then
+  if [ "${OVERDRIVE_MODE}" = "1" ]; then
     if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
       if ! curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
         _sv_log "OmniRoute down, starting on :${_or_port}..."

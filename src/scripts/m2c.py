@@ -41,7 +41,7 @@ def convert_midi_to_csv(midi_path, outdir=None):
 
 
 def output_dir():
-    return Path(os.environ.get('COMPOSITION_OUTPUT_DIR', 'src/output'))
+    return Path(os.environ['COMPOSITION_OUTPUT_DIR'])
 
 
 def resolve_input_path(raw):

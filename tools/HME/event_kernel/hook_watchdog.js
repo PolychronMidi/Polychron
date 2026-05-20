@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
@@ -222,7 +223,7 @@ function main() {
   let input = '';
   process.stdin.on('data', (c) => { input += c.toString('utf8'); });
   process.stdin.on('end', () => {
-    const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+    const root = _hmeRequireEnv('PROJECT_ROOT');
     if (cmd === 'userprompt-alert') {
       const alert = userPromptAlert(root, input || '{}');
       if (alert) process.stdout.write(alert);

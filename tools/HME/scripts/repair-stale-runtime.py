@@ -8,7 +8,7 @@ import re
 import time
 from pathlib import Path
 
-ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3]))
+ROOT = Path(os.environ['PROJECT_ROOT'])
 LOCK_NAME = "run" + ".lock"
 
 

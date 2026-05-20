@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // generate-conductor-map: auto-generates Conductor Intelligence Map
 // (per-module: signals read / biases contributed / domain / reset scope /
 // feedback partners). In: system-manifest+boot-order+source. Out:
@@ -9,7 +10,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const SRC  = path.join(ROOT, 'src');
 const OUTPUT_DIR = path.join(METRICS_DIR);
 const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');

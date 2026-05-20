@@ -24,7 +24,7 @@ _ANNOTATIONS = ('# silent-ok:', '# FIXME:',
                  '# noqa', '# pylint:', '# pyright:', '# type:',
                  '// silent-ok:', '// FIXME:',
                  '// eslint-', '// noqa')
-_CWARN = int(os.environ.get('COMMENT_BLOAT_FAIL', '5'))
+_CWARN = int(os.environ['COMMENT_BLOAT_FAIL'])
 
 
 def _last_user_idx(events):

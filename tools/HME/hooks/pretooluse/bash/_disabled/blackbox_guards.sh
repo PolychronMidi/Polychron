@@ -12,7 +12,7 @@
 # Block mkdir of misplaced log/, metrics/, or tmp/ directories via the
 # canonical JS path_policy module used by proxy policies.
 if echo "$CMD" | grep -qE '\bmkdir\b'; then
-  _MKDIR_VERDICT=$(CMD="$CMD" PROJECT_ROOT="${PROJECT_ROOT:-}" node -e "
+  _MKDIR_VERDICT=$(CMD="$CMD" PROJECT_ROOT="${PROJECT_ROOT}" node -e "
 const p = require(process.env.PROJECT_ROOT + '/tools/HME/proxy/path_policy');
 const cmd = process.env.CMD || '';
 if (p.mkdirHasMisplacedRootOnlyDir(cmd, ['log', 'tmp'])) console.log('root-only');
@@ -36,7 +36,7 @@ fi
 
 if _policy_enabled block-runlock-deletion && echo "$CMD" | grep -q 'run\.lock'; then
   # FAIL-LOUD: was `2>/dev/null`. A python crash silently disabled the
-  _BBG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_bbg_py_err_$$")  # silent-ok: optional fallback path.
+  _BBG_PY_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_bbg_py_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_bbg_py_err_$$")  # silent-ok: optional fallback path.
   _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>"$_BBG_PY_ERR" <<'PY'
 import shlex, sys, re
 cmd = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -81,7 +81,7 @@ if any(t in tokens for t in ("python3", "python", "node", "perl", "ruby")):
 print("ALLOW")
 PY
 )
-  if [ -s "$_BBG_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  if [ -s "$_BBG_PY_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _BBG_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     while IFS= read -r _bbg_line; do
       [ -n "$_bbg_line" ] && echo "[$_BBG_TS] [blackbox_guards:runlock] python3 failed (run.lock guard fails OPEN -- CRITICAL): $_bbg_line" \

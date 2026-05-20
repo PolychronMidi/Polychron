@@ -4,12 +4,12 @@ if [ "${HME_VERIFY_LANDED_OK:-0}" = "1" ]; then
   return 0 2>/dev/null || exit 0  # silent-ok: optional fallback path.
 fi
 
-_VLB_TURN_EDITS="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
+_VLB_TURN_EDITS="${PROJECT_ROOT}/tmp/hme-turn-edits.txt"
 [ -s "$_VLB_TURN_EDITS" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 [ -n "${CMD:-}" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
 _VLB_HIT=$(_VLB_CMD="$CMD" _VLB_FILE="$_VLB_TURN_EDITS" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.
-import os, shlex
+import os, shlex, tempfile
 cmd = os.environ.get("_VLB_CMD", "")
 edits_file = os.environ.get("_VLB_FILE", "")
 if not cmd or not edits_file or not os.path.isfile(edits_file):
@@ -35,8 +35,9 @@ for tok in tokens:
 # git reads snapshots/deltas, not current state.
 if any(t == "git" or os.path.basename(t) == "git" for t in tokens):
     raise SystemExit
-# /tmp/ paths are scratch, not source-file reads.
-if any(t.startswith("/tmp/") for t in tokens):
+# Absolute temp-dir paths are scratch, not source-file reads.
+temp_prefix = tempfile.gettempdir().rstrip(os.sep) + os.sep
+if any(t.startswith(temp_prefix) for t in tokens):
     raise SystemExit
 verify_verbs = {"grep", "egrep", "fgrep", "rg", "ag", "ack",
                 "cat", "head", "tail", "less", "more", "bat", "batcat",
@@ -57,7 +58,7 @@ PYEOF
 
 if [ -n "$_VLB_HIT" ]; then
   _VLB_MSG="verify-landed antipattern -- Bash reads $_VLB_HIT which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-grepping is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
-  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT:-}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.
+  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.
 import os, time
 path = os.environ.get("_VLB_FILE", "")
 hit = os.environ.get("_VLB_HIT", "")

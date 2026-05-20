@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
+ROOT="${PROJECT_ROOT}"
 cd "$ROOT"
 
 files=(
@@ -32,7 +32,7 @@ PROJECT_ROOT="$ROOT" node --test \
   tools/HME/tests/specs/proxy_route_metrics.test.js \
   tools/HME/tests/specs/routing_ready_contract.test.js
 
-printf '{"messages":[{"role":"user","content":"hi"}]}' | node tools/HME/proxy/hme_proxy.js --test >/tmp/hme-proxy-test-smoke.json
-python3 tools/HME/scripts/pipeline/hme/build-dir-intent-index.py >/tmp/hme-dir-intent-proxy-split.out
+printf '{"messages":[{"role":"user","content":"hi"}]}' | node tools/HME/proxy/hme_proxy.js --test >tools/HME/runtime/hme-proxy-test-smoke.json
+python3 tools/HME/scripts/pipeline/hme/build-dir-intent-index.py >tools/HME/runtime/hme-dir-intent-proxy-split.out
 
 echo "proxy split checks passed"

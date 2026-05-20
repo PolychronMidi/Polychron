@@ -4,7 +4,7 @@
 _hme_project_has_own_hooks() {
   local event="${1:-}"
   local cwd="${2:-${PWD:-}}"
-  local root="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
+  local root="${PROJECT_ROOT}"
   [ -n "$event" ] || return 1
   [ -n "$cwd" ] || return 1
 

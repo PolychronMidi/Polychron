@@ -9,7 +9,7 @@ _hme_hook_ledger_append() {
   local stdout_bytes="${5:-0}"
   local stderr_bytes="${6:-0}"
 
-  if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
+  if [ -z "${PROJECT_ROOT}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
     return 0
   fi
 

@@ -19,7 +19,7 @@ import os
 import subprocess
 import sys
 
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT", os.getcwd())
+PROJECT_ROOT = os.environ['PROJECT_ROOT']
 
 
 def _read_json(path: str) -> dict | None:

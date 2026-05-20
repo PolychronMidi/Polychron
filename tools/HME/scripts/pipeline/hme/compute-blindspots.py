@@ -32,7 +32,7 @@ from hme_paths import PROJECT_ROOT, hme_metric  # noqa: E402
 ACTIVITY = hme_metric("hme-activity.jsonl")
 STALENESS = hme_metric("kb-staleness.json")
 OUT = hme_metric("hme-blindspots.json")
-WINDOW = int(os.environ.get("HME_BLINDSPOT_WINDOW", "10"))
+WINDOW = int(os.environ['HME_BLINDSPOT_WINDOW'])
 
 SUBSYSTEMS = ["utils", "conductor", "rhythm", "time", "composers",
               "fx", "crossLayer", "writer", "play"]

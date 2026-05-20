@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 /**
  * HME CLI dispatcher -- invokes a worker tool over HTTP.
  *
@@ -45,7 +46,7 @@ const http = require('http');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const path = require('path');
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const HME_ROOT = path.join(PROJECT_ROOT, 'tools', 'HME');
 const { serviceHost, servicePort } = require(path.join(HME_ROOT, 'proxy', 'service_registry'));
 
@@ -56,7 +57,7 @@ const CLI_VERSION = (() => {
   catch (_) { return 'unknown'; }
 })();
 
-const HOST = process.env.HME_CLI_HOST || serviceHost('worker');
+const HOST = serviceHost('worker');
 const PORT = servicePort('worker');
 // Timeouts removed per request: handled at lower layers
 const TIMEOUT_MS = 0;

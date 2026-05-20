@@ -35,12 +35,12 @@ from pathlib import Path
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_METRICS = Path(os.environ.get("HME_METRICS_DIR", os.path.join(_PROJECT, "tools", "HME", "runtime", "metrics")))
+_METRICS = Path(os.environ['HME_METRICS_DIR'])
 _HISTORY = _METRICS / "chain-history"
 _SESSION_SHA = Path(_PROJECT) / "tmp" / "hme-session-sha.txt"
 _CORRECTIONS = Path(_PROJECT) / "tmp" / "hme-user-corrections.jsonl"
 _ENTANGLE = Path(_PROJECT) / "tmp" / "hme-entanglement.json"
-_CTX_FILE = Path(os.environ.get("HME_CTX_FILE", "/tmp/claude-context.json"))
+_CTX_FILE = Path(os.environ['HME_CTX_FILE'])
 
 
 def _session_start_sha() -> str:

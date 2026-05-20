@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 /**
  * Force `thinking.display: "summarized"` so Opus 4.7's adaptive thinking
  * returns visible summarized thinking text instead of empty/omitted blocks.
@@ -23,7 +24,7 @@
 
 const ENABLED = process.env.HME_PROXY_FORCE_THINKING === '1';
 const DISPLAY = (() => {
-  const raw = (process.env.HME_PROXY_THINKING_DISPLAY || 'summarized').toLowerCase();
+  const raw = (_hmeRequireEnv('HME_PROXY_THINKING_DISPLAY')).toLowerCase();
   return (raw === 'omitted') ? 'omitted' : 'summarized';
 })();
 

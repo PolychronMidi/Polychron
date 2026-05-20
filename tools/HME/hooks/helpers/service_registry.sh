@@ -2,7 +2,7 @@
 
 _hme_service_registry_py() {
   local cmd="$1" sid="$2"
-  local root="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
+  local root="${PROJECT_ROOT}"
   if [ -z "$root" ]; then
     local here="${PWD}"
     while [ -n "$here" ] && [ "$here" != "/" ]; do

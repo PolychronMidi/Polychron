@@ -10,8 +10,8 @@ set -o pipefail
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _PROJECT_ROOT="$(cd "$_SCRIPT_DIR/../.." && pwd)"
 
-_DAEMON_URL="$(PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT}" python3 "$_PROJECT_ROOT/tools/HME/scripts/service_registry.py" url llamacpp_daemon | sed 's#/health$##')"
-_WORKER_URL="$(PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT}" python3 "$_PROJECT_ROOT/tools/HME/scripts/service_registry.py" url worker | sed 's#/health$##')"
+_DAEMON_URL="$(PROJECT_ROOT="${PROJECT_ROOT}" python3 "$_PROJECT_ROOT/tools/HME/scripts/service_registry.py" url llamacpp_daemon | sed 's#/health$##')"
+_WORKER_URL="$(PROJECT_ROOT="${PROJECT_ROOT}" python3 "$_PROJECT_ROOT/tools/HME/scripts/service_registry.py" url worker | sed 's#/health$##')"
 _CODER_URL="http://127.0.0.1:8081"
 
 _pass() { echo "  PASS: $*"; }

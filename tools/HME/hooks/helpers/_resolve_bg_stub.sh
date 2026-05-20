@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Resolve Claude Code "Command running in background ID: X" stubs to real
-# task output by polling /tmp/claude-*/*/tasks/<id>.output, rewriting
+# task output by polling Claude's background task-output directory and rewriting
 # .tool_response in the stdin hook JSON in place.
 # Usage: _resolve_bg_stub <max-wait-seconds> <must-contain-marker-or-empty>
 # Caller MUST be in `set +e` (uses `|| true` internally).
@@ -8,11 +8,18 @@
 _rbg_input="$(cat)"
 _rbg_max_wait="${1:-10}"
 _rbg_must_contain="${2:-}"
+_rbg_runtime_dir="${PROJECT_ROOT}/tools/HME/runtime"
+mkdir -p "$_rbg_runtime_dir" 2>/dev/null
+_rbg_tmp_root="$(python3 - <<'PYEOF'
+import tempfile
+print(tempfile.gettempdir())
+PYEOF
+)"
 
 # Fast path: if no stub in response, pass through.
-_rbg_jq_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_jq_$$.err")  # silent-ok: optional fallback path.
+_rbg_jq_err=$(mktemp "$_rbg_runtime_dir/_rbg_jq_XXXXXX.err" 2>/dev/null || echo "$_rbg_runtime_dir/_rbg_jq_$$.err")  # silent-ok: optional fallback path.
 _rbg_tool_response="$(printf '%s' "$_rbg_input" | jq -r '.tool_response // ""' 2>"$_rbg_jq_err")"
-if [ -s "$_rbg_jq_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_rbg_jq_err" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   while IFS= read -r _rbg_line; do
     [ -n "$_rbg_line" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_resolve_bg_stub] jq parse failed extracting tool_response: $_rbg_line" \
       >> "$PROJECT_ROOT/log/hme-errors.log"
@@ -60,10 +67,10 @@ if [ -z "$_rbg_real" ]; then
 fi
 
 # Rewrite .tool_response with the real output. Use jq with --arg so
-_rbg_rewrite_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_rewrite_$$.err")  # silent-ok: optional fallback path.
+_rbg_rewrite_err=$(mktemp "$_rbg_runtime_dir/_rbg_rewrite_XXXXXX.err" 2>/dev/null || echo "$_rbg_runtime_dir/_rbg_rewrite_$$.err")  # silent-ok: optional fallback path.
 _rbg_rewritten="$(printf '%s' "$_rbg_input" \
   | jq --arg real "$_rbg_real" '.tool_response = $real' 2>"$_rbg_rewrite_err" || true)"
-if [ -s "$_rbg_rewrite_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_rbg_rewrite_err" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   while IFS= read -r _rbg_line; do
     [ -n "$_rbg_line" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_resolve_bg_stub] jq rewrite failed (task=$_rbg_task_id): $_rbg_line" \
       >> "$PROJECT_ROOT/log/hme-errors.log"

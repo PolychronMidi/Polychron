@@ -67,8 +67,19 @@ function loadEnv(envPath, opts) {
   return { loaded, skipped, error: null };
 }
 
+let _defaultEnvLoaded = false;
+function loadDefaultEnvForRequire() {
+  if (_defaultEnvLoaded) return;
+  loadEnv(defaultEnvPath(__dirname));
+  _defaultEnvLoaded = true;
+}
+
 function requireEnv(key, validator) {
-  const value = process.env[key];
+  let value = process.env[key];
+  if (value === undefined || value === '') {
+    loadDefaultEnvForRequire();
+    value = process.env[key];
+  }
   if (value === undefined || value === '') {
     throw new Error(`missing required environment key ${key}; declare it in .env and doc/templates/.env.example`);
   }

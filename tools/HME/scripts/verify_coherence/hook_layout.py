@@ -192,7 +192,7 @@ class HookMatcherValidityVerifier(Verifier):
     def run(self) -> VerdictResult:
         import re
 
-        project_root = os.environ.get("PROJECT_ROOT", _PROJECT)
+        project_root = os.environ['PROJECT_ROOT']
         i_dir = os.path.join(project_root, "tools", "HME", "i")
         if not os.path.isdir(i_dir):
             return _result(FAIL, 0.0, "tools/HME/i directory missing -- HME tool wrappers not installed")

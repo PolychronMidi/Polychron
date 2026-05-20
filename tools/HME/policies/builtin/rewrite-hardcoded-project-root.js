@@ -1,8 +1,9 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 // Rewrite Write/Edit content that hardcodes the literal PROJECT_ROOT path.
 
 const path = require('path');
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 
 const _ROOT_EXEMPT_FILE = /(\/\.env(\.[a-z]+)?$|\/README(\.[a-z]+)?$|\/CLAUDE\.md$|\/tools\/HME\/KB\/devlog\/|\/doc\/[^/]+\.md$|\/doc\/archive\/)/;
 

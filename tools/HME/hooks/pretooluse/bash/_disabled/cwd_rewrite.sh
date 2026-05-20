@@ -10,10 +10,10 @@
 # Rewriting is idempotent (absolute path works from any cwd) and cheap
 # (regex substitution), so we drop the cwd-guessing entirely. Still skips
 # when already absolute (leading `/`) or ./-prefixed.
-if [ -n "${PROJECT_ROOT:-}" ] \
+if [ -n "${PROJECT_ROOT}" ] \
    && echo "$CMD" | grep -qE '(^|[[:space:]])i/(review|learn|trace|evolve|status|hme|audit|why|policies)\b'; then
   # FAIL-LOUD: was `2>/dev/null`. A python crash here silently disabled
-  _CWD_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_cwd_py_err_$$")  # silent-ok: optional fallback path.
+  _CWD_PY_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_cwd_py_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_cwd_py_err_$$")  # silent-ok: optional fallback path.
   _FIXED_CMD=$(PROJECT_ROOT="$PROJECT_ROOT" python3 - "$CMD" <<'PYEOF' 2>"$_CWD_PY_ERR"
 import os, re, sys
 cmd = sys.argv[1]

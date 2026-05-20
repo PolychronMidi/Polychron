@@ -200,7 +200,7 @@ class SubagentBackendsVerifier(Verifier):
         backends["python"] = "python3"
 
         # 3. llama-server arbiter. Port 11436 was retired (see
-        _arbiter_port = os.environ.get("HME_ARBITER_PORT", "8080")
+        _arbiter_port = os.environ['HME_ARBITER_PORT']
         try:
             import urllib.request
             req = urllib.request.Request(f"http://127.0.0.1:{_arbiter_port}/health")

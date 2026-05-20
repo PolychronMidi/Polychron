@@ -31,13 +31,13 @@ if [[ ${#PARTS[@]} -gt 0 ]]; then
   printf '%s\n' "${PARTS[@]}" >&2
 fi
 
-CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/compact-log.jsonl"
+CTX_FILE="$PROJECT/tools/HME/runtime/claude-context.json"
+LOG="${HME_METRICS_DIR}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: same rationale as precompact.sh -- corrupted statusline JSON
   # would silently produce all-null calibration rows.
-  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_jq_err_$$")  # silent-ok: optional fallback path.
+  _PC_JQ_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_postc_jq_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_postc_jq_err_$$")  # silent-ok: optional fallback path.
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
   REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
   if [ -s "$_PC_JQ_ERR" ] && [ -d "$PROJECT/log" ]; then
@@ -55,11 +55,11 @@ fi
 
 # Reset context meter -- compaction freed the window. Only clear token counts;
 # used_pct will be written by statusLine on the next assistant message.
-echo '{}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
+echo '{}' > "$PROJECT/tools/HME/runtime/claude-context.json"
 
 # Re-orient after compaction -- surface current session state directly
 ORIENT=""
-PS="${METRICS_DIR:-$PROJECT/src/output/metrics}/pipeline-summary.json"
+PS="${METRICS_DIR}/pipeline-summary.json"
 if [ -f "$PS" ]; then
   VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
   WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
@@ -83,17 +83,17 @@ fi
 echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
 # hydrate the new window from the latest
-LATEST_LINK="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/chain-history/latest.yaml"
+LATEST_LINK="${HME_METRICS_DIR}/chain-history/latest.yaml"
 if [ -f "$LATEST_LINK" ]; then
   echo "" >&2
   echo "=== CHAIN LINK HYDRATION (PostCompact) ===" >&2
   echo "  Loading state from: $(readlink -f "$LATEST_LINK")" >&2
   # FAIL-LOUD: was `2>/dev/null >&2` which silenced ImportError / SyntaxError
-  _POSTC_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_py_err_$$")  # silent-ok: optional fallback path.
+  _POSTC_PY_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_postc_py_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_postc_py_err_$$")  # silent-ok: optional fallback path.
   python3 <<'PYEOF' >&2 2>"$_POSTC_PY_ERR"
 import json, os
 project = os.environ["PROJECT_ROOT"]
-latest = os.path.join(os.environ.get("HME_METRICS_DIR", os.path.join(project, "tools", "HME", "runtime", "metrics")), "chain-history", "latest.yaml")
+latest = os.path.join(os.environ["HME_METRICS_DIR"], "chain-history", "latest.yaml")
 try:
     with open(latest) as f:
         data = json.load(f)

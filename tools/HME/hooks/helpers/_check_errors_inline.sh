@@ -7,9 +7,9 @@
 
 # Returns:
 _hme_check_errors_inline() {
-  local PROJECT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
+  local PROJECT="${PROJECT_ROOT}"
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
-  local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
+  local INLINE_WATERMARK="$PROJECT/tools/HME/runtime/hme-errors.inline-watermark"
   # Heartbeat -- proves this helper actually ran.
   date +%s > "$PROJECT/tools/HME/runtime/heartbeat-inline-check.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
 
@@ -57,7 +57,7 @@ _hme_check_errors_inline() {
     while IFS= read -r line; do
       local cid
       cid=$(printf '%s' "$line" | /usr/bin/grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
-      [ -n "$cid" ] && echo "$cid|consumed-by-inline|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.
+      [ -n "$cid" ] && echo "$cid|consumed-by-inline|$(date +%s)" >> "$PROJECT/tools/HME/runtime/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.
     done <<< "$CANARY_LINES"
   fi
 

@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %
 logger = logging.getLogger("HME.llamacpp")
 logger.setLevel(logging.INFO)
 
-PID_FILE = "/tmp/hme-llamacpp-daemon.pid"
+PID_FILE = str(Path(os.environ['PROJECT_ROOT']) / 'tools' / 'HME' / 'runtime' / 'hme-llamacpp-daemon.pid')
 TRAINING_LOCK = ENV.require("HME_TRAINING_LOCK")
 
 _DEFAULT_WALL_TIMEOUT = 45  # hard wall-clock cap for /generate proxy
@@ -48,7 +48,7 @@ DAEMON_VERSION = _load_daemon_version()
 try:
     from log_rotation import rotate_on_boot as _rotate_logs
     _rotate_logs(
-        os.environ.get("PROJECT_ROOT", "")  # env-ok: bootstrap fallback
+        os.environ['PROJECT_ROOT']  # env-ok: bootstrap fallback
         or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )  # env-ok: bootstrap fallback
 except Exception as _rot_err:

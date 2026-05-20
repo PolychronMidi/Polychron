@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+ROOT="${PROJECT_ROOT}"
 cd "$ROOT"
 if [ -f .env ]; then
   set -a
@@ -35,7 +35,7 @@ run silent-fallback python3 tools/HME/scripts/check-silent-fallback.py tools/HME
 run silent-except python3 tools/HME/scripts/check-silent-except.py tools/HME/service/server
 run silent-source python3 tools/HME/scripts/check-shell-silent-source.py tools/HME/hooks
 run py-compile python3 -m py_compile tools/HME/scripts/invariants/*.py tools/HME/service/server/tools_analysis/evolution/evolution_invariants/*.py
-run invariants bash -c 'PYTHONPATH=tools/HME/service python3 - <<"PY" >/tmp/hme-invariants.verify
+run invariants bash -c 'PYTHONPATH=tools/HME/service python3 - <<"PY" >tools/HME/runtime/hme-invariants.verify
 from server.tools_analysis.evolution.evolution_invariants import check_invariants
 out = check_invariants(verbose=False)
 print(out)

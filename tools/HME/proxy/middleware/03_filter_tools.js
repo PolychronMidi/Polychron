@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 /**
  * Drop tool definitions you never use from the request before it reaches
  * Anthropic. The `tools` array is ~60KB on every request -- bigger than
@@ -33,7 +34,7 @@ function _stripInlineComment(value) {
 }
 
 function _dropSet(projectRoot) {
-  const raw = [process.env.HME_FILTER_TOOLS_DROP || ''];
+  const raw = [_hmeRequireEnv('HME_FILTER_TOOLS_DROP')];
   try {
     const envPath = path.join(projectRoot || process.cwd(), '.env');
     const text = fs.readFileSync(envPath, 'utf8');

@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 
 // Fails the pipeline if any tracked text file still contains unresolved
 // git merge-conflict markers from a botched stash/merge. spam-ok
@@ -6,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const ROOT = _hmeRequireEnv('PROJECT_ROOT');
 
 // ours/separator/theirs marker shapes from git's default conflict style.
 const MARKER_RES = [

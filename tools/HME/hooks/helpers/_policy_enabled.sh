@@ -9,7 +9,7 @@ _policy_enabled() {
   [ -z "$name" ] && return 0
   command -v jq >/dev/null 2>&1 || return 0  # no jq -> can't read config -> assume enabled
 
-  local project_root="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
+  local project_root="${PROJECT_ROOT}"
   local files=(
     "$project_root/config/policies.local.json"
     "$project_root/config/policies.json"

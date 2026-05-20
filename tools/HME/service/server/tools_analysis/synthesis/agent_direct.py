@@ -56,12 +56,12 @@ def _claude_model_for_tier(tier: str) -> str:
 
 # Per-process cap for legacy `claude --resume`; persisted count prevents restart-bypass.
 _DISPATCH_THREAD_CALL_COUNT = 0
-_DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))  # env-ok: runtime/test tuning
+_DISPATCH_THREAD_CALL_CAP = int(os.environ['HME_THREAD_CALL_CAP'])  # env-ok: runtime/test tuning
 _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
 
 
 def _count_file() -> str | None:
-    root = os.environ.get("PROJECT_ROOT", "")
+    root = os.environ['PROJECT_ROOT']
     return os.path.join(root, "tmp", "hme-thread-call-count") if root else None
 
 
@@ -132,7 +132,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
     global _DISPATCH_THREAD_CALL_COUNT
     if os.environ.get("HME_LEGACY_THREAD_DISPATCH") != "1":
         return None
-    project_root = os.environ.get("PROJECT_ROOT", "")
+    project_root = os.environ['PROJECT_ROOT']
     if not project_root:
         return None
     sid_file = os.path.join(project_root, "tmp", "hme-thread.sid")

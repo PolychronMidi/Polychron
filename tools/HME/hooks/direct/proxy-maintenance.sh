@@ -9,9 +9,9 @@ set +e
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _MAINT_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _MAINT_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _MAINT_ROOT="$CLAUDE_PROJECT_DIR"
 else
   _maint_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
@@ -27,7 +27,7 @@ if [ -z "$_MAINT_ROOT" ]; then
   echo "[proxy-maintenance] cannot resolve project root; exiting" >&2
   exit 1
 fi
-_MAINT_FLAG="$_MAINT_ROOT/tmp/hme-proxy-maintenance.flag"
+_MAINT_FLAG="$_MAINT_ROOT/tools/HME/runtime/hme-proxy-maintenance.flag"
 
 _action="${1:-}"
 _ttl="${2:-180}"

@@ -76,7 +76,7 @@ _nexus_list() {
 # Drop EDIT entries whose file currently matches git HEAD (net-zero
 _nexus_prune_clean_edits() {
   _nexus_ensure
-  [ -z "${PROJECT_ROOT:-}" ] && return 0
+  [ -z "${PROJECT_ROOT}" ] && return 0
   command -v git >/dev/null 2>&1 || return 0
   [ -d "$PROJECT_ROOT/.git" ] || return 0
   local tmp_out="${_NEXUS_FILE}.tmp"
@@ -106,7 +106,7 @@ _nexus_prune_clean_edits() {
 }
 
 _nexus_worktree_dirty() {
-  [ -z "${PROJECT_ROOT:-}" ] && return 0
+  [ -z "${PROJECT_ROOT}" ] && return 0
   command -v git >/dev/null 2>&1 || return 0
   [ -d "$PROJECT_ROOT/.git" ] || return 0
   [ -n "$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null)" ]

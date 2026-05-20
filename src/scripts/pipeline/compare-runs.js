@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/compare-runs.js
 // Profile A/B comparison tool: compares two composition runs side-by-side.
 // Takes two run directories (or uses metrics/ vs a named snapshot) and produces
@@ -22,7 +23,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR     = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR     = _hmeRequireEnv('METRICS_DIR');
 const COMPOSITION_DIR = path.join(ROOT, 'src', 'output');
 const SNAPSHOT_DIR    = path.join(METRICS_DIR, 'snapshots');
 const COMPARISON_PATH = path.join(METRICS_DIR, 'run-comparison.json');

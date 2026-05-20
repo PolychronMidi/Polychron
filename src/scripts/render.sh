@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
-OUT="${COMPOSITION_OUTPUT_DIR:-src/output}"
+OUT="${COMPOSITION_OUTPUT_DIR}"
 mkdir -p "$OUT"
 python3 src/scripts/c2m.py
 

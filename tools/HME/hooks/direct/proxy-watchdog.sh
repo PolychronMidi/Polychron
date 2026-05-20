@@ -9,9 +9,9 @@ cat >/dev/null 2>&1
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _WD_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _WD_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _WD_ROOT="$CLAUDE_PROJECT_DIR"
 else
   _wd_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
@@ -30,14 +30,14 @@ fi
 PROJECT_ROOT="$_WD_ROOT"
 [ -f "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" ] && source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh"
 
-_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
+_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
 _WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"  # silent-ok: optional fallback path.
 
 # -- OmniRoute health-check + respawn (OVERDRIVE_MODE=1 translator) --
-_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
+_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: optional fallback path.
 _OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"  # silent-ok: optional fallback path.
 _OR_DIR="$_WD_ROOT/tools/omniroute"
-if [ "${OVERDRIVE_MODE:-0}" = "1" ]; then
+if [ "${OVERDRIVE_MODE}" = "1" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   if ! curl -sf --max-time 2 "$_OR_URL" >/dev/null 2>&1; then
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
@@ -109,7 +109,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 # Spawn the proxy. Match the pattern polychron-launch.sh uses:
-mkdir -p "$_WD_ROOT/log" "$_WD_ROOT/tmp" 2>/dev/null
+mkdir -p "$_WD_ROOT/log" "$_WD_ROOT/tools/HME/runtime" 2>/dev/null
 ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
 echo "[$ts] [proxy-watchdog] SessionStart: proxy down, attempting respawn..." >&2
 
@@ -127,7 +127,7 @@ while [ "$_waited" -lt 8 ]; do
     echo "[$ts] [proxy-watchdog] proxy respawned (pid=$_WD_PID) after ${_waited}s" >&2
     # Clear the sticky proxy-down flag -- the next UserPromptSubmit
     # should not emit the offline banner.
-    rm -f "$_WD_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
+    rm -f "$_WD_ROOT/tools/HME/runtime/hme-proxy-down.flag" 2>/dev/null
     # Emit a one-shot recovery note into hme-errors.log so the log
     # captures the recovery as well as the failure.
     echo "[$ts] [proxy-watchdog] proxy respawned (pid=$_WD_PID) after ${_waited}s" \

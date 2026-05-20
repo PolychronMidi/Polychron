@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 // Payload dump util. Called from middleware/24_dump_system.js (post-pipeline)
 // and from hme_proxy.js (pre-pipeline). Off by default; HME_DUMP_SYSTEM_PROMPT=1
 // in .env enables both writes -- the pre/post pair lets the operator diff
@@ -7,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ENABLED = (process.env.HME_DUMP_SYSTEM_PROMPT ?? '0') === '1';
+const ENABLED = (_hmeRequireEnv('HME_DUMP_SYSTEM_PROMPT')) === '1';
 
 function _formatSystem(system) {
   if (typeof system === 'string') return system;

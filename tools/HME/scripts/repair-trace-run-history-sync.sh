@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+ROOT="${PROJECT_ROOT}"
 cd "$ROOT"
 if [ -f .env ]; then
   set -a

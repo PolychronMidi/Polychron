@@ -15,9 +15,9 @@ HOOK_DATA=$(cat)
 TOOL_NAME=$(_safe_jq "$HOOK_DATA" '.tool_name' 'unknown')
 # FAIL-LOUD: capture jq stderr; malformed hook payloads would silently produce
 # empty TOOL_INPUT and skew transcript fidelity / HME-call detection.
-_LTC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_jq_err_$$")  # silent-ok: optional fallback path.
+_LTC_JQ_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_ltc_jq_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_ltc_jq_err_$$")  # silent-ok: optional fallback path.
 TOOL_INPUT=$(echo "$HOOK_DATA" | jq -c '.tool_input // {}' 2>"$_LTC_JQ_ERR" | head -c 300)
-if [ -s "$_LTC_JQ_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_LTC_JQ_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _LTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _ltc_line; do
     [ -n "$_ltc_line" ] && echo "[$_LTC_TS] [log-tool-call] jq parse failed extracting tool_input: $_ltc_line" \
@@ -36,7 +36,7 @@ TS=$NOW_MS
 
 # LIFESAVER: compute elapsed for this tool call using PreToolUse timestamp
 SAFE_NAME=$(echo "$TOOL_NAME" | tr -c 'a-zA-Z0-9_-' '_')
-TS_FILE="/tmp/hme_lifesaver_${SESSION_ID}_${SAFE_NAME}"
+TS_FILE="$PROJECT_ROOT/tools/HME/runtime/hme_lifesaver_${SESSION_ID}_${SAFE_NAME}"
 ELAPSED_S=0
 if [ -f "$TS_FILE" ]; then
   START_MS=$(cat "$TS_FILE" 2>/dev/null)
@@ -79,7 +79,7 @@ if [ "$_IS_HME_CALL" = "1" ] && [ "$ELAPSED_S" -gt 0 ]; then
 fi
 
 # Build transcript entry. FAIL-LOUD: was `2>/dev/null` which silently
-_LTC_BUILD_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_build_err_$$")  # silent-ok: optional fallback path.
+_LTC_BUILD_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_ltc_build_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_ltc_build_err_$$")  # silent-ok: optional fallback path.
 ENTRY=$(jq -nc \
   --argjson ts "$TS" \
   --arg type "tool_call" \
@@ -89,7 +89,7 @@ ENTRY=$(jq -nc \
   --arg result "$TOOL_RESULT" \
   --arg summary "Tool: $TOOL_NAME" \
   '{ts: $ts, type: $type, route: $route, session_id: $session_id, content: $content, result: $result, summary: $summary}' 2>"$_LTC_BUILD_ERR")
-if [ -s "$_LTC_BUILD_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_LTC_BUILD_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _LTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _ltc_line; do
     [ -n "$_ltc_line" ] && echo "[$_LTC_TS] [log-tool-call] jq build failed (tool=$TOOL_NAME): $_ltc_line" \
@@ -101,7 +101,7 @@ rm -f "$_LTC_BUILD_ERR" 2>/dev/null
 [ -z "$ENTRY" ] && exit 0
 
 # 1. Append to JSONL + hme.log
-if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
+if [ -z "${PROJECT_ROOT}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
   echo "log-tool-call: PROJECT_ROOT unset or invalid ($PROJECT_ROOT) -- skipping transcript write" >&2
   exit 0
 fi

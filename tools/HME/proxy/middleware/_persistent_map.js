@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 /**
  * Persistent-Map helper for middleware modules. Wraps an in-memory Map
  * with append-only JSONL persistence + periodic compaction. Same pattern
@@ -44,7 +45,7 @@ class PersistentMap {
   constructor(filePath, opts = {}) {
     this._file = path.isAbsolute(filePath)
       ? filePath
-      : path.join(process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..'), filePath);
+      : path.join(_hmeRequireEnv('PROJECT_ROOT'), filePath);
     this._cap = opts.cap || DEFAULT_CAP;
     this._compactBytes = opts.compactBytes || DEFAULT_COMPACT_BYTES;
     this._map = new Map();

@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // Pipeline step: snapshot run features for quality predictor training.
 // Saves golden-fingerprint + trace-summary subset + metadata to
 // metrics/run-history/{ISO-timestamp}.json. Accumulates across runs.
@@ -215,7 +216,7 @@ function main() {
 
   // --perceptual: run EnCodec analysis and attach to snapshot
   // Only if WAV is newer than trace-summary (same pipeline run)
-  const COMPOSITION_OUTPUT_DIR = process.env.COMPOSITION_OUTPUT_DIR || path.join(__dirname, '..', '..', '..', 'src', 'output');
+  const COMPOSITION_OUTPUT_DIR = _hmeRequireEnv('COMPOSITION_OUTPUT_DIR');
   const WAV_PATH = path.join(COMPOSITION_OUTPUT_DIR, 'combined.wav');
   const wavFresh = fs.existsSync(WAV_PATH) &&
     fs.statSync(WAV_PATH).mtimeMs > fs.statSync(TS_PATH).mtimeMs - 600000; // within 10min
@@ -256,7 +257,7 @@ print(json.dumps(result))
 `;
       const output = execSync(`python3 -c '${pyScript.replace(/'/g, "'\\''")}'`, {
         timeout: 120000, encoding: 'utf-8',
-        env: { ...process.env, PYTHONPATH: '/home/jah/.local/lib/python3.12/site-packages' },
+        env: process.env,
       }).trim();
       snapshot.perceptual = { encodec: JSON.parse(output) };
       snapshot.features.cb0Entropy = snapshot.perceptual.encodec.cb0_entropy || 0;

@@ -134,7 +134,7 @@ def _resolve_project_root() -> str:
     """Resolve PROJECT_ROOT: env first, then walk up from this script
     looking for the doc/templates/AGENTS.md+.env pair. Returns "" only
     if neither path works."""
-    env_root = os.environ.get("PROJECT_ROOT", "")
+    env_root = os.environ['PROJECT_ROOT']
     if env_root:
         return env_root
     here = Path(__file__).resolve()
@@ -146,8 +146,8 @@ def _resolve_project_root() -> str:
 
 
 def _write_transcript(events: list[dict]) -> Path:
-    # Fixture under $PROJECT_ROOT/tmp/ (not /tmp/) so fabrication_check's
-    # path-safety guard accepts it (only ~/.claude/projects/ or PROJECT_ROOT/tmp).
+    # Fixture under project scratch so fabrication_check's path-safety guard
+    # accepts it (only transcript cache or project scratch paths).
     project_root = _resolve_project_root()
     if project_root:
         tmp_dir = Path(project_root) / "tmp" / "detector-test-fixtures"

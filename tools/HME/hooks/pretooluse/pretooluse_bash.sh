@@ -47,7 +47,7 @@ for _post in "${SCRIPT_DIR}/bash/post/"*.sh; do
   set -u -e
   if [ "$_rc" -ne 0 ] && [ "$_rc" -ne 2 ]; then
     _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-    _log="${PROJECT_ROOT:-/tmp}/log/hme-errors.log"
+    _log="${PROJECT_ROOT}/log/hme-errors.log"
     mkdir -p "$(dirname "$_log")" 2>/dev/null
     printf '[%s] [pretooluse_bash.sh] sub-file %s exited rc=%d -- downstream gates may have been skipped; investigate\n' \
       "$_ts" "$(basename "$_post")" "$_rc" >> "$_log" 2>/dev/null  # silent-ok: optional fallback path.

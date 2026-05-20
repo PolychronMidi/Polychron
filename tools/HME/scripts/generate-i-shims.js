@@ -1,10 +1,11 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
-const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const root = _hmeRequireEnv('PROJECT_ROOT');
 const registry = JSON.parse(fs.readFileSync(path.join(root, 'tools/HME/i_registry.json'), 'utf8'));
 const iDir = path.join(root, 'tools', 'HME', 'i');
 const check = process.argv.includes('--check');

@@ -16,7 +16,7 @@ if ! echo "$CMD" | grep -qE '(^|[[:space:]/])i/status\b'; then
 fi
 
 # Count status(mode='pipeline') calls in the current assistant turn. Also
-_PCP_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pcp_py_err_$$")  # silent-ok: optional fallback path.
+_PCP_PY_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_pcp_py_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_pcp_py_err_$$")  # silent-ok: optional fallback path.
 _STATUS_COUNT_PARSE=$(python3 - "$TRANSCRIPT_PATH" <<'PYEOF' 2>"$_PCP_PY_ERR"
 import json, os, re, sys
 path = sys.argv[1]
@@ -67,7 +67,7 @@ PYEOF
 )
 CALL_COUNT=$(echo "$_STATUS_COUNT_PARSE" | awk '{print $1}')
 _SENTINEL=$(echo "$_STATUS_COUNT_PARSE" | awk '{print $2}')
-if [ -s "$_PCP_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_PCP_PY_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _PCP_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _pcp_line; do
     [ -n "$_pcp_line" ] && echo "[$_PCP_TS] [pretooluse_check_pipeline] python3 failed (polling gate fails OPEN): $_pcp_line" \
@@ -75,7 +75,7 @@ if [ -s "$_PCP_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/lo
   done < "$_PCP_PY_ERR"
 fi
 rm -f "$_PCP_PY_ERR" 2>/dev/null
-if [ -n "$_SENTINEL" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -n "$_SENTINEL" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   # Drop stderr suppression -- write failure should surface (rare; would
   # indicate full disk / permission flap on log/ which has bigger problems).
   printf '[%s] [pretooluse_check_pipeline] transcript parse drift: %s (polling guard ineffective)\n' \

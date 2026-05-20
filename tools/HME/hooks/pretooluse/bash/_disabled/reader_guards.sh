@@ -5,7 +5,7 @@
 GUARD_CFG="${PROJECT_ROOT}/tools/HME/config/context-guards.json"
 if [ -f "$GUARD_CFG" ] && echo "$CMD" | grep -qE '\b(cat|head|tail|less|more|batcat|bat|diff|sed|awk|xxd|od|git)\b'; then
   # FAIL-LOUD: was `2>/dev/null` + bare `except: sys.exit(0)` which fail-OPENed
-  _BRG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_brg_py_err_$$")  # silent-ok: optional fallback path.
+  _BRG_PY_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_brg_py_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_brg_py_err_$$")  # silent-ok: optional fallback path.
   BASH_HIT=$(python3 - "$CMD" "$GUARD_CFG" <<'PYEOF' 2>"$_BRG_PY_ERR"
 import json, os, shlex, sys
 cmd, cfg = sys.argv[1], sys.argv[2]
@@ -14,7 +14,7 @@ try:
     tokens = shlex.split(cmd, posix=True)
 except ValueError:
     tokens = cmd.split()
-proj = os.environ.get("PROJECT_ROOT", "")
+proj = os.environ["PROJECT_ROOT"]
 blocked = d.get("blocked_paths", [])
 blocked_exts = d.get("blocked_extensions", [])
 paginated = d.get("paginated_paths", [])
@@ -168,7 +168,7 @@ while i < len(tokens):
     i += 1
 PYEOF
 )
-  if [ -s "$_BRG_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  if [ -s "$_BRG_PY_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _BRG_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     while IFS= read -r _brg_line; do
       [ -n "$_brg_line" ] && echo "[$_BRG_TS] [reader_guards] python3 failed (gate fails OPEN): $_brg_line" \

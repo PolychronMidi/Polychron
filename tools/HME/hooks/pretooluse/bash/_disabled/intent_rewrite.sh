@@ -4,7 +4,7 @@
 # Remaining translation: cat log/hme-errors.log -> i/status mode=coherence.
 # Skips raw ls, cat-on-arbitrary, grep/find on output|metrics. Pass-through default.
 
-[ "${HME_DOMINANCE:-}" = "1" ] || return 0
+[ "${HME_DOMINANCE}" = "1" ] || return 0
 
 _INTENT_CMD="$CMD"
 _INTENT_REWROTE=""

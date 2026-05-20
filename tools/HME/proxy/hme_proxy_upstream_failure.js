@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
@@ -147,7 +148,7 @@ async function handleUpstreamFailureOrSuccess({
   if (isInteractivePath && !coolingDown && process.env.OVERDRIVE_MODE !== '1') {
     recordUpstreamFailure(errMsg);
   } else if (isInteractivePath) {
-    console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isOmniRouteSwap=${isOmniRouteSwap}) -- passthrough blocked`);
+    console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${_hmeRequireEnv('OVERDRIVE_MODE')}, _isOmniRouteSwap=${isOmniRouteSwap}) -- passthrough blocked`);
   } else if (!isInteractivePath) {
     console.error('sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)');
   }

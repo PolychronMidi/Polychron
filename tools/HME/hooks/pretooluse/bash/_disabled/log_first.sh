@@ -11,7 +11,7 @@
 # every code mtime under src/ and tools/HME/. If the agent edited code since
 # the last run, the run is legitimate and the gate steps aside.
 
-[ -z "${PROJECT_ROOT:-}" ] && return 0
+[ -z "${PROJECT_ROOT}" ] && return 0
 
 _LOG_FIRST_TARGET=""
 case "$CMD" in

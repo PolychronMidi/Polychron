@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 /**
  * Wholesale-replace Claude Code's default system prompt with a project-
  * curated one. More robust than surgical pruning: we don't depend on
@@ -34,7 +35,7 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 
-const ENABLED = (process.env.HME_REPLACE_SYSTEM_PROMPT ?? '0') === '1';
+const ENABLED = (_hmeRequireEnv('HME_REPLACE_SYSTEM_PROMPT')) === '1';
 const CANONICAL_PATH = path.join(
   PROJECT_ROOT, 'doc', 'templates', 'canonical-system-prompt.md',
 );

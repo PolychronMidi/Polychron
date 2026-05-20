@@ -1,7 +1,8 @@
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // init.js - global initialization & channel mapping.
 
-COMPOSITION_OUTPUT_DIR = process.env.COMPOSITION_OUTPUT_DIR || (process.cwd() + '/src/output');
-METRICS_DIR = process.env.METRICS_DIR || (COMPOSITION_OUTPUT_DIR + '/metrics');
+COMPOSITION_OUTPUT_DIR = _hmeRequireEnv('COMPOSITION_OUTPUT_DIR');
+METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 
 // Timing and counter variables (documented inline for brevity)
 COMPOSER_TYPE_PROFILE_SOURCES = {};

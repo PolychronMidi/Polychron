@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/generators/generate-dependency-graph.js
 // Builds a machine-readable dependency graph of global variable producers and
 // consumers across all source files. Extends boot-order.json (which tracks
@@ -17,7 +18,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT   = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const SRC    = path.join(ROOT, 'src');
 const OUTPUT = path.join(METRICS_DIR, 'dependency-graph.json');
 const BOOT_ORDER_PATH = path.join(METRICS_DIR, 'boot-order.json');

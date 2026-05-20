@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/verify-boot-order.js
 // Walks the require chains from src/index.js to build the complete flat
 // boot order, maps each file to the global(s) it provides, and cross-
@@ -18,7 +19,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT        = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const SRC         = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(SRC, 'types', 'globals.d.ts');
 const OUTPUT      = path.join(METRICS_DIR, 'boot-order.json');

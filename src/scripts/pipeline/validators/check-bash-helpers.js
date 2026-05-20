@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 
 // Scans hook scripts in tools/HME/hooks for `_function_name` calls and verifies
 // each is defined either locally or in a sourced helper (transitively).
@@ -6,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const ROOT = _hmeRequireEnv('PROJECT_ROOT');
 // rationale: scoped to pretool/post hooks where the streak-helper bug class lives.
 const HOOK_ROOTS = [
   path.join(ROOT, 'tools/HME/hooks/pretooluse'),

@@ -12,7 +12,7 @@ _stderr_verdict() {
 
 _hme_log_hook_latency() {
   # PROJECT_ROOT must come from .env (sourced above). Never silently fall back
-  if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
+  if [ -z "${PROJECT_ROOT}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
     return 0
   fi
   # Drop entries whose hook name didn't resolve. _HME_HOOK_NAME falls back
@@ -54,7 +54,7 @@ _hme_latency_lifesaver() {
   [ "$dur_ms" -ge "$warn_ms" ] || return 0
   local msg="[ALERT] LIFESAVER: ${_HME_HOOK_EVENT:-hook}:${_HME_HOOK_NAME:-unknown} took ${dur_ms}ms (warn=${warn_ms}ms)."
   echo "$msg" >&2
-  if [ -n "${PROJECT_ROOT:-}" ]; then
+  if [ -n "${PROJECT_ROOT}" ]; then
     mkdir -p "$PROJECT_ROOT/log" 2>/dev/null || true
     echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [hook-latency] $msg" >> "$PROJECT_ROOT/log/hme-errors.log" 2>/dev/null || true
   fi

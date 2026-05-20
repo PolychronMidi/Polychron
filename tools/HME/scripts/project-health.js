@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
 
 const fs = require('fs');
@@ -17,7 +18,7 @@ function underPath(child, parent) {
 function main() {
   const args = process.argv.slice(2);
   const rootArg = args.find((a) => a.startsWith('--root='));
-  const root = path.resolve(rootArg ? rootArg.slice('--root='.length) : process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..'));
+  const root = path.resolve(rootArg ? rootArg.slice('--root='.length) : _hmeRequireEnv('PROJECT_ROOT'));
   const json = args.includes('--json');
   const results = [];
   let adapter;

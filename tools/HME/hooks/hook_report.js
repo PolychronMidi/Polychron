@@ -1,10 +1,11 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const LOG_FILE = path.join(PROJECT_ROOT, 'log', 'hme-hook-exec.jsonl');
 
 function _safeInt(value, fallback = 0) {

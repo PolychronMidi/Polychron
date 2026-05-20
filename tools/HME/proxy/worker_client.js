@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 /**
  * Thin HTTP client for the worker's RAG/validate/enrich endpoints.
  * Used by enrichment middleware that wants semantic-search signal beyond
@@ -41,9 +42,9 @@ const _cache = new Map();
 // Rolling failure telemetry. After STREAK_WARN consecutive failures in a
 let _failStreak = 0;
 // Shared with _safe_curl failure threshold; override only for local diagnostics.
-const STREAK_WARN = parseInt(process.env.HME_CURL_STREAK_WARN || '5', 10);
+const STREAK_WARN = parseInt(_hmeRequireEnv('HME_CURL_STREAK_WARN'), 10);
 const _errLogPath = (() => {
-  const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+  const root = _hmeRequireEnv('PROJECT_ROOT');
   return path.join(root, 'log', 'hme-errors.log');
 })();
 function _recordFailure(endpoint, reason) {

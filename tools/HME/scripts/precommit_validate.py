@@ -179,13 +179,25 @@ def secret_hits(path: str, data: bytes) -> list[str]:
     return hits
 
 
+def _is_embedded_project_tmp(line: str, pos: int) -> bool:
+    """True when project scratch is not absolute tmp."""
+    if pos <= 0:
+        return False
+    return line[pos - 1].isalnum() or line[pos - 1] in "_}"
+
+
 def local_path_hits(path: str, text: str) -> list[str]:
     hits = []
     for lineno, line in enumerate(text.splitlines(), 1):
         if LOCAL_PATH_ALLOW in line:
             continue
         for needle in LOCAL_PATH_NEEDLES:
-            if needle and needle in line:
+            if not needle:
+                continue
+            start = line.find(needle)
+            while start != -1 and _is_embedded_project_tmp(line, start):
+                start = line.find(needle, start + 1)
+            if start != -1:
                 hits.append(f"{q(path)}:{lineno} contains local path marker {needle.rstrip('/')}")
                 break
     return hits

@@ -1,8 +1,9 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 const path = require('path');
 const { loadJsonc } = require('./config_loader');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const FALLBACK_ROOT = path.resolve(__dirname, '..', '..', '..');
 const REGISTRY_PATH = (() => {
   const candidate = path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'services.json');

@@ -70,7 +70,7 @@ class TempFileLocationContract(unittest.TestCase):
     def test_transcript_fixture_files_never_land_in_project_root(self):
         path = _write_jsonl([_fixture_user("root guard")])
         try:
-            root = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[4])).resolve()
+            root = Path(os.environ['PROJECT_ROOT']).resolve()
             self.assertFalse(Path(path).resolve().is_relative_to(root))
         finally:
             os.unlink(path)

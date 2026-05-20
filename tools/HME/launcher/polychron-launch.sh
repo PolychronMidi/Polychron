@@ -39,9 +39,9 @@ else
   echo "[launch] WARNING: .env not found at $_ENV_FILE -- using defaults" >&2
 fi
 
-PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
+PROJECT_ROOT="${PROJECT_ROOT}"
 source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
-PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
 PROXY_PID_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
 OMNIROUTE_PID_LABEL="$(_hme_service_pid_label omniroute 2>/dev/null || printf '%s' omniroute)"  # silent-ok: optional fallback path.
@@ -64,9 +64,9 @@ _port_healthy() {
 }
 
 # 0. OmniRoute (OVERDRIVE_MODE=1 translator)
-_OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
+_OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: optional fallback path.
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
-_OD_START="${OVERDRIVE_MODE:-0}"
+_OD_START="${OVERDRIVE_MODE}"
 if [ "$_OD_START" = "1" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   _OR_DIR="$PROJECT_ROOT/tools/omniroute"
@@ -165,7 +165,7 @@ _start_llama() {
   _record_pid "llama-${name}" "$_pid"
 }
 
-if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "${HME_LLAMA_SERVER_BIN:-}" ]; then
+if [ "${HME_AUTOLAUNCH_LLAMA}" = "1" ] && [ -x "${HME_LLAMA_SERVER_BIN}" ]; then
   _start_llama arbiter \
     "${HME_ARBITER_PORT:?HME_ARBITER_PORT not in .env}" \
     "${HME_ARBITER:?HME_ARBITER not in .env}" \
@@ -190,9 +190,9 @@ _worker_url="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%
 _worker_status=$(curl -sf --max-time 3 "$_worker_url" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null || echo "starting...")  # silent-ok: optional fallback path.
 echo "[launch]   worker -> ${_worker_status}" >&2
 
-if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
-  _arb_ok=$(_llama_healthy "${HME_ARBITER_PORT:-8080}" && echo "ok" || echo "starting...")
-  _cod_ok=$(_llama_healthy "${HME_CODER_PORT:-8081}" && echo "ok" || echo "starting...")
+if [ "${HME_AUTOLAUNCH_LLAMA}" = "1" ]; then
+  _arb_ok=$(_llama_healthy "${HME_ARBITER_PORT}" && echo "ok" || echo "starting...")
+  _cod_ok=$(_llama_healthy "${HME_CODER_PORT}" && echo "ok" || echo "starting...")
   echo "[launch]   arbiter llama -> ${_arb_ok}" >&2
   echo "[launch]   coder llama   -> ${_cod_ok}" >&2
 fi
@@ -206,7 +206,7 @@ fi
 
 # 5. ANTHROPIC_BASE_URL bridge: VSCode/GUI claude doesn't source .env, so
 
-if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
+if [ -n "${ANTHROPIC_BASE_URL}" ]; then
   _vscode_dir="$PROJECT_ROOT/.vscode"
   mkdir -p "$_vscode_dir"
   python3 - "$_vscode_dir/settings.json" "$ANTHROPIC_BASE_URL" <<'PYEOF' || true

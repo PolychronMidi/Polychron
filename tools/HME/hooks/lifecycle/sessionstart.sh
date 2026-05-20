@@ -46,8 +46,8 @@ source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
 # HME Proxy + Supervisor. Ports come from services.json through _safety.sh.
-PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
-if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
+if [ "${HME_PROXY_ENABLED}" = "1" ]; then
   if ! curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
     PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
     if [ -f "$PROXY_SCRIPT" ]; then
@@ -72,7 +72,7 @@ curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
   -H 'Content-Type: application/json' \
   -d '{"older_than_ms":1800000}' >/dev/null 2>&1 || true
 # Log unexpected health-curl stderr; worker-start connection failures are normal.
-_SS_CURL_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_curl_err_$$")  # silent-ok: optional fallback path.
+_SS_CURL_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_ss_curl_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_ss_curl_err_$$")  # silent-ok: optional fallback path.
 HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>"$_SS_CURL_ERR" || echo "")
 if [ -s "$_SS_CURL_ERR" ] && ! grep -qiE 'connect|refused|timed out|timeout' "$_SS_CURL_ERR"; then
   _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
@@ -121,7 +121,7 @@ fi
 # Build orientation message
 MSG=""
 # Pipeline verdict + wall time
-PS="${METRICS_DIR:-$PROJECT/src/output/metrics}/pipeline-summary.json"
+PS="${METRICS_DIR}/pipeline-summary.json"
 if [ -f "$PS" ]; then
   VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
   WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
@@ -145,7 +145,7 @@ ONB_STEP="$(_onb_step_label)"
 echo -e "Onboarding: $ONB_STEP$MSG" >&2
 
 # Surface carried-over todos; log carry-over loader failures loudly.
-_SS_CARRY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_carry_err_$$")
+_SS_CARRY_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_ss_carry_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_ss_carry_err_$$")
 set +e
 CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_SS_CARRY_ERR"
 from server.tools_analysis.todo import list_carried_over
@@ -226,7 +226,7 @@ fi
 
 # Surface the current HCI trajectory summary so agents see the health arc.
 if [ -f "$TRAJ_SCRIPT" ]; then
-  _SS_TRAJ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_traj_err_$$")  # silent-ok: optional fallback path.
+  _SS_TRAJ_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_ss_traj_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_ss_traj_err_$$")  # silent-ok: optional fallback path.
   set +e
   TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" timeout 10s python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
   _SS_TRAJ_RC=$?
@@ -251,7 +251,7 @@ fi
 SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true  # silent-ok: optional fallback path.
 import json, os
 root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "."
-metrics_dir = os.environ.get("METRICS_DIR", os.path.join(root, "src", "output", "metrics"))
+metrics_dir = os.environ["METRICS_DIR"]
 def _j(name):
     try:
         with open(os.path.join(metrics_dir, name), encoding="utf-8") as f:

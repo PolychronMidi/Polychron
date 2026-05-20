@@ -26,7 +26,7 @@ if [ -n "$PROJECT_ROOT" ] && [[ "$REL" == "$PROJECT_ROOT"/* ]]; then
 fi
 
 # FAIL-LOUD: was `2>/dev/null` + bare `except: sys.exit(0)` which fail-OPENed
-_PG_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pg_gate_err_$$")  # silent-ok: optional fallback path.
+_PG_GATE_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_pg_gate_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_pg_gate_err_$$")  # silent-ok: optional fallback path.
 HIT=$(python3 - "$REL" "$GLOB" "$CONFIG" <<'PYEOF' 2>"$_PG_GATE_ERR"
 import json, os, sys
 rel, glob, cfg = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -39,11 +39,11 @@ for p in d.get("blocked_paths", []):
         print(p); sys.exit(0)
 for entry in d.get("paginated_paths", []):
     prefix = entry.get("prefix", "")
-    if prefix and (rel == prefix or (rel.endswith(prefix) and os.path.isfile(os.path.join(os.environ.get("PROJECT_ROOT",""), prefix)))):
+    if prefix and (rel == prefix or (rel.endswith(prefix) and os.path.isfile(os.path.join(os.environ["PROJECT_ROOT"], prefix)))):
         print(f"{prefix} (paginated-only)"); sys.exit(0)
 PYEOF
 )
-if [ -s "$_PG_GATE_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_PG_GATE_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _PG_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _pg_line; do
     [ -n "$_pg_line" ] && echo "[$_PG_TS] [pretooluse_grep:guard] python3 failed (gate fails OPEN): $_pg_line" \

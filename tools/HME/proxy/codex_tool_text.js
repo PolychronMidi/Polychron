@@ -1,9 +1,10 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 
 const path = require('path');
 const { repairMalformedNativeCall, rewriteBrokenReadDisplays } = require('./codex_tool_display_artifacts');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const TARGET_NAMES = new Set(['exec_command', 'functions.exec_command']);
 const ACTION_TO_TOOL = {
   read: 'Read',

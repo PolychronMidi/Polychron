@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // metaProfileDefinitions.js -- Built-in metaprofile definitions.
 // Each profile configures relationship-layer targets that meta-controllers
 // self-calibrate toward. Controllers not mentioned use their existing defaults.
@@ -15,7 +16,7 @@ moduleLifecycle.declare({
   provides: ['metaProfileDefinitions'],
   init: (deps) => {
   const V = deps.validator.create('metaProfileDefinitions');
-  const _projectRoot = process.env.PROJECT_ROOT || require('path').resolve(__dirname, '..', '..');
+  const _projectRoot = _hmeRequireEnv('PROJECT_ROOT');
 
   // Schema. 'pair' = 2-element finite-number array (lo, hi with lo <= hi).
   // Profiles must declare every key; unknown keys are rejected.

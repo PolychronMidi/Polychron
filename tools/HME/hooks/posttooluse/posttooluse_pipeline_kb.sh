@@ -9,7 +9,7 @@ echo "$CMD" | grep -q 'npm run main' || exit 0
 
 PROJECT="$PROJECT_ROOT"
 # All metrics live under src/output/metrics/ since the Apr 2026 bulk migration --
-SUMMARY="${METRICS_DIR:-$PROJECT/src/output/metrics}/trace-summary.json"
+SUMMARY="${METRICS_DIR}/trace-summary.json"
 [ -f "$SUMMARY" ] || exit 0
 
 # Extract key metrics and format as a reminder to persist to KB

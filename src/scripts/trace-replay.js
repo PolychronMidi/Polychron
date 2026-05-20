@@ -3,12 +3,13 @@
 // --json / --stats / --search K=V. Output: stdout or metrics/trace-replay.json.
 
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 
 const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const OUTPUT_DIR = path.join(METRICS_DIR);
 const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
 const REPLAY_JSON_PATH = path.join(OUTPUT_DIR, 'trace-replay.json');

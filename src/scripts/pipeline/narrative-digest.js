@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/narrative-digest.js
 // Generates a human-readable prose narrative of the composition run.
 // Instead of raw data, this produces a STORY: what the system did, why it
@@ -18,7 +19,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const COMPOSITION_DIR = path.join(ROOT, 'src', 'output');
 const SUMMARY_PATH = path.join(METRICS_DIR, 'trace-summary.json');
 const MANIFEST_PATH = path.join(METRICS_DIR, 'system-manifest.json');

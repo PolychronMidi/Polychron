@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/diff-compositions.js
 // Structural diff between two composition runs. Compares the musical structure
 // (sections, phrases, harmonic changes, tension arcs, regime transitions)
@@ -16,7 +17,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR     = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR     = _hmeRequireEnv('METRICS_DIR');
 const COMPOSITION_DIR = path.join(ROOT, 'src', 'output');
 const SNAPSHOT_DIR    = path.join(METRICS_DIR, 'snapshots');
 const DIFF_JSON       = path.join(METRICS_DIR, 'composition-diff.json');

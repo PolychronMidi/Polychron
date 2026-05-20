@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../proxy/shared/load_env.js');
 // tools/HME/scripts/pipeline/hme/emit-legacy-override-history.js
 //
 // Read axisEnergyEquilibrator.perLegacyOverride + perLegacyOverrideEntries
@@ -15,7 +16,7 @@ const { metricPath } = require('./utils');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = (process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..'));
+const ROOT = (_hmeRequireEnv('PROJECT_ROOT'));
 const TRACE = metricPath('trace-summary.json');
 const OUT = metricPath('legacy-override-history.jsonl');
 

@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 const V = validator.create('grandFinale');
@@ -142,7 +143,7 @@ grandFinale = () => {
       buffer: layer.buffer
     };
   });
-  const outputDir = process.env.COMPOSITION_OUTPUT_DIR || 'src/output';
+  const outputDir = _hmeRequireEnv('COMPOSITION_OUTPUT_DIR');
   layerData.forEach(({ name, buffer }) => {
     // L0 is an in-memory-only layer; never written to CSV output.
     if (name === 'L0') return;

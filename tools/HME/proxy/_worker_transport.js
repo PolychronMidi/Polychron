@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 /**
  * Transport router for proxy -> worker dispatch. Picks between HTTP
  * (`_worker_http.js`) and filesystem queue (`_worker_fs.js`) based on
@@ -26,7 +27,7 @@
 const httpBackend = require('./_worker_http');
 const fsBackend = require('./_worker_fs');
 
-const MODE = (process.env.HME_WORKER_TRANSPORT || 'http').toLowerCase();
+const MODE = (_hmeRequireEnv('HME_WORKER_TRANSPORT')).toLowerCase();
 const VALID_MODES = new Set(['http', 'hybrid']);
 const RESOLVED = VALID_MODES.has(MODE) ? MODE : 'http';
 

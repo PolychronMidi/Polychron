@@ -65,13 +65,13 @@ if [[ ${#PARTS[@]} -gt 0 ]]; then
 fi
 
 # Log compact event for context meter calibration.
-CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/compact-log.jsonl"
+CTX_FILE="$PROJECT/tools/HME/runtime/claude-context.json"
+LOG="${HME_METRICS_DIR}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: capture jq stderr; corrupted statusline JSON would silently
   # produce all-null calibration rows and skew the meter analysis.
-  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pc_jq_err_$$")  # silent-ok: optional fallback path.
+  _PC_JQ_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_pc_jq_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_pc_jq_err_$$")  # silent-ok: optional fallback path.
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
   REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
   SIZE=$(jq -r '.size // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
@@ -91,7 +91,7 @@ fi
 
 # if preemption didn't fire at 70%, at
 CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
-LATEST_LINK="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/chain-history/latest.yaml"
+LATEST_LINK="${HME_METRICS_DIR}/chain-history/latest.yaml"
 _NEEDS_FALLBACK=1
 if [ -f "$LATEST_LINK" ]; then
   # If a link exists and is < 10 min old, assume preemption fired

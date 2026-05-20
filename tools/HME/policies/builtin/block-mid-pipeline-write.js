@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 /**
  * Block writes/edits to src/ while a pipeline is running (tmp/run.lock
  * exists). The pipeline's behavior is being measured against the code
@@ -21,7 +22,7 @@ module.exports = {
   async fn(ctx) {
     const fp = (ctx.toolInput && ctx.toolInput.file_path) || '';
     if (!fp.includes('/Polychron/src/')) return ctx.allow();
-    const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+    const projectRoot = _hmeRequireEnv('PROJECT_ROOT');
     const lockFile = path.join(projectRoot, 'tmp', 'run.lock');
     if (!fs.existsSync(lockFile)) return ctx.allow();
     return ctx.deny(

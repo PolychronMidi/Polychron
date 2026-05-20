@@ -1,4 +1,5 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // Post-render perceptual analysis: runs EnCodec + CLAP on combined.wav,
 // correlates with trace data, produces metrics/perceptual-report.json.
 // Usage: node src/scripts/pipeline/perceptual-analysis.js
@@ -8,8 +9,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');
-const COMPOSITION_OUTPUT_DIR = process.env.COMPOSITION_OUTPUT_DIR || path.join(PROJECT_ROOT, 'src', 'output');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(COMPOSITION_OUTPUT_DIR, 'metrics');
+const COMPOSITION_OUTPUT_DIR = _hmeRequireEnv('COMPOSITION_OUTPUT_DIR');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const WAV_PATH = path.join(COMPOSITION_OUTPUT_DIR, 'combined.wav');
 const TRACE_SUMMARY = path.join(METRICS_DIR, 'trace-summary.json');
 const REPORT_PATH = path.join(METRICS_DIR, 'perceptual-report.json');
@@ -229,7 +230,7 @@ with open(sys.argv[3], 'w') as f:
         encoding: 'utf-8',
         maxBuffer: 50 * 1024 * 1024,
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, PYTHONPATH: '/home/jah/.local/lib/python3.12/site-packages' },
+        env: process.env,
       }
     );
 

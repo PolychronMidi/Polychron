@@ -11,11 +11,11 @@ if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
   # Run holograph diff with a timeout -- purely informational, never blocks.
   # Output goes to a temp file so we can read it without blocking stop.sh.
   _HOLO_TMP=$(mktemp)
-  _HOLO_ERR=$(mktemp 2>/dev/null || echo "/tmp/_holo_err_$$")  # silent-ok: optional fallback path.
+  _HOLO_ERR=$(mktemp "$PROJECT_ROOT/tools/HME/runtime/_holo_err_XXXXXX" 2>/dev/null || echo "$PROJECT_ROOT/tools/HME/runtime/_holo_err_$$")  # silent-ok: optional fallback path.
   # FAIL-LOUD: was double 2>/dev/null. A snapshot-holograph crash here
   timeout 2 bash -c "PROJECT_ROOT='$PROJECT_ROOT' HOLOGRAPH_FAST=1 python3 '$HOLO_SCRIPT' --diff '$SESSION_HOLO' 2>'$_HOLO_ERR'" > "$_HOLO_TMP" 2>>"$_HOLO_ERR" || true
   DIFF_OUT=$(cat "$_HOLO_TMP" 2>/dev/null)
-  if [ -s "$_HOLO_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  if [ -s "$_HOLO_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _HOLO_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     while IFS= read -r _holo_line; do
       [ -n "$_holo_line" ] && echo "[$_HOLO_TS] [stop_holograph] python3 failed (drift detector silenced): $_holo_line" \

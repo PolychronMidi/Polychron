@@ -24,7 +24,7 @@ done
 cd "$SCRIPT_DIR"
 
 # Source project .env for credentials
-PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+PROJECT_ROOT="${PROJECT_ROOT}"
 PROJECT_ENV="${PROJECT_ROOT}/.env"
 if [ -f "$PROJECT_ENV" ]; then
   set -a
@@ -32,6 +32,10 @@ if [ -f "$PROJECT_ENV" ]; then
   source "$PROJECT_ENV"
   set +a
 fi
+_OMNI_RUNTIME_DIR="${PROJECT_ROOT}/tools/HME/runtime"
+mkdir -p "$_OMNI_RUNTIME_DIR" 2>/dev/null || true
+_OMNI_SETUP_COOKIE="$_OMNI_RUNTIME_DIR/omni-setup-cookies.txt"
+_OMNI_REPAIR_COOKIE="$_OMNI_RUNTIME_DIR/omni-repair.txt"
 
 # Prefer nvm v24 node for watchdog/supervisor shells.
 _NODE_BIN="$(command -v node 2>/dev/null || echo node)"
@@ -109,7 +113,7 @@ fi
 # Configure provider credentials
 _provider_connection_exists() {
   local _provider="$1"
-  curl -sf -b /tmp/omni-setup-cookies.txt \
+  curl -sf -b $_OMNI_SETUP_COOKIE \
     "http://127.0.0.1:${PORT}/api/providers" 2>/dev/null | \
     OMNI_PROVIDER="$_provider" python3 -c 'import json, os, sys
 try:
@@ -123,7 +127,7 @@ sys.exit(0 if found else 1)'
 
 _provider_node_id_by_prefix() {
   local _prefix="$1" _api_type="${2:-chat}"
-  curl -sf -b /tmp/omni-setup-cookies.txt \
+  curl -sf -b $_OMNI_SETUP_COOKIE \
     "http://127.0.0.1:${PORT}/api/provider-nodes" 2>/dev/null | \
     OMNI_PREFIX="$_prefix" OMNI_API_TYPE="$_api_type" python3 -c 'import json, os, sys
 try:
@@ -157,7 +161,7 @@ print(json.dumps({
 }))
 PYJSON
 )
-  _result=$(curl -sf -b /tmp/omni-setup-cookies.txt -X POST \
+  _result=$(curl -sf -b $_OMNI_SETUP_COOKIE -X POST \
     "http://127.0.0.1:${PORT}/api/provider-nodes" \
     -H "Content-Type: application/json" \
     -d "$_payload" 2>&1) || true
@@ -194,7 +198,7 @@ import json, os
 print(json.dumps({"provider": os.environ["OMNI_PROVIDER"], "apiKey": os.environ["OMNI_KEY"], "name": os.environ["OMNI_NAME"]}))
 PYJSON
 )
-  _result=$(curl -sf -b /tmp/omni-setup-cookies.txt -X POST \
+  _result=$(curl -sf -b $_OMNI_SETUP_COOKIE -X POST \
     "http://127.0.0.1:${PORT}/api/providers" \
     -H "Content-Type: application/json" \
     -d "$_payload" 2>&1) || true
@@ -217,7 +221,7 @@ _configure_openai_compatible_provider() {
 }
 
 if [ "$DO_CONFIGURE" -eq 1 ]; then
-  LOGIN=$(curl -sf -c /tmp/omni-setup-cookies.txt -X POST \
+  LOGIN=$(curl -sf -c $_OMNI_SETUP_COOKIE -X POST \
     "http://127.0.0.1:${PORT}/api/auth/login" \
     -H "Content-Type: application/json" \
     -d '{"password":"polychron"}' 2>&1) || true
@@ -227,31 +231,31 @@ if [ "$DO_CONFIGURE" -eq 1 ]; then
     exit 1
   fi
 
-  _configure_provider "opencode-go" "${OPENCODE_API_KEY:-}" "Polychron HME"
-  _configure_provider "anthropic" "${ANTHROPIC_API_KEY:-}" "Polychron Anthropic"
-  _configure_provider "kilo-gateway" "${KILO_API_KEY:-}" "Polychron Kilo Gateway"
-  _configure_openai_compatible_provider "aihubmix" "${AIHUBMIX_API_KEY:-}" "Polychron AIHubMix" "AIHubMix Chat" "https://aihubmix.com/v1"
-  rm -f /tmp/omni-setup-cookies.txt
+  _configure_provider "opencode-go" "${OPENCODE_API_KEY}" "Polychron HME"
+  _configure_provider "anthropic" "${ANTHROPIC_API_KEY}" "Polychron Anthropic"
+  _configure_provider "kilo-gateway" "${KILO_API_KEY}" "Polychron Kilo Gateway"
+  _configure_openai_compatible_provider "aihubmix" "${AIHUBMIX_API_KEY}" "Polychron AIHubMix" "AIHubMix Chat" "https://aihubmix.com/v1"
+  rm -f $_OMNI_SETUP_COOKIE
 fi
 
 # Auto-repair: reset expired opencode-go credentials (OmniRoute's health-check
 # sometimes tests with wrong model and marks valid keys as expired).
 _repair_opencode_credentials() {
   local _port="$1"
-  curl -sf -c /tmp/omni-repair.txt -X POST "http://127.0.0.1:${_port}/api/auth/login" \
+  curl -sf -c $_OMNI_REPAIR_COOKIE -X POST "http://127.0.0.1:${_port}/api/auth/login" \
     -H "Content-Type: application/json" -d '{"password":"polychron"}' >/dev/null || return 0
-  curl -sf -b /tmp/omni-repair.txt "http://127.0.0.1:${_port}/api/providers" 2>/dev/null | \
+  curl -sf -b $_OMNI_REPAIR_COOKIE "http://127.0.0.1:${_port}/api/providers" 2>/dev/null | \
     python3 -c "
 import sys,json
 for c in json.load(sys.stdin).get('connections',[]):
     if c['provider']=='opencode-go' and c.get('testStatus')=='expired':
         print(c['id'])
 " | while read _cid; do
-    curl -sf -b /tmp/omni-repair.txt -X PUT "http://127.0.0.1:${_port}/api/providers/${_cid}" \
+    curl -sf -b $_OMNI_REPAIR_COOKIE -X PUT "http://127.0.0.1:${_port}/api/providers/${_cid}" \
       -H "Content-Type: application/json" \
       -d '{"testStatus":"success","isActive":true,"lastError":null,"errorCode":null}' >/dev/null && \
       echo "[omniroute] repaired expired opencode-go credential ${_cid}"
   done
-  rm -f /tmp/omni-repair.txt
+  rm -f $_OMNI_REPAIR_COOKIE
 }
 _repair_opencode_credentials "$PORT"

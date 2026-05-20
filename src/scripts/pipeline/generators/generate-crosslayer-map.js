@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/generators/generate-crosslayer-map.js
 // Auto-generates a cross-layer intelligence map showing module interactions,
 // ATG channel usage, lifecycle scopes, and inter-module communication paths.
@@ -16,7 +17,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const CL_DIR = path.join(ROOT, 'src', 'crossLayer');
 const OUTPUT_DIR = path.join(METRICS_DIR);
 const JSON_PATH  = path.join(OUTPUT_DIR, 'crosslayer-map.json');

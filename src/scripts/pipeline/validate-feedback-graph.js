@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/validate-feedback-graph.js
 // Cross-validates metrics/feedback_graph.json against source code.
 // Ensures the declared feedback topology matches actual registrations.
@@ -20,7 +21,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const SRC  = path.join(ROOT, 'src');
 const METRICS  = path.join(METRICS_DIR);
 

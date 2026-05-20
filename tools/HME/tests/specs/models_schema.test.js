@@ -1,11 +1,12 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const repo = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const repo = _hmeRequireEnv('PROJECT_ROOT');
 const VALID_TIERS = new Set(['E1', 'E2', 'E3', 'E4', 'E5']);
 const VALID_EFFORTS = new Set(['max', 'xhigh', 'high', 'medium', 'low']);
 

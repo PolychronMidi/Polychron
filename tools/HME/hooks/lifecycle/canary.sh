@@ -3,7 +3,7 @@
 # so PostToolUse/Stop lifesaver can verify it advances watermark. If injected
 # but never processed -> consumer side regressed. Passive marker, never blocks.
 
-PROJECT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
+PROJECT="${PROJECT_ROOT}"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
 CANARY_TRACK="$PROJECT/tools/HME/runtime/canary-pending.txt"
 

@@ -6,9 +6,9 @@
 # Project root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up; no hardcoded fallback.
 _AC_SELF="${BASH_SOURCE[0]}"
 _AC_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _AC_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _AC_ROOT="$CLAUDE_PROJECT_DIR"
 else
   _AC_TRY="$(cd "$(dirname "$_AC_SELF")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
@@ -125,7 +125,8 @@ _ac_do_commit() {
   fi
   # Flock for concurrent-commit serialization (advisory, 30s wait).
   local _ac_err_buf
-  _ac_err_buf=$(mktemp 2>/dev/null || echo "/tmp/hme-ac-err.$$")  # silent-ok: optional fallback path.
+  mkdir -p "$_AC_ROOT/tools/HME/runtime" 2>/dev/null
+  _ac_err_buf=$(mktemp "$_AC_ROOT/tools/HME/runtime/hme-ac-err.XXXXXX" 2>/dev/null || echo "$_AC_ROOT/tools/HME/runtime/hme-ac-err.$$")  # silent-ok: optional fallback path.
   # shellcheck disable=SC2094
   exec 9>"$_AC_LOCK_FILE"
   if ! flock -w 30 9 2>/dev/null; then  # silent-ok: optional fallback path.

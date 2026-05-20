@@ -8,9 +8,9 @@ set +e  # explicitly NOT fail-fast -- we own our bookkeeping
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _DIRECT_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _DIRECT_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _DIRECT_ROOT="$CLAUDE_PROJECT_DIR"
 else
   _ad_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
@@ -40,7 +40,7 @@ if [ ! -f "$_HELPER" ]; then
   mkdir -p "$_DIRECT_ROOT/log" 2>/dev/null
   # FAIL-LOUD on alert-sink writes (see claude_adapter.js rationale).
   echo "[$ts] [autocommit-direct] helper missing at $_HELPER" >> "$_DIRECT_ROOT/log/hme-errors.log"
-  mkdir -p "$_DIRECT_ROOT/tmp" 2>/dev/null
+  mkdir -p "$_DIRECT_ROOT/tools/HME/runtime" 2>/dev/null
   echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/tools/HME/runtime/autocommit.fail" 2>/dev/null  # silent-ok: optional fallback path.
   exit 0
 fi
@@ -73,7 +73,7 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
          | /usr/bin/grep -qE '^(src|tools/HME|scripts|lab)/'; then
       (
         timeout 600 "$_DIRECT_ROOT/tools/HME/i/review" mode=forget \
-          > "$_DIRECT_ROOT/tmp/hme-review-auto.out" 2>&1
+          > "$_DIRECT_ROOT/tools/HME/runtime/hme-review-auto.out" 2>&1
         _AR_RC=$?
         if [ "$_AR_RC" -ne 0 ]; then
           _AR_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)

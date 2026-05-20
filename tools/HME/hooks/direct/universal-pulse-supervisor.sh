@@ -8,9 +8,9 @@
 set +e
 
 _SV_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _SV_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_SV_ROOT" ]; then
@@ -22,13 +22,13 @@ if [ -z "$_SV_ROOT" ]; then
 fi
 
 _UP_PID_FILE="$_SV_ROOT/tools/HME/runtime/universal-pulse-supervisor.pid"
-_UP_CHILD_PID_FILE="$_SV_ROOT/tmp/hme-universal-pulse.pid"
-_UP_HEARTBEAT="$_SV_ROOT/tmp/hme-universal-pulse.heartbeat"
+_UP_CHILD_PID_FILE="$_SV_ROOT/tools/HME/runtime/hme-universal-pulse.pid"
+_UP_HEARTBEAT="$_SV_ROOT/tools/HME/runtime/hme-universal-pulse.heartbeat"
 _UP_PYTHON_SCRIPT="$_SV_ROOT/tools/HME/activity/universal_pulse.py"
 _UP_LIFECYCLE_LOG="$_SV_ROOT/log/hme-universal-pulse.log"
 _UP_POLL_INTERVAL=15
 _UP_STALE_THRESHOLD=90   # heartbeat stale > 90s -> respawn
-_UP_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
+_UP_MAINT_FLAG="$_SV_ROOT/tools/HME/runtime/hme-proxy-maintenance.flag"
 
 _up_log() {
   mkdir -p "$(dirname "$_UP_LIFECYCLE_LOG")" 2>/dev/null

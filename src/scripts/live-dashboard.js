@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/live-dashboard.js
 // Real-time composition dashboard -- WebSocket server that streams
 // telemetry from trace.jsonl as it is written, plus a static HTML page.
@@ -16,7 +17,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT       = path.join(__dirname, '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 const TRACE_FILE = path.join(METRICS_DIR, 'trace.jsonl');
 const HTML_FILE  = path.join(__dirname, 'dashboard.html');
 const DEFAULT_PORT = 3377;

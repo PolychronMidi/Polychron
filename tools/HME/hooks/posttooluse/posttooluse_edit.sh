@@ -6,7 +6,7 @@ INPUT=$(cat)
 printf '%s' "$INPUT" | node -e '
 const fs = require("fs");
 const path = require("path");
-const root = process.env.PROJECT_ROOT || process.cwd();
+const root = process.env.PROJECT_ROOT;
 let env = {};
 try { env = JSON.parse(fs.readFileSync(0, "utf8") || "{}"); } catch (_err) { process.exit(0); }
 const response = env.tool_response || env.tool_result || {};

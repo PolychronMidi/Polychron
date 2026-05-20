@@ -1,11 +1,12 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const path = require('node:path');
 
-const repo = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const repo = _hmeRequireEnv('PROJECT_ROOT');
 
 function clearProxyCache() {
   for (const k of Object.keys(require.cache)) {

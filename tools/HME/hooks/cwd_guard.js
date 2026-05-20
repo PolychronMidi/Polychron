@@ -1,9 +1,10 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 
 function _payloadCwd(stdinJson) {
   try {

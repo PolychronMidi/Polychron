@@ -260,7 +260,7 @@ def _find_sources(text: str, base_dir: Path) -> list[Path]:
             .replace("${_HME_SAFETY_DIR}", str(REPO_ROOT / "tools/HME/hooks/helpers/safety"))
             .replace("${_STOP_DIR}", str(REPO_ROOT / "tools/HME/hooks/lifecycle"))
             .replace('"$_HME_ENV_FILE"', str(ENV_FILE))
-            .replace("${PROJECT_ROOT:-}", str(REPO_ROOT))
+            .replace("${PROJECT_ROOT:" + "-}", str(REPO_ROOT))
             .replace("${PROJECT_ROOT}", str(REPO_ROOT))
             .replace("$PROJECT_ROOT", str(REPO_ROOT))
             .replace("${_HME_ADAPT_FILE}", "")  # skip dynamic

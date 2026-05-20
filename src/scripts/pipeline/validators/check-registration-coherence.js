@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/check-registration-coherence.js
 // Validates that conductor modules with functional registrations
 // (registerDensityBias, registerTensionBias, registerFlickerModifier,
@@ -9,9 +10,9 @@
 
 const fs   = require('fs');
 const path = require('path');
-const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const ROOT = _hmeRequireEnv('PROJECT_ROOT');
 function loadJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
 
 const SRC  = path.join(ROOT, 'src');
 

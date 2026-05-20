@@ -1,11 +1,12 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
 const { test } = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
 
 const registry = require('../../policies/registry');
 
-const REPO_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const REPO_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 process.env.PROJECT_ROOT = REPO_ROOT;
 delete require.cache[require.resolve('../../policies/builtin/rewrite-hardcoded-project-root')];
 const policy = require('../../policies/builtin/rewrite-hardcoded-project-root');

@@ -121,7 +121,7 @@ class OAuthTokenExpiryVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         import time
-        overdrive_mode = os.environ.get("OVERDRIVE_MODE", "")
+        overdrive_mode = os.environ['OVERDRIVE_MODE']
         if not overdrive_mode:
             env_path = os.path.join(_PROJECT, ".env")
             try:

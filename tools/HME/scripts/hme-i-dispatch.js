@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const ROOT = process.env.PROJECT_ROOT || process.env.CLAUDE_PROJECT_DIR || path.resolve(__dirname, '..', '..', '..');
+const ROOT = _hmeRequireEnv('PROJECT_ROOT');
 const HME_CLI = path.join(ROOT, 'tools', 'HME', 'scripts', 'hme-cli.js');
 const REGISTRY = path.join(ROOT, 'tools', 'HME', 'i_registry.json');
 
@@ -174,7 +175,7 @@ function dispatchTrace(args) {
 }
 
 function dispatchReview(args) {
-  const timeout = process.env.HME_REVIEW_TIMEOUT || '180';
+  const timeout = _hmeRequireEnv('HME_REVIEW_TIMEOUT');
   const r = spawnSync('timeout', [timeout, 'node', HME_CLI, 'review', ...args], { stdio: 'inherit', env: { ...process.env, PROJECT_ROOT: ROOT } });
   if (r.status === 124) {
     const msg = `[${new Date().toISOString()}] [i/review] wall-clock timeout after ${timeout}s -- worker deadlock? Args: ${args.join(' ')}`;

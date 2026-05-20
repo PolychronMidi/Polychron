@@ -1,9 +1,10 @@
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = _hmeRequireEnv('PROJECT_ROOT');
 
 const ENV_REF_RE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g;
 
@@ -52,7 +53,7 @@ const COMPOSITION_OUTPUT_DIR = underRoot(
   path.join(PROJECT_ROOT, 'src', 'output'),
 );
 const COMPOSITION_METRICS_DIR = underRoot(
-  process.env.COMPOSITION_METRICS_DIR || process.env.METRICS_DIR,
+  _hmeRequireEnv('COMPOSITION_METRICS_DIR'),
   path.join(COMPOSITION_OUTPUT_DIR, 'metrics'),
 );
 

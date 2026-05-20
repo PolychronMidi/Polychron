@@ -20,7 +20,7 @@ if [ -f "$_ENV_FILE" ]; then
   set +a
 fi
 
-PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
+PROJECT_ROOT="${PROJECT_ROOT}"
 source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 
