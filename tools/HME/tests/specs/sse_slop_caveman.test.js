@@ -9,8 +9,8 @@ test('slop caveman compression deletes requested glue words case-insensitively',
   assert.equal(result.out, 'One; ready; it fix; ship.');
 });
 
-test('slop rewriter applies caveman compression to text blocks', () => {
-  const ctx = new Map([['priorUserWasDeny', true]]);
+test('slop rewriter applies caveman compression to text blocks without deny gate', () => {
+  const ctx = new Map();
   assert.equal(slopStripRewrite('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }, ctx), null);
   assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'I will now fix the thing.' } }, ctx), null);
   const out = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 0 }, ctx);
