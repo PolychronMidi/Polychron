@@ -108,4 +108,12 @@ function defaultEnvPath(callerDir) {
   return path.resolve(callerDir, '..', '..', '..', '..', '.env');
 }
 
-module.exports = { loadEnv, defaultEnvPath };
+module.exports = {
+  loadEnv,
+  parseEnvFile,
+  requireEnv,
+  requireEnvInt,
+  requireEnvFloat,
+  requireEnvBool,
+  defaultEnvPath,
+};
