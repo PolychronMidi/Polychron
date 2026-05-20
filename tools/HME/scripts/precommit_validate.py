@@ -322,9 +322,20 @@ def self_protect() -> None:
         pass
 
 
+def full_env_failfast_check() -> None:
+    script = ROOT / "tools" / "HME" / "scripts" / "check-env-failfast.py"
+    proc = subprocess.run(["python3", str(script)], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if proc.returncode != 0:
+        detail = (proc.stdout or proc.stderr or "env fail-fast checker failed").strip().splitlines()
+        failures.append("env fail-fast invariant failed: " + (detail[0] if detail else "unknown"))
+        for line in detail[1:20]:
+            failures.append("env fail-fast invariant failed: " + line)
+
+
 def main() -> int:
     load_env_secrets()
     self_protect()
+    full_env_failfast_check()
     declared_env_keys = env_template_keys()
     for path in staged_paths():
         reason = blocked_path_reason(path, POLICY)
