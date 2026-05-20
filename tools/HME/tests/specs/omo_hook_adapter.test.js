@@ -34,3 +34,8 @@ test('OpenCode host shim maps lifecycle to plugin hooks', async () => {
   assert.equal(results[0].result, 'applied');
   assert.equal(results[0].output.note, 'request');
 });
+
+test('request lifecycle excludes chat.message side-effect hook from shadow bridge', () => {
+  assert.equal(HOOK_MAP.request.includes('chat.message'), false);
+  assert.equal(HOOK_MAP.request.includes('experimental.chat.messages.transform'), true);
+});
