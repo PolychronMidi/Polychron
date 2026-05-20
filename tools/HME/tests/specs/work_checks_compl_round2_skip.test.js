@@ -321,6 +321,42 @@ test('work_checks: unfinished tasks still block the nothing-missed round-2 skip'
     assert.match(result.reason, /#11 \[in_progress\]/);
   }));
 
+test('work_checks: TodoWrite open items block stopping even when no task-store JSON exists',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix all codex route gaps' } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [
+        { content: 'Fix live Codex proxy restart coverage', activeForm: 'Fixing live Codex proxy restart coverage', status: 'completed' },
+        { content: 'Finish env waiver removal', activeForm: 'Finishing env waiver removal', status: 'in_progress' },
+        { content: 'Patch Write-to-Read fallback', activeForm: 'Patching Write-to-Read fallback', status: 'pending' },
+      ] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+    assert.match(result.reason, /Finish env waiver removal/);
+    assert.match(result.reason, /Patch Write-to-Read fallback/);
+  }));
+
+test('work_checks: latest TodoWrite all-completed list does not block',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix all codex route gaps' } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [
+        { content: 'Finish env waiver removal', status: 'in_progress' },
+      ] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [
+        { content: 'Finish env waiver removal', status: 'completed' },
+      ] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
 test('work_checks: live Claude task store blocks unfinished session tasks',
   _withSandbox(async (sandbox) => {
     const sessionId = '11111111-2222-3333-4444-555555555555';
