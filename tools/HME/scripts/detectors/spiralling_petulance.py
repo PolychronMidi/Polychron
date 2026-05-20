@@ -261,7 +261,7 @@ def main() -> int:
     noop_bash, failed_reads = _current_turn_noop_tools(path)
     if _flabbergasted_by_autocommit(path):
         print("flabbergasted_by_autocommit")
-    elif _hook_noop_pairs(path) >= 2 or noop_bash >= 2 or failed_reads >= 2:
+    elif _repeated_command_seen(path) or _hook_noop_pairs(path) >= 2 or noop_bash >= 2 or failed_reads >= 2:
         print("spiralling_petulance")
     else:
         print("ok")
