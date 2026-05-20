@@ -28,13 +28,13 @@ test('slop cleanup collapses punctuation left by caveman deletions', () => {
   assert.equal(result.out, 'Plan remains.');
 });
 
-test('slop rewriter applies caveman compression to text blocks without deny gate', () => {
+test('slop rewriter applies full slop stripping to text blocks without deny gate', () => {
   const ctx = new Map();
   assert.equal(slopStripRewrite('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }, ctx), null);
-  assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'I will now fix the thing.' } }, ctx), null);
+  assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Acknowledged. I will now fix the thing and test.' } }, ctx), null);
   const out = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 0 }, ctx);
   assert.equal(out.events[1][1].delta.type, 'text_delta');
-  assert.equal(out.events[1][1].delta.text, 'Fix thing.');
+  assert.equal(out.events[1][1].delta.text, 'K. Fix thing & test.');
 });
 
 test('slop rewriter applies caveman compression to thinking blocks without deny gate', () => {
