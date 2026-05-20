@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_hooks_bootstrap.sh"
 INPUT=$(cat)
-_DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); const out=toHookResponse(d); if(out) process.stdout.write(out);})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>/tmp/hme-prewrite-edit.err)
+: "${PROJECT_ROOT:?PROJECT_ROOT required by HME hook bootstrap}"
+_TMP_SUBDIR="tmp"
+_HME_TMP_DIR=$(printf '%s/%s' "$PROJECT_ROOT" "$_TMP_SUBDIR")
+mkdir -p "$_HME_TMP_DIR" 2>/dev/null || true
+_PREWRITE_ERR="${_HME_TMP_DIR}/hme-prewrite-edit.err"
+_DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); const out=toHookResponse(d); if(out) process.stdout.write(out);})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>"$_PREWRITE_ERR")
 _RC=$?
-if [ "$_RC" -ne 0 ]; then _emit_block "BLOCKED: central pre-write check failed before editing. $(tail -c 500 /tmp/hme-prewrite-edit.err 2>/dev/null)"; exit 2; fi
+if [ "$_RC" -ne 0 ]; then _emit_block "BLOCKED: central pre-write check failed before editing. $(tail -c 500 "$_PREWRITE_ERR" 2>/dev/null)"; exit 2; fi
 if [ -n "$_DECISION" ]; then
   printf '%s\n' "$_DECISION"
   case "$_DECISION" in *'"permissionDecision":"deny"'*|*'"permissionDecision":"ask"'*) exit 0;; esac
@@ -12,9 +17,9 @@ FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
 # Antagonism warning: fires when this edit's module + a prior same-turn edit are registered antagonists (r<=-0.3).
-_TURN_EDIT_STATE="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
+_TURN_EDIT_STATE="${PROJECT_ROOT}/${_TMP_SUBDIR}/hme-turn-edits.txt"
 _MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
-if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/src/output/metrics/hme-coupling.json" ]; then
+if [ -n "$_MODULE_BASE" ] && [ -f "${PROJECT_ROOT}/src/output/metrics/hme-coupling.json" ]; then
   if [ -f "$_TURN_EDIT_STATE" ]; then
     while IFS= read -r _prior_mod; do
       [ -z "$_prior_mod" ] && continue
@@ -44,7 +49,7 @@ fi
 # Recording deferred to AFTER blocking gates -- see end of file.
 
 # Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
-if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
+if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/${_TMP_SUBDIR}/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
   _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT edit src/ code mid-pipeline -- the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools (i/learn, i/review, i/trace) or edit tooling/docs in the meantime."
   exit 2
 fi
@@ -75,8 +80,7 @@ fi
 # Hardcoded-project-root guard: rejects host-specific path baked into
 # source. Use $PROJECT_ROOT / $CLAUDE_PROJECT_DIR / walk-up. Matches
 # against LIVE PROJECT_ROOT to avoid false-positive on other clones.
-if [ -n "${PROJECT_ROOT:-}" ] \
-   && echo "$NEW_STRING" | grep -qF "$PROJECT_ROOT" \
+if echo "$NEW_STRING" | grep -qF "$PROJECT_ROOT" \
    && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
    && ! echo "$NEW_STRING" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
    && ! echo "$FILE" | grep -qE '(/\.env(\.[a-z]+)?$|/README(\.[a-z]+)?$|/CLAUDE\.md$|/tools/HME/KB/devlog/|/doc/[^/]+\.md$|/doc/archive/)'; then
@@ -157,11 +161,11 @@ if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
   # Semantic bugfix lookup -- ask the worker if this module has a known bugfix
   # in KB that scores high against the current edit intent. High-confidence
   # hits (score >= 0.6) block: the edit is likely re-introducing a past bug.
-  # Cache in /tmp by content hash so repeat attempts don't re-query.
+  # Cache in project-root tmp by content hash so repeat attempts don't re-query.
   MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
   if [ -n "$MODULE" ] && [ ${#NEW_STRING} -gt 20 ]; then
     HASH=$(printf '%s' "$NEW_STRING" | sha1sum | cut -c1-16)
-    CACHE="/tmp/hme-edit-validate-$HASH.json"
+    CACHE="${PROJECT_ROOT}/${_TMP_SUBDIR}/hme-edit-validate-$HASH.json"
     if [ ! -f "$CACHE" ]; then
       # 500ms timeout (was 2s, blew p95). Healthy worker fits; degraded
       # worker writes {} and skips the KB check this turn.
@@ -214,9 +218,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
         >/dev/null 2>&1 &
     fi
     # Per-turn dedup tracker (cleared at turn start by userpromptsubmit.sh).
-    # Skip when PROJECT_ROOT unset to avoid /tmp/ leak.
-    _AUTO_BRIEF_TURN_FILE=""
-    [ -n "${PROJECT_ROOT:-}" ] && _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/tmp/hme-turn-briefs.txt"
+    _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/${_TMP_SUBDIR}/hme-turn-briefs.txt"
     if [ -n "$_AUTO_BRIEF_TURN_FILE" ] && [ -f "$_AUTO_BRIEF_TURN_FILE" ] \
         && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
       _AUTO_BRIEF_SKIP=1
@@ -270,11 +272,14 @@ ${_file_head}"
 fi
 
 # Record this edit's module for downstream gates (verify-landed antagonism, etc.). All blocking gates have passed.
-if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ]; then
+if [ -n "$_MODULE_BASE" ]; then
   mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
   echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
 fi
 
+# Edit attempts break repeated-command spirals even if transcript shape changes.
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" --reset-edit 2>/dev/null || true
 # streak helpers removed 2026-05-17 (5f0b98ef8); call sites pruned.
 [ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
 exit 0
