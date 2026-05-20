@@ -1,5 +1,6 @@
 'use strict';
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { PROJECT_ROOT } = require('../shared');
 const { resolveOmo } = require('../../omo_bridge/dependency');
 const { validateOmoContract } = require('../../omo_bridge/contract_validator');
