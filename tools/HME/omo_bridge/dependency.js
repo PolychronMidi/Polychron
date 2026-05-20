@@ -58,10 +58,10 @@ function resolveOmo(options = {}) {
     let root = '';
     let packageName = '';
     if (source === 'package') {
-      packageName = String(options.packageName ?? _env('HME_OMO_PACKAGE'));
+      packageName = String(options.packageName ?? _envRequired('HME_OMO_PACKAGE'));
       root = _resolvePackage(packageName);
     } else if (source === 'path') {
-      root = _resolvePath(String(options.path ?? _env('HME_OMO_PATH')));
+      root = _resolvePath(String(options.path ?? _envRequired('HME_OMO_PATH')));
     } else {
       throw new Error(`unsupported HME_OMO_SOURCE: ${source}`);
     }
