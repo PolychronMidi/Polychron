@@ -37,6 +37,11 @@ test('slop rewriter applies full slop stripping to text blocks without deny gate
   assert.equal(out.events[1][1].delta.text, 'K. Fix thing & test.');
 });
 
+test('stop-hook bare ack treats slop-compressed K as strip-worthy after deny', () => {
+  const { _isBareAck } = require('../../proxy/sse_stop_hook_rewriters');
+  assert.equal(_isBareAck('K.'), true);
+});
+
 test('slop rewriter applies caveman compression to thinking blocks without deny gate', () => {
   const ctx = new Map();
   assert.equal(slopStripRewrite('content_block_start', { type: 'content_block_start', index: 1, content_block: { type: 'thinking', thinking: '' } }, ctx), null);
