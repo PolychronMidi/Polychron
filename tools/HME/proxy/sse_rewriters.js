@@ -648,11 +648,10 @@ function _logSlopHits(hits, textPreview) {
   } catch (_e) { /* stat is best-effort */ }
 }
 
-// Always-on text-block slop rewriter; replay corrected block at stop.
+// Text/thinking slop rewriter; caveman compression is always-on, while the
+// older rhetorical slop catalog remains gated to post-deny follow-ups.
 function slopStripRewrite(eventName, data, ctx) {
-  // Gated on priorUserWasDeny -- slop patterns mostly appear in stop-hook
-  // follow-ups; normal turns stream freely.
-  if (!ctx.get('priorUserWasDeny')) return data;
+  const fullSlop = Boolean(ctx.get('priorUserWasDeny'));
   const key = 'slop_text_hold';
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
