@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { _stripSlop, slopStripRewrite } = require('../../proxy/sse_rewriters');
+const { _stripSlop, slopStripRewrite } = require('../../proxy/sse_slop_rewriter');
 
 test('slop caveman compression deletes requested glue words case-insensitively', () => {
   const result = _stripSlop("I'm the one; I am now too ready; it has the fix; I will ship now.");
