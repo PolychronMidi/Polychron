@@ -178,22 +178,19 @@ def _repeat_level(cmd: str, transcript_path: str, now: float | None = None) -> i
 def _repeated_command_seen(path: str) -> bool:
     seen: dict[str, tuple[int, float | None]] = {}
     for idx, event in enumerate(_events(path)[-500:]):
-        if any(_is_edit_tool(str(tu.get("name", ""))) for tu in iter_tool_uses(event)):
+        if _event_has_edit(event):
             seen.clear()
             continue
         ts = _event_ts(event)
         now = ts if ts is not None else time.time()
-        for tu in iter_tool_uses(event):
-            if not _is_bash_tool(str(tu.get("name", ""))):
+        for cmd in _event_bash_commands(event):
+            key = _command_key(cmd)
+            if not key:
                 continue
-            for cmd in _commands_from_tool(tu):
-                key = _command_key(cmd)
-                if not key:
-                    continue
-                prior = seen.get(key)
-                if prior is not None and _recent_enough(prior[1], now):
-                    return True
-                seen[key] = (idx, ts)
+            prior = seen.get(key)
+            if prior is not None and _recent_enough(prior[1], now):
+                return True
+            seen[key] = (idx, ts)
     return False
 
 
