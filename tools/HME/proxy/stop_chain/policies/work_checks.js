@@ -497,11 +497,18 @@ module.exports = {
     if (!transcriptPath) return ctx.allow();
     const taskDebt = unfinishedTaskDebt(transcriptPath);
     if (taskDebt) { armFpGate('UNFINISHED_TASKS'); return ctx.deny(taskDebt); }
-    const nextActionDebt = scanNextActionDebt(lastAssistantText(transcriptPath));
+    const lastAssistant = lastAssistantText(transcriptPath);
+    const nextActionDebt = scanNextActionDebt(lastAssistant);
     if (nextActionDebt.length > 0) {
       const enumerated = nextActionDebt.map((s, i) => `  ${i + 1}. "${s}"`).join('\n');
       armFpGate('NEXT_ACTION_DEBT');
       return ctx.deny(`${REASONS.NEXT_ACTION_DEBT}\n\n${enumerated}`);
+    }
+    const workDebt = scanWorkDebtAdmission(lastAssistant);
+    if (workDebt.length > 0) {
+      const enumerated = workDebt.map((s, i) => `  ${i + 1}. "${s}"`).join('\n');
+      armFpGate('WORK_DEBT_ADMISSION');
+      return ctx.deny(`${REASONS.WORK_DEBT_ADMISSION}\n\n${enumerated}`);
     }
     const { text: lastUser, turnIndex } = lastUserInfo;
     if (!lastUser) return ctx.allow();
