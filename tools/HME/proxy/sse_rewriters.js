@@ -566,25 +566,25 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|a|you\s+are|you|you['’]re|your|right.|okay.|hmm|was|has|need|too|is|the|now|that|then|agreed.|implementing|continuing|explicitly|we|we['’]ll|we['’]re)\b\s*/gi,
-    repl: '' },
+    re: /(^|[^A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|a|you\s+are|you|you['’]re|your|right[.!?]*|okay[.!?]*|hmm[.!?]*|was|has|need|too|is|the|now|that|then|agreed[.!?]*|implementing|continuing|explicitly|we|we['’]ll|we['’]re)(?=$|[^A-Za-z0-9_])\s*/gi,
+    repl: (_match, lead) => lead },
   {
     name: 'abbreviations',
-    // Replaces common words with their standard short-form abbreviations
-    re: /\b(?:without|with|between|before|amount|because)\b/gi,
-    repl: (match) => {
-      switch (match.toLowerCase()) {
-        case 'without': return 'w/o';
-        case 'with': return 'w/';
-        case 'between': return 'b/w';
-        case 'before': return 'b4';
-        case 'amount': return 'amt';
-        case 'because': return 'b/c';
-        case 'and': return '&';
-        case 'into': return '2';
-        case 'to': return '-';
-        case 'Acknowledged.': return 'k.';
-        default: return match;
+    // Replaces common words with their standard short-form abbreviations.
+    re: /\b(without|with|between|before|amount|because|and|into|to|acknowledged)([.!?,;:]?)/gi,
+    repl: (_match, word, punct = '') => {
+      switch (word.toLowerCase()) {
+        case 'without': return `w/o${punct}`;
+        case 'with': return `w/${punct}`;
+        case 'between': return `b/w${punct}`;
+        case 'before': return `b4${punct}`;
+        case 'amount': return `amt${punct}`;
+        case 'because': return `b/c${punct}`;
+        case 'and': return `&${punct}`;
+        case 'into': return `2${punct}`;
+        case 'to': return `-${punct}`;
+        case 'acknowledged': return `k${punct}`;
+        default: return `${word}${punct}`;
       }
     }
   },
