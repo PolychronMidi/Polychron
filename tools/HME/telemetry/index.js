@@ -83,8 +83,9 @@ function record(category, event, fields) {
     // hme-errors.log is line-oriented text (LIFESAVER text-scans it);
     // hme.log is the human operational log. Error events must hit both.
     const ts = (fields && fields.ts) || new Date().toISOString();
-    const reason = (fields && (fields.reason || fields.message)) || event;
-    const tail = JSON.stringify({ event, ...fields });
+    const rawReason = (fields && (fields.reason || fields.message)) || event;
+    const reason = String(rawReason || '').replace(/\s*\r?\n\s*/g, ' ');
+    const tail = JSON.stringify({ event, ...fields, reason });
     _append('error', `[${ts}] [${event}] ${reason}  ${tail}`);
     try {
       fs.mkdirSync(path.join(PROJECT_ROOT, 'log'), { recursive: true });
