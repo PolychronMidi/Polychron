@@ -385,6 +385,8 @@ function scanUnfinishedTaskReminder(text) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+    if (/^\d+\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+    if (/^stdout\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
     if (!/\b(in_progress|pending)\b/i.test(trimmed)) continue;
     if (!/(^|[^A-Za-z])(task|todo|status|subject|description|activeForm|Here are the existing tasks|<system-reminder>)|^#\d+\.?\s*\[(?:in_progress|pending)\]/i.test(trimmed)) continue;
     hits.push(trimmed.slice(0, 240));
