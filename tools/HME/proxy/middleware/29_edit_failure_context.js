@@ -74,7 +74,7 @@ module.exports = {
         ctx.appendToResult(toolResult, currentContext.text);
       }
       if (readEquivalent) {
-        sessionState.recordRead({ session_id: session || ctx.session || ctx.session_id || '', tool_name: 'Read', tool_input: { file_path: file } }, { source: 'edit_failure_auto_context', reason });
+        sessionState.recordRead({ session_id: session || ctx.session || ctx.session_id || '', tool_name: 'Read', tool_input: { file_path: file } }, { source: 'edit_failure_auto_context' });
       }
       ctx.markDirty();
       ctx.emit({ event: 'edit_failure_context_appended', tool: toolUse.name, file: relPath(file, root), reason, read_equivalent: currentContext.readable, replaced_native_error: readEquivalent });
