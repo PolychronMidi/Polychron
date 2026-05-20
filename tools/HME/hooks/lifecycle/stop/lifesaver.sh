@@ -87,7 +87,7 @@ if [ -f "$ERROR_LOG" ]; then
         [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.
       done <<< "$_UNFIXED_CANARY"
     fi
-    _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" || true)
+    _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" | grep -vE "$_STATUS_LINE_RE" || true)
     # Same source-tag + severity-axis classification as the new-errors
     UNFIXED_SELF_BY_TAG=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
     UNFIXED_REMAINING=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
