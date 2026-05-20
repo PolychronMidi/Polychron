@@ -583,6 +583,8 @@ const _SLOP_PATTERNS = [
         case 'people': return 'ppl';
         case 'because': return 'b/c';
         case 'and': return '&';
+        case 'into': return '2';
+        case 'to': return '-';
         case 'Acknowledged.': return 'k.';
         default: return match;
       }
