@@ -57,18 +57,7 @@ function validateClaudeStdout(event, stdout, root) {
     return stdout;
   } catch (err) {
     const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
-    try {
-      const base = root || requireEnv('PROJECT_ROOT');
-      if (base) {
-        const ts = new Date().toISOString();
-        const tail = JSON.stringify({ event: 'hook-output-validation', message, hook_event: event });
-        const errLog = path.join(base, 'log', 'hme-errors.log');
-        const hmeLog = path.join(base, 'log', 'hme.log');
-        fs.mkdirSync(path.dirname(errLog), { recursive: true });
-        fs.appendFileSync(errLog, `[${ts}] [hook-output-validation] ${message}  ${tail}\n`);
-        fs.appendFileSync(hmeLog, `${ts.replace('T', ' ').replace('Z', '')} ERROR hook-output-validation: ${message}  ${tail}\n`);
-      }
-    } catch (_e) { /* best-effort lifesaver log */ }
+    logHookError(root, event, message.replace(/^JSON validation failed/, 'hook-output-validation: JSON validation failed'));
     return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
   }
 }
