@@ -32,12 +32,27 @@ function userMsg() {
   return { type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'turn-start sentinel' }] } };
 }
 
+function bashEvent(cmd, extra = {}) {
+  return {
+    type: 'assistant',
+    ...extra,
+    message: {
+      role: 'assistant',
+      content: [{ type: 'tool_use', id: `tu_${Math.random().toString(36).slice(2, 8)}`, name: 'Bash', input: { command: cmd } }],
+    },
+  };
+}
+
 function noopBashEvent(cmd) {
+  return bashEvent(cmd);
+}
+
+function editEvent() {
   return {
     type: 'assistant',
     message: {
       role: 'assistant',
-      content: [{ type: 'tool_use', id: `tu_${Math.random().toString(36).slice(2, 8)}`, name: 'Bash', input: { command: cmd } }],
+      content: [{ type: 'tool_use', id: `tu_${Math.random().toString(36).slice(2, 8)}`, name: 'Edit', input: { file_path: 'test-fixture.txt', old_string: 'a', new_string: 'b' } }],
     },
   };
 }
