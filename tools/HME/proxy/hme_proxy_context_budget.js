@@ -44,7 +44,7 @@ function loadModelCtxRegistry() {
 }
 
 function _ensureProcessEnvLoaded() {
-  loadEnv(defaultEnvPath(__dirname));
+  loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 }
 
 function _envValue(env, key) {
