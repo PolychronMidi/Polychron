@@ -352,6 +352,8 @@ def noop_predicate(cmd: str, transcript_path: str) -> str | bool:
     if not cmd:
         return False
     try:
+        if _NOOP_BASH.match(cmd):
+            return _petulance_message(1, cmd, "inert no-op Bash")
         state_level = _state_repeat_level_and_record(cmd)
         if state_level >= 1:
             return _petulance_message(state_level, cmd)
