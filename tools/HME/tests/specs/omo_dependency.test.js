@@ -23,7 +23,7 @@ test('OMO dependency resolver resolves configured relative path and metadata', (
     const rel = path.relative(repoRoot, sandbox);
     fs.writeFileSync(path.join(sandbox, 'package.json'), JSON.stringify({ name: 'fake-omo', version: '1.2.3', main: 'index.js' }));
     fs.writeFileSync(path.join(sandbox, 'index.js'), 'module.exports = {};\n');
-    const result = resolveOmo({ enabled: true, source: 'path', path: rel });
+    const result = resolveOmo({ enabled: true, source: 'path', path: rel, requiredVersion: '' });
     assert.equal(result.status, 'ok');
     assert.equal(result.version, '1.2.3');
     assert.equal(result.entrypoint, 'index.js');
