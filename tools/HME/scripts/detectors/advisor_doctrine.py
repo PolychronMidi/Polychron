@@ -231,7 +231,7 @@ def main() -> int:
 
     events = _load_current_turn(sys.argv[1])
     text = _last_assistant_text(events)
-    n_advisor_records = _advisor_invocations(events)
+    n_advisor_records = _consult_invocations(events)
     n_work = _substantive_work_count(events)
     text_lower = text.lower()
 
