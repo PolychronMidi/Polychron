@@ -92,13 +92,13 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
 });
 
 test('Codex native Read drops pages for non-PDF paths before bridge execution', () => {
-  const response = { output: [{ type: 'function_call', name: 'Read', arguments: JSON.stringify({ file_path: 'tools/HME/proxy/codex_response_forwarder.js', pages: '1', limit: 5 }) }] };
+  const response = { output: [{ type: 'function_call', name: 'Read', arguments: JSON.stringify({ file_path: 'doc/templates/AGENTS.md', pages: '1', limit: 5 }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const cmd = JSON.parse(rewritten.body.output[0].arguments).cmd;
-  assert.match(cmd, /codex_response_forwarder\.js/);
+  assert.match(cmd, /doc\/templates\/AGENTS\.md/);
   assert.doesNotMatch(cmd, /"pages"/);
   const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
-  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'tools/HME/proxy/codex_response_forwarder.js', limit: 5 });
+  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/templates/AGENTS.md', limit: 5 });
 });
 
 
