@@ -32,7 +32,7 @@ function _emitHeldInput(state, index, input) {
 // this file first". Synthesize a Read call (using offset/limit if the Edit
 // hinted at them, else first 50 lines) so the model gets the content
 // instead of a hard error.
-const { editToReadFallback, isInvalidEditInput, isEditFamilyTool } = require('./edit_validation');
+const { editToReadFallback, isInvalidEditInput, isEditFamilyTool, isWriteTool } = require('./edit_validation');
 
 const READ_FALLBACK_TOOL_NAMES = new Set(['Read']);
 const READ_TOOL_NAMES = new Set(['Read']);
