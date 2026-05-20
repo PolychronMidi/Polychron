@@ -186,7 +186,42 @@ test('editFallbackToReadRewrite: converts stale Edit (old_string absent from fil
   } finally { fs.rmSync(tmp, { force: true }); }
 });
 
-test('editFallbackToReadRewrite: ignores non-Edit tool_use blocks', () => {
+test('editFallbackToReadRewrite: converts unread absolute Write target to Read', () => {
+  const sessionId = `s-write-unread-${Date.now()}-${Math.random()}`;
+  const cache = require('../../proxy/session_read_cache');
+  cache.clearSession(sessionId);
+  const map = new Map([['session_id', sessionId]]);
+  const ctx = { get: (k) => map.get(k), set: (k, v) => map.set(k, v) };
+  const input = JSON.stringify({ file_path: '/abs/write-target.js', content: 'new content' });
+  const events = [
+    ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_write', name: 'Write', input: {} } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: input } }],
+    ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+  ];
+  const out = _drive(editFallbackToReadRewrite, ctx, events);
+  assert.equal(out[0][1].content_block.name, 'Read');
+  const readInput = JSON.parse(out[1][1].delta.partial_json);
+  assert.deepEqual(readInput, { file_path: '/abs/write-target.js', limit: 50 });
+});
+
+test('editFallbackToReadRewrite: passes Write through after prior Read', () => {
+  const sessionId = `s-write-seen-${Date.now()}-${Math.random()}`;
+  const cache = require('../../proxy/session_read_cache');
+  cache.recordRead(sessionId, '/abs/write-seen.js');
+  const map = new Map([['session_id', sessionId]]);
+  const ctx = { get: (k) => map.get(k), set: (k, v) => map.set(k, v) };
+  const input = JSON.stringify({ file_path: '/abs/write-seen.js', content: 'new content' });
+  const events = [
+    ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_write', name: 'Write', input: {} } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: input } }],
+    ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+  ];
+  const out = _drive(editFallbackToReadRewrite, ctx, events);
+  assert.equal(out[0][1].content_block.name, 'Write');
+  assert.equal(out[1][1].delta.partial_json, input);
+});
+
+test('editFallbackToReadRewrite: ignores non-Edit/Write tool_use blocks', () => {
   const ctx = _ctx();
   const events = [
     ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_1', name: 'Bash', input: {} } }],
