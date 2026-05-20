@@ -46,10 +46,7 @@ function validateClaudeStdout(event, stdout, root) {
     const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
     try {
       const base = root || requireEnv('PROJECT_ROOT');
-      if (!base) return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
-      const log = path.join(base, 'log', 'hme-errors.log');
-      fs.mkdirSync(path.dirname(log), { recursive: true });
-      fs.appendFileSync(log, `[${new Date().toISOString()}] [hook-output-validation] ${message}\n`);
+      if (base) telemetry.error('hook-output-validation', { message, hook_event: event, project_root: base });
     } catch (_e) { /* best-effort lifesaver log */ }
     return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
   }
