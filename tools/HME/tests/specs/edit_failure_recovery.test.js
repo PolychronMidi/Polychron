@@ -225,6 +225,7 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
     PROJECT_ROOT: root,
     session: 'modified-since-read-test',
     appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    replaceResult(result, text) { result.content = text; },
     markDirty() {},
     warn(message) { throw new Error(message); },
     emit(row) { events.push(row); },
