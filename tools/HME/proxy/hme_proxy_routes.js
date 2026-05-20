@@ -18,6 +18,7 @@ function createProxyRouteDispatcher({
   handlePreWriteCheckRoute,
   handleSessionStateRoute,
   handleMcpRequest,
+  loadedMiddleware = [],
 }) {
   const uselessPaths = new Set(['/', '/favicon.ico', '/robots.txt']);
 
