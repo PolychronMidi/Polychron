@@ -162,7 +162,7 @@ function createContextBudget() {
   }
 
   function compactDecisionTelemetry({ payload, bytes, usedTokens, budgetTokens, plan, cappedByBytes, telemetryLimited }) {
-    if ((plan.maxTier || 0) <= 0 && process.env.HME_PROXY_COMPACT_TRACE !== '1') return;
+    if ((plan.maxTier || 0) <= 0 && !compactTrace) return;
     const model = payload && payload.model || '';
     const frac = budgetTokens > 0 ? usedTokens / budgetTokens : 0;
     const key = [model, usedTokens, budgetTokens || 0, plan.maxTier || 0, Number.isFinite(plan.threshold) ? plan.threshold : 'inf', cappedByBytes ? 1 : 0, telemetryLimited ? 1 : 0].join(':');
