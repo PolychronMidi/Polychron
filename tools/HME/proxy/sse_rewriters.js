@@ -566,8 +566,8 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /(^|[^A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|a|you\s+are|you|you['’]re|your|right[.!?]*|okay[.!?]*|hmm[.!?]*|was|has|need|too|is|the|now|that|then|agreed[.!?]*|implementing|continuing|explicitly|we|we['’]ll|we['’]re)(?=$|[^A-Za-z0-9_])\s*/gi,
-    repl: (_match, lead) => lead },
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|a|you\s+are|you|you['’]re|your|right[.!?]*|okay[.!?]*|hmm[.!?]*|was|has|need|too|is|the|now|that|then|agreed[.!?]*|implementing|continuing|explicitly|we|we['’]ll|we['’]re)(?![A-Za-z0-9_])\s*/gi,
+    repl: '' },
   {
     name: 'abbreviations',
     // Replaces common words with their standard short-form abbreviations.
