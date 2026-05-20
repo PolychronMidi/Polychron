@@ -132,11 +132,11 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     return;
   }
   const stripped = maybeStripNonSseBareAck({ payload, outBuf });
-  const rewritten = _maybeRewriteNonSseEdit(stripped || outBuf);
+  const rewritten = _maybeRewriteNonSseEdit(stripped || outBuf, payload);
   clientRes.end(rewritten);
 }
 
-function _maybeRewriteNonSseEdit(buf) {
+function _maybeRewriteNonSseEdit(buf, payload) {
   const text = typeof buf === 'string' ? buf : Buffer.isBuffer(buf) ? buf.toString('utf8') : '';
   if (!text || text.charAt(0) !== '{') return buf;
   let body;
