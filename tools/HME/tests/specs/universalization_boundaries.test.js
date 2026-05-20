@@ -86,6 +86,19 @@ test('Claude Stop denies relay raw structured block stdout', () => {
   assert.deepEqual(JSON.parse(relayed.stdout), { decision: 'block', reason });
 });
 
+test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSON', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-invalid-json-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    const out = JSON.parse(validateClaudeStdout('Stop', '{bad json', tmp));
+    assert.equal(out.decision, 'block');
+    assert.match(out.reason, /JSON validation failed/);
+    assert.match(fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8'), /hook-output-validation/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('request transform core remains protocol-aware for Codex cleanup', () => {
   const { applyRequestTransform } = require('../../proxy/codex_payload');
   const result = applyRequestTransform({
