@@ -76,6 +76,18 @@ test('SseTransform applies caveman compression to provider reasoning converted t
   assert.equal(out[1][1].delta.thinking, 'Checking path.');
 });
 
+test('SseTransform applies full slop stripping to normal assistant text without deny context', async () => {
+  purgeProxyModules();
+  const { slopStripRewrite } = require('../../proxy/sse_rewriters');
+  const raw = [
+    event('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }),
+    event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Acknowledged. I will fix and test.' } }),
+    event('content_block_stop', { type: 'content_block_stop', index: 0 }),
+  ].join('');
+  const out = parseSse(await runSse(raw, [slopStripRewrite]));
+  assert.equal(out[1][1].delta.text, 'K. Fix & test.');
+});
+
 test('sendFinalResponse rewrites non-SSE unread Update to Read', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-nonsse-rewrite-'));
   try {
