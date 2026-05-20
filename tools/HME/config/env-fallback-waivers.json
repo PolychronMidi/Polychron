@@ -1,0 +1,1445 @@
+{
+  "_comment": "Audited legacy inline fallbacks for declared .env keys. check-env-failfast.py fails on any unclassified new fallback and on stale waiver rows. Shrink this list when converting legacy sites to strict env loaders.",
+  "waivers": [
+    {
+      "hash": "7d22479c684828d7a3ca66670a7d7d0b0ef889b128c99687d7e6452de52d6201",
+      "key": "PROJECT_ROOT",
+      "path": "src/conductor/metaProfileDefinitions.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "a8fdc89359c2e2abb582058c44b5e25b4b74ab327ecd47c5f0c29cbd0d39f24d",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/writer/grandFinale.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "cd736703df3d88f1e9cbfcc5f23ffc5143e43d6a77b91471448e3ef2d590b988",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/utils/init.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "181113da7f1d10bddfa726ef594b0368cead5862b94d1fe90ae0884cc9f3724d",
+      "key": "METRICS_DIR",
+      "path": "src/utils/init.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "92d2cf5ea4a6ad0640aae7778a8fccbeb597a77817320bf5848e70d6a7fb21e4",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/scripts/m2c.py",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "f5d58e5f6815e8525eacff3391a77d64895834aa87be72ae9876741dd0f10024",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/trace-replay.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "05f6bd6fa7db0b75b5e4b77dbd5e800499aa92d92f18f1999abc88d5a1903838",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/scripts/c2m.py",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "a82605c4a881bc860952785a674a9401143591396a79c78f09997a85c1a1b415",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/live-dashboard.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "553ee9cfdeb2132ffd55e765a6e762627d9589c502f540862293894d69154651",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/scripts/render.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "4bc1cf7ea7544201f1bb90bd6abce2a563659e26847701b2c8931b86ab0af06b",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/metaprofile-sensitivity.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "d27fde99004a3d6ee77a8a4014f09ef7faa8790ee3fe8a6ef0cedb73e15d656c",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/scripts/render-lite.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "5c02d198a20b68e3a712eec207baeac01a545a4d396586a7f768508f5e758527",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/validate-feedback-graph.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "79c6e5f300a2e065bc5be3c5c91ec4026f3d18bd8ad803b17886c0e2fad6f270",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/narrative-digest.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "7b9ba70bbd5a559895540f02875d7f45c26fdb0fae42e5003e5fae961905ed26",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/verify-boot-order.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "b09f1b459b59c379c2484784ac4af1b9fa80051c6d85b326ac601fde729b1b51",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/diff-compositions.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "59976a1263e4717bf1ba12e4048c1b72aaebef71cb8590aa82fb6bc8f1f09aa0",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/compare-runs.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "d08e9f6f16b229ff82d8324f34be07cecc30c1b31ef5ad5ad2934bca3198498a",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/scripts/pipeline/snapshot-run.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "1bbbeb407e8532f02e7aaaee031625ee2e9f9233c40fbbcbf94162daf9c31800",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/visualize-feedback-graph.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "efb1c8198213b1d379d1b62dfd59fec426a9b52b1e23a23babcfc72e2a2c1800",
+      "key": "COMPOSITION_OUTPUT_DIR",
+      "path": "src/scripts/pipeline/perceptual-analysis.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "247dd1352c9b3c216c52ee319e367fa7280614c863fe0d75a693929f9d6b7c53",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/perceptual-analysis.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "462424613f1615309c7ad6b0f99e76ca38f83f9190c54ea0f2108353840b4ad7",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/golden-fingerprint.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "c49a15b4ca74c45f79adcbf9e434e2d6eef9ea77f4880aee03406907a83fe19b",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/generators/generate-feedback-graph.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "89086795e1f7ec4f39de6ce7f2aaba5bdea02965ba5d66d8f66d6669ee4021b9",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/generators/generate-conductor-map.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "32c65a8b58b79f7e514871dad6e4a567e39ae3d6cc863b957225b6fca0fd6b9f",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/generators/generate-crosslayer-map.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "e93bd451e1245180baefcb7a4f65bcc0603d99b4e73bdddc59692efb11868802",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/generators/generate-dependency-graph.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "7921bd8a264ea185c7f839f273726216fa472d0fda2fb483ef10cd0cba64a1db",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/generators/generate-predictions.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "407c870861e615c32419e2cd80f116f27cb2291eab90e572db8a49d4664ab49c",
+      "key": "HME_METRICS_DIR",
+      "path": "src/scripts/pipeline/generators/generate-predictions.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "c902d0e79811bed94f188810e74d4dbb06802d77676009cbb4919642f050bbb0",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-merge-markers.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "61944027e36de9009cd543e746ac787f93103e634c1f164c2a89aa83f591970d",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "30495f5368f646dde956720b8f44ae27ee434f0459406d3ab226973213eab269",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "7a1d2188f32542f304a46b1f1a30c2d6cf2c9de98ae70539e6b9da604bc1c643",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-tuning-invariants.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "ae2baa5ab035768d8457df12888ad4d74658d3b5fd6901eeee748673b8ed5ef1",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/validators/check-tuning-invariants.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "4e64df83a00dc59ae286956ad0013961a5e7c58b83b74846b2cb9ab155f13e2b",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-hme-coherence.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "4f6cfdc5a3ce23f2d0cd140321533bc96ccd0125dce97074f31e6800bc535f5c",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/validators/check-hme-coherence.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "1e40b485e5662db15f49cddc0024b412daa29a2ed9ffca67602582ad4cd9fe2f",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-safe-preboot-audit.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "be5f0c893e8e5abcdfdab154614b1af9dfbdaa7d359094a91342e1c2521401eb",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/validators/check-safe-preboot-audit.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "4d17a2b267851cfa3d2db7028aeba35e0296b8804e5ea311bad150c39d832999",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-registration-coherence.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "bab08af2c6aa5d176c378a5b5e7514b8d702ab21f5fd9320daab2fd1d52dffb2",
+      "key": "METRICS_DIR",
+      "path": "src/scripts/pipeline/validators/check-registration-coherence.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "fa27ebf44bcd9d698da5b76db2f06a1a9aff3d9b3d6e6e21bb2987114d1f5c1f",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-bash-helpers.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "c8d73cb413f69d2bd2d9b37c7b3f0fedd09d776e4f2f0aedd96df3a7213f9699",
+      "key": "PROJECT_ROOT",
+      "path": "src/scripts/pipeline/validators/check-root-only-dirs.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "9b6c5dcce2026cf0840a97c22b7d7c533deacdba6f2582c83c17b3796e63585d",
+      "key": "PROJECT_ROOT",
+      "path": "tools/omniroute/start.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c384985f4ee2bb4c329d583ebaa55f4c90b76d6be1d30b3edbe10e1f5b284125",
+      "key": "OPENCODE_API_KEY",
+      "path": "tools/omniroute/start.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b2a43e8ce38a6699b9805e2d41a9ff4327b7d4912ca84e11dc6ce26749ea820f",
+      "key": "ANTHROPIC_API_KEY",
+      "path": "tools/omniroute/start.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "ef0814d60b99b378535423a1bc245cce221b312694d866ee82980b0ccbabbe53",
+      "key": "KILO_API_KEY",
+      "path": "tools/omniroute/start.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "47035ecba8a996eb7cd1850d77906e8c5e7899563c7d2d27c5d96c8d980f0424",
+      "key": "AIHUBMIX_API_KEY",
+      "path": "tools/omniroute/start.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "662641f7da6749da74146d1a9cadbaf33dce1d06ea8d5df94976c5d25f1eabed",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/log-tool-call.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c5ee7e48b8b34f072d625e33dece203de3f6df136d4110f68ef14aa3a45d9e79",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/log-tool-call.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "5ae4ad9a2cb494e03417b3e261e84c9b89eba5a745a278f43bfabf37f50102b5",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/log-tool-call.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "7072f4d278e50e8f6f327cf7ac440a80ade972f9e416bdda050db619694fe68e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/hook_report.js",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "f71cab5914bdf78fd60ef19dc81f503f9552547a8ba3850cf3cf04190cfd53fc",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/cwd_guard.js",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "a1a80be1d0945e0d0f50dd444acda48463d8e66a9a27fb8cc2f7aa3f224f1f10",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct_test.js",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "767e6ce08083498ebd370fa994e45bae7a4bd80b0ba9f4f607698e01fe7d8692",
+      "key": "OVERDRIVE_MODE",
+      "path": "tools/HME/proxy/hme_proxy_upstream_failure.js",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "3268f2790a970e4488bd95550fe4234d1f47044056cdd6b2c5438e52d46bd114",
+      "key": "OVERDRIVE_MODE",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "98ff5845fb34e2ba8758623d223e9ec92928bffed3b7600a7d80050def8461fc",
+      "key": "GROQ_API_KEY",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "de46528028a3ec98f6dc6ccfcac9d4214da9ac3b52720a48f06a3a85edbf06b0",
+      "key": "OPENROUTER_API_KEY",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "ac74728c35c1d2e3094665c2fe4e9992aa61d0f1abdce1af5ffb618203033393",
+      "key": "CEREBRAS_API_KEY",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "1348b2f861e8b8b17acb01d9fb4ce3e2cf7f71bccca297bf1bbc43d5d02851b6",
+      "key": "MISTRAL_API_KEY",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "e240923e01d7fbc3a0f494d439fab32b973b1c8debb368a19eb219de3cdf4c6c",
+      "key": "NVIDIA_API_KEY",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "aec5b089a9006a3b7cacfb8a37a22e5c9145fc57ee1911f1c6abd3fee72e2e59",
+      "key": "GEMINI_API_KEY",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b293957259749d142419bd9427e453a5cde474deb1a043901f55d807006af028",
+      "key": "HME_LLAMACPP_ARBITER_URL",
+      "path": "tools/HME/proxy/test-proxy-live.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "321c7d629b6a9817aba2f8384769e70f073dabc0d8091324376201fd0f28f462",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/proxy/codex_tool_text.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "16292389cecfd7732746974516d3898e2fa0b656e983b69567c57907e32009a6",
+      "key": "HME_DUMP_SYSTEM_PROMPT",
+      "path": "tools/HME/proxy/_dump.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "5745f86f2c8b4f95679d638e96abdc0219d12b69ce1a1250f686247c9f7795bc",
+      "key": "COMMENT_BLOAT_WARN",
+      "path": "tools/HME/proxy/pre_write_check.js",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "857a9a294550495031139b73771955c993a12be6618c51ea810bad78bffad477",
+      "key": "COMMENT_BLOAT_LONG_LINE",
+      "path": "tools/HME/proxy/pre_write_check.js",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "6e6c45840e5f18d03d9c7d5fbcb0e888994406fc3a0efeae312f09c44c76182c",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/proxy/worker_client.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "bdcb28064c549caa2a58781470f18ea66b35d88e6f4f44262d1810440a716750",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/proxy/hme_paths.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "28cfb30b7821a265efb83b35c130df47e4c96a8cbfc106c9ce163b56e40a175c",
+      "key": "COMPOSITION_METRICS_DIR",
+      "path": "tools/HME/proxy/hme_paths.js",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "84c5838069a55a7b7d9e107f377262952c24ded7d3a1c5679010ec6830d13149",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/proxy/service_registry.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "defc2cdd3f2387f48130cf1d04a5ed7d4f8bad34fc13fe952cd155e9ec3ce767",
+      "key": "HME_WORKER_TRANSPORT",
+      "path": "tools/HME/proxy/_worker_transport.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "7e155b5b87844cd4448510bb90d4280ff01c505b0fd4f16726b990e0b8b1b726",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/launcher/polychron-restart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "3d3094dadcddb42349d30d2463559e81ea87b7472156bf357f646ba231f280fd",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/launcher/polychron-restart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "473a718e70c220eb42c4195523595a3fff4947915322371344fdd825697bf2ff",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "664b0b68905364c6544ae188939414fcf12e5ba98b96360666e1459bbeaadd9c",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "8f3ff4bbfbe56957b0987efc7fa8074f89a035bfe4e063d645a088a6f7b2f12c",
+      "key": "HME_OMNIROUTE_PORT",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "941e08383446212b11219d2b0e13cec4ad853d88c87abab253c1cfc2dfe1d192",
+      "key": "OVERDRIVE_MODE",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "514257a1d170e28155bc11fa1d07e292a71e34254bfe2059704959e224cd8e07",
+      "key": "HME_AUTOLAUNCH_LLAMA",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "15e1f96a69b875ac06d5e25b7fca9266a508faedd3230550958d597fcf5b8c90",
+      "key": "HME_LLAMA_SERVER_BIN",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "03739d1816e669c5e38e8d0559d87f23c441668bf41080eb455a03bb6e69a580",
+      "key": "HME_AUTOLAUNCH_LLAMA",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b9b4b513f3bed8de96babab60f909c5fde793d24636bdd4b55af3e69671ceddb",
+      "key": "HME_ARBITER_PORT",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c6c467b497c9a3b013d5e1951cba5151276b17eda7d15d91afc7887aca813231",
+      "key": "HME_CODER_PORT",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "ab62b689b6e1776e66aca3edf9aff267fd027cfa84b0f8fbbedf9c5f8e4a9c25",
+      "key": "ANTHROPIC_BASE_URL",
+      "path": "tools/HME/launcher/polychron-launch.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b6b3f622ce26b5c410839c7243b07bc0ac93aed39063e3ff050b304267d7ab65",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/launcher/polychron-proxy-restart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "a0973604f5c185659f512b0e13d6685705ab6b9225d446e37f3cbb93fcb330b1",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/launcher/polychron-proxy-restart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "5a824326b02754d6d15213a8b16d9311091b26aa566587a27844466ce7dbac80",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/launcher/polychron-shutdown.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "1dd866c5b25177230d29044e65a7acd715139f805e6af2deb9c81483500552dc",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/event_kernel/statusline.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "ea3b3a0f1e303f3451dc2d7a3453ee920028b0d8721c2a6af6c76129523490aa",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/event_kernel/statusline.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "107112b2718f28af4599882c886738400542affadac2919a8b9d11b57cd162df",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/event_kernel/hook_watchdog.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "24b5d961e973d462d5d9a530a27bf67595c3bd96834cd790a5d1f88eaef22ff8",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/event_kernel/host_adapter_common.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "03ebfb5944d55b7be59255002eea3909ddf53e65980ab763b5cce8355ab63695",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/repair-trace-run-history-sync.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "adeb0aa6ddcd138db95a56f2d73b5edfa43fb372b5de3cd7b7e39e4e14608772",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/generate-i-shims.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "a296bcefb3a3ab4088ebbec55e74cf13dfc6229f7f34d634714ccc518b2af4f7",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/codex-agent-job.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "baa9a2425548a60ffc62e0a39d8f061335542518b67d9832757bdf7a23365fad",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/repair-stale-runtime.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "7854554e3a13e5bf0924e1324419dc620062dc22732a6948926faa7787664235",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/project-health.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "eac99abc6e0ae77d6d04796f178df8b7ec0485e4cbfa75e470372e1a260bfcce",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/audit_shell_undefined_vars.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "280ccb8bdd1eb83afb3990e170b2d7c16af0aed03013237f0e53daedaf2043ae",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/team_dashboard.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "ac79324d606773d70deb8b4e913532a18334c80e88598bef174936bf73b7de5d",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/scripts/team_dashboard.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "bd09d10156e947ed3a124343ef66fda474d44ef77b9007a8d32aa44e2e48526e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/hme-cli.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "46c71a7d3abef0159c6558523e48e58ed3a7950b21121c3d06763bb18bf469ef",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/draft-learn.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "12465cf0219c658d9ec297a83a5d130fcb5eae4b79a77cfadfd4c9e3583c5837",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/scripts/chain-snapshot.py",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "f166d8f80feda728ed355f6ba33bffd3a32f35850954e9ca3e988142d5742bae",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/adapt-from-activity.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "aef646f9fc45b26e9998d2e0cba998fb2b623363c559892fc8481b2ba6ab1a16",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/init-project-profile.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "5d31d86f03d9059be5ba13aaf5478cbda7d0a2e08316e3f66a0b82d0ac894453",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/hme-i-dispatch.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "f0ac1f47049eee045ea0ae286297efdf7243efa364872270a56fd6d4053da00f",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/scripts/hme-i-dispatch.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "e240fcaaa9206c0ed9d5dcdc9f853024071c9990c571585cdf5a21b575f2f769",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/test-proxy-split.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b82b1d0e7666a0eb0e121ff239da53a53b3286785cf11bc42b13b85ea5556a0a",
+      "key": "COMMENT_BLOAT_WARN",
+      "path": "tools/HME/scripts/audit-comment-bloat.py",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "09d7cc5f2b7bf7e7583f64717dbf506728bf3880adfbe9291a29cab4e60e2489",
+      "key": "COMMENT_BLOAT_FAIL",
+      "path": "tools/HME/scripts/audit-comment-bloat.py",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "f4e4121ce7504c024168993160b6c8d0ba52302836e05caf07600115e04a0d04",
+      "key": "COMMENT_BLOAT_LONG_LINE",
+      "path": "tools/HME/scripts/audit-comment-bloat.py",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "7433e88e9b6b5242b0b9a1191584b4b18b44504db5ff692350aa04e43b2eeffd",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/verify-hme-refactor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "ac7cfa07b132c69a9d2cdeee4d7383c3c7569f3720473124efc5ce0b50f58ce4",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/codex_structured_tool.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "df6bc98a8fbaf3378e9d04f4048cb04f436197b46119b1a862da63cc30b0a8a1",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/verify-coherence-registry.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "894145a26d14f91fb325a7499c34cf3cd82fa58439fc70d781533ef3679ab575",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_policy_enabled.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "cbff94f32e3dba26eab5e3737bf7abc0b4c497820a42961db8aadbe095b4af62",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/helpers/_policy_enabled.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "cca4b87616c3ee8ee6acc4c67d9d5d03793c81a00d8577c09b1bd59fb2eb3c4f",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/service_registry.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "86f83dbee39881eab55f341989e825fa59299cb72115858ede837a58c4df1cb4",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/helpers/service_registry.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "52d47332ea8cf56f3f954b53295de168ba11a75f7c060e30c07d687205df052a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_safety.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "5d3b8606e4434a4d24c490be6522e9e16a2c43447daabf7b4e9d1544711c3a81",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "5d3b8606e4434a4d24c490be6522e9e16a2c43447daabf7b4e9d1544711c3a81",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "ef8a1ee63cd7ab1de5578738f467a43c47da3e92bf18ca3c33d08e4a40e26520",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_autocommit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "9e74ed3b02e3d5c82f8a7bbd87feade541852c8fd01426e9a4226566c3215d40",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/helpers/_autocommit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "e7b0e377d0c91b85e9ebae9c3d7251484f650096a6345d0d88fb142a0f234e3a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/cwd_guard.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c513d90bbc115944dce5024f75588e173c7ab8d481df94b166ea29644a9d4ec8",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/helpers/cwd_guard.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "47fbacb322ec145e941e32f6c66e325bcd98789e750c26a98185667a5d40e879",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/hook_ledger.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b97bfceed1fde52b04e44b2efaafa739111adafedc2d3f7ad0d88c0902c7fb96",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_resolve_bg_stub.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "56c5a9a5b9317ac5172a08529ae590584fa8e926ae1880fbb8f30e13901212fc",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_resolve_bg_stub.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c11f5e57d0849a93423b4dd983ce5e482d2047dde5e94192dd362c36cb535d56",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/hooks/helpers/_signals.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "8fab5a213d9f914e08173fcec375e67085335596313b0296f3350842528b1dce",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_signals.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "cd37676a99f53e805af1d7af65c49d994f3d0020cd4258b137e6d1f29f06940a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_signals.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "20bdfe706e24f7ca480f2386782c3da77322796130f24bfc9c64cf1785ee9f7f",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_signals.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "20bdfe706e24f7ca480f2386782c3da77322796130f24bfc9c64cf1785ee9f7f",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_signals.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "66b8ca5491146c6d5810e8d69cff622644cf8ebbb9a4a1c54dd445fd93f35210",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/_check_errors_inline.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "679e529478cd4431331c1e0af81cf88ab23465008d2b54f7f632aafb78455406",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/helpers/_check_errors_inline.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "bbc29cf2544049674b7813b2f055dea2f6051c330a2ae82764459a4034783cb0",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/canary.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "7b56700048746ceead18e97ce49cd544eaff67a09c4f0a6ab5c8377a9f451156",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/lifecycle/canary.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "a2df3f2122b266f5a2f3f1a497273827df3309ed0b408fe49248e08f761df163",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/postcompact.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "bb4a9d84d82ed1f1f43aafe62fc4cee2cc333138dfe917a64fb374c64ebb4e08",
+      "key": "METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/postcompact.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "21cead88260d509508fe6a901e29c47cec954b18d7bad926b0087a53d8231824",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/postcompact.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "54f6eebc2a0ff537293dfa358407f987d3496fdbb948a2a6322fd178651cc6b2",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/postcompact.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "acb29a7d265ea4ec40ccbd76564780261ea6f925b726841f92372473c83c4f5c",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/hooks/lifecycle/sessionstart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "14470f375dc2bc5f030555f3a7fc4c799e0d2bb0a27306350acbd7a0d4ccef7a",
+      "key": "HME_PROXY_ENABLED",
+      "path": "tools/HME/hooks/lifecycle/sessionstart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "20e10309c3c662a3a9e3a1c937a00dd4239158756e73baa2a9da26417b6c5818",
+      "key": "METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/sessionstart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "f925309d8a015f99edd97c4a9a0a379ba89655d747ff003149c75180480bab03",
+      "key": "METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/sessionstart.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "eaa2df7c0ddbda22b83c1cabc125e6012099adec2f892cf39f7ade8b63ad52bd",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "4318057a9a31d09b3219377342954d47768a6f647282fee283b9b1953b004ab4",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "efdd51afbc5f855e38daee6218f83c813770a6c6024621ffe877007fdf8e730e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "efdd51afbc5f855e38daee6218f83c813770a6c6024621ffe877007fdf8e730e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "48b4abe4cbab24bcabed9e1bbacce6feb73fae810ac3556c694e4e46f330def0",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/precompact.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "82e1f35eb6ab2ac7d1cbbbc7a26cf25995db77f59925172970e0ad17c4c44dba",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/hooks/lifecycle/precompact.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "ff5137aa592d36153e6f77a061f381c16b7a8bbf2548d24d5dbc1bd98563422e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "66700b833c09a66b77809a2b7b367fc08af20953d1f2d3486a7b9e332d11efe5",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "09317f02bb08b26d53ec65609ae2702cf0c047a0c29ef527921abe3ba882223e",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "59d37337a0ac37909274ff332bd8309d8f44f1391ee149bfbab2ad2a5ca22d36",
+      "key": "HME_OMNIROUTE_PORT",
+      "path": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "937d41d7d0044b3634fcdf022834deba80d39c2d8fe4fdebe6aab33b8893e775",
+      "key": "OVERDRIVE_MODE",
+      "path": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c1317f0cd78dd4eed5f87cf2dd2c45f075c853646c578c20b475801f7d1c344e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct/proxy-maintenance.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "03f2e57596efd045be3590c88843a50bd90bb3daec83e9a273b2b69001f00c4b",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/direct/proxy-maintenance.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "eff5d95c454696fe4712b5054ec1726e2b6ba4a384250d5fce76b0ed1684b27c",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "d118c2ee7dfe65856fd4778bef5ba0746af6212ba086a873ff5ce84b6de96639",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "1593e6b453720eb63d964ad55129cf421ac37e7869069a44b5bda541c214f630",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct/universal-pulse-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b56eef2e4eedfc321e27fc9672ee9d30e433cea7bae076ab43866e69bbcd9b92",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/direct/universal-pulse-supervisor.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "f74c8ef61a00aea5e5e3a632bd05aeb52671cc49ef91d1166946690f283fcb97",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct/autocommit-direct.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "a85a7b50c672c9bda1d4a14dd0033866d48a14a35f837d3cee2c098089bb8c72",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/direct/autocommit-direct.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "be37d8fddb0c4ee26dc5a67609b41af73db9e70e35a6c12bc3eba195518ef8db",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/direct/proxy-watchdog.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "e43be3c4e117a1ac3c1785ac0253b602d849c3cbac35074d11230eb8f61a5fc1",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/direct/proxy-watchdog.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "9e0cdf7dc6371e09af354f78fadcab48721156e20d8ebfb687afe4ed0019fa7c",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/hooks/direct/proxy-watchdog.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "894099b1d77eb4e6fd68bf03562d536fe44fdc5ddf820b3e88e18b393e25940b",
+      "key": "HME_OMNIROUTE_PORT",
+      "path": "tools/HME/hooks/direct/proxy-watchdog.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "e95c6de0a23628cc8335afc250d8d465d9c39d5db818c998c9f1748b51a054d9",
+      "key": "OVERDRIVE_MODE",
+      "path": "tools/HME/hooks/direct/proxy-watchdog.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "bbab0fc1cf342c1bd4d2c1ac25f9516562568871123f859aa4cee31549a00a76",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/pretooluse_grep.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "d799a16f41eb5dc5fc757956a54094c2b67f1e66836bb4635c569ad6d80057de",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/pretooluse_grep.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "897ae6fa63701d9149d611956afab0c3f40a642143e9f7f8d85719e1f815f8ce",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "fe071019f3bfd35a0068e8add5c03a565bf9525b987e0b2e042335d2c163e38f",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "fca6be07125748d5326cfe680a2fb9b34b5ff55319ffddaa3d951a48dd6c1257",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/pretooluse_bash.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c4ab13495e4dd9b825feed1d703c8f121f967b63b7532399a59e8e813d2c4fdd",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_edit.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "3bd04a0001b2271055fe5f001f51d985a4074b2a72fedf9fe540fea2611b3a11",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_read_kb.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c54fc956c76603814774947213772effd2ee29a841607e3517a31a160837e80b",
+      "key": "METRICS_DIR",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_pipeline_kb.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "8939820b94c38b7d0413b8f7cef894dd796ed1e42204a7245b1e6d43e3d43ced",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/latency.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "16ae798950cbd39404bdcc809cb3ef88deb160f2233b8b8f12dc611ba86f2ee3",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/latency.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c7f2dd005ea0de4acabd964dcdb54ea36dff91ed7e797bb9c9f6949034bc4753",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/misc_safe.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "f59167beb7f750c4f1f8eb35c52c4511b1d7b84dc9293476a1b5a4206b874fc3",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/misc_safe.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "01df404718a4ecb074f5c5b90407f0d611f5796f33db979ce65d5d2928a8a825",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/misc_safe.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "41de0b642dbcc02a7f48799288c3d06b84463585b2827c27baffc828febe515a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/misc_safe.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "8a532bc6ef3b5209c2b6f769ea5a377b5baecf237acaaa0ee30b6be1e2339f75",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/curl.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "80f880525892f75a71f1607b171f2de88f565668bf3d546b23df1ec49ce8c0fe",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/curl.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "964101fd8c952e1b5f3ff4ec7bbc8141abf462372a885146be610477fa78b7b1",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/curl.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "309a9cfb5f8b9e70ef19ff1225e8dd2d60a9b4cb4452f0f349eef33c10150396",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/curl.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b257b76329296bf55f1e76db7dfa3ec19c582310d879b121f4b7ae46f8c85cb4",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/project_root.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "67681d12e2c5be1b674eeb6ab4b5e065f6dedadd56354f54bf17aa2f253ec526",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/helpers/safety/project_root.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "d01955b9795afec8428caba3ce034f9de6ee09c9d4ad469b333795070c394442",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/project_root.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "4f5461ad3096aada4d50e7f374dee35afb621de2bd1cfd96759ab66ae7623399",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/helpers/safety/project_root.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "937e474eccf40ccee5f41936ab61bcf02f1e7201b32cf2ea0c1eb0799700a2bd",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/detectors.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "8f4a9546c36be40829e31dcdce0ccef581d012d5ad48f6ad0d642e2b962be11a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/detectors.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "48783059024f9581a65d6c8c42f4cca139357afa5fd479f42a0a34d0c533d428",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/detectors.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "c464992d0c223494417cda6f9ef42e35fcf359e440bd498fd270c7810011ab33",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/detectors.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "2712e93da74c5da4717ddce5400c2882da380bb67af6dfe58d35642271c09e10",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/detectors.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "7f96f59e0b6985f09d7c6a9b405c3cfff3b2f90b238e33e5e1763f092dd71360",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/_preamble.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "196a5e28d5f426ced7e6f0fc87669245260d3eeb8ac77902934eca4b05517857",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/lifecycle/stop/_preamble.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "4c487363ca4fab167335ac3e352926dc7a45d99737d1ac2eda8114fafadafe25",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/_preamble.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "5ba796b275436c702135fc1d55d6db2775a33634ee75dc15b324c75992e16e6e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/lifecycle/stop/holograph.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b49098ef715f5f455fc7838ce97a01d0ab9d013fdf530b39af3db7b2b95a0301",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/pre/registry_mirror.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "be80b7c8e185fac4cd13eda33bee1c0ca5f948e32a9675561690e0394b2369da",
+      "key": "CLAUDE_PROJECT_DIR",
+      "path": "tools/HME/hooks/pretooluse/bash/pre/registry_mirror.sh",
+      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
+    },
+    {
+      "hash": "b5ef828f4609960df1724daf027c626840b1e084231ccbdbc7aa527a079e68bd",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/log_first.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "f3e9868b759246190f20da7367aac1aae39b5def02caf976b14d114a74cbb54b",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/reader_guards.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "34a96d3c59d1ee01328dacf890fed22be90dc3d5d88ca8c8fe3b873cb45b4a4a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/reader_guards.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "8d40bafdab853524f906d20747a2606e51bd5921804a3e06a60126ee9a038106",
+      "key": "HME_DOMINANCE",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/intent_rewrite.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "8b499db13e785db6649970fbda1cf143d3c516678343722d3e73c56298587920",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/cwd_rewrite.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "eaf5d54ed4635e95130f0db6232a45d9693b21fcfb169fce6ea85c2526ac0b41",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/verify_landed_block.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "090c13a05b3a324ac749cd26f8121a001011cef3e58cb3d7db51212ad573b870",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/verify_landed_block.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "487f317a4899f675eed1acfd729b6cf10164aecd7a8a9d2ed6f106ca1544d3c1",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/blackbox_guards.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "da25943c105409e595c7a0fc4ca069e87995917cbe92e3cc048723723c912b3a",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/hooks/pretooluse/bash/_disabled/blackbox_guards.sh",
+      "reason": "disabled legacy hook: classified until deleted or re-enabled with fail-fast loader"
+    },
+    {
+      "hash": "96a79ae543dbe4c005a608a5fc3ea750a471cd6a1214b987233c5b6d2d86850e",
+      "key": "HME_PROXY_THINKING_DISPLAY",
+      "path": "tools/HME/proxy/middleware/02_thinking_rewrite.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "9d746a03a7364e67f677fbef870f661ce85a16b89f70c6f596b1d6138cb0034e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/proxy/middleware/_persistent_map.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "5a09dc978bc1b11cf9fecf4e9455e8a0d311fa41547a7733596bfceed2916cbc",
+      "key": "HME_FILTER_TOOLS_DROP",
+      "path": "tools/HME/proxy/middleware/03_filter_tools.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "de5b43d50b45baab949f5efd47c7d0774ac644fcee533d46b245b41231990f86",
+      "key": "HME_REPLACE_SYSTEM_PROMPT",
+      "path": "tools/HME/proxy/middleware/01_replace_system.js",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "3b88de019458aec1b3a0e69ccdf1a484f3bf761991076235f1874e6ccfc9971e",
+      "key": "PYTORCH_CUDA_ALLOC_CONF",
+      "path": "tools/HME/proxy/supervisor/children.js",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "1210670dfa72cdd336ed27c19e75923d2e09fa1c0032b5f240d27565109bad6b",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/service/llamacpp_daemon/_boot.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "5af487b5fcc49c8c9759b237e21dad43fe8c510a134cb1c92bcc13fa149e408e",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/service/server/tools_analysis/synthesis/agent_direct.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "15e519d39c21e8a33401c968cdc47abd4bda177a36739a45714bbb25ab168d01",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/service/server/tools_analysis/synthesis/agent_direct.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "3434dc8e21c3d03e54b47f41f684a74de3af2df550cb3a080416db4797a61bb7",
+      "key": "COMMENT_BLOAT_WARN",
+      "path": "tools/HME/policies/builtin/block-comment-bloat.js",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "cf1a5014e7e1ee20d36315fcab82514da2f6e18d0449bbbb9f89e2c28af25637",
+      "key": "COMMENT_BLOAT_LONG_LINE",
+      "path": "tools/HME/policies/builtin/block-comment-bloat.js",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "5b66ece5e3e300d2af6a6daa8de358ef89c1d0f9903ea8f470c51c4919b9b1d9",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/policies/builtin/rewrite-hardcoded-project-root.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "93cc09780800f319069942494e912425b844485f5a250bb7f30b2daafd72aabd",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/policies/builtin/block-mid-pipeline-write.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "01afb7175a463324bb06578eb34b5a859e17baed5310c23f009f2dd7078d0336",
+      "key": "HME_IGNORE_DIRS",
+      "path": "tools/HME/scripts/verify_coherence/code_audits_syntax.py",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "07199a56173e084a61dd10e1895b467d6f47e83e165acbc803925a8c06904fb8",
+      "key": "OVERDRIVE_MODE",
+      "path": "tools/HME/scripts/verify_coherence/env_settings.py",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "71845f88ac578506b4995f286ac8093eb1ec7590d9ea385d367f09845025dbb1",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/verify_coherence/hook_layout.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "b570c9e6f411168480da4b5525161239cf6d95e4e304799103d87e2cf5dd7fda",
+      "key": "HME_ARBITER_PORT",
+      "path": "tools/HME/scripts/verify_coherence/subagent.py",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "fbec54311d537bc994ca97ebc3b2089fe7dce25fe67ffd50287a04ce989ac612",
+      "key": "HME_PROXY_PORT",
+      "path": "tools/HME/scripts/verify_coherence/runtime_perf.py",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "d81fed719b297c20ae8e211b6a9f1215f37d6e0655a37cbbea951e23cde832ed",
+      "key": "HME_METRICS_DIR",
+      "path": "tools/HME/scripts/verify_coherence/_base.py",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "7b4fce65e8e4ebd918c2567782fae28fa30f6a1ca56e79df5db400f431536ae9",
+      "key": "METRICS_DIR",
+      "path": "tools/HME/scripts/verify_coherence/_base.py",
+      "reason": "composition legacy path/runtime default classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "206d15a3862bf5a3107a530372319cfb594112c01079869b7a74c50098d06ee5",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "07e424b430af5369c3fcf7e455cc2e6325492814cfbf0d0eb1658ead982882f3",
+      "key": "COMMENT_BLOAT_FAIL",
+      "path": "tools/HME/scripts/detectors/boyscout_clean.py",
+      "reason": "classified legacy env fallback pending fail-fast conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "0306455a65b25de87c4811f2c6a3e6e72dfe446bc3ec1deed293fd2340d0fdac",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/detectors/test__transcript_api.py",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "fc71c666496a4f37e121010f09919bc072b9fdfc7cbab87e0593944b0b23e427",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/detectors/fabrication_check.py",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "0164eff2ccfec57bbebc9f15610494669f81c48e67c8260bbd390f08ab4fe142",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/pipeline/hme/compute-consensus.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "766f56921f2dabc2a4eafb5c7a6cd0a9da6cfbd738277ce975c4ca034cc192a1",
+      "key": "HME_BLINDSPOT_WINDOW",
+      "path": "tools/HME/scripts/pipeline/hme/compute-blindspots.py",
+      "reason": "HME legacy runtime tuning fallback classified for follow-up conversion; no new fallbacks allowed"
+    },
+    {
+      "hash": "ba3d4eab3c4a07bc8fefd70018306441360fb5a3f28c49a82fb198a79525f429",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/scripts/pipeline/hme/emit-legacy-override-history.js",
+      "reason": "bootstrap/root discovery boundary: cannot require .env before locating repo root"
+    },
+    {
+      "hash": "4fe0b23a12de9131c2c22bd5bb5bc3d28d7b5b42ca0a3415e0c024d9f4d0ebfa",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/scripts/smoke-test-indexing-mode.sh",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "8bfa6ed012d09d5cb63e50bc6352d7f04c7972d14f9cbeea538aaef8424b7585",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/scripts/smoke-test-indexing-mode.sh",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "c64f0adbfe3cfb6eae79e5666ec1b5a2264a13c00385db20e8a29405e57fcc16",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/specs/models_schema.test.js",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "05504962393cac2a1f83517e3fb0c6852c1b7720a417cc11d9a359784e152c3c",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/specs/models_anthropic_registry.test.js",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "1874f856f95f276c2c0f6d0c7a971c43a2653bd7455a9bb067d3f0d4e55db883",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/specs/rewrite_hardcoded_project_root.test.js",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "7defb828b8d59e6b2cd92c22090fb1a92c35af28d2ebb8ba6856dd22c056d8f2",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/specs/proxy_boundary_contract.test.js",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    },
+    {
+      "hash": "f305577905a9aabf1fc7d63dddf187754952119e091e4c7a49b0ecd810925d99",
+      "key": "PROJECT_ROOT",
+      "path": "tools/HME/tests/specs/proxy_handler_integration.test.js",
+      "reason": "test/runtime fixture: fallback exists to exercise isolated tests without requiring project .env load"
+    }
+  ]
+}
