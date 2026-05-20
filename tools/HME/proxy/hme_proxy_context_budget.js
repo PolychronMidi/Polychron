@@ -269,4 +269,4 @@ function createContextBudget() {
   };
 }
 
-module.exports = { createContextBudget, envNumber, inputBudget };
+module.exports = { createContextBudget, parseProxyContextEnv, inputBudget };
