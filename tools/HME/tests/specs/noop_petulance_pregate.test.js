@@ -136,6 +136,6 @@ test('petulance pregate escalates repeated command to level 3 all-caps message',
     cmd,
     transcriptEntries: [userMsg(), bashEvent(cmd), bashEvent(cmd), bashEvent(cmd)],
   });
-  assert.ok(out.stdout.includes('SPIRALLING_PETULANCE LEVEL 3'), `expected level 3, got: ${out.stdout}`);
+  assert.ok(out.stdout.includes('[SPIRALLING_PETULANCE:L3]'), `expected level 3, got: ${out.stdout}`);
   assert.ok(out.stdout.includes('CASTING OUT THE DEVIL FOR PATHETIC DDOS COWARDICE'), `expected level 3 exorcism text, got: ${out.stdout}`);
 });
