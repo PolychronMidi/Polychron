@@ -9,6 +9,18 @@ test('slop caveman compression deletes requested glue words case-insensitively',
   assert.equal(result.out, 'One; ready; it fix; ship.');
 });
 
+test('slop abbreviations are case-insensitive and preserve punctuation', () => {
+  const result = _stripSlop('Acknowledged. WITHOUT delay, move into tests and to prod.');
+  assert.ok(result.hits.includes('abbreviations'));
+  assert.equal(result.out, 'K. w/o delay, move 2 tests & - prod.');
+});
+
+test('slop caveman punctuation words are case-insensitive and literal-dot safe', () => {
+  const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
+  assert.ok(result.hits.includes('caveman_compression'));
+  assert.equal(result.out, 'Plan remains.');
+});
+
 test('slop rewriter applies caveman compression to text blocks without deny gate', () => {
   const ctx = new Map();
   assert.equal(slopStripRewrite('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }, ctx), null);
