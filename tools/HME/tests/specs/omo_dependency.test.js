@@ -35,7 +35,7 @@ test('OMO dependency resolver resolves configured relative path and metadata', (
 test('OMO dependency resolver rejects absolute paths outside project root', () => {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-omo-outside-'));
   try {
-    const result = resolveOmo({ enabled: true, source: 'path', path: sandbox });
+    const result = resolveOmo({ enabled: true, source: 'path', path: sandbox, requiredVersion: '' });
     assert.equal(result.status, 'error');
     assert.match(result.error, /inside PROJECT_ROOT|relative/);
   } finally {
