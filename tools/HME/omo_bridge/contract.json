@@ -1,0 +1,14 @@
+{
+  "contract_version": "hme-omo/v1",
+  "required_entrypoints": [
+    "package.json"
+  ],
+  "optional_entrypoints": [
+    "context-injector",
+    "hooks/anthropic-context-window-limit-recovery",
+    "config/schema/dynamic-context-pruning",
+    "team-mode",
+    "background-agent",
+    "plugin-handlers"
+  ]
+}
