@@ -19,6 +19,8 @@ _READ_FAILURE = re.compile(r"(enoent|no such file|verify-landed antipattern|bloc
 _GIT_INSPECT = re.compile(r"(codex_structured_tool\.js\s+git|\bgit\s+(?:status|diff|log|show)\b)", re.I | re.S)
 _CLEAN_GIT_TEXT = re.compile(r"(\[SUCCESS\]|\(no stdout\)|nothing to commit|working tree clean|no changes|\bclean\b)", re.I)
 _STATUS_OR_DIFF = re.compile(r"(\bgit\s+(?:status|diff)\b|[\"\'](?:status|diff)[\"\'])", re.I | re.S)
+_REPEAT_WINDOW_SEC = 180
+_EDIT_TOOL_NAMES = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
 
 def _text(event: dict) -> str:
