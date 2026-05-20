@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { classifyOmoAction, checkOmoAction } = require('../../omo_bridge/policy_adapter');
+const { classifyOmoAction, checkOmoAction, checkOmoActionThroughHme } = require('../../omo_bridge/policy_adapter');
 
 test('OMO policy adapter classifies mutating action types', () => {
   assert.equal(classifyOmoAction({ tool: 'Write' }), 'write');
