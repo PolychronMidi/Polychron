@@ -62,16 +62,19 @@ module.exports = {
     const { text, block, msg, isString } = _lastUserText(payload);
     if (!text || !msg) return;
 
-    const shortcut = SHORTCUTS[text];
+    const key = text.toLowerCase();
+    const shortcut = SHORTCUTS[key];
     if (shortcut) {
       _setUserText({ msg, block, isString }, shortcut);
+      if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: shortcut });
       ctx.markDirty();
       return;
     }
 
-    if (text === 'cc') {
+    if (key === 'cc') {
       payload.__shortcut_compact = true;
       _setUserText({ msg, block, isString }, '/compact');
+      if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: '/compact' });
       ctx.markDirty();
     }
   },
