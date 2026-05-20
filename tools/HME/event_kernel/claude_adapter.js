@@ -121,4 +121,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout };
+module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout, shouldLogHookStderr };
