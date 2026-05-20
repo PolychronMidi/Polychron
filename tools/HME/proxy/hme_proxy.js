@@ -10,6 +10,10 @@
 'use strict';
 
 const http = require('http');
+const path = require('path');
+const { loadEnv } = require('./shared/load_env');
+
+loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 
 const { sessionKey } = require('./shared');
 const {
