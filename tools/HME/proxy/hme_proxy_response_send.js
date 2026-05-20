@@ -143,7 +143,18 @@ function _maybeRewriteNonSseEdit(buf, payload) {
   try { body = JSON.parse(text); } catch (_e) { return buf; }
   if (!body || typeof body !== 'object') return buf;
   const { rewriteNonSseEditFallback } = require('./edit_validation');
-  const { body: next, count } = rewriteNonSseEditFallback(body, { checkFs: true });
+  const sessionId = payload ? sessionKey(payload) : '';
+  const { body: next, count } = rewriteNonSseEditFallback(body, {
+    checkFs: true,
+    isUnread: (input) => {
+      const fp = String((input && (input.file_path || input.path)) || '').trim();
+      if (!sessionId || !fp || !fp.startsWith('/')) return false;
+      const cache = require('./session_read_cache');
+      if (cache.hasRead(sessionId, fp)) return false;
+      cache.recordRead(sessionId, fp);
+      return true;
+    },
+  });
   if (!count) return buf;
   const out = JSON.stringify(next);
   return Buffer.isBuffer(buf) ? Buffer.from(out, 'utf8') : out;
