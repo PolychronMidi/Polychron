@@ -113,6 +113,37 @@ class _EnvLoader:
         for key, val in parsed.items():
             os.environ[key] = val
 
+    def _template_path(self, root: Path) -> Path:
+        configured = os.environ.get("HME_ENV_FAILFAST_TEMPLATE")
+        return (root / configured) if configured else (root / "doc" / "templates" / ".env.example")
+
+    def _template_keys(self, path: Path) -> set[str]:
+        if not path.is_file():
+            raise RuntimeError(
+                f"hme_env: missing env template at {path}. Defaults belong in "
+                f"doc/templates/.env.example, not inline fallbacks."
+            )
+        keys: set[str] = set()
+        with open(path, encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key = line.split("=", 1)[0].strip()
+                if key:
+                    keys.add(key)
+        return keys
+
+    def _validate_template_keys(self, root: Path, parsed: dict[str, str]) -> None:
+        template = self._template_path(root)
+        missing = sorted(self._template_keys(template) - set(parsed))
+        if missing:
+            raise RuntimeError(
+                "hme_env: .env is missing template key(s) from "
+                f"{template}: {', '.join(missing[:20])}"
+                + (f" ... {len(missing) - 20} more" if len(missing) > 20 else "")
+            )
+
     def _raw(self, key: str) -> str | None:
         if not self._loaded:
             self.load()
