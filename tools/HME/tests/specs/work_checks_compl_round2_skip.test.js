@@ -299,6 +299,17 @@ test('work_checks: unfinished task reminder blocks stopping before auto-complete
     assert.match(result.reason, /status: in_progress/);
   }));
 
+test('work_checks: stop-hook JSON block echoes do not create unfinished-task debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'finish the work' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: '266\t{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items."}' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
 test('work_checks: unfinished tasks still block the nothing-missed round-2 skip',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
