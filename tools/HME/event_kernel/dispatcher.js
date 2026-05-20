@@ -378,4 +378,4 @@ async function dispatchEvent(eventName, stdinJson) {
   }
 }
 
-module.exports = { dispatchEvent, runHook, runChain };
+module.exports = { dispatchEvent, runHook, runChain, lifecycleContextResult };
