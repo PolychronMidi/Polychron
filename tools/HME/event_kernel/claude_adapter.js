@@ -35,6 +35,20 @@ Restart: node tools/HME/proxy/hme_proxy.js
 Check:   curl -sf http://127.0.0.1:${port}/health`;
 }
 
+function logHookError(root, event, message) {
+  try {
+    const base = root || requireEnv('PROJECT_ROOT');
+    if (!base || !message) return;
+    const ts = new Date().toISOString();
+    const tail = JSON.stringify({ event: 'hook-runtime-error', message, hook_event: event });
+    const errLog = path.join(base, 'log', 'hme-errors.log');
+    const hmeLog = path.join(base, 'log', 'hme.log');
+    fs.mkdirSync(path.dirname(errLog), { recursive: true });
+    fs.appendFileSync(errLog, `[${ts}] [hook-runtime-error] ${message}  ${tail}\n`);
+    fs.appendFileSync(hmeLog, `${ts.replace('T', ' ').replace('Z', '')} ERROR hook-runtime-error: ${message}  ${tail}\n`);
+  } catch (_e) { /* best-effort lifesaver log */ }
+}
+
 function validateClaudeStdout(event, stdout, root) {
   const text = String(stdout || '').trim();
   if (!text) return stdout || '';
