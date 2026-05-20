@@ -50,10 +50,11 @@ function logHookError(root, event, message, kind = 'hook-runtime-error') {
 }
 
 function shouldLogHookStderr(stderr) {
-  const lines = String(stderr || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  if (lines.length === 0) return false;
+  const text = String(stderr || '').trim();
+  if (!text) return false;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.every((line) => /^ok$/i.test(line))) return false;
-  return true;
+  return /\b(error|failed|failure|exception|traceback|invalid|crash|denied|JSON validation failed|Stop hook error)\b/i.test(text);
 }
 
 function validateClaudeStdout(event, stdout, root) {
