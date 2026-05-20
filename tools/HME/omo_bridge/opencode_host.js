@@ -6,7 +6,9 @@ async function createOpenCodeHost(pluginFactory, options = {}) {
   const client = options.client || createClientShim(options);
   const plugin = typeof pluginFactory === 'function'
     ? await pluginFactory({ directory: options.directory || process.cwd(), client })
-    : (pluginFactory || {});
+    : (pluginFactory && typeof pluginFactory.server === 'function'
+      ? await pluginFactory.server({ directory: options.directory || process.cwd(), client })
+      : (pluginFactory || {}));
   return {
     plugin,
     client,
