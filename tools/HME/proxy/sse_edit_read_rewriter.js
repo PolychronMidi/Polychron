@@ -104,8 +104,9 @@ function editFallbackToReadRewrite(eventName, data, ctx) {
   if (!editState) return data;
   editHolds.delete(data.index);
   const parsed = _parseToolInput(editState);
-  const invalid = isInvalidEditInput(parsed, { checkFs: true });
-  const unread = !invalid && _editTargetUnread(parsed, ctx);
+  const isWrite = isWriteTool(editState.name);
+  const invalid = isWrite ? false : isInvalidEditInput(parsed, { checkFs: true });
+  const unread = !invalid && (isWrite ? _shouldRewriteWriteToRead(parsed, ctx) : _editTargetUnread(parsed, ctx));
   if (!invalid && !unread) {
     return { events: [
       ['content_block_start', editState.startData],
