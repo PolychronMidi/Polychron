@@ -566,7 +566,7 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|has|too|is|the|now)\b\s*/gi,
+    re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|has|need|too|is|the|now)\b\s*/gi,
     repl: '' },
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
