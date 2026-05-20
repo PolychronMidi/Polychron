@@ -4,9 +4,9 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
-const { loadEnv, defaultEnvPath, requireEnv, requireEnvInt, requireEnvBool } = require('./shared/load_env');
+const { loadEnv, requireEnv, requireEnvInt, requireEnvBool } = require('./shared/load_env');
 
-loadEnv(defaultEnvPath(__dirname));
+loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 
 const DEFAULT_UPSTREAM_HOST = requireEnv('HME_PROXY_UPSTREAM_HOST');
 const DEFAULT_UPSTREAM_PORT = requireEnvInt('HME_PROXY_UPSTREAM_PORT');
