@@ -348,6 +348,9 @@ def noop_predicate(cmd: str, transcript_path: str) -> str | bool:
     if not cmd:
         return False
     try:
+        state_level = _state_repeat_level_and_record(cmd)
+        if state_level >= 1:
+            return _petulance_message(state_level, cmd)
         repeat_level = _repeat_level(cmd, transcript_path)
         if repeat_level >= 1:
             return _petulance_message(repeat_level, cmd)
