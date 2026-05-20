@@ -58,7 +58,7 @@ function finalRelay(event, result, body = '{}') {
   const fields = claudeRelayFields(event, result);
   let payload = {};
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
-  const root = payload._hme_project_root || process.env.PROJECT_ROOT;
+  const root = payload._hme_project_root || requireEnv('PROJECT_ROOT');
   fields.stdout = validateClaudeStdout(event, fields.stdout, root);
   recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
   if (fields.stdout) process.stdout.write(fields.stdout);
