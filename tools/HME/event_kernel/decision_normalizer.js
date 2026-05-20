@@ -188,6 +188,8 @@ function claudeRelayFields(event, result) {
     if (parsed && parsed.decision === 'block' && parsed.reason) {
       stdout = JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
     }
+    const fields = decisionFields(parseJson(stdout));
+    if (fields.decision === 'deny' && /^\s*ok\s*$/i.test(stderr || '')) stderr = '';
   }
   if (code === 0 && !stderr) stderr = ' ';
   return { stdout, stderr, exit_code: code };
