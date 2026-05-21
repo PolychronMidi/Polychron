@@ -76,7 +76,7 @@ module.exports = {
       const currentContext = contextWindow(root, file, input.old_string || '', input.new_string || '', reason);
       const readEquivalent = currentContext.readable && /File has not been read yet\. Read it first before writing to it|File has been modified since read/.test(text);
       if (readEquivalent && typeof ctx.replaceResult === 'function') {
-        ctx.replaceResult(toolResult, currentContext.text.replace('[READ current context', '[AUTO-READ current context'));
+        ctx.replaceResult(toolResult, actualReadResult(root, file));
       } else {
         ctx.appendToResult(toolResult, currentContext.text);
       }
