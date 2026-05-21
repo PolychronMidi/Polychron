@@ -59,6 +59,7 @@
   "local_path_allow_token": "local-path-ok",
   "env_secret_marker": "SECRETS ABOVE THIS LINE",
   "canonical_precommit": "tools/HME/git-hooks/pre-commit",
+  "canonical_post_commit": "tools/HME/git-hooks/post-commit",
   "precommit_validator": "tools/HME/scripts/precommit_validate.py",
   "env_template": "doc/templates/.env.example"
 }
