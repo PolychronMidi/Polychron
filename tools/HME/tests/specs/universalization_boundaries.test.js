@@ -176,12 +176,35 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   assert.equal(shouldLogHookStderr('ok'), false);
   assert.equal(shouldLogHookStderr('ok\nok'), false);
   assert.equal(shouldLogHookStderr('Stop hook error: JSON validation failed'), true);
-  assert.equal(shouldLogHookStderr('Stop hook error: MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.'), false);
+  assert.equal(shouldLogHookStderr('Stop hook error: MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.'), true);
   assert.equal(shouldLogHookStderr('[ALERT] LIFESAVER - MID-TURN ERRORS DETECTED:\n[autocommit:proxy] [onRequest] git commit failed twice: ERROR: pre-commit validation blocked this commit.'), false);
   assert.equal(shouldLogHookStderr('[autocommit:proxy] [onRequest] git commit failed twice: ERROR: pre-commit validation blocked this commit.'), false);
   assert.equal(shouldLogHookStderr('HME proxy already running on :9099\nOnboarding: 6/7 await verdict\nPipeline: STABLE'), false);
   assert.equal(isBenignHookStderr('ok\nok'), true);
   assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
+});
+
+
+test('Claude adapter logs Stop block reasons to Lifesaver logs', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-block-error-log-'));
+  try {
+    const adapterPath = path.join(repoRoot, 'tools/HME/event_kernel/claude_adapter.js');
+    const reason = 'MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.\nAddress all of them in this turn.';
+    execFileSync('node', ['-e', [
+      `const { finalRelay } = require(${JSON.stringify(adapterPath)});`,
+      `finalRelay('Stop', { stdout: ${JSON.stringify(JSON.stringify({ decision: 'block', reason }))}, stderr: '', exit_code: 0 }, ${JSON.stringify(JSON.stringify({ _hme_project_root: tmp }))});`,
+    ].join('\n')], {
+      encoding: 'utf8',
+      env: { ...process.env, PROJECT_ROOT: tmp, HME_ADAPTER_NO_NUDGE: '1' },
+    });
+    const errors = fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8');
+    const hme = fs.readFileSync(path.join(tmp, 'log', 'hme.log'), 'utf8');
+    assert.match(errors, /hook-stop-block/);
+    assert.match(errors, /Stop hook error: MULTI-FLAG STOP/);
+    assert.match(hme, /ERROR hook-stop-block/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('Claude Stop root block stays structured stdout and never surfaces policy stderr as hook error', () => {
