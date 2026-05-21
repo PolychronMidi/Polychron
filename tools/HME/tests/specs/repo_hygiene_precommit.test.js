@@ -8,6 +8,7 @@ const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const canonicalHook = path.join(PROJECT_ROOT, 'tools/HME/git-hooks/pre-commit');
+const canonicalPostCommitHook = path.join(PROJECT_ROOT, 'tools/HME/git-hooks/post-commit');
 const validator = path.join(PROJECT_ROOT, 'tools/HME/scripts/precommit_validate.py');
 const policyPath = path.join(PROJECT_ROOT, 'tools/HME/config/repo-hygiene.json');
 const installer = path.join(PROJECT_ROOT, 'tools/HME/scripts/install-git-hooks.sh');
