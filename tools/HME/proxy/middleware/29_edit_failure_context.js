@@ -6,9 +6,9 @@ const { PROJECT_ROOT } = require('../shared');
 const { recordFailure } = require('../turn_failure_state');
 const sessionState = require('../session_state');
 const { isEditFamilyTool } = require('../edit_validation');
-const READ_GATE_RE = new RegExp(['File has not been read yet\\.', 'Read it first before writing to it'].join('\\s*'));
+const READ_GATE_RE = /read.*before.*writ|not.*read.*yet/i;
 const MODIFIED_SINCE_READ_RE = /File has been modified since read[^\n]*/;
-const FAIL_RE = /\b(old_string not found|old_string is not unique)\b|File has been modified since read[^\n]*|File has not been read yet\.[^\n]*/;
+const FAIL_RE = /\b(old_string not found|old_string is not unique)\b|File has been modified since read[^\n]*|read.*before.*writ|not.*read.*yet/i;
 
 function textOf(toolResult) {
   const c = toolResult && toolResult.content;
@@ -107,7 +107,7 @@ module.exports = {
     if (text.includes('[READ current context')) return;
     try {
       const currentContext = contextWindow(root, file, input.old_string || '', input.new_string || '', reason);
-      const readEquivalent = currentContext.readable && /File has not been read yet\. Read it first before writing to it|File has been modified since read/.test(text);
+      const readEquivalent = currentContext.readable && (READ_GATE_RE.test(text) || /File has been modified since read/.test(text));
       if (readEquivalent && typeof ctx.replaceResult === 'function') {
         ctx.replaceResult(toolResult, actualReadResult(root, file));
       } else {
