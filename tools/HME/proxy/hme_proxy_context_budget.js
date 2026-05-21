@@ -269,7 +269,8 @@ function createContextBudget() {
     const budget = resolveModelCtx(String(swapModel || ''));
     const authoritativeUsed = statuslineInputTokens();
     const before = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    if (budget > 0 && authoritativeUsed > 0 && (authoritativeUsed / budget) < compactStartFraction) return 0;
+    if (budget > 0 && authoritativeUsed <= 0) return 0;
+    if (budget > 0 && (authoritativeUsed / budget) < compactStartFraction) return 0;
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'omni-context',
       model: String(swapModel || ''),
