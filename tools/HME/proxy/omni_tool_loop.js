@@ -91,7 +91,10 @@ function toolInput(name, args) {
     ...(args.replace_all ? { replace_all: true } : {}),
   };
   if (name === 'WebFetch') return { url: String(args.url || ''), prompt: String(args.prompt || '') };
-  if (name === 'Agent') return { prompt: String(args.prompt || ''), ...(args.level != null ? { level: Number(args.level) } : {}) };
+  if (name === 'Agent') {
+    const prompt = String(args.prompt || '');
+    return { prompt, description: String(args.description || args.justification || prompt.split(/\r?\n/)[0].slice(0, 60) || 'Subagent task'), ...(args.level != null ? { level: Number(args.level) } : {}) };
+  }
   return args;
 }
 
