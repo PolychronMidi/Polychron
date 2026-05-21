@@ -12,9 +12,8 @@ const WATERMARK = 'tools/HME/runtime/errors-lastread.proxy';
 // observation-severity, and self-origin tags.
 const CANARY_RE = /\[CANARY-/;
 const OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
-const SELF_TAG_RE = /^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^\]]+|hook-failure|sessionstart:[^\]]+)\]/;
+const SELF_TAG_RE = /^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^\]]+|hook-failure|hook-stop-block|hook-runtime-error|sessionstart:[^\]]+)\]/;
 const HOOK_WATCHDOG_MISSING_RE = /^\[hook-watchdog\]\s+\[ALERT\]\s+UserPromptSubmit fired before successful SessionStart\.\s+\|\s+Session:\s+([0-9a-f]{6,12}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i;
-const HOOK_STOP_BLOCK_RE = /^\[hook-stop-block\]\s+/i;
 const CRITICAL_INFRA_SELF_RE = /^\[(universal_pulse|supervisor)\].*\b(CRITICAL|FAIL|child_restart_limit|restart_limit|giving up|gave up|unhealthy|required)\b/i;
 
 function _isAgentActionable(line) {
@@ -22,7 +21,6 @@ function _isAgentActionable(line) {
   const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
   const criticalInfra = CRITICAL_INFRA_SELF_RE.test(body);
   if (CANARY_RE.test(body)) return false;
-  if (HOOK_STOP_BLOCK_RE.test(body)) return false;
   if (SELF_TAG_RE.test(body) && !criticalInfra) return false;
   if (HOOK_WATCHDOG_MISSING_RE.test(body)) return false;
   if (OBSERVATION_RE.test(body) && !criticalInfra) return false;
