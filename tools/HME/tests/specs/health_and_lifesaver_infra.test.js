@@ -112,6 +112,27 @@ module.exports.lifesaverDoesNotEscalateHookBookkeeping = async function () {
   assert.strictEqual(payload.messages[0].content, 'hi');
 };
 
+module.exports.lifesaverEscalatesCryingWolfRecords = async function () {
+  const lifesaver = require('../../proxy/middleware/22_lifesaver_inject.js');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-crying-wolf-'));
+  try {
+    fs.mkdirSync(path.join(root, 'log'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'tools/HME/runtime'), { recursive: true });
+    const errLog = path.join(root, 'log/hme-errors.log');
+    fs.writeFileSync(errLog, '');
+    const ctx = { PROJECT_ROOT: root, dirty: false, events: [], markDirty() { this.dirty = true; }, emit(e) { this.events.push(e); } };
+    lifesaver.onRequest({ payload: { messages: [{ role: 'user', content: 'seed' }] }, ctx });
+    fs.appendFileSync(errLog, '[crying_wolf] CRITICAL non-error hook UI reached model-visible context; stripped raw output. Hooks must do work, not communicate by UI echo. raw_omitted=true\n');
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    lifesaver.onRequest({ payload, ctx });
+    assert.strictEqual(ctx.dirty, true);
+    assert.match(payload.messages[0].content, /\[crying_wolf\] CRITICAL/);
+    assert.doesNotMatch(payload.messages[0].content, /Ran 1 stop hook/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+};
+
 module.exports.lifesaverInjectionWritesContractArtifacts = async function () {
   const { assertRealLifesaverInjection, LIFESAVER_HEARTBEAT_REL, LIFESAVER_INJECT_LOG_REL } = require('../../proxy/lifesaver_alerts');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-contract-'));
