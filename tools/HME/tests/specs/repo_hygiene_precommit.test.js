@@ -25,6 +25,7 @@ function run(cmd, args, opts = {}) {
 test('repo hygiene policy exists and declares canonical precommit assets', () => {
   const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
   assert.equal(policy.canonical_precommit, 'tools/HME/git-hooks/pre-commit');
+  assert.equal(policy.canonical_post_commit, 'tools/HME/git-hooks/post-commit');
   assert.equal(policy.precommit_validator, 'tools/HME/scripts/precommit_validate.py');
   assert.ok(policy.blocked_paths.includes('tools/HME/runtime/**'));
   assert.ok(policy.blocked_paths.includes('**/session-state.json'));
