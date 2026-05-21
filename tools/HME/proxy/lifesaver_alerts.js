@@ -29,6 +29,30 @@ on the next successful autocommit.`;
   return { flagPath, body, banner };
 }
 
+
+function recordLifesaverInjection(root, source, banner, meta = {}) {
+  try {
+    const logPath = path.join(root, LIFESAVER_INJECT_LOG_REL);
+    fs.mkdirSync(path.dirname(logPath), { recursive: true });
+    fs.appendFileSync(logPath, JSON.stringify({
+      ts: new Date().toISOString(),
+      source: source || 'unknown',
+      bytes: Buffer.byteLength(String(banner || '')),
+      ...meta,
+    }) + '\n');
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
+function assertRealLifesaverInjection(root, source, banner, meta = {}) {
+  const text = String(banner || '');
+  if (!LIFESAVER_TEXT_RE.test(text)) return false;
+  touchLifesaverHeartbeat(root);
+  return recordLifesaverInjection(root, source, text, meta);
+}
+
 function touchLifesaverHeartbeat(root) {
   try {
     const heartbeat = path.join(root, LIFESAVER_HEARTBEAT_REL);
