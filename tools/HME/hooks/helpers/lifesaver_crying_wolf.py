@@ -28,6 +28,9 @@ RECOVERED_UPSTREAM_RES = (
 RECOVERED_AUTOCOMMIT_RES = (
     re.compile(r"^\[autocommit(?::proxy)?\]\s+.*git commit failed twice:", re.I),
     re.compile(r"^\[hook-output-validation\]\s+JSON validation failed for Claude PreToolUse hook stdout:", re.I),
+    re.compile(r"^\[autocommit(?::proxy)?\]\s+\[onRequest\] git commit failed twice:", re.I),
+    re.compile(r"^Fix or unstage the following:", re.I),
+    re.compile(r"^\s*- .*\b(?:contains value of|invalid JavaScript syntax|pre-commit validation blocked)", re.I),
 )
 
 
