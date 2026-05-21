@@ -190,6 +190,7 @@ function claudeRelayFields(event, result) {
   let code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
   if (isBenignHookStderr(stderr)) stderr = '';
   if (event === 'Stop' && code === 0 && stdout) {
+    stderr = ' ';
     const parsed = parseJson(stdout);
     if (parsed && parsed.decision === 'block' && parsed.reason) {
       stderr = ' ';
