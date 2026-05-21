@@ -215,6 +215,34 @@ test('request telemetry emits prompt-free normalized request metadata', () => {
   assert.equal(JSON.stringify(row).includes('secret prompt'), false);
 });
 
+test('hook lifecycle time-travel ledger records redacted checkpoints and forks', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-hook-time-travel-'));
+  try {
+    process.env.PROJECT_ROOT = root;
+    process.env.HME_RUNTIME_DIR = path.join(root, 'tools', 'HME', 'runtime');
+    fs.mkdirSync(process.env.HME_RUNTIME_DIR, { recursive: true });
+    const ttPath = require.resolve('../../event_kernel/lifecycle_time_travel');
+    delete require.cache[ttPath];
+    const tt = require('../../event_kernel/lifecycle_time_travel');
+    const payload = { session_id: 's1', turn_id: 't1', user_prompt: 'secret prompt text' };
+    const first = tt.checkpoint({ root, host: 'claude', event: 'UserPromptSubmit', payload, phase: 'received', values: { rawInput: JSON.stringify(payload) } });
+    const second = tt.checkpoint({ root, host: 'claude', event: 'UserPromptSubmit', payload, phase: 'validated', values: { stdout: 'secret output' } });
+    assert.equal(second.parent_id, first.checkpoint_id);
+    const hist = tt.history(root, first.thread_id);
+    assert.equal(hist.length, 2);
+    assert.equal(hist[0].phase, 'validated');
+    assert.equal(Object.hasOwn(hist[0].values, 'stdout'), false);
+    assert.equal(Object.hasOwn(hist[0].values, 'stdout_bytes'), true);
+    assert.equal(JSON.stringify(hist).includes('secret prompt text'), false);
+    const forked = tt.fork(root, first.checkpoint_id, { values: { policy: 'alternate' } });
+    assert.equal(forked.parent_id, first.checkpoint_id);
+    assert.equal(forked.source, 'fork');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+
 test('turn side effects expose shared lifesaver/autocommit interfaces without forcing host protocol', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-turn-effects-'));
   try {
