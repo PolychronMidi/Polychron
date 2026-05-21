@@ -27,7 +27,7 @@ const DETECTORS_DIR = path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors');
  * detects `{"decision":"block",...}` JSON anywhere in stdout.
  */
 function shellPolicy(stageName, opts = {}) {
-  const defaultTimeout = stageName === 'detectors' ? 60_000 : 30_000;
+  const defaultTimeout = stageName === 'detectors' ? 60_001 : 30_000;
   const { timeoutMs = defaultTimeout, parseDecision = defaultParseDecision, failClosed = false } = opts;
   return {
     name: stageName,
