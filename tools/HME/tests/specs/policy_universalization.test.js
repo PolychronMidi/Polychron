@@ -147,6 +147,26 @@ test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => 
 });
 
 
+test('legacy verbose hook UI leak alerts are compacted from request text', () => {
+  const { stripHookUiEchoText } = require('../../proxy/hook_ui_echo_guard');
+  const stats = {};
+  const text = stripHookUiEchoText([
+    'before',
+    '',
+    '[lifesaver inject from proxy]',
+    '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED',
+    'Host-rendered Stop-hook UI reached model-visible context and was stripped before inference. fingerprints=abc,def,+2 count=4 bytes=999. Raw hook text omitted to prevent crying_wolf.',
+    'after',
+  ].join('\n'), stats, { projectRoot: root });
+  assert.match(text, /HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped/);
+  assert.match(text, /before/);
+  assert.match(text, /after/);
+  assert.doesNotMatch(text, /fingerprints=/);
+  assert.doesNotMatch(text, /count=4/);
+  assert.doesNotMatch(text, /bytes=999/);
+});
+
+
 test('Codex exec_command responses pass through shared Bash policy', () => {
   const rewritten = rewriteCodexResponseObject({ output: [{ type: 'function_call', name: 'exec_command', arguments: JSON.stringify({ cmd: pipeShell }) }] });
   const call = rewritten.body.output[0];
