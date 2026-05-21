@@ -336,7 +336,7 @@ def self_protect() -> None:
             installed_post = POST_COMMIT_HOOK_PATH.read_text(encoding="utf-8", errors="replace")
             if installed_post != post_text:
                 failures.append("post-commit self-protection failed: installed hook differs from canonical tools/HME/git-hooks/post-commit")
-            for token in ("proxy-supervisor.sh", "restart"):
+            for token in ("post-commit-proxy-reload-needed", "not restarting synchronously"):
                 if token not in post_text:
                     failures.append(f"post-commit self-protection failed: canonical hook missing token: {token}")
         except OSError as exc:
