@@ -102,6 +102,45 @@ test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSO
   }
 });
 
+test('Claude adapter logs and repairs UserPromptSubmit JSON rejected by host schema', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-userprompt-invalid-shape-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    const raw = JSON.stringify({
+      hookSpecificOutput: { additionalContext: 'lifesaver context' },
+      decision: 'allow',
+      reason: 'diagnostic only',
+    });
+    const out = JSON.parse(validateClaudeStdout('UserPromptSubmit', raw, tmp));
+    assert.deepEqual(out, {
+      hookSpecificOutput: {
+        hookEventName: 'UserPromptSubmit',
+        additionalContext: 'lifesaver context',
+      },
+    });
+    const errors = fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8');
+    assert.match(errors, /hook-output-validation/);
+    assert.match(errors, /UserPromptSubmit root decision="allow" is not valid Claude hook JSON/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
+test('Claude adapter blocks scalar UserPromptSubmit JSON and emits Lifesaver context', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-userprompt-scalar-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    const out = JSON.parse(validateClaudeStdout('UserPromptSubmit', '[]', tmp));
+    assert.equal(out.decision, 'block');
+    assert.equal(out.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.match(out.hookSpecificOutput.additionalContext, /Hook JSON output validation failed/);
+    assert.match(fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8'), /stdout JSON root must be an object/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   const { shouldLogHookStderr } = require('../../event_kernel/claude_adapter');
   const { isBenignHookStderr, claudeRelayFields } = require('../../event_kernel/decision_normalizer');
