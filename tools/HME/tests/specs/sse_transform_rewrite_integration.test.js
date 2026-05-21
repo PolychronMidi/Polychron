@@ -102,7 +102,7 @@ test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wol
       event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop\nafter' } }),
       event('content_block_stop', { type: 'content_block_stop', index: 0 }),
     ].join('');
-    const outText = await runSse(raw, [hookUiEchoStripRewrite]);
+    const outText = await runSse(raw, [hookUiEchoStripRewrite], '', { projectRoot: tmp });
     assert.doesNotMatch(outText, /Ran 1 stop hook/);
     assert.doesNotMatch(outText, /claude_adapter\.js Stop/);
     assert.match(outText, /before/);
