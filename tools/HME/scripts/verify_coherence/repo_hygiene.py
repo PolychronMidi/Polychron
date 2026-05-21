@@ -28,6 +28,7 @@ class CanonicalPrecommitHookVerifier(Verifier):
             return _result(FAIL, 0.0, "repo hygiene precommit assets missing", missing)
         problems = []
         c_text = canonical.read_text(encoding="utf-8", errors="replace")
+        pc_text = post_commit.read_text(encoding="utf-8", errors="replace")
         v_text = validator.read_text(encoding="utf-8", errors="replace")
         p_text = policy.read_text(encoding="utf-8", errors="replace")
         required = [
