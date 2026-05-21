@@ -93,7 +93,13 @@ async function runHostAdapter(opts) {
   if (opts.hostProjectEnv) process.env[opts.hostProjectEnv] = root;
   const port = Number(_hmeRequireEnv('HME_PROXY_PORT'));
   nudgeSupervisors(root);
-  const body = opts.buildBody({ event, root, rawBody: await readStdin(`${opts.host}_adapter`), cwd: process.cwd() });
+  const rawBody = await readStdin(`${opts.host}_adapter`);
+  const body = opts.buildBody({ event, root, rawBody, cwd: process.cwd() });
+  let payload = {};
+  try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
+  const thread_id = timeTravel.threadId({ host: opts.host, event, payload });
+  timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'adapter:received', source: 'input', values: { thread_id, rawBody } });
+  timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'adapter:normalized', values: { thread_id, body } });
   const watch = watchdog.begin(root, event, body, { host: opts.host });
   let result = await postLifecycle(port, event, body, opts.host === 'codex' ? 'codex' : '');
   if (!result) {
