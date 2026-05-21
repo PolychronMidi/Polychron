@@ -191,8 +191,7 @@ test('edit failure middleware appends current context and records read-equivalen
       ctx,
     });
     assert.doesNotMatch(toolResult.content, /File has not been read yet/);
-    assert.match(toolResult.content, /\[AUTO-READ current context src\/target\.js:/);
-    assert.match(toolResult.content, /current context line/);
+    assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
     assert.equal(events[0].event, 'edit_failure_context_appended');
     assert.equal(events[0].read_equivalent, true);
     assert.equal(events[0].replaced_native_error, true);
@@ -237,8 +236,7 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
       ctx,
     });
     assert.doesNotMatch(toolResult.content, /File has been modified since read/);
-    assert.match(toolResult.content, /\[AUTO-READ current context src\/target\.js:/);
-    assert.match(toolResult.content, /current context line/);
+    assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
     assert.equal(events[0].event, 'edit_failure_context_appended');
     assert.equal(events[0].read_equivalent, true);
     assert.equal(events[0].replaced_native_error, true);
