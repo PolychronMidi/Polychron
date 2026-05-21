@@ -13,6 +13,18 @@ async function runShortcut(payload) {
   return middleware.runPipeline(payload, {}, 'shortcut-test');
 }
 
+test('request_shape normalizes Claude messages and Codex Responses input', () => {
+  const shape = require('../../proxy/request_shape');
+  const claude = { messages: [
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu', content: 'tool output' }] },
+    { role: 'user', content: [{ type: 'text', text: 'n' }] },
+  ] };
+  const codex = { input: [{ role: 'user', content: [{ type: 'input_text', text: 'm' }] }] };
+  assert.equal(shape.messageText(shape.lastRealUserMessage(claude)), 'n');
+  assert.equal(shape.messageText(shape.lastRealUserMessage(codex)), 'm');
+});
+
+
 test('shortcuts_rewriter expands bare n string content', async () => {
   const payload = { messages: [{ role: 'user', content: 'n' }] };
   const dirty = await runShortcut(payload);
