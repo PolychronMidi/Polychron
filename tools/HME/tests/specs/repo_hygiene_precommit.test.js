@@ -74,8 +74,9 @@ test('canonical hook and validator parse', () => {
 });
 
 test('canonical precommit verifier passes', () => {
-  const code = `import importlib.util; p='${path.join(PROJECT_ROOT, 'tools/HME/scripts/verify_coherence/repo_hygiene.py')}'; spec=importlib.util.spec_from_file_location('repo_hygiene', p); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); r=m.CanonicalPrecommitHookVerifier().execute(); print(r.status); print(r.summary); raise SystemExit(0 if r.status == 'PASS' else 1)`;
-  const r = run('python3', ['-c', code]);
+  const code = `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); from verify_coherence.repo_hygiene import CanonicalPrecommitHookVerifier; r=CanonicalPrecommitHookVerifier().execute(); print(r.status); print(r.summary); raise SystemExit(0 if r.status == 'PASS' else 1)`;
+  const metricsDir = path.join(PROJECT_ROOT, 'src/output/metrics');
+  const r = run('python3', ['-c', code], { env: { HME_METRICS_DIR: metricsDir, METRICS_DIR: metricsDir, HME_IGNORE_DIRS: 'node_modules,.git,tmp,log', OVERDRIVE_MODE: '0', HME_ARBITER_PORT: '0', HME_PROXY_PORT: '9099' } });
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /PASS/);
 });
