@@ -47,6 +47,23 @@ function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, paylo
   append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(summary));
 }
 
+function recordHookCheckpoint(root, stage, fields = {}) {
+  if (!root || !stage) return;
+  const row = {
+    ts: new Date().toISOString(),
+    stage: String(stage),
+    host: fields.host || '',
+    event: fields.event || '',
+    policy: fields.policy || '',
+    decision: fields.decision || '',
+    exit_code: Number.isInteger(fields.exit_code) ? fields.exit_code : null,
+    stdout_bytes: Number(fields.stdout_bytes || 0),
+    stderr_bytes: Number(fields.stderr_bytes || 0),
+    reason_hash: fields.reason ? reasonHash(String(fields.reason)) : '',
+  };
+  append(path.join(runtimeDir(root), 'hook-checkpoints.jsonl'), JSON.stringify(row));
+}
+
 function recordPolicyRewrite(root, payload = {}, rewrites = []) {
   if (!root || !Array.isArray(rewrites) || rewrites.length === 0) return;
   const row = {
