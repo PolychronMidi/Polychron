@@ -188,15 +188,17 @@ test('synthetic PreToolUse Bash rewrites reader without retired streak state', a
   fs.mkdirSync(path.join(root, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(root, 'doc', 'templates', 'AGENTS.md'), '# agent\n');
   try {
+    process.env.HME_PETULANCE_STATE_PATH = path.join(root, 'tmp', 'petulance-read-rewrite.json');
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
-      session_id: 's3read',
+      session_id: `s3read-${Date.now()}-${Math.random()}`,
       tool_input: { command: 'cat doc/templates/AGENTS.md' },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.match(res.stdout, /updatedInput/);
     assert.match(res.stdout, /codex_structured_tool\.js read --json/);
   } finally {
+    delete process.env.HME_PETULANCE_STATE_PATH;
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
