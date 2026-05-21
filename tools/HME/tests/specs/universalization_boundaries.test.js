@@ -48,7 +48,7 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-adapter-deny-'));
   try {
     const transcript = path.join(tmp, 'transcript.jsonl');
-    const cmd = 'adapter-repeat-command';
+    const cmd = `adapter-repeat-command-${process.pid}-${Date.now()}`;
     const prior = {
       type: 'assistant',
       message: { role: 'assistant', content: [{ type: 'tool_use', id: 'tu_adapter', name: 'Bash', input: { command: cmd } }] },
