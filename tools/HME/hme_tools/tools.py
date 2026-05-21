@@ -51,10 +51,11 @@ def _json(value: dict[str, Any]) -> str:
 
 class AgentTool(HMETool):
     name = "Agent"
-    description = 'Run a subagent. Example: Agent level=3 prompt="Audit parser edge cases." Use level 1-5: 1 tiny, 2 focused, 3 standard, 4 deep, 5 principal.'
+    description = 'Run a subagent. Example: Agent level=3 prompt="Audit parser edge cases." description="Parser audit". Use level 1-5: 1 tiny, 2 focused, 3 standard, 4 deep, 5 principal.'
     inputs = {
         "level": {"type": "integer", "description": "Effort level 1-5."},
         "prompt": {"type": "string", "description": "Focused task for the agent."},
+        "description": {"type": "string", "description": "Short label for the subagent task. Defaults from prompt if omitted.", "nullable": True},
     }
     output_type = "string"
     side_effect = "agent"
@@ -66,8 +67,8 @@ class AgentTool(HMETool):
     host_native = False
     visibility = {"progress_label": "Agent level={level}", "result_summary": "bytes"}
 
-    def forward(self, level: int, prompt: str) -> str:
-        return _run_node_action("agent", {"level": int(level), "prompt": prompt})
+    def forward(self, level: int, prompt: str, description: str | None = None) -> str:
+        return _run_node_action("agent", {"level": int(level), "prompt": prompt, "description": description or prompt.splitlines()[0][:60] or "Subagent task"})
 
 
 class BashTool(HMETool):
