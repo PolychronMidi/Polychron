@@ -46,6 +46,11 @@ const PROXY_GIT_SHA = (() => {
   } catch (_) { return 'unknown'; }
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
+try {
+  const runtimePath = require('path').resolve(__dirname, '..', 'runtime', 'proxy-runtime.json');
+  require('fs').mkdirSync(require('path').dirname(runtimePath), { recursive: true });
+  require('fs').writeFileSync(runtimePath, JSON.stringify({ git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, pid: process.pid }) + '\n');
+} catch (_e) { /* silent-ok: runtime metadata best-effort */ }
 
 const proxyRouteMetrics = createRouteMetrics();
 const PORT = servicePort('proxy');

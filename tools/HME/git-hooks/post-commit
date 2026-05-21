@@ -4,21 +4,20 @@ ROOT="$(git rev-parse --show-toplevel)"
 LOG="$ROOT/log/hme-post-commit-restart.log"
 ERR="$ROOT/log/hme-errors.log"
 STATE="$ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
-PORT="${HME_PROXY_PORT:-9099}"
+RUNTIME="$ROOT/tools/HME/runtime/proxy-runtime.json"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ERR")" "$(dirname "$STATE")"
 HEAD_SHA="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || true)"
 printf '%s\n' "$HEAD_SHA" >"$STATE"
 printf '[post-commit] proxy reload needed for sha %s; not restarting synchronously from git hook\n' "$HEAD_SHA" >>"$LOG"
-HEALTH_JSON="$(curl -sS --max-time 2 "http://127.0.0.1:${PORT}/health" 2>/dev/null || true)"
 LIVE_SHA=""
-RUNTIME_STALE="unknown"
-if [ -n "$HEALTH_JSON" ]; then
-  LIVE_SHA="$(printf '%s' "$HEALTH_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("git_sha") or "")' 2>/dev/null || true)"
-  RUNTIME_STALE="$(printf '%s' "$HEALTH_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(str(bool(d.get("runtime_stale"))).lower())' 2>/dev/null || echo unknown)"
+LIVE_PID=""
+if [ -f "$RUNTIME" ]; then
+  LIVE_SHA="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("git_sha") or "")' "$RUNTIME" 2>/dev/null || true)"
+  LIVE_PID="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("pid") or "")' "$RUNTIME" 2>/dev/null || true)"
 fi
 TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-if [ -z "$HEALTH_JSON" ]; then
-  printf '[%s] [stale_runtime] CRITICAL post-commit could not reach HME proxy health on :%s after commit sha=%s; reload-needed marker written; proxy code may be stale.\n' "$TS" "$PORT" "$HEAD_SHA" >>"$ERR"
-elif [ -n "$HEAD_SHA" ] && [ -n "$LIVE_SHA" ] && [ "$HEAD_SHA" != "$LIVE_SHA" ]; then
-  printf '[%s] [stale_runtime] CRITICAL HME proxy runtime stale after commit: live_sha=%s head_sha=%s runtime_stale=%s; reload-needed marker written; not restarting synchronously to avoid active API ConnectionRefused.\n' "$TS" "$LIVE_SHA" "$HEAD_SHA" "$RUNTIME_STALE" >>"$ERR"
+if [ -z "$LIVE_SHA" ]; then
+  printf '[%s] [stale_runtime] CRITICAL post-commit cannot read proxy runtime metadata after commit sha=%s; reload-needed marker written; proxy code may be stale.\n' "$TS" "$HEAD_SHA" >>"$ERR"
+elif [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "$LIVE_SHA" ]; then
+  printf '[%s] [stale_runtime] CRITICAL HME proxy runtime stale after commit: live_sha=%s head_sha=%s live_pid=%s; reload-needed marker written; not restarting synchronously to avoid active API ConnectionRefused.\n' "$TS" "$LIVE_SHA" "$HEAD_SHA" "$LIVE_PID" >>"$ERR"
 fi
