@@ -82,8 +82,14 @@ _sv_is_maintenance_active() {
 }
 
 _sv_bundle_health_issue() {
-  if ! curl -sf --max-time 3 "$_SV_URL" >/dev/null 2>&1; then
+  local http_code
+  http_code=$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' "$_SV_URL" 2>/dev/null || echo 000)  # silent-ok: optional fallback path.
+  if [ "$http_code" = "000" ]; then
     echo "proxy unreachable at $_SV_URL"
+    return 0
+  fi
+  if [ "$http_code" != "200" ]; then
+    echo "proxy unhealthy at $_SV_URL status=$http_code"
     return 0
   fi
   local child_id child_url
