@@ -225,9 +225,12 @@ test('edit failure middleware treats stale native edit guidance as read-equivale
   delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
   const mw = require('../../proxy/middleware/29_edit_failure_context');
   const sessionState = require('../../proxy/session_state');
+  const staleA = ['File has been modified', 'since read'].join(' ');
+  const staleB = ['Read it again before', 'attempting to write it.'].join(' ');
+  const staleC = ['File content has changed', 'since it was last read.'].join(' ');
   const cases = [
-    'Error: File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.',
-    'Error: File content has changed since it was last read. This commonly happens when a linter or formatter run via Bash rewrites the file. Call Read on this file to refresh, then retry the edit.',
+    `Error: ${staleA}, either by the user or by a linter. ${staleB}`,
+    `Error: ${staleC} This commonly happens when a linter or formatter run via Bash rewrites the file. Call Read on this file to refresh, then retry the edit.`,
   ];
   try {
     for (const [idx, message] of cases.entries()) {
