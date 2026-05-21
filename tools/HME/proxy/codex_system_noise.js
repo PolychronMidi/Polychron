@@ -7,7 +7,7 @@ const { CODEX_SYSTEM_NOISE_RULES, itemText, classifyRemoveBlockText } = require(
 function classifyNoise(item) {
   const text = itemText(item);
   if (text == null) return '';
-  return classifyRemoveBlockText(text, CODEX_WRAPPER_RULES);
+  return classifyRemoveBlockText(text, CODEX_SYSTEM_NOISE_RULES);
 }
 
 function stripCodexSystemNoise(body, stats = {}) {
