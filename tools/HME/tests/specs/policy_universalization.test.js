@@ -147,6 +147,36 @@ test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => 
 });
 
 
+test('host-rendered Stop hook UI echo strips directive-only continuations', () => {
+  const { stripHookUiEchoInValue } = require('../../proxy/hook_ui_echo_guard');
+  const os = require('node:os');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-hook-ui-directive-'));
+  try {
+    const stats = {};
+    const payload = {
+      messages: [{ role: 'user', content: [{ type: 'text', text: [
+        'before',
+        '● Ran 1 stop hook',
+        '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop',
+        '   or repeated failed Reads. Stop answering the gate with a dot/empty command/retry loop. Do the concrete corrective action once: modify the target',
+        '  file/state the hook names, verify it, then stop.',
+        'after',
+      ].join('\n') }] }],
+    };
+    const out = stripHookUiEchoInValue(payload, stats, { projectRoot: tmp });
+    const textOut = out.messages[0].content[0].text;
+    assert.match(textOut, /before/);
+    assert.match(textOut, /after/);
+    assert.doesNotMatch(textOut, /Ran 1 stop hook/);
+    assert.doesNotMatch(textOut, /claude_adapter\.js Stop/);
+    assert.doesNotMatch(textOut, /Stop answering the gate/);
+    assert.match(fs.readFileSync(path.join(tmp, 'tmp/hme-hook-ui-echo-leak.flag'), 'utf8'), /"event":"hook-ui-echo-leak"/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
 test('legacy verbose hook UI leak alerts are compacted from request text', () => {
   const { stripHookUiEchoText } = require('../../proxy/hook_ui_echo_guard');
   const stats = {};
