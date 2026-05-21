@@ -9,6 +9,7 @@ const STOP_ERROR_BLOCK_RE = /(?:^|\n)\s*(?:[⎿│>\-]*\s*)?Stop hook error:\s*[
 const STOP_SECTION_RE = /\n?\s*---\s*\[\d+\/\d+\]\s+[A-Z_ -]+\s*---[\s\S]{0,2500}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t])|$)/g;
 const STOP_POLICY_RE = /\b(?:MULTI-FLAG STOP|EXHAUST PROTOCOL VIOLATION|SPIRALLING_PETULANCE|AUTO-COMPLETENESS CHECK|UNFINISHED TASK-LIST VIOLATION|PLAN-ABANDONMENT DETECTED|STOP-WORK ANTIPATTERN)\b/i;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
+const ERROR_LOG = path.join('log', 'hme-errors.log');
 
 function fingerprint(text) {
   const normalized = String(text || '')
@@ -21,17 +22,24 @@ function fingerprint(text) {
 
 function recordLeak(root, fp, bytes, stats) {
   if (!root || !fp) return;
+  const ts = new Date().toISOString();
+  const row = {
+    ts,
+    event: 'hook-ui-echo-leak',
+    severity: 'CRITICAL',
+    fingerprint: fp,
+    stripped_bytes: bytes,
+  };
   try {
     const file = path.join(root, ECHO_LOG);
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.appendFileSync(file, JSON.stringify({
-      ts: new Date().toISOString(),
-      event: 'hook-ui-echo-leak',
-      severity: 'CRITICAL',
-      fingerprint: fp,
-      stripped_bytes: bytes,
-    }) + '\n');
+    fs.appendFileSync(file, JSON.stringify(row) + '\n');
   } catch (_e) { /* best-effort telemetry */ }
+  try {
+    const err = path.join(root, ERROR_LOG);
+    fs.mkdirSync(path.dirname(err), { recursive: true });
+    fs.appendFileSync(err, `[${ts}] [hook-ui-echo-leak] CRITICAL host-rendered Stop hook UI reached model-visible context; stripped. fingerprint=${fp} bytes=${bytes}  ${JSON.stringify(row)}\n`);
+  } catch (_e) { /* best-effort lifesaver */ }
   stats.categories = stats.categories || {};
   stats.categories['hook-ui-echo-leak'] = (stats.categories['hook-ui-echo-leak'] || 0) + 1;
   stats.leaks = (stats.leaks || 0) + 1;
