@@ -161,6 +161,39 @@ def _command_key(cmd: str) -> str:
     return (cmd or "").replace("\r\n", "\n").strip()
 
 
+def _command_family(cmd: str) -> str:
+    key = _command_key(cmd)
+    if not key:
+        return ""
+    first = key.split("\n", 1)[0].strip()
+    if first.startswith("python3 - <<") or first.startswith("python - <<"):
+        return "python-heredoc"
+    if first.startswith("node - <<"):
+        return "node-heredoc"
+    tokens = first.split()
+    if len(tokens) >= 3 and tokens[0] == "node" and tokens[1] == "--test":
+        return "node-test"
+    if len(tokens) >= 2 and tokens[0] == "node" and tokens[1] == "-c":
+        return "node-syntax-check"
+    if len(tokens) >= 2 and tokens[0] == "python3" and tokens[1] == "-m":
+        return "python-module"
+    return ""
+
+
+def _is_distinct_diagnostic_repeat(current: str, previous: str) -> bool:
+    """Allow same diagnostic family with changed payload.
+
+    Repeating a literal command is often spam. Repeating the same interpreter
+    wrapper with different embedded code/test targets is normal debugging.
+    """
+    cur_key = _command_key(current)
+    prev_key = _command_key(previous)
+    if not cur_key or not prev_key or cur_key == prev_key:
+        return False
+    cur_family = _command_family(cur_key)
+    return bool(cur_family and cur_family == _command_family(prev_key))
+
+
 def _is_bash_tool(name: str) -> bool:
     return name in {"Bash", "functions.exec_command", "exec_command"}
 
