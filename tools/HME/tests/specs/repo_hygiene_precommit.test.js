@@ -75,7 +75,7 @@ test('canonical hook and validator parse', () => {
 
 test('canonical precommit verifier passes', () => {
   const code = `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); from verify_coherence.repo_hygiene import CanonicalPrecommitHookVerifier; r=CanonicalPrecommitHookVerifier().execute(); print(r.status); print(r.summary); raise SystemExit(0 if r.status == 'PASS' else 1)`;
-  const r = run('python3', ['-c', code]);
+  const r = run('python3', ['-c', code], { env: { HME_METRICS_DIR: path.join(PROJECT_ROOT, 'src/output/metrics') } });
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /PASS/);
 });
