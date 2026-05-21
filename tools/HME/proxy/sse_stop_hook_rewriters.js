@@ -116,7 +116,7 @@ function hookUiEchoStripRewrite(eventName, data, ctx) {
     const root = ctx.get('projectRoot') || PROJECT_ROOT;
     const stats = ctx.get('hookUiEchoStats') || {};
     ctx.set('hookUiEchoStats', stats);
-    const stripped = stripHookUiEchoText(state.text, stats, { projectRoot: root });
+    const stripped = stripHookUiEchoText(state.text, stats, { projectRoot: root, source: 'response-sse' });
     if (!stripped.trim()) return null;
     const events = [['content_block_start', state.startData]];
     events.push(['content_block_delta', { type: 'content_block_delta', index: data.index, delta: { type: 'text_delta', text: stripped } }]);

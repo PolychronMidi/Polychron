@@ -77,11 +77,12 @@ function recordLeak(root, fp, bytes, stats, source = 'unknown') {
     fs.appendFileSync(file, JSON.stringify(row) + '\n');
   } catch (_e) { /* best-effort telemetry */ }
   try {
-    if (!stats._cryingWolfLogged) {
+    const shouldAlert = shouldEmitCryingWolf(root, fp, source);
+    if (shouldAlert && !stats._cryingWolfLogged) {
       stats._cryingWolfLogged = true;
       const err = path.join(root, ERROR_LOG);
       fs.mkdirSync(path.dirname(err), { recursive: true });
-      if (shouldEmitCryingWolf(root, fp, source)) fs.appendFileSync(err, `[${ts}] [crying_wolf] CRITICAL non-error hook UI reached model-visible context; stripped raw output. Hooks must do work, not communicate by UI echo. source=${source} raw_omitted=true\n`);
+      fs.appendFileSync(err, `[${ts}] [crying_wolf] CRITICAL non-error hook UI reached model-visible context; stripped raw output. Hooks must do work, not communicate by UI echo. source=${source} raw_omitted=true\n`);
     }
   } catch (_e) { /* best-effort Lifesaver */ }
   stats.categories = stats.categories || {};
