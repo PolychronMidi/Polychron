@@ -106,7 +106,7 @@ function maybeStripNonSseHookUiEcho({ outBuf, projectRoot = PROJECT_ROOT }) {
   }
 }
 
-function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf }) {
+function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf, projectRoot = PROJECT_ROOT }) {
   const willSseTransform = !final
     && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
   if (willSseTransform || !final) {
