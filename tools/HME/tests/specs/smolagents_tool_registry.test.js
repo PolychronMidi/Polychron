@@ -32,6 +32,23 @@ test('smolagents HME registry preserves policy metadata separately from model sc
   assert.equal(byName.Bash.parameters.required.includes('command'), true);
 });
 
+test('universal tool surface projects canonical tools for every host family', () => {
+  assert.deepEqual(toolNames('codex'), ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+  assert.deepEqual(toolSurface('openai'), canonicalToolSchemas());
+  assert.deepEqual(toolSurface('claude'), canonicalToolSchemas());
+  assert.deepEqual(toolSurface('langchain'), canonicalLangChainTools());
+  assert.deepEqual(toolSurface('metadata'), canonicalToolMetadata());
+  const readPlan = bridgePlan('Read', { file: 'README.md' });
+  assert.equal(readPlan.ok, true);
+  assert.equal(readPlan.passthrough_target, 'exec_command');
+  assert.equal(readPlan.bridge_action, 'read');
+  assert.equal(readPlan.requires_approval, false);
+  const editPlan = bridgePlan('Edit', { file_path: 'x', old_string: 'a', new_string: 'b' });
+  assert.equal(editPlan.requires_approval, true);
+  assert.deepEqual(bridgePlan('Read', {}).missing, ['file_path']);
+});
+
+
 test('smolagents registry exports LangChain StructuredTool-compatible descriptors from same source', () => {
   const schemas = canonicalToolSchemas();
   const langchain = canonicalLangChainTools();
