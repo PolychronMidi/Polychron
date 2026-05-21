@@ -45,12 +45,12 @@ function _readCache() {
 }
 
 function _editTargetUnread(input, ctx) {
-  const cache = _readCache();
-  if (!cache) return false;
-  const sessionId = ctx && typeof ctx.get === 'function' ? ctx.get('session_id') : '';
-  if (!sessionId) return false;
   const fp = String((input && (input.file_path || input.path)) || '').trim();
-  if (!fp || !fp.startsWith('/')) return false;
+  if (!fp || !fp.startsWith('/')) return true;
+  const cache = _readCache();
+  if (!cache) return true;
+  const sessionId = ctx && typeof ctx.get === 'function' ? ctx.get('session_id') : '';
+  if (!sessionId) return true;
   return !cache.hasRead(sessionId, fp);
 }
 
