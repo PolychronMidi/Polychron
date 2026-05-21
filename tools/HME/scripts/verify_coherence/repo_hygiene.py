@@ -72,4 +72,4 @@ class CanonicalPrecommitHookVerifier(Verifier):
             return _result(WARN, 0.8, "canonical post-commit hook present but not installed", ["run tools/HME/scripts/install-git-hooks.sh"])
         if problems:
             return _result(FAIL, 0.0, "canonical precommit hook contract drift", problems)
-        return _result(PASS, 1.0, "canonical precommit hook installed and policy-backed")
+        return _result(PASS, 1.0, "canonical pre/post-commit hooks installed; post-commit records reload-needed without hot restart")
