@@ -45,6 +45,21 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   assert.equal(claudeStop.stderr, ' ');
 });
 
+test('Claude adapter repairs invalid PreToolUse stdout into Lifesaver deny', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-pretool-lifesaver-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    const out = JSON.parse(validateClaudeStdout('PreToolUse', JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'missing event' } }), tmp));
+    assert.equal(out.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(out.hookSpecificOutput.permissionDecisionReason, /\[ALERT\] LIFESAVER/);
+    assert.match(out.hookSpecificOutput.permissionDecisionReason, /hookSpecificOutput missing hookEventName/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
 test('Claude adapter PreToolUse deny stays structured stdout without hook-error stderr', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-adapter-deny-'));
   try {
