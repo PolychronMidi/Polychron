@@ -31,19 +31,22 @@ function _save(sessionId, obj) {
   } catch (_e) { /* silent-ok: cache write best-effort */ }
 }
 
-function recordRead(sessionId, filePath) {
+function recordRead(sessionId, filePath, meta = {}) {
   if (!sessionId || !filePath) return;
   const obj = _load(sessionId);
-  obj.files[String(filePath)] = Date.now();
+  obj.files[String(filePath)] = { ts: Date.now(), v: 2, source: meta.source || 'read' };
   _save(sessionId, obj);
 }
 
 function hasRead(sessionId, filePath) {
   if (!sessionId || !filePath) return false;
   const obj = _load(sessionId);
-  const ts = obj.files[String(filePath)];
-  if (!ts) return false;
-  return (Date.now() - Number(ts)) < TTL_MS;
+  const rec = obj.files[String(filePath)];
+  if (!rec || typeof rec !== 'object') return false;
+  if (rec.v !== 2) return false;
+  const ts = Number(rec.ts);
+  if (!Number.isFinite(ts)) return false;
+  return (Date.now() - ts) < TTL_MS;
 }
 
 function clearSession(sessionId) {
