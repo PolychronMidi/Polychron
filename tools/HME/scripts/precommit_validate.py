@@ -329,13 +329,30 @@ def self_protect() -> None:
             if hook_text != canonical_text:
                 failures.append("pre-commit self-protection failed: installed hook differs from canonical tools/HME/git-hooks/pre-commit")
         except OSError:
-            pass
+            pass  # silent-ok: pending review
+    if post_commit.is_file():
+        try:
+            post_text = post_commit.read_text(encoding="utf-8", errors="replace")
+            installed_post = POST_COMMIT_HOOK_PATH.read_text(encoding="utf-8", errors="replace")
+            if installed_post != post_text:
+                failures.append("post-commit self-protection failed: installed hook differs from canonical tools/HME/git-hooks/post-commit")
+            for token in ("proxy-supervisor.sh", "restart"):
+                if token not in post_text:
+                    failures.append(f"post-commit self-protection failed: canonical hook missing token: {token}")
+        except OSError as exc:
+            failures.append(f"post-commit self-protection failed: cannot read installed hook ({exc.__class__.__name__})")
     try:
         mode = HOOK_PATH.stat().st_mode
         if not (mode & stat.S_IXUSR):
             failures.append("pre-commit self-protection failed: hook is not executable")
     except OSError:
-        pass
+        pass  # silent-ok: pending review
+    try:
+        mode = POST_COMMIT_HOOK_PATH.stat().st_mode
+        if not (mode & stat.S_IXUSR):
+            failures.append("post-commit self-protection failed: hook is not executable")
+    except OSError:
+        pass  # silent-ok: pending review
 
 
 def full_env_failfast_check() -> None:
