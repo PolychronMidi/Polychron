@@ -53,10 +53,10 @@ function evaluateReadInput(input = {}, opts = {}) {
   return permission('allow');
 }
 
-function toHookResponse(result) {
+function toHookResponse(result, event = 'PreToolUse') {
   if (!result || result.decision === 'allow' && !result.reason) return '';
-  if (result.decision === 'deny') return JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: result.reason }, systemMessage: result.reason });
-  return JSON.stringify({ hookSpecificOutput: { permissionDecision: 'allow', additionalContext: result.reason }, systemMessage: result.reason });
+  if (result.decision === 'deny') return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: result.reason }, systemMessage: result.reason });
+  return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'allow', additionalContext: result.reason }, systemMessage: result.reason });
 }
 
 module.exports = { evaluateReadInput, toHookResponse };
