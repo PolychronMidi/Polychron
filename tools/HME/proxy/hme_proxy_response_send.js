@@ -159,7 +159,7 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     xform.end(outBuf);
     return;
   }
-  const hookUiStripped = maybeStripNonSseHookUiEcho({ outBuf });
+  const hookUiStripped = maybeStripNonSseHookUiEcho({ outBuf, projectRoot });
   const stripped = maybeStripNonSseBareAck({ payload, outBuf: hookUiStripped || outBuf });
   const rewritten = _maybeRewriteNonSseEdit(stripped || hookUiStripped || outBuf, payload);
   clientRes.end(rewritten);
