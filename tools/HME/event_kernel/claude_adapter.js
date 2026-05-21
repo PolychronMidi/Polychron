@@ -56,7 +56,8 @@ function shouldLogHookStderr(stderr) {
   if (!text) return false;
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.every((line) => /^ok$/i.test(line))) return false;
-  return /\b(error|failed|failure|exception|traceback|invalid|crash|denied|JSON validation failed|Stop hook error)\b/i.test(text);
+  if (/^Stop hook error:/i.test(text)) return false;
+  return /\b(error|failed|failure|exception|traceback|invalid|crash|denied|JSON validation failed)\b/i.test(text);
 }
 
 function _lifesaverBlock(event, message) {
