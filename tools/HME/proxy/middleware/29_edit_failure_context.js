@@ -5,6 +5,7 @@ const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 const { recordFailure } = require('../turn_failure_state');
 const sessionState = require('../session_state');
+const sessionReadCache = require('../session_read_cache');
 const { isEditFamilyTool } = require('../edit_validation');
 const READ_GATE_RE = /read.*before.*writ|not.*read.*yet/i;
 const STALE_READ_RE = /File (?:has been modified since read|content has changed since it was last read)[^\n]*|Call Read on this file[^\n]*/i;
