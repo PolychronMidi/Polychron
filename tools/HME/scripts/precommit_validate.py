@@ -21,6 +21,7 @@ ROOT = Path(os.environ.get("PROJECT_ROOT") or subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"], text=True).strip())
 POLICY = load_policy(ROOT)
 HOOK_PATH = Path(os.environ.get("HOOK_PATH") or ROOT / ".git" / "hooks" / "pre-commit")
+POST_COMMIT_HOOK_PATH = Path(os.environ.get("POST_COMMIT_HOOK_PATH") or ROOT / ".git" / "hooks" / "post-commit")
 ENV_PATH = ROOT / ".env"
 MARKER = POLICY.get("env_secret_marker", "SECRETS ABOVE THIS LINE")
 MAX_BYTES = int(os.environ.get("HME_PRECOMMIT_MAX_BYTES", str(POLICY.get("max_file_bytes", 5 * 1024 * 1024))))
