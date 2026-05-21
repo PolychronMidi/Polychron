@@ -31,10 +31,18 @@ function _save(sessionId, obj) {
   } catch (_e) { /* silent-ok: cache write best-effort */ }
 }
 
+function _fileSig(filePath) {
+  try {
+    const st = fs.statSync(filePath);
+    return { mtimeMs: st.mtimeMs, size: st.size };
+  } catch (_e) { return { mtimeMs: 0, size: -1 }; }
+}
+
 function recordRead(sessionId, filePath, meta = {}) {
   if (!sessionId || !filePath) return;
   const obj = _load(sessionId);
-  obj.files[String(filePath)] = { ts: Date.now(), v: 2, source: meta.source || 'read' };
+  const sig = _fileSig(String(filePath));
+  obj.files[String(filePath)] = { ts: Date.now(), v: 3, source: meta.source || 'read', mtimeMs: sig.mtimeMs, size: sig.size };
   _save(sessionId, obj);
 }
 
@@ -43,10 +51,13 @@ function hasRead(sessionId, filePath) {
   const obj = _load(sessionId);
   const rec = obj.files[String(filePath)];
   if (!rec || typeof rec !== 'object') return false;
-  if (rec.v !== 2) return false;
+  if (rec.v !== 3) return false;
   const ts = Number(rec.ts);
-  if (!Number.isFinite(ts)) return false;
-  return (Date.now() - ts) < TTL_MS;
+  if (!Number.isFinite(ts) || (Date.now() - ts) >= TTL_MS) return false;
+  const sig = _fileSig(String(filePath));
+  if (sig.mtimeMs > 0 && Number(rec.mtimeMs) > 0 && sig.mtimeMs !== Number(rec.mtimeMs)) return false;
+  if (sig.size >= 0 && Number.isFinite(Number(rec.size)) && sig.size !== Number(rec.size)) return false;
+  return true;
 }
 
 function clearSession(sessionId) {
