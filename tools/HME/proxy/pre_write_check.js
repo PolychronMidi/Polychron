@@ -345,9 +345,11 @@ function toHookResponse(decision) {
   if (decision.permissionDecision === 'ask') {
     return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: decision.reason } });
   }
-  if (decision.contextualRules && decision.contextualRules.length) {
-    const out = { hookEventName: 'PreToolUse', permissionDecision: 'allow', additionalContext: decision.contextualRules.join('\n\n') };
+  if (decision.updatedInput && typeof decision.updatedInput === 'object' || decision.contextualRules && decision.contextualRules.length) {
+    const out = { hookEventName: 'PreToolUse', permissionDecision: 'allow' };
+    if (decision.contextualRules && decision.contextualRules.length) out.additionalContext = decision.contextualRules.join('\n\n');
     if (decision.updatedInput && typeof decision.updatedInput === 'object') out.updatedInput = decision.updatedInput;
+    if (decision.updatedToolName) out.updatedToolName = decision.updatedToolName;
     return JSON.stringify({ hookSpecificOutput: out });
   }
   return '';
