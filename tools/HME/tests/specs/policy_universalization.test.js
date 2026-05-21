@@ -91,6 +91,26 @@ test('hook noise stripper removes duplicate hook/status spam', () => {
   assert.equal(stats.stripped, 3);
 });
 
+
+test('hook noise stripper removes Stop hook host echoes from any text role', () => {
+  const { stripHookNoiseInValue } = require('../../proxy/hook_noise_text');
+  const stats = {};
+  const payload = {
+    messages: [{ role: 'user', content: [{ type: 'text', text: [
+      'Stop hook blocking error from command: "node $PROJECT_ROOT/tools/HME/event_kernel/claude_adapter.js Stop": MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.',
+      'Address all of them in this turn.',
+      '',
+      '--- [1/2] EXHAUST ---',
+      'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
+      '',
+      'real user request survives',
+    ].join('\n') }] }],
+  };
+  const out = stripHookNoiseInValue(payload, stats);
+  assert.equal(out.messages[0].content[0].text.trim(), 'real user request survives');
+  assert.ok(stats.categories.stop_hook_host_echo >= 1);
+});
+
 test('Codex exec_command responses pass through shared Bash policy', () => {
   const rewritten = rewriteCodexResponseObject({ output: [{ type: 'function_call', name: 'exec_command', arguments: JSON.stringify({ cmd: pipeShell }) }] });
   const call = rewritten.body.output[0];
