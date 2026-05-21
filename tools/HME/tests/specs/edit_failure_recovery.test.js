@@ -215,7 +215,7 @@ test('edit failure middleware appends current context and records read-equivalen
   }
 });
 
-test('edit failure middleware treats file-modified-since-read as read-equivalent refresh', () => {
+test('edit failure middleware treats stale native edit guidance as read-equivalent refresh', () => {
   const root = sandbox('hme-edit-modified-since-read-mw-');
   const file = path.join(root, 'src', 'target.js');
   fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
@@ -225,36 +225,66 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
   delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
   const mw = require('../../proxy/middleware/29_edit_failure_context');
   const sessionState = require('../../proxy/session_state');
-  const toolResult = { content: 'Error: File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.', is_error: true };
-  const events = [];
-  const ctx = {
-    PROJECT_ROOT: root,
-    appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
-    replaceResult(result, text) { result.content = text; },
-    markDirty() {},
-    warn(message) { throw new Error(message); },
-    emit(row) { events.push(row); },
-  };
+  const cases = [
+    'Error: File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.',
+    'Error: File content has changed since it was last read. This commonly happens when a linter or formatter run via Bash rewrites the file. Call Read on this file to refresh, then retry the edit.',
+  ];
   try {
-    mw.onToolResult({
-      toolUse: { name: 'Edit', input: { file_path: file, old_string: 'stale text', new_string: 'replacement' } },
-      toolResult,
-      session: 'modified-since-read-test',
-      ctx,
-    });
-    assert.doesNotMatch(toolResult.content, /File has been modified since read/);
-    assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
-    assert.equal(events[0].event, 'edit_failure_context_appended');
-    assert.equal(events[0].read_equivalent, true);
-    assert.equal(events[0].replaced_native_error, true);
-    const read = sessionState.readState('modified-since-read-test').files_read.at(-1);
-    assert.equal(read.file, file);
-    assert.equal(read.source, 'edit_failure_auto_context');
-    assert.equal(read.reason, '');
+    for (const [idx, message] of cases.entries()) {
+      const toolResult = { content: message, is_error: true };
+      const events = [];
+      const ctx = {
+        PROJECT_ROOT: root,
+        appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+        replaceResult(result, text) { result.content = text; },
+        markDirty() {},
+        warn(err) { throw new Error(err); },
+        emit(row) { events.push(row); },
+      };
+      mw.onToolResult({
+        toolUse: { name: 'Edit', input: { file_path: file, old_string: 'stale text', new_string: 'replacement' } },
+        toolResult,
+        session: `modified-since-read-test-${idx}`,
+        ctx,
+      });
+      assert.doesNotMatch(toolResult.content, /File (has been modified since read|content has changed since it was last read)|Call Read on this file|retry the edit/);
+      assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
+      assert.equal(events[0].event, 'edit_failure_context_appended');
+      assert.equal(events[0].read_equivalent, true);
+      assert.equal(events[0].replaced_native_error, true);
+      const read = sessionState.readState(`modified-since-read-test-${idx}`).files_read.at(-1);
+      assert.equal(read.file, file);
+      assert.equal(read.source, 'edit_failure_auto_context');
+      assert.equal(read.reason, '');
+    }
   } finally {
     if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
     delete require.cache[require.resolve('../../proxy/session_state')];
     delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+
+test('request cleanup replaces stale native edit guidance before model sees it', () => {
+  const root = sandbox('hme-edit-stale-request-cleanup-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'fresh file body\n');
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const payload = { messages: [
+    { role: 'assistant', content: [{ type: 'tool_use', id: 'u1', name: 'Update', input: { file_path: file } }] },
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'u1', is_error: true, content: 'Error: File content has changed since it was last read. Call Read on this file to refresh, then retry the edit.' }] },
+  ] };
+  let dirty = false;
+  const events = [];
+  try {
+    mw.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty() { dirty = true; }, emit(row) { events.push(row); } } });
+    const block = payload.messages[1].content[0];
+    assert.equal(block.is_error, false);
+    assert.equal(block.content, 'fresh file body\n');
+    assert.equal(dirty, true);
+    assert.equal(events[0].event, 'edit_failure_raw_result_replaced');
+  } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
