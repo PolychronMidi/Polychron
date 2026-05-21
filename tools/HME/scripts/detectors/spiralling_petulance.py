@@ -296,6 +296,8 @@ def _repeat_level(cmd: str, transcript_path: str, now: float | None = None) -> i
             prior_same = 0
             continue
         for prior_cmd in _event_bash_commands(event):
+            if _is_distinct_diagnostic_repeat(key, prior_cmd):
+                continue
             if _command_key(prior_cmd) == key and _recent_enough(_event_ts(event), now):
                 prior_same += 1
     return min(prior_same, 3)
