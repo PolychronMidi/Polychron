@@ -212,6 +212,23 @@ function createContextBudget() {
   }
 
   function estimatedContextTokens(bytes) { return Math.ceil(bytes / contextBytesPerTokenEst); }
+
+  function statuslineInputTokens() {
+    try {
+      const file = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'claude-statusline-raw.json');
+      const stat = fs.statSync(file);
+      if ((Date.now() - stat.mtimeMs) > 5 * 60 * 1000) return 0;
+      const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const ctx = data && data.context_window || {};
+      const total = positiveNumber(ctx.total_input_tokens);
+      if (total) return total;
+      const usage = ctx.current_usage || {};
+      return positiveNumber(usage.input_tokens)
+        + positiveNumber(usage.cache_read_input_tokens)
+        + positiveNumber(usage.cache_creation_input_tokens);
+    } catch (_e) { return 0; }
+  }
+
   function omniContextThresholdBytes(swapModel) {
     const budget = resolveModelCtx(String(swapModel || ''));
     const startTokens = Math.floor(budget * compactStartFraction);
