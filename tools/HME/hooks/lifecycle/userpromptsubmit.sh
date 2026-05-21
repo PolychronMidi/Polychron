@@ -59,8 +59,8 @@ Fix the root cause. Do not silence the alert -- the flag clears automatically
 on the next successful proxy autocommit."
   echo "" >&2
   echo "$_AC_BANNER" >&2
-  jq -n --arg banner "$_AC_BANNER" --arg reason "LIFESAVER: autocommit failed; see $_AC_FAIL_FLAG." \
-    '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner},decision:"allow",reason:$reason}'
+  jq -n --arg banner "$_AC_BANNER" \
+    '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
 fi
 
 # Reset the psychopathic-polling counter at turn start -- the counter
