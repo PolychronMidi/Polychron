@@ -111,14 +111,18 @@ async function runHostAdapter(opts) {
     if (maintenanceActive(root)) {
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [${opts.host}-adapter] proxy unreachable during maintenance (event=${event})`);
       result = { stdout: '', stderr: opts.maintenanceStderr || '', exit_code: 0 };
+      timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'transport:maintenance', values: { thread_id, exit_code: result.exit_code } });
     } else {
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [${opts.host}-adapter] ${event} direct fallback (proxy down)`);
+      timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'transport:direct-fallback', values: { thread_id } });
       result = await dispatchEvent(event, body);
       if (opts.onDirectFallback) result = opts.onDirectFallback({ result, root, port, event, body, ts }) || result;
     }
   } else if (opts.onProxyResult) {
+    timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'transport:proxy', values: { thread_id, stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code } });
     opts.onProxyResult({ result, root, port, event, body, ts });
   }
+  timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'kernel:result', values: { thread_id, stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code } });
   watchdog.end(watch, result);
   if (opts.beforeFinalRelay) result = opts.beforeFinalRelay({ event, result, body, root }) || result;
   opts.finalRelay(event, result, body);
