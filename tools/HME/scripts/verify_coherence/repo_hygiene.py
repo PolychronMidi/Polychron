@@ -45,7 +45,7 @@ class CanonicalPrecommitHookVerifier(Verifier):
         for token in ["blocked_paths", "local_path_markers", "canonical_precommit", "canonical_post_commit"]:
             if token not in p_text:
                 problems.append(f"policy missing token: {token}")
-        for token in ["post-commit-proxy-reload-needed", "not restarting synchronously"]:
+        for token in ["post-commit-proxy-reload-needed", "not restarting synchronously", "hme-errors.log", "stale_runtime"]:
             if token not in pc_text:
                 problems.append(f"canonical post-commit hook missing token: {token}")
         if "proxy-supervisor.sh" in pc_text:
