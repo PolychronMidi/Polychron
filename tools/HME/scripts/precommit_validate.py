@@ -345,12 +345,17 @@ def full_env_failfast_check() -> None:
 
 
 def full_python_compile_check() -> None:
-    raw = git_bytes("ls-files", "*.py", check=False).decode("utf-8", "replace").splitlines()
-    for path in raw:
-        if skip_syntax(path, POLICY):
+    raw = git_bytes("ls-files", "-s", "-z", "--", "*.py", check=False)
+    for entry in raw.split(b"\0"):
+        if not entry:
             continue
-        blob = git_bytes("show", f"HEAD:{path}", check=False)
-        if not blob:
+        line = entry.decode("utf-8", "surrogateescape")
+        meta, path = line.split("\t", 1)
+        mode = meta.split(" ", 1)[0]
+        if mode not in {"100644", "100755"} or skip_syntax(path, POLICY):
+            continue
+        blob = staged_blob(path)
+        if blob is None:
             continue
         with tempfile.NamedTemporaryFile("wb", suffix=".py", delete=False) as tmp:
             tmp.write(blob)
@@ -371,6 +376,7 @@ def main() -> int:
     load_env_secrets()
     self_protect()
     full_env_failfast_check()
+    full_python_compile_check()
     declared_env_keys = env_template_keys()
     for path in staged_paths():
         reason = blocked_path_reason(path, POLICY)
