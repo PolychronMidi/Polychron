@@ -92,9 +92,12 @@ def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
         ch = str(row.get("hash") or "")
         prior_cmd = str(row.get("cmd") or "")
         recent.append({"hash": ch, "ts": ts, "cmd": prior_cmd})
+        family = _command_family(key)
         if ch == h:
             prior_same += 1
         elif _is_distinct_diagnostic_repeat(key, prior_cmd):
+            if family:
+                family_seen[family] = prior_cmd
             continue
     recent.append({"hash": h, "ts": now, "cmd": key})
     state["attempts"] = recent[-_MAX_STATE_ATTEMPTS:]
