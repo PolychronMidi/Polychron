@@ -325,9 +325,9 @@ async function runStopChain(stdinJson) {
 
   let stdout = '';
   if (firstDeny) {
-    stdout = JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: firstDeny.reason } });
+    stdout = JSON.stringify({ decision: 'block', reason: firstDeny.reason });
   } else if (instructs.length) {
-    stdout = JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: instructs.join('\n\n') } });
+    stdout = JSON.stringify({ systemMessage: instructs.join('\n\n') });
   }
 
   return { stdout, stderr: combinedStderr, exit_code: 0 };
