@@ -3,9 +3,9 @@
 // Canonical Claude-style tool surface for Codex requests.
 // Source of truth is the smolagents HMETool registry under tools/HME/hme_tools.
 
-const { canonicalToolSchemas } = require('./hme_tool_registry');
+const { toolSurface } = require('./universal_tool_surface');
 
-function uniformToolList() { return canonicalToolSchemas(); }
+function uniformToolList() { return toolSurface('codex'); }
 
 const UNIFORM_NAMES = new Set(uniformToolList().map((t) => t.name));
 const TOOLS = uniformToolList();
