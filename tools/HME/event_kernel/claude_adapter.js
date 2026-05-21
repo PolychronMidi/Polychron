@@ -138,6 +138,7 @@ function validateClaudeStdout(event, stdout, root) {
   if (normalized.issues.length) {
     const message = `Hook JSON output validation failed for Claude ${event}: ${normalized.issues.join('; ')}`;
     logHookError(root, event, message, 'hook-output-validation');
+    if (event === 'PreToolUse' || event === 'PermissionRequest') return _lifesaverBlock(event, message);
     return JSON.stringify(normalized.parsed);
   }
   return stdout;
