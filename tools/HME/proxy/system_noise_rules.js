@@ -5,7 +5,7 @@ const RE_CONTEXT_FULL = /^<system-reminder>\nAs you answer the user's questions,
 const RE_CONTEXT_TAIL = /\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n(?=<\/system-reminder>\s*$)/;
 const RE_STOP_HOOK_PROXY = /^<system-reminder>\nHME Stop Hook Feedback \(proxy-injected\)\n[\s\S]*?\n<\/system-reminder>\s*$/;
 const RE_STOP_HOOK = /^Stop hook feedback:\n\[(?:node )?[^\]]+event_kernel\/claude_adapter\.js Stop\]: [\s\S]*$/;
-const RE_STOP_HOOK_KEEP = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE/;
+const RE_STOP_HOOK_KEEP = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE|PRETOOL_SCHEMA_FIX/;
 const RE_AGENT_FEEDBACK = /^<system-reminder kind="[^"]+" source="[^"]+">\n[\s\S]*?\n<\/system-reminder>\s*$/;
 const RE_LIFESAVER_BANNER = /\[lifesaver inject from proxy\]\n[\s\S]*$/;
 
