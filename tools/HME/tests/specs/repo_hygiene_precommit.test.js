@@ -60,6 +60,8 @@ test('canonical post-commit hook records reload need without synchronous proxy r
   const hook = fs.readFileSync(canonicalPostCommitHook, 'utf8');
   assert.match(hook, /post-commit-proxy-reload-needed/);
   assert.match(hook, /not restarting synchronously/);
+  assert.match(hook, /hme-errors\.log/);
+  assert.match(hook, /stale_runtime/);
   assert.doesNotMatch(hook, /proxy-supervisor\.sh/);
   assert.ok(fs.statSync(canonicalPostCommitHook).mode & 0o100, 'canonical post-commit hook must be executable');
 });
