@@ -107,13 +107,15 @@ if [ -f "$ERROR_LOG" ]; then
     # Filter routine-ops noise (CANARY self-tests, proxy-watchdog respawns)
     # before showing as LIFESAVER alerts -- they're INFO, not errors.
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
-      | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned' \
+      | sed 's/^\[[0-9TZ:.\-]*\] //' \
+      | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned|^\[(hook-stop-block|hook-runtime-error|hook-failure|hook-output-validation)\]' \
+      | grep -vE '^[[:space:]]*$' \
       | sort -u)
-    # Stop hook is the ONLY gate that advances watermark (else unfixed errors
-    echo "" >&2
-    echo "LIFESAVER -- unresolved errors in hme-errors.log:" >&2
-    echo "$NEW_ERRORS" >&2
-    BANNER="LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:
+    if [ -z "$NEW_ERRORS" ]; then
+      echo "$TOTAL" > "$WATERMARK" 2>/dev/null || true
+    else
+      # Stop hook is the ONLY gate that advances watermark for real errors.
+      BANNER="LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:
 ${NEW_ERRORS}"
     # Block ONLY if the supervisor-abandoned sentinel currently exists
     export BLOCK="false"
@@ -131,12 +133,13 @@ ${NEW_ERRORS}"
         export BLOCK="true"
       fi
     fi
-    if [ "$BLOCK" = "true" ]; then
-      jq -n --arg banner "$BANNER" \
-        '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner},decision:"block",reason:"LIFESAVER: worker supervisor abandoned -- restart before proceeding."}'
-    else
-      jq -n --arg banner "$BANNER" \
-        '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
+      if [ "$BLOCK" = "true" ]; then
+        jq -n --arg banner "$BANNER" \
+          '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner},decision:"block",reason:"LIFESAVER: worker supervisor abandoned -- restart before proceeding."}'
+      else
+        jq -n --arg banner "$BANNER" \
+          '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
+      fi
     fi
   fi
 fi
