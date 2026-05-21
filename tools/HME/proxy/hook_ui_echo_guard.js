@@ -14,6 +14,8 @@ const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?node\s+\S*tools\/HME\
 const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?Stop hook error:/i;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
 const ERROR_LOG = path.join('log', 'hme-errors.log');
+const SEEN_FILE = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-seen.json');
+const CRYING_WOLF_ALERT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const STRIPPED_MARKER_RE = /(?:^|\n)\s*\[HME stripped host Stop-hook UI echo: hook-ui-echo-leak fp=[0-9a-f]+\]\s*(?:(?:\n\s*(?:SPIRALLING_PETULANCE|EXHAUST PROTOCOL VIOLATION|MULTI-FLAG STOP|Address all of them|enumerated item|nothing left|silence is the correct response)[^\n]*){0,8})/gi;
 const VERBOSE_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED\s*\nHost-rendered Stop-hook UI reached model-visible context and was stripped before inference\.[^\n]*fingerprints=[^\n]*Raw hook text omitted[^\n]*(?=\n|$)/gi;
 const COMPACT_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics\.\s*(?=\n|$)/gi;
@@ -27,7 +29,36 @@ function fingerprint(text) {
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 12);
 }
 
-function recordLeak(root, fp, bytes, stats) {
+function shouldEmitCryingWolf(root, fp, source) {
+  if (!root || !fp) return true;
+  const file = path.join(root, SEEN_FILE);
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+  let db = {};
+  try { db = JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch (_e) { db = {}; }
+  if (!db || typeof db !== 'object' || Array.isArray(db)) db = {};
+  const key = `${source || 'unknown'}:${fp}`;
+  const rec = db[key] && typeof db[key] === 'object' ? db[key] : null;
+  const lastAlert = rec && Number.isFinite(Number(rec.last_alert_ms)) ? Number(rec.last_alert_ms) : 0;
+  const emit = !rec || (now - lastAlert) >= CRYING_WOLF_ALERT_INTERVAL_MS;
+  db[key] = {
+    source: source || 'unknown',
+    fingerprint: fp,
+    first_seen: rec && rec.first_seen ? rec.first_seen : nowIso,
+    last_seen: nowIso,
+    count: (rec && Number.isFinite(Number(rec.count)) ? Number(rec.count) : 0) + 1,
+    last_alert_ms: emit ? now : lastAlert,
+    last_alert: emit ? nowIso : (rec && rec.last_alert ? rec.last_alert : null),
+  };
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(db, null, 2) + '\n');
+  } catch (_e) { /* best-effort dedupe */ }
+  return emit;
+}
+
+function recordLeak(root, fp, bytes, stats, source = 'unknown') {
   if (!root || !fp) return;
   stats._hookUiEchoSeen = stats._hookUiEchoSeen || new Set();
   if (stats._hookUiEchoSeen.has(fp)) return;
@@ -50,7 +81,7 @@ function recordLeak(root, fp, bytes, stats) {
       stats._cryingWolfLogged = true;
       const err = path.join(root, ERROR_LOG);
       fs.mkdirSync(path.dirname(err), { recursive: true });
-      fs.appendFileSync(err, `[${ts}] [crying_wolf] CRITICAL non-error hook UI reached model-visible context; stripped raw output. Hooks must do work, not communicate by UI echo. raw_omitted=true\n`);
+      if (shouldEmitCryingWolf(root, fp, source)) fs.appendFileSync(err, `[${ts}] [crying_wolf] CRITICAL non-error hook UI reached model-visible context; stripped raw output. Hooks must do work, not communicate by UI echo. source=${source} raw_omitted=true\n`);
     }
   } catch (_e) { /* best-effort Lifesaver */ }
   stats.categories = stats.categories || {};
@@ -63,13 +94,14 @@ function stripHookUiEchoText(text, stats = {}, opts = {}) {
   out = out.replace(VERBOSE_HOOK_UI_ALERT_RE, '');
   out = out.replace(COMPACT_HOOK_UI_ALERT_RE, '');
   const root = opts.projectRoot || opts.root || '';
+  const source = opts.source || 'unknown';
   const seen = new Set();
   function removeBlock(block, force = false) {
     if (!force && !STOP_POLICY_RE.test(block) && !STOP_DIRECTIVE_RE.test(block) && !/Stop hook error:/i.test(block)) return block;
     const fp = fingerprint(block);
     if (!seen.has(fp)) {
       seen.add(fp);
-      recordLeak(root, fp, Buffer.byteLength(block), stats);
+      recordLeak(root, fp, Buffer.byteLength(block), stats, source);
     }
     stats.stripped = (stats.stripped || 0) + 1;
     stats.removed_bytes = (stats.removed_bytes || 0) + Buffer.byteLength(block);
