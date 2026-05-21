@@ -36,6 +36,12 @@ function fakeClientRes() {
   };
 }
 
+test('detectors shell policy has expanded timeout budget', () => {
+  assert.equal(shellPolicy('detectors').timeoutMs, 60000);
+  assert.equal(shellPolicy('post_hooks').timeoutMs, 30000);
+});
+
+
 test('env loader fails fast on missing templated keys and invalid typed reads', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-env-contract-'));
   const prev = process.env.HME_ENV_FAILFAST_TEMPLATE;
