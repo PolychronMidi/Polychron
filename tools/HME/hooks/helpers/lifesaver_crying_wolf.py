@@ -24,6 +24,10 @@ RECOVERED_UPSTREAM_RES = (
     re.compile(r"\bUPSTREAM_400_INTERACTIVE\b.*thinkingLevel: Extra inputs are not permitted", re.I),
     re.compile(r"\bUPSTREAM_400_INTERACTIVE\b.*adaptive thinking is not supported", re.I),
 )
+RECOVERED_AUTOCOMMIT_RES = (
+    re.compile(r"^\[autocommit(?::proxy)?\]\s+.*git commit failed twice:", re.I),
+    re.compile(r"^\[hook-output-validation\]\s+JSON validation failed for Claude PreToolUse hook stdout:", re.I),
+)
 
 
 def _int_file(path: Path) -> int:
@@ -68,6 +72,8 @@ def _kind(line: str) -> str:
         return "self_observation"
     if any(rx.search(norm) for rx in RECOVERED_UPSTREAM_RES):
         return "recovered_upstream"
+    if any(rx.search(norm) for rx in RECOVERED_AUTOCOMMIT_RES):
+        return "recovered_autocommit"
     return "unknown"
 
 
@@ -75,7 +81,9 @@ def _allowed(kind: str, mode: str) -> bool:
     base = {"blank", "canary", "self_observation"}
     if kind in base:
         return True
-    return mode in {"known-recovered", "proxy-restart-success"} and kind == "recovered_upstream"
+    if mode in {"known-recovered", "proxy-restart-success"} and kind == "recovered_upstream":
+        return True
+    return mode in {"known-recovered", "autocommit-success"} and kind == "recovered_autocommit"
 
 
 def _state(root: Path) -> dict:
@@ -124,7 +132,7 @@ def reconcile(root: Path, mode: str, reason: str, dry_run: bool = False) -> dict
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--project-root", default=os.environ.get("PROJECT_ROOT") or os.getcwd())
-    ap.add_argument("--mode", choices=("self-only", "known-recovered", "proxy-restart-success"), default="self-only")
+    ap.add_argument("--mode", choices=("self-only", "known-recovered", "proxy-restart-success", "autocommit-success"), default="self-only")
     ap.add_argument("--reason", default="manual")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--quiet", action="store_true")
