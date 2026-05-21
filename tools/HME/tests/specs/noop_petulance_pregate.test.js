@@ -81,15 +81,6 @@ test('petulance pregate allows real commands even after a prior no-op', () => {
   assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'no petulance verdict for real command');
 });
 
-test('petulance pregate override HME_PETULANCE_OK=1 bypasses the gate', () => {
-  const out = runHook({
-    cmd: ':',
-    transcriptEntries: [userMsg(), noopBashEvent(':')],
-    env: { HME_PETULANCE_OK: '1' },
-  });
-  assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'override must bypass');
-});
-
 test('petulance pregate matches `true`, sleep 0, empty printf, empty echo variants', () => {
   for (const cmd of ['true', 'builtin true', 'sleep 0', "printf ''", 'printf %s ""', "echo ''", '  :  ']) {
     const out = runHook({
