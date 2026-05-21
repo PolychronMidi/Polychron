@@ -67,6 +67,9 @@ function touchLifesaverHeartbeat(root) {
 module.exports = {
   AUTOCOMMIT_FAIL_REL,
   LIFESAVER_HEARTBEAT_REL,
+  LIFESAVER_INJECT_LOG_REL,
   readAutocommitFailure,
   touchLifesaverHeartbeat,
+  recordLifesaverInjection,
+  assertRealLifesaverInjection,
 };
