@@ -52,7 +52,7 @@ test('Codex hook decision compact logs hash/channels without raw reason text', (
   const { sanitizeStdout, recordHookDecision } = require('../../event_kernel/codex_adapter');
   const reason = 'BLOCKED: secret reason payload';
   const raw = JSON.stringify({
-    hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: reason },
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason },
     systemMessage: reason,
   });
   const clean = sanitizeStdout('PreToolUse', raw);
