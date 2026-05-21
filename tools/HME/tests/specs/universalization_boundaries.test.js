@@ -34,6 +34,7 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   assert.equal(claude.exit_code, 0);
   assert.equal(claude.stderr, ' ');
   assert.deepEqual(JSON.parse(claude.stdout).hookSpecificOutput, {
+    hookEventName: 'PreToolUse',
     permissionDecision: 'deny',
     permissionDecisionReason: reason,
   });
