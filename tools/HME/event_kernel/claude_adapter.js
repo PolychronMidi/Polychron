@@ -58,17 +58,79 @@ function shouldLogHookStderr(stderr) {
   return /\b(error|failed|failure|exception|traceback|invalid|crash|denied|JSON validation failed|Stop hook error)\b/i.test(text);
 }
 
+function _lifesaverBlock(event, message) {
+  const alert = `[ALERT] LIFESAVER: ${message}`;
+  const out = { decision: 'block', reason: alert };
+  if (event === 'UserPromptSubmit') {
+    out.hookSpecificOutput = { hookEventName: event, additionalContext: alert };
+  }
+  return JSON.stringify(out);
+}
+
+function _normalizeClaudeStdoutObject(event, parsed) {
+  const issues = [];
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { parsed: null, issues: ['stdout JSON root must be an object'] };
+  }
+  const out = { ...parsed };
+  if (out.hookSpecificOutput && typeof out.hookSpecificOutput === 'object' && !Array.isArray(out.hookSpecificOutput)) {
+    out.hookSpecificOutput = { ...out.hookSpecificOutput };
+    if (!out.hookSpecificOutput.hookEventName) {
+      out.hookSpecificOutput.hookEventName = event;
+      issues.push(`hookSpecificOutput missing hookEventName for ${event}; filled before host relay`);
+    } else if (out.hookSpecificOutput.hookEventName !== event) {
+      issues.push(`hookSpecificOutput hookEventName=${JSON.stringify(out.hookSpecificOutput.hookEventName)} did not match ${event}; corrected before host relay`);
+      out.hookSpecificOutput.hookEventName = event;
+    }
+  }
+
+  if (event === 'UserPromptSubmit') {
+    if (out.decision === 'allow') {
+      delete out.decision;
+      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
+      issues.push('UserPromptSubmit root decision="allow" is not valid Claude hook JSON; stripped allow diagnostic fields');
+    } else if (out.decision && out.decision !== 'block') {
+      issues.push(`UserPromptSubmit root decision=${JSON.stringify(out.decision)} is not valid Claude hook JSON; stripped decision fields`);
+      delete out.decision;
+      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
+    } else if (!out.decision && Object.prototype.hasOwnProperty.call(out, 'reason')) {
+      issues.push('UserPromptSubmit root reason without decision="block" is not valid Claude hook JSON; stripped reason');
+      delete out.reason;
+    }
+    const hso = out.hookSpecificOutput;
+    if (hso && typeof hso === 'object' && !Array.isArray(hso) && hso.permissionDecision) {
+      if (hso.permissionDecisionReason && !hso.additionalContext) hso.additionalContext = hso.permissionDecisionReason;
+      delete hso.permissionDecision;
+      delete hso.permissionDecisionReason;
+      issues.push('UserPromptSubmit hookSpecificOutput contained PreToolUse permissionDecision fields; stripped before host relay');
+    }
+  }
+  return { parsed: out, issues };
+}
+
 function validateClaudeStdout(event, stdout, root) {
   const text = String(stdout || '').trim();
   if (!text) return stdout || '';
+  let parsed;
   try {
-    JSON.parse(text);
-    return stdout;
+    parsed = JSON.parse(text);
   } catch (err) {
     const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
     logHookError(root, event, message, 'hook-output-validation');
-    return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
+    return _lifesaverBlock(event, message);
   }
+  const normalized = _normalizeClaudeStdoutObject(event, parsed);
+  if (!normalized.parsed) {
+    const message = `Hook JSON output validation failed for Claude ${event}: ${normalized.issues.join('; ')}`;
+    logHookError(root, event, message, 'hook-output-validation');
+    return _lifesaverBlock(event, message);
+  }
+  if (normalized.issues.length) {
+    const message = `Hook JSON output validation failed for Claude ${event}: ${normalized.issues.join('; ')}`;
+    logHookError(root, event, message, 'hook-output-validation');
+    return JSON.stringify(normalized.parsed);
+  }
+  return stdout;
 }
 
 function finalRelay(event, result, body = '{}') {
