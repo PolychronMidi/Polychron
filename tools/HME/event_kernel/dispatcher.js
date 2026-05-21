@@ -341,7 +341,7 @@ async function dispatchEvent(eventName, stdinJson) {
       if (isWriteFamilyTool(tool)) {
         const decision = await preWriteCheck(empty);
         const stdout = toHookResponse(decision);
-        if (decision.permissionDecision !== 'allow') return { stdout, stderr: ' ', exit_code: 0 };
+        if (stdout || decision.permissionDecision !== 'allow') return { stdout, stderr: ' ', exit_code: 0 };
       }
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
