@@ -89,10 +89,13 @@ def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
         if ts <= last_edit or now - ts > _REPEAT_WINDOW_SEC:
             continue
         ch = str(row.get("hash") or "")
-        recent.append({"hash": ch, "ts": ts})
+        prior_cmd = str(row.get("cmd") or "")
+        recent.append({"hash": ch, "ts": ts, "cmd": prior_cmd})
         if ch == h:
             prior_same += 1
-    recent.append({"hash": h, "ts": now})
+        elif _is_distinct_diagnostic_repeat(key, prior_cmd):
+            continue
+    recent.append({"hash": h, "ts": now, "cmd": key})
     state["attempts"] = recent[-_MAX_STATE_ATTEMPTS:]
     state["last_edit_ts"] = last_edit
     _save_state(state)
