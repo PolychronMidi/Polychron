@@ -33,6 +33,7 @@ fi
 
 CTX_FILE="$PROJECT/tools/HME/runtime/claude-context.json"
 LOG="${HME_METRICS_DIR}/compact-log.jsonl"
+mkdir -p "${HME_METRICS_DIR}" 2>/dev/null
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: same rationale as precompact.sh -- corrupted statusline JSON
