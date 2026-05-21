@@ -215,6 +215,34 @@ test('request telemetry emits prompt-free normalized request metadata', () => {
   assert.equal(JSON.stringify(row).includes('secret prompt'), false);
 });
 
+test('universal lifecycle graph records redacted checkpoints and forks', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-universal-lifecycle-'));
+  try {
+    process.env.PROJECT_ROOT = root;
+    process.env.HME_RUNTIME_DIR = path.join(root, 'tools', 'HME', 'runtime');
+    fs.mkdirSync(process.env.HME_RUNTIME_DIR, { recursive: true });
+    const graphPath = require.resolve('../../event_kernel/lifecycle_graph');
+    const ttPath = require.resolve('../../event_kernel/lifecycle_time_travel');
+    delete require.cache[graphPath];
+    delete require.cache[ttPath];
+    const { createLifecycleGraph } = require('../../event_kernel/lifecycle_graph');
+    const tt = require('../../event_kernel/lifecycle_time_travel');
+    const payload = { session_id: 's2', turn_id: 't2', user_prompt: 'private text' };
+    const graph = createLifecycleGraph({ root, host: 'codex', event: 'UserPromptSubmit', body: JSON.stringify(payload), payload });
+    graph.checkpoint('adapter:received', { rawBody: JSON.stringify(payload) }, 'input');
+    graph.recordTransport('proxy', { stdout: 'private stdout', stderr: '', exit_code: 0 });
+    const hist = tt.history(root, graph.thread_id);
+    assert.equal(hist.length, 2);
+    assert.equal(hist[0].phase, 'transport:proxy');
+    assert.equal(hist[1].phase, 'adapter:received');
+    assert.equal(JSON.stringify(hist).includes('private text'), false);
+    assert.equal(JSON.stringify(hist).includes('private stdout'), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+
 test('hook lifecycle time-travel ledger records redacted checkpoints and forks', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-hook-time-travel-'));
   try {
