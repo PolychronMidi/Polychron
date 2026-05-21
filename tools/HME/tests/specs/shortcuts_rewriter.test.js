@@ -55,6 +55,13 @@ test('shortcuts_rewriter expands shortcut on last real user message before tool 
 });
 
 
+test('shortcuts_rewriter expands Codex input_text shortcuts through shared request shape', () => {
+  const payload = { input: [{ role: 'user', content: [{ type: 'input_text', text: 'm' }] }] };
+  assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
+  assert.equal(payload.input[0].content[0].text, "what's missing?");
+});
+
+
 test('shortcuts_rewriter expands last non-reminder text block', async () => {
   const payload = {
     messages: [{
