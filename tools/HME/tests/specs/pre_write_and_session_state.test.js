@@ -244,12 +244,21 @@ test('hook failures mirror into hme-errors for Lifesaver pickup', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('synthetic Stop chain policy returns decision shape', async () => {
+test('synthetic Stop chain policy returns valid Claude Stop schema', async () => {
   const root = _withSandbox('hme-hook-stop-');
-  const res = await dispatch(root, 'Stop', { session_id: 's5' });
-  assert.strictEqual(res.exit_code, 0);
-  assert.strictEqual(typeof res.stdout, 'string');
-  fs.rmSync(root, { recursive: true, force: true });
+  try {
+    const res = await dispatch(root, 'Stop', { session_id: 's5' });
+    assert.strictEqual(res.exit_code, 0);
+    assert.strictEqual(typeof res.stdout, 'string');
+    if (res.stdout.trim()) {
+      const parsed = JSON.parse(res.stdout);
+      assert.equal(Object.hasOwn(parsed, 'hookSpecificOutput'), false, 'Stop cannot emit hookSpecificOutput in Claude schema');
+      if (parsed.decision) assert.equal(parsed.decision, 'block');
+      if (parsed.decision === 'block') assert.equal(typeof parsed.reason, 'string');
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('synthetic SessionStart returns lifecycle shape', async () => {
