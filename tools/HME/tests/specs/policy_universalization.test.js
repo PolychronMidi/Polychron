@@ -135,10 +135,11 @@ test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => 
     assert.match(textOut, /keep after/);
     assert.doesNotMatch(textOut, /Stop hook error/);
     assert.doesNotMatch(textOut, /Final text enumerated/);
-    assert.match(textOut, /hook-ui-echo-leak fp=/);
-    const errLog = fs.readFileSync(path.join(tmp, 'log/hme-errors.log'), 'utf8');
-    assert.match(errLog, /\[hook-ui-echo-leak\] CRITICAL host-rendered Stop hook UI reached model-visible context; stripped/);
-    assert.doesNotMatch(errLog, /Final text enumerated/);
+    assert.doesNotMatch(textOut, /hook-ui-echo-leak fp=/);
+    assert.equal(fs.existsSync(path.join(tmp, 'log/hme-errors.log')), false);
+    const flag = fs.readFileSync(path.join(tmp, 'tmp/hme-hook-ui-echo-leak.flag'), 'utf8');
+    assert.match(flag, /"event":"hook-ui-echo-leak"/);
+    assert.doesNotMatch(flag, /Final text enumerated/);
     assert.equal(stats.categories.stop_hook_ui_echo >= 1, true);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
