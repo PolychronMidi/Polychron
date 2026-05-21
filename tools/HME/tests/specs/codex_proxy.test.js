@@ -10,6 +10,7 @@ const { spawn, spawnSync } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 const { applyRequestTransform } = require('../../proxy/codex_payload');
+const { codexTargetChain, decisionForTarget } = require('../../proxy/model_route_resolver');
 
 function freePort() {
   return new Promise((resolve, reject) => {
