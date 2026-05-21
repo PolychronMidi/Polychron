@@ -39,9 +39,9 @@ test('decision normalizer keeps protocol rendering separate from shared decision
     permissionDecisionReason: reason,
   });
 
-  const claudeStop = claudeRelayFields('Stop', { stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: reason } }), stderr: '', exit_code: 0 });
+  const claudeStop = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: '', exit_code: 0 });
   assert.equal(claudeStop.exit_code, 0);
-  assert.deepEqual(JSON.parse(claudeStop.stdout).hookSpecificOutput, { hookEventName: 'Stop', additionalContext: reason });
+  assert.equal(claudeStop.stdout, JSON.stringify({ decision: 'block', reason }));
   assert.equal(claudeStop.stderr, ' ');
 });
 
@@ -90,17 +90,29 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
   }
 });
 
-test('Claude Stop policy feedback relays as additionalContext stdout', () => {
+test('Claude Stop policy feedback relays as root block stdout', () => {
   const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
   const relayed = claudeRelayFields('Stop', {
-    stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: reason } }),
+    stdout: JSON.stringify({ decision: 'block', reason }),
     stderr: '',
     exit_code: 0,
   });
   assert.equal(relayed.exit_code, 0);
   assert.equal(relayed.stderr, ' ');
-  assert.deepEqual(JSON.parse(relayed.stdout).hookSpecificOutput, { hookEventName: 'Stop', additionalContext: reason });
+  assert.deepEqual(JSON.parse(relayed.stdout), { decision: 'block', reason });
+});
+
+
+test('Claude adapter converts invalid Stop hookSpecificOutput into valid root block', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-hso-repair-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    const out = JSON.parse(validateClaudeStdout('Stop', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: 'STOP REASON' } }), tmp));
+    assert.deepEqual(out, { decision: 'block', reason: 'STOP REASON' });
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSON', () => {
@@ -172,11 +184,11 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
 });
 
-test('Claude Stop block stays structured stdout and never surfaces policy stderr as hook error', () => {
+test('Claude Stop root block stays structured stdout and never surfaces policy stderr as hook error', () => {
   const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'EXHAUST PROTOCOL VIOLATION: fix work';
-  const fields = claudeRelayFields('Stop', { stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: reason } }), stderr: 'FAIL: detectors policy blocked', exit_code: 0 });
-  assert.deepEqual(JSON.parse(fields.stdout).hookSpecificOutput, { hookEventName: 'Stop', additionalContext: reason });
+  const fields = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: 'FAIL: detectors policy blocked', exit_code: 0 });
+  assert.deepEqual(JSON.parse(fields.stdout), { decision: 'block', reason });
   assert.equal(fields.stderr, ' ');
   assert.equal(fields.exit_code, 0);
 });
