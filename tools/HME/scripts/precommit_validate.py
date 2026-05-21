@@ -306,9 +306,12 @@ def executable_sanity(path: str, mode: str, data: bytes) -> None:
 
 def self_protect() -> None:
     canonical = ROOT / POLICY.get("canonical_precommit", "tools/HME/git-hooks/pre-commit")
+    post_commit = ROOT / POLICY.get("canonical_post_commit", "tools/HME/git-hooks/post-commit")
     validator = ROOT / POLICY.get("precommit_validator", "tools/HME/scripts/precommit_validate.py")
     if not canonical.is_file():
         failures.append("pre-commit self-protection failed: canonical hook missing")
+    if not post_commit.is_file():
+        failures.append("post-commit self-protection failed: canonical hook missing")
     if not validator.is_file():
         failures.append("pre-commit self-protection failed: validator missing")
     try:
