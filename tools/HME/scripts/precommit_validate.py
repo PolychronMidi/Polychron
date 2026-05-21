@@ -364,7 +364,7 @@ def full_python_compile_check() -> None:
             try:
                 os.unlink(tmp_path)
             except OSError:
-                pass  # silent-ok: pending review
+                pass  # silent-ok: tempfile already gone or OS cleanup raced
 
 
 def main() -> int:
