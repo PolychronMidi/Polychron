@@ -22,6 +22,7 @@ function _isAgentActionable(line) {
   const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
   const criticalInfra = CRITICAL_INFRA_SELF_RE.test(body);
   if (CANARY_RE.test(body)) return false;
+  if (HOOK_STOP_BLOCK_RE.test(body)) return false;
   if (SELF_TAG_RE.test(body) && !criticalInfra) return false;
   if (HOOK_WATCHDOG_MISSING_RE.test(body)) return false;
   if (OBSERVATION_RE.test(body) && !criticalInfra) return false;
