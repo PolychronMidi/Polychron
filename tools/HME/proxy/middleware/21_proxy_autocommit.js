@@ -68,6 +68,10 @@ function _recordSuccess(root) {
     fs.writeFileSync(path.join(root, COUNTER_REL), '0');
     fs.writeFileSync(path.join(root, LAST_SUCCESS_REL), _ts());
     fs.writeFileSync(path.join(root, HEARTBEAT_REL), String(Math.floor(Date.now() / 1000)));
+    try {
+      const helper = path.join(root, 'tools', 'HME', 'hooks', 'helpers', 'lifesaver_crying_wolf.py');
+      if (fs.existsSync(helper)) spawnSync('python3', [helper, '--project-root', root, '--mode', 'autocommit-success', '--reason', 'proxy-autocommit-success', '--quiet'], { cwd: root, timeout: 3000, encoding: 'utf8' });
+    } catch (_) { /* best-effort */ }
     const flag = path.join(root, FAIL_FLAG_REL);
     if (fs.existsSync(flag)) fs.unlinkSync(flag);
   } catch (_) { /* best-effort */ }

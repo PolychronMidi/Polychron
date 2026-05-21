@@ -89,6 +89,9 @@ _ac_success() {
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
   echo 0 > "$_AC_COUNTER" 2>/dev/null || true  # silent-ok: optional fallback path.
   date -u +"%Y-%m-%dT%H:%M:%SZ" > "$_AC_LAST_SUCCESS" 2>/dev/null || true
+  if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" ]; then
+    python3 "$_AC_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py"       --project-root "$_AC_ROOT" --mode autocommit-success --reason shell-autocommit-success --quiet       >/dev/null 2>&1 || true
+  fi
   rm -f "$_AC_FAIL_FLAG" 2>/dev/null || true
   # Heartbeat for watchdog freshness check.
   date +%s > "$_AC_STATE_DIR/heartbeat-autocommit.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
