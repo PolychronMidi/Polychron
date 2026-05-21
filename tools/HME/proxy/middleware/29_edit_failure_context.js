@@ -5,6 +5,7 @@ const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 const { recordFailure } = require('../turn_failure_state');
 const sessionState = require('../session_state');
+const sessionReadCache = require('../session_read_cache');
 const { isEditFamilyTool } = require('../edit_validation');
 const READ_GATE_RE = /read.*before.*writ|not.*read.*yet/i;
 const MODIFIED_SINCE_READ_RE = /File has been modified since read[^\n]*/;
@@ -114,7 +115,9 @@ module.exports = {
         ctx.appendToResult(toolResult, currentContext.text);
       }
       if (readEquivalent) {
-        sessionState.recordRead({ session_id: session || ctx.session || ctx.session_id || '', tool_name: 'Read', tool_input: { file_path: file } }, { source: 'edit_failure_auto_context' });
+        const sessionId = session || ctx.session || ctx.session_id || '';
+        sessionState.recordRead({ session_id: sessionId, tool_name: 'Read', tool_input: { file_path: file } }, { source: 'edit_failure_auto_context' });
+        sessionReadCache.recordRead(sessionId, file);
       }
       ctx.markDirty();
       ctx.emit({ event: 'edit_failure_context_appended', tool: toolUse.name, file: relPath(file, root), reason, read_equivalent: currentContext.readable, replaced_native_error: readEquivalent });
