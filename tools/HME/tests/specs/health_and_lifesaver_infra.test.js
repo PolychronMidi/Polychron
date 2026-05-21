@@ -65,7 +65,8 @@ module.exports.healthFlagsStaleProxyRuntime = async function () {
   const res = dispatchHealth({
     worker: { required: true, alive: true, healthy: true, gaveUp: false },
   }, 'stale-sha');
-  assert.strictEqual(res.statusCode, 503);
+  assert.strictEqual(res.statusCode, 200);
+  assert.strictEqual(res.body.ok, true);
   assert.strictEqual(res.body.runtime_stale, true);
 };
 
