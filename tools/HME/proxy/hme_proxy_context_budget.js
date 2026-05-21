@@ -140,7 +140,7 @@ function createContextBudget() {
     if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
     const targetFraction = gear === 1 ? compactGear1Target : (gear === 2 ? compactGear2Target : compactGear3Target);
     const threshold = Math.max(1, Math.floor(budgetTokens * targetFraction * contextBytesPerTokenEst));
-    const staleHorizon = gear === 1 ? keepMin * 2 : (gear === 1.5 ? keepMin * 2 : keepMin);
+    const staleHorizon = gear === 1 ? keepMin * 2 : (gear === 2 ? keepMin * 1.75 : keepMin * 1.5);
     const floor = gear === 1 ? 250000 : (gear === 2 ? 225000 : 200000);
     return { threshold, maxTier: gear, maxToolResultAge: staleHorizon, toolResultByteFloor: floor };
   }
