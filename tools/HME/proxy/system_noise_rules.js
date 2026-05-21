@@ -24,7 +24,10 @@ const CODEX_WRAPPER_RULES = [
   { name: 'skills_instructions', re: /^<skills_instructions>[\s\S]*<\/skills_instructions>\s*$/ },
 ];
 
+const STOP_HOOK_HOST_ECHO_RULE = { name: 'stop-hook-host-echo', re: RE_STOP_HOOK, action: 'remove-block' };
 const CLAUDE_REMOVE_BLOCK_RULES = CLAUDE_STRIP_RULES.filter((rule) => rule.action === 'remove-block');
+const UNIVERSAL_REMOVE_BLOCK_RULES = [...CLAUDE_REMOVE_BLOCK_RULES, STOP_HOOK_HOST_ECHO_RULE];
+const CODEX_SYSTEM_NOISE_RULES = [...CODEX_WRAPPER_RULES, ...UNIVERSAL_REMOVE_BLOCK_RULES];
 const TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
 
 function itemText(item) {
