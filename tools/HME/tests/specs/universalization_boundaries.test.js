@@ -175,8 +175,8 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   const { isBenignHookStderr, claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   assert.equal(shouldLogHookStderr('ok'), false);
   assert.equal(shouldLogHookStderr('ok\nok'), false);
-  assert.equal(shouldLogHookStderr('Stop hook error: JSON validation failed'), true);
-  assert.equal(shouldLogHookStderr('Stop hook error: MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.'), true);
+  assert.equal(shouldLogHookStderr('JSON validation failed'), true);
+  assert.equal(shouldLogHookStderr('MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.'), true);
   assert.equal(shouldLogHookStderr('[ALERT] LIFESAVER - MID-TURN ERRORS DETECTED:\n[autocommit:proxy] [onRequest] git commit failed twice: ERROR: pre-commit validation blocked this commit.'), false);
   assert.equal(shouldLogHookStderr('[autocommit:proxy] [onRequest] git commit failed twice: ERROR: pre-commit validation blocked this commit.'), false);
   assert.equal(shouldLogHookStderr('HME proxy already running on :9099\nOnboarding: 6/7 await verdict\nPipeline: STABLE'), false);
@@ -202,7 +202,7 @@ test('Claude adapter logs Stop block reasons to Lifesaver logs', () => {
     const errors = fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8');
     const hme = fs.readFileSync(path.join(tmp, 'log', 'hme.log'), 'utf8');
     assert.match(errors, /hook-stop-block/);
-    assert.match(errors, /Stop hook error: MULTI-FLAG STOP/);
+    assert.match(errors, /MULTI-FLAG STOP/);
     assert.match(hme, /ERROR hook-stop-block/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });

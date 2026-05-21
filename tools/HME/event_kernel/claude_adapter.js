@@ -213,7 +213,7 @@ function finalRelay(event, result, body = '{}') {
   fields.stdout = validateClaudeStdout(event, fields.stdout, root);
   timeTravel.checkpoint({ root, host: 'claude', event, payload, phase: 'relay:validated', values: { thread_id, relay_stdout: fields.stdout || '', relay_stderr: fields.stderr || '', exit_code: fields.exit_code } });
   const stopBlockReason = event === 'Stop' ? summarizeStopBlockReason(denyReason(fields.stdout || '')) : '';
-  if (stopBlockReason) logHookError(root, event, `Stop hook error: ${stopBlockReason}`, 'hook-stop-block');
+  if (stopBlockReason) logHookError(root, event, `${stopBlockReason}`, 'hook-stop-block');
   if (shouldLogHookStderr(fields.stderr)) logHookError(root, event, fields.stderr.trim());
   recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
   if (fields.stdout) process.stdout.write(fields.stdout);
