@@ -9,7 +9,6 @@ const STOP_ERROR_BLOCK_RE = /(?:^|\n)\s*(?:[⎿│>\-]*\s*)?Stop hook error:\s*[
 const STOP_SECTION_RE = /\n?\s*---\s*\[\d+\/\d+\]\s+[A-Z_ -]+\s*---[\s\S]{0,2500}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t])|$)/g;
 const STOP_POLICY_RE = /\b(?:MULTI-FLAG STOP|EXHAUST PROTOCOL VIOLATION|SPIRALLING_PETULANCE|AUTO-COMPLETENESS CHECK|UNFINISHED TASK-LIST VIOLATION|PLAN-ABANDONMENT DETECTED|STOP-WORK ANTIPATTERN)\b/i;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
-const ERROR_LOG = path.join('log', 'hme-errors.log');
 const LEAK_FLAG = path.join('tmp', 'hme-hook-ui-echo-leak.flag');
 const STRIPPED_MARKER_RE = /(?:^|\n)\s*\[HME stripped host Stop-hook UI echo: hook-ui-echo-leak fp=[0-9a-f]+\]\s*(?:(?:\n\s*(?:SPIRALLING_PETULANCE|EXHAUST PROTOCOL VIOLATION|MULTI-FLAG STOP|Address all of them|enumerated item|nothing left|silence is the correct response)[^\n]*){0,8})/gi;
 
@@ -45,21 +44,13 @@ function recordLeak(root, fp, bytes, stats) {
     fs.mkdirSync(path.dirname(flag), { recursive: true });
     fs.appendFileSync(flag, JSON.stringify(row) + '\n');
   } catch (_e) { /* best-effort same-turn alert */ }
-  try {
-    if (!stats._hookUiEchoErrorLogged) {
-      stats._hookUiEchoErrorLogged = true;
-      const err = path.join(root, ERROR_LOG);
-      fs.mkdirSync(path.dirname(err), { recursive: true });
-      fs.appendFileSync(err, `[${ts}] [hook-ui-echo-leak] CRITICAL host-rendered Stop hook UI reached model-visible context; stripped. fingerprint=${fp} bytes=${bytes} raw_omitted=true\n`);
-    }
-  } catch (_e) { /* best-effort lifesaver */ }
   stats.categories = stats.categories || {};
   stats.categories['hook-ui-echo-leak'] = (stats.categories['hook-ui-echo-leak'] || 0) + 1;
   stats.leaks = (stats.leaks || 0) + 1;
 }
 
 function stripHookUiEchoText(text, stats = {}, opts = {}) {
-  let out = String(text || '').replace(STRIPPED_MARKER_RE, '');
+  let out = String(text || '');
   const root = opts.projectRoot || opts.root || '';
   const seen = new Set();
   function removeBlock(block) {
@@ -75,6 +66,7 @@ function stripHookUiEchoText(text, stats = {}, opts = {}) {
     stats.categories.stop_hook_ui_echo = (stats.categories.stop_hook_ui_echo || 0) + 1;
     return '';
   }
+  out = out.replace(STRIPPED_MARKER_RE, removeBlock);
   out = out.replace(HOST_STOP_ECHO_RE, removeBlock);
   out = out.replace(STOP_ERROR_BLOCK_RE, removeBlock);
   out = out.replace(STOP_SECTION_RE, (block) => STOP_POLICY_RE.test(block) ? removeBlock(block) : block);
