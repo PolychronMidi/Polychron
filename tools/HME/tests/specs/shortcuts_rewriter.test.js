@@ -28,6 +28,21 @@ test('shortcuts_rewriter expands n after system reminder in string content', asy
   assert.equal(payload.messages[0].content, `${reminder}\nnext suggestions?`);
 });
 
+test('shortcuts_rewriter expands shortcut on last real user message before tool results', async () => {
+  const payload = {
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: '<system-reminder>noise</system-reminder>' }, { type: 'text', text: 'n' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 'tu_shortcut_probe', name: 'Bash', input: { command: 'printf probe' } }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu_shortcut_probe', content: 'probe output' }] },
+    ],
+  };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content[1].text, 'next suggestions?');
+  assert.equal(payload.messages[2].content[0].content, 'probe output');
+});
+
+
 test('shortcuts_rewriter expands last non-reminder text block', async () => {
   const payload = {
     messages: [{
