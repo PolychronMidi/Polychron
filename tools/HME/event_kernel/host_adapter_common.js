@@ -5,7 +5,6 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { createLifecycleGraph } = require('./lifecycle_graph');
-const timeTravel = require('./lifecycle_time_travel');
 const watchdog = require('./hook_watchdog');
 const { nudgeSupervisors } = require('./supervisors');
 
