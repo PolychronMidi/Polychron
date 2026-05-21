@@ -121,10 +121,13 @@ function _editCurrentFileDecision(payload) {
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return _permission('deny', `BLOCKED: Edit target is not an existing file: ${String(file).slice(0, 160)}`);
     const sessionState = require('./session_state');
     const sid = payload.session_id || '';
-    const priorReads = sessionState.readState(sid).files_read || [];
-    const hasRead = priorReads.some((r) => r && r.file === file);
-    if (sid && !hasRead) return _readRewriteDecision(payload, 'edit-before-read');
     const current = fs.readFileSync(file, 'utf8');
+    const stale = !current.includes(input.old_string);
+    if (!stale) {
+      const priorReads = sessionState.readState(sid).files_read || [];
+      const hasRead = priorReads.some((r) => r && r.file === file);
+      if (sid && !hasRead) return _readRewriteDecision(payload, 'edit-before-read');
+    }
     if (!current.includes(input.old_string)) {
       if (input.new_string && current.includes(input.new_string)) {
         return _permission('deny', 'BLOCKED: Edit old_string is absent and new_string is already present. The change appears already applied; do not trust a native Edit success here.');
