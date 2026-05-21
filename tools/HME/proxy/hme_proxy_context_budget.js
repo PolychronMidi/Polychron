@@ -266,14 +266,18 @@ function createContextBudget() {
   function shrinkForOmniContext(payload, swapModel) {
     const budget = resolveModelCtx(String(swapModel || ''));
     const authoritativeUsed = statuslineInputTokens();
+    const before = Buffer.byteLength(JSON.stringify(payload), 'utf8');
     if (budget > 0 && authoritativeUsed > 0 && (authoritativeUsed / budget) < compactStartFraction) return 0;
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'omni-context',
       model: String(swapModel || ''),
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
-    const threshold = omniContextThresholdBytes(swapModel);
-    const before = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    let threshold = omniContextThresholdBytes(swapModel);
+    if (budget > 0 && authoritativeUsed > 0 && before > 0) {
+      const bytesPerAuthoritativeToken = before / authoritativeUsed;
+      threshold = Math.max(threshold, Math.floor(budget * compactGear1Target * bytesPerAuthoritativeToken));
+    }
     if (before <= threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
       threshold,
