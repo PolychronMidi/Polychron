@@ -36,7 +36,9 @@ function shellPolicy(stageName, opts = {}) {
       if (decisionFromStdout) return decisionFromStdout;
       if (failClosed && (result.exit_code !== 0 || result.error || result.signal)) {
         const detail = (result.stderr || (result.error && result.error.message) || result.signal || `exit ${result.exit_code}`).trim();
-        return ctx.deny(`STOP-CHAIN INTEGRITY FAILURE: shell policy ${stageName} failed closed (${detail.slice(0, 800)}). Fix the policy before stopping.`);
+        const code = result.exit_code === -1 && result.signal === 'SIGTERM' && /timeout after/i.test(detail) ? 124 : result.exit_code;
+        const prefix = code === 124 ? `fail=124 ${detail}` : detail;
+        return ctx.deny(`STOP-CHAIN INTEGRITY FAILURE: shell policy ${stageName} failed closed (${prefix.slice(0, 800)}). Fix the policy before stopping.`);
       }
       return ctx.allow();
     },
