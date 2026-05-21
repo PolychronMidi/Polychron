@@ -144,6 +144,7 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     try {
       const sessionId = payload ? sessionKey(payload) : '';
       if (sessionId) xform._ctx.set('session_id', sessionId);
+      xform._ctx.set('projectRoot', projectRoot);
       const text = lastUserText(payload);
       const denyHit = Boolean(text && DENY_MARKERS.some((m) => text.includes(m)));
       if (denyHit) xform._ctx.set('priorUserWasDeny', true);
