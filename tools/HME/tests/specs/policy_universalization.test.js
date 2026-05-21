@@ -97,7 +97,7 @@ test('hook noise stripper removes Stop hook host echoes from any text role', () 
   const stats = {};
   const payload = {
     messages: [{ role: 'user', content: [{ type: 'text', text: [
-      'Stop hook blocking error from command: "node $PROJECT_ROOT/tools/HME/event_kernel/claude_adapter.js Stop": MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.',
+      'Stop hook blocking error from command: "node ${PROJECT_ROOT}/tools/HME/event_kernel/claude_adapter.js Stop": MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.',
       'Address all of them in this turn.',
       '',
       '--- [1/2] EXHAUST ---',
