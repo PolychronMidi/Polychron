@@ -120,7 +120,7 @@ async function runHostAdapter(opts) {
       if (opts.onDirectFallback) result = opts.onDirectFallback({ result, root, port, event, body, ts }) || result;
     }
   } else if (opts.onProxyResult) {
-    timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'transport:proxy', values: { thread_id, stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code } });
+    lifecycle.recordTransport('proxy', result);
     opts.onProxyResult({ result, root, port, event, body, ts });
   }
   timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'kernel:result', values: { thread_id, stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code } });
