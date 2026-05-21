@@ -115,8 +115,8 @@ async function runHostAdapter(opts) {
       lifecycle.recordTransport('maintenance', result);
     } else {
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [${opts.host}-adapter] ${event} direct fallback (proxy down)`);
-      timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'transport:direct-fallback', values: { thread_id } });
-      result = await dispatchEvent(event, body);
+      lifecycle.recordTransport('direct-fallback');
+      result = await lifecycle.dispatch();
       if (opts.onDirectFallback) result = opts.onDirectFallback({ result, root, port, event, body, ts }) || result;
     }
   } else if (opts.onProxyResult) {
