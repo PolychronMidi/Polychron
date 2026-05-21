@@ -172,10 +172,10 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
 });
 
-test('Claude Stop block stays structured stdout and does not duplicate reason on stderr', () => {
+test('Claude Stop block stays structured stdout and never surfaces policy stderr as hook error', () => {
   const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'EXHAUST PROTOCOL VIOLATION: fix work';
-  const fields = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: '', exit_code: 0 });
+  const fields = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: 'FAIL: detectors policy blocked', exit_code: 0 });
   assert.equal(fields.stdout, JSON.stringify({ decision: 'block', reason }));
   assert.equal(fields.stderr, ' ');
   assert.equal(fields.exit_code, 0);
