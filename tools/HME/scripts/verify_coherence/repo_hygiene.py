@@ -52,6 +52,8 @@ class CanonicalPrecommitHookVerifier(Verifier):
             problems.append("canonical post-commit hook restarts proxy synchronously")
         if not (canonical.stat().st_mode & stat.S_IXUSR):
             problems.append("canonical hook is not executable")
+        if not (post_commit.stat().st_mode & stat.S_IXUSR):
+            problems.append("canonical post-commit hook is not executable")
         if not (validator.stat().st_mode & stat.S_IXUSR):
             problems.append("precommit validator is not executable")
         if not (installer.stat().st_mode & stat.S_IXUSR):
@@ -62,6 +64,12 @@ class CanonicalPrecommitHookVerifier(Verifier):
                 problems.append("installed .git/hooks/pre-commit differs from canonical hook")
         else:
             return _result(WARN, 0.8, "canonical hook present but not installed", ["run tools/HME/scripts/install-git-hooks.sh"])
+        if installed_post.exists():
+            ip_text = installed_post.read_text(encoding="utf-8", errors="replace")
+            if ip_text != pc_text:
+                problems.append("installed .git/hooks/post-commit differs from canonical hook")
+        else:
+            return _result(WARN, 0.8, "canonical post-commit hook present but not installed", ["run tools/HME/scripts/install-git-hooks.sh"])
         if problems:
             return _result(FAIL, 0.0, "canonical precommit hook contract drift", problems)
         return _result(PASS, 1.0, "canonical precommit hook installed and policy-backed")
