@@ -39,7 +39,8 @@ function shouldEmitCryingWolf(root, fp, source) {
   try { db = JSON.parse(fs.readFileSync(file, 'utf8')); }
   catch (_e) { db = {}; }
   if (!db || typeof db !== 'object' || Array.isArray(db)) db = {};
-  const key = `${source || 'unknown'}:${fp}`;
+  const sourceKey = source || 'unknown';
+  const key = sourceKey === 'request' ? 'request:host-ui-echo' : `${sourceKey}:${fp}`;
   const rec = db[key] && typeof db[key] === 'object' ? db[key] : null;
   const lastAlert = rec && Number.isFinite(Number(rec.last_alert_ms)) ? Number(rec.last_alert_ms) : 0;
   const emit = !rec || (now - lastAlert) >= CRYING_WOLF_ALERT_INTERVAL_MS;

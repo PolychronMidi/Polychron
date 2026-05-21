@@ -109,6 +109,8 @@ if [ -f "$ERROR_LOG" ]; then
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
       | sed 's/^\[[0-9TZ:.\-]*\] //' \
       | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned|^\[(hook-stop-block|hook-runtime-error|hook-failure|hook-output-validation|hook-ui-echo-leak)\]' \
+      | grep -vE '^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+)\]' \
+      | grep -vE '\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b' \
       | grep -vE '^[[:space:]]*$' \
       | sort -u)
     if [ -z "$NEW_ERRORS" ]; then
