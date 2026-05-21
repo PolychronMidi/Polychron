@@ -7,7 +7,6 @@ const { readAutocommitFailure, touchLifesaverHeartbeat, assertRealLifesaverInjec
 
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'tools/HME/runtime/errors-lastread.proxy';
-const HOOK_UI_ECHO_FLAG = 'tmp/hme-hook-ui-echo-leak.flag';
 
 // Mirrors lifesaver.sh classification: drop CANARY self-tests,
 // observation-severity, and self-origin tags.
@@ -69,27 +68,6 @@ function _appendToLastUser(payload, note) {
 }
 
 
-function _readHookUiEchoLeak(root) {
-  const flag = path.join(root, HOOK_UI_ECHO_FLAG);
-  let raw = '';
-  try { raw = fs.readFileSync(flag, 'utf8'); } catch (_e) { return null; }
-  try { fs.unlinkSync(flag); } catch (_e) { /* consume best-effort */ }
-  const fps = [];
-  let bytes = 0;
-  for (const line of raw.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    try {
-      const row = JSON.parse(line);
-      if (row && row.fingerprint && !fps.includes(row.fingerprint)) fps.push(row.fingerprint);
-      if (row && Number.isFinite(Number(row.stripped_bytes))) bytes += Number(row.stripped_bytes);
-    } catch (_e) { /* ignore malformed flag rows */ }
-  }
-  if (fps.length === 0 && raw.trim()) fps.push('unknown');
-  if (fps.length === 0) return null;
-  const banner = '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics.';
-  return { banner, flagPath: flag, count: fps.length, bytes };
-}
-
 module.exports = {
   name: 'lifesaver_inject',
 
@@ -109,16 +87,6 @@ module.exports = {
       assertRealLifesaverInjection(ctx.PROJECT_ROOT, 'autocommit', acFailure.banner, { flag: acFailure.flagPath });
       ctx.markDirty();
       ctx.emit({ event: 'lifesaver_injected', source: 'autocommit', flag: acFailure.flagPath });
-    }
-
-    const hookUiLeak = _readHookUiEchoLeak(ctx.PROJECT_ROOT);
-    if (hookUiLeak && _appendToLastUser(
-      payload,
-      `\n\n[lifesaver inject from proxy]\n${hookUiLeak.banner}\n`,
-    )) {
-      assertRealLifesaverInjection(ctx.PROJECT_ROOT, 'hook_ui_echo_leak', hookUiLeak.banner, { count: hookUiLeak.count, bytes: hookUiLeak.bytes });
-      ctx.markDirty();
-      ctx.emit({ event: 'lifesaver_injected', source: 'hook_ui_echo_leak', count: hookUiLeak.count, bytes: hookUiLeak.bytes });
     }
 
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);

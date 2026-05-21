@@ -13,10 +13,10 @@ const RAN_STOP_HOOK_LINE_RE = /^\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook\s*$/i
 const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
 const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?Stop hook error:/i;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
-const LEAK_FLAG = path.join('tmp', 'hme-hook-ui-echo-leak.flag');
+const ERROR_LOG = path.join('log', 'hme-errors.log');
 const STRIPPED_MARKER_RE = /(?:^|\n)\s*\[HME stripped host Stop-hook UI echo: hook-ui-echo-leak fp=[0-9a-f]+\]\s*(?:(?:\n\s*(?:SPIRALLING_PETULANCE|EXHAUST PROTOCOL VIOLATION|MULTI-FLAG STOP|Address all of them|enumerated item|nothing left|silence is the correct response)[^\n]*){0,8})/gi;
 const VERBOSE_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED\s*\nHost-rendered Stop-hook UI reached model-visible context and was stripped before inference\.[^\n]*fingerprints=[^\n]*Raw hook text omitted[^\n]*(?=\n|$)/gi;
-const COMPACT_HOOK_UI_ALERT = '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics.';
+const COMPACT_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics\.\s*(?=\n|$)/gi;
 
 function fingerprint(text) {
   const normalized = String(text || '')
@@ -46,10 +46,13 @@ function recordLeak(root, fp, bytes, stats) {
     fs.appendFileSync(file, JSON.stringify(row) + '\n');
   } catch (_e) { /* best-effort telemetry */ }
   try {
-    const flag = path.join(root, LEAK_FLAG);
-    fs.mkdirSync(path.dirname(flag), { recursive: true });
-    fs.appendFileSync(flag, JSON.stringify(row) + '\n');
-  } catch (_e) { /* best-effort same-turn alert */ }
+    if (!stats._cryingWolfLogged) {
+      stats._cryingWolfLogged = true;
+      const err = path.join(root, ERROR_LOG);
+      fs.mkdirSync(path.dirname(err), { recursive: true });
+      fs.appendFileSync(err, `[${ts}] [crying_wolf] CRITICAL non-error hook UI reached model-visible context; stripped raw output. Hooks must do work, not communicate by UI echo. raw_omitted=true\n`);
+    }
+  } catch (_e) { /* best-effort Lifesaver */ }
   stats.categories = stats.categories || {};
   stats.categories['hook-ui-echo-leak'] = (stats.categories['hook-ui-echo-leak'] || 0) + 1;
   stats.leaks = (stats.leaks || 0) + 1;
@@ -57,9 +60,8 @@ function recordLeak(root, fp, bytes, stats) {
 
 function stripHookUiEchoText(text, stats = {}, opts = {}) {
   let out = String(text || '');
-  let sawVerboseAlert = false;
-  out = out.replace(VERBOSE_HOOK_UI_ALERT_RE, () => { sawVerboseAlert = true; return ''; });
-  if (sawVerboseAlert) out = `${COMPACT_HOOK_UI_ALERT}\n${out.replace(/^\s+/, '')}`;
+  out = out.replace(VERBOSE_HOOK_UI_ALERT_RE, '');
+  out = out.replace(COMPACT_HOOK_UI_ALERT_RE, '');
   const root = opts.projectRoot || opts.root || '';
   const seen = new Set();
   function removeBlock(block, force = false) {
