@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+RESTART="$ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
+LOG="$ROOT/log/hme-post-commit-restart.log"
+mkdir -p "$(dirname "$LOG")"
+if [ -x "$RESTART" ]; then
+  PROJECT_ROOT="$ROOT" "$RESTART" restart >>"$LOG" 2>&1 || {
+    printf '[post-commit] proxy restart failed; see %s\n' "$LOG" >&2
+    exit 1
+  }
+fi
