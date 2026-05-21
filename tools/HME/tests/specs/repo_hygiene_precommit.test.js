@@ -49,10 +49,19 @@ test('precommit validator imports shared path policy and keeps literal local sen
   assert.doesNotMatch(body, new RegExp(`${path.sep}m${'nt'}${path.sep}`));
 });
 
-test('hook installer is executable and points at canonical hook', () => {
+test('hook installer is executable and points at canonical hooks', () => {
   const body = fs.readFileSync(installer, 'utf8');
   assert.match(body, /tools\/HME\/git-hooks\/pre-commit/);
+  assert.match(body, /tools\/HME\/git-hooks\/post-commit/);
   assert.ok(fs.statSync(installer).mode & 0o100, 'installer must be executable');
+});
+
+test('canonical post-commit hook records reload need without synchronous proxy restart', () => {
+  const hook = fs.readFileSync(canonicalPostCommitHook, 'utf8');
+  assert.match(hook, /post-commit-proxy-reload-needed/);
+  assert.match(hook, /not restarting synchronously/);
+  assert.doesNotMatch(hook, /proxy-supervisor\.sh/);
+  assert.ok(fs.statSync(canonicalPostCommitHook).mode & 0o100, 'canonical post-commit hook must be executable');
 });
 
 test('canonical hook and validator parse', () => {
