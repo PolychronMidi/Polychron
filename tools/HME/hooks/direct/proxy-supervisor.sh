@@ -125,7 +125,7 @@ _sv_spawn_proxy() {
   fi
   HME_PROXY_PORT="$_SV_PORT" PROJECT_ROOT="$_SV_ROOT" \
     setsid nohup node "$_SV_PROXY_SCRIPT" \
-    >> "$_SV_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
+    >> "$_SV_ROOT/log/hme-proxy.out" 2>&1 < /dev/null 200>&- &
   local pid=$!
   disown 2>/dev/null
   _sv_log "proxy spawn attempted (pid=$pid)"
