@@ -239,11 +239,13 @@ function createContextBudget() {
 
   function injectContextHeader(headers, swapModel) {
     const ctx = resolveModelCtx(swapModel);
-    const estUsed = estimatedContextTokens(lastPayloadBytes);
-    const remaining = Math.max(0, ctx - estUsed);
+    const authoritativeUsed = statuslineInputTokens();
+    if (!ctx || !authoritativeUsed) return;
+    if ((authoritativeUsed / ctx) < compactStartFraction) return;
+    const remaining = Math.max(0, ctx - authoritativeUsed);
     if (remaining < ctx * contextSignalRemainingFraction) {
       headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
-      console.error(`[hme-proxy] context signal: ~${estUsed}/${ctx} tokens (${remaining} remaining) -> triggering /compact`);
+      console.error(`[hme-proxy] context signal: ~${authoritativeUsed}/${ctx} tokens (${remaining} remaining) -> triggering /compact`);
     }
   }
 
