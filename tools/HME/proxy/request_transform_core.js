@@ -5,6 +5,7 @@ const path = require('path');
 const { normalizeStructuredBridgeCalls } = require('./codex_tool_text');
 const { normalizeICommandsInValue } = require('./i_command_text');
 const { stripHookNoiseInValue } = require('./hook_noise_text');
+const { stripHookUiEchoInValue } = require('./hook_ui_echo_guard');
 const { stripCodexSystemNoise } = require('./codex_system_noise');
 const { sanitizeMessages } = require('./conversation_graph');
 
@@ -154,6 +155,7 @@ function applyCodexRequestTransform(body, deps, injectNativeToolSchemas) {
   const bridgeNormalized = normalizeStructuredBridgeCalls(transformed);
   transformed = bridgeNormalized.body;
   const hookNoiseStats = {};
+  transformed = stripHookUiEchoInValue(transformed, hookNoiseStats, { projectRoot });
   transformed = stripHookNoiseInValue(transformed, hookNoiseStats);
   const systemNoiseStats = {};
   transformed = stripCodexSystemNoise(transformed, systemNoiseStats);
@@ -179,6 +181,8 @@ function applyAnthropicCommonTransforms(payload) {
   const normalized = normalizeICommandsInValue(payload, iStats);
   if (normalized && normalized !== payload) { for (const k of Object.keys(payload)) delete payload[k]; Object.assign(payload, normalized); }
   const hookNoiseStats = {};
+  const uiStripped = stripHookUiEchoInValue(payload, hookNoiseStats, { projectRoot: require('./shared').PROJECT_ROOT });
+  if (uiStripped && uiStripped !== payload) { for (const k of Object.keys(payload)) delete payload[k]; Object.assign(payload, uiStripped); }
   const stripped = stripHookNoiseInValue(payload, hookNoiseStats);
   if (stripped && stripped !== payload) { for (const k of Object.keys(payload)) delete payload[k]; Object.assign(payload, stripped); }
   const sanitized = sanitizeMessages(payload);
