@@ -52,7 +52,7 @@ function stripHookNoiseText(text, stats = {}) {
 }
 
 function stripHookNoiseInValue(value, stats = {}, protectedUserText = false) {
-  if (typeof value === 'string') return protectedUserText ? value : stripHookNoiseText(value, stats);
+  if (typeof value === 'string') return stripHookNoiseText(value, stats);
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => stripHookNoiseInValue(item, stats, protectedUserText));
   const childProtected = protectedUserText || value.role === 'user';
