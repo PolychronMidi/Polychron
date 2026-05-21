@@ -149,8 +149,8 @@ function stripHookUiEchoText(text, stats = {}, opts = {}) {
   out = stripRenderedStopHookLines(out);
   out = out.replace(STRIPPED_MARKER_RE, (block) => removeBlock(block, true));
   out = out.replace(HOST_STOP_ECHO_RE, (block) => removeBlock(block, true));
-  out = out.replace(HOST_NATIVE_TOOL_ERROR_RE, (block) => removeBlock(block, true));
-  out = out.replace(HOST_NATIVE_TOOL_ERROR_LINE_RE, (block) => removeBlock(block, true));
+  out = out.replace(HOST_NATIVE_TOOL_ERROR_RE, (block) => (NATIVE_EDIT_ERROR_PHRASE_RE.test(block) ? removeBlock(block, true) : block));
+  out = out.replace(HOST_NATIVE_TOOL_ERROR_LINE_RE, (block) => (NATIVE_EDIT_ERROR_PHRASE_RE.test(block) ? removeBlock(block, true) : block));
   out = out.replace(STOP_ERROR_BLOCK_RE, (block) => removeBlock(block, true));
   out = out.replace(STOP_SECTION_RE, (block) => STOP_POLICY_RE.test(block) || STOP_DIRECTIVE_RE.test(block) ? removeBlock(block) : block);
   const lines = out.split(/\r?\n/);
