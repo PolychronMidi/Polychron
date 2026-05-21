@@ -67,6 +67,8 @@ test('canonical post-commit hook records reload need without synchronous proxy r
 test('canonical hook and validator parse', () => {
   let r = run('bash', ['-n', canonicalHook]);
   assert.equal(r.status, 0, r.stderr);
+  r = run('bash', ['-n', canonicalPostCommitHook]);
+  assert.equal(r.status, 0, r.stderr);
   r = run('python3', ['-m', 'py_compile', validator, path.join(PROJECT_ROOT, 'tools/HME/scripts/path_policy.py')]);
   assert.equal(r.status, 0, r.stderr);
 });
