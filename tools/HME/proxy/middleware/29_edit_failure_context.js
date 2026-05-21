@@ -8,8 +8,8 @@ const sessionState = require('../session_state');
 const sessionReadCache = require('../session_read_cache');
 const { isEditFamilyTool } = require('../edit_validation');
 const READ_GATE_RE = /read.*before.*writ|not.*read.*yet/i;
-const MODIFIED_SINCE_READ_RE = /File has been modified since read[^\n]*/;
-const FAIL_RE = /\b(old_string not found|old_string is not unique)\b|File has been modified since read[^\n]*|read.*before.*writ|not.*read.*yet/i;
+const STALE_READ_RE = /File (?:has been modified since read|content has changed since it was last read)[^\n]*|Call Read on this file[^\n]*/i;
+const FAIL_RE = /\b(old_string not found|old_string is not unique)\b|File (?:has been modified since read|content has changed since it was last read)[^\n]*|Call Read on this file[^\n]*|read.*before.*writ|not.*read.*yet/i;
 
 function textOf(toolResult) {
   const c = toolResult && toolResult.content;
