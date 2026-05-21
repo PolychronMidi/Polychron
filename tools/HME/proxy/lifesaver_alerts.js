@@ -5,6 +5,8 @@ const path = require('path');
 
 const AUTOCOMMIT_FAIL_REL = path.join('tools', 'HME', 'runtime', 'autocommit.fail');
 const LIFESAVER_HEARTBEAT_REL = path.join('tools', 'HME', 'runtime', 'heartbeat-lifesaver.ts');
+const LIFESAVER_INJECT_LOG_REL = path.join('tools', 'HME', 'runtime', 'lifesaver-injections.jsonl');
+const LIFESAVER_TEXT_RE = /\[ALERT\]\s+LIFESAVER|\bLIFESAVER\s+--/;
 
 function readAutocommitFailure(root) {
   const flagPath = path.join(root, AUTOCOMMIT_FAIL_REL);
