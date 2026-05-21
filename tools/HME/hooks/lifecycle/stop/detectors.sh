@@ -30,7 +30,7 @@ if ! type _detector_parse_case >/dev/null 2>&1 || ! type _detector_emit_persist 
 fi
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   _DET_PY_ERR=$(mktemp "$_DET_ERR_DIR/det_py_err.XXXXXX" 2>/dev/null || echo "$_DET_ERR_DIR/_det_py_err_$$")  # silent-ok: optional fallback path.
-  _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>"$_DET_PY_ERR")
+  _RUN_ALL_OUT=$(timeout "${HME_STOP_DETECTORS_TIMEOUT_SEC:-12}" python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>"$_DET_PY_ERR")
   _RUN_ALL_STATUS=$?
   if [ -s "$_DET_PY_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _DET_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
