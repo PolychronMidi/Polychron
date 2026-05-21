@@ -26,7 +26,7 @@ test('lifecycle payload core normalizes shared fields while keeping host identit
 test('decision normalizer keeps protocol rendering separate from shared decision parsing', () => {
   const { sanitizeCodexStdout, claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'BLOCKED: shared reason';
-  const raw = JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: reason }, systemMessage: reason });
+  const raw = JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason }, systemMessage: reason });
   const codex = JSON.parse(sanitizeCodexStdout('PreToolUse', raw));
   assert.equal(codex.hookSpecificOutput.permissionDecisionReason, reason);
   assert.equal(Object.hasOwn(codex, 'systemMessage'), false);
