@@ -66,7 +66,7 @@ function shouldLogHookStderr(stderr) {
   if (!text) return false;
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.every((line) => /^ok$/i.test(line))) return false;
-  if (/^Stop hook error:/i.test(text)) return true;
+  if (/^/i.test(text)) return true;
   if (/\[proxy-supervisor\] CRASH LOOP DETECTED/i.test(text)) return !/\[observation-only/i.test(text);
   if (/\[ALERT\] LIFESAVER - MID-TURN ERRORS DETECTED:/i.test(text)) return false;
   if (/\[(autocommit|autocommit:proxy|proxy-supervisor|hme self-health|hook-output-validation)\]/i.test(text)) return false;
