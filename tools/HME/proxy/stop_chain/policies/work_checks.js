@@ -382,11 +382,23 @@ function scanUnfinishedTaskReminder(text) {
   if (!text) return [];
   const lines = String(text).split(/\r?\n/);
   const hits = [];
+  let inStopHookPayload = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+    if (/^(Stop hook feedback:|Stop hook blocking error from command:|STOP-CHAIN INTEGRITY FAILURE:|---)$/.test(trimmed)
+      || /^--- \[\d+\/\d+\]/.test(trimmed)) {
+      inStopHookPayload = true;
+      continue;
+    }
+    if (inStopHookPayload) {
+      if (/^\s*(Carried-over HME todos|Here are the existing tasks|TaskList|#\d+\.?\s*\[(?:in_progress|pending)\])/i.test(trimmed)) inStopHookPayload = false;
+      else if (/UNFINISHED TASK-LIST VIOLATION|Open task evidence:|\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+      else if (/^\d+\.\s*\d+:\[\d{4}-\d{2}-\d{2}T.*\[proxy-supervisor\]/.test(trimmed)) continue;
+    }
     if (/^\d+\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
     if (/^stdout\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+    if (/\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
     if (!/\b(in_progress|pending)\b/i.test(trimmed)) continue;
     if (!/(^|[^A-Za-z])(task|todo|status|subject|description|activeForm|Here are the existing tasks|<system-reminder>)|^#\d+\.?\s*\[(?:in_progress|pending)\]/i.test(trimmed)) continue;
     hits.push(trimmed.slice(0, 240));
