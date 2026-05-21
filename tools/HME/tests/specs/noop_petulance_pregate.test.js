@@ -176,6 +176,33 @@ test('petulance pregate allows repeated command outside 3 minute window', () => 
   assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'stale command must not block');
 });
 
+test('petulance pregate allows repeated diagnostic wrappers when payload changes', () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'petulance-diagnostic-family-'));
+  const statePath = path.join(stateDir, 'state.json');
+  try {
+    const firstCmd = "python3 - <<'PY'\nprint('first diagnostic')\nPY";
+    const secondCmd = "python3 - <<'PY'\nprint('second diagnostic')\nPY";
+    const first = runHook({ cmd: firstCmd, transcriptEntries: [userMsg()], statePath });
+    assert.ok(first.ok, `first diagnostic command should pass, got: ${first.stdout}`);
+    const second = runHook({ cmd: secondCmd, transcriptEntries: [userMsg()], statePath });
+    assert.ok(second.ok, `changed diagnostic command should pass, got: ${second.stdout}`);
+    assert.ok(!second.stdout.includes('SPIRALLING_PETULANCE'), 'changed heredoc diagnostic must not be treated as repeat spam');
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test('petulance pregate transcript scan allows changed diagnostic wrappers', () => {
+  const firstCmd = "python3 - <<'PY'\nprint('first transcript diagnostic')\nPY";
+  const secondCmd = "python3 - <<'PY'\nprint('second transcript diagnostic')\nPY";
+  const out = runHook({
+    cmd: secondCmd,
+    transcriptEntries: [userMsg(), bashEvent(firstCmd)],
+  });
+  assert.ok(out.ok, `changed transcript diagnostic command should pass, got: ${out.stdout}`);
+  assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'changed heredoc transcript command must not be treated as repeat spam');
+});
+
 test('petulance pregate escalates repeated command to level 3 all-caps message', () => {
   const cmd = 'i/hme admin action=health';
   const out = runHook({

@@ -212,19 +212,6 @@
           "context_length": 200000,
           "max_output_tokens": 8192,
           "max_input_tokens": 191808
-        },
-        {
-          "id": "gpt-5.2",
-          "name": "GPT 5.2",
-          "maker": "OpenAI",
-          "provider": "opencode-go",
-          "cost": "usage",
-          "cost_amt": 1.1,
-          "notes": "General-purpose frontier reasoning.",
-          "tier_score": 4,
-          "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
         }
       ]
     },
