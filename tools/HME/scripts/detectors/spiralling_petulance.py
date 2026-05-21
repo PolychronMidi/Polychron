@@ -99,6 +99,8 @@ def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
             if family:
                 family_seen[family] = prior_cmd
             continue
+    if _command_family(key) in family_seen:
+        recent = [row for row in recent if row.get("cmd") != family_seen[_command_family(key)]]
     recent.append({"hash": h, "ts": now, "cmd": key})
     state["attempts"] = recent[-_MAX_STATE_ATTEMPTS:]
     state["last_edit_ts"] = last_edit
