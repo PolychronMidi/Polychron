@@ -189,6 +189,12 @@ function claudeRelayFields(event, result) {
   let stderr = result.stderr || '';
   let code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
   if (isBenignHookStderr(stderr)) stderr = '';
+  if (event === 'Stop' && code === 0 && stdout) {
+    const parsed = parseJson(stdout);
+    if (parsed && parsed.decision === 'block' && parsed.reason && !stderr) {
+      stderr = ' ';
+    }
+  }
   if (event === 'PreToolUse' && code === 0 && stdout) {
     const parsed = parseJson(stdout);
     if (parsed && parsed.decision === 'block' && parsed.reason) {
