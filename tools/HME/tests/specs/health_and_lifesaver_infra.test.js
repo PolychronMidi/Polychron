@@ -1,5 +1,6 @@
 'use strict';
 
+const test = require('node:test');
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
@@ -106,3 +107,8 @@ module.exports.lifesaverInjectionWritesContractArtifacts = async function () {
   }
 };
 
+
+
+if (require.main === module) {
+  for (const [name, fn] of Object.entries(module.exports)) test(name, fn);
+}
