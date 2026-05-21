@@ -42,6 +42,21 @@ test('session_read_cache: clearSession wipes only the named session', () => {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('session_read_cache: invalidates read when file mtime changes', () => {
+  const dir = _isolate();
+  try {
+    const cache = require('../../proxy/session_read_cache');
+    const file = path.join(dir, 'target.js');
+    fs.writeFileSync(file, 'one');
+    cache.recordRead('s1', file);
+    assert.equal(cache.hasRead('s1', file), true);
+    const future = new Date(Date.now() + 5000);
+    fs.writeFileSync(file, 'two');
+    fs.utimesSync(file, future, future);
+    assert.equal(cache.hasRead('s1', file), false);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('session_read_cache: ignores empty session_id or file_path', () => {
   const dir = _isolate();
   try {
