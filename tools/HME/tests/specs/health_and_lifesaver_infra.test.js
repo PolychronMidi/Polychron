@@ -109,6 +109,4 @@ module.exports.lifesaverInjectionWritesContractArtifacts = async function () {
 
 
 
-if (require.main === module) {
-  for (const [name, fn] of Object.entries(module.exports)) test(name, fn);
-}
+for (const [name, fn] of Object.entries(module.exports)) test(name, fn);
