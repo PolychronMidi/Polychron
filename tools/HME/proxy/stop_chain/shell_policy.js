@@ -31,6 +31,7 @@ function shellPolicy(stageName, opts = {}) {
   const { timeoutMs = defaultTimeout, parseDecision = defaultParseDecision, failClosed = false } = opts;
   return {
     name: stageName,
+    timeoutMs,
     async run(ctx) {
       const result = await spawnStage(stageName, ctx.stdinJson, timeoutMs);
       const decisionFromStdout = parseDecision(result.stdout, ctx);
