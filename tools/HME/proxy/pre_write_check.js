@@ -101,8 +101,20 @@ function _editShapeDecision(payload) {
   return null;
 }
 
+function _readRewriteDecision(payload, reason) {
+  const nextInput = editToReadFallback((payload && payload.tool_input) || {});
+  return {
+    permissionDecision: 'allow',
+    reason: '',
+    contextualRules: [],
+    updatedInput: nextInput,
+    updatedToolName: 'Read',
+    rewriteReason: reason,
+  };
+}
+
 function _editCurrentFileDecision(payload) {
-  if (payload.tool_name !== 'Edit' || payload._hme_synthetic_tool) return null;
+  if (!isEditFamilyTool(payload.tool_name) || payload._hme_synthetic_tool) return null;
   const input = payload.tool_input || {};
   const file = input.file_path || '';
   try {
