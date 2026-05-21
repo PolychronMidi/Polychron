@@ -154,6 +154,25 @@ function _normalizeClaudeStdoutObject(event, parsed) {
 function validateClaudeStdout(event, stdout, root) {
   const text = String(stdout || '').trim();
   if (!text) return stdout || '';
+  if (event === 'Stop') {
+    try {
+      const stopParsed = JSON.parse(text);
+      if (stopParsed && stopParsed.hookSpecificOutput && typeof stopParsed.hookSpecificOutput === 'object' && !Array.isArray(stopParsed.hookSpecificOutput)) {
+        const hso = stopParsed.hookSpecificOutput;
+        const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
+          : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
+          : typeof stopParsed.reason === 'string' ? stopParsed.reason
+          : '';
+        const repaired = { ...stopParsed };
+        delete repaired.hookSpecificOutput;
+        if (reason) {
+          repaired.decision = 'block';
+          repaired.reason = reason;
+        }
+        return JSON.stringify(repaired);
+      }
+    } catch (_e) { /* normal JSON validation below logs the malformed Stop payload */ }
+  }
   let parsed;
   try {
     parsed = JSON.parse(text);
