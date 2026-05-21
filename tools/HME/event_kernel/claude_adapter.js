@@ -57,6 +57,7 @@ function shouldLogHookStderr(stderr) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.every((line) => /^ok$/i.test(line))) return false;
   if (/^Stop hook error:/i.test(text)) return /\b(unexpected|exception|traceback|invalid|JSON validation failed|schema|missing|required field)\b/i.test(text) && !/\b(MULTI-FLAG STOP|AUTO-COMPLETENESS|EXHAUST PROTOCOL|SPIRALLING_PETULANCE|UNFINISHED TASK-LIST|STOP-CHAIN INTEGRITY FAILURE)\b/i.test(text);
+  if (/\[proxy-supervisor\] CRASH LOOP DETECTED/i.test(text)) return !/\[observation-only/i.test(text);
   return /\b(error|failed|failure|exception|traceback|invalid|crash|denied|JSON validation failed)\b/i.test(text);
 }
 
