@@ -91,7 +91,7 @@ async function runHostAdapter(opts) {
   process.env.PROJECT_ROOT = root;
   if (opts.hostProjectEnv) process.env[opts.hostProjectEnv] = root;
   const port = Number(_hmeRequireEnv('HME_PROXY_PORT'));
-  nudgeSupervisors(root);
+  if (process.env.HME_ADAPTER_NO_NUDGE !== '1') nudgeSupervisors(root);
   const rawBody = await readStdin(`${opts.host}_adapter`);
   const body = opts.buildBody({ event, root, rawBody, cwd: process.cwd() });
   let payload = {};
