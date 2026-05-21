@@ -29,13 +29,15 @@ test('compact_tool_descriptions rewrites verbose tool descriptions only', () => 
   assert.match(payload.tools[0].description, /^Read a file by absolute path/);
   assert.match(payload.tools[1].description, /^Run a subagent/);
   assert.match(payload.tools[1].description, /Agent level=3 prompt=/);
+  assert.match(payload.tools[1].description, /description=/);
   assert.match(payload.tools[2].description, /^Run a bash command/);
   assert.match(payload.tools[3].description, /^Maintain a session task list/);
   assert.match(payload.tools[4].description, /^Fetch and summarize a public URL/);
   assert.match(payload.tools[5].description, /^Search the web/);
   assert.equal(payload.tools[6].description, 'keep me');
-  assert.deepEqual(Object.keys(payload.tools[1].input_schema.properties), ['level', 'prompt']);
+  assert.deepEqual(Object.keys(payload.tools[1].input_schema.properties), ['level', 'prompt', 'description']);
   assert.deepEqual(payload.tools[1].input_schema.required, ['level', 'prompt']);
+  assert.equal(payload.tools[1].input_schema.properties.description.type, 'string');
   assert.equal(payload.tools[1].input_schema.additionalProperties, false);
   assert.ok(payload.tools[0].description.length < 220);
   assert.ok(payload.tools[1].description.length < 360);
