@@ -42,9 +42,14 @@ class CanonicalPrecommitHookVerifier(Verifier):
         for token in ["blocked_path_reason", "secret_hits", "has_conflict_markers", "executable_sanity"]:
             if token not in v_text:
                 problems.append(f"validator missing token: {token}")
-        for token in ["blocked_paths", "local_path_markers", "canonical_precommit"]:
+        for token in ["blocked_paths", "local_path_markers", "canonical_precommit", "canonical_post_commit"]:
             if token not in p_text:
                 problems.append(f"policy missing token: {token}")
+        for token in ["post-commit-proxy-reload-needed", "not restarting synchronously"]:
+            if token not in pc_text:
+                problems.append(f"canonical post-commit hook missing token: {token}")
+        if "proxy-supervisor.sh" in pc_text:
+            problems.append("canonical post-commit hook restarts proxy synchronously")
         if not (canonical.stat().st_mode & stat.S_IXUSR):
             problems.append("canonical hook is not executable")
         if not (validator.stat().st_mode & stat.S_IXUSR):
