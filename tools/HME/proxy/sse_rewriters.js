@@ -173,6 +173,7 @@ function longLeadingSleepRewrite(eventName, data, ctx) {
 }
 
 const {
+  hookUiEchoStripRewrite,
   ackStripRewrite,
   hallucinatedTurnPrefixStripRewrite,
   stopHookCeremonyStripRewrite,
