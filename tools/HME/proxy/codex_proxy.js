@@ -11,6 +11,7 @@ const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 const { requestTelemetry } = require('./request_telemetry');
+const { decisionForTarget } = require('./model_route_resolver');
 const { servicePort } = require('./service_registry');
 const { emitStartMarker } = require('./start_marker');
 const { ensureSession, reapDuplicates } = require('./codex_session_guard');
