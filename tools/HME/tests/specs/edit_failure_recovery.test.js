@@ -168,11 +168,15 @@ test('edit failure middleware appends current context and records read-equivalen
   const file = path.join(root, 'src', 'target.js');
   fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
   const prevRoot = process.env.PROJECT_ROOT;
+  const prevCacheDir = process.env.HME_SESSION_READ_CACHE_DIR;
   process.env.PROJECT_ROOT = root;
+  process.env.HME_SESSION_READ_CACHE_DIR = path.join(root, 'tmp', 'session-read-cache');
   delete require.cache[require.resolve('../../proxy/session_state')];
+  delete require.cache[require.resolve('../../proxy/session_read_cache')];
   delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
   const mw = require('../../proxy/middleware/29_edit_failure_context');
   const sessionState = require('../../proxy/session_state');
+  const sessionReadCache = require('../../proxy/session_read_cache');
   const toolResult = { content: 'Error: read before write required', is_error: true };
   const events = [];
   const ctx = {
@@ -200,9 +204,12 @@ test('edit failure middleware appends current context and records read-equivalen
     assert.equal(read.file, file);
     assert.equal(read.source, 'edit_failure_auto_context');
     assert.equal(read.reason, '');
+    assert.equal(sessionReadCache.hasRead('read-gate-test', file), true);
   } finally {
     if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
+    if (prevCacheDir === undefined) delete process.env.HME_SESSION_READ_CACHE_DIR; else process.env.HME_SESSION_READ_CACHE_DIR = prevCacheDir;
     delete require.cache[require.resolve('../../proxy/session_state')];
+    delete require.cache[require.resolve('../../proxy/session_read_cache')];
     delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
     fs.rmSync(root, { recursive: true, force: true });
   }
