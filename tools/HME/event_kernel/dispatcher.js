@@ -123,6 +123,14 @@ function _finishHook(eventName, scriptPath, startedAt, result) {
   if (code !== 0 && !_policyDecisionOutput(result.stdout || '')) {
     _appendHookFailure(eventName, scriptPath, code, result);
   }
+  recordHookCheckpoint(PROJECT_ROOT, 'hook-script', {
+    event: eventName || 'hook',
+    policy: path.basename(scriptPath),
+    decision: code === 0 ? 'ok' : 'error',
+    exit_code: code,
+    stdout_bytes: Buffer.byteLength(result.stdout || ''),
+    stderr_bytes: Buffer.byteLength(result.stderr || ''),
+  });
   return result;
 }
 
