@@ -36,6 +36,7 @@ const stateClient = require('../proxy/session_state_client');
 const { normalize } = require('./envelope');
 const { recordFailure } = require('../proxy/turn_failure_state');
 const { spawnFileInput } = require('./fs_ipc');
+const { recordHookCheckpoint } = require('./hook_decision_log');
 const nativeHooks = require('./native_hooks');
 
 async function _recordLifecycleState(eventName, stdinJson) {
