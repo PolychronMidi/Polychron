@@ -146,10 +146,19 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   const { isBenignHookStderr, claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   assert.equal(shouldLogHookStderr('ok'), false);
   assert.equal(shouldLogHookStderr('ok\nok'), false);
-  assert.equal(shouldLogHookStderr('Stop hook error: JSON validation failed'), true);
+  assert.equal(shouldLogHookStderr('Stop hook error: JSON validation failed'), false);
   assert.equal(shouldLogHookStderr('HME proxy already running on :9099\nOnboarding: 6/7 await verdict\nPipeline: STABLE'), false);
   assert.equal(isBenignHookStderr('ok\nok'), true);
   assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
+});
+
+test('Claude Stop block stays structured stdout and does not duplicate reason on stderr', () => {
+  const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
+  const reason = 'EXHAUST PROTOCOL VIOLATION: fix work';
+  const fields = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: '', exit_code: 0 });
+  assert.equal(fields.stdout, JSON.stringify({ decision: 'block', reason }));
+  assert.equal(fields.stderr, ' ');
+  assert.equal(fields.exit_code, 0);
 });
 
 test('lifecycle status stderr is converted to context instead of error channel', () => {
