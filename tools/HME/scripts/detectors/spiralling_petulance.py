@@ -81,6 +81,7 @@ def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
     last_edit = float(state.get("last_edit_ts") or 0.0)
     h = _cmd_hash(key)
     recent: list[dict] = []
+    family_seen: dict[str, str] = {}
     prior_same = 0
     for row in state.get("attempts", []):
         if not isinstance(row, dict):
