@@ -78,6 +78,31 @@ function _lifesaverBlock(event, message) {
     });
   }
   const out = { decision: 'block', reason: alert };
+  if (event === 'Stop') {
+    if (out.hookSpecificOutput) {
+      const hso = out.hookSpecificOutput;
+      const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
+        : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
+        : typeof out.reason === 'string' ? out.reason
+        : '';
+      delete out.hookSpecificOutput;
+      if (reason) {
+        out.decision = 'block';
+        out.reason = reason;
+      } else {
+        issues.push('Stop hookSpecificOutput is not valid Claude hook JSON; stripped unsupported field');
+      }
+    }
+    if (out.decision && out.decision !== 'block') {
+      issues.push(`Stop root decision=${JSON.stringify(out.decision)} is not valid Claude hook JSON; stripped decision fields`);
+      delete out.decision;
+      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
+    } else if (!out.decision && Object.prototype.hasOwnProperty.call(out, 'reason')) {
+      issues.push('Stop root reason without decision="block" is not valid Claude hook JSON; stripped reason');
+      delete out.reason;
+    }
+  }
+
   if (event === 'UserPromptSubmit') {
     out.hookSpecificOutput = { hookEventName: event, additionalContext: alert };
   }
