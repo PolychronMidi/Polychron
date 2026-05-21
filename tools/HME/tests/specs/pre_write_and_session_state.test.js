@@ -319,14 +319,16 @@ test('synthetic autocommit direct fallback script exists', () => {
 
 test('hook envelope normalizes JSON string tool_input', () => {
   const { normalize } = require('../../event_kernel/envelope');
-  const tmpFile = path.join(os.tmpdir(), 'x.js');
+  const tempRoot = os.tmpdir();
+  const fileName = 'x.js';
+  const tempFile = path.join(tempRoot, fileName);
   const env = normalize(JSON.stringify({
     session_id: 's8',
     tool_name: 'Write',
-    tool_input: JSON.stringify({ file_path: tmpFile, content: 'const x = 1;' }),
+    tool_input: JSON.stringify({ file_path: tempFile, content: 'const x = 1;' }),
   }));
   assert.strictEqual(env.session_id, 's8');
-  assert.strictEqual(env.file_path, tmpFile);
+  assert.strictEqual(env.file_path, tempFile);
   assert.strictEqual(env.content, 'const x = 1;');
 });
 
