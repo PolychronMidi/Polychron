@@ -108,7 +108,7 @@ if [ -f "$ERROR_LOG" ]; then
     # before showing as LIFESAVER alerts -- they're INFO, not errors.
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
       | sed 's/^\[[0-9TZ:.\-]*\] //' \
-      | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned|^\[(hook-stop-block|hook-runtime-error|hook-failure|hook-output-validation|hook-ui-echo-leak|crying_wolf)\]' \
+      | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned|^\[(hook-stop-block|hook-runtime-error|hook-failure|hook-output-validation|hook-ui-echo-leak)\]' \
       | grep -vE '^[[:space:]]*$' \
       | sort -u)
     if [ -z "$NEW_ERRORS" ]; then
