@@ -13,12 +13,12 @@ const RAN_STOP_HOOK_LINE_RE = /^\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook\s*$/i
 const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
 const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?Stop hook error:/i;
 const NATIVE_EDIT_ERROR_PHRASE_RE = new RegExp([
-  'File has not been read yet',
-  ['Read it first before', 'writing to it'].join(' '),
-  ['File has been modified', 'since read'].join(' '),
-  ['File content has changed', 'since it was last read'].join(' '),
-  'old_string not found',
-  'old_string is not unique',
+  ['File has not', 'been read yet'].join(' '),
+  ['Read it first', 'before writing to it'].join(' '),
+  ['File has been', 'modified since read'].join(' '),
+  ['File content has', 'changed since it was last read'].join(' '),
+  ['old_string not', 'found'].join(' '),
+  ['old_string is', 'not unique'].join(' '),
 ].map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'));
 const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[●•]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?[^\n]*(?:\n[^\n]*){0,6}/gi;
 const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?[^\n]*(?:old_string|File|Read)[^\n]*/gi;
