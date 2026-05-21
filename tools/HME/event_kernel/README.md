@@ -16,6 +16,22 @@ Adapters translate that result into their host protocol. `claude_adapter.js`
 wraps the result for Claude Code, while `codex_adapter.js` relays Codex-native
 JSON and filters unsupported fields such as `updatedInput`.
 
+## Lifecycle time travel
+
+Adapters now write passive LangGraph-style checkpoints to
+`tools/HME/runtime/hook-lifecycle-checkpoints.jsonl` at relay boundaries. The
+ledger mirrors LangGraphJS time-travel semantics from the local reference tree:
+each checkpoint has `thread_id`, `checkpoint_id`, `parent_id`, `phase`, and
+redacted `values`. It gives hook lifecycle events replay/fork control without
+adding a hot-path npm dependency while `@langchain/langgraph` is not installed in
+this repo.
+
+Use `lifecycle_time_travel.history(root, threadId)` to inspect a hook thread,
+`get(root, checkpointId)` to view one checkpoint, and `fork(root, checkpointId,
+patch)` to create an alternate state branch. Raw payload/stdout/stderr content is
+stored as byte counts and hashes only; prompt text and secrets do not enter the
+ledger.
+
 ## Process IPC
 
 All subprocess boundaries use `fs_ipc.js`: the kernel writes hook input to
