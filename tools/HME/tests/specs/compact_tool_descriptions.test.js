@@ -47,6 +47,16 @@ test('compact_tool_descriptions rewrites verbose tool descriptions only', () => 
   assert.ok(payload.tools[5].description.length < 220);
 });
 
+
+test('compact_tool_descriptions preserves host-required Agent.description while adding schema', () => {
+  const payload = { tools: [
+    { name: 'Agent', description: 'host agent', input_schema: { type: 'object', properties: { level: {}, prompt: {}, description: {} }, required: ['level', 'prompt', 'description'], additionalProperties: false } },
+  ] };
+  assert.equal(run(payload), true);
+  assert.deepEqual(payload.tools[0].input_schema.required, ['level', 'prompt', 'description']);
+  assert.deepEqual(Object.keys(payload.tools[0].input_schema.properties), ['level', 'prompt', 'description']);
+});
+
 test('compact_tool_descriptions inserts canonical TodoWrite when missing', () => {
   const payload = { tools: [
     { name: 'Read', description: 'very long read description' },
