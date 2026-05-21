@@ -2,7 +2,7 @@
 
 // Strip Codex-injected system noise wrappers from body.input[].content[].
 
-const { CODEX_WRAPPER_RULES, itemText, classifyRemoveBlockText } = require('./system_noise_rules');
+const { CODEX_SYSTEM_NOISE_RULES, itemText, classifyRemoveBlockText } = require('./system_noise_rules');
 
 function classifyNoise(item) {
   const text = itemText(item);
