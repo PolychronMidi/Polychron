@@ -189,6 +189,27 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
   assert.deepStrictEqual(events, []);
 });
 
+test('Codex route decisions use shared model_route_resolver target normalization', () => {
+  const body = { model: 'gpt-5.5', input: [] };
+  const targets = codexTargetChain({
+    body,
+    upstreamUrl: 'https://direct.example/v1/responses',
+    cfg: { codex_omniroute: { enabled: true, url: 'http://127.0.0.1:20128/v1/responses', provider_prefix: 'cx' } },
+    env: { HME_CODEX_OMNIROUTE: '1' },
+    servicePort: () => 20128,
+  });
+  const decision = decisionForTarget({ host: 'codex', protocol: 'openai-responses', requestedModel: body.model, target: targets[0] });
+  assert.deepStrictEqual(decision, {
+    host: 'codex',
+    requested_model: 'gpt-5.5',
+    provider: 'omniroute',
+    protocol: 'openai-responses',
+    route: 'omniroute',
+    target_model: 'cx/gpt-5.5',
+  });
+});
+
+
 test('Codex proxy status mode renders payload deltas without prompt text', () => {
   const sandbox = withSandbox();
   const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
