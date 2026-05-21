@@ -80,6 +80,32 @@ function maybeStripNonSseBareAck({ payload, outBuf }) {
   }
 }
 
+function maybeStripNonSseHookUiEcho({ outBuf }) {
+  try {
+    const outStr = outBuf.toString('utf8');
+    if (!outStr.trimStart().startsWith('{')) return null;
+    const parsed = JSON.parse(outStr);
+    if (!parsed || !Array.isArray(parsed.content)) return null;
+    const { stripHookUiEchoText } = require('./hook_ui_echo_guard');
+    let changed = false;
+    const nextContent = [];
+    for (const b of parsed.content) {
+      if (!b || b.type !== 'text' || typeof b.text !== 'string') {
+        nextContent.push(b);
+        continue;
+      }
+      const stripped = stripHookUiEchoText(b.text, {}, { projectRoot: PROJECT_ROOT });
+      if (stripped !== b.text) changed = true;
+      if (stripped.trim()) nextContent.push({ ...b, text: stripped });
+    }
+    if (!changed) return null;
+    parsed.content = nextContent;
+    return Buffer.from(JSON.stringify(parsed), 'utf8');
+  } catch (_e) {
+    return null;
+  }
+}
+
 function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf }) {
   const willSseTransform = !final
     && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
