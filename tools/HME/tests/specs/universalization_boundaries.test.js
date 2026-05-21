@@ -60,6 +60,7 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
       encoding: 'utf8',
       env: {
         ...process.env,
+        HME_PETULANCE_OK: undefined,
         PROJECT_ROOT: repoRoot,
         HME_PROXY_PORT: '9',
         HME_PETULANCE_STATE_PATH: path.join(tmp, 'state.json'),
