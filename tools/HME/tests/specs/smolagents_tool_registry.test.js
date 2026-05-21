@@ -6,6 +6,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { canonicalToolSchemas, canonicalToolMetadata, canonicalLangChainTools, missingRequiredFields, requiresApproval } = require('../../proxy/hme_tool_registry');
+const { bridgePlan, toolNames, toolSurface } = require('../../proxy/universal_tool_surface');
 
 const ROOT = path.resolve(__dirname, '../../..', '..');
 
