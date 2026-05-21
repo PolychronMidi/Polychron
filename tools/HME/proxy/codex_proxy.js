@@ -179,13 +179,15 @@ async function handleResponses(req, res) {
     projectRoot: PROJECT_ROOT,
   });
   const targets = targetChain(transformed, UPSTREAM_URL, loadConfig);
+  const route_decision = decisionForTarget({ host: 'codex', protocol: 'openai-responses', requestedModel: transformed.model || body.model || '', target: targets[0] });
   record({
     kind: 'request',
     source,
     upstream: targets[0].url,
     route: targets[0].kind,
+    route_decision,
     targets: targetSummary(targets),
-    telemetry: requestTelemetry({ host: 'codex', protocol: 'openai-responses', provider: targets[0].kind, route: targets[0].kind, path: req.url, body: transformed, before, after, cleanup }),
+    telemetry: requestTelemetry({ host: 'codex', protocol: 'openai-responses', provider: targets[0].kind, route: targets[0].kind, path: req.url, body: transformed, before, after, cleanup, route_decision }),
     autocommit,
     lifesaver_injected: lifesaver.injected,
     lifesaver_flag: lifesaver.flag || '',
