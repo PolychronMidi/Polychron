@@ -127,6 +127,26 @@ test('pre-write rewrites long comment lines instead of denying', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('pre-write rewrites unread Edit/Update into Read instead of native read-gate failure', async () => {
+  const root = _withSandbox('hme-pre-write-unread-edit-');
+  const { preWriteCheck, toHookResponse } = require('../../proxy/pre_write_check');
+  const target = path.join(root, 'src', 'x.js');
+  fs.writeFileSync(target, 'const x = 1;\n');
+  const decision = await preWriteCheck(JSON.stringify({
+    tool_name: 'Update',
+    session_id: 's-unread-edit',
+    tool_input: { file_path: target, old_string: 'const x = 1;\n', new_string: 'const x = 2;\n' },
+  }));
+  assert.strictEqual(decision.permissionDecision, 'allow');
+  assert.strictEqual(decision.updatedToolName, 'Read');
+  assert.deepStrictEqual(decision.updatedInput, { file_path: target, limit: 50 });
+  const out = JSON.parse(toHookResponse(decision)).hookSpecificOutput;
+  assert.strictEqual(out.updatedToolName, 'Read');
+  assert.deepStrictEqual(out.updatedInput, { file_path: target, limit: 50 });
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+
 test('pre-write hardcoded-root: rewrites literal root to $PROJECT_ROOT', async () => {
   const root = _withSandbox('hme-pre-write-root-line-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
@@ -299,13 +319,14 @@ test('synthetic autocommit direct fallback script exists', () => {
 
 test('hook envelope normalizes JSON string tool_input', () => {
   const { normalize } = require('../../event_kernel/envelope');
+  const tmpFile = path.join(os.tmpdir(), 'x.js');
   const env = normalize(JSON.stringify({
     session_id: 's8',
     tool_name: 'Write',
-    tool_input: JSON.stringify({ file_path: '/tmp/x.js', content: 'const x = 1;' }),
+    tool_input: JSON.stringify({ file_path: tmpFile, content: 'const x = 1;' }),
   }));
   assert.strictEqual(env.session_id, 's8');
-  assert.strictEqual(env.file_path, '/tmp/x.js');
+  assert.strictEqual(env.file_path, tmpFile);
   assert.strictEqual(env.content, 'const x = 1;');
 });
 
