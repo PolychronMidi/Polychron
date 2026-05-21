@@ -116,6 +116,36 @@ test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wol
 });
 
 
+test('sendFinalResponse strips non-SSE hook UI echoes and writes crying_wolf error', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-nonsse-hook-ui-'));
+  const oldRoot = process.env.PROJECT_ROOT;
+  try {
+    process.env.PROJECT_ROOT = tmp;
+    purgeProxyModules();
+    const { sendFinalResponse } = require('../../proxy/hme_proxy_response_send');
+    const body = {
+      type: 'message',
+      content: [{ type: 'text', text: 'before\n● Ran 1 stop hook\n  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop\nafter' }],
+    };
+    let ended = null;
+    const clientRes = {
+      writeHead() {},
+      end(buf) { ended = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf); },
+    };
+    sendFinalResponse({ clientRes, payload: { messages: [{ role: 'user', content: 'x' }] }, final: true, outStatus: 200, outHeaders: { 'content-type': 'application/json' }, outBuf: Buffer.from(JSON.stringify(body), 'utf8') });
+    assert.doesNotMatch(ended, /Ran 1 stop hook/);
+    assert.doesNotMatch(ended, /claude_adapter\.js Stop/);
+    assert.match(ended, /before/);
+    assert.match(ended, /after/);
+    assert.match(fs.readFileSync(path.join(tmp, 'log/hme-errors.log'), 'utf8'), /\[crying_wolf\] CRITICAL/);
+  } finally {
+    if (oldRoot === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = oldRoot;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
 test('sendFinalResponse rewrites non-SSE unread Update to Read', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-nonsse-rewrite-'));
   try {
