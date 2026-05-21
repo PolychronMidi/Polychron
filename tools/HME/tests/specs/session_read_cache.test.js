@@ -137,6 +137,37 @@ test('editFallbackToReadRewrite: lets valid Edit pass when target was previously
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('editFallbackToReadRewrite: rewrites previously-Read Edit to Read when target changed on disk', () => {
+  const dir = _isolate();
+  try {
+    const cache = require('../../proxy/session_read_cache');
+    const file = path.join(dir, 'seen.js');
+    fs.writeFileSync(file, 'a');
+    cache.recordRead('s-stale', file);
+    fs.writeFileSync(file, 'aa');
+    const future = new Date(Date.now() + 5000);
+    fs.utimesSync(file, future, future);
+    const { editFallbackToReadRewrite } = require('../../proxy/sse_rewriters');
+    const ctxMap = new Map([['session_id', 's-stale']]);
+    const ctx = { get: (k) => ctxMap.get(k), set: (k, v) => ctxMap.set(k, v) };
+    const validEdit = JSON.stringify({ file_path: file, old_string: 'a', new_string: 'b' });
+    const out = [];
+    const events = [
+      ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_1', name: 'Update', input: {} } }],
+      ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: validEdit } }],
+      ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+    ];
+    for (const [n, d] of events) {
+      const r = editFallbackToReadRewrite(n, d, ctx);
+      if (r === null) continue;
+      if (r && r.events) { for (const e of r.events) out.push(e); continue; }
+      out.push([n, r]);
+    }
+    assert.equal(out[0][1].content_block.name, 'Read', 'stale Read snapshot must force Read before native Update executes');
+    assert.equal(JSON.parse(out[1][1].delta.partial_json).file_path, file);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('REPO_ROOT marker so test file is identifiable', () => { assert.ok(REPO_ROOT.endsWith('Polychron')); });
 
 test('readInputNormalizeRewrite: drops pages for non-PDF Read tool calls', () => {
