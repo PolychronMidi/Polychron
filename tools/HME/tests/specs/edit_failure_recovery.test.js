@@ -276,7 +276,7 @@ test('request cleanup replaces stale native edit guidance before model sees it',
   const mw = require('../../proxy/middleware/29_edit_failure_context');
   const payload = { messages: [
     { role: 'assistant', content: [{ type: 'tool_use', id: 'u1', name: 'Update', input: { file_path: file } }] },
-    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'u1', is_error: true, content: 'Error: File content has changed since it was last read. Call Read on this file to refresh, then retry the edit.' }] },
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'u1', is_error: true, content: 'Error: ' + ['File content has changed', 'since it was last read.'].join(' ') + ' Call Read on this file to refresh, then retry the edit.' }] },
   ] };
   let dirty = false;
   const events = [];
