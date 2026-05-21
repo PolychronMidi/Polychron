@@ -140,7 +140,10 @@ function inputFor(name, args) {
   if (name === 'Write') return { file_path: args.file_path || args.file || '', content: String(args.content || '') };
   if (name === 'Edit') return { file_path: args.file_path || args.file || '', old_string: String(args.old_string || ''), new_string: String(args.new_string || ''), ...(args.replace_all ? { replace_all: true } : {}) };
   if (name === 'WebFetch') return { url: String(args.url || ''), prompt: String(args.prompt || '') };
-  if (name === 'Agent') return { prompt: String(args.prompt || ''), ...(args.level != null ? { level: Number(args.level) } : {}) };
+  if (name === 'Agent') {
+    const prompt = String(args.prompt || '');
+    return { prompt, description: String(args.description || args.justification || prompt.split(/\r?\n/)[0].slice(0, 60) || 'Subagent task'), ...(args.level != null ? { level: Number(args.level) } : {}) };
+  }
   if (name === 'Bash') return { command: String(args.command || args.cmd || ''), ...(args.timeout != null ? { timeout: Number(args.timeout) } : {}), ...(args.description != null ? { description: String(args.description) } : {}), ...(args.run_in_background != null ? { run_in_background: Boolean(args.run_in_background) } : {}) };
   return args;
 }
