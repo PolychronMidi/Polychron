@@ -190,9 +190,11 @@ test('Claude adapter logs Stop block reasons to Lifesaver logs', () => {
   try {
     const adapterPath = path.join(repoRoot, 'tools/HME/event_kernel/claude_adapter.js');
     const reason = 'MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.\nAddress all of them in this turn.';
+    const stdoutJson = JSON.stringify(JSON.stringify({ decision: 'block', reason }));
+    const bodyJson = JSON.stringify(JSON.stringify({ _hme_project_root: tmp }));
     execFileSync('node', ['-e', [
       `const { finalRelay } = require(${JSON.stringify(adapterPath)});`,
-      `finalRelay('Stop', { stdout: ${JSON.stringify(JSON.stringify({ decision: 'block', reason }))}, stderr: '', exit_code: 0 }, ${JSON.stringify(JSON.stringify({ _hme_project_root: tmp }))});`,
+      `finalRelay('Stop', { stdout: ${stdoutJson}, stderr: '', exit_code: 0 }, ${bodyJson});`,
     ].join('\n')], {
       encoding: 'utf8',
       env: { ...process.env, PROJECT_ROOT: tmp, HME_ADAPTER_NO_NUDGE: '1' },
