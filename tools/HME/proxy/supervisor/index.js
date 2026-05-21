@@ -160,9 +160,6 @@ async function _healthLoop() {
           if (meta.required !== false) {
             try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}${tailHint}\n`); } catch (_e) { /* best-effort */ }
           }
-          // Filesystem sentinel the i/ wrappers + statusline check for immediate surfaci
-          // Cleared on successful adoption (see the adopt path above). Optional
-          // children are degraded-self-health only; do not create a blocking
           if (meta.required !== false) {
             try {
               fs.mkdirSync(path.dirname(sentinel), { recursive: true });
