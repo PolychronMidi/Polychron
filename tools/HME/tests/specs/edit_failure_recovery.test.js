@@ -173,7 +173,7 @@ test('edit failure middleware appends current context and records read-equivalen
   delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
   const mw = require('../../proxy/middleware/29_edit_failure_context');
   const sessionState = require('../../proxy/session_state');
-  const toolResult = { content: 'Error: File has not been read yet. Read it first before writing to it.', is_error: true };
+  const toolResult = { content: 'Error: read before write required', is_error: true };
   const events = [];
   const ctx = {
     PROJECT_ROOT: root,
@@ -190,7 +190,7 @@ test('edit failure middleware appends current context and records read-equivalen
       session: 'read-gate-test',
       ctx,
     });
-    assert.doesNotMatch(toolResult.content, /File has not been read yet/);
+    assert.doesNotMatch(toolResult.content, /read before write required/);
     assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
     assert.equal(events[0].event, 'edit_failure_context_appended');
     assert.equal(events[0].read_equivalent, true);
