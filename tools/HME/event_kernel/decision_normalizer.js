@@ -191,7 +191,7 @@ function claudeRelayFields(event, result) {
   if (isBenignHookStderr(stderr)) stderr = '';
   if (event === 'Stop' && code === 0 && stdout) {
     const parsed = parseJson(stdout);
-    if (parsed && parsed.decision === 'block' && parsed.reason && !stderr) {
+    if (parsed && parsed.decision === 'block' && parsed.reason) {
       stderr = ' ';
     }
   }
