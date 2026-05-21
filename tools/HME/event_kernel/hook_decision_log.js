@@ -81,4 +81,4 @@ function recordPolicyRewrite(root, payload = {}, rewrites = []) {
   append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(row));
 }
 
-module.exports = { hookDecisionSummary, recordHookDecision, recordPolicyRewrite };
+module.exports = { hookDecisionSummary, recordHookDecision, recordHookCheckpoint, recordPolicyRewrite };
