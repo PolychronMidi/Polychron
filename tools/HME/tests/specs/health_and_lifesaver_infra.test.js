@@ -92,6 +92,26 @@ module.exports.lifesaverEscalatesCriticalInfraSelfTags = async function () {
   assert.doesNotMatch(payload.messages[0].content, /observed tick/);
 };
 
+module.exports.lifesaverDoesNotEscalateHookBookkeeping = async function () {
+  const lifesaver = require('../../proxy/middleware/22_lifesaver_inject.js');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-hook-bookkeeping-'));
+  fs.mkdirSync(path.join(root, 'log'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'tools/HME/runtime'), { recursive: true });
+  const errLog = path.join(root, 'log/hme-errors.log');
+  fs.writeFileSync(errLog, '');
+  const ctx = { PROJECT_ROOT: root, dirty: false, events: [], markDirty() { this.dirty = true; }, emit(e) { this.events.push(e); } };
+  lifesaver.onRequest({ payload: { messages: [{ role: 'user', content: 'seed' }] }, ctx });
+  fs.appendFileSync(
+    errLog,
+    '[hook-stop-block] MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.\n' +
+      '[hook-runtime-error] LIFESAVER -- unresolved errors in hme-errors.log: bookkeeping echo\n',
+  );
+  const payload = { messages: [{ role: 'user', content: 'hi' }] };
+  lifesaver.onRequest({ payload, ctx });
+  assert.strictEqual(ctx.dirty, false);
+  assert.strictEqual(payload.messages[0].content, 'hi');
+};
+
 module.exports.lifesaverInjectionWritesContractArtifacts = async function () {
   const { assertRealLifesaverInjection, LIFESAVER_HEARTBEAT_REL, LIFESAVER_INJECT_LOG_REL } = require('../../proxy/lifesaver_alerts');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-contract-'));
