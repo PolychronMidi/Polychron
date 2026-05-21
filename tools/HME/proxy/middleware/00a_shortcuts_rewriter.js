@@ -27,9 +27,18 @@ function _rewriteShortcutText(text, value) {
   return value;
 }
 
+function _isRealUserMessage(msg) {
+  if (!msg || msg.role !== 'user') return false;
+  const content = msg.content;
+  if (typeof content === 'string') return true;
+  if (!Array.isArray(content)) return false;
+  return content.some((block) => block && block.type === 'text' && typeof block.text === 'string')
+    && !content.some((block) => block && block.type === 'tool_result');
+}
+
 function _lastUserText(payload) {
   if (!payload || !Array.isArray(payload.messages)) return { text: '', block: null, msg: null };
-  const userMsgs = payload.messages.filter(m => m && m.role === 'user');
+  const userMsgs = payload.messages.filter(_isRealUserMessage);
   if (!userMsgs.length) return { text: '', block: null, msg: null };
   const last = userMsgs[userMsgs.length - 1];
   if (typeof last.content === 'string') {
