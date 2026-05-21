@@ -138,7 +138,10 @@ function finalRelay(event, result, body = '{}') {
   let payload = {};
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
   const root = payload._hme_project_root || requireEnv('PROJECT_ROOT');
+  const thread_id = timeTravel.threadId({ host: 'claude', event, payload });
+  timeTravel.checkpoint({ root, host: 'claude', event, payload, phase: 'relay:raw', values: { thread_id, raw_stdout: result.stdout || '', relay_stdout: fields.stdout || '', relay_stderr: fields.stderr || '', exit_code: fields.exit_code } });
   fields.stdout = validateClaudeStdout(event, fields.stdout, root);
+  timeTravel.checkpoint({ root, host: 'claude', event, payload, phase: 'relay:validated', values: { thread_id, relay_stdout: fields.stdout || '', relay_stderr: fields.stderr || '', exit_code: fields.exit_code } });
   if (shouldLogHookStderr(fields.stderr)) logHookError(root, event, fields.stderr.trim());
   recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
   if (fields.stdout) process.stdout.write(fields.stdout);
