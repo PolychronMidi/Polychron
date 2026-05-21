@@ -54,8 +54,11 @@ function rewriteAgent(tool) {
     tool.description = AGENT_DESCRIPTION;
     changed = true;
   }
-  if (!sameJson(tool.input_schema, AGENT_SCHEMA)) {
-    tool.input_schema = JSON.parse(JSON.stringify(AGENT_SCHEMA));
+  const nextSchema = JSON.parse(JSON.stringify(AGENT_SCHEMA));
+  const required = Array.isArray(tool.input_schema && tool.input_schema.required) ? tool.input_schema.required : [];
+  if (required.includes('description')) nextSchema.required = ['level', 'prompt', 'description'];
+  if (!sameJson(tool.input_schema, nextSchema)) {
+    tool.input_schema = nextSchema;
     changed = true;
   }
   return changed;
