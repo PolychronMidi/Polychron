@@ -87,7 +87,7 @@ function _normalizeClaudeStdoutObject(event, parsed) {
   if (out.hookSpecificOutput && typeof out.hookSpecificOutput === 'object' && !Array.isArray(out.hookSpecificOutput)) {
     out.hookSpecificOutput = { ...out.hookSpecificOutput };
     if (!out.hookSpecificOutput.hookEventName) {
-      out.hookSpecificOutput.hookEventName = event;
+      issues.push('hookSpecificOutput missing hookEventName');
     } else if (out.hookSpecificOutput.hookEventName !== event) {
       issues.push(`hookSpecificOutput hookEventName=${JSON.stringify(out.hookSpecificOutput.hookEventName)} did not match ${event}; corrected before host relay`);
       out.hookSpecificOutput.hookEventName = event;
