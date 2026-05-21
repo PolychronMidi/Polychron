@@ -111,6 +111,41 @@ test('hook noise stripper removes Stop hook host echoes from any text role', () 
   assert.ok(stats.categories.stop_hook_host_echo >= 1);
 });
 
+test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => {
+  const { stripHookUiEchoInValue } = require('../../proxy/hook_ui_echo_guard');
+  const os = require('node:os');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-hook-ui-echo-'));
+  try {
+    const stats = {};
+    const payload = {
+      messages: [{ role: 'user', content: [{ type: 'text', text: [
+        'keep before',
+        '● Ran 1 stop hook',
+        '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop',
+        '  ⎿ Stop hook error: EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
+        '',
+        '  --- [1/2] EXHAUST ---',
+        '  EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
+        'keep after',
+      ].join('\n') }] }],
+    };
+    const out = stripHookUiEchoInValue(payload, stats, { projectRoot: tmp });
+    const textOut = out.messages[0].content[0].text;
+    assert.match(textOut, /keep before/);
+    assert.match(textOut, /keep after/);
+    assert.doesNotMatch(textOut, /Stop hook error/);
+    assert.doesNotMatch(textOut, /Final text enumerated/);
+    assert.match(textOut, /hook-ui-echo-leak fp=/);
+    const errLog = fs.readFileSync(path.join(tmp, 'log/hme-errors.log'), 'utf8');
+    assert.match(errLog, /\[hook-ui-echo-leak\] CRITICAL host-rendered Stop hook UI reached model-visible context; stripped/);
+    assert.doesNotMatch(errLog, /Final text enumerated/);
+    assert.equal(stats.categories.stop_hook_ui_echo >= 1, true);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
 test('Codex exec_command responses pass through shared Bash policy', () => {
   const rewritten = rewriteCodexResponseObject({ output: [{ type: 'function_call', name: 'exec_command', arguments: JSON.stringify({ cmd: pipeShell }) }] });
   const call = rewritten.body.output[0];
