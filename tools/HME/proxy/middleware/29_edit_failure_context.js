@@ -50,9 +50,11 @@ function contextWindow(root, file, oldString = '', newString = '', reason = 'edi
   return { text: `\n[READ current context ${relPath(file, root)}:${start + 1}-${end}]\n${body}`, readable: true };
 }
 
-function suggestedReadCall(root, file, reason = '') {
-  const why = /modified since read/i.test(reason) ? 'stale prior read' : 'missing prior read';
-  return `[HME read required: ${why}]\nRun this exact tool call next:\nRead({"file_path":${JSON.stringify(file)}})`;
+function actualReadResult(root, file) {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    return `[READ unavailable: ${relPath(file, root)} is not a readable file]`;
+  }
+  return fs.readFileSync(file, 'utf8');
 }
 
 module.exports = {
