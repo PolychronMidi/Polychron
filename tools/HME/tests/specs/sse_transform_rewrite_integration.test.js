@@ -88,6 +88,34 @@ test('SseTransform applies full slop stripping to normal assistant text without 
   assert.equal(out[1][1].delta.text, 'K. & test.');
 });
 
+test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wolf error', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-sse-hook-ui-'));
+  const oldRoot = process.env.PROJECT_ROOT;
+  try {
+    process.env.PROJECT_ROOT = tmp;
+    purgeProxyModules();
+    const { hookUiEchoStripRewrite } = require('../../proxy/sse_rewriters');
+    const raw = [
+      event('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }),
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'before\n● Ran 1 stop hook\n' } }),
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop\nafter' } }),
+      event('content_block_stop', { type: 'content_block_stop', index: 0 }),
+    ].join('');
+    const outText = await runSse(raw, [hookUiEchoStripRewrite]);
+    assert.doesNotMatch(outText, /Ran 1 stop hook/);
+    assert.doesNotMatch(outText, /claude_adapter\.js Stop/);
+    assert.match(outText, /before/);
+    assert.match(outText, /after/);
+    const errLog = fs.readFileSync(path.join(tmp, 'log/hme-errors.log'), 'utf8');
+    assert.match(errLog, /\[crying_wolf\] CRITICAL non-error hook UI reached model-visible context/);
+  } finally {
+    if (oldRoot === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = oldRoot;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
 test('sendFinalResponse rewrites non-SSE unread Update to Read', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-nonsse-rewrite-'));
   try {
