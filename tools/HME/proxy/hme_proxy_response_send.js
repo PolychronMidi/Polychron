@@ -177,10 +177,11 @@ function _maybeRewriteNonSseEdit(buf, payload) {
     checkFs: true,
     isUnread: (input) => {
       const fp = String((input && (input.file_path || input.path)) || '').trim();
-      if (!sessionId || !fp || !fp.startsWith('/')) return false;
+      if (!fp || !fp.startsWith('/')) return true;
+      if (!sessionId) return true;
       const cache = require('./session_read_cache');
       if (cache.hasRead(sessionId, fp)) return false;
-      cache.recordRead(sessionId, fp);
+      cache.recordRead(sessionId, fp, { source: 'edit_fallback_rewrite' });
       return true;
     },
   });
