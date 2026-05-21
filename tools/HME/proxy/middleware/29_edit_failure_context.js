@@ -79,7 +79,7 @@ function _replaceRawReadGateResults(payload, root, ctx) {
       const file = (toolUse.input || {}).file_path || (toolUse.input || {}).path || '';
       if (!file) continue;
       const text = textOf(block);
-      if (!READ_GATE_RE.test(text) && !MODIFIED_SINCE_READ_RE.test(text)) continue;
+      if (!READ_GATE_RE.test(text) && !STALE_READ_RE.test(text)) continue;
       block.content = actualReadResult(root, file);
       block.is_error = false;
       if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'edit_failure_raw_result_replaced', tool: toolUse.name, file: relPath(file, root) });
