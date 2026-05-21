@@ -123,7 +123,7 @@ async function runHostAdapter(opts) {
     lifecycle.recordTransport('proxy', result);
     opts.onProxyResult({ result, root, port, event, body, ts });
   }
-  timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'kernel:result', values: { thread_id, stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code } });
+  lifecycle.checkpoint('kernel:result', { stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code });
   watchdog.end(watch, result);
   if (opts.beforeFinalRelay) result = opts.beforeFinalRelay({ event, result, body, root }) || result;
   opts.finalRelay(event, result, body);
