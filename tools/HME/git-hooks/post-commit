@@ -3,7 +3,23 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 RESTART="$ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
 LOG="$ROOT/log/hme-post-commit-restart.log"
-mkdir -p "$(dirname "$LOG")"
+STATE="$ROOT/tools/HME/runtime/post-commit-proxy-restart.last"
+MIN_INTERVAL="${HME_POST_COMMIT_RESTART_MIN_SEC:-180}"
+mkdir -p "$(dirname "$LOG")" "$(dirname "$STATE")"
+HEAD_SHA="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || true)"
+HEALTH_JSON="$(curl -sS --max-time 2 http://127.0.0.1:${HME_PROXY_PORT:-9099}/health 2>/dev/null || true)"
+if [ -n "$HEALTH_JSON" ] && printf '%s' "$HEALTH_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") and not d.get("runtime_stale") else 1)' 2>/dev/null; then
+  exit 0
+fi
+NOW="$(date +%s)"
+LAST=0
+[ -f "$STATE" ] && LAST="$(cat "$STATE" 2>/dev/null || echo 0)"
+case "$LAST" in ''|*[!0-9]*) LAST=0 ;; esac
+if [ $((NOW - LAST)) -lt "$MIN_INTERVAL" ]; then
+  printf '[post-commit] proxy restart throttled (%ss remaining) for sha %s\n' "$((MIN_INTERVAL - (NOW - LAST)))" "$HEAD_SHA" >>"$LOG"
+  exit 0
+fi
+printf '%s\n' "$NOW" >"$STATE"
 if [ -x "$RESTART" ]; then
   PROJECT_ROOT="$ROOT" "$RESTART" restart >>"$LOG" 2>&1 || {
     printf '[post-commit] proxy restart failed; see %s\n' "$LOG" >&2

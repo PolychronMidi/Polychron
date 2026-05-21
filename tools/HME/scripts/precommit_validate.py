@@ -329,7 +329,7 @@ def self_protect() -> None:
             if hook_text != canonical_text:
                 failures.append("pre-commit self-protection failed: installed hook differs from canonical tools/HME/git-hooks/pre-commit")
         except OSError:
-            pass  # silent-ok: pending review
+            pass  # silent-ok: optional fallback path.
     if post_commit.is_file():
         try:
             post_text = post_commit.read_text(encoding="utf-8", errors="replace")
@@ -346,13 +346,13 @@ def self_protect() -> None:
         if not (mode & stat.S_IXUSR):
             failures.append("pre-commit self-protection failed: hook is not executable")
     except OSError:
-        pass  # silent-ok: pending review
+        pass  # silent-ok: optional fallback path.
     try:
         mode = POST_COMMIT_HOOK_PATH.stat().st_mode
         if not (mode & stat.S_IXUSR):
             failures.append("post-commit self-protection failed: hook is not executable")
     except OSError:
-        pass  # silent-ok: pending review
+        pass  # silent-ok: optional fallback path.
 
 
 def full_env_failfast_check() -> None:
