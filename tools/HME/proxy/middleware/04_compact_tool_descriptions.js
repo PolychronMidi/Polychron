@@ -1,6 +1,6 @@
 'use strict';
 
-const AGENT_DESCRIPTION = `Run a subagent. Example: Agent level=3 prompt="Audit parser edge cases." Use level 1-5: 1 tiny, 2 focused, 3 standard, 4 deep, 5 principal.`;
+const AGENT_DESCRIPTION = `Run a subagent. Example: Agent level=3 prompt="Audit parser edge cases." description="Parser audit". Use level 1-5: 1 tiny, 2 focused, 3 standard, 4 deep, 5 principal.`;
 
 const AGENT_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
