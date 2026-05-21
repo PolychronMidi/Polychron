@@ -8,6 +8,7 @@ const AGENT_SCHEMA = {
   properties: {
     level: { description: 'Effort level 1-5.', type: 'integer', minimum: 1, maximum: 5 },
     prompt: { description: 'Focused task for the agent.', type: 'string' },
+    description: { description: 'Short label for the subagent task. Defaults from prompt if omitted.', type: 'string' },
   },
   required: ['level', 'prompt'],
   additionalProperties: false,
