@@ -18,10 +18,12 @@ class CanonicalPrecommitHookVerifier(Verifier):
         root = Path(_PROJECT)
         policy = root / "tools" / "HME" / "config" / "repo-hygiene.json"
         canonical = root / "tools" / "HME" / "git-hooks" / "pre-commit"
+        post_commit = root / "tools" / "HME" / "git-hooks" / "post-commit"
         validator = root / "tools" / "HME" / "scripts" / "precommit_validate.py"
         installer = root / "tools" / "HME" / "scripts" / "install-git-hooks.sh"
         installed = root / ".git" / "hooks" / "pre-commit"
-        missing = [str(p.relative_to(root)) for p in (policy, canonical, validator, installer) if not p.exists()]
+        installed_post = root / ".git" / "hooks" / "post-commit"
+        missing = [str(p.relative_to(root)) for p in (policy, canonical, post_commit, validator, installer) if not p.exists()]
         if missing:
             return _result(FAIL, 0.0, "repo hygiene precommit assets missing", missing)
         problems = []
