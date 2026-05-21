@@ -825,6 +825,31 @@ test('OmniRoute preflight does not compact below configured high-water statuslin
   }
 });
 
+test('OmniRoute preflight does not compact when statusline usage is unavailable', () => {
+  const oldEnv = { ...process.env };
+  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
+  try {
+    try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '4';
+    const budget = createContextBudget();
+    const payload = { model: 'gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 16; i += 1) payload.messages.push({ role: 'user', content: 'x'.repeat(30000) });
+    const before = JSON.stringify(payload);
+    assert.equal(budget.shrinkForContext(payload, 'gpt-5.5-xhigh'), 0);
+    assert.equal(JSON.stringify(payload), before);
+  } finally {
+    process.env = oldEnv;
+    if (prevStatusline != null) fs.writeFileSync(statusline, prevStatusline);
+  }
+});
+
 test('message dropping is disabled until gear three', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 20; i += 1) {
