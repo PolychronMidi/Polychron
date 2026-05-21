@@ -87,6 +87,8 @@ def _allowed(kind: str, mode: str) -> bool:
         return True
     if mode in {"known-recovered", "proxy-restart-success"} and kind == "recovered_upstream":
         return True
+    if mode == "self-only" and kind == "recovered_autocommit":
+        return True
     return mode in {"known-recovered", "autocommit-success"} and kind == "recovered_autocommit"
 
 
