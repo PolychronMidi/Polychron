@@ -1,5 +1,7 @@
 'use strict';
 
+const { lastRealUserMessage, messageContentItems, messageText } = require('../request_shape');
+
 const SHORTCUTS = {
   'n': 'next suggestions?',
   'm': "what's missing?",
