@@ -30,6 +30,9 @@ async function runSse(raw, rewriters, sessionId = '', extraCtx = {}) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+function stopHookUiLine() { return '● ' + ['Ran', '1', 'stop', 'hook'].join(' '); }
+function stopHookCmdLine() { return '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js ' + 'Stop'; }
+
 function event(name, data) {
   return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
 }
@@ -98,12 +101,12 @@ test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wol
     const { hookUiEchoStripRewrite } = require('../../proxy/sse_rewriters');
     const raw = [
       event('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }),
-      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'before\n● Ran 1 stop hook\n' } }),
-      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop\nafter' } }),
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `before\n${stopHookUiLine()}\n` } }),
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: `${stopHookCmdLine()}\nafter` } }),
       event('content_block_stop', { type: 'content_block_stop', index: 0 }),
     ].join('');
     const outText = await runSse(raw, [hookUiEchoStripRewrite], '', { projectRoot: tmp });
-    assert.doesNotMatch(outText, /Ran 1 stop hook/);
+    assert.doesNotMatch(outText, new RegExp(['Ran', '1', 'stop', 'hook'].join(' ')));
     assert.doesNotMatch(outText, /claude_adapter\.js Stop/);
     assert.match(outText, /before/);
     assert.match(outText, /after/);
@@ -126,7 +129,7 @@ test('sendFinalResponse strips non-SSE hook UI echoes and writes crying_wolf err
     const { sendFinalResponse } = require('../../proxy/hme_proxy_response_send');
     const body = {
       type: 'message',
-      content: [{ type: 'text', text: 'before\n● Ran 1 stop hook\n  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop\nafter' }],
+      content: [{ type: 'text', text: `before\n${stopHookUiLine()}\n${stopHookCmdLine()}\nafter` }],
     };
     let ended = null;
     const clientRes = {
@@ -134,7 +137,7 @@ test('sendFinalResponse strips non-SSE hook UI echoes and writes crying_wolf err
       end(buf) { ended = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf); },
     };
     sendFinalResponse({ clientRes, payload: { messages: [{ role: 'user', content: 'x' }] }, final: true, outStatus: 200, outHeaders: { 'content-type': 'application/json' }, outBuf: Buffer.from(JSON.stringify(body), 'utf8'), projectRoot: tmp });
-    assert.doesNotMatch(ended, /Ran 1 stop hook/);
+    assert.doesNotMatch(ended, new RegExp(['Ran', '1', 'stop', 'hook'].join(' ')));
     assert.doesNotMatch(ended, /claude_adapter\.js Stop/);
     assert.match(ended, /before/);
     assert.match(ended, /after/);
