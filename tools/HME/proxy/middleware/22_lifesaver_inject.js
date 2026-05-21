@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { readAutocommitFailure, touchLifesaverHeartbeat } = require('../lifesaver_alerts');
+const { readAutocommitFailure, touchLifesaverHeartbeat, assertRealLifesaverInjection } = require('../lifesaver_alerts');
 
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'tools/HME/runtime/errors-lastread.proxy';
@@ -83,6 +83,7 @@ module.exports = {
       payload,
       `\n\n[lifesaver inject from proxy]\n${acFailure.banner}\n`,
     )) {
+      assertRealLifesaverInjection(ctx.PROJECT_ROOT, 'autocommit', acFailure.banner, { flag: acFailure.flagPath });
       ctx.markDirty();
       ctx.emit({ event: 'lifesaver_injected', source: 'autocommit', flag: acFailure.flagPath });
     }
@@ -166,6 +167,7 @@ module.exports = {
     // Append to LAST USER MESSAGE (not payload.system) -- mutating
     // system invalidates the prompt-cache prefix every turn.
     if (_appendToLastUser(payload, `\n\n[lifesaver inject from proxy]\n${banner}\n`)) {
+      assertRealLifesaverInjection(ctx.PROJECT_ROOT, 'error_log', banner, { count: unread.length });
       ctx.markDirty();
     }
 
