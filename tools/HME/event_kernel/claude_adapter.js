@@ -62,6 +62,15 @@ function shouldLogHookStderr(stderr) {
 
 function _lifesaverBlock(event, message) {
   const alert = `[ALERT] LIFESAVER: ${message}`;
+  if (event === 'PreToolUse' || event === 'PermissionRequest') {
+    return JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: event,
+        permissionDecision: 'deny',
+        permissionDecisionReason: alert,
+      },
+    });
+  }
   const out = { decision: 'block', reason: alert };
   if (event === 'UserPromptSubmit') {
     out.hookSpecificOutput = { hookEventName: event, additionalContext: alert };
