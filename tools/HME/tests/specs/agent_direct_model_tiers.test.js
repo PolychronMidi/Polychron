@@ -11,7 +11,11 @@ const MODULE = path.join(PROJECT_ROOT, 'tools/HME/service/server/tools_analysis/
 function runPython(body) {
   return spawnSync('python3', ['-c', body], {
     cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT },
+    env: {
+      ...process.env,
+      PROJECT_ROOT,
+      HME_THREAD_CALL_CAP: process.env.HME_THREAD_CALL_CAP || '8',
+    },
     encoding: 'utf8',
   });
 }

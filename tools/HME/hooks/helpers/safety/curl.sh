@@ -4,7 +4,8 @@
 # next turn. Previously this fire-and-forgot with `2>/dev/null || echo ''`
 # and silent 100% failure rates masqueraded as "worker returned nothing."
 # Curl failure threshold is fixed unless overridden explicitly.
-_HME_CURL_STREAK_WARN="${HME_CURL_STREAK_WARN:-5}"
+: "${HME_CURL_STREAK_WARN:?HME_CURL_STREAK_WARN required}"
+_HME_CURL_STREAK_WARN="$HME_CURL_STREAK_WARN"
 # Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"
 _hme_curl_streak_path() {
   if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
@@ -71,7 +72,7 @@ _safe_curl() {
       [ -s "$curl_err" ] && curl_msg=$(head -c 200 "$curl_err" | tr '\n' ' ')
       # Severity classification: tag with WARN (observation) below
       local _sev="WARN"
-      if [ "$streak" -ge "${_HME_CURL_STREAK_WARN:-5}" ]; then
+      if [ "$streak" -ge "$_HME_CURL_STREAK_WARN" ]; then
         _sev="ERROR"
       fi
       # FAIL-LOUD on alert-sink writes -- was 2>/dev/null; if errors.log

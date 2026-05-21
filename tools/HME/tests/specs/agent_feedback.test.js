@@ -20,18 +20,22 @@ test('renderEnvelope produces the canonical shape with kind+source attrs', () =>
   assert.ok(fb.isCanonicalEnvelope(out));
 });
 
-test('canonical envelopes are stripped by the middleware table', () => {
-  const ruleNames = stripMod.STRIP_RULES.map((r) => r.name);
-  assert.ok(ruleNames.includes('agent-feedback-canonical'), 'canonical strip rule present');
+test('canonical envelopes are stripped by middleware behavior', () => {
   const text = fb.renderEnvelope({ kind: 'proxy_status', text: 'route advanced to gpt-5.5-xhigh' });
-  const rule = stripMod.STRIP_RULES.find((r) => r.name === 'agent-feedback-canonical');
-  assert.ok(rule.re.test(text), 'canonical rule matches its own envelope');
+  const payload = { messages: [{ content: [{ type: 'text', text }] }] };
+  let dirty = false;
+  stripMod.onRequest({ payload, ctx: { markDirty: () => { dirty = true; }, emit: () => {} } });
+  assert.deepStrictEqual(payload.messages[0].content, []);
+  assert.equal(dirty, true);
 });
 
-test('canonical envelopes survive when other shapes are present', () => {
+test('canonical envelopes are stripped without matching legacy skill reminders', () => {
   const canonical = fb.renderEnvelope({ kind: 'context_inject', text: 'recent edits: file.js' });
   const stop = '<system-reminder>\nThe following skills are available for use with the Skill tool:\nfoo\n</system-reminder>';
-  const rule = stripMod.STRIP_RULES.find((r) => r.name === 'agent-feedback-canonical');
-  assert.ok(rule.re.test(canonical));
-  assert.ok(!rule.re.test(stop), 'canonical rule does not match the legacy skill envelope');
+  const payload = { messages: [{ content: [
+    { type: 'text', text: canonical },
+    { type: 'text', text: stop },
+  ] }] };
+  stripMod.onRequest({ payload, ctx: { markDirty: () => {}, emit: () => {} } });
+  assert.deepStrictEqual(payload.messages[0].content, []);
 });

@@ -1,8 +1,46 @@
 'use strict';
 
+const { execFileSync } = require('child_process');
+const { PROJECT_ROOT } = require('./shared');
+
 function json(clientRes, status, body) {
   clientRes.writeHead(status, { 'Content-Type': 'application/json' });
   clientRes.end(JSON.stringify(body));
+}
+
+
+function currentRepoGitSha() {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: PROJECT_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1000,
+    }).trim();
+  } catch (_e) {
+    return null;
+  }
+}
+
+function requiredSupervisorFailures(supervisor) {
+  return Object.entries(supervisor || {})
+    .filter(([, child]) => child && child.required !== false && (!!child.gaveUp || !child.healthy))
+    .map(([name]) => name);
+}
+
+function healthVerdict(supervisor, runningSha) {
+  const supervisor_failures = requiredSupervisorFailures(supervisor);
+  const current_git_sha = currentRepoGitSha();
+  const runtime_stale = Boolean(current_git_sha && runningSha && current_git_sha !== runningSha);
+  const ok = supervisor_failures.length === 0 && !runtime_stale;
+  return {
+    ok,
+    status: ok ? 'ok' : 'degraded',
+    httpStatus: ok ? 200 : 503,
+    supervisor_failures,
+    current_git_sha,
+    runtime_stale,
+  };
 }
 
 function createProxyRouteDispatcher({
@@ -31,15 +69,21 @@ function createProxyRouteDispatcher({
     }
     if (url === '/health') {
       const statusFn = supervisorStatus || require('./supervisor/index').status;
-      json(clientRes, 200, {
-        status: 'ok',
+      const supervisor = statusFn();
+      const verdict = healthVerdict(supervisor, PROXY_GIT_SHA);
+      json(clientRes, verdict.httpStatus, {
+        status: verdict.status,
+        ok: verdict.ok,
         port: PORT,
         version: PROXY_VERSION,
         git_sha: PROXY_GIT_SHA,
+        current_git_sha: verdict.current_git_sha,
+        runtime_stale: verdict.runtime_stale,
+        supervisor_failures: verdict.supervisor_failures,
         started_at: PROXY_STARTED_AT,
         routes: routeMetrics,
         middleware: loadedMiddleware,
-        supervisor: statusFn(),
+        supervisor,
       });
       return true;
     }

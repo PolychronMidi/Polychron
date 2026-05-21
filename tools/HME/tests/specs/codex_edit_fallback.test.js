@@ -18,7 +18,7 @@ test('codex Edit fallback: missing old_string/new_string rewrites to Read bridge
   assert.equal(stats.edit_fallback_to_read, 1);
   assert.equal(body.name, 'exec_command');
   const cmdArgs = JSON.parse(body.arguments);
-  assert.match(cmdArgs.cmd, /codex_structured_tool\.js read/);
+  assert.match(cmdArgs.cmd, /run_tool\.py Read/);
   assert.match(cmdArgs.cmd, /file_path/);
   assert.match(cmdArgs.cmd, /\/abs\/x\.js/);
 });
@@ -27,7 +27,7 @@ test('codex Edit fallback: no-op (old===new) rewrites to Read bridge', () => {
   const obj = _editCall({ file_path: '/abs/x.js', old_string: 'same', new_string: 'same' });
   const { body, stats } = rewriteCodexResponseObject(obj);
   assert.equal(stats.edit_fallback_to_read, 1);
-  assert.match(JSON.parse(body.arguments).cmd, /codex_structured_tool\.js read/);
+  assert.match(JSON.parse(body.arguments).cmd, /run_tool\.py Read/);
 });
 
 test('codex Edit fallback: display-redacted old_string rewrites to Read bridge', () => {
@@ -35,12 +35,12 @@ test('codex Edit fallback: display-redacted old_string rewrites to Read bridge',
   const obj = _editCall({ file_path: '/abs/x.js', old_string: `head ${redacted} tail`, new_string: 'q' });
   const { body, stats } = rewriteCodexResponseObject(obj);
   assert.equal(stats.edit_fallback_to_read, 1);
-  assert.match(JSON.parse(body.arguments).cmd, /codex_structured_tool\.js read/);
+  assert.match(JSON.parse(body.arguments).cmd, /run_tool\.py Read/);
 });
 
 test('codex Edit fallback: valid Edit passes through as Edit bridge', () => {
   const obj = _editCall({ file_path: '/abs/x.js', old_string: 'old', new_string: 'new' });
   const { body, stats } = rewriteCodexResponseObject(obj);
   assert.equal(stats.edit_fallback_to_read || 0, 0);
-  assert.match(JSON.parse(body.arguments).cmd, /codex_structured_tool\.js edit/);
+  assert.match(JSON.parse(body.arguments).cmd, /run_tool\.py Edit/);
 });

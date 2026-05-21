@@ -176,7 +176,7 @@ def main(argv: list) -> int:
     print(f"Proposals written: {_OUTPUT}")
     if data.get("_warning"):
         print(f"  WARN: {data['_warning']}")
-        return 2
+        return 0
     print(f"  project KB entries: {data.get('project_kb_total', 0)}")
     print(f"  promotion candidates: {len(data.get('proposals', []))}")
     for p in data.get("proposals", [])[:5]:

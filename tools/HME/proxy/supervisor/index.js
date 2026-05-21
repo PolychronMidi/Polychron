@@ -17,6 +17,7 @@ const fs = require('fs');
 const { emit, PROJECT_ROOT, RUNTIME_DIR } = require('../shared');
 const SUPERVISOR_ABANDONED_SENTINEL = path.join(RUNTIME_DIR, 'supervisor-abandoned');
 const { CHILDREN } = require('./children');
+const { service } = require('../service_registry');
 
 const LOG_DIR = path.join(PROJECT_ROOT, 'log');
 
@@ -264,12 +265,17 @@ function isHealthy(name) {
 function status() {
   const out = {};
   for (const [name, state] of _children) {
+    const meta = service(name) || {};
     out[name] = {
       pid: state.proc ? state.proc.pid : null,
       alive: state.proc ? state.proc.exitCode === null : false,
       healthy: state.healthy,
       restarts: state.restarts,
       lastHealthy: state.lastHealthy,
+      gaveUp: !!state.gaveUp,
+      degradedSince: state.degradedSince || 0,
+      maxRestarts: state.spec.maxRestarts,
+      required: meta.required !== false,
     };
   }
   return out;
