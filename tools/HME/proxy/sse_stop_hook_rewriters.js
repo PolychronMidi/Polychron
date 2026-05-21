@@ -91,6 +91,41 @@ function _isBareAck(text) {
   return false;
 }
 
+function hookUiEchoStripRewrite(eventName, data, ctx) {
+  const key = 'hook_ui_echo_text_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [], text: '' });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    state.text += data.delta.text || '';
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    const { stripHookUiEchoText } = require('./hook_ui_echo_guard');
+    const { PROJECT_ROOT } = require('./shared');
+    const root = ctx.get('projectRoot') || PROJECT_ROOT;
+    const stats = ctx.get('hookUiEchoStats') || {};
+    ctx.set('hookUiEchoStats', stats);
+    const stripped = stripHookUiEchoText(state.text, stats, { projectRoot: root });
+    if (!stripped.trim()) return null;
+    const events = [['content_block_start', state.startData]];
+    events.push(['content_block_delta', { type: 'content_block_delta', index: data.index, delta: { type: 'text_delta', text: stripped } }]);
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
 function ackStripRewrite(eventName, data, ctx) {
   // Only active when the request payload indicated the prior user
   // message was a hook-deny payload. Set by the proxy before passing
