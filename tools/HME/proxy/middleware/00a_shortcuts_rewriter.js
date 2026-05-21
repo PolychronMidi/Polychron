@@ -29,31 +29,18 @@ function _rewriteShortcutText(text, value) {
   return value;
 }
 
-function _isRealUserMessage(msg) {
-  if (!msg || msg.role !== 'user') return false;
-  const content = msg.content;
-  if (typeof content === 'string') return true;
-  if (!Array.isArray(content)) return false;
-  return content.some((block) => block && block.type === 'text' && typeof block.text === 'string')
-    && !content.some((block) => block && block.type === 'tool_result');
-}
-
 function _lastUserText(payload) {
-  if (!payload || !Array.isArray(payload.messages)) return { text: '', block: null, msg: null };
-  const userMsgs = payload.messages.filter(_isRealUserMessage);
-  if (!userMsgs.length) return { text: '', block: null, msg: null };
-  const last = userMsgs[userMsgs.length - 1];
+  const last = lastRealUserMessage(payload);
+  if (!last) return { text: '', block: null, msg: null };
   if (typeof last.content === 'string') {
     return { text: _withoutSystemReminders(last.content), block: null, msg: last, isString: true };
   }
-  if (Array.isArray(last.content)) {
-    for (let i = last.content.length - 1; i >= 0; i--) {
-      const block = last.content[i];
-      if (block && block.type === 'text' && typeof block.text === 'string') {
-        const text = _withoutSystemReminders(block.text);
-        if (text) return { text, block, msg: last };
-      }
-    }
+  const items = messageContentItems(last);
+  for (let i = items.length - 1; i >= 0; i--) {
+    const block = items[i];
+    const raw = messageText({ content: [block] });
+    const text = _withoutSystemReminders(raw);
+    if (text) return { text, block, msg: last };
   }
   return { text: '', block: null, msg: null };
 }
