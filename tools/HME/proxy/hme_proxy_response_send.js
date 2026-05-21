@@ -113,7 +113,7 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     } = require('./sse_rewriters');
     const { providerReasoningToThinkingRewrite } = require('./reasoning_to_thinking');
     const xform = new SseTransform({
-      rewriters: [dropToolUseRewrite, editFallbackToReadRewrite, readInputNormalizeRewrite, providerReasoningToThinkingRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
+      rewriters: [dropToolUseRewrite, editFallbackToReadRewrite, readInputNormalizeRewrite, providerReasoningToThinkingRewrite, hookUiEchoStripRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
     });
     try {
       const sessionId = payload ? sessionKey(payload) : '';
