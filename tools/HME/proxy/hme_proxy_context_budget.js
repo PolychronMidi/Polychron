@@ -214,7 +214,10 @@ function createContextBudget() {
   function estimatedContextTokens(bytes) { return Math.ceil(bytes / contextBytesPerTokenEst); }
   function omniContextThresholdBytes(swapModel) {
     const budget = resolveModelCtx(String(swapModel || ''));
-    return Math.floor(budget * Math.max(contextPreflightFraction, compactStartFraction) * contextBytesPerTokenEst);
+    const startTokens = Math.floor(budget * compactStartFraction);
+    const preflightBytes = Math.floor(budget * contextPreflightFraction * contextBytesPerTokenEst);
+    const startBytes = Math.floor(startTokens * contextBytesPerTokenEst);
+    return Math.max(preflightBytes, startBytes);
   }
 
   function injectContextHeader(headers, swapModel) {
