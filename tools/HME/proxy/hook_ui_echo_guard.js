@@ -65,7 +65,18 @@ function stripHookUiEchoText(text, stats = {}, opts = {}) {
   out = out.replace(HOST_STOP_ECHO_RE, removeBlock);
   out = out.replace(STOP_ERROR_BLOCK_RE, removeBlock);
   out = out.replace(STOP_SECTION_RE, (block) => STOP_POLICY_RE.test(block) ? removeBlock(block) : block);
-  return out;
+  const lines = out.split(/\r?\n/);
+  const kept = [];
+  let dropping = false;
+  for (const line of lines) {
+    if (STOP_SECTION_RE.test(line) || /---\s*\[\d+\/\d+\]\s+[A-Z_ -]+\s*---/.test(line)) { dropping = true; removeBlock(line); continue; }
+    if (dropping) {
+      if (line.trim() === '' || STOP_POLICY_RE.test(line) || /^\s/.test(line)) { removeBlock(line); continue; }
+      dropping = false;
+    }
+    kept.push(line);
+  }
+  return kept.join('\n');
 }
 
 function stripHookUiEchoInValue(value, stats = {}, opts = {}) {
