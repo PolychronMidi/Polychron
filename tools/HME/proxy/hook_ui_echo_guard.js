@@ -11,6 +11,8 @@ const STOP_POLICY_RE = /\b(?:MULTI-FLAG STOP|EXHAUST PROTOCOL VIOLATION|SPIRALLI
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
 const LEAK_FLAG = path.join('tmp', 'hme-hook-ui-echo-leak.flag');
 const STRIPPED_MARKER_RE = /(?:^|\n)\s*\[HME stripped host Stop-hook UI echo: hook-ui-echo-leak fp=[0-9a-f]+\]\s*(?:(?:\n\s*(?:SPIRALLING_PETULANCE|EXHAUST PROTOCOL VIOLATION|MULTI-FLAG STOP|Address all of them|enumerated item|nothing left|silence is the correct response)[^\n]*){0,8})/gi;
+const VERBOSE_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED\s*\nHost-rendered Stop-hook UI reached model-visible context and was stripped before inference\.[^\n]*fingerprints=[^\n]*Raw hook text omitted[^\n]*(?=\n|$)/gi;
+const COMPACT_HOOK_UI_ALERT = '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see tools/HME/runtime/hook-ui-echo-leaks.jsonl.';
 
 function fingerprint(text) {
   const normalized = String(text || '')
@@ -51,6 +53,9 @@ function recordLeak(root, fp, bytes, stats) {
 
 function stripHookUiEchoText(text, stats = {}, opts = {}) {
   let out = String(text || '');
+  let sawVerboseAlert = false;
+  out = out.replace(VERBOSE_HOOK_UI_ALERT_RE, () => { sawVerboseAlert = true; return ''; });
+  if (sawVerboseAlert) out = `${COMPACT_HOOK_UI_ALERT}\n${out.replace(/^\s+/, '')}`;
   const root = opts.projectRoot || opts.root || '';
   const seen = new Set();
   function removeBlock(block) {
