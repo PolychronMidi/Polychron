@@ -102,7 +102,28 @@ test('system noise rules are shared by Claude and Codex cleanup', () => {
     'collaboration_mode',
     'skills_instructions',
   ]);
+  assert.ok(rules.UNIVERSAL_REMOVE_BLOCK_RULES.some((rule) => rule.name === 'stop-hook-host-echo'));
+  assert.ok(rules.CODEX_SYSTEM_NOISE_RULES.some((rule) => rule.name === 'stop-hook-host-echo'));
   assert.strictEqual(claude.name, 'strip_skill_reminder');
+});
+
+
+test('Codex cleanup strips Claude Stop hook host echo via universal noise rule', () => {
+  const payload = {
+    input: [{
+      role: 'user',
+      content: [
+        { type: 'input_text', text: 'Stop hook feedback:\n[node $PROJECT_ROOT/tools/HME/event_kernel/claude_adapter.js Stop]: EXHAUST PROTOCOL VIOLATION: noisy echo' },
+        { type: 'input_text', text: 'real continuation request' },
+      ],
+    }],
+  };
+  const stats = {};
+  const result = stripCodexSystemNoise(payload, stats);
+  assert.notStrictEqual(result, payload);
+  assert.strictEqual(stats.dropped, 1);
+  assert.strictEqual(stats.categories['stop-hook-host-echo'], 1);
+  assert.deepStrictEqual(result.input[0].content, [{ type: 'input_text', text: 'real continuation request' }]);
 });
 
 test('codex_payload preserves real input_text while replacing tools with the uniform surface', () => {
