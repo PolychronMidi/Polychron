@@ -116,3 +116,37 @@ test('codex_payload preserves real input_text while replacing tools with the uni
   assert.deepStrictEqual(result.after.tool_names, ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
   assert.strictEqual(result.cleanup.native_tools_added, 7);
 });
+
+
+test('strips wrapper noise from input_text items', () => {
+  const payload = {
+    input: [
+      {
+        role: 'user',
+        content: [
+          { type: 'input_text', text: '<permissions instructions>cwd=/tmp</permissions instructions>' },
+          { type: 'input_text', text: 'real user request' },
+        ],
+      },
+    ],
+  };
+  const stats = {};
+  const result = stripCodexSystemNoise(payload, stats);
+  assert.notEqual(result, payload);
+  assert.equal(stats.dropped, 1);
+  assert.deepEqual(result.input[0].content, [
+    { type: 'input_text', text: 'real user request' },
+  ]);
+});
+
+test('preserves real input_text content', () => {
+  const payload = {
+    input: [
+      { role: 'user', content: [{ type: 'input_text', text: 'please keep this' }] },
+    ],
+  };
+  const stats = {};
+  const result = stripCodexSystemNoise(payload, stats);
+  assert.strictEqual(result, payload);
+  assert.equal(stats.dropped, 0);
+});

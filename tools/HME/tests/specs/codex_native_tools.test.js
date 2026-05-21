@@ -405,3 +405,10 @@ test('Codex proxy diagnoses tool-only streamed completion instead of silently re
     upstream.close();
   }
 });
+
+
+test('uniform Codex tools keep the canonical HME tool set', () => {
+  const { codexToolsForApi } = require('../../proxy/codex_uniform_tools');
+  const names = codexToolsForApi().map((tool) => tool.name).sort();
+  assert.deepEqual(names, ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+});

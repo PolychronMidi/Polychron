@@ -1,3 +1,5 @@
+'use strict';
+
 const RE_SKILL = /^<system-reminder>\nThe following skills are available for use with the Skill tool:[\s\S]*?\n<\/system-reminder>\s*$/;
 const RE_CONTEXT_FULL = /^<system-reminder>\nAs you answer the user's questions, you can use the following context:\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n<\/system-reminder>\s*$/;
 const RE_CONTEXT_TAIL = /\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n(?=<\/system-reminder>\s*$)/;
@@ -33,6 +35,10 @@ function itemText(item) {
   return null;
 }
 
+function shouldStripSystemText(text) {
+  return CLAUDE_STRIP_RULES.some((rule) => rule.re.test(text));
+}
+
 function classifyRemoveBlockText(text, rules) {
   for (const rule of rules) {
     if (rule.re.test(text)) return rule.name;
@@ -48,5 +54,6 @@ module.exports = {
   RE_STOP_HOOK_KEEP,
   TEXT_TYPES,
   itemText,
+  shouldStripSystemText,
   classifyRemoveBlockText,
 };
