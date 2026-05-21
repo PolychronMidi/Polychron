@@ -193,6 +193,7 @@ module.exports = {
   bashPolicyRewrite,
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
+  hookUiEchoStripRewrite,
   ackStripRewrite,
   slopStripRewrite,
   hallucinatedTurnPrefixStripRewrite,
