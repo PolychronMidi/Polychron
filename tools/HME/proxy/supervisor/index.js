@@ -160,18 +160,21 @@ async function _healthLoop() {
           if (meta.required !== false) {
             try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}${tailHint}\n`); } catch (_e) { /* best-effort */ }
           }
-          // Filesystem sentinel the i/ wrappers + statusline check for immediate surfacing.
-          // Cleared on successful adoption (see the adopt path above).
-          try {
-            fs.mkdirSync(path.dirname(sentinel), { recursive: true });
-            fs.writeFileSync(sentinel, JSON.stringify({
-              child: spec.name,
-              restarts: spec.maxRestarts,
-              abandoned_at: new Date().toISOString(),
-              message: msg,
-              last_output: childTail
-            }, null, 2));
-          } catch (_e) { /* best-effort */ }
+          // Filesystem sentinel the i/ wrappers + statusline check for immediate surfaci
+          // Cleared on successful adoption (see the adopt path above). Optional
+          // children are degraded-self-health only; do not create a blocking
+          if (meta.required !== false) {
+            try {
+              fs.mkdirSync(path.dirname(sentinel), { recursive: true });
+              fs.writeFileSync(sentinel, JSON.stringify({
+                child: spec.name,
+                restarts: spec.maxRestarts,
+                abandoned_at: new Date().toISOString(),
+                message: msg,
+                last_output: childTail
+              }, null, 2));
+            } catch (_e) { /* best-effort */ }
+          }
           emit({ event: 'child_restart_limit', child: spec.name });
           state.gaveUp = true;
         }
