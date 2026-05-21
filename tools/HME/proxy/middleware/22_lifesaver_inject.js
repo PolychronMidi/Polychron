@@ -86,8 +86,7 @@ function _readHookUiEchoLeak(root) {
   }
   if (fps.length === 0 && raw.trim()) fps.push('unknown');
   if (fps.length === 0) return null;
-  const banner = '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED\n' +
-    'Host-rendered Stop-hook UI reached model-visible context and was stripped before inference. Raw hook text omitted; diagnostics are in tools/HME/runtime/hook-ui-echo-leaks.jsonl.';
+  const banner = '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics.';
   return { banner, flagPath: flag, count: fps.length, bytes };
 }
 
