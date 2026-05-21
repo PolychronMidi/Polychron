@@ -16,7 +16,7 @@ const {
   rootOnlyDirMessage,
   metricsMessage,
 } = require('./path_policy');
-const { editToReadFallback, isEditFamilyTool } = require('./edit_validation');
+const { isEditFamilyTool } = require('./edit_validation');
 
 function _permission(decision, reason = '', context = '') {
   return { permissionDecision: decision, reason, contextualRules: context ? [context] : [] };
@@ -101,18 +101,6 @@ function _editShapeDecision(payload) {
   return null;
 }
 
-function _readRewriteDecision(payload, reason) {
-  const nextInput = editToReadFallback((payload && payload.tool_input) || {});
-  return {
-    permissionDecision: 'allow',
-    reason: '',
-    contextualRules: [],
-    updatedInput: nextInput,
-    updatedToolName: 'Read',
-    rewriteReason: reason,
-  };
-}
-
 function _editCurrentFileDecision(payload) {
   if (!isEditFamilyTool(payload.tool_name) || payload._hme_synthetic_tool) return null;
   const input = payload.tool_input || {};
@@ -122,12 +110,6 @@ function _editCurrentFileDecision(payload) {
     const sessionState = require('./session_state');
     const sid = payload.session_id || '';
     const current = fs.readFileSync(file, 'utf8');
-    const stale = !current.includes(input.old_string);
-    if (!stale) {
-      const priorReads = sessionState.readState(sid).files_read || [];
-      const hasRead = priorReads.some((r) => r && r.file === file);
-      if (sid && !hasRead) return _readRewriteDecision(payload, 'edit-before-read');
-    }
     if (!current.includes(input.old_string)) {
       if (input.new_string && current.includes(input.new_string)) {
         return _permission('deny', 'BLOCKED: Edit old_string is absent and new_string is already present. The change appears already applied; do not trust a native Edit success here.');
@@ -348,11 +330,9 @@ function toHookResponse(decision) {
   if (decision.permissionDecision === 'ask') {
     return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: decision.reason } });
   }
-  if (decision.updatedInput && typeof decision.updatedInput === 'object' || decision.contextualRules && decision.contextualRules.length) {
-    const out = { hookEventName: 'PreToolUse', permissionDecision: 'allow' };
-    if (decision.contextualRules && decision.contextualRules.length) out.additionalContext = decision.contextualRules.join('\n\n');
+  if (decision.contextualRules && decision.contextualRules.length) {
+    const out = { hookEventName: 'PreToolUse', permissionDecision: 'allow', additionalContext: decision.contextualRules.join('\n\n') };
     if (decision.updatedInput && typeof decision.updatedInput === 'object') out.updatedInput = decision.updatedInput;
-    if (decision.updatedToolName) out.updatedToolName = decision.updatedToolName;
     return JSON.stringify({ hookSpecificOutput: out });
   }
   return '';
