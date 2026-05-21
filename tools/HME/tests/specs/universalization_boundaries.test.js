@@ -63,6 +63,7 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
         PROJECT_ROOT: repoRoot,
         HME_PROXY_PORT: '9',
         HME_PETULANCE_STATE_PATH: path.join(tmp, 'state.json'),
+        HME_ADAPTER_NO_NUDGE: '1',
       },
     });
     const stdout = JSON.parse(out);
