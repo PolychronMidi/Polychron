@@ -92,3 +92,27 @@ test('codex_payload applyRequestTransform strips the three system noise wrappers
   assert.strictEqual(result.cleanup.codex_system_noise_categories.collaboration_mode, 1);
   assert.strictEqual(result.cleanup.codex_system_noise_categories.skills_instructions, 1);
 });
+
+test('system noise rules are shared by Claude and Codex cleanup', () => {
+  const rules = require('../../proxy/system_noise_rules');
+  const claude = require('../../proxy/middleware/00_strip_skill_reminder');
+  assert.ok(rules.CLAUDE_STRIP_RULES.some((rule) => rule.name === 'skill'));
+  assert.deepStrictEqual(rules.CODEX_WRAPPER_RULES.map((rule) => rule.name), [
+    'permissions_instructions',
+    'collaboration_mode',
+    'skills_instructions',
+  ]);
+  assert.strictEqual(claude.name, 'strip_skill_reminder');
+});
+
+test('codex_payload preserves real input_text while replacing tools with the uniform surface', () => {
+  const cfg = { request_transform: { cleanup: { enabled: true } } };
+  const result = applyRequestTransform({
+    model: 'gpt-5.5',
+    input: [{ role: 'user', content: [{ type: 'input_text', text: 'ship the real task' }] }],
+    tools: [{ type: 'function', name: 'exec_command' }, { type: 'function', name: 'apply_patch' }],
+  }, { loadConfig: () => cfg, record: () => {}, projectRoot: process.cwd() });
+  assert.strictEqual(result.body.input[0].content[0].text, 'ship the real task');
+  assert.deepStrictEqual(result.after.tool_names, ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+  assert.strictEqual(result.cleanup.native_tools_added, 7);
+});

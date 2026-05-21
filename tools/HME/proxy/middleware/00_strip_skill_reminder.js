@@ -1,34 +1,11 @@
 'use strict';
 
-// Table-driven strip rules for <system-reminder> wrappers and stale stop-hook
-// echoes. Each rule is {name, re, action}; new shapes are a one-line addition.
-
-const RE_SKILL = /^<system-reminder>\nThe following skills are available for use with the Skill tool:[\s\S]*?\n<\/system-reminder>\s*$/;
-const RE_CONTEXT_FULL = /^<system-reminder>\nAs you answer the user's questions, you can use the following context:\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n<\/system-reminder>\s*$/;
-const RE_CONTEXT_TAIL = /\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n(?=<\/system-reminder>\s*$)/;
-const RE_STOP_HOOK_PROXY = /^<system-reminder>\nHME Stop Hook Feedback \(proxy-injected\)\n[\s\S]*?\n<\/system-reminder>\s*$/;
-const RE_STOP_HOOK = /^Stop hook feedback:\n\[node [^\]]+event_kernel\/claude_adapter\.js Stop\]: [\s\S]*$/;
-const RE_STOP_HOOK_KEEP = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE/;
+const { CLAUDE_STRIP_RULES: STRIP_RULES, RE_STOP_HOOK, RE_STOP_HOOK_KEEP } = require('../system_noise_rules');
 
 const STOP_HOOK_COMPACT = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
 const STOP_HOOK_COMPACT_AUTO = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
 const STOP_HOOK_COMPACT_EXHAUST = 'Stop hook feedback: EXHAUST PROTOCOL VIOLATION compacted by hme-proxy.';
 const STOP_HOOK_COMPACTS = [STOP_HOOK_COMPACT, STOP_HOOK_COMPACT_AUTO, STOP_HOOK_COMPACT_EXHAUST];
-
-// full-block strips remove the entire content block; tail strips
-// rewrite the text in place; the stop-hook entry is delegated to its compactor.
-// rationale: canonical envelope from proxy/agent_feedback.js drives the universal strip.
-const RE_AGENT_FEEDBACK = /^<system-reminder kind="[^"]+" source="[^"]+">\n[\s\S]*?\n<\/system-reminder>\s*$/;
-const RE_LIFESAVER_BANNER = /\[lifesaver inject from proxy\]\n[\s\S]*$/;
-
-const STRIP_RULES = [
-  { name: 'agent-feedback-canonical', re: RE_AGENT_FEEDBACK, action: 'remove-block' },
-  { name: 'skill', re: RE_SKILL, action: 'remove-block' },
-  { name: 'context-full', re: RE_CONTEXT_FULL, action: 'remove-block' },
-  { name: 'stop-hook-proxy-echo', re: RE_STOP_HOOK_PROXY, action: 'remove-block' },
-  { name: 'lifesaver-banner', re: RE_LIFESAVER_BANNER, action: 'remove-block' },
-  { name: 'context-tail', re: RE_CONTEXT_TAIL, action: 'replace-with', replacement: '\n' },
-];
 
 const RECENT_STOP_HOOKS = [];
 

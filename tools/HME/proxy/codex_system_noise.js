@@ -1,31 +1,13 @@
 'use strict';
 
 // Strip Codex-injected system noise wrappers from body.input[].content[].
-// Mirrors Claude-side 00_strip_skill_reminder remove-block rules.
 
-const WRAPPER_RULES = [
-  { name: 'permissions_instructions', re: /^<permissions instructions>[\s\S]*<\/permissions instructions>\s*$/ },
-  { name: 'collaboration_mode',       re: /^<collaboration_mode>[\s\S]*<\/collaboration_mode>\s*$/ },
-  { name: 'skills_instructions',      re: /^<skills_instructions>[\s\S]*<\/skills_instructions>\s*$/ },
-];
-
-const TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
-
-function itemText(item) {
-  if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
-  if (!TEXT_TYPES.has(String(item.type || ''))) return null;
-  if (typeof item.text === 'string') return item.text;
-  if (typeof item.content === 'string') return item.content;
-  return null;
-}
+const { CODEX_WRAPPER_RULES, itemText, classifyRemoveBlockText } = require('./system_noise_rules');
 
 function classifyNoise(item) {
   const text = itemText(item);
   if (text == null) return '';
-  for (const rule of WRAPPER_RULES) {
-    if (rule.re.test(text)) return rule.name;
-  }
-  return '';
+  return classifyRemoveBlockText(text, CODEX_WRAPPER_RULES);
 }
 
 function stripCodexSystemNoise(body, stats = {}) {
@@ -53,4 +35,4 @@ function stripCodexSystemNoise(body, stats = {}) {
   return mutated ? { ...body, input: nextInput } : body;
 }
 
-module.exports = { stripCodexSystemNoise, WRAPPER_RULES };
+module.exports = { stripCodexSystemNoise, WRAPPER_RULES: CODEX_WRAPPER_RULES };
