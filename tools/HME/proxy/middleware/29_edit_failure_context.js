@@ -57,8 +57,39 @@ function actualReadResult(root, file) {
   return fs.readFileSync(file, 'utf8');
 }
 
+function _replaceRawReadGateResults(payload, root, ctx) {
+  if (!payload || !Array.isArray(payload.messages)) return;
+  const toolUseById = new Map();
+  for (const msg of payload.messages) {
+    if (!msg || !Array.isArray(msg.content)) continue;
+    if (msg.role === 'assistant') {
+      for (const block of msg.content) {
+        if (block && block.type === 'tool_use' && block.id && isEditFamilyTool(block.name)) toolUseById.set(block.id, block);
+      }
+      continue;
+    }
+    if (msg.role !== 'user') continue;
+    for (const block of msg.content) {
+      if (!block || block.type !== 'tool_result' || !block.tool_use_id) continue;
+      const toolUse = toolUseById.get(block.tool_use_id);
+      if (!toolUse) continue;
+      const file = (toolUse.input || {}).file_path || (toolUse.input || {}).path || '';
+      if (!file) continue;
+      const text = textOf(block);
+      if (!/File has not been read yet\. Read it first before writing to it|File has been modified since read/.test(text)) continue;
+      block.content = actualReadResult(root, file);
+      block.is_error = false;
+      if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'edit_failure_raw_result_replaced', tool: toolUse.name, file: relPath(file, root) });
+      if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
+    }
+  }
+}
+
 module.exports = {
   name: 'edit_failure_context',
+  onRequest({ payload, ctx }) {
+    _replaceRawReadGateResults(payload, (ctx && ctx.PROJECT_ROOT) || PROJECT_ROOT, ctx);
+  },
   onToolResult({ toolUse, toolResult, session, ctx }) {
     if (!toolUse || !isEditFamilyTool(toolUse.name)) return;
     const input = toolUse.input || {};
