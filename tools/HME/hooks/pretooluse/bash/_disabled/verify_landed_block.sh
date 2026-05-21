@@ -87,7 +87,7 @@ PYEOF
     return 0 2>/dev/null || exit 0  # silent-ok: optional fallback path.
   fi
   if [ "$_VLB_COUNT" -eq 2 ]; then
-    _emit_enrich_allow "WARNING: $_VLB_MSG Next verify-landed violation within 3 minutes will block."
+    _emit_enrich_allow "WARNING: $_VLB_MSG Next verify-landed violation will block."
     exit 0
   fi
   _emit_block "BLOCKED: $_VLB_MSG"

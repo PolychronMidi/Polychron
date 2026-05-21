@@ -100,14 +100,14 @@ test('petulance pregate matches `true`, sleep 0, empty printf, empty echo varian
   }
 });
 
-test('petulance pregate denies repeated real Bash command within 3 minutes without edit', () => {
+test('petulance pregate denies repeated real Bash command without edit', () => {
   const cmd = 'i/hme admin action=health';
   const out = runHook({
     cmd,
     transcriptEntries: [userMsg(), bashEvent(cmd)],
   });
   assert.ok(out.stdout.includes('SPIRALLING_PETULANCE'), `expected repeat deny, got: ${out.stdout}`);
-  assert.match(out.stdout, /within 3 minutes with no intervening edit/);
+  assert.match(out.stdout, /with no intervening edit/);
 });
 
 test('petulance pregate state tracker denies repeated command without transcript dependency', () => {

@@ -68,7 +68,7 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
     });
     const stdout = JSON.parse(out);
     assert.equal(stdout.hookSpecificOutput.permissionDecision, 'deny');
-    assert.equal(stdout.hookSpecificOutput.permissionDecisionReason, '[SPIRALLING_PETULANCE] - blocked repeated command within 3 minutes with no intervening edit. No command spam.');
+    assert.equal(stdout.hookSpecificOutput.permissionDecisionReason, '[SPIRALLING_PETULANCE] - blocked repeated command with no intervening edit. No command spam.');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
