@@ -159,7 +159,7 @@ function verifyLanded(cmd, root) {
   if (!edited.length) return null;
   const tokens = shellWords(cmd);
   if (tokens.some((t) => ['python', 'python3', 'node', 'bash', 'sh', 'pytest', 'ruby', 'perl', 'go', 'deno'].includes(path.basename(t)))) return null;
-  if (tokens.some((t) => path.basename(t) === 'git' || t.startsWith('/tmp/'))) return null;
+  if (tokens.some((t) => path.basename(t) === 'git' || path.isAbsolute(t) && normalizeRel(t, root).startsWith('tmp/'))) return null;
   const verbs = new Set(['grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'cat', 'head', 'tail', 'less', 'more', 'bat', 'batcat', 'wc', 'awk', 'sed']);
   if (!tokens.some((t) => verbs.has(path.basename(t)))) return null;
   const hit = tokens.map((t) => path.basename(t).replace(/\.[^.]*$/, '')).find((b) => edited.includes(b));
@@ -232,10 +232,10 @@ function evaluateBashInput(input = {}, opts = {}) {
   return allow(next, '', timeoutChanged);
 }
 
-function toHookResponse(result) {
+function toHookResponse(result, event = 'PreToolUse') {
   if (!result || (result.decision === 'allow' && !result.changed && !result.reason)) return '';
-  if (result.decision === 'deny') return JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: result.reason } });
-  const hso = { permissionDecision: 'allow' };
+  if (result.decision === 'deny') return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: result.reason } });
+  const hso = { hookEventName: event, permissionDecision: 'allow' };
   if (result.changed) hso.updatedInput = result.input;
   if (result.reason) hso.additionalContext = result.reason;
   return JSON.stringify({ hookSpecificOutput: hso });
