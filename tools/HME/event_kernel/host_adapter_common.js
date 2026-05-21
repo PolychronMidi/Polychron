@@ -97,9 +97,10 @@ async function runHostAdapter(opts) {
   const body = opts.buildBody({ event, root, rawBody, cwd: process.cwd() });
   let payload = {};
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
-  const thread_id = timeTravel.threadId({ host: opts.host, event, payload });
-  timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'adapter:received', source: 'input', values: { thread_id, rawBody } });
-  timeTravel.checkpoint({ root, host: opts.host, event, payload, phase: 'adapter:normalized', values: { thread_id, body } });
+  const lifecycle = createLifecycleGraph({ root, host: opts.host, event, body, payload });
+  const thread_id = lifecycle.thread_id;
+  lifecycle.checkpoint('adapter:received', { rawBody }, 'input');
+  lifecycle.checkpoint('adapter:normalized', { body });
   const watch = watchdog.begin(root, event, body, { host: opts.host });
   let result = await postLifecycle(port, event, body, opts.host === 'codex' ? 'codex' : '');
   if (!result) {
