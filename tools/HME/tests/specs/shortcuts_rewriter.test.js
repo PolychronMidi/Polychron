@@ -2,6 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const middleware = require('../../proxy/middleware');
+const shortcutsRewriter = require('../../proxy/middleware/00a_shortcuts_rewriter');
 
 let loaded = false;
 async function runShortcut(payload) {
@@ -64,4 +65,17 @@ test('shortcuts_rewriter expands c at end of system-reminder string', async () =
   const dirty = await runShortcut(payload);
   assert.equal(dirty, true);
   assert.equal(payload.messages[0].content, `${reminder}\ncontinue`);
+});
+
+test('shortcuts_rewriter tolerates middleware contexts without markDirty', () => {
+  const payload = { messages: [{ role: 'user', content: 'n' }] };
+  assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
+  assert.equal(payload.messages[0].content, 'next suggestions?');
+});
+
+test('shortcuts_rewriter tolerates compact shortcut contexts without markDirty', () => {
+  const payload = { messages: [{ role: 'user', content: 'cc' }] };
+  assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
+  assert.equal(payload.__shortcut_compact, true);
+  assert.equal(payload.messages[0].content, '/compact');
 });

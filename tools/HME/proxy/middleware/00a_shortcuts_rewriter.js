@@ -67,7 +67,7 @@ module.exports = {
     if (shortcut) {
       _setUserText({ msg, block, isString }, shortcut);
       if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: shortcut });
-      ctx.markDirty();
+      if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
       return;
     }
 
@@ -75,7 +75,7 @@ module.exports = {
       payload.__shortcut_compact = true;
       _setUserText({ msg, block, isString }, '/compact');
       if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: '/compact' });
-      ctx.markDirty();
+      if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
     }
   },
 };
