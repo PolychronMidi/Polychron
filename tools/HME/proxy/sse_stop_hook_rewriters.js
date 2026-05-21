@@ -572,6 +572,7 @@ function soloRationaleTrimRewrite(eventName, data, ctx) {
 }
 
 module.exports = {
+  hookUiEchoStripRewrite,
   ackStripRewrite,
   hallucinatedTurnPrefixStripRewrite,
   stopHookCeremonyStripRewrite,
