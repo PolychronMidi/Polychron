@@ -43,8 +43,27 @@ function codexTargetChain({ body, upstreamUrl, cfg = {}, env = process.env, serv
 
 function targetSummary(targets) { return targets.map((t) => `${t.kind}:${t.body && t.body.model ? t.body.model : ''}`).join(' -> '); }
 
-function routeDecision({ host, requestedModel, provider = '', protocol = '', route = '' }) {
-  return { host, requested_model: requestedModel || '', provider, protocol, route, target_model: provider && requestedModel && !requestedModel.includes('/') ? `${provider}/${requestedModel}` : (requestedModel || '') };
+function providerTargetModel(provider, requestedModel) {
+  const model = requestedModel || '';
+  if (!provider || !model || model.includes('/')) return model;
+  return `${provider}/${model}`;
 }
 
-module.exports = { codexOmniConfig, codexTargetChain, targetSummary, routeDecision };
+function routeDecision({ host, requestedModel, provider = '', protocol = '', route = '', targetModel = '' }) {
+  return {
+    host,
+    requested_model: requestedModel || '',
+    provider,
+    protocol,
+    route,
+    target_model: targetModel || providerTargetModel(provider, requestedModel),
+  };
+}
+
+function decisionForTarget({ host, protocol, requestedModel, target }) {
+  const route = target && target.kind || '';
+  const targetModel = target && target.body && target.body.model || requestedModel || '';
+  return routeDecision({ host, requestedModel, provider: route, protocol, route, targetModel });
+}
+
+module.exports = { codexOmniConfig, codexTargetChain, targetSummary, routeDecision, decisionForTarget, providerTargetModel };
