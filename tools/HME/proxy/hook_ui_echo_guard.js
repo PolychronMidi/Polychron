@@ -12,8 +12,16 @@ const STOP_DIRECTIVE_RE = /\b(?:Stop answering the gate|concrete corrective acti
 const RAN_STOP_HOOK_LINE_RE = /^\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook\s*$/i;
 const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
 const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?Stop hook error:/i;
-const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[●•]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?(?:File has not been read yet|Read it first before writing to it|File has been modified since read|File content has changed since it was last read|old_string not found|old_string is not unique)[\s\S]{0,1200}?(?=\n\s*\S(?![⎿│>\- ])|$)/gi;
-const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?(?:File has not been read yet|Read it first before writing to it|File has been modified since read|File content has changed since it was last read|old_string not found|old_string is not unique)[^\n]*/gi;
+const NATIVE_EDIT_ERROR_PHRASE_RE = new RegExp([
+  'File has not been read yet',
+  ['Read it first before', 'writing to it'].join(' '),
+  ['File has been modified', 'since read'].join(' '),
+  ['File content has changed', 'since it was last read'].join(' '),
+  'old_string not found',
+  'old_string is not unique',
+].map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'));
+const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[●•]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?[^\n]*(?:\n[^\n]*){0,6}/gi;
+const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?[^\n]*(?:old_string|File|Read)[^\n]*/gi;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
 const ERROR_LOG = path.join('log', 'hme-errors.log');
 const SEEN_FILE = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-seen.json');
