@@ -18,10 +18,11 @@ function purgeProxyModules() {
   }
 }
 
-async function runSse(raw, rewriters, sessionId = '') {
+async function runSse(raw, rewriters, sessionId = '', extraCtx = {}) {
   const { SseTransform } = require('../../proxy/sse_transform');
   const xform = new SseTransform({ rewriters });
   if (sessionId) xform._ctx.set('session_id', sessionId);
+  for (const [key, value] of Object.entries(extraCtx)) xform._ctx.set(key, value);
   const chunks = [];
   xform.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
   xform.end(Buffer.from(raw, 'utf8'));
