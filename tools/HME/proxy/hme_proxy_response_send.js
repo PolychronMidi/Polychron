@@ -80,7 +80,7 @@ function maybeStripNonSseBareAck({ payload, outBuf }) {
   }
 }
 
-function maybeStripNonSseHookUiEcho({ outBuf }) {
+function maybeStripNonSseHookUiEcho({ outBuf, projectRoot = PROJECT_ROOT }) {
   try {
     const outStr = outBuf.toString('utf8');
     if (!outStr.trimStart().startsWith('{')) return null;
