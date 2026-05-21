@@ -94,7 +94,7 @@ function maybeStripNonSseHookUiEcho({ outBuf, projectRoot = PROJECT_ROOT }) {
         nextContent.push(b);
         continue;
       }
-      const stripped = stripHookUiEchoText(b.text, {}, { projectRoot: PROJECT_ROOT });
+      const stripped = stripHookUiEchoText(b.text, {}, { projectRoot });
       if (stripped !== b.text) changed = true;
       if (stripped.trim()) nextContent.push({ ...b, text: stripped });
     }
