@@ -426,6 +426,20 @@ test('work_checks: completed Claude task store entries do not block',
     }
   }));
 
+test('work_checks: stop-hook echo does not become unfinished task debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: [
+        { type: 'text', text: 'Stop hook feedback:\nSTOP-CHAIN INTEGRITY FAILURE: shell policy detectors failed closed (fail=124). Fix the policy before stopping.\n\n---\n\nUNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items.\n\nOpen task evidence:\n  1. 17206:[2026-05-21T04:56:38Z] [proxy-supervisor]     {"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items."' },
+      ] } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'tools/HME/proxy/stop_chain/shell_policy.js' } }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
+
 test('work_checks: text-only short verdict maps to STOP_WORK_TEXT_ONLY reason',
   _withSandbox(async (sandbox) => {
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
