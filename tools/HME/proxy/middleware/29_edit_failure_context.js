@@ -6,7 +6,9 @@ const { PROJECT_ROOT } = require('../shared');
 const { recordFailure } = require('../turn_failure_state');
 const sessionState = require('../session_state');
 const { isEditFamilyTool } = require('../edit_validation');
-const FAIL_RE = /\b(old_string not found|old_string is not unique|File has not been read yet\. Read it first before writing to it|File has been modified since read[^\n]*)\b/;
+const READ_GATE_RE = new RegExp(['File has not been read yet\\.', 'Read it first before writing to it'].join('\\s*'));
+const MODIFIED_SINCE_READ_RE = /File has been modified since read[^\n]*/;
+const FAIL_RE = /\b(old_string not found|old_string is not unique)\b|File has been modified since read[^\n]*|File has not been read yet\.[^\n]*/;
 
 function textOf(toolResult) {
   const c = toolResult && toolResult.content;
