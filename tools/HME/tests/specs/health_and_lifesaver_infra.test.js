@@ -90,3 +90,19 @@ module.exports.lifesaverEscalatesCriticalInfraSelfTags = async function () {
   assert.match(payload.messages[0].content, /child_restart_limit worker/);
   assert.doesNotMatch(payload.messages[0].content, /observed tick/);
 };
+
+module.exports.lifesaverInjectionWritesContractArtifacts = async function () {
+  const { assertRealLifesaverInjection, LIFESAVER_HEARTBEAT_REL, LIFESAVER_INJECT_LOG_REL } = require('../../proxy/lifesaver_alerts');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-contract-'));
+  try {
+    const ok = assertRealLifesaverInjection(root, 'test', '[ALERT] LIFESAVER - synthetic contract');
+    assert.strictEqual(ok, true);
+    assert.ok(fs.existsSync(path.join(root, LIFESAVER_HEARTBEAT_REL)));
+    const rows = fs.readFileSync(path.join(root, LIFESAVER_INJECT_LOG_REL), 'utf8').trim().split('\n');
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(JSON.parse(rows[0]).source, 'test');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+};
+
