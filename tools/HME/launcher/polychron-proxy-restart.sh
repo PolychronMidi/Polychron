@@ -30,8 +30,25 @@ PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 
+_http_code() {
+  curl -sS --max-time 1 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || echo 000
+}
+
 _port_healthy() {
-  curl -sf --max-time 1 "$1" > /dev/null 2>&1
+  [ "$(_http_code "$1")" = "200" ]
+}
+
+_port_responding() {
+  local code
+  code="$(_http_code "$1")"
+  [ "$code" != "000" ]
+}
+
+_port_listener_pids() {
+  command -v ss >/dev/null 2>&1 || return 0
+  ss -ltnp "sport = :${PROXY_PORT}" 2>/dev/null \
+    | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' \
+    | sort -u
 }
 
 mapfile -t _PROXY_BUNDLE_PATTERNS < <(_hme_bundle_process_patterns proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
