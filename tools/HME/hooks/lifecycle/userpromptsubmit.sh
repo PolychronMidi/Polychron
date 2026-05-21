@@ -136,7 +136,7 @@ ${NEW_ERRORS}"
         '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner},decision:"block",reason:"LIFESAVER: worker supervisor abandoned -- restart before proceeding."}'
     else
       jq -n --arg banner "$BANNER" \
-        '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner},decision:"allow",reason:"LIFESAVER: unresolved errors in hme-errors.log."}'
+        '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
     fi
   fi
 fi
