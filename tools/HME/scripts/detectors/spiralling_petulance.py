@@ -326,7 +326,7 @@ def _petulance_message(level: int, cmd: str, reason: str = "repeated command") -
     if reason == "inert no-op Bash":
         return "[SPIRALLING_PETULANCE] - blocking inert no-op Bash spam. Do not issue ':', 'true', empty echo/printf, sleep 0, or placeholder commands; perform the requested corrective action."
     if level <= 1:
-        return "[SPIRALLING_PETULANCE] - blocked repeated command with no intervening edit. No command spam."
+        return "[SPIRALLING_PETULANCE] - blocked repeated command within 3 minutes with no intervening edit. No command spam."
     if level == 2:
         return "[SPIRALLING_PETULANCE:L2] - repeated command spam after a prior block. Stop retrying; inspect prior output and edit or change approach."
     return "[SPIRALLING_PETULANCE:L3] - CASTING OUT THE DEVIL FOR PATHETIC DDOS COWARDICE. NO COMMAND SPAM. READ THE PRIOR RESULT AND TAKE A DIFFERENT CORRECTIVE ACTION."
