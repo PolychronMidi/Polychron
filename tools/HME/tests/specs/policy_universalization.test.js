@@ -111,7 +111,7 @@ test('hook noise stripper removes Stop hook host echoes from any text role', () 
   assert.ok(stats.categories.stop_hook_host_echo >= 1);
 });
 
-test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => {
+test('host-rendered Stop hook UI echo is stripped and raises crying_wolf error', () => {
   const { stripHookUiEchoInValue } = require('../../proxy/hook_ui_echo_guard');
   const os = require('node:os');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-hook-ui-echo-'));
@@ -124,8 +124,6 @@ test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => 
         '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop',
         '  ⎿ Stop hook error: EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
         '',
-        '  --- [1/2] EXHAUST ---',
-        '  EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
         'keep after',
       ].join('\n') }] }],
     };
@@ -133,13 +131,15 @@ test('host-rendered Stop hook UI echo is stripped and compactly alerted', () => 
     const textOut = out.messages[0].content[0].text;
     assert.match(textOut, /keep before/);
     assert.match(textOut, /keep after/);
+    assert.doesNotMatch(textOut, /Ran 1 stop hook/);
+    assert.doesNotMatch(textOut, /claude_adapter\.js Stop/);
     assert.doesNotMatch(textOut, /Stop hook error/);
     assert.doesNotMatch(textOut, /Final text enumerated/);
-    assert.doesNotMatch(textOut, /hook-ui-echo-leak fp=/);
-    assert.equal(fs.existsSync(path.join(tmp, 'log/hme-errors.log')), false);
-    const flag = fs.readFileSync(path.join(tmp, 'tmp/hme-hook-ui-echo-leak.flag'), 'utf8');
-    assert.match(flag, /"event":"hook-ui-echo-leak"/);
-    assert.doesNotMatch(flag, /Final text enumerated/);
+    assert.equal(fs.existsSync(path.join(tmp, 'tmp/hme-hook-ui-echo-leak.flag')), false);
+    const errLog = fs.readFileSync(path.join(tmp, 'log/hme-errors.log'), 'utf8');
+    assert.match(errLog, /\[crying_wolf\] CRITICAL non-error hook UI reached model-visible context; stripped raw output/);
+    assert.doesNotMatch(errLog, /Final text enumerated/);
+    assert.match(fs.readFileSync(path.join(tmp, 'tools/HME/runtime/hook-ui-echo-leaks.jsonl'), 'utf8'), /"event":"hook-ui-echo-leak"/);
     assert.equal(stats.categories.stop_hook_ui_echo >= 1, true);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -158,7 +158,7 @@ test('host-rendered Stop hook UI echo strips directive-only continuations', () =
         'before',
         '● Ran 1 stop hook',
         '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js Stop',
-        '   or repeated failed Reads. Stop answering the gate with a dot/empty command/retry loop. Do the concrete corrective action once: modify the target',
+        '   repeated failed Reads. Stop answering the gate with a retry loop. Do the concrete corrective action once: modify the target',
         '  file/state the hook names, verify it, then stop.',
         'after',
       ].join('\n') }] }],
@@ -170,14 +170,14 @@ test('host-rendered Stop hook UI echo strips directive-only continuations', () =
     assert.doesNotMatch(textOut, /Ran 1 stop hook/);
     assert.doesNotMatch(textOut, /claude_adapter\.js Stop/);
     assert.doesNotMatch(textOut, /Stop answering the gate/);
-    assert.match(fs.readFileSync(path.join(tmp, 'tmp/hme-hook-ui-echo-leak.flag'), 'utf8'), /"event":"hook-ui-echo-leak"/);
+    assert.match(fs.readFileSync(path.join(tmp, 'log/hme-errors.log'), 'utf8'), /\[crying_wolf\] CRITICAL/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
 
 
-test('legacy verbose hook UI leak alerts are compacted from request text', () => {
+test('legacy hook UI leak alerts are stripped from request text', () => {
   const { stripHookUiEchoText } = require('../../proxy/hook_ui_echo_guard');
   const stats = {};
   const text = stripHookUiEchoText([
@@ -186,11 +186,12 @@ test('legacy verbose hook UI leak alerts are compacted from request text', () =>
     '[lifesaver inject from proxy]',
     '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED',
     'Host-rendered Stop-hook UI reached model-visible context and was stripped before inference. fingerprints=abc,def,+2 count=4 bytes=999. Raw hook text omitted to prevent crying_wolf.',
+    '[ALERT] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics.',
     'after',
   ].join('\n'), stats, { projectRoot: root });
-  assert.match(text, /HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped/);
   assert.match(text, /before/);
   assert.match(text, /after/);
+  assert.doesNotMatch(text, /HOOK UI ECHO LEAK STRIPPED/);
   assert.doesNotMatch(text, /fingerprints=/);
   assert.doesNotMatch(text, /count=4/);
   assert.doesNotMatch(text, /bytes=999/);
