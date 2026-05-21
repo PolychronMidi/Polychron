@@ -18,6 +18,16 @@ function denyReason(stdout) {
   } catch (_err) { return ''; }
 }
 
+function summarizeStopBlockReason(reason) {
+  const text = String(reason || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const compact = text
+    .replace(/\s+---\s+\[\d+\/\d+\][\s\S]*$/u, '')
+    .replace(/\s+If the work is actually done[\s\S]*$/u, '')
+    .trim();
+  return compact.slice(0, 500);
+}
+
 function stageStopReminder(root, reason) {
   if (!root || !reason) return;
   const file = path.join(root, 'tmp', 'hme-stop-reminder.json');
