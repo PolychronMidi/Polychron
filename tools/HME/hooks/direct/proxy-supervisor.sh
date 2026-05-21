@@ -83,15 +83,13 @@ _sv_is_maintenance_active() {
 
 _sv_bundle_health_issue() {
   local http_code
-  http_code=$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' "$_SV_URL" 2>/dev/null || echo 000)  # silent-ok: optional fallback path.
+  http_code=$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' "$_SV_URL" 2>/dev/null || echo 000)  # silent-ok: health probe may race proxy boot.
   if [ "$http_code" = "000" ]; then
     echo "proxy unreachable at $_SV_URL"
     return 0
   fi
-  if [ "$http_code" != "200" ]; then
-    echo "proxy unhealthy at $_SV_URL status=$http_code"
-    return 0
-  fi
+  # Any HTTP response from /health means the proxy listener is alive. A 503 can
+  # be diagnostic (runtime_stale) and must not trigger same-port hot restarts.
   local child_id child_url
   while read -r child_id child_url; do
     [ -n "$child_id" ] || continue
