@@ -264,6 +264,9 @@ function createContextBudget() {
   }
 
   function shrinkForOmniContext(payload, swapModel) {
+    const budget = resolveModelCtx(String(swapModel || ''));
+    const authoritativeUsed = statuslineInputTokens();
+    if (budget > 0 && authoritativeUsed > 0 && (authoritativeUsed / budget) < compactStartFraction) return 0;
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'omni-context',
       model: String(swapModel || ''),
