@@ -7,6 +7,7 @@ const { runHostAdapter, append } = require('./host_adapter_common');
 const { buildHostPayload } = require('./lifecycle_payload');
 const decisions = require('./decision_normalizer');
 const decisionLog = require('./hook_decision_log');
+const timeTravel = require('./lifecycle_time_travel');
 
 function sanitizeStdout(event, stdout) { return decisions.sanitizeCodexStdout(event, stdout); }
 function sanitizeHookSpecific(event, out) { return decisions.sanitizeHookSpecific(event, out); }
