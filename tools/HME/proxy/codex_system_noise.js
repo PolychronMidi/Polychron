@@ -35,4 +35,4 @@ function stripCodexSystemNoise(body, stats = {}) {
   return mutated ? { ...body, input: nextInput } : body;
 }
 
-module.exports = { stripCodexSystemNoise, WRAPPER_RULES: CODEX_WRAPPER_RULES };
+module.exports = { stripCodexSystemNoise, WRAPPER_RULES: CODEX_SYSTEM_NOISE_RULES };
