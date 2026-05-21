@@ -108,7 +108,7 @@ module.exports = {
     if (text.includes('[READ current context')) return;
     try {
       const currentContext = contextWindow(root, file, input.old_string || '', input.new_string || '', reason);
-      const readEquivalent = currentContext.readable && (READ_GATE_RE.test(text) || /File has been modified since read/.test(text));
+      const readEquivalent = currentContext.readable && (READ_GATE_RE.test(text) || STALE_READ_RE.test(text));
       if (readEquivalent && typeof ctx.replaceResult === 'function') {
         ctx.replaceResult(toolResult, actualReadResult(root, file));
       } else {
