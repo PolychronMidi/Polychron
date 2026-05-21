@@ -109,6 +109,7 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
       stopHookCeremonyStripRewrite,
       fpGateMarkerRewrite,
       soloRationaleTrimRewrite,
+      hookUiEchoStripRewrite,
     } = require('./sse_rewriters');
     const { providerReasoningToThinkingRewrite } = require('./reasoning_to_thinking');
     const xform = new SseTransform({
