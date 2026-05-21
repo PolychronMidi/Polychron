@@ -133,7 +133,7 @@ test('sendFinalResponse strips non-SSE hook UI echoes and writes crying_wolf err
       writeHead() {},
       end(buf) { ended = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf); },
     };
-    sendFinalResponse({ clientRes, payload: { messages: [{ role: 'user', content: 'x' }] }, final: true, outStatus: 200, outHeaders: { 'content-type': 'application/json' }, outBuf: Buffer.from(JSON.stringify(body), 'utf8') });
+    sendFinalResponse({ clientRes, payload: { messages: [{ role: 'user', content: 'x' }] }, final: true, outStatus: 200, outHeaders: { 'content-type': 'application/json' }, outBuf: Buffer.from(JSON.stringify(body), 'utf8'), projectRoot: tmp });
     assert.doesNotMatch(ended, /Ran 1 stop hook/);
     assert.doesNotMatch(ended, /claude_adapter\.js Stop/);
     assert.match(ended, /before/);
