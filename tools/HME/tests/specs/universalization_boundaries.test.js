@@ -185,8 +185,8 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
 });
 
 
-test('Claude adapter logs Stop block reasons to Lifesaver logs', () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-block-error-log-'));
+test('Claude adapter does not log expected Stop block directives as errors', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-block-no-error-log-'));
   try {
     const adapterPath = path.join(repoRoot, 'tools/HME/event_kernel/claude_adapter.js');
     const reason = 'MULTI-FLAG STOP (2 detectors firing): EXHAUST, SPIRALLING_PETULANCE.\nAddress all of them in this turn.';
@@ -199,11 +199,8 @@ test('Claude adapter logs Stop block reasons to Lifesaver logs', () => {
       encoding: 'utf8',
       env: { ...process.env, PROJECT_ROOT: tmp, HME_ADAPTER_NO_NUDGE: '1' },
     });
-    const errors = fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8');
-    const hme = fs.readFileSync(path.join(tmp, 'log', 'hme.log'), 'utf8');
-    assert.match(errors, /hook-stop-block/);
-    assert.match(errors, /MULTI-FLAG STOP/);
-    assert.match(hme, /ERROR hook-stop-block/);
+    assert.equal(fs.existsSync(path.join(tmp, 'log', 'hme-errors.log')), false);
+    assert.equal(fs.existsSync(path.join(tmp, 'log', 'hme.log')), false);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
