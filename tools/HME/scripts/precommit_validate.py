@@ -344,6 +344,29 @@ def full_env_failfast_check() -> None:
             failures.append("env fail-fast invariant failed: " + line)
 
 
+def full_python_compile_check() -> None:
+    raw = git_bytes("ls-files", "*.py", check=False).decode("utf-8", "replace").splitlines()
+    for path in raw:
+        if skip_syntax(path, POLICY):
+            continue
+        blob = git_bytes("show", f"HEAD:{path}", check=False)
+        if not blob:
+            continue
+        with tempfile.NamedTemporaryFile("wb", suffix=".py", delete=False) as tmp:
+            tmp.write(blob)
+            tmp_path = tmp.name
+        try:
+            try:
+                py_compile.compile(tmp_path, doraise=True)
+            except py_compile.PyCompileError as exc:
+                failures.append(f"{q(path)}: invalid tracked Python syntax ({redact(str(exc.exc_type_name))})")
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass  # silent-ok: pending review
+
+
 def main() -> int:
     load_env_secrets()
     self_protect()
