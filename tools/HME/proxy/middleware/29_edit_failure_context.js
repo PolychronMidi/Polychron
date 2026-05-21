@@ -50,6 +50,11 @@ function contextWindow(root, file, oldString = '', newString = '', reason = 'edi
   return { text: `\n[READ current context ${relPath(file, root)}:${start + 1}-${end}]\n${body}`, readable: true };
 }
 
+function suggestedReadCall(root, file, reason = '') {
+  const why = /modified since read/i.test(reason) ? 'stale prior read' : 'missing prior read';
+  return `[HME read required: ${why}]\nRun this exact tool call next:\nRead({"file_path":${JSON.stringify(file)}})`;
+}
+
 module.exports = {
   name: 'edit_failure_context',
   onToolResult({ toolUse, toolResult, session, ctx }) {
