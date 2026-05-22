@@ -68,13 +68,15 @@ function createProxyRouteDispatcher({
       json(clientRes, 200, { status: 'ok', component: 'hme-stop-gate', ...stopGateHealth() });
       return true;
     }
-    if (url === '/health') {
+    if (url === '/health' || url === '/ready') {
       const statusFn = supervisorStatus || require('./supervisor/index').status;
       const supervisor = statusFn();
       const verdict = healthVerdict(supervisor, PROXY_GIT_SHA);
-      json(clientRes, verdict.httpStatus, {
-        status: verdict.status,
-        ok: verdict.ok,
+      const readyOnly = url === '/ready';
+      json(clientRes, readyOnly ? 200 : verdict.httpStatus, {
+        status: readyOnly ? 'ready' : verdict.status,
+        ok: readyOnly ? true : verdict.ok,
+        listener_ready: true,
         port: PORT,
         version: PROXY_VERSION,
         git_sha: PROXY_GIT_SHA,
