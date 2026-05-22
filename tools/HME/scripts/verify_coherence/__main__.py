@@ -20,18 +20,32 @@ from ._base import METRICS_DIR, PROJECT_METRICS_DIR, _PROJECT, FAIL, ERROR
 from . import REGISTRY
 
 
+_RUNTIME_CATEGORIES = frozenset({"runtime"})
+
+
+def _kind_for(verifier) -> str:
+    explicit = getattr(verifier, "kind", "") or ""
+    if explicit in ("static", "runtime"):
+        return explicit
+    return "runtime" if verifier.category in _RUNTIME_CATEGORIES else "static"
+
+
 def run_engine() -> dict:
     results: dict = {}
     by_category: dict = {}
+    by_kind: dict = {"static": [], "runtime": []}
     for v in REGISTRY:
         result = v.execute()
+        kind = _kind_for(v)
         results[v.name] = {
             "category": v.category,
+            "kind": kind,
             "subtag": getattr(v, "subtag", "") or "",
             "weight": v.weight,
             **result.to_dict(),
         }
         by_category.setdefault(v.category, []).append((v, result))
+        by_kind[kind].append((v, result))
 
     # Aggregate weighted score per category, then overall.
     category_scores = {}
@@ -44,14 +58,35 @@ def run_engine() -> dict:
             "weight_total": total_w,
         }
 
+    kind_scores = {}
+    for kind, entries in by_kind.items():
+        if not entries:
+            kind_scores[kind] = {"score": 1.0, "verifier_count": 0, "weight_total": 0.0}
+            continue
+        total_w = sum(v.weight for v, _r in entries)
+        weighted = sum(v.weight * r.score for v, r in entries)
+        kind_scores[kind] = {
+            "score": (weighted / total_w) if total_w > 0 else 0.0,
+            "verifier_count": len(entries),
+            "weight_total": total_w,
+        }
+
     total_w = sum(v.weight for v in REGISTRY)
     weighted = sum(v.weight * results[v.name]["score"] for v in REGISTRY)
     hci = (weighted / total_w * 100.0) if total_w > 0 else 0.0
 
+    # Static-only score: the blocking number. Runtime-only score: pure
+    # observability signal. Operators read both to tell "the code drifted"
+    static_hci = (kind_scores["static"]["score"] * 100.0) if kind_scores["static"]["verifier_count"] else hci
+    runtime_hci = (kind_scores["runtime"]["score"] * 100.0) if kind_scores["runtime"]["verifier_count"] else 100.0
+
     return {
         "hci": round(hci, 1),
+        "static_hci": round(static_hci, 1),
+        "runtime_hci": round(runtime_hci, 1),
         "verifier_count": len(REGISTRY),
         "categories": category_scores,
+        "kinds": kind_scores,
         "verifiers": results,
         "timestamp": time.time(),
         "project_root": _PROJECT,
@@ -67,6 +102,11 @@ def format_text(report: dict) -> str:
     lines.append(f"  HCI: {hci:5.1f} / 100  [{bar}]")
     lines.append(f"  {report['verifier_count']} verifiers across "
                  f"{len(report['categories'])} categories")
+    static_hci = report.get("static_hci")
+    runtime_hci = report.get("runtime_hci")
+    if static_hci is not None and runtime_hci is not None:
+        lines.append(f"  static: {static_hci:5.1f} / 100   "
+                     f"runtime: {runtime_hci:5.1f} / 100")
     lines.append("")
     lines.append("## Categories")
     for cat in sorted(report["categories"].keys()):

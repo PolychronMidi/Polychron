@@ -119,15 +119,20 @@ def iter_project_files(
 class Verifier:
     """Each subclass declares name, category, weight, and run().
 
-    `subtag` is an optional finer-grained classifier within a category --
-    e.g. `regression-prevention`, `drift-detection`, `freshness`,
-    `structural-integrity`, `interface-contract`. Defaults to "" for
-    backwards compat; surfaced in text/JSON output so an agent can scan
-    "what kind of broken is each red verifier?"."""
+    `subtag` -- finer classifier within a category (regression-prevention,
+    drift-detection, freshness, structural-integrity, interface-contract).
+
+    `kind` -- "static" or "runtime". Static verifiers are deterministic
+    file analyses that block commits. Runtime verifiers touch the live
+    system (log probes, OAuth expiry, supervisor processes) and surface
+    observability without gating; flipping a runtime probe red is a
+    signal, not a regression.
+    """
     name: str = ""
     category: str = ""
     subtag: str = ""
     weight: float = 1.0
+    kind: str = "static"  # "static" | "runtime"
 
     def run(self) -> VerdictResult:
         raise NotImplementedError
