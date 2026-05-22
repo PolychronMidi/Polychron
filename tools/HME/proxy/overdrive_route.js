@@ -262,6 +262,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     Object.assign(payload, providerRequestOverrides(result.omniProvider, env, cfg));
     stripOmniUnsupportedRequestFields(payload, result.omniProvider);
     applyEffortParams(payload, result.swapMeta, result.omniProvider);
+    payload.stream = result.wasStreaming === true;
     try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
     catch (err) {
       console.error(`[hme-proxy] OmniRoute payload serialize failed: ${err.message} (len=${JSON.stringify(payload).length}B)`);
