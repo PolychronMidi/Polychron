@@ -280,6 +280,7 @@ _sv_loop() {
       exit 0
     fi
   fi
+  _SV_SELF_FINGERPRINT="$(_sv_file_fingerprint "$_SV_SELF")"
   _sv_log "supervisor loop started (pid=$$, flock held)"
   echo $$ > "$_SV_PID_FILE"
   # Only remove the pid file if it still contains OUR pid. Stop+start
