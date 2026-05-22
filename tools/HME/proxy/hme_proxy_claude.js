@@ -113,7 +113,7 @@ function createClaudeHandler(deps) {
               const fs = require('fs');
               const path = require('path');
               const root = process.env.PROJECT_ROOT;
-          if (!root) throw new Error('PROJECT_ROOT not set');
+              if (!root) throw new Error('PROJECT_ROOT not set');
               const ts = new Date().toISOString().replace(/[:.]/g, '-');
               fs.writeFileSync(path.join(root, 'tmp', `noop-leak-${ts}.json`), JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
             }
