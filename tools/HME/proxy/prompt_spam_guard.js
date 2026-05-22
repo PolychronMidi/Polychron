@@ -193,9 +193,8 @@ function blockNoopSystemReminderTurn({ req, res, payload, record, source = {} })
   jsonResponse(res, 200, anthropicTextResponse(payload, NOOP_TURN_TEXT, 'hme_noop_turn'));
 }
 
-function shouldBlockNoopSystemReminderTurn({ req, payload, headers }) {
-  return contentTypeJson(headers || (req && req.headers))
-    && (isCountTokensRequest(req) || isNoopSystemReminderTurn(payload));
+function shouldBlockNoopSystemReminderTurn({ req, payload }) {
+  return isCountTokensRequest(req) || isNoopSystemReminderTurn(payload);
 }
 
 function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
