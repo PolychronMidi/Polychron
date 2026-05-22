@@ -286,6 +286,25 @@ async function handleAnthropicResponseComplete({
   headers = failureResult.headers;
   fullBody = failureResult.fullBody;
 
+  const contextRetry = await retryOmniContextWindowExceeded({
+    isOmniRouteSwap,
+    status,
+    headers,
+    fullBody,
+    payload,
+    swapChain,
+    omniProvider,
+    swapModel,
+    transport,
+    upstreamOpts,
+    upstreamHeaders,
+  });
+  if (contextRetry) {
+    status = contextRetry.status;
+    headers = contextRetry.headers;
+    fullBody = contextRetry.fullBody;
+  }
+
   if (status >= 200 && status < 300 && payload && payload.__shortcut_compact) {
     try {
       console.error('[shortcuts] compact response received, auto-submitting continue...');
