@@ -399,8 +399,26 @@ case "$_action" in
     if [ -f "$_SV_PID_FILE" ]; then
       existing=$(cat "$_SV_PID_FILE" 2>/dev/null)
       if [ -n "$existing" ] && kill -0 "$existing" 2>/dev/null; then
-        echo "proxy-supervisor: already running (pid=$existing)" >&2
-        exit 0
+        current_fingerprint="$(_sv_file_fingerprint "$_SV_SELF")"
+        running_fingerprint="$(_sv_state_fingerprint "$_SV_STATE_FILE")"
+        if [ -n "$current_fingerprint" ] && [ -n "$running_fingerprint" ] && [ "$current_fingerprint" != "$running_fingerprint" ]; then
+          _sv_log "supervisor start replacing stale supervisor pid=$existing (source fingerprint changed)"
+          kill "$existing" 2>/dev/null || true
+          waited=0
+          while [ "$waited" -lt 5 ] && kill -0 "$existing" 2>/dev/null; do
+            sleep 1
+            waited=$((waited + 1))
+          done
+          if kill -0 "$existing" 2>/dev/null; then
+            _sv_log "stale supervisor pid=$existing did not exit after TERM; start left existing supervisor running"
+            echo "proxy-supervisor: stale supervisor still running (pid=$existing)" >&2
+            exit 0
+          fi
+          rm -f "$_SV_PID_FILE" 2>/dev/null
+        else
+          echo "proxy-supervisor: already running (pid=$existing)" >&2
+          exit 0
+        fi
       fi
       # Stale pid file -- remove before respawning.
       rm -f "$_SV_PID_FILE"
