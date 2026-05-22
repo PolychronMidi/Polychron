@@ -137,6 +137,9 @@ from .repo_mermaid_freshness import (  # noqa: F401
 from .cross_context_isolation import (  # noqa: F401
     CrossContextIsolationVerifier,
 )
+from .bug_pattern_coverage import (  # noqa: F401
+    BugPatternCoverageVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance

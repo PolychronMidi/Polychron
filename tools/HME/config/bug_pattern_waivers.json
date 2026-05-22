@@ -1,0 +1,25 @@
+{
+  "$comment": "Bug-pattern concern tokens that are intentionally unwatched by any verifier. Use sparingly -- most fix-commit concerns SHOULD have a regression guard. Each waiver entry: {concern, reason}. Stale waivers (the concern no longer appears in the last 100 fix commits) FAIL so the list shrinks as the codebase moves on.",
+  "waivers": [
+    {"concern": "alongside", "reason": "subject-line filler word, not a real concern"},
+    {"concern": "debug", "reason": "generic verb, not a verifiable invariant"},
+    {"concern": "diagrams", "reason": "mermaid diagram fixes -- covered by repo-mermaid-freshness via 'mermaid' token"},
+    {"concern": "disambiguate", "reason": "verb form; the regression test for disambiguation lives in repo_mermaid_freshness.test.py"},
+    {"concern": "disambiguation", "reason": "same as disambiguate"},
+    {"concern": "failed", "reason": "common subject-line word, not a concern"},
+    {"concern": "four", "reason": "quantity word from 'four missed requires' -- not a concern"},
+    {"concern": "helpers", "reason": "generic noun; specific helpers have specific verifiers"},
+    {"concern": "infra", "reason": "infra is the doc/PROXY_CONTEXTS.md default classification; covered by cross-context-isolation"},
+    {"concern": "kind", "reason": "the kind property is covered by verifier-self-coverage class-attribute checks"},
+    {"concern": "log", "reason": "generic verb in commit subjects; specific log concerns have specific verifiers"},
+    {"concern": "long", "reason": "size adjective, not a concern"},
+    {"concern": "ordered", "reason": "covered by 'time-ordered' in read_policy auto-tail rule"},
+    {"concern": "policy", "reason": "covered by failure_policy, omni_failure_policy, read_policy etc."},
+    {"concern": "rule", "reason": "rules are enforced by their specific verifiers (markdown-invariant, etc)"},
+    {"concern": "shadow", "reason": "covered by onboarding-flow shadow regression test"},
+    {"concern": "shadowing", "reason": "covered by onboarding-flow shadow regression test"},
+    {"concern": "subdirs", "reason": "covered by subtree-label-disambiguation regression test"},
+    {"concern": "tail", "reason": "covered by read_policy.autoTailRewrite"},
+    {"concern": "time", "reason": "time-ordered files covered by read_policy auto-tail"}
+  ]
+}
