@@ -56,6 +56,7 @@ _SV_RELOAD_MARKER="$_SV_ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
 _SV_RUNTIME_FILE="$_SV_ROOT/tools/HME/runtime/proxy-runtime.json"
 _SV_POLL_INTERVAL=10
 _SV_MISS_THRESHOLD=3
+_SV_RELOAD_DEBOUNCE_SECS=20
 
 # Crash-loop detection. If the proxy bundle fails to become healthy after a
 # spawn attempt, count a failure. Repeated failures back off and alert.
