@@ -98,6 +98,36 @@ async function handleUpstreamFailureOrSuccess({
     }
   }
 
+  const isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
+    && upstreamHeaders['authorization'].startsWith('Bearer ');
+  if (status === 401 && isBearerAuth && payload && Array.isArray(payload.messages)) {
+    try {
+      console.error('got 401, attempting token refresh + retry before raising upstream alert');
+      const newToken = await refreshOauthToken();
+      const retryHeaders = { ...upstreamHeaders, authorization: `Bearer ${newToken}` };
+      retryHeaders['content-length'] = String(outBody.length);
+      const retryOpts = { ...upstreamOpts, headers: retryHeaders };
+      const retry = await new Promise((resolve, reject) => {
+        const req = transport.request(retryOpts, (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(chunks) }));
+          res.on('error', reject);
+        });
+        req.on('error', reject);
+        req.write(outBody);
+        req.end();
+      });
+      console.error(`401-retry response: ${retry.statusCode}`);
+      if (retry.statusCode >= 200 && retry.statusCode < 300) {
+        recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
+        return { status: retry.statusCode, headers: retry.headers, fullBody: retry.body };
+      }
+    } catch (refreshErr) {
+      console.error(`401-refresh failed: ${refreshErr.message}`);
+    }
+  }
+
   recordOmniRouteFailureAdvance({
     isOmniRouteSwap,
     swapChain,
@@ -178,36 +208,6 @@ async function handleUpstreamFailureOrSuccess({
     console.error(`snapshot/lifesaver write failed: ${err.message}`);
   }
   emit({ event: 'upstream_error', session: sessionForTelemetry, status, type: errInfo.type, message: errInfo.message, path_label: pathLabel });
-
-  const isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
-    && upstreamHeaders['authorization'].startsWith('Bearer ');
-  if (status === 401 && isBearerAuth && payload && Array.isArray(payload.messages)) {
-    try {
-      console.error('got 401, attempting token refresh + retry');
-      const newToken = await refreshOauthToken();
-      const retryHeaders = { ...upstreamHeaders, authorization: `Bearer ${newToken}` };
-      retryHeaders['content-length'] = String(outBody.length);
-      const retryOpts = { ...upstreamOpts, headers: retryHeaders };
-      const retry = await new Promise((resolve, reject) => {
-        const req = transport.request(retryOpts, (res) => {
-          const chunks = [];
-          res.on('data', (c) => chunks.push(c));
-          res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(chunks) }));
-          res.on('error', reject);
-        });
-        req.on('error', reject);
-        req.write(outBody);
-        req.end();
-      });
-      console.error(`401-retry response: ${retry.statusCode}`);
-      if (retry.statusCode >= 200 && retry.statusCode < 300) {
-        recordUpstreamSuccess();
-        return { status: retry.statusCode, headers: retry.headers, fullBody: retry.body };
-      }
-    } catch (refreshErr) {
-      console.error(`401-refresh failed: ${refreshErr.message}`);
-    }
-  }
 
   return { status, headers, fullBody };
 }
