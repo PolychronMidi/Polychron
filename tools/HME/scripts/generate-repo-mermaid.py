@@ -46,11 +46,17 @@ def dir_intent(abs_path: Path) -> str:
         text = readme.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return ""
+    # Stop before the auto-generated block so the root README's dir_intent
+    # is stable even after this script writes to it.
+    if BEGIN in text:
+        text = text.split(BEGIN, 1)[0]
     for line in text.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("<!--"):
+        if (not stripped
+                or stripped.startswith("#")
+                or stripped.startswith("<!--")
+                or stripped.startswith("```")):
             continue
-        # Truncate long intents so the mermaid node stays legible.
         if len(stripped) > 80:
             stripped = stripped[:77] + "..."
         return stripped
