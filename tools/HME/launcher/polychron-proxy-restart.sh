@@ -137,9 +137,11 @@ for entry in "${_proxy_pids[@]:-}"; do
 done
 
 for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
-# silent-ok: optional fallback path.
-  pkill -TERM -f "$pat" 2>/dev/null \
-    && echo "[proxy-restart] SIGTERM -> pattern: $pat" >&2 || true
+  while IFS= read -r _pat_pid; do
+    [ -n "$_pat_pid" ] || continue
+    kill -TERM "$_pat_pid" 2>/dev/null \
+      && echo "[proxy-restart] SIGTERM -> pattern: $pat (${_pat_pid})" >&2 || true
+  done < <(_bundle_pattern_pids "$pat")
 done
 
 # 2. Wait for the proxy bundle PROCESSES to exit -- not just ports.
