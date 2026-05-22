@@ -266,7 +266,8 @@ fi
 
 # 6. Spawn proxy with same invocation as polychron-launch.sh's step 1.
 _PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
-echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
+_EXPECTED_SHA="$(_current_head_sha)"
+echo "[proxy-restart] starting HME proxy on :${PROXY_PORT} (expected_sha=${_EXPECTED_SHA:-unknown})..." >&2
 cd "$PROJECT_ROOT"
 HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
   setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
