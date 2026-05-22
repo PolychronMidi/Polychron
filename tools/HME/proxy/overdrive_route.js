@@ -210,6 +210,19 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.swapModel = upstreamModelId(result.swapModel);
   if (env.HME_OMNIROUTE_PROVIDER) result.omniProvider = env.HME_OMNIROUTE_PROVIDER;
 
+  if (result.swapMeta && String(result.swapMeta.provider || '').trim() === 'anthropic') {
+    payload.model = result.swapModel;
+    try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
+    catch (err) {
+      console.error(`[hme-proxy] direct Anthropic payload serialize failed: ${err.message}`);
+      result.outBody = outBody;
+    }
+    result.lastPayloadBytes = result.outBody.length;
+    result.applied = true;
+    console.error(`[hme-proxy] MODE=1 direct Anthropic: claude-* -> ${result.swapModel} via default Anthropic OAuth path (stream=${result.wasStreaming})`);
+    return result;
+  }
+
   if (env.HME_OMNIROUTE_OFF !== '1') {
     const targetFormat = omniTargetFormat(result.omniProvider);
     console.error(`[hme-proxy] swap pre-omni: chainLen=${result.swapChain.length} model=${result.swapModel} provider=${result.omniProvider} targetFormat=${targetFormat}`);
