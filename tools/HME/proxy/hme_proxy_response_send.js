@@ -137,9 +137,11 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     delete outHeaders['content-length'];
   }
   if (outBuf && outBuf.length === 0) {
-    console.error('sendFinalResponse: outBuf is empty, injecting fallback error event');
-    outBuf = require('./hme_proxy_core')._anthropicTextSseBuffer('hme-proxy', 'API returned empty response body. Please retry or /compact.');
-    outHeaders['content-type'] = 'text/event-stream; charset=utf-8';
+    console.error('sendFinalResponse: outBuf is empty; closing with minimal stop SSE');
+    clientRes.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache' });
+    writeMinimalStopSse(clientRes, payload && payload.model || 'hme-proxy');
+    clientRes.end();
+    return;
   }
   clientRes.writeHead(outStatus, outHeaders);
   const isSseFinal = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
