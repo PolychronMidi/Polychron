@@ -131,6 +131,9 @@ from .verifier_self_coverage import (  # noqa: F401
 from .metric_name_orphans import (  # noqa: F401
     MetricNameOrphansVerifier,
 )
+from .repo_mermaid_freshness import (  # noqa: F401
+    RepoMermaidFreshnessVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
