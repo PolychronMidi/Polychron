@@ -60,25 +60,30 @@ function normalizeICommands(payload) {
 const _EMPTY_USER_PLACEHOLDER = '(content stripped by hme-proxy boilerplate filter)';
 
 function _ensureUserMessageNonEmpty(msg) {
-  if (!msg || msg.role !== 'user') return;
+  if (!msg || msg.role !== 'user') return false;
   const c = msg.content;
   if (typeof c === 'string') {
-    if (c.trim() === '') msg.content = _EMPTY_USER_PLACEHOLDER;
-    return;
+    if (c.trim() === '') { msg.content = _EMPTY_USER_PLACEHOLDER; return true; }
+    return false;
   }
-  if (!Array.isArray(c)) return;
+  if (!Array.isArray(c)) return false;
   const hasSignal = c.some((b) => {
     if (!b || typeof b !== 'object') return false;
     if (b.type === 'tool_result' || b.type === 'tool_use' || b.type === 'image' || b.type === 'document') return true;
     if (b.type === 'text' && typeof b.text === 'string' && b.text.trim() !== '') return true;
     return false;
   });
-  if (!hasSignal) msg.content = [{ type: 'text', text: _EMPTY_USER_PLACEHOLDER }];
+  if (!hasSignal) { msg.content = [{ type: 'text', text: _EMPTY_USER_PLACEHOLDER }]; return true; }
+  return false;
 }
 
 function _ensureAllUserMessagesNonEmpty(payload) {
-  if (!payload || !Array.isArray(payload.messages)) return;
-  for (const m of payload.messages) _ensureUserMessageNonEmpty(m);
+  if (!payload || !Array.isArray(payload.messages)) return 0;
+  let fixed = 0;
+  for (const m of payload.messages) {
+    if (_ensureUserMessageNonEmpty(m)) fixed++;
+  }
+  return fixed;
 }
 
 function stripBoilerplate(payload) {
@@ -147,8 +152,8 @@ function stripBoilerplate(payload) {
       patterns: Object.entries(stripped_samples).map(([k, v]) => `${k}=${v}`).join(','),
     });
   }
-  _ensureAllUserMessagesNonEmpty(payload);
-  return strippedCount;
+  const emptyFixed = _ensureAllUserMessagesNonEmpty(payload);
+  return strippedCount + emptyFixed;
 }
 
 // Semantic-redundancy strip
@@ -319,8 +324,8 @@ function stripSemanticRedundancy(payload) {
       patterns: Object.entries(patterns).map(([k, v]) => `${k}=${v}`).join(','),
     });
   }
-  _ensureAllUserMessagesNonEmpty(payload);
-  return strippedCount;
+  const emptyFixed = _ensureAllUserMessagesNonEmpty(payload);
+  return strippedCount + emptyFixed;
 }
 
 function scanMessages(payload) {
