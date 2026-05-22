@@ -93,5 +93,43 @@ class RepoMermaidFreshnessTests(unittest.TestCase):
             self.assertEqual(r.status, "PASS", msg=f"summary={r.summary} details={r.details}")
 
 
+class SubtreeLabelDisambiguationTests(unittest.TestCase):
+    """Regression guard for the path-relative-label behaviour added in
+    42f88918. Two sibling dirs that share a basename under different
+    parents (e.g. `a/x/utils` and `a/y/utils`) must produce distinct
+    labels in the subtree diagram, even though their node IDs are
+    already unique."""
+
+    def _build_subtree_block(self, tmp: Path) -> str:
+        sys.path.insert(0, str(REPO_ROOT / "tools/HME/scripts"))
+        gen_path = REPO_ROOT / "tools/HME/scripts/generate-repo-mermaid.py"
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_gen", gen_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        subprocess.run(["git", "init", "-q"], cwd=tmp, check=True)
+        subprocess.run(["git", "config", "user.email", "t@t"], cwd=tmp, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=tmp, check=True)
+        for rel in ("a/x/utils/x.txt", "a/y/utils/y.txt", "a/x/utils/README.md",
+                    "a/y/utils/README.md", "a/README.md"):
+            write_file(tmp, rel, "stub\n")
+        subprocess.run(["git", "add", "."], cwd=tmp, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=tmp, check=True)
+        return mod.build_subtree(tmp, Path("a"))
+
+    def test_same_basename_dirs_get_distinct_labels(self):
+        import re
+        with tempfile.TemporaryDirectory() as tmp:
+            block = self._build_subtree_block(Path(tmp))
+        labels = re.findall(r'\["([^"]+?)(?:<br/>.*)?"\]', block)
+        self.assertIn("a/", labels, msg=f"labels={labels}")
+        self.assertIn("x/utils/", labels, msg=f"labels={labels}")
+        self.assertIn("y/utils/", labels, msg=f"labels={labels}")
+        # The bare basename "utils/" must NOT appear -- both should be
+        # disambiguated by their parent path.
+        self.assertNotIn("utils/", labels,
+                         msg=f"undisambiguated label found; labels={labels}")
+
+
 if __name__ == "__main__":
     unittest.main()
