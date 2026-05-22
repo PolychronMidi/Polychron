@@ -13,6 +13,16 @@ const DENY_MARKERS = [
   'PostToolUse:',
 ];
 
+function writeMinimalStopSse(res, model = 'hme-proxy') {
+  const id = `proxy_${Date.now()}`;
+  const events = [
+    ['message_start', { type: 'message_start', message: { id, type: 'message', role: 'assistant', model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 0, output_tokens: 0 } } }],
+    ['message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 0 } }],
+    ['message_stop', { type: 'message_stop' }],
+  ];
+  for (const [event, data] of events) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
 function lastUserText(payload) {
   const msgs = (payload && payload.messages) || [];
   let text = '';
