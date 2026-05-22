@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { swapFileUnchanged } = require('../../proxy/middleware/06a_file_unchanged_swap');
+const { swapFileUnchanged } = require('../../proxy/file_unchanged_swap');
 
 function readUse(id, file_path) {
   return { type: 'tool_use', id, name: 'Read', input: { file_path } };
