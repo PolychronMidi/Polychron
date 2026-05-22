@@ -85,7 +85,8 @@ test('env fail-fast invariant catches try/except os.environ fallback', () => {
 });
 
 test('full env fail-fast scanner catches try/except os.environ fallback', () => {
-  const code = `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); import check_env_failfast as c; lines=['try:', '    root = os.environ["PROJECT_ROOT"]', 'except KeyError:', '    root = ""']; rows=c._try_except_fallback_rows('x.py', lines, {'PROJECT_ROOT'}); print(rows); raise SystemExit(0 if rows else 1)`;
+  const scanner = path.join(PROJECT_ROOT, 'tools/HME/scripts/check-env-failfast.py');
+  const code = `import importlib.util; spec=importlib.util.spec_from_file_location('check_env_failfast', ${JSON.stringify(scanner)}); c=importlib.util.module_from_spec(spec); spec.loader.exec_module(c); lines=['try:', '    root = os.environ["PROJECT_ROOT"]', 'except KeyError:', '    root = ""']; rows=c._try_except_fallback_rows('x.py', lines, {'PROJECT_ROOT'}); print(rows); raise SystemExit(0 if rows else 1)`;
   const r = run('python3', ['-c', code]);
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /PROJECT_ROOT/);
