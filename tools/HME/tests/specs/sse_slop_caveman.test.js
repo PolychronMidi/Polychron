@@ -51,6 +51,30 @@ test('slop rewriter applies caveman compression to thinking blocks without deny 
   assert.equal(out.events[1][1].delta.thinking, 'Checking path.');
 });
 
+test('caveman patterns do not mutate content inside backtick spans', () => {
+  const result = _stripSlop('Run `git config --get user.name and verify` to confirm.');
+  assert.ok(result.hits.includes('caveman_abbreviations'), 'still fires on prose');
+  assert.match(result.out, /`git config --get user\.name and verify`/, 'backtick span content preserved verbatim');
+});
+
+test('caveman patterns do not mutate content inside triple-backtick fences', () => {
+  const input = 'Then we run:\n```\ncurl -X POST http://api/v1 and check the response\n```\nand then move on.';
+  const result = _stripSlop(input);
+  assert.match(result.out, /curl -X POST http:\/\/api\/v1 and check the response/, 'fenced code untouched');
+});
+
+test('caveman patterns continue to fire on prose between code spans', () => {
+  const result = _stripSlop('I will now run `npm test` and we will see the result.');
+  assert.ok(result.hits.includes('caveman_compression'), 'prose still compressed');
+  assert.match(result.out, /`npm test`/, 'code span survives');
+  assert.doesNotMatch(result.out, /\bI will\b/, 'I-will outside code is stripped');
+});
+
+test('text without backticks takes the fast path unchanged in behavior', () => {
+  const result = _stripSlop('I will now run the test and we will see.');
+  assert.ok(result.hits.includes('caveman_compression'));
+});
+
 test('signature_delta on held thinking block flushes the start before the delta', () => {
   const ctx = new Map();
   const startData = { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } };

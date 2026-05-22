@@ -263,6 +263,34 @@ function _cleanupSlopArtifacts(text) {
     .trim();
 }
 
+// Split text into [{code:bool, s:string}, ...] segments. Code segments are
+// either triple-backtick fenced blocks or inline single-backtick spans.
+// Code-unsafe slop patterns are applied only to {code:false} segments so
+function _segmentByCode(text) {
+  const out = [];
+  const re = /```[\s\S]*?```|`[^`\n]+`/g;
+  let last = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push({ code: false, s: text.slice(last, m.index) });
+    out.push({ code: true, s: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push({ code: false, s: text.slice(last) });
+  return out;
+}
+
+function _replaceOutsideCode(text, re, repl) {
+  if (!/`/.test(text)) return text.replace(re, repl);
+  const segs = _segmentByCode(text);
+  for (const seg of segs) {
+    if (!seg.code) seg.s = seg.s.replace(re, repl);
+  }
+  return segs.map((s) => s.s).join('');
+}
+
+const _CODE_UNSAFE_PATTERNS = new Set(['caveman_compression', 'caveman_abbreviations']);
+
 function _stripSlop(text) {
   if (typeof text !== 'string' || !text) return { out: text, hits: [] };
   let out = text;
@@ -270,7 +298,9 @@ function _stripSlop(text) {
   for (const p of _SLOP_PATTERNS) {
     if (p.re === null) continue;  // function-style entries (e.g. excessive_bold)
     const before = out;
-    out = out.replace(p.re, p.repl);
+    out = _CODE_UNSAFE_PATTERNS.has(p.name)
+      ? _replaceOutsideCode(out, p.re, p.repl)
+      : out.replace(p.re, p.repl);
     if (out !== before) hits.push(p.name);
   }
   // Function-style strips: density-gated, can't be a simple regex.
