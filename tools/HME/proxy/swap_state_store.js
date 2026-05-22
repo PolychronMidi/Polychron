@@ -24,7 +24,9 @@ function _read(projectRoot) {
 }
 
 function _write(projectRoot, st) {
-  fs.writeFileSync(_filePath(projectRoot), JSON.stringify(st));
+  const file = _filePath(projectRoot);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(st));
 }
 
 function _matchesChain(st, sig) { return st && st.chain === sig; }
