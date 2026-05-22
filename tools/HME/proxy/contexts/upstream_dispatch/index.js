@@ -15,8 +15,11 @@ const {
   recordUpstreamSuccess,
   recordUpstreamFailure,
   refreshOauthToken,
+  isPassthroughMode,
 } = require('../../upstream');
 const omniroute = require('../../omniroute_client');
+const resolver = require('../../model_route_resolver');
+const { routeDecision } = resolver;
 
 module.exports = {
   createClaudeHandler,
@@ -29,5 +32,8 @@ module.exports = {
   recordUpstreamSuccess,
   recordUpstreamFailure,
   refreshOauthToken,
+  isPassthroughMode,
   omniroute,
+  resolver,
+  routeDecision,
 };

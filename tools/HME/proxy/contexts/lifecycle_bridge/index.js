@@ -10,6 +10,8 @@ const {
 const { emitStartMarker } = require('../../start_marker');
 const { createProxyRouteDispatcher } = require('../../hme_proxy_routes');
 const hmeDispatcher = require('../../hme_dispatcher');
+const supervisorChildren = require('../../supervisor/children');
+const supervisor = require('../../supervisor');
 
 module.exports = {
   handleLifecycleRoute,
@@ -20,4 +22,6 @@ module.exports = {
   createProxyRouteDispatcher,
   lifecycleBridge: lifecycleBridgeModule,
   hmeDispatcher,
+  supervisorChildren,
+  supervisor,
 };
