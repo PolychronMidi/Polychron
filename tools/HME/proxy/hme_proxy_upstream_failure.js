@@ -209,6 +209,23 @@ async function handleUpstreamFailureOrSuccess({
     }
   }
 
+  const credentialFailover = await retryOmniCredentialFailure({
+    status,
+    errInfo,
+    payload,
+    swapChain,
+    omniProvider,
+    swapModel,
+    transport,
+    upstreamOpts,
+    upstreamHeaders,
+    projectRoot: PROJECT_ROOT,
+  });
+  if (credentialFailover) {
+    recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
+    return { status: credentialFailover.status, headers: credentialFailover.headers, fullBody: credentialFailover.fullBody };
+  }
+
   recordOmniRouteFailureAdvance({
     isOmniRouteSwap,
     swapChain,
