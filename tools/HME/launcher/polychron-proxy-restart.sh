@@ -108,7 +108,7 @@ PY
 }
 
 _assert_runtime_matches_listener() {
-  local expected_pid="$1" expected_sha="$2" head_sha marker_sha runtime_pid runtime_sha ts
+  local expected_pid="${1-}" expected_sha="${2-}" head_sha marker_sha runtime_pid runtime_sha ts
   head_sha="$(_current_head_sha)"
   marker_sha="$(_marker_sha)"
   runtime_pid="$(_runtime_value pid)"
