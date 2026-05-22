@@ -67,7 +67,11 @@ function modelTier(modelId) {
 
 function claudeModelForOverdrive(modelId) {
   const raw = String(modelId || '');
-  if (raw.startsWith('claude-')) return raw;
+  return raw.startsWith('claude-') ? raw : '';
+}
+
+function providerPrefixedClaudeModel(modelId) {
+  const raw = String(modelId || '');
   const slash = raw.indexOf('/');
   if (slash < 0) return '';
   const provider = raw.slice(0, slash).toLowerCase();
