@@ -50,3 +50,21 @@ test('slop rewriter applies caveman compression to thinking blocks without deny 
   assert.equal(out.events[1][1].delta.type, 'thinking_delta');
   assert.equal(out.events[1][1].delta.thinking, 'Checking path.');
 });
+
+test('signature_delta on held thinking block flushes the start before the delta', () => {
+  const ctx = new Map();
+  const startData = { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } };
+  assert.equal(slopStripRewrite('content_block_start', startData, ctx), null);
+  const sigDelta = { type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'abc' } };
+  const flushed = slopStripRewrite('content_block_delta', sigDelta, ctx);
+  assert.ok(flushed && Array.isArray(flushed.events), 'signature_delta must trigger flush events');
+  assert.equal(flushed.events[0][0], 'content_block_start', 'start emitted before signature_delta');
+  assert.deepEqual(flushed.events[0][1], startData);
+  assert.equal(flushed.events[1][0], 'content_block_delta');
+  assert.deepEqual(flushed.events[1][1], sigDelta);
+  const stop = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 0 }, ctx);
+  assert.ok(stop && Array.isArray(stop.events), 'stop must emit a flush array');
+  const startEventsAfterStop = stop.events.filter((e) => e[0] === 'content_block_start');
+  assert.equal(startEventsAfterStop.length, 0, 'no duplicate content_block_start after stop');
+  assert.equal(stop.events[stop.events.length - 1][0], 'content_block_stop');
+});

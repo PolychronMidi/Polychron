@@ -317,6 +317,16 @@ function slopStripRewrite(eventName, data, ctx) {
     state.deltas.push(data);
     return null;
   }
+  // Non-text/thinking deltas (e.g. signature_delta on thinking blocks) must
+  // not jump ahead of the held content_block_start. Flush the start first,
+  if (eventName === 'content_block_delta' && data && holds.has(data.index)) {
+    const state = holds.get(data.index);
+    const events = [['content_block_start', state.startData], [eventName, data]];
+    state.startData = null;
+    state.deltas = state.deltas || [];
+    state.flushed = true;
+    return { events };
+  }
   if (eventName === 'content_block_stop' && data) {
     const state = holds.get(data.index);
     if (!state) return data;
@@ -328,7 +338,8 @@ function slopStripRewrite(eventName, data, ctx) {
       if (typeof d.delta.thinking === 'string') assembled += d.delta.thinking;
     }
     const { out, hits } = _stripSlop(assembled);
-    const events = [['content_block_start', state.startData]];
+    const events = [];
+    if (state.startData) events.push(['content_block_start', state.startData]);
     if (hits.length === 0) {
       for (const d of state.deltas) events.push(['content_block_delta', d]);
       events.push(['content_block_stop', data]);
