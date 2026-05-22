@@ -82,6 +82,24 @@ test('context token usage parser extracts Anthropic JSON and SSE usage', () => {
   );
 });
 
+test('OmniRoute context-window SSE stays an error event, not assistant text', () => {
+  const body = Buffer.from('event: error\ndata: {"type":"error","error":{"type":"invalid_request_error","message":"input exceeds the context window"}}\n\n');
+  const { outHeaders, outBuf } = normalizeOmniContextWindowSse({
+    isOmniRouteSwap: true,
+    status: 200,
+    outHeaders: { 'content-type': 'text/event-stream' },
+    outBuf: body,
+    swapModel: 'gpt-test',
+    anthropicTextSseBuffer() { throw new Error('must not fabricate assistant text'); },
+    log() {},
+  });
+  const text = outBuf.toString('utf8');
+  assert.match(text, /event: error/);
+  assert.match(text, /context_window_exceeded/);
+  assert.doesNotMatch(text, /event: message_start/);
+  assert.equal(outHeaders['x-hme-proxy-error'], 'context_window_exceeded');
+});
+
 test('context token usage fields separate upstream headers from synthetic context signal', () => {
   const row = _contextTokenUsageFields({
     headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '2500' },
