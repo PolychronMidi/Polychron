@@ -378,6 +378,14 @@ function _entryText(entry) {
   return '';
 }
 
+function isStructuredTaskReminderLine(trimmed) {
+  if (/^#\d+\.?\s*\[(?:in_progress|pending)\]/i.test(trimmed)) return true;
+  if (/^(?:[-*]\s*)?id:\s*\S+\b.*\bstatus:\s*(?:in_progress|pending)\b/i.test(trimmed)) return true;
+  if (/^(?:[-*]\s*)?status:\s*(?:in_progress|pending)\b.*\b(subject|description|content|activeForm):/i.test(trimmed)) return true;
+  if (/^(?:[-*]\s*)?(subject|description|content|activeForm):\s*\S+\b.*\bstatus:\s*(?:in_progress|pending)\b/i.test(trimmed)) return true;
+  return false;
+}
+
 function scanUnfinishedTaskReminder(text) {
   if (!text) return [];
   const lines = String(text).split(/\r?\n/);
@@ -400,7 +408,7 @@ function scanUnfinishedTaskReminder(text) {
     if (/^stdout\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
     if (/\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
     if (!/\b(in_progress|pending)\b/i.test(trimmed)) continue;
-    if (!/(^|[^A-Za-z])(task|todo|status|subject|description|activeForm|Here are the existing tasks|<system-reminder>)|^#\d+\.?\s*\[(?:in_progress|pending)\]/i.test(trimmed)) continue;
+    if (!isStructuredTaskReminderLine(trimmed)) continue;
     hits.push(trimmed.slice(0, 240));
     if (hits.length >= 6) break;
   }
