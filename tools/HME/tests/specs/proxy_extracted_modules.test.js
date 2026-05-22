@@ -102,6 +102,26 @@ test('OmniRoute context-window SSE stays an error event, not assistant text', ()
   assert.equal(outHeaders['x-hme-proxy-error'], 'context_window_exceeded');
 });
 
+test('responseHasErrorEvent detects SSE and JSON errors', () => {
+  assert.equal(responseHasErrorEvent(Buffer.from('event: error\ndata: {"error":{"type":"context_window_exceeded"}}\n\n')), true);
+  assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ type: 'error', error: { type: 'x' } }))), true);
+  assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))), false);
+});
+
+test('model route cooldown marks context-window quarantine and expires by time', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-route-health-'));
+  try {
+    const now = Date.parse('2026-05-22T00:00:00Z');
+    markRouteCooldown('cx/gpt-test', 'context_window_exceeded', { projectRoot: dir, ttlMs: 1000, now });
+    const state = loadModelRouteHealth(dir);
+    assert.equal(state['cx/gpt-test'].status, 'cooldown');
+    assert.equal(routeSkipReason('cx/gpt-test', state, {}, now + 500), 'context_window_exceeded');
+    assert.equal(routeSkipReason('cx/gpt-test', state, {}, now + 1500), '');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('context token usage fields separate upstream headers from synthetic context signal', () => {
   const row = _contextTokenUsageFields({
     headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '2500' },
