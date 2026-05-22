@@ -47,12 +47,36 @@ function validateAgainstTemplate(envPath, values, opts = {}) {
   }
 }
 
+function expandEnvValues(values) {
+  const expanded = new Map();
+  const resolving = new Set();
+  const resolve = (key) => {
+    if (expanded.has(key)) return expanded.get(key);
+    if (resolving.has(key)) throw new Error(`cyclic .env interpolation involving ${key}`);
+    if (!values.has(key)) return process.env[key];
+    resolving.add(key);
+    const raw = values.get(key);
+    const value = String(raw).replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_match, ref) => {
+      const resolved = resolve(ref);
+      if (resolved === undefined || resolved === '') {
+        throw new Error(`unresolved .env interpolation ${key} references ${ref}`);
+      }
+      return String(resolved);
+    });
+    resolving.delete(key);
+    expanded.set(key, value);
+    return value;
+  };
+  for (const key of values.keys()) resolve(key);
+  return expanded;
+}
+
 function loadEnv(envPath, opts) {
   const overwrite = !!(opts && opts.overwrite);
   if (!fs.existsSync(envPath)) {
     throw new Error(`missing required .env at ${envPath}`);
   }
-  const values = parseEnvFile(envPath);
+  const values = expandEnvValues(parseEnvFile(envPath));
   validateAgainstTemplate(envPath, values, opts || {});
   let loaded = 0;
   let skipped = 0;
