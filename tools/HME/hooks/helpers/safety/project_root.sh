@@ -1,9 +1,9 @@
 # Resolve project root: $CLAUDE_PROJECT_DIR, then walk up for .env+.git.
 # No host-specific hardcoded fallback (removed for portability).
 _HME_PROJECT_ROOT=""
-if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/src" ]; then
+if [ "${PROJECT_ROOT+x}" = "x" ] && [ -n "$PROJECT_ROOT" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _HME_PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
-elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -f "$CLAUDE_PROJECT_DIR/.env" ]; then
+elif [ "${CLAUDE_PROJECT_DIR+x}" = "x" ] && [ -n "$CLAUDE_PROJECT_DIR" ] && [ -f "$CLAUDE_PROJECT_DIR/.env" ]; then
   _HME_PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_HME_PROJECT_ROOT" ]; then
