@@ -64,20 +64,19 @@ def assert_class_shape(tc: unittest.TestCase, cls) -> None:
                 msg=f"{cls.__name__}.kind invalid")
 
 
-def smoke_run(tc: unittest.TestCase, tmpdir, classes) -> None:
-    """Call .execute() on every class in `classes` under PROJECT_ROOT=tmpdir;
-    assert each returns a VerdictResult with a valid status and 0<=score<=1."""
+def smoke_run(tc: unittest.TestCase, classes) -> None:
+    """Call .execute() on every class in `classes` against the live repo;
+    assert each returns a VerdictResult with a valid status and 0<=score<=1.
+
+    execute() wraps run() with timing + exception handling, so a verifier
+    crash becomes status=ERROR (still a valid VerdictResult); this test
+    is asserting structural integrity of the result envelope, not the
+    business outcome of any one verifier.
+    """
     from verify_coherence._base import VerdictResult
-
-    def _do():
-        results = []
-        for cls in classes:
-            r = cls().execute()
-            results.append((cls.__name__, r))
-        return results
-
-    results = with_project_root(tmpdir, _do)
-    for name, r in results:
+    for cls in classes:
+        r = cls().execute()
+        name = cls.__name__
         tc.assertIsInstance(r, VerdictResult, msg=f"{name}: {type(r)}")
         tc.assertIn(r.status, VALID_STATUSES, msg=f"{name}: status={r.status!r}")
         tc.assertGreaterEqual(r.score, 0.0, msg=f"{name}: score={r.score}")
