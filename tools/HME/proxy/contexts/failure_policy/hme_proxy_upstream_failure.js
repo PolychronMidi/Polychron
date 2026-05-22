@@ -1,9 +1,9 @@
 'use strict';
-const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
+const { requireEnv: _hmeRequireEnv } = require('../../shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
-const { emit, PROJECT_ROOT } = require('./shared');
+const { emit, PROJECT_ROOT } = require('../../shared');
 const {
   recordUpstreamSuccess,
   recordUpstreamFailure,
@@ -12,7 +12,7 @@ const {
   upstreamModelId,
   swapStore,
   omniroute,
-} = require('./contexts/upstream_dispatch');
+} = require('../../contexts/upstream_dispatch');
 const {
   detectUpstreamFailure: _detectUpstreamFailure,
   alertCooldownActive: _alertCooldownActive,

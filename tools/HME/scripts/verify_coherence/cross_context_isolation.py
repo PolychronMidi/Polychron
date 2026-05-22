@@ -142,7 +142,7 @@ class CrossContextIsolationVerifier(Verifier):
                 importer_rel = str(js.relative_to(root)).replace("\\", "/")
             except ValueError:
                 continue
-            if "/contexts/" in importer_rel:
+            if importer_rel in facades.values():
                 continue
             importer_ctx = _context_of(importer_rel, membership)
             if importer_ctx == "infra":

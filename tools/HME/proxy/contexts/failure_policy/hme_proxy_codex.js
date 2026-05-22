@@ -6,8 +6,8 @@ const {
   omniProviderForConfigProvider,
   omniTargetFormat,
   isManualTopActive,
-} = require('./contexts/upstream_dispatch');
-const swapStore = require('./swap_state_store');
+} = require('../../contexts/upstream_dispatch');
+const swapStore = require('../../swap_state_store');
 const { chainSignature } = swapStore;
 
 function upstreamModelId(model) {

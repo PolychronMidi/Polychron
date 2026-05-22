@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PROJECT_ROOT } = require('./shared');
+const { PROJECT_ROOT } = require('../../shared');
 
 function routeHealthPath(projectRoot = PROJECT_ROOT) {
   return path.join(projectRoot, 'tools', 'HME', 'runtime', 'model-route-health.json');

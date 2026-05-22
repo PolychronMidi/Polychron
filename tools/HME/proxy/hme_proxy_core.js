@@ -55,7 +55,7 @@ const {
   _tryParseJson,
   detectUpstreamFailure: _detectUpstreamFailure,
   alertCooldownActive: _alertCooldownActive,
-} = require('./failure_classification');
+} = require('./contexts/failure_policy');
 
 const _STALE_TOOL_KEEP_TURNS = requireEnvInt('HME_PROXY_STALE_TOOL_KEEP_TURNS');
 
