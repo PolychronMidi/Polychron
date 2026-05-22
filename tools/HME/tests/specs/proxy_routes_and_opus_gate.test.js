@@ -45,10 +45,11 @@ test('proxy route health reports stale runtime degraded while ready stays listen
 test('proxy route dispatcher handles health/version/stop and probe short-circuits', () => {
   clearProxyCache();
   const { createProxyRouteDispatcher } = require('../../proxy/hme_proxy_routes');
+  const headSha = execFileSync('git', ['-C', repoRoot, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
   const dispatch = createProxyRouteDispatcher({
     PORT: 9099,
     PROXY_VERSION: 'test-version',
-    PROXY_GIT_SHA: 'test-sha',
+    PROXY_GIT_SHA: headSha,
     PROXY_STARTED_AT: 'test-start',
     routeMetrics: { direct: 1 },
     stopGateHealth: () => ({ reminder_pending: false, middleware: [] }),
