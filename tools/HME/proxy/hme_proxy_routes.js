@@ -28,9 +28,9 @@ function requiredSupervisorFailures(supervisor) {
     .map(([name]) => name);
 }
 
-function healthVerdict(supervisor, runningSha) {
+function healthVerdict(supervisor, runningSha, currentShaFn = currentRepoGitSha) {
   const supervisor_failures = requiredSupervisorFailures(supervisor);
-  const current_git_sha = currentRepoGitSha();
+  const current_git_sha = currentShaFn();
   const runtime_stale = Boolean(current_git_sha && runningSha && current_git_sha !== runningSha);
   const ok = supervisor_failures.length === 0 && !runtime_stale;
   return {
