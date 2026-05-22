@@ -19,6 +19,7 @@ DISMISSIVE_PHRASES = (
 )
 SUCCESS_ONLY = re.compile(r"^\s*\[?success\]?\s*[.!]?\s*$", re.IGNORECASE)
 FP_CHECK_ONLY = re.compile(r"^\s*\[FP-CHECK:\s*(yes|no)\]\s*$", re.IGNORECASE)
+PROXY_NOOP_ONLY = re.compile(r"^\s*⁣\s*$")
 PROXY_ERROR_ONLY = re.compile(r"^\s*\[Proxy Error\]\s+upstream API returned an empty response\. Please retry request\.\s*$", re.IGNORECASE)
 
 # User prompts that legitimately invite a short confirmation.
