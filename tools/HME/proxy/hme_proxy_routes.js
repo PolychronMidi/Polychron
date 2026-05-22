@@ -129,4 +129,4 @@ function createProxyRouteDispatcher({
   };
 }
 
-module.exports = { createProxyRouteDispatcher };
+module.exports = { createProxyRouteDispatcher, healthVerdict, requiredSupervisorFailures };
