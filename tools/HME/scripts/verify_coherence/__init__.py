@@ -118,6 +118,9 @@ from .repo_hygiene import (  # noqa: F401
 from .markdown_invariant import (  # noqa: F401
     MarkdownInvariantVerifier,
 )
+from .forbidden_api_keys import (  # noqa: F401
+    ForbiddenApiKeysVerifier,
+)
 
 # Preserves the ordering from the original verify-coherence.py -- a few
 # downstream consumers (dashboard, diff scripts) expect this sequence.
@@ -126,6 +129,7 @@ REGISTRY = [
     NumericClaimDriftVerifier(),
     DocCoreLayoutVerifier(),
     MarkdownInvariantVerifier(),
+    ForbiddenApiKeysVerifier(),
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
     EnvTamperVerifier(),
