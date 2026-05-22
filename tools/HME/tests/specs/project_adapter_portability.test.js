@@ -9,7 +9,7 @@ const path = require('node:path');
 
 const repo = path.resolve(__dirname, '..', '..', '..', '..');
 const adapter = require('../../proxy/project_adapter');
-const hmePaths = require('../../proxy/hme_paths');
+const hmePaths = require('../../proxy/infra/hme_paths');
 
 function copyDir(src, dst) {
   fs.mkdirSync(dst, { recursive: true });

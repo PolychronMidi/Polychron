@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { PROJECT_ROOT } = require('../shared');
-const hmePaths = require('../hme_paths');
+const hmePaths = require('../infra/hme_paths');
 const STALENESS_PATH = hmePaths.hmeMetric('kb-staleness.json');
 
 function reportFailure(ctx, toolResult, message) {

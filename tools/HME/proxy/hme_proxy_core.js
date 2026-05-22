@@ -8,7 +8,7 @@ const HME_PREFIX = /^mcp__HME__/;
 const PROXY_STARTED_AT = new Date().toISOString();
 const PROXY_GIT_SHA = (() => {
   try {
-    const { runSync } = require('./subprocess');
+    const { runSync } = require('./infra/subprocess');
     const r = runSync('git', ['rev-parse', '--short', 'HEAD'], {
       cwd: require('path').resolve(__dirname, '..', '..', '..'),
       timeoutMs: 1000,

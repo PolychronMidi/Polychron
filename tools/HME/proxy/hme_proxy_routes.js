@@ -1,6 +1,6 @@
 'use strict';
 
-const { runSync } = require('./subprocess');
+const { runSync } = require('./infra/subprocess');
 const { PROJECT_ROOT } = require('./shared');
 
 function json(clientRes, status, body) {

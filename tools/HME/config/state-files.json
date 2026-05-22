@@ -404,7 +404,7 @@
       "path": "tools/HME/runtime/metrics/*",
       "coordination": "HME-owned telemetry; project metrics stay adapter-scoped.",
       "writers": [
-        "tools/HME/proxy/hme_paths.js",
+        "tools/HME/proxy/infra/hme_paths.js",
         "tools/HME/scripts/hme_paths.py",
         "HME components using HME_METRICS_DIR"
       ],
@@ -424,7 +424,7 @@
       "path": "tools/HME/runtime/state/*",
       "coordination": "Durable HME state; not part of swappable project src/.",
       "writers": [
-        "tools/HME/proxy/hme_paths.js",
+        "tools/HME/proxy/infra/hme_paths.js",
         "tools/HME/scripts/hme_paths.py",
         "HME components using HME_STATE_DIR"
       ],

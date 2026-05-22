@@ -8,7 +8,7 @@ const { loadEnv } = require('./shared/load_env');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 
-const _cfg = require('./hme_config').load();
+const _cfg = require('./infra/hme_config').load();
 const DEFAULT_UPSTREAM_HOST = _cfg.proxy.upstreamHost;
 const DEFAULT_UPSTREAM_PORT = _cfg.proxy.upstreamPort;
 const DEFAULT_UPSTREAM_TLS = _cfg.proxy.upstreamTls;

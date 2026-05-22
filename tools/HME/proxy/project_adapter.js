@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PROJECT_ROOT } = require('./hme_paths');
+const { PROJECT_ROOT } = require('./infra/hme_paths');
 
 const DEFAULT_ADAPTER = Object.freeze({
   project_id: 'generic',

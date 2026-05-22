@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const hmePaths = require('./hme_paths');
+const hmePaths = require('./infra/hme_paths');
 const REFRESH_INTERVAL_MS = 60_000;
 
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'src/scripts/pipeline/bias-bounds-manifest.json');

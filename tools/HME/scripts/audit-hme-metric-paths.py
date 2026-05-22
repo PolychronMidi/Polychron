@@ -16,7 +16,7 @@ LEGACY_PATTERNS = [
 ALLOW = {
     "tools/HME/scripts/_common.py",
     "tools/HME/scripts/hme_paths.py",
-    "tools/HME/proxy/hme_paths.js",
+    "tools/HME/proxy/infra/hme_paths.js",
 }
 
 

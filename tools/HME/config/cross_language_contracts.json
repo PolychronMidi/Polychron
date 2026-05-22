@@ -46,7 +46,7 @@
           "pattern": "PROJECT_METRIC_NAMES\\s*=\\s*\\{([^}]+)\\}"
         },
         {
-          "file": "tools/HME/proxy/hme_paths.js",
+          "file": "tools/HME/proxy/infra/hme_paths.js",
           "pattern": "PROJECT_METRIC_NAMES\\s*=\\s*new\\s+Set\\(\\[([^\\]]+)\\]\\)"
         }
       ]
@@ -72,7 +72,7 @@
           "pattern": "HME_METRIC_NAMES\\s*=\\s*\\{([^}]+)\\}"
         },
         {
-          "file": "tools/HME/proxy/hme_paths.js",
+          "file": "tools/HME/proxy/infra/hme_paths.js",
           "pattern": "HME_METRIC_NAMES\\s*=\\s*new\\s+Set\\(\\[([^\\]]+)\\]\\)"
         }
       ]

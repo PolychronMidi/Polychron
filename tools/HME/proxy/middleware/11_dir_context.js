@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT, mtimeCache } = require('../shared');
-const hmePaths = require('../hme_paths');
+const hmePaths = require('../infra/hme_paths');
 
 const INTENT_PATH = hmePaths.hmeMetric('hme-dir-intent.json');
 const MAX_RULES_INJECTED = 2;

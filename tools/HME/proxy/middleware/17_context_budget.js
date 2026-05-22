@@ -28,7 +28,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
-const hmePaths = require('../hme_paths');
+const hmePaths = require('../infra/hme_paths');
 
 const METRICS = hmePaths.hmeMetric('hme-enricher-efficacy.jsonl');
 const RATES = path.join(PROJECT_ROOT, 'tmp', 'hme-enricher-efficacy-rates.json');

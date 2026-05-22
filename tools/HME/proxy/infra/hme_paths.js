@@ -1,5 +1,5 @@
 'use strict';
-const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
+const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');

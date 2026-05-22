@@ -70,7 +70,7 @@ def _stage_declarations(root: Path) -> None:
     """Declarations referencing every name; must be ignored as writers."""
     _stage(root, "tools/HME/scripts/hme_paths.py",
            "# declarations only\n")
-    _stage(root, "tools/HME/proxy/hme_paths.js",
+    _stage(root, "tools/HME/proxy/infra/hme_paths.js",
            "// declarations only\n")
 
 
@@ -130,7 +130,7 @@ class MetricNameOrphansTests(unittest.TestCase):
             _write_registry(root, {"PROJECT_METRIC_NAMES": ["only-in-decl.json"]})
             _stage(root, "tools/HME/scripts/hme_paths.py",
                    'PROJECT_METRIC_NAMES = {"only-in-decl.json"}\n')
-            _stage(root, "tools/HME/proxy/hme_paths.js",
+            _stage(root, "tools/HME/proxy/infra/hme_paths.js",
                    "const PROJECT_METRIC_NAMES = new Set(['only-in-decl.json']);\n")
             r = _with_root(root, _run)
             self.assertEqual(r.status, "FAIL")

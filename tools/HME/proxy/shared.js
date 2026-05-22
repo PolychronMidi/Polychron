@@ -4,7 +4,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const { loadJsonc } = require('./config_loader');
-const hmePaths = require('./hme_paths');
+const hmePaths = require('./infra/hme_paths');
 
 const PROJECT_ROOT = hmePaths.PROJECT_ROOT;
 const EMIT_PY = path.join(PROJECT_ROOT, 'tools/HME/activity/emit.py');

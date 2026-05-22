@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('path');
-const { PROJECT_ROOT } = require('./shared');
+const { PROJECT_ROOT } = require('../shared');
 
 function projectPath(...segments) {
   return path.join(PROJECT_ROOT, ...segments);

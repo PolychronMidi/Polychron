@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
-const paths = require('../../proxy/paths');
+const paths = require('../../proxy/infra/paths');
 
 test('projectPath joins relative to PROJECT_ROOT', () => {
   assert.equal(paths.projectPath('a', 'b.txt'), path.join(paths.PROJECT_ROOT, 'a', 'b.txt'));

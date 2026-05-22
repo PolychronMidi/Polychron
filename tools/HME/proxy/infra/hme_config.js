@@ -1,6 +1,6 @@
 'use strict';
 
-const { requireEnv, requireEnvInt, requireEnvBool } = require('./shared/load_env');
+const { requireEnv, requireEnvInt, requireEnvBool } = require('../shared/load_env');
 
 function readOptional(name) {
   const raw = process.env[name];

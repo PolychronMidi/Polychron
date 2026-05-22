@@ -16,7 +16,7 @@ entry survives long after the code that wrote that file is gone."
 Source of truth for the registry: tools/HME/config/cross_language_contracts.json
 Declaration sites (excluded from writer count):
   tools/HME/scripts/hme_paths.py
-  tools/HME/proxy/hme_paths.js
+  tools/HME/proxy/infra/hme_paths.js
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ REGISTRY_REL = "tools/HME/config/cross_language_contracts.json"
 
 DECLARATION_FILES = {
     "tools/HME/scripts/hme_paths.py",
-    "tools/HME/proxy/hme_paths.js",
+    "tools/HME/proxy/infra/hme_paths.js",
     REGISTRY_REL,
 }
 

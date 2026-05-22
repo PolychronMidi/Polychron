@@ -6,8 +6,8 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const hmePaths = require('./hme_paths');
-const { runtimePath, logPath, tmpPath } = require('./paths');
+const hmePaths = require('./infra/hme_paths');
+const { runtimePath, logPath, tmpPath } = require('./infra/paths');
 
 const CACHE_STABLE_MS = 4 * 60 * 1000;
 let _statusSnapshot = null;

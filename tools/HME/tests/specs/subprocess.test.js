@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { run, runSync, captureSync } = require('../../proxy/subprocess');
+const { run, runSync, captureSync } = require('../../proxy/infra/subprocess');
 
 test('runSync captures stdout, stderr, exit code', () => {
   const r = runSync('node', ['-e', 'process.stderr.write("warn"); console.log("hi"); process.exit(0);']);

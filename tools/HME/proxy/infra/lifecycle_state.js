@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PROJECT_ROOT } = require('./shared');
+const { PROJECT_ROOT } = require('../shared');
 
 function resolveRelative(rel) {
   return path.join(PROJECT_ROOT, rel);

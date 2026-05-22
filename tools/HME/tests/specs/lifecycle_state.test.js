@@ -11,23 +11,23 @@ function withTmpProjectRoot(prefix, fn) {
   const prior = process.env.PROJECT_ROOT;
   process.env.PROJECT_ROOT = root;
   for (const key of Object.keys(require.cache)) {
-    if (key.includes('/tools/HME/proxy/lifecycle_state.js')
+    if (key.includes('/tools/HME/proxy/infra/lifecycle_state.js')
         || key.includes('/tools/HME/proxy/shared')
-        || key.includes('/tools/HME/proxy/hme_paths.js')) {
+        || key.includes('/tools/HME/proxy/infra/hme_paths.js')) {
       delete require.cache[key];
     }
   }
   try {
-    const mod = require('../../proxy/lifecycle_state');
+    const mod = require('../../proxy/infra/lifecycle_state');
     return fn(root, mod);
   } finally {
     if (prior === undefined) delete process.env.PROJECT_ROOT;
     else process.env.PROJECT_ROOT = prior;
     fs.rmSync(root, { recursive: true, force: true });
     for (const key of Object.keys(require.cache)) {
-      if (key.includes('/tools/HME/proxy/lifecycle_state.js')
+      if (key.includes('/tools/HME/proxy/infra/lifecycle_state.js')
           || key.includes('/tools/HME/proxy/shared')
-          || key.includes('/tools/HME/proxy/hme_paths.js')) {
+          || key.includes('/tools/HME/proxy/infra/hme_paths.js')) {
         delete require.cache[key];
       }
     }

@@ -42,7 +42,7 @@ const PROXY_VERSION = (() => {
 })();
 const PROXY_GIT_SHA = (() => {
   try {
-    const { runSync } = require('./subprocess');
+    const { runSync } = require('./infra/subprocess');
     const r = runSync('git', ['rev-parse', '--short', 'HEAD'], {
       cwd: require('path').resolve(__dirname, '..', '..', '..'),
       timeoutMs: 1000,
@@ -52,7 +52,7 @@ const PROXY_GIT_SHA = (() => {
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
 function writeRuntimeMetadata() {
-  const { writeMarker } = require('./lifecycle_state');
+  const { writeMarker } = require('./infra/lifecycle_state');
   writeMarker('PROXY_RUNTIME', { git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, pid: process.pid });
 }
 function logRuntimeMetadataFailure(err) {

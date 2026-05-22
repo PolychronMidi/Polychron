@@ -124,7 +124,7 @@ class CrossContextIsolationTests(unittest.TestCase):
             write_file(root, "tools/HME/proxy/alpha_main.js",
                        "const u = require('./hme_paths');\n"
                        "module.exports = { main: () => u.something() };\n")
-            write_file(root, "tools/HME/proxy/hme_paths.js",
+            write_file(root, "tools/HME/proxy/infra/hme_paths.js",
                        "module.exports = { something: () => 1 };\n")
             write_file(root, "tools/HME/proxy/contexts/alpha/index.js",
                        "module.exports = require('../../alpha_main.js');\n")

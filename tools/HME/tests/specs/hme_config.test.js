@@ -6,9 +6,9 @@ const path = require('node:path');
 
 function freshConfig() {
   for (const key of Object.keys(require.cache)) {
-    if (key.includes('/tools/HME/proxy/hme_config.js')) delete require.cache[key];
+    if (key.includes('/tools/HME/proxy/infra/hme_config.js')) delete require.cache[key];
   }
-  return require('../../proxy/hme_config');
+  return require('../../proxy/infra/hme_config');
 }
 
 test('load() returns a deep-frozen config snapshot', () => {

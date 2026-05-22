@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const hmePaths = require('./hme_paths');
+const hmePaths = require('./infra/hme_paths');
 
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
 const REFRESH_INTERVAL_MS = 60_000;
