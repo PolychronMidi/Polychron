@@ -54,10 +54,6 @@ function isTextEventStream(payload) {
   return payload && payload.stream === true;
 }
 
-function contentTypeJson(headers = {}) {
-  return String(headers['content-type'] || headers['Content-Type'] || '').toLowerCase().includes('json');
-}
-
 function responseInputText(item) {
   if (!item || typeof item !== 'object') return '';
   if (item.type === 'message' || item.role) return textFromContent(item.content);
