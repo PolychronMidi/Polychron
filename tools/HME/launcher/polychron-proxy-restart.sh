@@ -181,20 +181,29 @@ if [ -f "$PID_FILE" ]; then
   mv "$_tmp_pid_file" "$PID_FILE"
 fi
 
-# 6. Spawn proxy with same invocation as polychron-launch.sh's step 1.
-echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
-cd "$PROJECT_ROOT"
-HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
-  setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
-    >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
-_PROXY_PID=$!
-disown 2>/dev/null || true
-
-# 7. Append the new proxy PID to the PID file so the next full-stack
-# shutdown finds it.
+# 6. Spawn proxy with same invocation as polychron-launch.sh's step 1 unless
+# an already-ready listener survived cleanup. Survival usually means a racing
+# supervisor already restored service; adopting it is safer than aborting.
 _PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
-echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
-echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
+if [ "$_ADOPT_EXISTING_LISTENER" = "1" ]; then
+  _PROXY_PID="$(_port_listener_pids | head -1)"
+  echo "[proxy-restart] adopted existing ${_PROXY_LABEL} listener (pid ${_PROXY_PID:-unknown})" >&2
+else
+  echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
+  cd "$PROJECT_ROOT"
+  HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
+    setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
+      >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
+  _PROXY_PID=$!
+  disown 2>/dev/null || true
+  echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
+fi
+
+# 7. Append the new/adopted proxy PID to the PID file so the next full-stack
+# shutdown finds it.
+if [ -n "${_PROXY_PID:-}" ]; then
+  echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
+fi
 
 # 8. Listener readiness gate: /ready proves :${PROXY_PORT} is serving the new
 # process without waiting for slower required workers. Full /health is still
