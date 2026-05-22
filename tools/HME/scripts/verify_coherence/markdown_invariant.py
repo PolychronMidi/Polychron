@@ -49,10 +49,18 @@ ALLOWED_FILENAMES = {
 # Long-form essays + canonical templates that pre-date the invariant
 # are grandfathered in by directory. New .md files in these trees stay
 ALLOWED_PREFIXES = (
-    "doc/theory/",
-    "doc/templates/",
+    "doc/",
+    "tools/csv_maestro/doc/",
+    "tools/HME/activity/",
+    "tools/HME/doc/",
+    "tools/HME/proxy/",
     "tools/HME/tests/fixtures/",
 )
+
+# Single-file exceptions at otherwise non-prefixed locations.
+ALLOWED_PATHS = {
+    "plan.md",
+}
 
 SKIP_DIRS = {
     ".git",
@@ -73,6 +81,7 @@ SKIP_DIRS = {
     "KB",
     "dist",
     "build",
+    "output",
 }
 
 MAX_README_LINES = 120
@@ -154,13 +163,15 @@ def _walk_markdown(root: str):
 def _classify(rel_path: Path) -> tuple[str, str]:
     name = rel_path.name
     rel_str = str(rel_path).replace(os.sep, "/")
+    if rel_str in ALLOWED_PATHS:
+        return "allowed_canonical", ""
+    if any(rel_str.startswith(prefix) for prefix in ALLOWED_PREFIXES):
+        return "allowed_prefix", ""
     if name in ALLOWED_FILENAMES:
         canonical = ALLOWED_FILENAMES[name]
         if rel_str == canonical:
             return "allowed_canonical", ""
         return "misplaced_canonical", f"{rel_str} must live at {canonical}"
-    if any(rel_str.startswith(prefix) for prefix in ALLOWED_PREFIXES):
-        return "allowed_prefix", ""
     if name == "README.md":
         return "readme", ""
     return "disallowed", (

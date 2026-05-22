@@ -215,7 +215,7 @@ class ContextBudgetVerifier(Verifier):
     weight = 1.5
 
     def run(self) -> VerdictResult:
-        ctx_file = os.environ.get("HME_CTX_FILE", "/tmp/claude-context.json")
+        ctx_file = os.environ["HME_CTX_FILE"]
         if not os.path.isfile(ctx_file):
             return _result(SKIP, 1.0, "no statusline data yet")
         try:
@@ -376,8 +376,8 @@ def _trigger_warm_reprime() -> None:
 
 class PlanOutputValidityVerifier(Verifier):
     """H4: validate that plans produced by agent_local --mode plan reference
-    real files only. Plans live in /tmp/hme-agent-*.md when emitted via the
-    hook. Scan recent plans for file paths and confirm each exists.
+    real files only. Plans live in $HME_AGENT_PLAN_DIR/hme-agent-*.md when
+    emitted via the hook. Scan recent plans for file paths and confirm each exists.
     Hallucinated file paths in plans are the plan-mode analog of
     hallucinated code in edit mode -- both are capability failures."""
     name = "plan-output-validity"
@@ -387,7 +387,7 @@ class PlanOutputValidityVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         import glob
-        plan_files = sorted(glob.glob("/tmp/hme-agent-*.md"))
+        plan_files = sorted(glob.glob(os.path.join(os.environ["HME_AGENT_PLAN_DIR"], "hme-agent-*.md")))
         if not plan_files:
             return _result(SKIP, 1.0, "no recent plan outputs to validate")
         checked = 0

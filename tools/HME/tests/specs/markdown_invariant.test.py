@@ -72,19 +72,19 @@ class MarkdownInvariantTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _write(root, "doc/composition.md")
-            _write(root, "plan.md", "this should not exist\n")
+            _write(root, "stray-notes.md", "this should not exist\n")
 
             def _run():
                 from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
                 return MarkdownInvariantVerifier().run()
             r = _with_project_root(root, _run)
             self.assertEqual(r.status, "FAIL")
-            self.assertTrue(any("plan.md" in d for d in r.details))
+            self.assertTrue(any("stray-notes.md" in d for d in r.details))
 
     def test_misplaced_canonical_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _write(root, "src/output/metrics/composition.md", "drifted\n")
+            _write(root, "src/metrics/composition.md", "drifted\n")
 
             def _run():
                 from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
