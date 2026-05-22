@@ -243,7 +243,12 @@ while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
 done
 
 if _proxy_listener_ready; then
-  echo "[proxy-restart] proxy listener ready after ${_waited}s" >&2
+  _LISTENER_PID="$(_port_listener_pids | head -1)"
+  echo "[proxy-restart] proxy listener ready after ${_waited}s (pid=${_LISTENER_PID:-unknown})" >&2
+  if ! _assert_runtime_matches_listener "$_LISTENER_PID"; then
+    echo "[proxy-restart] ERROR: runtime metadata does not match the active listener/current checkout" >&2
+    exit 1
+  fi
 else
   echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
   echo "[proxy-restart]   tail $PROJECT_ROOT/log/hme-proxy.out for diagnostics" >&2
