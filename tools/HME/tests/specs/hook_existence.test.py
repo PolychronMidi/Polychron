@@ -24,6 +24,9 @@ def _purge():
             sys.modules.pop(mod, None)
 
 
+_REAL_EXPANDUSER = os.path.expanduser
+
+
 def _with_settings(tmp: Path, settings: dict | None, fn):
     settings_path = tmp / "settings.json"
     if settings is not None:
@@ -33,9 +36,10 @@ def _with_settings(tmp: Path, settings: dict | None, fn):
     os.environ["PROJECT_ROOT"] = str(tmp)
     os.environ["HME_METRICS_DIR"] = str(tmp / "metrics")
     _purge()
+    def _eu(p):
+        return str(settings_path) if p == "~/.claude/settings.json" else _REAL_EXPANDUSER(p)
     try:
-        with mock.patch("os.path.expanduser", side_effect=lambda p:
-                        str(settings_path) if p == "~/.claude/settings.json" else os.path.expanduser(p)):
+        with mock.patch("os.path.expanduser", side_effect=_eu):
             return fn()
     finally:
         if prior is None:
