@@ -241,15 +241,14 @@ function createContextBudget() {
     return Math.max(preflightBytes, startBytes);
   }
 
-  function injectContextHeader(headers, swapModel) {
-    const ctx = resolveModelCtx(swapModel);
-    const authoritativeUsed = statuslineInputTokens();
-    if (!ctx || !authoritativeUsed) return;
-    if ((authoritativeUsed / ctx) < compactStartFraction) return;
-    const remaining = Math.max(0, ctx - authoritativeUsed);
-    if (remaining < ctx * contextSignalRemainingFraction) {
+  function injectContextHeader(headers, _swapModel) {
+    const { used, size } = statuslineContextUsage();
+    if (!used || !size) return;
+    if ((used / size) < compactStartFraction) return;
+    const remaining = Math.max(0, size - used);
+    if (remaining < size * contextSignalRemainingFraction) {
       headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
-      console.error(`[hme-proxy] context signal: ~${authoritativeUsed}/${ctx} tokens (${remaining} remaining) -> triggering /compact`);
+      console.error(`[hme-proxy] context signal: ~${used}/${size} Claude-window tokens (${remaining} remaining) -> triggering /compact`);
     }
   }
 
