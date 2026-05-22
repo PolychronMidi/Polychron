@@ -24,6 +24,83 @@ function recordSuccessAndReset({ getConsecutive429s, setConsecutive429s }) {
   }
 }
 
+function isOmniRouteCredentialFailure(status, errInfo) {
+  if (![400, 401, 403].includes(status)) return false;
+  const text = `${errInfo && errInfo.type || ''} ${errInfo && errInfo.message || ''} ${errInfo && errInfo.code || ''}`.toLowerCase();
+  return /auth|credential|api[_ -]?key|invalid[_ -]?key|no credentials|forbidden|unauthorized/.test(text);
+}
+
+function cloneRetryPayload(payload, provider, model) {
+  const retryPayload = JSON.parse(JSON.stringify(payload || {}));
+  retryPayload.model = `${provider}/${model}`;
+  return retryPayload;
+}
+
+async function retryOmniCredentialFailure({
+  status,
+  errInfo,
+  payload,
+  swapChain,
+  omniProvider,
+  swapModel,
+  transport,
+  upstreamOpts,
+  upstreamHeaders,
+  projectRoot = PROJECT_ROOT,
+}) {
+  if (!isOmniRouteCredentialFailure(status, errInfo) || !payload || !Array.isArray(swapChain) || swapChain.length <= 1) return null;
+  const failedRoute = `${omniProvider}/${swapModel}`;
+  try {
+    markRouteCooldown(failedRoute, `credential_failure_${status}`, { ttlMs: 3_600_000, projectRoot });
+    emit({ event: 'model_route_quarantine', route: failedRoute, reason: `credential_failure_${status}` });
+  } catch (err) {
+    console.error(`[hme-proxy] credential-failure route quarantine failed for ${failedRoute}: ${err.message}`);
+  }
+  const startIdx = swapStore.peek(projectRoot).idx || 0;
+  for (let ri = 1; ri < swapChain.length; ri++) {
+    const retryIdx = (startIdx + ri) % swapChain.length;
+    const candidate = swapChain[retryIdx];
+    const provider = omniProviderForConfigProvider(candidate && candidate.provider || '');
+    const model = upstreamModelId(candidate);
+    const route = `${provider}/${model}`;
+    if (route === failedRoute) continue;
+    const retryPayload = cloneRetryPayload(payload, provider, model);
+    const retryBody = Buffer.from(JSON.stringify(retryPayload), 'utf8');
+    const retryHeaders = { ...upstreamHeaders, 'content-length': String(retryBody.length) };
+    const retryOpts = { ...upstreamOpts, headers: retryHeaders };
+    console.error(`[hme-proxy] OmniRoute credential failover ${ri}/${swapChain.length - 1}: ${failedRoute} -> ${route}`);
+    try {
+      const retry = await new Promise((resolve, reject) => {
+        const req = transport.request(retryOpts, (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, fullBody: Buffer.concat(chunks) }));
+          res.on('error', reject);
+        });
+        req.on('error', reject);
+        req.write(retryBody);
+        req.end();
+      });
+      if (retry.status >= 200 && retry.status < 300) {
+        swapStore.recordSuccess(swapChain, retryIdx, projectRoot);
+        emit({ event: 'omniroute_credential_failover', outcome: 'success', prior_route: failedRoute, route });
+        console.error(`[hme-proxy] OmniRoute credential failover succeeded: ${route}`);
+        return retry;
+      }
+      const retryErr = _detectUpstreamFailure(retry.status, retry.headers, retry.fullBody);
+      if (isOmniRouteCredentialFailure(retry.status, retryErr)) {
+        try { markRouteCooldown(route, `credential_failure_${retry.status}`, { ttlMs: 3_600_000, projectRoot }); } catch (_e) {}
+      }
+      emit({ event: 'omniroute_credential_failover', outcome: 'failed', status: retry.status, prior_route: failedRoute, route });
+      console.error(`[hme-proxy] OmniRoute credential failover target failed: ${route} status=${retry.status}`);
+    } catch (err) {
+      emit({ event: 'omniroute_credential_failover', outcome: 'error', prior_route: failedRoute, route, message: err.message });
+      console.error(`[hme-proxy] OmniRoute credential failover error on ${route}: ${err.message}`);
+    }
+  }
+  return null;
+}
+
 async function handleUpstreamFailureOrSuccess({
   status,
   headers,
