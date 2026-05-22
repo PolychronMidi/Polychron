@@ -4,17 +4,21 @@ const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
-const { recordUpstreamSuccess, recordUpstreamFailure, refreshOauthToken } = require('./upstream');
+const {
+  recordUpstreamSuccess,
+  recordUpstreamFailure,
+  refreshOauthToken,
+  omniProviderForConfigProvider,
+  upstreamModelId,
+  swapStore,
+  omniroute,
+} = require('./contexts/upstream_dispatch');
 const {
   detectUpstreamFailure: _detectUpstreamFailure,
   alertCooldownActive: _alertCooldownActive,
 } = require('./failure_classification');
 const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
-const { omniProviderForConfigProvider } = require('./omniroute_protocol');
-const { upstreamModelId } = require('./overdrive_route');
 const { markRouteCooldown } = require('./model_route_health');
-const swapStore = require('./swap_state_store');
-const omniroute = require('./omniroute_client');
 
 function recordSuccessAndReset({ getConsecutive429s, setConsecutive429s }) {
   recordUpstreamSuccess();
