@@ -9,6 +9,7 @@ const {
 } = lifecycleBridgeModule;
 const { emitStartMarker } = require('../../start_marker');
 const { createProxyRouteDispatcher } = require('../../hme_proxy_routes');
+const hmeDispatcher = require('../../hme_dispatcher');
 
 module.exports = {
   handleLifecycleRoute,
@@ -18,4 +19,5 @@ module.exports = {
   emitStartMarker,
   createProxyRouteDispatcher,
   lifecycleBridge: lifecycleBridgeModule,
+  hmeDispatcher,
 };
