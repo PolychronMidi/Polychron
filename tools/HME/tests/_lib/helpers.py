@@ -116,7 +116,11 @@ def stage_file(root, rel, body=""):
 
 
 def assert_class_shape(tc, cls):
-    """Common class-attribute assertions for every Verifier subclass."""
+    """Common class-attribute assertions for every Verifier subclass.
+
+    `kind` is a @property on the Verifier base (derived from category), so
+    we read it from an instance rather than the class.
+    """
     name = getattr(cls, "name", None)
     tc.assertIsInstance(name, str, msg=f"{cls.__name__}.name not a str")
     tc.assertTrue(name, msg=f"{cls.__name__}.name is empty")
@@ -124,7 +128,7 @@ def assert_class_shape(tc, cls):
                         msg=f"{cls.__name__}.category not a str")
     tc.assertIsInstance(getattr(cls, "weight", None), (int, float),
                         msg=f"{cls.__name__}.weight not numeric")
-    tc.assertIn(getattr(cls, "kind", "static"), VALID_KINDS,
+    tc.assertIn(cls().kind, VALID_KINDS,
                 msg=f"{cls.__name__}.kind invalid")
 
 
