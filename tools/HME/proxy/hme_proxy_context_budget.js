@@ -269,34 +269,33 @@ function createContextBudget() {
   }
 
   function shrinkForOmniContext(payload, swapModel) {
-    const budget = resolveModelCtx(String(swapModel || ''));
-    const authoritativeUsed = statuslineInputTokens();
+    const model = String(swapModel || '');
+    const budget = resolveModelCtx(model);
     const before = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    if (budget > 0 && authoritativeUsed <= 0) return 0;
-    if (budget > 0 && (authoritativeUsed / budget) < compactStartFraction) return 0;
+    const usedTokens = Math.ceil(before / contextBytesPerTokenEst);
+    const plan = planForUsage({ usedTokens, budgetTokens: budget, fallbackBytes: passthroughCompactBytes });
+    if (!budget || plan.maxTier <= 0) return 0;
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'omni-context',
-      model: String(swapModel || ''),
+      model,
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
-    let threshold = omniContextThresholdBytes(swapModel);
-    if (budget > 0 && authoritativeUsed > 0 && before > 0) {
-      const bytesPerAuthoritativeToken = before / authoritativeUsed;
-      threshold = Math.max(threshold, Math.floor(budget * compactGear1Target * bytesPerAuthoritativeToken));
-    }
-    if (before <= threshold) return 0;
+    const afterPruneBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    const pruneUsedTokens = Math.ceil(afterPruneBytes / contextBytesPerTokenEst);
+    const prunePlan = planForUsage({ usedTokens: pruneUsedTokens, budgetTokens: budget, fallbackBytes: passthroughCompactBytes });
+    if (prunePlan.maxTier <= 0 || afterPruneBytes <= prunePlan.threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
-      threshold,
+      effectiveThreshold: () => prunePlan,
       keepMin,
       maxToolResultAge: staleToolKeepTurns,
       env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: omniLocalSummary },
       log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
       route: 'omni-context',
-      model: String(swapModel || ''),
+      model,
       projectRoot: PROJECT_ROOT,
     });
     const after = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${threshold}B model=${swapModel} est=${estimatedContextTokens(after)}/${resolveModelCtx(String(swapModel || ''))} tokens changed=${changed}`);
+    console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${Number.isFinite(prunePlan.threshold) ? prunePlan.threshold : 'none'}B tier=${prunePlan.maxTier} model=${model} est=${estimatedContextTokens(after)}/${budget} tokens changed=${changed}`);
     return changed;
   }
 
