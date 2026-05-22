@@ -140,7 +140,7 @@ def activity_digest(window: str = "round", verbose: bool = False) -> str:
         "## Event counts",
     ]
     if routine_total and not verbose:
-        lines.append(f"  routine_compacted      {routine_total}  (use verbose=true for full counts)")
+        lines.append(f"  routine_events_hidden {routine_total}  (use verbose=true for full counts)")
     for evt, n in visible_counts.most_common():
         lines.append(f"  {evt:<22} {n}")
 
