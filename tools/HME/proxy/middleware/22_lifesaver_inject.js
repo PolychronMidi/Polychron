@@ -171,7 +171,7 @@ module.exports = {
     const unreadRaw = lines.slice(lastSeen);
     if (unreadRaw.length === 0) return;
     // Drop canaries / observation-severity / self-origin tags.
-    const unread = unreadRaw.filter(_isAgentActionable);
+    const unread = unreadRaw.filter((line) => _isAgentActionable(line, ctx.PROJECT_ROOT));
     if (unread.length === 0) {
       // Advance the watermark even on all-skipped so we don't re-scan.
       try { fs.writeFileSync(wmPath, String(totalLines)); } catch (_e) { /* ignore */ }
