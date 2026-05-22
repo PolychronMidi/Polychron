@@ -95,6 +95,22 @@ def openai_tool_schema(tool: HMETool) -> dict[str, Any]:
     }
 
 
+@dataclass
+class HmeToolDescriptor:
+    """Schema mirror for tools/HME/config/hme-tool-descriptor.schema.json.
+
+    Locked in by the cross-language-contracts verifier: this dataclass's
+    field set must match the schema's `properties` keys exactly. The
+    runtime emitter (`langchain_tool_schema`) and the JS consumer
+    (`canonicalLangChainTools`) both depend on this shape.
+    """
+    name: str = ""
+    description: str = ""
+    args_schema: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
+    return_direct: bool = False
+
+
 def langchain_tool_schema(tool: HMETool) -> dict[str, Any]:
     """LangChain StructuredTool-compatible descriptor from canonical HMETool metadata."""
     schema = openai_tool_schema(tool)

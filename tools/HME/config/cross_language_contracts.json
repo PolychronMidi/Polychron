@@ -97,6 +97,12 @@
       "schema": "tools/HME/config/project-adapter.schema.json",
       "dataclass_file": "tools/HME/scripts/project_adapter.py",
       "dataclass_name": "ProjectAdapter"
+    },
+    {
+      "name": "HmeToolDescriptor",
+      "schema": "tools/HME/config/hme-tool-descriptor.schema.json",
+      "dataclass_file": "tools/HME/hme_tools/base.py",
+      "dataclass_name": "HmeToolDescriptor"
     }
   ]
 }

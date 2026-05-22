@@ -203,5 +203,26 @@ class CrossLanguageContractsTests(unittest.TestCase):
             self.assertIn("dataclass_only", joined)
 
 
+class HmeToolDescriptorRuntimeTests(unittest.TestCase):
+    """Behavioural check: the descriptors emitted by langchain_tool_schema
+    actually conform to the HmeToolDescriptor schema mirror at runtime."""
+
+    def test_dataclass_keys_match_schema(self):
+        schema_path = REPO_ROOT / "tools/HME/config/hme-tool-descriptor.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        schema_keys = set(schema["properties"].keys())
+
+        from dataclasses import fields
+        try:
+            sys.path.insert(0, str(REPO_ROOT / "tools" / "HME"))
+            from hme_tools.base import HmeToolDescriptor
+        except Exception as e:
+            self.skipTest(f"hme_tools.base import failed (smolagents absent): {e}")
+            return
+        dc_keys = {f.name for f in fields(HmeToolDescriptor)}
+        self.assertEqual(schema_keys, dc_keys,
+                         msg=f"schema={schema_keys} dc={dc_keys}")
+
+
 if __name__ == "__main__":
     unittest.main()

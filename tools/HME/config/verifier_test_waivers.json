@@ -1,27 +1,4 @@
 {
   "$comment": "Verifier modules that currently lack a dedicated test spec under tools/HME/tests/specs/. New verifier modules MUST ship with a test (or add themselves to this list with a justification). Entries are removed from this file when the test is added; the verifier flags stale waivers as a FAIL so the list cannot decay into a permanent escape hatch.",
-  "waivers": [
-    {"module": "autocommit_health", "reason": "pre-dates self-coverage rule; technical debt"},
-    {"module": "code_audits", "reason": "pre-dates self-coverage rule; many small verifiers, needs split or one fat spec"},
-    {"module": "code_audits_antifork", "reason": "pre-dates self-coverage rule"},
-    {"module": "code_audits_atomic", "reason": "pre-dates self-coverage rule"},
-    {"module": "code_audits_conjugate", "reason": "pre-dates self-coverage rule"},
-    {"module": "code_audits_state", "reason": "pre-dates self-coverage rule"},
-    {"module": "code_audits_style", "reason": "pre-dates self-coverage rule"},
-    {"module": "code_audits_syntax", "reason": "pre-dates self-coverage rule"},
-    {"module": "code_audits_test", "reason": "pre-dates self-coverage rule"},
-    {"module": "docs", "reason": "pre-dates self-coverage rule"},
-    {"module": "env_settings", "reason": "pre-dates self-coverage rule"},
-    {"module": "graph", "reason": "pre-dates self-coverage rule"},
-    {"module": "hook_layout", "reason": "pre-dates self-coverage rule"},
-    {"module": "logs", "reason": "pre-dates self-coverage rule"},
-    {"module": "meta_observers", "reason": "pre-dates self-coverage rule"},
-    {"module": "onboarding", "reason": "pre-dates self-coverage rule"},
-    {"module": "runtime_behavior", "reason": "pre-dates self-coverage rule"},
-    {"module": "runtime_perf", "reason": "pre-dates self-coverage rule"},
-    {"module": "runtime_safety", "reason": "pre-dates self-coverage rule"},
-    {"module": "subagent", "reason": "pre-dates self-coverage rule"},
-    {"module": "todo_tools", "reason": "pre-dates self-coverage rule"},
-    {"module": "tool_surface", "reason": "pre-dates self-coverage rule"}
-  ]
+  "waivers": []
 }
