@@ -16,7 +16,7 @@ const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId, ro
 const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
 const { _jsonStats } = require('../../proxy/hme_proxy_response_trace');
 const { loadEnv, requireEnvInt } = require('../../proxy/shared/load_env');
-const { _contextTokenUsageFields, _extractUsageFromBody } = require('../../proxy/hme_proxy_anthropic_response');
+const { _contextTokenUsageFields, _extractUsageFromBody, normalizeOmniContextWindowSse } = require('../../proxy/hme_proxy_anthropic_response');
 const codexFallback = require('../../proxy/hme_proxy_codex');
 const { shellPolicy } = require('../../proxy/stop_chain/shell_policy');
 
