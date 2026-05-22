@@ -173,6 +173,73 @@ test('model route cooldown marks context-window quarantine and expires by time',
   }
 });
 
+function _freshLifesaverInject() {
+  const modPath = require.resolve('../../proxy/middleware/22_lifesaver_inject');
+  delete require.cache[modPath];
+  return require('../../proxy/middleware/22_lifesaver_inject');
+}
+
+function _initGitRoot(dir) {
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.invalid'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+  fs.writeFileSync(path.join(dir, 'x.txt'), 'x');
+  execFileSync('git', ['add', 'x.txt'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '-m', 'init'], { cwd: dir, stdio: 'ignore' });
+  return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+}
+
+test('lifesaver proxy injection drops resolved stale-runtime lines', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stale-drop-'));
+  try {
+    const head = _initGitRoot(dir);
+    fs.mkdirSync(path.join(dir, 'log'), { recursive: true });
+    fs.mkdirSync(path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = path.join(dir, 'log/hme-errors.log');
+    fs.writeFileSync(errLog, '');
+    fs.writeFileSync(path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: head }));
+    const mod = _freshLifesaverInject();
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    let dirtied = false;
+    const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
+    mod.onRequest({ payload, ctx }); // seed watermark
+    fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL stale but already fixed\n');
+    mod.onRequest({ payload, ctx });
+    assert.equal(dirtied, false);
+    assert.equal(payload.messages[0].content, 'hi');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('lifesaver proxy injection keeps overdue unresolved stale-runtime lines actionable', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stale-keep-'));
+  const oldGrace = process.env.HME_POST_COMMIT_STALE_GRACE_SEC;
+  try {
+    const head = _initGitRoot(dir);
+    fs.mkdirSync(path.join(dir, 'log'), { recursive: true });
+    fs.mkdirSync(path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = path.join(dir, 'log/hme-errors.log');
+    fs.writeFileSync(errLog, '');
+    fs.writeFileSync(path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: 'oldsha' }));
+    fs.writeFileSync(path.join(dir, 'tools/HME/runtime/post-commit-stale-runtime.json'), JSON.stringify({ first_seen_epoch: 1, head_sha: head }));
+    process.env.HME_POST_COMMIT_STALE_GRACE_SEC = '0';
+    const mod = _freshLifesaverInject();
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    let dirtied = false;
+    const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
+    mod.onRequest({ payload, ctx }); // seed watermark
+    fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL still stale\n');
+    mod.onRequest({ payload, ctx });
+    assert.equal(dirtied, true);
+    assert.match(payload.messages[0].content, /still stale/);
+  } finally {
+    if (oldGrace === undefined) delete process.env.HME_POST_COMMIT_STALE_GRACE_SEC;
+    else process.env.HME_POST_COMMIT_STALE_GRACE_SEC = oldGrace;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('context token usage fields separate upstream headers from synthetic context signal', () => {
   const row = _contextTokenUsageFields({
     headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '2500' },
