@@ -33,6 +33,10 @@ PROXY_READY_TIMEOUT="${HME_PROXY_READY_TIMEOUT:-8}"
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-45}"
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
+RELOAD_MARKER="$PROJECT_ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
+STALE_RUNTIME_STATE="$PROJECT_ROOT/tools/HME/runtime/post-commit-stale-runtime.json"
+RUNTIME_FILE="$PROJECT_ROOT/tools/HME/runtime/proxy-runtime.json"
+ERROR_LOG="$PROJECT_ROOT/log/hme-errors.log"
 
 _http_code() {
   curl -sS --max-time 1 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || echo 000
