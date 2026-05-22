@@ -234,6 +234,11 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   try { chainInfo = buildMode1Chain(payload, env, cfg, { projectRoot }); }
   catch (err) { console.error(`[hme-proxy] MODE=1 chain build failed: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(payload.model) }; }
   result.swapChain = chainInfo.chain || [];
+  if (requestedClaudeModel) {
+    const primary = findAnthropicModelByApiId(cfg, requestedClaudeModel) || { id: requestedClaudeModel, api_model: requestedClaudeModel, provider: 'anthropic' };
+    const primaryRoute = modelRouteKey(primary, env);
+    result.swapChain = [primary, ...result.swapChain.filter((m) => modelRouteKey(m, env) !== primaryRoute)];
+  }
   console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
   if (result.swapChain.length > 0) {
     const idx = selectedIndex(result.swapChain, projectRoot);
