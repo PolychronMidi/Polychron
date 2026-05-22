@@ -23,8 +23,11 @@ const {
   buildJurisdictionContext,
   scanMessages,
 } = require('./contexts/request_mutation');
-const { servicePort } = require('./service_registry');
-const { emitStartMarker } = require('./contexts/lifecycle_bridge');
+const { servicePort } = require('./contexts/upstream_dispatch');
+const {
+  emitStartMarker,
+  supervisor: _supervisorModule,
+} = require('./contexts/lifecycle_bridge');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createContextBudget } = require('./hme_proxy_context_budget');
 const { createOpusGate } = require('./hme_proxy_opus_gate');
@@ -62,7 +65,7 @@ function logRuntimeMetadataFailure(err) {
 const proxyRouteMetrics = createRouteMetrics();
 const PORT = servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
-const { WORKER_PORT } = require('./supervisor/children');
+const { WORKER_PORT } = require('./contexts/lifecycle_bridge').supervisorChildren;
 
 const contextBudget = createContextBudget();
 const opusGate = createOpusGate();
