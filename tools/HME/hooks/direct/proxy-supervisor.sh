@@ -302,7 +302,17 @@ _sv_loop() {
       continue
     fi
 
-    if _sv_bundle_healthy; then
+    if _sv_reload_marker_pending && ! _sv_is_maintenance_active; then
+      _sv_log "post-commit reload marker pending; running proxy restart"
+      if _sv_spawn_and_verify; then
+        _sv_log "post-commit reload verified"
+        consecutive_spawn_fails=0
+        misses=0
+      else
+        consecutive_spawn_fails=$((consecutive_spawn_fails + 1))
+        _sv_log "post-commit reload failed (consecutive_fails=$consecutive_spawn_fails)"
+      fi
+    elif _sv_bundle_healthy; then
       if [ "$misses" -gt 0 ]; then
         _sv_log "proxy healthy again after $misses miss(es)"
       fi
