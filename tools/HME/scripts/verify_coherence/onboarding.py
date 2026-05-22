@@ -63,15 +63,19 @@ class OnboardingFlowVerifier(Verifier):
         if not os.path.isfile(script):
             return skipped(summary="verifier script not found")
         rc, out, _err = _run_subprocess(script)
-        passed = sum(1 for ln in out.splitlines() if "PASS:" in ln)
-        failed = sum(1 for ln in out.splitlines() if "FAIL:" in ln)
-        total = passed + failed
+        n_passed = sum(1 for ln in out.splitlines() if "PASS:" in ln)
+        n_failed = sum(1 for ln in out.splitlines() if "FAIL:" in ln)
+        total = n_passed + n_failed
         if total == 0:
             return errored(summary="verifier produced no PASS/FAIL output")
-        score = passed / total
+        score = n_passed / total
         if rc == 0:
             return passed(score=score, summary=f"all {total} onboarding tests pass")
-        return failed(score=score, summary=f"{failed}/{total} onboarding tests failed", details=[ln for ln in out.splitlines() if "FAIL:" in ln])
+        return failed(
+            score=score,
+            summary=f"{n_failed}/{total} onboarding tests failed",
+            details=[ln for ln in out.splitlines() if "FAIL:" in ln],
+        )
 
 
 @register
