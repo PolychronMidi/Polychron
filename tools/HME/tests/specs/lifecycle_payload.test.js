@@ -70,3 +70,27 @@ test('addClaudeTranscript is a no-op for non-Stop events', () => {
   const result = addClaudeTranscript(payload, root, 'PreToolUse');
   assert.equal(result.transcript_path, '/should/stay');
 });
+
+test('normalizeLifecyclePayload propagates HME_SUBAGENT=1 to payload._hme_subagent', () => {
+  const { normalizeLifecyclePayload } = require('../../event_kernel/lifecycle_payload');
+  const prior = process.env.HME_SUBAGENT;
+  try {
+    process.env.HME_SUBAGENT = '1';
+    const p = normalizeLifecyclePayload({ host: 'claude', event: 'Stop', root: '/tmp', rawBody: '{}', cwd: '/tmp' });
+    assert.equal(p._hme_subagent, true);
+  } finally {
+    if (prior === undefined) delete process.env.HME_SUBAGENT; else process.env.HME_SUBAGENT = prior;
+  }
+});
+
+test('normalizeLifecyclePayload leaves _hme_subagent unset without HME_SUBAGENT', () => {
+  const { normalizeLifecyclePayload } = require('../../event_kernel/lifecycle_payload');
+  const prior = process.env.HME_SUBAGENT;
+  try {
+    delete process.env.HME_SUBAGENT;
+    const p = normalizeLifecyclePayload({ host: 'claude', event: 'Stop', root: '/tmp', rawBody: '{}', cwd: '/tmp' });
+    assert.equal(p._hme_subagent, undefined);
+  } finally {
+    if (prior !== undefined) process.env.HME_SUBAGENT = prior;
+  }
+});

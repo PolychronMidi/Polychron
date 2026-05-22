@@ -44,6 +44,7 @@ function normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole }
   if (!payload.cwd) payload.cwd = cwd || process.cwd();
   if (!payload.session_id && payload.thread_id) payload.session_id = payload.thread_id;
   if (teamRole && !payload._hme_team_role) payload._hme_team_role = teamRole;
+  if (process.env.HME_SUBAGENT === '1') payload._hme_subagent = true;
   return payload;
 }
 

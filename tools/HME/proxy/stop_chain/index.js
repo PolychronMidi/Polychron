@@ -233,6 +233,16 @@ async function runStopChain(stdinJson) {
   resetTrace();
   appendTrace('chain_start');
 
+  // Subagent escape: parent-context checks (NEXUS pending commit, EXHAUST
+  // protocol, unfinished-task-debt from the primary session) make no sense
+  try {
+    const payload = JSON.parse(stdinJson || '{}');
+    if (payload && payload._hme_subagent === true) {
+      appendTrace('subagent_allow');
+      return { stdout: '', stderr: '', exit_code: 0 };
+    }
+  } catch (_e) { /* malformed payload falls through to normal chain */ }
+
   // Cascade-break: silence-equivalent ack of a deny payload short-circuits
   // the entire chain. No policies run, no detectors fire, turn ends.
   if (_isCascadeBreakConditions(stdinJson)) {

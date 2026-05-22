@@ -6,17 +6,16 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
-from _verifier_smoke import assert_class_shape, smoke_run
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
+from helpers import assert_class_shape, smoke_run
 
 
 def _classes():
     from verify_coherence.logs import (
-        LogSizeVerifier, ErrorLogVerifier, LifesaverRateVerifier,
-        PipelineBgScriptHealthVerifier,
+        LogSizeVerifier, ErrorLogVerifier,
+        LifesaverRateVerifier, PipelineBgScriptHealthVerifier,
     )
-    return (LogSizeVerifier, ErrorLogVerifier, LifesaverRateVerifier,
-            PipelineBgScriptHealthVerifier)
+    return (LogSizeVerifier, ErrorLogVerifier, LifesaverRateVerifier, PipelineBgScriptHealthVerifier)
 
 
 class LogsModuleTests(unittest.TestCase):

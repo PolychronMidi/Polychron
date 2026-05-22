@@ -156,6 +156,14 @@ test('stop_chain: runStopChain with empty payload returns shape {stdout, stderr,
     assert.strictEqual(result.exit_code, 0, 'exit_code is always 0 -- chain crashes do not wedge agent');
   }));
 
+test('stop_chain: subagent escape short-circuits when _hme_subagent: true',
+  _withChainSandbox(async (chain) => {
+    const result = await chain.runStopChain(JSON.stringify({ _hme_subagent: true }));
+    assert.strictEqual(result.stdout, '', 'subagent escape returns empty stdout (no deny, no instruct)');
+    assert.strictEqual(result.stderr, '');
+    assert.strictEqual(result.exit_code, 0);
+  }));
+
 test('stop_chain: runStopChain handles malformed JSON without throwing',
   _withChainSandbox(async (chain, sandbox) => {
     const result = await chain.runStopChain('not valid json');
