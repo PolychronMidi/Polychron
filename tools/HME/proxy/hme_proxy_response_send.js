@@ -218,6 +218,7 @@ module.exports = {
   sendFinalResponse,
   maybeRunStopFallback,
   responseHasToolUse,
+  responseHasErrorEvent,
   lastUserText,
   userWasDeny,
 };
