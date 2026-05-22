@@ -130,16 +130,19 @@ _sv_bundle_healthy() {
 
 _sv_reload_marker_pending() {
   [ -f "$_SV_RELOAD_MARKER" ] || return 1
-  local wanted live
+  local wanted live marker_age now marker_mtime
   wanted=$(cat "$_SV_RELOAD_MARKER" 2>/dev/null | head -1)
   live=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true)
-  # Trace one-shot per (wanted,live) pair so silent skips become diagnosable.
-  local trace_key="${wanted}:${live}"
+  marker_mtime=$(stat -c %Y "$_SV_RELOAD_MARKER" 2>/dev/null || echo 0)
+  now=$(date +%s 2>/dev/null || echo 0)
+  marker_age=$((now - marker_mtime))
+  # Trace one-shot per (wanted,live,age-bucket) pair so silent skips become diagnosable.
+  local trace_key="${wanted}:${live}:$((marker_age / _SV_RELOAD_DEBOUNCE_SECS))"
   if [ "$trace_key" != "${_SV_RELOAD_TRACE_LAST:-}" ]; then
-    _sv_log "reload-marker probe wanted=[$wanted] live=[$live]"
+    _sv_log "reload-marker probe wanted=[$wanted] live=[$live] marker_age=${marker_age}s"
     _SV_RELOAD_TRACE_LAST="$trace_key"
   fi
-  [ -n "$wanted" ] && [ "$wanted" != "$live" ]
+  [ -n "$wanted" ] && [ "$wanted" != "$live" ] && [ "$marker_age" -ge "$_SV_RELOAD_DEBOUNCE_SECS" ]
 }
 
 _sv_wait_bundle_healthy() {
