@@ -10,6 +10,16 @@ const {
 const { buildJurisdictionContext } = require('../../context');
 const { scanMessages } = require('../../messages');
 const middleware = require('../../middleware');
+const {
+  isSingleQuotaProbe,
+  isTodoWriteOnlyProbe,
+  isStructuredOutputsProbe,
+  shouldBlockNoopSystemReminderTurn,
+  blockQuotaProbe,
+  blockTodoWriteOnlyProbe,
+  blockStructuredOutputsProbe,
+  blockNoopSystemReminderTurn,
+} = require('../../prompt_spam_guard');
 
 module.exports = {
   mutateClaudeRequest,
@@ -17,4 +27,12 @@ module.exports = {
   buildJurisdictionContext,
   scanMessages,
   middleware,
+  isSingleQuotaProbe,
+  isTodoWriteOnlyProbe,
+  isStructuredOutputsProbe,
+  shouldBlockNoopSystemReminderTurn,
+  blockQuotaProbe,
+  blockTodoWriteOnlyProbe,
+  blockStructuredOutputsProbe,
+  blockNoopSystemReminderTurn,
 };

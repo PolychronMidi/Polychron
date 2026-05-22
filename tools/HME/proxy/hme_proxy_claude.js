@@ -8,9 +8,20 @@ const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./upstream');
 const { applyOverdriveRoute } = require('./overdrive_route');
-const { handleLegacySwapResponse } = require('./legacy_swap_response');
-const middleware = require('./middleware/index');
-const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
+const {
+  handleLegacySwapResponse,
+  handleAnthropicResponseComplete,
+} = require('./contexts/response_transform');
+const requestMutationCtx = require('./contexts/request_mutation');
+const { middleware, mutateClaudeRequest } = requestMutationCtx;
+const {
+  createProxyRouteDispatcher,
+  lifecycleBridge: _lifecycleBridgeModule,
+} = require('./contexts/lifecycle_bridge');
+const {
+  handleMidResponseError,
+  handleConnectionError,
+} = require('./contexts/failure_policy');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
@@ -22,9 +33,6 @@ const {
 } = require('./hme_proxy_core');
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
-const { mutateClaudeRequest } = require('./hme_proxy_request_mutation');
-const { handleAnthropicResponseComplete } = require('./hme_proxy_anthropic_response');
-const { handleMidResponseError, handleConnectionError } = require('./hme_proxy_connection_errors');
 const {
   isSingleQuotaProbe,
   isTodoWriteOnlyProbe,
@@ -34,10 +42,10 @@ const {
   blockTodoWriteOnlyProbe,
   blockStructuredOutputsProbe,
   blockNoopSystemReminderTurn,
-} = require('./prompt_spam_guard');
+} = requestMutationCtx;
 
 function lifecycleBridge() {
-  return require('./lifecycle_bridge');
+  return _lifecycleBridgeModule;
 }
 
 function createClaudeHandler(deps) {

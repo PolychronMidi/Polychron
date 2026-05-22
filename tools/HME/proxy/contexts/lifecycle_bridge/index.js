@@ -1,12 +1,14 @@
 'use strict';
 
+const lifecycleBridgeModule = require('../../lifecycle_bridge');
 const {
   handleLifecycleRoute,
   recordLifecycleHit,
   lifecycleInactive,
   runInlineFallback,
-} = require('../../lifecycle_bridge');
+} = lifecycleBridgeModule;
 const { emitStartMarker } = require('../../start_marker');
+const { createProxyRouteDispatcher } = require('../../hme_proxy_routes');
 
 module.exports = {
   handleLifecycleRoute,
@@ -14,4 +16,6 @@ module.exports = {
   lifecycleInactive,
   runInlineFallback,
   emitStartMarker,
+  createProxyRouteDispatcher,
+  lifecycleBridge: lifecycleBridgeModule,
 };
