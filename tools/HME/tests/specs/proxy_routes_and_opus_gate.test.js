@@ -29,6 +29,15 @@ function fakeRes() {
   };
 }
 
+test('proxy route health reports stale runtime degraded while ready stays listener-only', () => {
+  const { healthVerdict } = require('../../proxy/hme_proxy_routes');
+  const degraded = healthVerdict({ worker: { healthy: true, required: true } }, 'not-head', () => 'head');
+  assert.equal(degraded.ok, false);
+  assert.equal(degraded.httpStatus, 503);
+  assert.equal(degraded.runtime_stale, true);
+  assert.equal(degraded.listener_ready, true);
+});
+
 test('proxy route dispatcher handles health/version/stop and probe short-circuits', () => {
   clearProxyCache();
   const { createProxyRouteDispatcher } = require('../../proxy/hme_proxy_routes');
