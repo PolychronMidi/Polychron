@@ -14,6 +14,7 @@ function _filePath(projectRoot) {
   return path.join(projectRoot || PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
 }
 
+// chainSignature returns a stable '|'-joined "provider:model" string identifying the cha
 function chainSignature(chain) {
   return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
 }
