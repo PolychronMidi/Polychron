@@ -134,12 +134,6 @@ def build_subtree(root: Path, top: Path, orient: str = "LR") -> str:
     return "\n".join(lines)
 
 
-# Back-compat shim: older callers (e.g. the freshness verifier in
-# earlier turns) used to import build_graph. The new section format
-def build_graph(root: Path, max_depth: int = 2, orient: str = "LR") -> str:
-    return build_overview(root, orient=orient)
-
-
 def render_section(root: Path, orient: str = "LR") -> str:
     """Build the full BEGIN..END section: overview + per-subtree blocks."""
     dirs = _all_dirs(root)
