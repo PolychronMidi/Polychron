@@ -144,8 +144,11 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
   server.on('error', (err) => {
     if (!listenFallbackTried && ['EAFNOSUPPORT', 'EINVAL'].includes(err.code)) {
       listenFallbackTried = true;
-      console.warn(`listen warning: IPv6 dual-stack unavailable (${err.code}); falling back to 127.0.0.1`);
-      server.listen(PORT, '127.0.0.1', () => announceListen(`http://127.0.0.1:${PORT}`));
+      console.warn(`Acceptable warning: listen warning: IPv6 dual-stack unavailable (${err.code}); falling back to 127.0.0.1`);
+      server.listen(PORT, '127.0.0.1', () => {
+        try { writeRuntimeMetadata(); } catch (metaErr) { logRuntimeMetadataFailure(metaErr); }
+        announceListen(`http://127.0.0.1:${PORT}`);
+      });
       return;
     }
     proxyRouteMetrics.recordError(err);
@@ -153,6 +156,7 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
     process.exit(1);
   });
   server.listen({ port: PORT, host: '::', ipv6Only: false }, () => {
+    try { writeRuntimeMetadata(); } catch (metaErr) { logRuntimeMetadataFailure(metaErr); }
     announceListen(`http://127.0.0.1:${PORT} and http://[::1]:${PORT}`);
   });
 }
