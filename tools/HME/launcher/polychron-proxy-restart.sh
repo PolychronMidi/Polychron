@@ -84,16 +84,50 @@ _current_head_sha() {
   git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || true
 }
 
+_marker_sha() {
+  [ -f "$RELOAD_MARKER" ] || return 0
+  head -1 "$RELOAD_MARKER" 2>/dev/null || true
+}
+
+_record_stale_runtime_state() {
+  local runtime_sha="$1" head_sha="$2" marker_sha="$3" ts
+  ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)
+  python3 - "$STALE_RUNTIME_STATE" "$runtime_sha" "$head_sha" "$marker_sha" "$ts" <<'PY' 2>/dev/null || true
+import json, sys
+path, runtime_sha, head_sha, marker_sha, ts = sys.argv[1:]
+with open(path, 'w', encoding='utf-8') as f:
+    json.dump({
+        'runtime_sha': runtime_sha,
+        'head_sha': head_sha,
+        'marker_sha': marker_sha,
+        'recorded_at': ts,
+        'reason': 'head advanced during proxy restart; marker retained for next supervisor poll',
+    }, f, sort_keys=True)
+    f.write('\n')
+PY
+}
+
 _assert_runtime_matches_listener() {
-  local expected_pid="$1" head_sha runtime_pid runtime_sha ts
+  local expected_pid="$1" expected_sha="$2" head_sha marker_sha runtime_pid runtime_sha ts
   head_sha="$(_current_head_sha)"
+  marker_sha="$(_marker_sha)"
   runtime_pid="$(_runtime_value pid)"
   runtime_sha="$(_runtime_value git_sha)"
-  if [ -z "$runtime_pid" ] || [ -z "$runtime_sha" ] || [ "$runtime_pid" != "$expected_pid" ] || { [ -n "$head_sha" ] && [ "$runtime_sha" != "$head_sha" ]; }; then
+  if [ -z "$runtime_pid" ] || [ -z "$runtime_sha" ] || [ "$runtime_pid" != "$expected_pid" ] || { [ -n "$expected_sha" ] && [ "$runtime_sha" != "$expected_sha" ]; }; then
     ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)
     mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null || true
-    echo "[$ts] [proxy-restart] CRITICAL runtime/listener mismatch after restart: listener_pid=${expected_pid:-none} runtime_pid=${runtime_pid:-none} runtime_sha=${runtime_sha:-none} head_sha=${head_sha:-none}" >> "$ERROR_LOG"
+    echo "[$ts] [proxy-restart] CRITICAL runtime/listener mismatch after restart: listener_pid=${expected_pid:-none} runtime_pid=${runtime_pid:-none} runtime_sha=${runtime_sha:-none} expected_sha=${expected_sha:-none} head_sha=${head_sha:-none}" >> "$ERROR_LOG"
     return 1
+  fi
+  if [ -n "$head_sha" ] && [ "$runtime_sha" != "$head_sha" ]; then
+    _record_stale_runtime_state "$runtime_sha" "$head_sha" "$marker_sha"
+    echo "[proxy-restart] NOTICE: HEAD advanced during restart (${runtime_sha} -> ${head_sha}); marker retained for supervisor follow-up" >&2
+    return 0
+  fi
+  if [ -n "$marker_sha" ] && [ "$marker_sha" != "$runtime_sha" ]; then
+    _record_stale_runtime_state "$runtime_sha" "$head_sha" "$marker_sha"
+    echo "[proxy-restart] NOTICE: reload marker targets ${marker_sha} after runtime ${runtime_sha}; marker retained for supervisor follow-up" >&2
+    return 0
   fi
   rm -f "$RELOAD_MARKER" "$STALE_RUNTIME_STATE" 2>/dev/null || true
   return 0
