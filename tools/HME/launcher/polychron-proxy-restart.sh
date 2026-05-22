@@ -155,7 +155,7 @@ while [ "$_waited" -lt "$_GRACE_S" ]; do
     [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && _alive=1
   done
   for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
-    pgrep -f "$pat" >/dev/null 2>&1 && _alive=1
+    [ -n "$(_bundle_pattern_pids "$pat")" ] && _alive=1
   done
   [ "$_alive" = "0" ] && break
   sleep 1
