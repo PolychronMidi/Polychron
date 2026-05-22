@@ -60,6 +60,9 @@ _hme_check_errors_inline() {
   # Strip canaries before classifying so they don't count as agent-errors.
   local _NEW_NO_CANARY
   _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -vE "$_CANARY_RE" || true)
+  if _hme_stale_runtime_resolved_or_grace; then
+    _NEW_NO_CANARY=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -v '\[stale_runtime\]' || true)
+  fi
   # Two-axis classification: source-tag first (self-origin regardless of
   # severity), then severity word (self-origin if WARN/INFO/DEBUG/NOTICE).
   local _SELF_BY_TAG _REMAINING _SELF_BY_SEV
