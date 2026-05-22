@@ -62,11 +62,11 @@ test('currentIndex resets to 0 on chain-signature mismatch', () => {
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('recordFailure on empty state advances to idx=0 with fail=1', () => {
+test('recordFailure on empty state advances to idx=1 with fail=1', () => {
   const root = tmpRoot();
   try {
     const st = store.recordFailure(CHAIN, root);
-    assert.equal(st.idx, 0);
+    assert.equal(st.idx, 1, 'first failure must advance off model[0]');
     assert.equal(st.fail, 1);
     assert.equal(st.chain, store.chainSignature(CHAIN));
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
@@ -77,7 +77,7 @@ test('recordFailure twice in window advances idx', () => {
   try {
     store.recordFailure(CHAIN, root);
     const st = store.recordFailure(CHAIN, root);
-    assert.equal(st.idx, 1);
+    assert.equal(st.idx, 2);
     assert.equal(st.fail, 2);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
@@ -85,11 +85,10 @@ test('recordFailure twice in window advances idx', () => {
 test('recordFailure wraps around chain', () => {
   const root = tmpRoot();
   try {
-    // 4 failures: idx walks 0 -> 1 -> 2 -> 0 (wrap on the 4th).
-    for (let i = 0; i < 4; i++) store.recordFailure(CHAIN, root);
+    for (let i = 0; i < 3; i++) store.recordFailure(CHAIN, root);
     const st = store.peek(root);
     assert.equal(st.idx, 0, 'wrapped past chain.length');
-    assert.equal(st.fail, 4);
+    assert.equal(st.fail, 3);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 

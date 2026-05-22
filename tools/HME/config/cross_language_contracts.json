@@ -1,0 +1,33 @@
+{
+  "$comment": "Registry of cross-language contracts. Each entry pins a piece of behavior or shape that lives in two source languages and MUST stay in lock-step. The cross-language-contract verifier enforces it.",
+  "shared_sets": [
+    {
+      "name": "MUTATING_EFFECTS",
+      "values": ["write", "edit", "shell", "network", "agent"],
+      "sites": [
+        {
+          "file": "tools/HME/omo_bridge/hme_tools_to_omo.py",
+          "pattern": "MUTATING_EFFECTS\\s*=\\s*\\{([^}]+)\\}"
+        },
+        {
+          "file": "tools/HME/omo_bridge/hme_tools_to_omo.js",
+          "pattern": "MUTATING_EFFECTS\\s*=\\s*new\\s+Set\\(\\[([^\\]]+)\\]\\)"
+        }
+      ]
+    }
+  ],
+  "function_pairs": [
+    {
+      "name": "hme_tools_to_omo:descriptor_transform",
+      "py": {
+        "file": "tools/HME/omo_bridge/hme_tools_to_omo.py",
+        "symbol": "to_omo_tool_descriptor"
+      },
+      "js": {
+        "file": "tools/HME/omo_bridge/hme_tools_to_omo.js",
+        "symbol": "toOmoToolDescriptor"
+      }
+    }
+  ],
+  "schema_mirrors": []
+}

@@ -29,7 +29,8 @@ function recordOmniRouteFailureAdvance({
   const next = swapChain[st.idx];
   const np = omniProviderForConfigProvider(next.provider || '');
   const ntf = omniTargetFormat(np);
-  console.error(`[hme-proxy] MODE=${odMode} fallback: rate-limited on ${omniProvider}/${swapModel} -> advancing to ${np}/${next.id} targetFormat=${ntf} (chain pos ${st.idx}/${swapChain.length}, fail count ${st.fail})`);
+  const failureKind = isRateLimit ? 'rate-limited' : `status=${status}`;
+  console.error(`[hme-proxy] MODE=${odMode} fallback: ${failureKind} on ${omniProvider}/${swapModel} -> advancing to ${np}/${next.id} targetFormat=${ntf} (chain pos ${st.idx}/${swapChain.length}, fail count ${st.fail})`);
 }
 
 function blankRetryDisabledReason({ payload, swapChain: _swapChain, env: _env = process.env }) {
