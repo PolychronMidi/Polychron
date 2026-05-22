@@ -9,25 +9,9 @@ function isLoopbackRequest(clientReq) {
   return remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
 }
 
-function bodyModel(outBody) {
-  if (!outBody || outBody.length === 0) return '';
-  try {
-    const parsed = JSON.parse(Buffer.isBuffer(outBody) ? outBody.toString('utf8') : String(outBody));
-    return typeof parsed.model === 'string' ? parsed.model : '';
-  } catch (_err) {
-    return '';
-  }
-}
-
-function shouldInjectLoopbackOauth({ clientReq, upstreamHeaders, outBody, isAnthropic, isOmniRouteSwap }) {
-  if (!isAnthropic || upstreamHeaders.authorization || upstreamHeaders['x-api-key']) return false;
-  if (!isLoopbackRequest(clientReq)) return false;
-  if (!isOmniRouteSwap) return true;
-
-  // Overdrive OmniRoute swaps intentionally remove client auth before forwarding
-  // to the local OmniRoute service. Re-inject Claude OAuth only for Claude-family
-  const model = bodyModel(outBody).toLowerCase();
-  return model.startsWith('claude/') || model.startsWith('anthropic/');
+function shouldInjectLoopbackOauth({ clientReq, upstreamHeaders, isAnthropic, isOmniRouteSwap }) {
+  if (!isAnthropic || isOmniRouteSwap || upstreamHeaders.authorization || upstreamHeaders['x-api-key']) return false;
+  return isLoopbackRequest(clientReq);
 }
 
 function injectLoopbackOauth(upstreamHeaders, clientReq) {
