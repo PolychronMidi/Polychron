@@ -188,6 +188,48 @@ function isNothingMissedResponse(text) {
   return re.test(trimmed);
 }
 
+// Bare-marker bypass shape: `[SUCCESS]`, `[OK]`, `K.`, single-word ceremony.
+// The model is supposed to use the fp-gate marker only when work is genuinely
+function isBareCompletionMarker(text) {
+  if (!text) return false;
+  const trimmed = text.trim().replace(/\s+/g, ' ');
+  if (trimmed.length > 32) return false;
+  return /^(\[?(success|ok|done|complete|completed|noted|acknowledged|continue)\.?\]?|k\.?|✓|✔|fp[-_ ]?gate(\s+marker)?)$/i.test(trimmed);
+}
+
+// Count assistant tool_use blocks since the most recent user prompt in the
+// transcript. The completeness gate uses this to decide whether the model
+function assistantToolUsesSinceLastUserPrompt(transcriptPath) {
+  if (!transcriptPath) return 0;
+  let lines;
+  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
+  catch (_e) { return 0; }
+  let lastUserIdx = -1;
+  const entries = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i]) continue;
+    let entry;
+    try { entry = JSON.parse(lines[i]); } catch (_e) { continue; }
+    entries.push(entry);
+    const role = entry.type || entry.role;
+    if (role === 'user') {
+      const text = _entryText(entry);
+      if (text && !/^\[SYSTEM NOTIFICATION/.test(text) && !/^Stop hook feedback:/.test(text)) {
+        lastUserIdx = entries.length - 1;
+      }
+    }
+  }
+  if (lastUserIdx < 0) return 0;
+  let count = 0;
+  for (let i = lastUserIdx + 1; i < entries.length; i++) {
+    const entry = entries[i];
+    const role = entry.type || entry.role;
+    if (role !== 'assistant') continue;
+    count += _assistantToolUses(entry).length;
+  }
+  return count;
+}
+
 // anti-fork-begin: speculation-regexes min=6
 const SPECULATION_RES = [
   /\bi\s+(worry|suspect|imagine|wonder|guess|think\s+(that|maybe))\b[^.!?\n]{1,120}/gi,
@@ -599,6 +641,22 @@ module.exports = {
         return ctx.allow();
       }
     }
+    const bypassMarker = isBareCompletionMarker(lastAssistantText(transcriptPath));
+    const toolUsesThisTurn = assistantToolUsesSinceLastUserPrompt(transcriptPath);
+    if (bypassMarker && toolUsesThisTurn === 0) {
+      // Bare completion marker reply with no tool calls since the user
+      // prompted -- this is the subversion shape the gate must catch.
+      armFpGate('FP_GATE_SUBVERSION');
+      return ctx.deny(
+        "FP-GATE SUBVERSION DETECTED: your last reply was a bare completion "
+        + "marker ([SUCCESS] / [OK] / k. / etc.) with zero tool calls since the "
+        + "most recent user prompt. The fp-gate marker is reserved for turns "
+        + "where the requested work is actually done -- using it to short-circuit "
+        + "an AUTO-COMPLETENESS CHECK is fraud. Resume the work the user asked "
+        + "for and emit a tool call. The completeness counter is NOT advanced "
+        + "by this denial; another bare marker reply will hit this same gate."
+      );
+    }
     store[turnKey] = next;
     saveComplStore(store);
 
@@ -635,5 +693,11 @@ module.exports = {
       armFpGate('COMPL_ROUND_1'); return ctx.deny(REASONS.COMPL_ROUND_1);
     }
     armFpGate('COMPL_ROUND_2'); return ctx.deny(REASONS.COMPL_ROUND_2);
+  },
+  _testables: {
+    isNothingMissedResponse,
+    isBareCompletionMarker,
+    assistantToolUsesSinceLastUserPrompt,
+    REASONS,
   },
 };
