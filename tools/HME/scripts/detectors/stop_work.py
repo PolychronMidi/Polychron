@@ -99,6 +99,22 @@ def main() -> int:
     stripped = re.sub(r'"[^"\n]*"', " ", stripped)
     stripped = re.sub(r"'[^'\n]*'", " ", stripped)
     full_text = stripped.lower().strip()
+    user_text = _last_user_text(events)
+    is_hook_feedback = bool(user_text and any(m in user_text for m in (
+        "Stop hook feedback:", "Stop hook blocking error from command:",
+        "AUTO-COMPLETENESS", "[stop-hook fp-gate -- proxy-injected]",
+    )))
+    if is_hook_feedback and (
+        FP_CHECK_ONLY.match(raw_text)
+        or PROXY_ERROR_ONLY.match(raw_text)
+        or SUCCESS_ONLY.match(raw_text)
+        or full_text in ("ok", "done", "noted", "got it", "ack")
+    ):
+        print("ok")
+        return 0
+    if PROXY_ERROR_ONLY.match(raw_text):
+        print("ok")
+        return 0
     if SUCCESS_ONLY.match(raw_text):
         print("DISMISSIVE")
         return 0
@@ -106,15 +122,7 @@ def main() -> int:
         print("DISMISSIVE")
         return 0
     if not has_tool_use and len(full_text) < 200:
-        user_text = _last_user_text(events)
         if _is_short_confirm_invitation(user_text):
-            print("ok")
-            return 0
-        # Allow minimal ack only for hook-deny loops.
-        if user_text and any(m in user_text for m in (
-            "Stop hook feedback:", "Stop hook blocking error from command:",
-            "AUTO-COMPLETENESS",
-        )) and full_text in ("ok", "done", "noted", "got it", "ack"):
             print("ok")
             return 0
         print("TEXT_ONLY_SHORT")
