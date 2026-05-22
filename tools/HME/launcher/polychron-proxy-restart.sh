@@ -156,11 +156,11 @@ if _proxy_listener_ready; then
   done < <(_port_listener_pids)
 fi
 if _proxy_listener_ready; then
-  echo "[proxy-restart] WARN: proxy listener survived cleanup; adopting existing listener instead of aborting" >&2
-  _ADOPT_EXISTING_LISTENER=1
-else
-  _ADOPT_EXISTING_LISTENER=0
+  echo "[proxy-restart] ERROR: proxy listener survived cleanup on :${PROXY_PORT}; refusing to adopt potentially stale code" >&2
+  echo "[proxy-restart]   remaining listener pid(s): $(_port_listener_pids | tr '\n' ' ')" >&2
+  exit 1
 fi
+_ADOPT_EXISTING_LISTENER=0
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
 _VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"
