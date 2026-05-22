@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { readAutocommitFailure, touchLifesaverHeartbeat, assertRealLifesaverInjection } = require('../lifesaver_alerts');
 
 const ERR_LOG = 'log/hme-errors.log';
