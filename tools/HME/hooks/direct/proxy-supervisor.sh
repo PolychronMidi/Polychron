@@ -76,6 +76,23 @@ _sv_file_fingerprint() {
   python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$1" 2>/dev/null
 }
 
+_sv_state_fingerprint() {
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("fingerprint") or "")' "$1" 2>/dev/null
+}
+
+_sv_write_state() {
+  local pid="$1" fingerprint="$2" ts
+  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+  mkdir -p "$(dirname "$_SV_STATE_FILE")" 2>/dev/null || true
+  python3 - "$pid" "$fingerprint" "$ts" "$_SV_SELF" "$_SV_STATE_FILE" <<'PY' 2>/dev/null || true
+import json, sys
+pid, fingerprint, ts, self_path, out_path = sys.argv[1:]
+with open(out_path, 'w', encoding='utf-8') as f:
+    json.dump({'pid': pid, 'fingerprint': fingerprint, 'started_at': ts, 'self': self_path}, f, sort_keys=True)
+    f.write('\n')
+PY
+}
+
 _sv_reexec_if_self_changed() {
   local current
   current="$(_sv_file_fingerprint "$_SV_SELF")"
