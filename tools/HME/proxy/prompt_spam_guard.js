@@ -94,6 +94,11 @@ function jsonResponse(res, status, body) {
 
 const NOOP_TURN_TEXT = String.fromCharCode(0x2063);
 
+function approximateInputTokens(payload) {
+  const json = JSON.stringify(payload || {});
+  return Math.max(1, Math.ceil(Buffer.byteLength(json, 'utf8') / 4));
+}
+
 function anthropicEmptyResponse(payload, prefix = 'hme_empty') {
   return {
     id: `${prefix}_${Date.now()}`,
