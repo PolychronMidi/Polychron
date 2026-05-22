@@ -213,20 +213,24 @@ function createContextBudget() {
 
   function estimatedContextTokens(bytes) { return Math.ceil(bytes / contextBytesPerTokenEst); }
 
-  function statuslineInputTokens() {
+  function statuslineContextUsage() {
     try {
       const file = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'claude-statusline-raw.json');
       const stat = fs.statSync(file);
-      if ((Date.now() - stat.mtimeMs) > 5 * 60 * 1000) return 0;
+      if ((Date.now() - stat.mtimeMs) > 5 * 60 * 1000) return { used: 0, size: 0 };
       const data = JSON.parse(fs.readFileSync(file, 'utf8'));
       const ctx = data && data.context_window || {};
-      const total = positiveNumber(ctx.total_input_tokens);
-      if (total) return total;
       const usage = ctx.current_usage || {};
-      return positiveNumber(usage.input_tokens)
-        + positiveNumber(usage.cache_read_input_tokens)
-        + positiveNumber(usage.cache_creation_input_tokens);
-    } catch (_e) { return 0; }
+      const used = positiveNumber(ctx.total_input_tokens)
+        || positiveNumber(usage.input_tokens)
+          + positiveNumber(usage.cache_read_input_tokens)
+          + positiveNumber(usage.cache_creation_input_tokens);
+      return { used, size: positiveNumber(ctx.context_window_size) };
+    } catch (_e) { return { used: 0, size: 0 }; }
+  }
+
+  function statuslineInputTokens() {
+    return statuslineContextUsage().used;
   }
 
   function omniContextThresholdBytes(swapModel) {
