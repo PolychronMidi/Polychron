@@ -24,6 +24,68 @@ function recordSuccessAndReset({ getConsecutive429s, setConsecutive429s }) {
   }
 }
 
+const OMNIROUTE_OAUTH_PROVIDERS = new Set(['claude', 'anthropic', 'cx', 'codex']);
+
+async function refreshOmniRouteProviderOnRateLimit({ omniProvider }) {
+  if (!OMNIROUTE_OAUTH_PROVIDERS.has(String(omniProvider || '').toLowerCase())) return false;
+  const password = process.env.OMNIROUTE_ADMIN_PASSWORD || 'polychron';
+  const port = omniroute.port();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const cookieHeader = await new Promise((resolve) => {
+    const req = require('http').request(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, (res) => {
+      const cookie = (res.headers['set-cookie'] || []).map((c) => c.split(';')[0]).join('; ');
+      res.resume();
+      res.on('end', () => resolve(cookie));
+    });
+    req.on('error', () => resolve(''));
+    req.write(JSON.stringify({ password }));
+    req.end();
+  });
+  if (!cookieHeader) return false;
+  const list = await new Promise((resolve) => {
+    const req = require('http').request(`${baseUrl}/api/providers`, {
+      method: 'GET',
+      headers: { Cookie: cookieHeader },
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+        catch (_e) { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.end();
+  });
+  const target = (list && Array.isArray(list.connections) ? list.connections : []).find((c) => c && c.provider === omniProvider && c.authType === 'oauth' && c.isActive);
+  if (!target || !target.id) return false;
+  return new Promise((resolve) => {
+    const body = '{}';
+    const req = require('http').request(`${baseUrl}/api/providers/${encodeURIComponent(target.id)}/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': String(body.length), Cookie: cookieHeader },
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) console.error(`[429-OMNIROUTE-REFRESH] ${omniProvider} refresh HTTP ${res.statusCode}: ${Buffer.concat(chunks).toString('utf8').slice(0, 300)}`);
+        else console.error(`[429-OMNIROUTE-REFRESH] ${omniProvider} OAuth token refreshed via OmniRoute API`);
+        resolve(ok);
+      });
+    });
+    req.on('error', (err) => {
+      console.error(`[429-OMNIROUTE-REFRESH] ${omniProvider} refresh request failed: ${err.message}`);
+      resolve(false);
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
 function isOmniRouteCredentialFailure(status, errInfo) {
   if (![400, 401, 403].includes(status)) return false;
   const text = `${errInfo && errInfo.type || ''} ${errInfo && errInfo.message || ''} ${errInfo && errInfo.code || ''}`.toLowerCase();
@@ -244,7 +306,7 @@ async function handleUpstreamFailureOrSuccess({
       try {
         const newToken = await refreshOauthToken();
         console.error(`[429-AUTO-REFRESH] Successfully refreshed and persisted OAuth credentials. Retrying original request.`);
-        
+
         // Retry with the new token (same as 401 handler pattern)
         const retryHeaders = { ...upstreamHeaders, authorization: `Bearer ${newToken}` };
         retryHeaders['content-length'] = String(outBody.length);
@@ -260,10 +322,37 @@ async function handleUpstreamFailureOrSuccess({
           req.write(outBody);
           req.end();
         });
-        
+
         return { status: retry.status, headers: retry.headers, fullBody: retry.body };
       } catch (e) {
         console.error(`[429-AUTO-REFRESH] Refresh and retry failed: ${e.message}`);
+      }
+    } else if (isOmniRouteSwap) {
+      console.error(`[429-OMNIROUTE-REFRESH] Detected 429 via OmniRoute (${omniProvider}/${swapModel}); refreshing provider OAuth token then retrying...`);
+      const refreshed = await refreshOmniRouteProviderOnRateLimit({ omniProvider });
+      if (refreshed) {
+        try {
+          const retryHeaders = { ...upstreamHeaders, 'content-length': String(outBody.length) };
+          const retryOpts = { ...upstreamOpts, headers: retryHeaders };
+          const retry = await new Promise((resolve, reject) => {
+            const req = transport.request(retryOpts, (res) => {
+              const chunks = [];
+              res.on('data', (c) => chunks.push(c));
+              res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(chunks) }));
+              res.on('error', reject);
+            });
+            req.on('error', reject);
+            req.write(outBody);
+            req.end();
+          });
+          if (retry.status >= 200 && retry.status < 300) {
+            recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
+            return { status: retry.status, headers: retry.headers, fullBody: retry.body };
+          }
+          console.error(`[429-OMNIROUTE-REFRESH] retry still failed: status=${retry.status}`);
+        } catch (e) {
+          console.error(`[429-OMNIROUTE-REFRESH] retry threw: ${e.message}`);
+        }
       }
     }
     const nextPlan = effectiveCompactThreshold();
