@@ -130,12 +130,7 @@ function _isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders, outB
 }
 
 function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel: _swapModel, anthropicTextSseBuffer: _anthropicTextSseBuffer, log = console.error }) {
-  if (!isOmniRouteSwap || status < 200 || status >= 300
-      || !(outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
-    return { outHeaders, outBuf };
-  }
-  const text = outBuf.toString('utf8');
-  if (text.includes('event: message_start') || !/input exceeds the context window/i.test(text)) {
+  if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders, outBuf })) {
     return { outHeaders, outBuf };
   }
   const msg = 'Upstream context window exceeded: input exceeds the context window. Compact or start a fresh turn before retrying this transcript.';
