@@ -18,11 +18,34 @@ const HOOK_WATCHDOG_MISSING_RE = /^\[hook-watchdog\]\s+\[ALERT\]\s+UserPromptSub
 const CRITICAL_INFRA_SELF_RE = /^\[(universal_pulse|supervisor)\].*\b(CRITICAL|FAIL|child_restart_limit|restart_limit|giving up|gave up|unhealthy|required)\b/i;
 const CRYING_WOLF_RE = /^\[crying_wolf\]\s+CRITICAL\b/i;
 
-function _isAgentActionable(line) {
+function _staleRuntimeResolvedOrGrace(projectRoot) {
+  try {
+    const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000 }).trim();
+    const runtimePath = path.join(projectRoot, 'tools/HME/runtime/proxy-runtime.json');
+    let live = '';
+    try { live = JSON.parse(fs.readFileSync(runtimePath, 'utf8')).git_sha || ''; } catch (_e) { /* optional metadata */ }
+    if (head && live && head === live) return true;
+    const markerPath = path.join(projectRoot, 'tools/HME/runtime/post-commit-stale-runtime.json');
+    let marker;
+    try { marker = JSON.parse(fs.readFileSync(markerPath, 'utf8')); } catch (_e) { return false; }
+    const first = Number(marker.first_seen_epoch || 0);
+    const markerHead = String(marker.head_sha || '');
+    if (!Number.isFinite(first) || first <= 0) return false;
+    if (head && markerHead && head !== markerHead) return false;
+    const grace = Number.parseInt(process.env.HME_POST_COMMIT_STALE_GRACE_SEC || '120', 10);
+    const graceSec = Number.isFinite(grace) && grace >= 0 ? grace : 120;
+    return ((Date.now() / 1000) - first) < graceSec;
+  } catch (_e) {
+    return false;
+  }
+}
+
+function _isAgentActionable(line, projectRoot) {
   // tag-anchored regex matches at line start.
   const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
   const criticalInfra = CRITICAL_INFRA_SELF_RE.test(body);
   if (CANARY_RE.test(body)) return false;
+  if (/^\[stale_runtime\]/.test(body) && _staleRuntimeResolvedOrGrace(projectRoot)) return false;
   if (CRYING_WOLF_RE.test(body)) return true;
   if (SELF_TAG_RE.test(body) && !criticalInfra) return false;
   if (HOOK_WATCHDOG_MISSING_RE.test(body)) return false;
