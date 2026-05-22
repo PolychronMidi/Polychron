@@ -2088,6 +2088,7 @@ declare var fs: any;
 declare var path: any;
 declare var COMPOSITION_OUTPUT_DIR: string;
 declare var METRICS_DIR: string;
+declare var _hmeRequireEnv: (name: string) => string;
 declare var minMidi: number;
 declare var maxMidi: number;
 declare var channelStateField: {
