@@ -182,7 +182,7 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
     log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
   }
   if (!Array.isArray(swapChain) || swapChain.length <= 1 || !payload) return null;
-  const startIdx = swapStore.peek(PROJECT_ROOT).idx || 0;
+  const startIdx = swapStore.peek(projectRoot).idx || 0;
   for (let ri = 1; ri < swapChain.length; ri++) {
     const retryIdx = (startIdx + ri) % swapChain.length;
     const candidate = swapChain[retryIdx];
