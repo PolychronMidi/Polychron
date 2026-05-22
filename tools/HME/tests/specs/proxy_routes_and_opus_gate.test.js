@@ -3,6 +3,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
+const { execFileSync } = require('node:child_process');
+const path = require('node:path');
+
+const repoRoot = path.resolve(__dirname, '../../..');
 
 function clearProxyCache() {
   for (const k of Object.keys(require.cache)) {
