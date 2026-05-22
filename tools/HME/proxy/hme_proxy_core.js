@@ -8,12 +8,12 @@ const HME_PREFIX = /^mcp__HME__/;
 const PROXY_STARTED_AT = new Date().toISOString();
 const PROXY_GIT_SHA = (() => {
   try {
-    const { execSync } = require('child_process');
-    return execSync('git rev-parse --short HEAD', {
+    const { runSync } = require('./subprocess');
+    const r = runSync('git', ['rev-parse', '--short', 'HEAD'], {
       cwd: require('path').resolve(__dirname, '..', '..', '..'),
-      encoding: 'utf8',
-      timeout: 1000,
-    }).trim();
+      timeoutMs: 1000,
+    });
+    return r.exit === 0 ? r.stdout.trim() : 'unknown';
   } catch (_) { return 'unknown'; }
 })();
 function _loadedMiddleware() {

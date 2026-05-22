@@ -37,19 +37,18 @@ const PROXY_VERSION = (() => {
 })();
 const PROXY_GIT_SHA = (() => {
   try {
-    const { execSync } = require('child_process');
-    return execSync('git rev-parse --short HEAD', {
+    const { runSync } = require('./subprocess');
+    const r = runSync('git', ['rev-parse', '--short', 'HEAD'], {
       cwd: require('path').resolve(__dirname, '..', '..', '..'),
-      encoding: 'utf8',
-      timeout: 1000,
-    }).trim();
+      timeoutMs: 1000,
+    });
+    return r.exit === 0 ? r.stdout.trim() : 'unknown';
   } catch (_) { return 'unknown'; }
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
 function writeRuntimeMetadata() {
-  const runtimePath = require('path').resolve(__dirname, '..', 'runtime', 'proxy-runtime.json');
-  require('fs').mkdirSync(require('path').dirname(runtimePath), { recursive: true });
-  require('fs').writeFileSync(runtimePath, JSON.stringify({ git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, pid: process.pid }) + '\n');
+  const { writeMarker } = require('./lifecycle_state');
+  writeMarker('PROXY_RUNTIME', { git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, pid: process.pid });
 }
 function logRuntimeMetadataFailure(err) {
   try {
