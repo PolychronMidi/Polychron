@@ -20,6 +20,7 @@ Run: python3 tools/HME/scripts/generate-repo-mermaid.py
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -74,9 +75,28 @@ def safe_label(text: str) -> str:
     return text.replace('"', "'").replace("\n", " ")
 
 
-def _node_line(root: Path, d: Path, indent: str = "    ") -> str:
+def _node_line(root: Path, d: Path, indent: str = "    ",
+               relative_to: Path | None = None) -> str:
+    """Emit a mermaid node declaration.
+
+    `relative_to` is the subtree root for which the label should be
+    rendered. When set, the label is the path of `d` relative to
+    `relative_to` -- so within the `src/` subtree, `src/composers/utils`
+    renders as `composers/utils/`, disambiguating it from
+    `src/scripts/utils` (which would render as `scripts/utils/`).
+    Without `relative_to`, the label is the basename only.
+    """
     node_id = safe_id(str(d))
-    label_main = "Polychron" if d == Path(".") else d.name + "/"
+    if d == Path("."):
+        label_main = "Polychron"
+    elif relative_to is not None and d != relative_to:
+        try:
+            rel = d.relative_to(relative_to)
+            label_main = str(rel).replace(os.sep, "/") + "/"
+        except ValueError:
+            label_main = d.name + "/"
+    else:
+        label_main = d.name + "/"
     intent = dir_intent(root / d)
     label = f"{label_main}<br/><i>{safe_label(intent)}</i>" if intent else label_main
     return f'{indent}{node_id}["{safe_label(label)}"]'
@@ -128,7 +148,7 @@ def build_subtree(root: Path, top: Path, orient: str = "LR") -> str:
 
     lines = [f"flowchart {orient}"]
     for d in sorted(in_subtree, key=lambda p: (len(p.parts), str(p))):
-        lines.append(_node_line(root, d))
+        lines.append(_node_line(root, d, relative_to=top))
     for d in sorted(parents.keys(), key=lambda p: (len(p.parts), str(p))):
         lines.append(f"    {safe_id(str(parents[d]))} --> {safe_id(str(d))}")
     return "\n".join(lines)
