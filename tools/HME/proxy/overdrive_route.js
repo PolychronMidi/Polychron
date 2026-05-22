@@ -8,7 +8,10 @@ const {
 } = require('./omniroute_protocol');
 const { servicePort } = require('./service_registry');
 const { applyEffortParams } = require('./model_effort');
-const { loadModelRouteHealth, routeSkipReason } = require('./model_route_health');
+const {
+  loadModelRouteHealth,
+  routeSkipReason,
+} = require('./contexts/failure_policy');
 
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
@@ -293,7 +296,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     result.swapMeta = legacy.model;
   }
   applyEffortParams(payload, result.swapMeta, result.omniProvider);
-  const { translateRequestToOpenAI } = require('./zen_translator');
+  const { translateRequestToOpenAI } = require('./contexts/response_transform').zenTranslator;
   const oaPayload = translateRequestToOpenAI(payload, result.swapModel);
   clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
   clientReq.headers.authorization = `Bearer ${zenKey}`;

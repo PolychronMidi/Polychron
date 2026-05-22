@@ -1,12 +1,14 @@
 'use strict';
 
 const { sessionKey, emit, PROJECT_ROOT } = require('./shared');
-const { isPassthroughMode } = require('./upstream');
+const {
+  isPassthroughMode,
+  routeDecision,
+} = require('./contexts/upstream_dispatch');
 const { shouldInject, consumeStatusContext, buildJurisdictionContext, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { requestTelemetry } = require('./request_telemetry');
-const { routeDecision } = require('./model_route_resolver');
 
 function applyExplicitOtpmCap(payload) {
   const raw = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
