@@ -239,7 +239,8 @@ class GitCommitTestCoverageVerifier(Verifier):
                 continue
             has_test = any(
                 ("verify-" in f or "test-" in f or "_test." in f
-                 or "stress-test" in f or "verifier" in f.lower())
+                 or ".test." in f or "stress-test" in f
+                 or "verifier" in f.lower())
                 for f in files
             )
             if not has_test:

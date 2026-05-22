@@ -133,12 +133,30 @@ def assert_class_shape(tc, cls):
 
 
 def smoke_run(tc, classes):
-    """Call .execute() on every class in `classes`; assert each returns
-    a VerdictResult with a valid status and 0<=score<=1."""
+    """Call .run() then .execute() on every class in `classes`.
+
+    .run() is invoked directly first so a TypeError / NameError /
+    AttributeError class bug (e.g. local variable shadowing a helper)
+    surfaces as a real test failure, not as a wrapped ERROR status.
+    .execute() is invoked after to assert the result envelope shape.
+
+    A verifier may legitimately raise inside run() when its
+    environment is incomplete -- catch that distinction by mapping
+    OSError/FileNotFoundError to a SKIP-equivalent path. Anything else
+    is a programmer bug and fails the test loudly.
+    """
     from verify_coherence._base import VerdictResult
     for cls in classes:
-        r = cls().execute()
         name = cls.__name__
+        try:
+            cls().run()
+        except (OSError, FileNotFoundError, KeyError):
+            # Environment incompleteness during smoke is OK; production
+            # callers handle these via execute()'s try-wrap.
+            pass
+        except NotImplementedError:
+            tc.fail(f"{name}.run is abstract; subclass must implement it")
+        r = cls().execute()
         tc.assertIsInstance(r, VerdictResult, msg=f"{name}: {type(r)}")
         tc.assertIn(r.status, VALID_STATUSES, msg=f"{name}: status={r.status!r}")
         tc.assertGreaterEqual(r.score, 0.0, msg=f"{name}: score={r.score}")
