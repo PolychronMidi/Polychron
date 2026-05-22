@@ -51,6 +51,8 @@ _SV_MAINT_FLAG="$_SV_ROOT/tools/HME/runtime/hme-proxy-maintenance.flag"
 _SV_LIFECYCLE_LOG="$_SV_ROOT/log/hme-proxy-lifecycle.log"
 _SV_ERROR_LOG="$_SV_ROOT/log/hme-errors.log"
 _SV_PROXY_SCRIPT="$_SV_ROOT/tools/HME/proxy/hme_proxy.js"
+_SV_RELOAD_MARKER="$_SV_ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
+_SV_RUNTIME_FILE="$_SV_ROOT/tools/HME/runtime/proxy-runtime.json"
 _SV_POLL_INTERVAL=10
 _SV_MISS_THRESHOLD=3
 
