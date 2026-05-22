@@ -88,8 +88,13 @@ _sv_bundle_health_issue() {
     echo "proxy unreachable at $_SV_URL"
     return 0
   fi
-  # Any HTTP response from /health means the proxy listener is alive. A 503 can
-  # be diagnostic (runtime_stale) and must not trigger same-port hot restarts.
+  local runtime_stale
+  runtime_stale=$(curl -sS --max-time 3 "$_SV_URL" 2>/dev/null \
+    | python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("runtime_stale") else "0")' 2>/dev/null || echo 0)
+  if [ "$runtime_stale" = "1" ]; then
+    echo "proxy runtime stale at $_SV_URL"
+    return 0
+  fi
   local child_id child_url
   while read -r child_id child_url; do
     [ -n "$child_id" ] || continue
