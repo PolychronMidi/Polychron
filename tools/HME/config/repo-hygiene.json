@@ -19,7 +19,8 @@
     "*.log": "log files are runtime output"
   },
   "path_allowlist": [
-    "tools/HME/runtime/INVENTORY.md"
+    "tools/HME/runtime/INVENTORY.md",
+    ".env.sha256"
   ],
   "blocked_jsonl_dirs": [
     "runtime",
