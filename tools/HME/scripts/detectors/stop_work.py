@@ -114,7 +114,7 @@ def main() -> int:
     ):
         print("ok")
         return 0
-    if PROXY_ERROR_ONLY.match(raw_text):
+    if PROXY_NOOP_ONLY.match(raw_text) or PROXY_ERROR_ONLY.match(raw_text):
         print("ok")
         return 0
     if SUCCESS_ONLY.match(raw_text):
