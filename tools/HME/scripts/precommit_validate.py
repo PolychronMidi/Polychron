@@ -229,6 +229,42 @@ _ENV_FALLBACK_PATTERNS = [
     re.compile(r"\bgetenv\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
     re.compile(r"\$\{([A-Z0-9_]+)(?::-|-)"),
 ]
+_ENV_INDEX_RE = re.compile(r"os\.environ\[\s*['\"]([A-Z0-9_]+)['\"]\s*\]")
+_ENV_EXCEPT_RE = re.compile(r"^\s*except\s+(?:\(?\s*)?(KeyError|LookupError|Exception|BaseException)\b")
+_ENV_LITERAL_FALLBACK_RE = re.compile(
+    r"^\s*(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?\s*=|return)\s*"
+    r"(?:['\"].*['\"]|None|False|True|\d+|\{\}|\[\])\s*(?:#.*)?$"
+)
+
+
+def try_except_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[str]:
+    hits: list[str] = []
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        if line.strip() != "try:":
+            continue
+        env_keys: set[str] = set()
+        except_idx: int | None = None
+        for j in range(idx + 1, min(len(lines), idx + 16)):
+            probe = lines[j]
+            for match in _ENV_INDEX_RE.finditer(probe):
+                key = match.group(1)
+                if key in keys:
+                    env_keys.add(key)
+            if _ENV_EXCEPT_RE.match(probe):
+                except_idx = j
+                break
+        if not env_keys or except_idx is None:
+            continue
+        handler = lines[except_idx + 1:min(len(lines), except_idx + 9)]
+        if not any(_ENV_LITERAL_FALLBACK_RE.match(h) for h in handler):
+            continue
+        for key in sorted(env_keys):
+            hits.append(
+                f"{q(path)}:{idx + 1} uses try/except fallback for .env key {key}; "
+                "missing declared env must fail fast, not synthesize defaults"
+            )
+    return hits
 
 
 def inline_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[str]:
