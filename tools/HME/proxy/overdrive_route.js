@@ -76,8 +76,9 @@ function providerSkipSet(cfg, env = process.env) {
 }
 
 function hasOmniCredential(model, env = process.env) {
-  const provider = providerKey(model && model.provider, env);
-  if (provider === 'anthropic') return env.HME_OMNIROUTE_TRUST_STORED_CREDS === '1';
+  const rawProvider = String((model && model.provider) || '').trim();
+  const provider = providerKey(rawProvider, env);
+  if (rawProvider === 'anthropic' || provider === 'claude') return env.HME_OMNIROUTE_TRUST_STORED_CREDS === '1';
   return true;
 }
 
