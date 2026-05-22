@@ -134,7 +134,10 @@ def _resolve_project_root() -> str:
     """Resolve PROJECT_ROOT: env first, then walk up from this script
     looking for the doc/templates/AGENTS.md+.env pair. Returns "" only
     if neither path works."""
-    env_root = os.environ['PROJECT_ROOT']
+    try:
+        env_root = os.environ["PROJECT_ROOT"]
+    except KeyError:
+        env_root = ""
     if env_root:
         return env_root
     here = Path(__file__).resolve()
