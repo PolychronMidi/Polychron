@@ -7,13 +7,14 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 const hmePaths = require('./hme_paths');
+const { runtimePath, logPath, tmpPath } = require('./paths');
 
 const CACHE_STABLE_MS = 4 * 60 * 1000;
 let _statusSnapshot = null;
 let _statusSnapshotAt = 0;
 
 const COHERENCE_BUDGET_PATH = hmePaths.hmeMetric('hme-coherence-budget.json');
-const ERRORS_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+const ERRORS_LOG = logPath('hme-errors.log');
 const ACTIVITY_LOG = hmePaths.hmeMetric('hme-activity.jsonl');
 const GROUND_TRUTH_LOG = hmePaths.hmeMetric('hme-ground-truth.jsonl');
 const DIR_INTENT_PATH = hmePaths.hmeMetric('hme-dir-intent.json');
@@ -61,7 +62,7 @@ function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
 function recentLifesaverErrors() {
   // Turn-aware: show only errors added since userpromptsubmit.sh recorded
   // the turn-start line count in tools/HME/runtime/errors-turnstart.
-  const TURNSTART_PATH = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'errors-turnstart');
+  const TURNSTART_PATH = runtimePath('errors-turnstart');
   let turnStartLine = null;
   try {
     const raw = fs.readFileSync(TURNSTART_PATH, 'utf8').trim();
@@ -178,7 +179,7 @@ function recentGroundTruth(n = 1, maxAgeMs = GROUND_TRUTH_MAX_AGE_MS) {
 
 function _nexusEditCount() {
   try {
-    const nexusPath = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
+    const nexusPath = tmpPath('hme-nexus.state');
     if (!fs.existsSync(nexusPath)) return 0;
     const lines = fs.readFileSync(nexusPath, 'utf8').split('\n');
     return lines.filter((l) => l.startsWith('EDIT:')).length;
