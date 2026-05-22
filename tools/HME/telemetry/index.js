@@ -27,7 +27,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const hmePaths = require('../proxy/hme_paths');
+const hmePaths = require('../proxy/infra/hme_paths');
 
 const PROJECT_ROOT = hmePaths.PROJECT_ROOT;
 

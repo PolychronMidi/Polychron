@@ -14,7 +14,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const hmePaths = require('../proxy/hme_paths');
+const hmePaths = require('../proxy/infra/hme_paths');
 
 const STORE_VERSION = 1;
 const LOG_NAME = 'hook-lifecycle-checkpoints.jsonl';

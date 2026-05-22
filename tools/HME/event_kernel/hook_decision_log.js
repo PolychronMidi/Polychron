@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseJson, decisionFields, reasonHash } = require('./decision_normalizer');
-const hmePaths = require('../proxy/hme_paths');
+const hmePaths = require('../proxy/infra/hme_paths');
 
 function runtimeDir(root) {
   const rootText = String(root || '');
