@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import subprocess
 import sys
 import tempfile
 import time
@@ -11,7 +10,9 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
-from helpers import assert_class_shape, smoke_run, with_project_root
+from helpers import (
+    assert_class_shape, smoke_run, with_project_root, init_git_repo,
+)
 
 
 def _classes():
@@ -19,15 +20,6 @@ def _classes():
         AutocommitHealthVerifier, ShimHealthVerifier,
     )
     return (AutocommitHealthVerifier, ShimHealthVerifier)
-
-
-def _init_repo(root: Path) -> None:
-    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-    subprocess.run(["git", "config", "user.email", "t@t"], cwd=root, check=True)
-    subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True)
-    (root / "seed.txt").write_text("seed\n")
-    subprocess.run(["git", "add", "seed.txt"], cwd=root, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=root, check=True)
 
 
 def _state_path(root: Path, name: str) -> Path:
@@ -58,7 +50,7 @@ class AutocommitHealthBehaviourTests(unittest.TestCase):
     def test_pass_on_clean_worktree_with_fresh_heartbeat(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _init_repo(root)
+            init_git_repo(root)
             _fresh_heartbeat(root)
             r = with_project_root(root, _run_autocommit)
             self.assertEqual(r.status, "PASS", msg=f"summary={r.summary} details={r.details}")
@@ -66,7 +58,7 @@ class AutocommitHealthBehaviourTests(unittest.TestCase):
     def test_fail_when_sticky_fail_flag_present(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _init_repo(root)
+            init_git_repo(root)
             _fresh_heartbeat(root)
             _state_path(root, "autocommit.fail").write_text("commit hook bounced")
             r = with_project_root(root, _run_autocommit)
@@ -77,7 +69,7 @@ class AutocommitHealthBehaviourTests(unittest.TestCase):
     def test_fail_when_attempt_counter_at_three_or_more(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _init_repo(root)
+            init_git_repo(root)
             _fresh_heartbeat(root)
             _state_path(root, "autocommit.counter").write_text("5")
             r = with_project_root(root, _run_autocommit)
@@ -88,7 +80,7 @@ class AutocommitHealthBehaviourTests(unittest.TestCase):
     def test_fail_on_stale_last_success(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _init_repo(root)
+            init_git_repo(root)
             _fresh_heartbeat(root)
             stale = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=72)
             _state_path(root, "autocommit.last-success").write_text(stale.isoformat())
@@ -100,7 +92,7 @@ class AutocommitHealthBehaviourTests(unittest.TestCase):
     def test_fail_when_dirty_worktree_with_missing_heartbeat(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            _init_repo(root)
+            init_git_repo(root)
             (root / "dirt.txt").write_text("uncommitted\n")
             r = with_project_root(root, _run_autocommit)
             self.assertEqual(r.status, "FAIL")
