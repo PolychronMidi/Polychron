@@ -14,6 +14,68 @@
           "pattern": "MUTATING_EFFECTS\\s*=\\s*new\\s+Set\\(\\[([^\\]]+)\\]\\)"
         }
       ]
+    },
+    {
+      "name": "PROJECT_METRIC_NAMES",
+      "values": [
+        "adaptive-state.json",
+        "composition-diff.json",
+        "composition-diff.md",
+        "current-run.json",
+        "feedback_graph.json",
+        "fingerprint-comparison.json",
+        "golden-fingerprint.json",
+        "golden-fingerprint.prev.json",
+        "hci-snapshot-diff.json",
+        "hci-verifier-snapshot.json",
+        "journal.md",
+        "l0-dump.json",
+        "narrative-digest.md",
+        "perceptual-report.json",
+        "pipeline-summary.json",
+        "run-comparison.json",
+        "runtime-snapshots.json",
+        "system-manifest.json",
+        "trace-summary.json",
+        "trace.jsonl",
+        "verdict-model.json"
+      ],
+      "sites": [
+        {
+          "file": "tools/HME/scripts/hme_paths.py",
+          "pattern": "PROJECT_METRIC_NAMES\\s*=\\s*\\{([^}]+)\\}"
+        },
+        {
+          "file": "tools/HME/proxy/hme_paths.js",
+          "pattern": "PROJECT_METRIC_NAMES\\s*=\\s*new\\s+Set\\(\\[([^\\]]+)\\]\\)"
+        }
+      ]
+    },
+    {
+      "name": "HME_METRIC_NAMES",
+      "values": [
+        "detector-stats.jsonl",
+        "hci-regression-alert.json",
+        "kb-signatures.json",
+        "kb-staleness.json",
+        "kb-trust-weights.json",
+        "legacy-override-history.jsonl",
+        "mode-classifier.jsonl",
+        "reflections.jsonl",
+        "satisfaction.jsonl",
+        "todo-graph.md",
+        "vram-history.jsonl"
+      ],
+      "sites": [
+        {
+          "file": "tools/HME/scripts/hme_paths.py",
+          "pattern": "HME_METRIC_NAMES\\s*=\\s*\\{([^}]+)\\}"
+        },
+        {
+          "file": "tools/HME/proxy/hme_paths.js",
+          "pattern": "HME_METRIC_NAMES\\s*=\\s*new\\s+Set\\(\\[([^\\]]+)\\]\\)"
+        }
+      ]
     }
   ],
   "function_pairs": [

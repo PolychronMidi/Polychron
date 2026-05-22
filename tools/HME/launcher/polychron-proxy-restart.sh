@@ -154,8 +154,15 @@ _label_in_proxy_bundle() {
 _HEAD_SHA="$(_current_head_sha)"
 if _proxy_listener_ready; then
   _ADOPT_PID="$(_port_listener_pids | head -1)"
-  if [ -n "$_ADOPT_PID" ] && _assert_runtime_matches_listener "$_ADOPT_PID" "$_HEAD_SHA" 2>/dev/null; then
-    echo "[proxy-restart] adopted existing healthy proxy listener (pid=${_ADOPT_PID}, sha=${_HEAD_SHA:-unknown}); no restart needed" >&2
+  _ADOPT_RUNTIME_PID="$(_runtime_value pid)"
+  _ADOPT_RUNTIME_SHA="$(_runtime_value git_sha)"
+  if [ -n "$_ADOPT_PID" ] \
+     && [ -n "$_ADOPT_RUNTIME_PID" ] \
+     && [ "$_ADOPT_RUNTIME_PID" = "$_ADOPT_PID" ] \
+     && [ -n "$_ADOPT_RUNTIME_SHA" ] \
+     && [ -n "$_HEAD_SHA" ] \
+     && [ "$_ADOPT_RUNTIME_SHA" = "$_HEAD_SHA" ]; then
+    echo "[proxy-restart] adopted existing healthy proxy listener (pid=${_ADOPT_PID}, sha=${_HEAD_SHA}); no restart needed" >&2
     exit 0
   fi
 fi
