@@ -145,6 +145,72 @@ function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, ou
   return { outHeaders: headers, outBuf: _anthropicErrorSseBuffer('context_window_exceeded', msg) };
 }
 
+function _cloneWithTailMessages(payload, keep = 80) {
+  const retryPayload = JSON.parse(JSON.stringify(payload || {}));
+  if (Array.isArray(retryPayload.messages) && retryPayload.messages.length > keep) {
+    retryPayload.messages = retryPayload.messages.slice(-keep);
+  }
+  retryPayload.stream = false;
+  if (typeof retryPayload.max_tokens !== 'number' || retryPayload.max_tokens > 2048) retryPayload.max_tokens = 2048;
+  delete retryPayload.thinking;
+  return retryPayload;
+}
+
+function _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload }) {
+  const retryBody = Buffer.from(JSON.stringify(payload), 'utf8');
+  const retryOpts = { ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(retryBody.length) } };
+  return new Promise((resolve, reject) => {
+    const req = transport.request(retryOpts, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, fullBody: Buffer.concat(chunks) }));
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.write(retryBody);
+    req.end();
+  });
+}
+
+async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, swapChain, omniProvider, swapModel, transport, upstreamOpts, upstreamHeaders, log = console.error }) {
+  if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) return null;
+  const routeKey = _omniRouteKeyFromModel(payload && payload.model, omniProvider);
+  try {
+    markRouteCooldown(routeKey, 'context_window_exceeded', { ttlMs: 300_000, projectRoot: PROJECT_ROOT });
+    emit({ event: 'model_route_quarantine', route: routeKey, reason: 'context_window_exceeded' });
+  } catch (err) {
+    log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
+  }
+  if (!Array.isArray(swapChain) || swapChain.length <= 1 || !payload) return null;
+  const startIdx = swapStore.peek(PROJECT_ROOT).idx || 0;
+  for (let ri = 1; ri < swapChain.length; ri++) {
+    const retryIdx = (startIdx + ri) % swapChain.length;
+    const candidate = swapChain[retryIdx];
+    const provider = omniProviderForConfigProvider(candidate.provider || '');
+    const model = upstreamModelId(candidate);
+    const retryPayload = _cloneWithTailMessages(payload, 80);
+    retryPayload.model = `${provider}/${model}`;
+    log(`[hme-proxy] context-window retry ${ri}/${swapChain.length - 1}: ${retryPayload.model} tail_msgs=${Array.isArray(retryPayload.messages) ? retryPayload.messages.length : 0}`);
+    try {
+      const retry = await _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload: retryPayload });
+      if (retry.status >= 200 && retry.status < 300
+          && !_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
+        swapStore.recordSuccess(swapChain, retryIdx, PROJECT_ROOT);
+        emit({ event: 'context_window_retry', outcome: 'success', route: retryPayload.model, prior_route: routeKey });
+        return retry;
+      }
+      if (_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
+        try { markRouteCooldown(retryPayload.model, 'context_window_exceeded', { ttlMs: 300_000, projectRoot: PROJECT_ROOT }); } catch (_e) {}
+      }
+      emit({ event: 'context_window_retry', outcome: 'failed', status: retry.status, route: retryPayload.model, prior_route: routeKey });
+    } catch (err) {
+      log(`[hme-proxy] context-window retry failed: ${err.message}`);
+      emit({ event: 'context_window_retry', outcome: 'error', route: retryPayload.model, message: err.message });
+    }
+  }
+  return null;
+}
+
 async function handleAnthropicResponseComplete({
   chunks,
   upstreamRes,
