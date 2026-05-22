@@ -54,12 +54,44 @@ def candidate_files(root: Path):
         yield path, rel
 
 
+def _try_except_fallback_rows(rel: str, lines: list[str], keys: set[str]) -> list[dict]:
+    out: list[dict] = []
+    for idx, line in enumerate(lines):
+        if line.strip() != "try:":
+            continue
+        env_keys: set[str] = set()
+        except_idx: int | None = None
+        for j in range(idx + 1, min(len(lines), idx + 16)):
+            probe = lines[j]
+            for match in ENV_INDEX_RE.finditer(probe):
+                key = match.group(1)
+                if key in keys:
+                    env_keys.add(key)
+            if ENV_EXCEPT_RE.match(probe):
+                except_idx = j
+                break
+        if not env_keys or except_idx is None:
+            continue
+        handler = lines[except_idx + 1:min(len(lines), except_idx + 9)]
+        if not any(ENV_LITERAL_FALLBACK_RE.match(h) for h in handler):
+            continue
+        for key in sorted(env_keys):
+            out.append({
+                "rel": rel,
+                "lineno": idx + 1,
+                "key": key,
+                "line": "try/except fallback around os.environ[...]",
+            })
+    return out
+
+
 def findings() -> list[dict]:
     keys = declared_env_keys()
     out: list[dict] = []
     for path, rel in candidate_files(ROOT):
         text = path.read_text(encoding="utf-8", errors="replace")
-        for lineno, line in enumerate(text.splitlines(), 1):
+        lines = text.splitlines()
+        for lineno, line in enumerate(lines, 1):
             if "env-fallback-ok" in line:
                 continue
             for pattern in PATTERNS:
@@ -72,6 +104,7 @@ def findings() -> list[dict]:
                             "key": key,
                             "line": line.strip(),
                         })
+        out.extend(_try_except_fallback_rows(rel, lines, keys))
     return out
 
 
