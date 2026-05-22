@@ -176,6 +176,32 @@ function isTodoWriteOnlyProbe(payload) {
     && payload && Array.isArray(payload.messages) && payload.messages.length === 1;
 }
 
+function blockNoopSystemReminderTurn({ req, res, payload, record, source = {} }) {
+  if (record) {
+    record({
+      kind: 'noop-system-reminder-turn-blocked',
+      source,
+      model: payload && payload.model ? payload.model : '',
+      reason: 'last user message is empty or system-reminder-only',
+    });
+  }
+  if (isCountTokensRequest(req)) {
+    jsonResponse(res, 200, { input_tokens: 0 });
+    return;
+  }
+  if (isTextEventStream(payload)) {
+    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache' });
+    res.end(anthropicTextSse(payload, NOOP_TURN_TEXT, 'hme_noop_turn'));
+    return;
+  }
+  jsonResponse(res, 200, anthropicTextResponse(payload, NOOP_TURN_TEXT, 'hme_noop_turn'));
+}
+
+function shouldBlockNoopSystemReminderTurn({ req, payload, headers }) {
+  return contentTypeJson(headers || (req && req.headers))
+    && (isCountTokensRequest(req) || isNoopSystemReminderTurn(payload));
+}
+
 function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
   if (record) {
     record({
