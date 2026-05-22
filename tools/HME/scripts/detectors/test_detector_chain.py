@@ -732,6 +732,12 @@ _CASES = [
          _assistant_msg("[Proxy Error] upstream API returned an empty response. Please retry request."),
      ],
      "ok"),
+    ("stop_work", "proxy-noop-local-turn-exempt",
+     [
+         _user_msg("<system-reminder>\n</system-reminder>"),
+         _assistant_msg("⁣"),
+     ],
+     "ok"),
 
     # stop_work: dismissive phrase inside backticks/quotes must NOT fire
     # (mirrors exhaust_check's quote-strip; padded past TEXT_ONLY_SHORT).
