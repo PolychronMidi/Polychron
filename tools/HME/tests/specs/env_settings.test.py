@@ -2,16 +2,15 @@
 """Behavioural + smoke tests for verify_coherence.env_settings."""
 from __future__ import annotations
 
-import json
-import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
-from helpers import assert_class_shape, smoke_run, with_project_root
+from helpers import (
+    assert_class_shape, smoke_run, with_project_root, with_home_settings,
+)
 
 
 def _classes():
@@ -20,28 +19,6 @@ def _classes():
         EnvTamperVerifier, EnvLoadVerifier,
     )
     return (SettingsJsonVerifier, OAuthTokenExpiryVerifier, EnvTamperVerifier, EnvLoadVerifier)
-
-
-_REAL_EXPANDUSER = os.path.expanduser
-
-
-def _with_home_settings(tmp: Path, settings: dict | str | None, fn):
-    """Mock ~/.claude/settings.json to point at tmp/settings.json.
-
-    Pass `settings` as a dict to write JSON, as a str to write raw text
-    (for malformed-JSON cases), or None to leave the file absent.
-    """
-    settings_path = tmp / "settings.json"
-    if isinstance(settings, dict):
-        settings_path.write_text(json.dumps(settings))
-    elif isinstance(settings, str):
-        settings_path.write_text(settings)
-    def _eu(p):
-        if p == "~/.claude/settings.json":
-            return str(settings_path)
-        return _REAL_EXPANDUSER(p)
-    with mock.patch("os.path.expanduser", side_effect=_eu):
-        return fn()
 
 
 def _run_settings():
@@ -75,17 +52,17 @@ class EnvSettingsSmokeTests(unittest.TestCase):
 class SettingsJsonBehaviourTests(unittest.TestCase):
     def test_skip_when_settings_file_absent(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r = _with_home_settings(Path(tmp), None, _run_settings)
+            r = with_home_settings(Path(tmp), None, _run_settings)
             self.assertEqual(r.status, "SKIP")
 
     def test_pass_on_canonical_shape(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r = _with_home_settings(Path(tmp), {"hooks": CANONICAL_HOOKS}, _run_settings)
+            r = with_home_settings(Path(tmp), {"hooks": CANONICAL_HOOKS}, _run_settings)
             self.assertEqual(r.status, "PASS", msg=f"summary={r.summary} details={r.details}")
 
     def test_fail_on_malformed_json(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r = _with_home_settings(Path(tmp), "{not valid", _run_settings)
+            r = with_home_settings(Path(tmp), "{not valid", _run_settings)
             self.assertEqual(r.status, "FAIL")
             self.assertIn("MALFORMED", r.summary)
 
@@ -93,14 +70,14 @@ class SettingsJsonBehaviourTests(unittest.TestCase):
         partial = dict(CANONICAL_HOOKS)
         partial.pop("Stop")
         with tempfile.TemporaryDirectory() as tmp:
-            r = _with_home_settings(Path(tmp), {"hooks": partial}, _run_settings)
+            r = with_home_settings(Path(tmp), {"hooks": partial}, _run_settings)
             self.assertEqual(r.status, "FAIL")
             self.assertTrue(any("missing lifecycle events" in d for d in r.details),
                             msg=f"details={r.details}")
 
     def test_fail_when_root_is_not_object(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r = _with_home_settings(Path(tmp), '["array root"]', _run_settings)
+            r = with_home_settings(Path(tmp), '["array root"]', _run_settings)
             self.assertEqual(r.status, "FAIL")
             self.assertIn("expected object", r.summary)
 
