@@ -1,4 +1,3 @@
-const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
 
 const V = validator.create('grandFinale');

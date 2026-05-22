@@ -1,4 +1,3 @@
-const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // metaProfileDefinitions.js -- Built-in metaprofile definitions.
 // Each profile configures relationship-layer targets that meta-controllers
 // self-calibrate toward. Controllers not mentioned use their existing defaults.
