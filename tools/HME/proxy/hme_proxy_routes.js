@@ -32,9 +32,10 @@ function healthVerdict(supervisor, runningSha) {
   const supervisor_failures = requiredSupervisorFailures(supervisor);
   const current_git_sha = currentRepoGitSha();
   const runtime_stale = Boolean(current_git_sha && runningSha && current_git_sha !== runningSha);
-  const ok = supervisor_failures.length === 0;
+  const ok = supervisor_failures.length === 0 && !runtime_stale;
   return {
     ok,
+    listener_ready: true,
     status: ok ? 'ok' : 'degraded',
     httpStatus: ok ? 200 : 503,
     supervisor_failures,
