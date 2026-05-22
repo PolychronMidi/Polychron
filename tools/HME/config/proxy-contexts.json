@@ -1,0 +1,68 @@
+{
+  "$comment": "File -> bounded-context membership per doc/PROXY_CONTEXTS.md. Files not listed here default to 'infra' (shared primitives below all contexts). cross-context-isolation reads this registry and flags any require() that reaches into another context's internal helper instead of its façade.",
+  "contexts": {
+    "request_mutation": {
+      "facade": "tools/HME/proxy/contexts/request_mutation/index.js",
+      "files": [
+        "tools/HME/proxy/hme_proxy_request_mutation.js",
+        "tools/HME/proxy/messages.js",
+        "tools/HME/proxy/context.js",
+        "tools/HME/proxy/prompt_spam_guard.js"
+      ],
+      "file_patterns": ["tools/HME/proxy/compactor.*\\.js$", "tools/HME/proxy/middleware/.*\\.js$"]
+    },
+    "upstream_dispatch": {
+      "facade": "tools/HME/proxy/contexts/upstream_dispatch/index.js",
+      "files": [
+        "tools/HME/proxy/upstream.js",
+        "tools/HME/proxy/overdrive_route.js",
+        "tools/HME/proxy/omniroute_client.js",
+        "tools/HME/proxy/omniroute_protocol.js",
+        "tools/HME/proxy/model_route_resolver.js",
+        "tools/HME/proxy/swap_state_store.js",
+        "tools/HME/proxy/hme_proxy_headers.js",
+        "tools/HME/proxy/service_registry.js",
+        "tools/HME/proxy/hme_proxy.js",
+        "tools/HME/proxy/hme_proxy_claude.js"
+      ]
+    },
+    "response_transform": {
+      "facade": "tools/HME/proxy/contexts/response_transform/index.js",
+      "files": [
+        "tools/HME/proxy/hme_proxy_anthropic_response.js",
+        "tools/HME/proxy/legacy_swap_response.js",
+        "tools/HME/proxy/sse_slop_rewriter.js",
+        "tools/HME/proxy/sse_stop_hook_rewriters.js",
+        "tools/HME/proxy/codex_response_forwarder.js",
+        "tools/HME/proxy/codex_tool_text.js",
+        "tools/HME/proxy/codex_omniroute.js",
+        "tools/HME/proxy/zen_translator.js",
+        "tools/HME/proxy/reasoning_to_thinking.js",
+        "tools/HME/proxy/hme_proxy_response_send.js",
+        "tools/HME/proxy/hme_proxy_response_trace.js",
+        "tools/HME/proxy/omni_tool_loop.js"
+      ]
+    },
+    "failure_policy": {
+      "facade": "tools/HME/proxy/contexts/failure_policy/index.js",
+      "files": [
+        "tools/HME/proxy/omni_failure_policy.js",
+        "tools/HME/proxy/hme_proxy_upstream_failure.js",
+        "tools/HME/proxy/hme_proxy_codex.js",
+        "tools/HME/proxy/hme_proxy_connection_errors.js",
+        "tools/HME/proxy/failure_classification.js",
+        "tools/HME/proxy/model_route_health.js"
+      ]
+    },
+    "lifecycle_bridge": {
+      "facade": "tools/HME/proxy/contexts/lifecycle_bridge/index.js",
+      "files": [
+        "tools/HME/proxy/lifecycle_bridge.js",
+        "tools/HME/proxy/hme_proxy_routes.js",
+        "tools/HME/proxy/start_marker.js",
+        "tools/HME/proxy/hme_dispatcher.js"
+      ],
+      "file_patterns": ["tools/HME/proxy/supervisor/.*\\.js$"]
+    }
+  }
+}

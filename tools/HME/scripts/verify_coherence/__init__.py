@@ -134,6 +134,9 @@ from .metric_name_orphans import (  # noqa: F401
 from .repo_mermaid_freshness import (  # noqa: F401
     RepoMermaidFreshnessVerifier,
 )
+from .cross_context_isolation import (  # noqa: F401
+    CrossContextIsolationVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
