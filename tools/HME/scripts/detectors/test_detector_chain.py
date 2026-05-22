@@ -711,6 +711,27 @@ _CASES = [
      ],
      "TEXT_ONLY_SHORT"),
 
+    # stop_work: hook-feedback retries must not spawn a secondary short-text
+    # loop on exact transport/meta markers. The original stop-hook verdict is
+    ("stop_work", "hook-feedback-fp-marker-exempt",
+     [
+         _user_msg("Stop hook feedback: EXHAUST PROTOCOL VIOLATION\n[stop-hook fp-gate -- proxy-injected]"),
+         _assistant_msg("[FP-CHECK: yes]"),
+     ],
+     "ok"),
+    ("stop_work", "hook-feedback-success-marker-exempt",
+     [
+         _user_msg("Stop hook feedback: STOP-WORK ANTIPATTERN"),
+         _assistant_msg("[SUCCESS]"),
+     ],
+     "ok"),
+    ("stop_work", "proxy-error-transport-exempt",
+     [
+         _user_msg("Stop hook feedback: STOP-WORK ANTIPATTERN"),
+         _assistant_msg("[Proxy Error] upstream API returned an empty response. Please retry request."),
+     ],
+     "ok"),
+
     # stop_work: dismissive phrase inside backticks/quotes must NOT fire
     # (mirrors exhaust_check's quote-strip; padded past TEXT_ONLY_SHORT).
     ("stop_work", "dismissive-phrase-in-quoted-context-exempt",
