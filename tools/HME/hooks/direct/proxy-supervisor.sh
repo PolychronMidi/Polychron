@@ -6,6 +6,7 @@
 # Stop: `proxy-supervisor.sh stop`; restart/reload restarts the live proxy child.
 
 set +e
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/helpers/_hooks_bootstrap.sh"
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _SV_ROOT=""
