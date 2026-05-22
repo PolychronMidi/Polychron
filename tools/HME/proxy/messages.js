@@ -57,6 +57,30 @@ function normalizeICommands(payload) {
   return stats.command_rewrites + stats.text_rewrites;
 }
 
+const _EMPTY_USER_PLACEHOLDER = '(content stripped by hme-proxy boilerplate filter)';
+
+function _ensureUserMessageNonEmpty(msg) {
+  if (!msg || msg.role !== 'user') return;
+  const c = msg.content;
+  if (typeof c === 'string') {
+    if (c.trim() === '') msg.content = _EMPTY_USER_PLACEHOLDER;
+    return;
+  }
+  if (!Array.isArray(c)) return;
+  const hasSignal = c.some((b) => {
+    if (!b || typeof b !== 'object') return false;
+    if (b.type === 'tool_result' || b.type === 'tool_use' || b.type === 'image' || b.type === 'document') return true;
+    if (b.type === 'text' && typeof b.text === 'string' && b.text.trim() !== '') return true;
+    return false;
+  });
+  if (!hasSignal) msg.content = [{ type: 'text', text: _EMPTY_USER_PLACEHOLDER }];
+}
+
+function _ensureAllUserMessagesNonEmpty(payload) {
+  if (!payload || !Array.isArray(payload.messages)) return;
+  for (const m of payload.messages) _ensureUserMessageNonEmpty(m);
+}
+
 function stripBoilerplate(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   let strippedCount = 0;
