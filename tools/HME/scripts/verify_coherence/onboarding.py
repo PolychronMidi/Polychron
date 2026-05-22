@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class StatesSyncVerifier(Verifier):
     name = "states-sync"
     category = "state"
@@ -34,6 +48,7 @@ class StatesSyncVerifier(Verifier):
         return _result(ERROR, 0.0, "verifier returned unexpected code", out.splitlines())
 
 
+@register
 class OnboardingFlowVerifier(Verifier):
     name = "onboarding-flow"
     category = "state"
@@ -57,6 +72,7 @@ class OnboardingFlowVerifier(Verifier):
                        [ln for ln in out.splitlines() if "FAIL:" in ln])
 
 
+@register
 class OnboardingStateIntegrityVerifier(Verifier):
     """If state file exists, its value must be in STATES."""
     name = "onboarding-state-integrity"
@@ -99,6 +115,7 @@ class OnboardingStateIntegrityVerifier(Verifier):
                        [f"valid: {valid}"])
 
 
+@register
 class OnboardingChainImportVerifier(Verifier):
     """onboarding_chain.py should import cleanly (no syntax errors or
     top-level side effects that require the MCP server)."""

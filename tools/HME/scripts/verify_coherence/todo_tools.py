@@ -7,12 +7,22 @@ import subprocess
 import sys
 
 from ._base import (
-    Verifier, VerdictResult, _result,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _SERVER_DIR, _SCRIPTS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
 )
 
 
+@register
 class TodoStoreSchemaVerifier(Verifier):
     """Every entry in todos.json has the required canonical fields."""
     name = "todo-store-schema"
@@ -38,6 +48,7 @@ class TodoStoreSchemaVerifier(Verifier):
         return _result(WARN, score, f"{len(violations)} schema violations", violations[:10])
 
 
+@register
 class TodoMarkdownSyncVerifier(Verifier):
     """TODO.md should be the sole human todo surface and match todos.json."""
     name = "todo-markdown-sync"
@@ -98,6 +109,7 @@ class TodoMarkdownSyncVerifier(Verifier):
         return _result(PASS, 1.0, "TODO.md is canonical, synced, and hook-wired")
 
 
+@register
 class TodoCodexPlanSyncVerifier(Verifier):
     """Codex update_plan must have a bridge into the canonical TODO store."""
     name = "todo-codex-plan-sync"
@@ -220,6 +232,7 @@ class TodoCodexPlanSyncVerifier(Verifier):
         return _result(PASS, 1.0, "Codex update_plan sync has proxy, hook adapter, and pulse automatic paths")
 
 
+@register
 class TodoOnboardingDecoupledVerifier(Verifier):
     """Onboarding state must not create persistent TODO/TodoWrite entries."""
     name = "todo-onboarding-decoupled"
@@ -269,6 +282,7 @@ class TodoOnboardingDecoupledVerifier(Verifier):
         return _result(PASS, 1.0, "onboarding state is separate from persistent TODO storage")
 
 
+@register
 class TodoArchiveContractVerifier(Verifier):
     """TODO-era devlogs should keep their documented archive shape."""
     name = "todo-archive-contract"

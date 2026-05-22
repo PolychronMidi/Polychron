@@ -12,12 +12,26 @@ import datetime
 import urllib.request
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class AutocommitHealthVerifier(Verifier):
     """Autocommit must succeed every attempt. Catastrophic silent failure
     has been observed -- autocommits dying without a single LIFESAVER
@@ -127,6 +141,7 @@ class AutocommitHealthVerifier(Verifier):
                        issues)
 
 
+@register
 class ShimHealthVerifier(Verifier):
     name = "worker-health"
     category = "runtime"

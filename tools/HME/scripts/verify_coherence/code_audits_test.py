@@ -11,12 +11,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class SilentFailureClassVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-silent-failure-class.py, which surfaces
     broad-except / catch-and-swallow sites that lack a `silent-ok:`
@@ -54,6 +68,7 @@ class SilentFailureClassVerifier(Verifier):
 
 
 
+@register
 class TestIsolationVerifier(Verifier):
     """Tests that exercise `runStopChain`, `dispatchEvent`, or `shellPolicy`
     spawn bash hooks that write to log/hme-errors.log via fail-loud
@@ -119,6 +134,7 @@ class TestIsolationVerifier(Verifier):
 
 
 
+@register
 class TestEnvUndefinedVerifier(Verifier):
     """In Node test files, `process.env.X = undefined` does NOT delete the
     var -- it sets the literal string 'undefined' (truthy). Later tests

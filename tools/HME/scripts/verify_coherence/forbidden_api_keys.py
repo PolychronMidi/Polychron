@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 
 from ._base import (
+    register,
     _PROJECT,
     Verifier,
     VerdictResult,
@@ -79,6 +80,7 @@ def _scannable(rel: Path) -> bool:
     return True
 
 
+@register
 class ForbiddenApiKeysVerifier(Verifier):
     """Fail if either forbidden API-key identifier appears in tracked content."""
 
@@ -86,7 +88,6 @@ class ForbiddenApiKeysVerifier(Verifier):
     category = "security"
     subtag = "regression-prevention"
     weight = 2.0
-    kind = "static"
 
     def run(self) -> VerdictResult:
         root = Path(_PROJECT)

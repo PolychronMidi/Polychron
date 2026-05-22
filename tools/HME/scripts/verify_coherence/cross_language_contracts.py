@@ -30,6 +30,7 @@ import re
 from pathlib import Path
 
 from ._base import (
+    register,
     _PROJECT,
     Verifier,
     VerdictResult,
@@ -216,6 +217,7 @@ def _check_schema_mirror(root: Path, entry: dict) -> list[str]:
     return issues
 
 
+@register
 class CrossLanguageContractsVerifier(Verifier):
     """Pin cross-language contracts so drift fails fast."""
 
@@ -223,7 +225,6 @@ class CrossLanguageContractsVerifier(Verifier):
     category = "code"
     subtag = "interface-contract"
     weight = 1.5
-    kind = "static"
 
     def run(self) -> VerdictResult:
         root = Path(_PROJECT)

@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class AntiForkHeuristicListVerifier(Verifier):
     """Heuristic lists tuned for false-positive bias (LIFESAVER severity
     words, fast-path-clean signals, fabrication-check phrases, exhaust_check

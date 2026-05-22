@@ -17,12 +17,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class HookCommandExistenceVerifier(Verifier):
     """Every hook command path declared in ~/.claude/settings.json
     must resolve to an existing, executable file. Typos in the hook path

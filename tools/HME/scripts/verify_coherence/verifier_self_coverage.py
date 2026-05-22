@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 
 from ._base import (
+    register,
     _PROJECT,
     Verifier,
     VerdictResult,
@@ -51,6 +52,7 @@ def _has_test(specs_dir: Path, module: str) -> bool:
     ).is_file()
 
 
+@register
 class VerifierSelfCoverageVerifier(Verifier):
     """Every verifier module needs a test spec or an explicit waiver entry."""
 
@@ -58,7 +60,6 @@ class VerifierSelfCoverageVerifier(Verifier):
     category = "code"
     subtag = "interface-contract"
     weight = 1.0
-    kind = "static"
 
     def run(self) -> VerdictResult:
         root = Path(_PROJECT)

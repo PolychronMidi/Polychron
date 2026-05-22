@@ -11,12 +11,26 @@ import time
 import hashlib
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class SettingsJsonVerifier(Verifier):
     """~/.claude/settings.json is the entry point for every Claude Code
     hook. A malformed JSON edit breaks hook dispatch entirely on next
@@ -93,6 +107,7 @@ class SettingsJsonVerifier(Verifier):
                        f"settings.json parses cleanly ({len(data.get('hooks', {}))} hook events declared)")
 
 
+@register
 class OAuthTokenExpiryVerifier(Verifier):
     """~/.claude/.credentials.json holds the Claude Code OAuth token
     that the proxy's auth injection uses for OVERDRIVE_MODE and any
@@ -165,6 +180,7 @@ class OAuthTokenExpiryVerifier(Verifier):
         return _result(PASS, 1.0, f"OAuth token valid for {remaining_h:.1f}h")
 
 
+@register
 class EnvTamperVerifier(Verifier):
     """Companion to EnvLoadVerifier. Compares the current .env contents
     against a stored SHA-256 checkpoint at .env.sha256. The first run
@@ -220,6 +236,7 @@ class EnvTamperVerifier(Verifier):
                         f"if intentional, `rm {sha_path}` and rerun to re-baseline"])
 
 
+@register
 class EnvLoadVerifier(Verifier):
     """The .env file at the project root is the single source of
     PROJECT_ROOT, METRICS_DIR, HME_PROXY_PORT, and every other *HME_*

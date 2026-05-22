@@ -10,9 +10,22 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
     telemetry_event_names,
 )
 from time_utils import activity_ts_seconds
@@ -24,6 +37,7 @@ from .code_audits_syntax import (  # noqa: F401
 # Verifier classes (extracted from code_audits.py).
 
 
+@register
 class CorePrinciplesAuditVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-core-principles.py, which surveys src/
     against the five core principles declared in doc/templates/AGENTS.md. FAILs only on
@@ -69,6 +83,7 @@ class CorePrinciplesAuditVerifier(Verifier):
 
 
 
+@register
 class HardcodedToolInvocationVerifier(Verifier):
     """Strings like `i/hme admin action=warm`, `i/status mode=hci-diff`,
     `i/evolve focus=design`, `i/review mode=forget`, `i/why mode=block`
@@ -149,6 +164,7 @@ class HardcodedToolInvocationVerifier(Verifier):
 
 
 
+@register
 class AgentLoopQualityVerifier(Verifier):
     """Scores recent agent-loop telemetry without treating fs-watcher noise as turns."""
     name = "agent-loop-quality"
@@ -239,6 +255,7 @@ class AgentLoopQualityVerifier(Verifier):
 
 
 
+@register
 class RepeatedCharSpamVerifier(Verifier):
     """No character may repeat 4+ times in a row in tracked text files --
     targets divider/box-decoration spam (runs of dashes, equals, hashes,
@@ -302,6 +319,7 @@ class RepeatedCharSpamVerifier(Verifier):
         )
 
 
+@register
 class MarkdownLinkIntegrityVerifier(Verifier):
     """All inline markdown links MUST resolve to an existing file or directory.
     Catches the cross-doc drift class that doc-rename and file-relocation
@@ -331,6 +349,7 @@ class MarkdownLinkIntegrityVerifier(Verifier):
         return _result(FAIL, score, f"{len(broken)} broken markdown link(s)", detail)
 
 
+@register
 class CommentBloatVerifier(Verifier):
     """Comment-block length discipline. doc/templates/AGENTS.md: "Inline comments
     single-line and terse. Elaboration goes in doc/." 3+ consecutive

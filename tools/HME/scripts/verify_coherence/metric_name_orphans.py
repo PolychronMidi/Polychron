@@ -25,6 +25,7 @@ import subprocess
 from pathlib import Path
 
 from ._base import (
+    register,
     _PROJECT,
     Verifier,
     VerdictResult,
@@ -68,6 +69,7 @@ def _writers(root: Path, literal: str) -> list[str]:
     return [h for h in hits if h not in DECLARATION_FILES]
 
 
+@register
 class MetricNameOrphansVerifier(Verifier):
     """Every metric-registry entry must have at least one non-declaration writer."""
 
@@ -75,7 +77,6 @@ class MetricNameOrphansVerifier(Verifier):
     category = "state"
     subtag = "drift-detection"
     weight = 1.0
-    kind = "static"
 
     def run(self) -> VerdictResult:
         root = Path(_PROJECT)

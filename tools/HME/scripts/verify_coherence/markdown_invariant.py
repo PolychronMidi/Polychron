@@ -30,6 +30,7 @@ import subprocess
 from pathlib import Path
 
 from ._base import (
+    register,
     _PROJECT,
     Verifier,
     VerdictResult,
@@ -201,6 +202,7 @@ def _readme_size(abs_path: Path) -> tuple[int, int]:
     return non_blank, len(raw)
 
 
+@register
 class MarkdownInvariantVerifier(Verifier):
     """Enforce the project-wide .md whitelist + concise-readme rule."""
 
@@ -208,7 +210,6 @@ class MarkdownInvariantVerifier(Verifier):
     category = "doc"
     subtag = "structural-integrity"
     weight = 1.5
-    kind = "static"
 
     def run(self) -> VerdictResult:
         root = Path(_PROJECT)

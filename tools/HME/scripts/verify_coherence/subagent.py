@@ -11,12 +11,26 @@ import time
 import urllib.request
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class SubagentModeVerifier(Verifier):
     """Checks that the public HME agent tool exposes only agent_local modes."""
     name = "subagent-mode-sync"
@@ -64,6 +78,7 @@ class SubagentModeVerifier(Verifier):
         )
 
 
+@register
 class SubagentPassthroughVerifier(Verifier):
     """The native Agent hook routes via team_agent_router, not local read-only stubs."""
     name = "subagent-router-type-tier"
@@ -100,6 +115,7 @@ class SubagentPassthroughVerifier(Verifier):
         )
 
 
+@register
 class SubagentGuardVerifier(Verifier):
     """Runs test 1 of the stress battery: the short-prompt guard.
 
@@ -165,6 +181,7 @@ class SubagentGuardVerifier(Verifier):
         )
 
 
+@register
 class SubagentBackendsVerifier(Verifier):
     """Verifies that agent_local.py's external dependencies are present.
 
@@ -245,6 +262,7 @@ class SubagentBackendsVerifier(Verifier):
         )
 
 
+@register
 class AgentJobContractVerifier(Verifier):
     """Codex/Claude/team agent launchers must share one filesystem contract."""
     name = "agent-job-contract"

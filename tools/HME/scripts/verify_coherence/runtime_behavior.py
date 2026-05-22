@@ -11,12 +11,26 @@ import time
 import threading
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class TransientErrorFilterVerifier(Verifier):
     """Ensures _log_error in hme_http_store.py uses SOURCE-based transient
     detection, not message-substring matching. The old detector looked for
@@ -75,6 +89,7 @@ class TransientErrorFilterVerifier(Verifier):
         return _result(PASS, 1.0, "_log_error uses source-based transient detection")
 
 
+@register
 class ServiceRegistryVerifier(Verifier):
     """Service URLs/heartbeats must derive from tools/HME/config/services.json."""
     name = "service-registry"
@@ -178,6 +193,7 @@ class ServiceRegistryVerifier(Verifier):
         return _result(PASS, 1.0, f"{len(services)} services registered; proxy bundle derives from services.json")
 
 
+@register
 class ExplicitListTrackingRuleVerifier(Verifier):
     """doc/templates/AGENTS.md must protect explicit user lists from silent todo collapse."""
     name = "explicit-list-tracking-rule"
@@ -202,6 +218,7 @@ class ExplicitListTrackingRuleVerifier(Verifier):
         return _result(PASS, 1.0, "doc/templates/AGENTS.md requires 1:1 tracking for explicit user lists")
 
 
+@register
 class ContextBudgetVerifier(Verifier):
     """H-compact optimization #13: verify that chain-link snapshots are
     being taken frequently enough relative to context consumption. Fails
@@ -266,6 +283,7 @@ class ContextBudgetVerifier(Verifier):
         return _result(WARN, 0.5, f"context {used}%, link age {link_age_s:.0f}s")
 
 
+@register
 class WarmContextFreshnessVerifier(Verifier):
     """H1: detect stale warm KV contexts and attempt auto-reprime.
 
@@ -374,6 +392,7 @@ def _trigger_warm_reprime() -> None:
     threading.Thread(target=_bg, daemon=True).start()
 
 
+@register
 class PlanOutputValidityVerifier(Verifier):
     """H4: validate that plans produced by agent_local --mode plan reference
     real files only. Plans live in $HME_AGENT_PLAN_DIR/hme-agent-*.md when

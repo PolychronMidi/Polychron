@@ -11,12 +11,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class ShellUndefinedVarsVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit_shell_undefined_vars.py, which statically
     scans tools/HME/hooks/**/*.sh for `$VAR` references that have no
@@ -61,6 +75,7 @@ class ShellUndefinedVarsVerifier(Verifier):
 
 
 
+@register
 class PythonSyntaxVerifier(Verifier):
     name = "python-syntax"
     category = "code"
@@ -90,6 +105,7 @@ class PythonSyntaxVerifier(Verifier):
 
 
 
+@register
 class ShellSyntaxVerifier(Verifier):
     name = "shell-syntax"
     category = "code"
@@ -161,6 +177,7 @@ _SPAM_EXTS = (
 
 
 
+@register
 class StalePathRenameVerifier(Verifier):
     """Catches stale references to renamed-but-still-cited paths across
     the entire repo. Surfaced after a `mcp/server -> service/server`

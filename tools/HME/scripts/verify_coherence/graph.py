@@ -9,13 +9,27 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS,
-    METRICS_DIR, PROJECT_METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
+    PROJECT_METRICS_DIR,
 )
 
 
+@register
 class FeedbackGraphVerifier(Verifier):
     """src/output/metrics/feedback_graph.json validates against src/scripts/pipeline/validate-feedback-graph.js"""
     name = "feedback-graph"
@@ -38,6 +52,7 @@ class FeedbackGraphVerifier(Verifier):
                        f"{len(loops)} loops + {len(ports)} firewall ports declared")
 
 
+@register
 class ReloadableModuleSyncVerifier(Verifier):
     """Every module in the reload registry actually exists."""
     name = "reloadable-sync"

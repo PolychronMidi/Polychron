@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class HookExecutabilityVerifier(Verifier):
     """Every non-helper hook script must be +x."""
     name = "hook-executability"
@@ -41,6 +55,7 @@ class HookExecutabilityVerifier(Verifier):
                        [f"chmod +x tools/HME/hooks/{name}" for name in broken])
 
 
+@register
 class DecoratorOrderVerifier(Verifier):
     """Every @chained tool must have @ctx.mcp.tool() OUTERMOST."""
     name = "decorator-order"
@@ -107,6 +122,7 @@ class DecoratorOrderVerifier(Verifier):
 # Verifiers -- STATE category
 
 
+@register
 class HookRegistrationVerifier(Verifier):
     """hooks.json must route every event through the portable event kernel."""
     name = "hook-registration"
@@ -169,6 +185,7 @@ class HookRegistrationVerifier(Verifier):
         return _result(FAIL, score, f"{len(issues)} hook registration issue(s)", issues[:12])
 
 
+@register
 class HookMatcherValidityVerifier(Verifier):
     """Post-MCP-decoupling surface check. Every `i/<tool>` wrapper in the
     project's `i/` directory must either (a) have a matching dispatch branch

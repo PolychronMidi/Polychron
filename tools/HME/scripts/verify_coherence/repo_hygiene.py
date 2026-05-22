@@ -5,9 +5,10 @@ import os
 import stat
 from pathlib import Path
 
-from ._base import Verifier, _result, PASS, FAIL, WARN, _PROJECT
+from ._base import Verifier, _result, PASS, FAIL, WARN, _PROJECT, register
 
 
+@register
 class CanonicalPrecommitHookVerifier(Verifier):
     name = "canonical-precommit-hook"
     category = "repo-hygiene"

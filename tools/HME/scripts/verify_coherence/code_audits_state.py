@@ -10,15 +10,29 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
     telemetry_event_names,
 )
 
 
 # State + lifecycle + integration verifiers.
 
+@register
 class StateFileOwnershipVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-state-file-ownership.py, which checks
     that every grep-detectable writer of a shared state file is declared
@@ -74,6 +88,7 @@ class StateFileOwnershipVerifier(Verifier):
 
 
 
+@register
 class ClaudeSettingsJsonVerifier(Verifier):
     """Validates ~/.claude/settings.json parses as JSON, every hook command
     path resolves, and Claude lifecycle/tool hooks route through the event
@@ -104,6 +119,7 @@ class ClaudeSettingsJsonVerifier(Verifier):
 
 
 
+@register
 class HumanDeferredAuditVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-human-deferred.py -- the human-side
     parallel of the agent-policing detector chain. Pattern surfaced by
@@ -150,6 +166,7 @@ class HumanDeferredAuditVerifier(Verifier):
 
 
 
+@register
 class ProxyMiddlewareRegistryVerifier(Verifier):
     """Every file in tools/HME/proxy/middleware/*.js must (a) carry the
     NN_ numeric prefix encoding load order, AND (b) not throw at require()
@@ -243,6 +260,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
                        issues[:10])
 
 
+@register
 class AdapterBoundaryRegistryVerifier(Verifier):
     """Bridge/shim/wrapper filenames must be real adapter/domain boundaries."""
     name = "adapter-boundary-registry"
@@ -296,6 +314,7 @@ class AdapterBoundaryRegistryVerifier(Verifier):
         return _result(PASS, 1.0, f"{len(entries)} adapter/domain boundary names declared; no compatibility registry remains")
 
 
+@register
 class ToolMetadataFactoryVerifier(Verifier):
     """HME server tools must register through the canonical metadata factory."""
     name = "tool-metadata-factory"
@@ -330,6 +349,7 @@ class ToolMetadataFactoryVerifier(Verifier):
         return _result(PASS, 1.0, "tool metadata factory feeds tool schemas and registry metadata")
 
 
+@register
 class GeneratedISurfaceVerifier(Verifier):
     """The public i/ command files must be generated from i_registry.json."""
     name = "generated-i-surface"
@@ -385,6 +405,7 @@ class GeneratedISurfaceVerifier(Verifier):
 
 
 
+@register
 class InterControllerCoherenceVerifier(Verifier):
     """Linfinfinf -- observes the observation apparatus. Delegates to
     tools/HME/scripts/audit-intercontroller-coherence.py which scans per-controller
@@ -422,6 +443,7 @@ class InterControllerCoherenceVerifier(Verifier):
 
 
 
+@register
 class ShellHookAuditVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-shell-hooks.py, which statically scans
     tools/HME/hooks/**/*.sh for cache-trap patterns -- most notably
@@ -463,6 +485,7 @@ class ShellHookAuditVerifier(Verifier):
 
 
 
+@register
 class ActivityEventsDocSyncVerifier(Verifier):
     """Telemetry events must stay registry-first.
 

@@ -9,9 +9,22 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
@@ -59,6 +72,7 @@ def _recent_interactive_latency_ms(limit: int = 20) -> float | None:
     return max(1.0, values[len(values) // 2])
 
 
+@register
 class HookLatencyVerifier(Verifier):
     """H3: flag hooks whose p95 wall-time exceeds a per-hook budget.
 
@@ -173,6 +187,7 @@ class HookLatencyVerifier(Verifier):
         )
 
 
+@register
 class GitCommitTestCoverageVerifier(Verifier):
     """H5: Check that recent 'fix'/'bug' commits add or modify a
     test/verifier in the same commit. Commits that claim fixes without a
@@ -235,6 +250,7 @@ class GitCommitTestCoverageVerifier(Verifier):
         )
 
 
+@register
 class ToolResponseLatencyVerifier(Verifier):
     """Baseline-relative latency verifier.
 

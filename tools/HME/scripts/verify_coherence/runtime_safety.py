@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class LifesaverIntegrityVerifier(Verifier):
     """Enforce the LIFESAVER no-dilution rule at the code level.
 
@@ -101,6 +115,7 @@ class LifesaverIntegrityVerifier(Verifier):
         )
 
 
+@register
 class LifesaverHeartbeatVerifier(Verifier):
     name = "lifesaver-heartbeat"
     category = "runtime"
@@ -127,6 +142,7 @@ class LifesaverHeartbeatVerifier(Verifier):
         return _result(PASS, 1.0, f"lifesaver heartbeat fresh ({age:.0f}s)")
 
 
+@register
 class TrajectoryTrendVerifier(Verifier):
     """Reads metrics/hme-trajectory.json and scores the HCI trend direction.
     A prolonged downward trend or a predicted drift below threshold 80 is a

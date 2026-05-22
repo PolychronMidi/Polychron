@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class DocDriftVerifier(Verifier):
     name = "doc-drift"
     category = "doc"
@@ -43,6 +57,7 @@ class DocDriftVerifier(Verifier):
                        out.splitlines()[:30])
 
 
+@register
 class NumericClaimDriftVerifier(Verifier):
     """Markdown docs that state specific counts (e.g. `19 hypermeta
     controllers`, `12 CIM dials`, `38 verifiers`) must match the live
@@ -77,6 +92,7 @@ class NumericClaimDriftVerifier(Verifier):
                        examples)
 
 
+@register
 class DocCoreLayoutVerifier(Verifier):
     """Core orientation docs must keep the progressive-layout contract."""
     name = "doc-core-layout"
@@ -110,6 +126,7 @@ class DocCoreLayoutVerifier(Verifier):
         return _result(PASS, 1.0, "core docs use README + doc/templates/AGENTS + concise/full doc layout")
 
 
+@register
 class DocstringPresenceVerifier(Verifier):
     """Every @ctx.mcp.tool() function has a non-empty docstring."""
     name = "tool-docstrings"

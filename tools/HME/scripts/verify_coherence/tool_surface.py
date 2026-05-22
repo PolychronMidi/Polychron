@@ -6,12 +6,21 @@ import os
 import re
 
 from ._base import (
-    Verifier, VerdictResult, _result,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _SERVER_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _SERVER_DIR,
 )
 
 
+@register
 class ToolSurfaceCoverageVerifier(Verifier):
     """Every public @ctx.mcp.tool() function appears in either templates/ONBOARDING.md
     or self-coherence.md. Hidden tools don't need to be documented."""
@@ -76,6 +85,7 @@ class ToolSurfaceCoverageVerifier(Verifier):
 # Verifiers -- RUNTIME category
 
 
+@register
 class TodoMergeHookConsistencyVerifier(Verifier):
     """The native TodoWrite hook should merge updatedInput without blocking."""
     name = "todowrite-hook-nonblock"

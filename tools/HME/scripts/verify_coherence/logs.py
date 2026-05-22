@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class LogSizeVerifier(Verifier):
     """The key HME logs (hme-proxy.out, hme-errors.log,
     hme-proxy-lifecycle.log, hme-activity.jsonl) are all append-only
@@ -74,6 +88,7 @@ class LogSizeVerifier(Verifier):
         return _result(PASS, 1.0, "all watched logs under 50 MB")
 
 
+@register
 class ErrorLogVerifier(Verifier):
     """Open LIFESAVER errors should be zero or very few."""
     name = "error-log"
@@ -113,6 +128,7 @@ class ErrorLogVerifier(Verifier):
 # Verifiers -- TOPOLOGY category
 
 
+@register
 class LifesaverRateVerifier(Verifier):
     """Scores LIFESAVER rate using multi-window recency:
         acute  (last 1h):  strongest signal of current problem
@@ -159,6 +175,7 @@ class LifesaverRateVerifier(Verifier):
         return _result(PASS, score, summary + " (no acute activity)")
 
 
+@register
 class PipelineBgScriptHealthVerifier(Verifier):
     """Surfaces silent failures from main-pipeline.js's bg-spawn analytics.
 

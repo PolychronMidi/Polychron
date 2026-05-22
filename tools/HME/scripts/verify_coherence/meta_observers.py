@@ -9,12 +9,26 @@ import sys
 import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
-    PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    register,
+    Verifier,
+    VerdictResult,
+    _result,
+    _run_subprocess,
+    PASS,
+    WARN,
+    FAIL,
+    SKIP,
+    ERROR,
+    _PROJECT,
+    _HOOKS_DIR,
+    _SERVER_DIR,
+    _SCRIPTS_DIR,
+    _DOC_DIRS,
+    METRICS_DIR,
 )
 
 
+@register
 class MetaObserverCoherenceVerifier(Verifier):
     """Scores meta-observer L14 alerts using the ACUTE (1h) window. Historical
     alerts in the 6h and 24h windows contribute weakly -- the focus is on
@@ -60,6 +74,7 @@ class MetaObserverCoherenceVerifier(Verifier):
         return _result(PASS, score, summary)
 
 
+@register
 class MemeticDriftVerifier(Verifier):
     """H16 consumer: reads metrics/hme-memetic-drift.json and flags rules
     with elevated violation counts. Low weight because the signal is noisy
@@ -93,6 +108,7 @@ class MemeticDriftVerifier(Verifier):
         return _result(PASS, 1.0, f"{total} violations across {len(violations)} tracked rules (none severe)")
 
 
+@register
 class PredictiveHCIVerifier(Verifier):
     """H9: consumes metrics/hme-hci-forecast.json (produced by predict-hci.py)
     and scores based on predicted drift. This is the forward-looking layer --
