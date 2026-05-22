@@ -5,6 +5,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const { sessionKey, PROJECT_ROOT } = require('../../proxy/shared');
 const { stripStaleToolResults } = require('../../proxy/conversation_graph');
