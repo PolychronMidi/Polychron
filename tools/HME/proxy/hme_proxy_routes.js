@@ -73,9 +73,10 @@ function createProxyRouteDispatcher({
       const supervisor = statusFn();
       const verdict = healthVerdict(supervisor, PROXY_GIT_SHA);
       const readyOnly = url === '/ready';
-      json(clientRes, readyOnly ? 200 : verdict.httpStatus, {
-        status: readyOnly ? 'ready' : verdict.status,
-        ok: readyOnly ? true : verdict.ok,
+      const readyOk = !verdict.runtime_stale;
+      json(clientRes, readyOnly ? (readyOk ? 200 : 503) : verdict.httpStatus, {
+        status: readyOnly ? (readyOk ? 'ready' : 'stale') : verdict.status,
+        ok: readyOnly ? readyOk : verdict.ok,
         listener_ready: true,
         port: PORT,
         version: PROXY_VERSION,
