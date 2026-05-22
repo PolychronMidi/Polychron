@@ -310,6 +310,18 @@ test('work_checks: stop-hook JSON block echoes do not create unfinished-task deb
     assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
   }));
 
+test('work_checks: proxy log JSON content echo does not create unfinished-task debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'finish the work' } },
+      { type: 'user', message: { content: 'Open task evidence:\n  1. "content": "loaded middleware: strip_skill_reminder, shortcuts_rewriter, replace_system, thinking_rewrite, filter_tools, compact_tool_descriptions"' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Continuing.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
 test('work_checks: unfinished tasks still block the nothing-missed round-2 skip',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
