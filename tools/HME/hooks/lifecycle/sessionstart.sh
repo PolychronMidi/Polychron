@@ -41,6 +41,16 @@ _hme_bg_timeout 30 verify-coherence-registry "$PROJECT/log/hme-bg-verify-coheren
 
 _signal_emit session_start sessionstart session '{}'
 
+# Subagent fast-path: ephemeral `claude -p` runs spawned with HME_SUBAGENT=1
+# only need the essential safety + state reset above. The orientation message,
+# holograph snapshot, HCI trajectory summary, todo/lance/learning surface, and
+# fork-watchdog scans are all parent-session UX that costs ~10-15s of Python
+# imports per spawn while the subagent's stderr is captured and discarded. Skip
+# all of it. Stop chain still gets the subagent escape via lifecycle_payload.
+if [ "${HME_SUBAGENT:-0}" = "1" ]; then
+  exit 0
+fi
+
 # Initialize onboarding state machine -- every new session re-arms the walkthrough
 source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
