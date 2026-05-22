@@ -32,6 +32,22 @@ if [ -f "$ERROR_LOG" ]; then
   _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|hook-stop-block|hook-runtime-error|hook-ui-echo-leak|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+|HCI trajectory)\]'
   _STATUS_LINE_RE='^(Onboarding:|Pipeline:|Last commit:|Carried-over HME todos|substrate:|[[:space:]]*\[[[:space:]]?\][[:space:]]*#[0-9]+|[[:space:]]*->[[:space:]]*\[arc_v_blindspot\])'
   _CANARY_RE='\[CANARY-'
+  _hme_stale_runtime_resolved_or_grace() {
+    local head live marker first marker_head now grace
+    head=$(git -C "$PROJECT" rev-parse --short HEAD 2>/dev/null || true)
+    live=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("git_sha") or "")' "$PROJECT/tools/HME/runtime/proxy-runtime.json" 2>/dev/null || true)
+    [ -n "$head" ] && [ -n "$live" ] && [ "$head" = "$live" ] && return 0
+    marker="$PROJECT/tools/HME/runtime/post-commit-stale-runtime.json"
+    [ -f "$marker" ] || return 1
+    first=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("first_seen_epoch") or "")' "$marker" 2>/dev/null || true)
+    marker_head=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("head_sha") or "")' "$marker" 2>/dev/null || true)
+    case "$first" in ''|*[!0-9]*) return 1 ;; esac
+    [ -n "$head" ] && [ -n "$marker_head" ] && [ "$head" != "$marker_head" ] && return 1
+    now=$(date +%s)
+    grace="${HME_POST_COMMIT_STALE_GRACE_SEC:-120}"
+    case "$grace" in ''|*[!0-9]*) grace=120 ;; esac
+    [ $((now - first)) -lt "$grace" ]
+  }
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
     # CANARY markers: consume silently; they're alert-chain self-tests
