@@ -304,11 +304,14 @@ def main() -> int:
     _closing_items = len(_LIST_ITEM_RE.findall(raw_text[_cutoff:]))
     if _closing_items >= _STRUCTURAL_ENUMERATION_THRESHOLD and not _has_tool_call_after_last_text(events):
         _user_text_struct = _last_user_text(events)
-        if not _is_research_evaluation_request(_user_text_struct):
+        if _is_completed_evidence_summary(raw_text):
+            _emit_stats("ok", f"structural_enumeration items={_closing_items} but completion-evidence summary applies")
+        elif not _is_research_evaluation_request(_user_text_struct):
             _emit_stats("exhaust_violation", f"structural_enumeration items={_closing_items} threshold={_STRUCTURAL_ENUMERATION_THRESHOLD}")
             print("exhaust_violation")
             return 0
-        _emit_stats("ok", f"structural_enumeration items={_closing_items} but research-eval exemption applies")
+        else:
+            _emit_stats("ok", f"structural_enumeration items={_closing_items} but research-eval exemption applies")
 
     # Substantive-work rescue is narrow: hot-reload narration only.
     n_work = _substantive_work_count(events)
