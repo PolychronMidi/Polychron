@@ -19,10 +19,12 @@ const { sessionKey } = require('./shared');
 const {
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
-const { buildJurisdictionContext } = require('./context');
-const { scanMessages } = require('./messages');
+const {
+  buildJurisdictionContext,
+  scanMessages,
+} = require('./contexts/request_mutation');
 const { servicePort } = require('./service_registry');
-const { emitStartMarker } = require('./start_marker');
+const { emitStartMarker } = require('./contexts/lifecycle_bridge');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createContextBudget } = require('./hme_proxy_context_budget');
 const { createOpusGate } = require('./hme_proxy_opus_gate');
@@ -69,7 +71,7 @@ let loadedMiddleware = null;
 let handleRequest = null;
 function getHandleRequest() {
   if (handleRequest) return handleRequest;
-  const middleware = require('./middleware/index');
+  const { middleware } = require('./contexts/request_mutation');
   const { createClaudeHandler } = require('./hme_proxy_claude');
   loadedMiddleware = middleware.loadAll();
   if (process.env.HME_PROXY_QUIET_IMPORT !== '1') console.log(`loaded middleware: ${loadedMiddleware.join(', ')}`);
