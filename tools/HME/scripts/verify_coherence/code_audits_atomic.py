@@ -11,22 +11,25 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -61,9 +64,7 @@ class AtomicStateWritesVerifier(Verifier):
         except Exception:
             patterns = []
         if not patterns:
-            return _result(SKIP, 1.0,
-                           "no atomic_write_path_patterns configured",
-                           [rules_path])
+            return skipped(summary="no atomic_write_path_patterns configured", details=[rules_path])
         compiled = [re.compile(p) for p in patterns]
         violations = []
         scanned = 0
@@ -166,13 +167,10 @@ class AtomicStateWritesVerifier(Verifier):
                     except OSError:
                         continue
         if not violations:
-            return _result(PASS, 1.0,
-                           f"{scanned} Python file(s) + shell scripts scanned; "
+            return passed(summary=f"{scanned} Python file(s) + shell scripts scanned; "
                            f"no naked state-file writes")
         score = max(0.0, 1.0 - len(violations) * 0.2)
-        return _result(FAIL, score,
-                       f"{len(violations)} non-atomic state-file write(s)",
-                       violations[:10])
+        return failed(score=score, summary=f"{len(violations)} non-atomic state-file write(s)", details=violations[:10])
 
 
 

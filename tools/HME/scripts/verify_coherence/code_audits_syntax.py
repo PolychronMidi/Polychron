@@ -11,22 +11,26 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -49,12 +53,12 @@ class ShellUndefinedVarsVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit_shell_undefined_vars.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         count = payload.get("violation_count", 0)
         files_scanned = payload.get("files_scanned", 0)
         detail = []
@@ -64,13 +68,11 @@ class ShellUndefinedVarsVerifier(Verifier):
                     f"{fileinfo['file']}:{finding['line']} ${finding['var']} -- {finding['snippet'][:100]}"
                 )
         if count == 0:
-            return _result(PASS, 1.0, f"no undefined-variable references across {files_scanned} hook(s)")
+            return passed(summary=f"no undefined-variable references across {files_scanned} hook(s)")
         # Each undefined ref drops score by 0.25; floor at 0. Any violation
         # is FAIL -- even a single one can silently kill an entire hook chain.
         score = max(0.0, 1.0 - 0.25 * count)
-        return _result(FAIL, score,
-                       f"{count} undefined-variable reference(s) -- silent set-u crash risk",
-                       detail[:20])
+        return failed(score=score, summary=f"{count} undefined-variable reference(s) -- silent set-u crash risk", details=detail[:20])
 
 
 
@@ -98,9 +100,9 @@ class PythonSyntaxVerifier(Verifier):
                 except SyntaxError as e:
                     broken.append(f"{os.path.relpath(path, _PROJECT)}:{e.lineno}: {e.msg}")
         if not broken:
-            return _result(PASS, 1.0, f"{total}/{total} Python files parse")
+            return passed(summary=f"{total}/{total} Python files parse")
         score = 1.0 - len(broken) / total
-        return _result(FAIL, score, f"{len(broken)}/{total} Python files broken", broken)
+        return failed(score=score, summary=f"{len(broken)}/{total} Python files broken", details=broken)
 
 
 
@@ -124,9 +126,9 @@ class ShellSyntaxVerifier(Verifier):
             if rc.returncode != 0:
                 broken.append(f"{f}: {rc.stderr.strip()[:100]}")
         if not broken:
-            return _result(PASS, 1.0, f"{total}/{total} shell hooks parse")
+            return passed(summary=f"{total}/{total} shell hooks parse")
         score = 1.0 - len(broken) / total
-        return _result(FAIL, score, f"{len(broken)}/{total} shell hooks broken", broken)
+        return failed(score=score, summary=f"{len(broken)}/{total} shell hooks broken", details=broken)
 
 
 # rationale: ban 4+ repeated decoration chars without false-positiving on code
@@ -207,7 +209,7 @@ class StalePathRenameVerifier(Verifier):
         except Exception:
             patterns = []
         if not patterns:
-            return _result(SKIP, 1.0, "no stale_path_patterns configured")
+            return skipped(summary="no stale_path_patterns configured")
 
         compiled = []
         for entry in patterns:
@@ -253,10 +255,7 @@ class StalePathRenameVerifier(Verifier):
                     except OSError:
                         continue
         if not violations:
-            return _result(PASS, 1.0,
-                           f"{scanned} file(s) scanned; no stale path references")
+            return passed(summary=f"{scanned} file(s) scanned; no stale path references")
         score = max(0.0, 1.0 - len(violations) * 0.1)
-        return _result(FAIL, score,
-                       f"{len(violations)} stale path reference(s)",
-                       violations[:10])
+        return failed(score=score, summary=f"{len(violations)} stale path reference(s)", details=violations[:10])
 

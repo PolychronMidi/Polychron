@@ -9,22 +9,27 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -77,7 +82,7 @@ class LifesaverIntegrityVerifier(Verifier):
                 with open(path) as f:
                     src = f.read()
             except Exception as e:
-                return _result(ERROR, 0.0, f"read error on {path}: {e}")
+                return errored(summary=f"read error on {path}: {e}")
             # Find every call to register_critical_failure and check the
             # surrounding 5 lines for gating patterns
             lines = src.splitlines()
@@ -103,16 +108,11 @@ class LifesaverIntegrityVerifier(Verifier):
                             )
                             break
         if not violations:
-            return _result(PASS, 1.0,
-                           "LIFESAVER fire paths are ungated (no cooldown/dampening detected)")
-        return _result(
-            FAIL, 0.0,
-            f"{len(violations)} LIFESAVER gating pattern(s) found -- CRITICAL: signal dilution subversion",
-            violations + [
+            return passed(summary="LIFESAVER fire paths are ungated (no cooldown/dampening detected)")
+        return failed(summary=f"{len(violations)} LIFESAVER gating pattern(s) found -- CRITICAL: signal dilution subversion", details=violations + [
                 "RULE: LIFESAVER must fire for every real occurrence. Dampening hides pain from the agent.",
                 "If alert is 'false positive', fix the detector at life-critical urgency -- do NOT silence it.",
-            ],
-        )
+            ])
 
 
 @register
@@ -128,18 +128,10 @@ class LifesaverHeartbeatVerifier(Verifier):
         try:
             age = time.time() - os.path.getmtime(heartbeat)
         except OSError:
-            return _result(
-                FAIL, 0.0,
-                "lifesaver heartbeat missing",
-                ["run a real Claude/Codex request through the proxy; hook/proxy lifesaver route must update tools/HME/runtime/heartbeat-lifesaver.ts"],
-            )
+            return failed(summary="lifesaver heartbeat missing", details=["run a real Claude/Codex request through the proxy; hook/proxy lifesaver route must update tools/HME/runtime/heartbeat-lifesaver.ts"])
         if age > max_age:
-            return _result(
-                FAIL, 0.0,
-                f"lifesaver heartbeat stale ({age/3600:.1f}h > {max_age/3600:.1f}h)",
-                ["Stop hooks or proxy lifesaver injection are not reaching the canonical lifesaver route"],
-            )
-        return _result(PASS, 1.0, f"lifesaver heartbeat fresh ({age:.0f}s)")
+            return failed(summary=f"lifesaver heartbeat stale ({age/3600:.1f}h > {max_age/3600:.1f}h)", details=["Stop hooks or proxy lifesaver injection are not reaching the canonical lifesaver route"])
+        return passed(summary=f"lifesaver heartbeat fresh ({age:.0f}s)")
 
 
 @register
@@ -155,19 +147,19 @@ class TrajectoryTrendVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-trajectory.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no trajectory data -- run analyze-hci-trajectory.py")
+            return skipped(summary="no trajectory data -- run analyze-hci-trajectory.py")
         try:
             with open(data_path) as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         # Explicit None check -- a missing key is SKIP (insufficient
         # history), not silently treated as 0 < 2 = True.
         holo_count = data.get("holograph_count")
         if holo_count is None:
-            return _result(SKIP, 1.0, "trajectory data missing holograph_count field")
+            return skipped(summary="trajectory data missing holograph_count field")
         if holo_count < 2:
-            return _result(SKIP, 1.0, "need 2+ holographs for trend analysis")
+            return skipped(summary="need 2+ holographs for trend analysis")
         trend = data.get("trend", {})
         pred = data.get("prediction") or {}
         direction = trend.get("direction", "flat")
@@ -176,20 +168,9 @@ class TrajectoryTrendVerifier(Verifier):
 
         # Predicted drop below 80 is a hard fail
         if pred.get("warning"):
-            return _result(
-                FAIL, 0.4,
-                f"trajectory warning: {pred.get('warning')}",
-                [f"current={current:.1f}", f"predicted={pred.get('next_hci_predicted', '?')}"],
-            )
+            return failed(score=0.4, summary=f"trajectory warning: {pred.get('warning')}", details=[f"current={current:.1f}", f"predicted={pred.get('next_hci_predicted', '?')}"])
         if direction == "down" and abs(slope) > 1.0:
-            return _result(
-                WARN, 0.7,
-                f"HCI declining at {slope:.2f}/day",
-                ["downward trend >1 point/day"],
-            )
+            return warned(score=0.7, summary=f"HCI declining at {slope:.2f}/day", details=["downward trend >1 point/day"])
         if direction == "down":
-            return _result(
-                PASS, 0.9,
-                f"HCI flat-ish downward ({slope:.2f}/day) -- monitor",
-            )
-        return _result(PASS, 1.0, f"HCI trend {direction} ({slope:+.2f}/day)")
+            return passed(score=0.9, summary=f"HCI flat-ish downward ({slope:.2f}/day) -- monitor")
+        return passed(summary=f"HCI trend {direction} ({slope:+.2f}/day)")

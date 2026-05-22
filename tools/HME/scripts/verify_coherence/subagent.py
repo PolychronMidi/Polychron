@@ -11,22 +11,27 @@ import time
 import urllib.request
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -42,40 +47,32 @@ class SubagentModeVerifier(Verifier):
         agent_py = os.path.join(_PROJECT, "tools", "HME", "service", "agent_local", "research.py")
         tool_py = os.path.join(_SERVER_DIR, "tools_analysis", "agent_unified.py")
         if not os.path.isfile(agent_py) or not os.path.isfile(tool_py):
-            return _result(SKIP, 1.0, "agent_local or HME agent tool missing")
+            return skipped(summary="agent_local or HME agent tool missing")
         try:
             with open(agent_py) as f:
                 src = f.read()
             m = re.search(r'_MODE_CONFIGS\s*=\s*\{(.*?)^\}', src, re.DOTALL | re.MULTILINE)
             if not m:
-                return _result(FAIL, 0.0, "could not find _MODE_CONFIGS in agent_local/research.py")
+                return failed(summary="could not find _MODE_CONFIGS in agent_local/research.py")
             declared_modes = set(re.findall(r'"(\w+)"\s*:\s*\{', m.group(1)))
         except Exception as e:
-            return _result(ERROR, 0.0, f"parse error on agent_local/research.py: {e}")
+            return errored(summary=f"parse error on agent_local/research.py: {e}")
         try:
             with open(tool_py) as f:
                 tool_src = f.read()
             m = re.search(r'if\s+mode\s+not\s+in\s+\((.*?)\):', tool_src, re.DOTALL)
             if not m:
-                return _result(FAIL, 0.0, "could not find mode allowlist in agent_unified.py")
+                return failed(summary="could not find mode allowlist in agent_unified.py")
             routed = set(re.findall(r'"(\w+)"|\'(\w+)\'', m.group(1)))
             routed = {a or b for a, b in routed}
         except Exception as e:
-            return _result(ERROR, 0.0, f"parse error on HME agent tool: {e}")
+            return errored(summary=f"parse error on HME agent tool: {e}")
 
         missing = routed - declared_modes
         extra = declared_modes - routed
         if missing:
-            return _result(
-                FAIL, 0.0,
-                f"HME agent tool exposes modes missing from agent_local: {sorted(missing)}",
-                [f"declared: {sorted(declared_modes)}", f"routed: {sorted(routed)}"],
-            )
-        return _result(
-            PASS, 1.0,
-            f"HME agent tool exposes {sorted(routed)} -> agent_local declares {sorted(declared_modes)}",
-            [f"unused mode configs: {sorted(extra)}"] if extra else [],
-        )
+            return failed(summary=f"HME agent tool exposes modes missing from agent_local: {sorted(missing)}", details=[f"declared: {sorted(declared_modes)}", f"routed: {sorted(routed)}"])
+        return passed(summary=f"HME agent tool exposes {sorted(routed)} -> agent_local declares {sorted(declared_modes)}", details=[f"unused mode configs: {sorted(extra)}"] if extra else [])
 
 
 @register
@@ -91,28 +88,21 @@ class SubagentPassthroughVerifier(Verifier):
     def run(self) -> VerdictResult:
         router_py = os.path.join(_SCRIPTS_DIR, "team_agent_router.py")
         if not os.path.isfile(router_py):
-            return _result(SKIP, 1.0, "team_agent_router.py missing")
+            return skipped(summary="team_agent_router.py missing")
         try:
             with open(router_py) as f:
                 src = f.read()
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         m = re.search(r'TYPE_TIER\s*:\s*dict\[str,\s*str\]\s*=\s*\{(.*?)^\}', src, re.DOTALL | re.MULTILINE)
         if not m:
-            return _result(FAIL, 0.0, "could not find TYPE_TIER in team_agent_router.py")
+            return failed(summary="could not find TYPE_TIER in team_agent_router.py")
         pairs = dict(re.findall(r'"([^"]+)"\s*:\s*"(E[1-5])"', m.group(1)))
         missing = [name for name in self._REQUIRED_TYPES if name not in pairs]
         invalid = [f"{name}={tier}" for name, tier in pairs.items() if not re.fullmatch(r"E[1-5]", tier)]
         if missing or invalid:
-            return _result(
-                FAIL, 0.0,
-                "team_agent_router TYPE_TIER is missing required native Agent type coverage",
-                [f"missing: {missing}", f"invalid: {invalid}", f"known: {sorted(pairs)}"],
-            )
-        return _result(
-            PASS, 1.0,
-            f"team_agent_router maps native Agent types: {sorted(pairs.items())}",
-        )
+            return failed(summary="team_agent_router TYPE_TIER is missing required native Agent type coverage", details=[f"missing: {missing}", f"invalid: {invalid}", f"known: {sorted(pairs)}"])
+        return passed(summary=f"team_agent_router maps native Agent types: {sorted(pairs.items())}")
 
 
 @register
@@ -132,11 +122,11 @@ class SubagentGuardVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_SCRIPTS_DIR, "stress-test-subagent.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "stress-test script not found")
+            return skipped(summary="stress-test script not found")
         service_root = os.path.join(_PROJECT, "tools", "HME", "service")
         agent_pkg = os.path.join(service_root, "agent_local", "__main__.py")
         if not os.path.isfile(agent_pkg):
-            return _result(FAIL, 0.0, "agent_local package entry point not found")
+            return failed(summary="agent_local package entry point not found")
         env = {**os.environ, "PROJECT_ROOT": _PROJECT}
         old_pythonpath = env.get("PYTHONPATH", "")
         env["PYTHONPATH"] = service_root if not old_pythonpath else f"{service_root}:{old_pythonpath}"
@@ -148,16 +138,15 @@ class SubagentGuardVerifier(Verifier):
                 env=env,
             )
             if not probe.stdout.strip():
-                return _result(FAIL, 0.0, "agent_local returned empty for short-prompt guard")
+                return failed(summary="agent_local returned empty for short-prompt guard")
             parsed = json.loads(probe.stdout)
             answer = (parsed.get("answer") or "").lower()
             if "declined" not in answer or "short" not in answer:
-                return _result(FAIL, 0.0, "agent_local short-prompt guard returned wrong payload",
-                               [probe.stdout[:300]])
+                return failed(summary="agent_local short-prompt guard returned wrong payload", details=[probe.stdout[:300]])
         except subprocess.TimeoutExpired:
-            return _result(FAIL, 0.0, "agent_local short-prompt guard timed out")
+            return failed(summary="agent_local short-prompt guard timed out")
         except Exception as e:
-            return _result(FAIL, 0.0, f"agent_local guard probe failed: {e}")
+            return failed(summary=f"agent_local guard probe failed: {e}")
         try:
             rc = subprocess.run(
                 ["python3", script, "--only", "1"],
@@ -165,20 +154,12 @@ class SubagentGuardVerifier(Verifier):
                 env=env,
             )
         except subprocess.TimeoutExpired:
-            return _result(
-                FAIL, 0.0,
-                "short-prompt guard didn't fire in 15s -- agent_local may be missing the early-exit",
-                ["regression: len<3 or words<2 prompts must return immediately"],
-            )
+            return failed(summary="short-prompt guard didn't fire in 15s -- agent_local may be missing the early-exit", details=["regression: len<3 or words<2 prompts must return immediately"])
         except Exception as e:
-            return _result(ERROR, 0.0, f"stress test invocation failed: {e}")
+            return errored(summary=f"stress test invocation failed: {e}")
         if rc.returncode == 0:
-            return _result(PASS, 1.0, "short-prompt guard fires correctly (<1s)")
-        return _result(
-            FAIL, 0.5,
-            "short-prompt guard did not pass",
-            rc.stdout.splitlines()[-5:],
-        )
+            return passed(summary="short-prompt guard fires correctly (<1s)")
+        return failed(score=0.5, summary="short-prompt guard did not pass", details=rc.stdout.splitlines()[-5:])
 
 
 @register
@@ -248,18 +229,10 @@ class SubagentBackendsVerifier(Verifier):
         details = [f"{k}={v or 'MISSING'}" for k, v in backends.items()]
 
         if not missing:
-            return _result(PASS, 1.0, "all subagent backends available", details)
+            return passed(summary="all subagent backends available", details=details)
         if "grep" in missing:
-            return _result(
-                FAIL, score,
-                f"subagent grep backend missing -- agent will silently fail every search",
-                details + ["install ripgrep or ensure GNU grep is on PATH"],
-            )
-        return _result(
-            WARN, score,
-            f"{len(missing)} subagent backend(s) missing: {', '.join(missing)}",
-            details,
-        )
+            return failed(score=score, summary=f"subagent grep backend missing -- agent will silently fail every search", details=details + ["install ripgrep or ensure GNU grep is on PATH"])
+        return warned(score=score, summary=f"{len(missing)} subagent backend(s) missing: {', '.join(missing)}", details=details)
 
 
 @register
@@ -275,7 +248,7 @@ class AgentJobContractVerifier(Verifier):
         wrapper = os.path.join(_SCRIPTS_DIR, "codex-agent-job.py")
         missing = [p for p in (helper, wrapper) if not os.path.isfile(p)]
         if missing:
-            return _result(FAIL, 0.0, "agent job contract file(s) missing", missing)
+            return failed(summary="agent job contract file(s) missing", details=missing)
         try:
             rc = subprocess.run(
                 [sys.executable, "-m", "py_compile", helper, wrapper],
@@ -285,18 +258,14 @@ class AgentJobContractVerifier(Verifier):
                 env={**os.environ, "PROJECT_ROOT": _PROJECT},
             )
         except Exception as e:
-            return _result(ERROR, 0.0, f"py_compile invocation failed: {e}")
+            return errored(summary=f"py_compile invocation failed: {e}")
         if rc.returncode != 0:
-            return _result(
-                FAIL, 0.0,
-                "agent job contract does not compile",
-                (rc.stderr or rc.stdout).splitlines()[-10:],
-            )
+            return failed(summary="agent job contract does not compile", details=(rc.stderr or rc.stdout).splitlines()[-10:])
         try:
             with open(helper) as f:
                 src = f.read()
         except OSError as e:
-            return _result(ERROR, 0.0, f"agent_jobs.py unreadable: {e}")
+            return errored(summary=f"agent_jobs.py unreadable: {e}")
         required = [
             'tools" / "HME" / "runtime" / "agent-jobs',
             "request.json",
@@ -309,5 +278,5 @@ class AgentJobContractVerifier(Verifier):
         ]
         gaps = [needle for needle in required if needle not in src]
         if gaps:
-            return _result(FAIL, 0.0, "agent job contract missing required paths/helpers", gaps)
-        return _result(PASS, 1.0, "agent job contract present, compile-clean, and file-backed")
+            return failed(summary="agent job contract missing required paths/helpers", details=gaps)
+        return passed(summary="agent job contract present, compile-clean, and file-backed")

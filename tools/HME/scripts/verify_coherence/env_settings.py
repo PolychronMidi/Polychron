@@ -11,22 +11,27 @@ import time
 import hashlib
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -54,23 +59,20 @@ class SettingsJsonVerifier(Verifier):
     def run(self) -> VerdictResult:
         path = os.path.expanduser("~/.claude/settings.json")
         if not os.path.isfile(path):
-            return _result(SKIP, 1.0, "no ~/.claude/settings.json")
+            return skipped(summary="no ~/.claude/settings.json")
         try:
             with open(path) as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
-            return _result(FAIL, 0.0,
-                           f"settings.json is MALFORMED JSON: {e}",
-                           [f"path: {path}",
+            return failed(summary=f"settings.json is MALFORMED JSON: {e}", details=[f"path: {path}",
                             "every hook is silently disabled on next session start"])
         except OSError as e:
-            return _result(ERROR, 0.0, f"settings.json unreadable: {e}")
+            return errored(summary=f"settings.json unreadable: {e}")
 
         issues = []
 
         if not isinstance(data, dict):
-            return _result(FAIL, 0.0,
-                           f"settings.json root is {type(data).__name__}, expected object")
+            return failed(summary=f"settings.json root is {type(data).__name__}, expected object")
 
         hooks = data.get("hooks")
         if hooks is None:
@@ -100,11 +102,8 @@ class SettingsJsonVerifier(Verifier):
                         issues.append(f"hooks[{event!r}][{i}].hooks is {type(ghooks).__name__}, expected list")
 
         if issues:
-            return _result(FAIL, 0.0,
-                           f"{len(issues)} settings.json issue(s)",
-                           issues)
-        return _result(PASS, 1.0,
-                       f"settings.json parses cleanly ({len(data.get('hooks', {}))} hook events declared)")
+            return failed(summary=f"{len(issues)} settings.json issue(s)", details=issues)
+        return passed(summary=f"settings.json parses cleanly ({len(data.get('hooks', {}))} hook events declared)")
 
 
 @register
@@ -148,36 +147,28 @@ class OAuthTokenExpiryVerifier(Verifier):
             except OSError:
                 overdrive_mode = ""
         if overdrive_mode == "1":
-            return _result(PASS, 1.0,
-                           f"OVERDRIVE_MODE={overdrive_mode} is Anthropic-free; OAuth token freshness is not gating")
+            return passed(summary=f"OVERDRIVE_MODE={overdrive_mode} is Anthropic-free; OAuth token freshness is not gating")
         path = os.path.expanduser("~/.claude/.credentials.json")
         if not os.path.isfile(path):
-            return _result(SKIP, 1.0,
-                           "~/.claude/.credentials.json not present -- overdrive disabled")
+            return skipped(summary="~/.claude/.credentials.json not present -- overdrive disabled")
         try:
             with open(path) as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            return _result(FAIL, 0.0, f"credentials.json unreadable: {e}")
+            return failed(summary=f"credentials.json unreadable: {e}")
         oauth = data.get("claudeAiOauth") or {}
         expires_at = oauth.get("expiresAt")
         if not isinstance(expires_at, (int, float)):
-            return _result(WARN, 0.5,
-                           "claudeAiOauth.expiresAt missing/non-numeric -- cannot verify",
-                           [f"keys: {sorted(oauth.keys())}"])
+            return warned(summary="claudeAiOauth.expiresAt missing/non-numeric -- cannot verify", details=[f"keys: {sorted(oauth.keys())}"])
         # expiresAt is milliseconds since epoch per Claude Code's format.
         now_ms = time.time() * 1000
         remaining_ms = expires_at - now_ms
         remaining_h = remaining_ms / 3_600_000
         if remaining_h <= 0:
-            return _result(WARN, 0.5,
-                           f"OAuth token expired {-remaining_h:.1f}h ago -- Claude fallback unavailable",
-                           ["start Claude Code to trigger token refresh"])
+            return warned(summary=f"OAuth token expired {-remaining_h:.1f}h ago -- Claude fallback unavailable", details=["start Claude Code to trigger token refresh"])
         if remaining_h < 1:
-            return _result(WARN, 0.5,
-                           f"OAuth token expires in {remaining_h:.1f}h -- refresh soon",
-                           [f"remaining_ms={int(remaining_ms)}"])
-        return _result(PASS, 1.0, f"OAuth token valid for {remaining_h:.1f}h")
+            return warned(summary=f"OAuth token expires in {remaining_h:.1f}h -- refresh soon", details=[f"remaining_ms={int(remaining_ms)}"])
+        return passed(summary=f"OAuth token valid for {remaining_h:.1f}h")
 
 
 @register
@@ -205,33 +196,28 @@ class EnvTamperVerifier(Verifier):
         env_path = os.path.join(_PROJECT, ".env")
         sha_path = os.path.join(_PROJECT, ".env.sha256")
         if not os.path.isfile(env_path):
-            return _result(SKIP, 1.0, ".env missing -- EnvLoadVerifier flags this")
+            return skipped(summary=".env missing -- EnvLoadVerifier flags this")
         try:
             with open(env_path, "rb") as f:
                 current = hashlib.sha256(f.read()).hexdigest()
         except OSError as e:
-            return _result(ERROR, 0.0, f".env unreadable: {e}")
+            return errored(summary=f".env unreadable: {e}")
         if not os.path.isfile(sha_path):
             # First run -- establish baseline.
             try:
                 with open(sha_path, "w") as f:
                     f.write(current + "\n")
             except OSError as e:
-                return _result(WARN, 0.8,
-                               f".env.sha256 could not be written: {e}",
-                               [f"tamper detection inactive until {sha_path} exists"])
-            return _result(PASS, 1.0,
-                           f".env.sha256 baseline established ({current[:16]}...)")
+                return warned(score=0.8, summary=f".env.sha256 could not be written: {e}", details=[f"tamper detection inactive until {sha_path} exists"])
+            return passed(summary=f".env.sha256 baseline established ({current[:16]}...)")
         try:
             with open(sha_path) as f:
                 stored = f.read().strip()
         except OSError as e:
-            return _result(ERROR, 0.0, f".env.sha256 unreadable: {e}")
+            return errored(summary=f".env.sha256 unreadable: {e}")
         if stored == current:
-            return _result(PASS, 1.0, ".env matches baseline")
-        return _result(FAIL, 0.0,
-                       ".env content changed since last baseline",
-                       [f"baseline: {stored[:16]}...",
+            return passed(summary=".env matches baseline")
+        return failed(summary=".env content changed since last baseline", details=[f"baseline: {stored[:16]}...",
                         f"current:  {current[:16]}...",
                         f"if intentional, `rm {sha_path}` and rerun to re-baseline"])
 
@@ -260,9 +246,7 @@ class EnvLoadVerifier(Verifier):
     def run(self) -> VerdictResult:
         env_path = os.path.join(_PROJECT, ".env")
         if not os.path.isfile(env_path):
-            return _result(FAIL, 0.0,
-                           f".env missing at {env_path}",
-                           [f"every downstream hook runs without PROJECT_ROOT -- "
+            return failed(summary=f".env missing at {env_path}", details=[f"every downstream hook runs without PROJECT_ROOT -- "
                             f"silent failure class"])
 
         # Parse the .env file manually -- no `source` subshell, no shell
@@ -284,7 +268,7 @@ class EnvLoadVerifier(Verifier):
                         continue
                     declared[key] = value.strip()
         except OSError as e:
-            return _result(ERROR, 0.0, f".env unreadable: {e}")
+            return errored(summary=f".env unreadable: {e}")
 
         issues = []
         if unparseable:
@@ -304,8 +288,5 @@ class EnvLoadVerifier(Verifier):
             )
 
         if issues:
-            return _result(FAIL, 0.0,
-                           f"{len(issues)} .env issue(s) -- silent-failure class",
-                           issues)
-        return _result(PASS, 1.0,
-                       f".env loads cleanly ({len(declared)} keys)")
+            return failed(summary=f"{len(issues)} .env issue(s) -- silent-failure class", details=issues)
+        return passed(summary=f".env loads cleanly ({len(declared)} keys)")

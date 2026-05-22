@@ -9,22 +9,26 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -38,7 +42,7 @@ class DocDriftVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_SCRIPTS_DIR, "verify-doc-sync.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "verifier script not found", [script])
+            return skipped(summary="verifier script not found", details=[script])
         rc, out, err = _run_subprocess(script)
         hits = None
         for ln in out.splitlines():
@@ -49,12 +53,11 @@ class DocDriftVerifier(Verifier):
                     pass  # silent-ok: best-effort parse
                 break
         if hits is None:
-            return _result(ERROR, 0.0, "could not parse verifier output", [err[:500]])
+            return errored(summary="could not parse verifier output", details=[err[:500]])
         if hits == 0:
-            return _result(PASS, 1.0, "no legacy tool references in any doc")
+            return passed(summary="no legacy tool references in any doc")
         score = max(0.0, 1.0 - hits / 20.0)  # 20 hits = score 0
-        return _result(FAIL, score, f"{hits} legacy tool reference(s)",
-                       out.splitlines()[:30])
+        return failed(score=score, summary=f"{hits} legacy tool reference(s)", details=out.splitlines()[:30])
 
 
 @register
@@ -71,25 +74,22 @@ class NumericClaimDriftVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_SCRIPTS_DIR, "verify-numeric-drift.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "verifier script not found", [script])
+            return skipped(summary="verifier script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse verifier output", [err[:500]])
+            return errored(summary="could not parse verifier output", details=[err[:500]])
         drift_count = payload.get("drift_count", 0)
         if drift_count == 0:
-            return _result(PASS, 1.0,
-                           f"all numeric claims match code (truth: {payload.get('truth', {})})")
+            return passed(summary=f"all numeric claims match code (truth: {payload.get('truth', {})})")
         # 10 drifts = score 0. The threshold is tight -- each drift is a
         # specific doc claim that now misleads readers.
         score = max(0.0, 1.0 - drift_count / 10.0)
         examples = [f"{d['file']}:{d['line']} {d['claim']} stated={d['stated']} actual={d['actual']}"
                     for d in payload.get("drifts", [])[:20]]
-        return _result(FAIL, score,
-                       f"{drift_count} numeric drift(s) across "
-                       f"{len(set(d['claim'] for d in payload.get('drifts', [])))} claim(s)",
-                       examples)
+        return failed(score=score, summary=f"{drift_count} numeric drift(s) across "
+                       f"{len(set(d['claim'] for d in payload.get('drifts', [])))} claim(s)", details=examples)
 
 
 @register
@@ -122,8 +122,8 @@ class DocCoreLayoutVerifier(Verifier):
             if re.search(r"\]\((?:\./)?(?:HME|SRC)\.md(?:#[^)]+)?\)", text):
                 issues.append(f"{rel}: links root self-coherence.md/composition.md instead of doc/self-coherence.md or doc/composition.md")
         if issues:
-            return _result(FAIL, 0.0, f"{len(issues)} doc layout issue(s)", issues)
-        return _result(PASS, 1.0, "core docs use README + doc/templates/AGENTS + concise/full doc layout")
+            return failed(summary=f"{len(issues)} doc layout issue(s)", details=issues)
+        return passed(summary="core docs use README + doc/templates/AGENTS + concise/full doc layout")
 
 
 @register
@@ -165,10 +165,10 @@ class DocstringPresenceVerifier(Verifier):
                     if not docstring or len(docstring.strip()) < 30:
                         missing.append(f"{f}::{node.name}")
         if total == 0:
-            return _result(SKIP, 1.0, "no @ctx.mcp.tool() functions found")
+            return skipped(summary="no @ctx.mcp.tool() functions found")
         score = 1.0 - len(missing) / total
         if not missing:
-            return _result(PASS, 1.0, f"{total}/{total} tools have docstrings")
+            return passed(summary=f"{total}/{total} tools have docstrings")
         return _result(FAIL if score < 0.7 else WARN, score,
                        f"{len(missing)}/{total} tools missing/short docstrings",
                        missing)

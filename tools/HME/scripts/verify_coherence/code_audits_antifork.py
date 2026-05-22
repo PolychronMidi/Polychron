@@ -9,22 +9,25 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -122,15 +125,11 @@ class AntiForkHeuristicListVerifier(Verifier):
                         )
         if not violations:
             if blocks_seen == 0:
-                return _result(SKIP, 1.0,
-                               "no anti-fork-marked lists found "
+                return skipped(summary="no anti-fork-marked lists found "
                                "(annotate conservative lists with # anti-fork-begin/-end)")
-            return _result(PASS, 1.0,
-                           f"{blocks_seen} anti-fork-marked list(s) at or above declared min")
+            return passed(summary=f"{blocks_seen} anti-fork-marked list(s) at or above declared min")
         score = max(0.0, 1.0 - len(violations) * 0.25)
-        return _result(FAIL, score,
-                       f"{len(violations)} anti-fork violation(s)",
-                       violations[:10])
+        return failed(score=score, summary=f"{len(violations)} anti-fork violation(s)", details=violations[:10])
 
 
 

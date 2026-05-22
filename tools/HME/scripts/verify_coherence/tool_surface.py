@@ -6,17 +6,22 @@ import os
 import re
 
 from ._base import (
-    register,
-    Verifier,
-    VerdictResult,
-    _result,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
     ERROR,
+    FAIL,
+    PASS,
+    SKIP,
+    VerdictResult,
+    Verifier,
+    WARN,
     _PROJECT,
     _SERVER_DIR,
+    _result,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -64,7 +69,7 @@ class ToolSurfaceCoverageVerifier(Verifier):
                         else:
                             public_tools.add(node.name)
         if not public_tools:
-            return _result(SKIP, 1.0, "no public tools found")
+            return skipped(summary="no public tools found")
         # Check each public tool appears in primer/self-coherence.md
         primer = os.path.join(_PROJECT, "doc", "templates", "ONBOARDING.md")
         hmemd = os.path.join(_PROJECT, "doc", "self-coherence.md")
@@ -75,11 +80,9 @@ class ToolSurfaceCoverageVerifier(Verifier):
                     text += f.read()
         missing = sorted(t for t in public_tools if t not in text)
         if not missing:
-            return _result(PASS, 1.0, f"all {len(public_tools)} public tools documented",
-                           [f"public: {sorted(public_tools)}", f"hidden: {sorted(hidden_tools)}"])
+            return passed(summary=f"all {len(public_tools)} public tools documented", details=[f"public: {sorted(public_tools)}", f"hidden: {sorted(hidden_tools)}"])
         score = 1.0 - len(missing) / len(public_tools)
-        return _result(WARN, score, f"{len(missing)}/{len(public_tools)} public tools undocumented",
-                       missing)
+        return warned(score=score, summary=f"{len(missing)}/{len(public_tools)} public tools undocumented", details=missing)
 
 
 # Verifiers -- RUNTIME category
@@ -96,22 +99,18 @@ class TodoMergeHookConsistencyVerifier(Verifier):
     def run(self) -> VerdictResult:
         hook = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "native_hooks", "todo.js")
         if not os.path.isfile(hook):
-            return _result(SKIP, 1.0, "native TodoWrite hook not found")
+            return skipped(summary="native TodoWrite hook not found")
         try:
             with open(hook) as f:
                 src = f.read()
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         m = re.search(r'async function pretoolTodoWrite\(.*?\n}\n\nasync function posttoolTodoWrite', src, re.DOTALL)
         if not m:
-            return _result(FAIL, 0.0, "pretoolTodoWrite handler not found")
+            return failed(summary="pretoolTodoWrite handler not found")
         body = m.group(0)
         if "hookBlock(" in body or '"decision":"block"' in body or "'decision':'block'" in body:
-            return _result(FAIL, 0.0,
-                           "TodoWrite handler has a blocking decision -- native TodoWrite will be frozen",
-                           ["return allow(...updatedInput...) so native TodoWrite proceeds"])
+            return failed(summary="TodoWrite handler has a blocking decision -- native TodoWrite will be frozen", details=["return allow(...updatedInput...) so native TodoWrite proceeds"])
         if "updatedInput" not in body or "return allow" not in body:
-            return _result(FAIL, 0.5,
-                           "TodoWrite handler does not visibly return allow(...updatedInput...)",
-                           ["preserve native TodoWrite with a merged updatedInput payload"])
-        return _result(PASS, 1.0, "TodoWrite hook allows native TodoWrite to proceed")
+            return failed(score=0.5, summary="TodoWrite handler does not visibly return allow(...updatedInput...)", details=["preserve native TodoWrite with a merged updatedInput payload"])
+        return passed(summary="TodoWrite hook allows native TodoWrite to proceed")

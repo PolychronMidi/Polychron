@@ -11,22 +11,26 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -80,20 +84,19 @@ class ConjugateChannelVerifier(Verifier):
         path = os.path.join(_PROJECT, "src", "output", "metrics",
                             "hme-musical-correlation.json")
         if not os.path.isfile(path):
-            return _result(SKIP, 1.0,
-                           "no musical-correlation file yet; pipeline hasn't produced one")
+            return skipped(summary="no musical-correlation file yet; pipeline hasn't produced one")
         try:
             with open(path) as f:
                 d = json.load(f)
         except (OSError, ValueError) as e:
-            return _result(ERROR, 0.0, f"could not read: {e}")
+            return errored(summary=f"could not read: {e}")
         latest = d.get("latest") or {}
         history = d.get("history") or []
         all_rounds = [r for r in (history + [latest])
                       if isinstance(r.get("hme_coherence"), (int, float))
                       and isinstance(r.get("perceptual_complexity_avg"), (int, float))]
         if not all_rounds:
-            return _result(SKIP, 1.0, "no rounds carry both signals")
+            return skipped(summary="no rounds carry both signals")
         if not isinstance(latest.get("hme_coherence"), (int, float)) or \
            not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
             # SKIP path -- but DON'T let the streak-aware license signal go
@@ -124,7 +127,7 @@ class ConjugateChannelVerifier(Verifier):
                 # Marker write is advisory; SKIP returns successfully
                 # regardless.
                 pass
-            return _result(SKIP, 1.0, "latest round missing one of the two signals")
+            return skipped(summary="latest round missing one of the two signals")
         # Data-driven thresholds -- medians across history
         sorted_h = sorted(r["hme_coherence"] for r in all_rounds)
         sorted_p = sorted(r["perceptual_complexity_avg"] for r in all_rounds)
@@ -152,11 +155,9 @@ class ConjugateChannelVerifier(Verifier):
                 os.replace(tightening_tmp, tightening_path)
             except OSError:
                 pass  # silent-ok: best-effort fs op
-            return _result(FAIL, 0.0,
-                           f"latest round in 'lost' quadrant "
+            return failed(summary=f"latest round in 'lost' quadrant "
                            f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
-                           f"perc={cur_p:.2f} < {p_thr:.2f})",
-                           ["wrote tmp/hme-band-tightening.json (V->IX bidirectional coupling)",
+                           f"perc={cur_p:.2f} < {p_thr:.2f})", details=["wrote tmp/hme-band-tightening.json (V->IX bidirectional coupling)",
                             "consider: i/status mode=conjugate for full quadrant view",
                             "consider: i/why mode=hci-drop to identify regressed axes",
                             "consider: i/why mode=conscience for ground-truth context"])
@@ -223,8 +224,7 @@ class ConjugateChannelVerifier(Verifier):
             quad = "sterile rigor"
         else:
             quad = "lucky chaos"
-        return _result(PASS, 1.0,
-                       f"latest round: '{quad}' "
+        return passed(summary=f"latest round: '{quad}' "
                        f"(HCI={cur_h:.2f}, perc={cur_p:.2f}; medians {h_thr:.2f}/{p_thr:.2f})")
 
 

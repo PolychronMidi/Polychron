@@ -25,6 +25,7 @@ from ._base import (
     Verifier,
     _PROJECT,
     _result,
+    failed,
     passed,
     register,
 )
@@ -113,9 +114,5 @@ class ForbiddenApiKeysVerifier(Verifier):
         if not hits:
             return passed(score=1.0, summary="no forbidden API-key identifiers in tracked content")
         score = max(0.0, 1.0 - len(hits) / 5.0)
-        return _result(
-            FAIL, score,
-            f"{len(hits)} forbidden API-key reference(s) -- regression of "
-            "ANTHROPIC/OPENAI key consumption",
-            hits[:30],
-        )
+        return failed(score=score, summary=f"{len(hits)} forbidden API-key reference(s) -- regression of "
+            "ANTHROPIC/OPENAI key consumption", details=hits[:30])

@@ -10,22 +10,26 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
     telemetry_event_names,
 )
 from time_utils import activity_ts_seconds
@@ -53,12 +57,12 @@ class CorePrinciplesAuditVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-core-principles.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         crit = payload.get("critical_count", 0)
         warn = payload.get("warn_count", 0)
         p1 = payload.get("p1_count", 0)
@@ -71,14 +75,10 @@ class CorePrinciplesAuditVerifier(Verifier):
             for item in s["violations"]["P1"]:
                 detail.append(f"P1 ({s['name']}): {item}")
         if crit == 0 and p1 == 0:
-            return _result(PASS, 1.0,
-                           f"no critical violations ({warn} warn-level, {failfast} P2 indicators)",
-                           detail[:20])
+            return passed(summary=f"no critical violations ({warn} warn-level, {failfast} P2 indicators)", details=detail[:20])
         # Each critical violation drops the score by 0.25; floor at 0.
         score = max(0.0, 1.0 - 0.25 * (crit + p1))
-        return _result(FAIL, score,
-                       f"{crit} CRITICAL oversize file(s), {p1} P1 violation(s)",
-                       detail[:20])
+        return failed(score=score, summary=f"{crit} CRITICAL oversize file(s), {p1} P1 violation(s)", details=detail[:20])
 
 
 
@@ -154,12 +154,9 @@ class HardcodedToolInvocationVerifier(Verifier):
                     except OSError:
                         continue
         if not violations:
-            return _result(PASS, 1.0,
-                           f"{scanned} file(s) scanned; no hardcoded tool invocations")
+            return passed(summary=f"{scanned} file(s) scanned; no hardcoded tool invocations")
         score = max(0.0, 1.0 - len(violations) * 0.15)
-        return _result(FAIL, score,
-                       f"{len(violations)} hardcoded tool-invocation(s)",
-                       violations[:10])
+        return failed(score=score, summary=f"{len(violations)} hardcoded tool-invocation(s)", details=violations[:10])
 
 
 
@@ -176,12 +173,12 @@ class AgentLoopQualityVerifier(Verifier):
         import time as _time
         path = os.path.join(METRICS_DIR, "hme-activity.jsonl")
         if not os.path.isfile(path):
-            return _result(SKIP, 1.0, "no activity log yet")
+            return skipped(summary="no activity log yet")
         try:
             with open(path) as f:
                 lines = f.readlines()[-3000:]
         except OSError as e:
-            return _result(ERROR, 0.0, f"read failed: {e}")
+            return errored(summary=f"read failed: {e}")
 
         cutoff = _time.time() - 3600
         events = []
@@ -195,7 +192,7 @@ class AgentLoopQualityVerifier(Verifier):
                 e["ts"] = ts
                 events.append(e)
         if not events:
-            return _result(SKIP, 1.0, "no activity in last hour")
+            return skipped(summary="no activity in last hour")
 
         loop_names = telemetry_event_names(stream="activity", group="agent_loop")
         turn_names = telemetry_event_names(stream="activity", group="turn_marker")
@@ -205,8 +202,7 @@ class AgentLoopQualityVerifier(Verifier):
         brief_names = telemetry_event_names(stream="activity", group="briefing")
         loop_events = [e for e in events if e.get("event") in loop_names]
         if not loop_events:
-            return _result(SKIP, 1.0,
-                           f"no agent-loop telemetry in last hour "
+            return skipped(summary=f"no agent-loop telemetry in last hour "
                            f"({len(events)} non-loop activity events)")
 
         turn_markers = sum(1 for e in loop_events
@@ -220,13 +216,11 @@ class AgentLoopQualityVerifier(Verifier):
         err_rate = bash_errs / denominator
         if err_rate > 0.25:
             self._write_tier_marker("RED", f"err_rate={err_rate*100:.1f}%")
-            return _result(FAIL, max(0.0, 1.0 - err_rate),
-                           f"high error rate: {err_rate*100:.1f}% "
+            return failed(score=max(0.0, 1.0 - err_rate), summary=f"high error rate: {err_rate*100:.1f}% "
                            f"({bash_errs} bash errors / {denominator} loop events)")
 
         self._write_tier_marker("GREEN", "healthy loop")
-        return _result(PASS, 1.0,
-                       f"healthy: {turn_markers} turn markers, {infs} inferences, "
+        return passed(summary=f"healthy: {turn_markers} turn markers, {infs} inferences, "
                        f"{tools} tool calls, "
                        f"{briefs} briefs, {bash_errs} errors "
                        f"(err_rate={err_rate*100:.1f}%)")
@@ -308,15 +302,11 @@ class RepeatedCharSpamVerifier(Verifier):
             if len(violations) >= 200:
                 break
         if not violations:
-            return _result(PASS, 1.0, "no character-spam runs detected")
+            return passed(summary="no character-spam runs detected")
         # Linear penalty: 50 violations halves the score; 100 zeros it.
         score = max(0.0, 1.0 - len(violations) / 100.0)
         suffix = " (showing first 200)" if len(violations) >= 200 else ""
-        return _result(
-            FAIL, score,
-            f"{len(violations)} character-spam run(s){suffix}",
-            violations[:30],
-        )
+        return failed(score=score, summary=f"{len(violations)} character-spam run(s){suffix}", details=violations[:30])
 
 
 @register
@@ -333,20 +323,20 @@ class MarkdownLinkIntegrityVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-markdown-links.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         broken = payload.get("broken", [])
         if not broken:
-            return _result(PASS, 1.0, "all markdown links resolve")
+            return passed(summary="all markdown links resolve")
         # Logarithmic: 100 broken = 0, 50 = 0.15, 10 = 0.5, 1 = 1.0
         import math
         score = max(0.0, 1.0 - math.log10(max(1, len(broken))) / math.log10(100))
         detail = [f"{b['source']}:{b['line']}  ({b['target']})" for b in broken[:10]]
-        return _result(FAIL, score, f"{len(broken)} broken markdown link(s)", detail)
+        return failed(score=score, summary=f"{len(broken)} broken markdown link(s)", details=detail)
 
 
 @register
@@ -372,24 +362,20 @@ class CommentBloatVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-comment-bloat.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         fail_count = len(payload.get("fail", []))
         warn_count = len(payload.get("warn", []))
         if fail_count == 0:
-            return _result(PASS, 1.0, f"no comment-bloat FAILs ({warn_count} WARNs)")
+            return passed(summary=f"no comment-bloat FAILs ({warn_count} WARNs)")
         # Logarithmic scaling: 800 = 0.0, 400 = 0.15, 100 = 0.55, 50 = 0.7,
         # 10 = 0.9, 0 = 1.0. Goal is monotonic improvement, not zero.
         import math
         score = max(0.0, 1.0 - math.log10(max(1, fail_count)) / math.log10(800))
         top = sorted(payload.get("fail", []), key=lambda x: -x.get("block_len", 0))[:10]
         detail = [f"{e['block_len']:>3}L  {e['path']}:{e['line']}" for e in top]
-        return _result(
-            FAIL, score,
-            f"{fail_count} comment block(s) >=5 lines, {warn_count} >=3 lines",
-            detail,
-        )
+        return failed(score=score, summary=f"{fail_count} comment block(s) >=5 lines, {warn_count} >=3 lines", details=detail)

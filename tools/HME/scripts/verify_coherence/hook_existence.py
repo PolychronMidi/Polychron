@@ -17,22 +17,27 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -53,23 +58,22 @@ class HookCommandExistenceVerifier(Verifier):
     def run(self) -> VerdictResult:
         settings_path = os.path.expanduser("~/.claude/settings.json")
         if not os.path.isfile(settings_path):
-            return _result(SKIP, 1.0, "no ~/.claude/settings.json")
+            return skipped(summary="no ~/.claude/settings.json")
         try:
             with open(settings_path) as f:
                 settings = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            return _result(ERROR, 0.0, f"settings.json unreadable: {e}")
+            return errored(summary=f"settings.json unreadable: {e}")
 
         # Explicit key check -- fail-fast if the schema diverges rather
         # than silently defaulting to an empty dict.
         hooks = settings.get("hooks")
         if hooks is None:
-            return _result(SKIP, 1.0, "no 'hooks' key in settings.json")
+            return skipped(summary="no 'hooks' key in settings.json")
         if not hooks:
-            return _result(SKIP, 1.0, "no hooks declared in settings.json")
+            return skipped(summary="no hooks declared in settings.json")
         if not isinstance(hooks, dict):
-            return _result(ERROR, 0.0,
-                           f"settings.json 'hooks' is {type(hooks).__name__}, expected dict")
+            return errored(summary=f"settings.json 'hooks' is {type(hooks).__name__}, expected dict")
 
         checked = 0
         missing = []
@@ -108,15 +112,13 @@ class HookCommandExistenceVerifier(Verifier):
             # Claude Code schema: groups is a list. If not, that's a real
             # configuration error, not something to silently paper over.
             if not isinstance(groups, list):
-                return _result(ERROR, 0.0,
-                               f"settings.json hooks[{event!r}] is {type(groups).__name__}, expected list")
+                return errored(summary=f"settings.json hooks[{event!r}] is {type(groups).__name__}, expected list")
             for group in groups:
                 group_hooks = group.get("hooks")
                 if group_hooks is None:
                     continue
                 if not isinstance(group_hooks, list):
-                    return _result(ERROR, 0.0,
-                                   f"settings.json hooks[{event!r}][].hooks is {type(group_hooks).__name__}, expected list")
+                    return errored(summary=f"settings.json hooks[{event!r}][].hooks is {type(group_hooks).__name__}, expected list")
                 for h in group_hooks:
                     cmd_raw = h.get("command")
                     if cmd_raw is None:
@@ -128,20 +130,14 @@ class HookCommandExistenceVerifier(Verifier):
             check_command("statusLine", status_line["command"])
 
         if checked == 0:
-            return _result(SKIP, 1.0, "no hook command path references to check")
+            return skipped(summary="no hook command path references to check")
         if relative:
             score = max(0.0, 1.0 - len(relative) / checked)
-            return _result(FAIL, score,
-                           f"{len(relative)}/{checked} hook path(s) are relative",
-                           relative + missing + not_executable)
+            return failed(score=score, summary=f"{len(relative)}/{checked} hook path(s) are relative", details=relative + missing + not_executable)
         if missing:
             score = max(0.0, 1.0 - len(missing) / checked)
-            return _result(FAIL, score,
-                           f"{len(missing)}/{checked} hook path(s) missing",
-                           missing + not_executable)
+            return failed(score=score, summary=f"{len(missing)}/{checked} hook path(s) missing", details=missing + not_executable)
         if not_executable:
-            return _result(WARN, 0.9,
-                           f"{len(not_executable)}/{checked} hook command(s) not marked executable",
-                           not_executable)
-        return _result(PASS, 1.0, f"all {checked} hook command path(s) present")
+            return warned(score=0.9, summary=f"{len(not_executable)}/{checked} hook command(s) not marked executable", details=not_executable)
+        return passed(summary=f"all {checked} hook command path(s) present")
 

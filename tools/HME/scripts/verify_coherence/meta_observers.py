@@ -9,22 +9,27 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -41,12 +46,12 @@ class MetaObserverCoherenceVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no effectiveness data yet")
+            return skipped(summary="no effectiveness data yet")
         try:
             with open(data_path) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         acute = data.get("acute_coherence_events", {}) or {}
         medium = data.get("medium_coherence_events", {}) or {}
         acute_worst = max((acute.get(k, 0) for k in
@@ -63,15 +68,11 @@ class MetaObserverCoherenceVerifier(Verifier):
             f"(degradation/churn/instability)"
         )
         if acute_worst >= 5:
-            return _result(
-                FAIL, score, summary,
-                ["HME unstable RIGHT NOW -- 5+ alerts in last hour",
-                 "check meta-observer recovery logic"],
-            )
+            return failed(score=score, summary=summary, details=["HME unstable RIGHT NOW -- 5+ alerts in last hour",
+                 "check meta-observer recovery logic"])
         if acute_worst >= 2:
-            return _result(WARN, score, summary,
-                           ["elevated meta-observer events in last hour"])
-        return _result(PASS, score, summary)
+            return warned(score=score, summary=summary, details=["elevated meta-observer events in last hour"])
+        return passed(score=score, summary=summary)
 
 
 @register
@@ -87,25 +88,21 @@ class MemeticDriftVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no memetic drift report")
+            return skipped(summary="no memetic drift report")
         try:
             with open(data_path) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         violations = data.get("violation_counts", {})
         if not violations:
-            return _result(PASS, 1.0, "no violations detected")
+            return passed(summary="no violations detected")
         worst = max(violations.values()) if violations else 0
         total = sum(violations.values())
         if worst >= 3:
             score = max(0.0, 1.0 - worst / 10.0)
-            return _result(
-                WARN, score,
-                f"{total} total violations, worst rule: {worst} occurrences",
-                [f"{k}: {v}" for k, v in sorted(violations.items(), key=lambda x: -x[1])[:3] if v > 0],
-            )
-        return _result(PASS, 1.0, f"{total} violations across {len(violations)} tracked rules (none severe)")
+            return warned(score=score, summary=f"{total} total violations, worst rule: {worst} occurrences", details=[f"{k}: {v}" for k, v in sorted(violations.items(), key=lambda x: -x[1])[:3] if v > 0])
+        return passed(summary=f"{total} violations across {len(violations)} tracked rules (none severe)")
 
 
 @register
@@ -133,14 +130,14 @@ class PredictiveHCIVerifier(Verifier):
                 # Subprocess failed (timeout, missing interpreter, etc.)
                 pass
         if not os.path.isfile(forecast_path):
-            return _result(SKIP, 1.0, "no forecast data")
+            return skipped(summary="no forecast data")
         try:
             with open(forecast_path) as f:
                 forecast = json.load(f)
         except Exception as e:
-            return _result(ERROR, 0.0, f"forecast read error: {e}")
+            return errored(summary=f"forecast read error: {e}")
         if forecast.get("_warning"):
-            return _result(SKIP, 1.0, forecast["_warning"])
+            return skipped(summary=forecast["_warning"])
         current = forecast.get("current_hci", 100)
         predicted = forecast.get("predicted_next_hci", 100)
         trend = forecast.get("trend", "flat")
@@ -149,5 +146,5 @@ class PredictiveHCIVerifier(Verifier):
         if warning:
             # Score: proportional to how far the prediction is below 80
             score = max(0.0, min(1.0, predicted / 100.0))
-            return _result(WARN, score, summary, [warning])
-        return _result(PASS, 1.0, summary)
+            return warned(score=score, summary=summary, details=[warning])
+        return passed(summary=summary)

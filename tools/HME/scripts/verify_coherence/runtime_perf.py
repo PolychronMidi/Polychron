@@ -9,22 +9,27 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -139,7 +144,7 @@ class HookLatencyVerifier(Verifier):
     def run(self) -> VerdictResult:
         log_path = os.path.join(_PROJECT, "log", "hme-hook-latency.jsonl")
         if not os.path.isfile(log_path):
-            return _result(SKIP, 1.0, "no hook latency log yet (first run)")
+            return skipped(summary="no hook latency log yet (first run)")
         # Match universal_pulse's rolling-window semantics. The previous
         _WINDOW_SEC = 600
         _cutoff_ts = time.time() - _WINDOW_SEC
@@ -161,9 +166,9 @@ class HookLatencyVerifier(Verifier):
                         float(entry.get("duration_ms", 0))
                     )
         except (OSError, ValueError) as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         if not by_hook:
-            return _result(SKIP, 1.0, "log exists but empty")
+            return skipped(summary="log exists but empty")
         # Compute p95 per hook, compare against per-hook budget.
         slow = []
         total = 0
@@ -179,7 +184,7 @@ class HookLatencyVerifier(Verifier):
             if p95 > budget:
                 slow.append(f"{hook_name}: p95={p95:.0f}ms (n={n}, budget={budget}ms)")
         if not slow:
-            return _result(PASS, 1.0, f"{total} hooks all within per-hook budget")
+            return passed(summary=f"{total} hooks all within per-hook budget")
         score = max(0.0, 1.0 - len(slow) / total)
         return _result(
             WARN if len(slow) < 3 else FAIL, score,
@@ -207,10 +212,10 @@ class GitCommitTestCoverageVerifier(Verifier):
                 capture_output=True, text=True, timeout=3,
             )
             if rc.returncode != 0:
-                return _result(SKIP, 1.0, "git log failed")
+                return skipped(summary="git log failed")
             log_lines = rc.stdout.splitlines()
         except Exception as e:
-            return _result(ERROR, 0.0, f"git error: {e}")
+            return errored(summary=f"git error: {e}")
         fix_commits = []
         for line in log_lines:
             parts = line.split(" ", 1)
@@ -220,7 +225,7 @@ class GitCommitTestCoverageVerifier(Verifier):
             if any(kw in msg.lower() for kw in self._FIX_KEYWORDS):
                 fix_commits.append((sha, msg))
         if not fix_commits:
-            return _result(PASS, 1.0, "no fix commits in last 50 -- nothing to check")
+            return passed(summary="no fix commits in last 50 -- nothing to check")
         uncovered = []
         for sha, msg in fix_commits[:10]:  # sample last 10 fix commits
             try:
@@ -240,14 +245,10 @@ class GitCommitTestCoverageVerifier(Verifier):
             if not has_test:
                 uncovered.append(f"{sha[:8]} {msg[:60]}")
         if not uncovered:
-            return _result(PASS, 1.0, f"{len(fix_commits)} fix commits, all include test/verifier changes")
+            return passed(summary=f"{len(fix_commits)} fix commits, all include test/verifier changes")
         # WARN not FAIL -- this is aspirational, not mandatory. Small project
         # code fixes don't always need new tests.
-        return _result(
-            WARN, max(0.0, 1.0 - len(uncovered) / 10.0),
-            f"{len(uncovered)} recent fix commit(s) without a new test/verifier",
-            uncovered[:5],
-        )
+        return warned(score=max(0.0, 1.0 - len(uncovered) / 10.0), summary=f"{len(uncovered)} recent fix commit(s) without a new test/verifier", details=uncovered[:5])
 
 
 @register
@@ -278,12 +279,12 @@ class ToolResponseLatencyVerifier(Verifier):
         ]
         ops_file = next((p for p in candidates if os.path.isfile(p)), None)
         if ops_file is None:
-            return _result(SKIP, 1.0, "no hme-ops.json found")
+            return skipped(summary="no hme-ops.json found")
         try:
             with open(ops_file) as f:
                 ops = json.load(f)
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         raw_ema_ms = float(ops.get("tool_response_ms_ema", 0.0) or 0.0)
         interactive_ms = _recent_interactive_latency_ms()
         latency_note = ""
@@ -292,7 +293,7 @@ class ToolResponseLatencyVerifier(Verifier):
             ema_ms = interactive_ms
             latency_note = f"recent interactive median={interactive_ms:.0f}ms"
         if ema_ms <= 0:
-            return _result(SKIP, 1.0, "no tool_response_ms_ema data")
+            return skipped(summary="no tool_response_ms_ema data")
 
         history_file = os.path.join(METRICS_DIR, "hme-latency-history.json")
         history: list = []
@@ -319,11 +320,7 @@ class ToolResponseLatencyVerifier(Verifier):
 
         # Score based on history
         if len(history) < 3:
-            return _result(
-                PASS, 1.0,
-                f"tool response EMA {ema_ms:.0f}ms (baseline forming: {len(history)}/3 samples)",
-                [f"no FAIL until baseline established -- {3 - len(history)} more samples needed"],
-            )
+            return passed(summary=f"tool response EMA {ema_ms:.0f}ms (baseline forming: {len(history)}/3 samples)", details=[f"no FAIL until baseline established -- {3 - len(history)} more samples needed"])
 
         prior_values = sorted(h["ema_ms"] for h in history)
         median = prior_values[len(prior_values) // 2]
@@ -343,35 +340,15 @@ class ToolResponseLatencyVerifier(Verifier):
         if ratio_med >= 3.0 or ratio_p75 >= 3.0:
             recent_restart, restart_detail = _recent_service_restart()
             if recent_restart:
-                return _result(
-                    WARN, 0.65,
-                    f"latency spike during startup grace: {ema_ms:.0f}ms",
-                    details + [restart_detail],
-                )
+                return warned(score=0.65, summary=f"latency spike during startup grace: {ema_ms:.0f}ms", details=details + [restart_detail])
             recent = [float(h.get("ema_ms", 0)) for h in history[-3:]]
             spike_count = sum(1 for v in recent + [ema_ms] if median > 0 and v / median >= 3.0)
             if spike_count < 2:
-                return _result(
-                    WARN, 0.65,
-                    f"latency spike: {ema_ms:.0f}ms vs {median:.0f}ms baseline",
-                    details + ["single-sample spike; FAIL requires persistence"],
-                )
+                return warned(score=0.65, summary=f"latency spike: {ema_ms:.0f}ms vs {median:.0f}ms baseline", details=details + ["single-sample spike; FAIL requires persistence"])
             score = max(0.0, 1.0 - (ratio_med - 1.5) / 3.0)
-            return _result(
-                FAIL, score,
-                f"latency regression: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)",
-                details + ["latency spike persisted -- investigate recent changes"],
-            )
+            return failed(score=score, summary=f"latency regression: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)", details=details + ["latency spike persisted -- investigate recent changes"])
         if ratio_med >= 1.5:
-            return _result(
-                WARN, 0.7,
-                f"latency elevated: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)",
-                details,
-            )
-        return _result(
-            PASS, 1.0,
-            f"latency within baseline: {ema_ms:.0f}ms (median {median:.0f}ms)",
-            details,
-        )
+            return warned(score=0.7, summary=f"latency elevated: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)", details=details)
+        return passed(summary=f"latency within baseline: {ema_ms:.0f}ms (median {median:.0f}ms)", details=details)
 
 

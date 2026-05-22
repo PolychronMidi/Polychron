@@ -27,6 +27,7 @@ from ._base import (
     failed,
     passed,
     register,
+    warned,
 )
 
 WAIVERS_REL = "tools/HME/config/verifier_test_waivers.json"
@@ -103,11 +104,8 @@ class VerifierSelfCoverageVerifier(Verifier):
         issues = missing + stale
         if not issues:
             if waivered:
-                return _result(
-                    WARN, max(0.0, 1.0 - len(waivered) / 30.0),
-                    f"{covered} verifier module(s) have tests; "
-                    f"{len(waivered)} waivered (technical debt)",
-                )
+                return warned(score=max(0.0, 1.0 - len(waivered) / 30.0), summary=f"{covered} verifier module(s) have tests; "
+                    f"{len(waivered)} waivered (technical debt)")
             return passed(score=1.0, summary=f"{covered} verifier module(s) have tests; no waivers")
         score = max(0.0, 1.0 - len(issues) / 10.0)
         status = FAIL

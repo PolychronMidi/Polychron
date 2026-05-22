@@ -107,8 +107,4 @@ class MetricNameOrphansVerifier(Verifier):
             return passed(score=1.0, summary=f"{checked} metric name(s) across {len(sets)} registry set(s) "
                 "all have writers")
         score = max(0.0, 1.0 - len(orphans) / max(checked, 1))
-        return _result(
-            FAIL, score,
-            f"{len(orphans)}/{checked} metric name(s) are orphaned in the registry",
-            orphans[:30],
-        )
+        return failed(score=score, summary=f"{len(orphans)}/{checked} metric name(s) are orphaned in the registry", details=orphans[:30])

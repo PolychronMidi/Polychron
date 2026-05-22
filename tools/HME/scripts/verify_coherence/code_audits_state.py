@@ -10,23 +10,28 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
     telemetry_event_names,
+    warned,
 )
 
 
@@ -70,20 +75,16 @@ class StateFileOwnershipVerifier(Verifier):
             issues.append("missing render-state-registry-docs.py")
         script = os.path.join(_PROJECT, "scripts", "audit-state-file-ownership.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script, *issues])
+            return skipped(summary="audit script not found", details=[script, *issues])
         rc, out, err = _run_subprocess([script])
         if rc == 0 and not issues:
-            return _result(PASS, 1.0,
-                           out.splitlines()[-1] if out else "all writers declared")
+            return passed(summary=out.splitlines()[-1] if out else "all writers declared")
         drift_lines = [l for l in out.splitlines()
                        if ("drift" in l and not l.startswith("no drift"))
                        or " -- writer not declared" in l
                        or "writes detected but not in registry" in l]
         details = drift_lines[:15] + issues[:15]
-        return _result(FAIL,
-                       max(0.0, 1.0 - 0.1 * len(details)),
-                       f"{len(drift_lines)} undeclared writer(s), {len(issues)} registry issue(s)",
-                       details)
+        return failed(score=max(0.0, 1.0 - 0.1 * len(details)), summary=f"{len(drift_lines)} undeclared writer(s), {len(issues)} registry issue(s)", details=details)
 
 
 
@@ -103,18 +104,16 @@ class ClaudeSettingsJsonVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-claude-settings.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         count = payload.get("violation_count", 0)
         if count == 0:
-            return _result(PASS, 1.0, f"{payload.get('settings_path')}: valid + event-kernel routed")
-        return _result(FAIL, 0.0,
-                       f"{count} issue(s) in {payload.get('settings_path')}",
-                       payload.get("violations", [])[:10])
+            return passed(summary=f"{payload.get('settings_path')}: valid + event-kernel routed")
+        return failed(summary=f"{count} issue(s) in {payload.get('settings_path')}", details=payload.get("violations", [])[:10])
 
 
 
@@ -143,14 +142,13 @@ class HumanDeferredAuditVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-human-deferred.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script])
         # Parse the count from the header line
         import re as _re_hd
         m = _re_hd.search(r"(\d+) deferral marker\(s\) across (\d+) categor", out)
         if not m:
-            return _result(WARN, 0.5, "could not parse audit output",
-                           [out[:200], err[:200]])
+            return warned(summary="could not parse audit output", details=[out[:200], err[:200]])
         total = int(m.group(1))
         cats = int(m.group(2))
         # Always PASS -- this is observability, not a gate. Score reflects
@@ -158,10 +156,8 @@ class HumanDeferredAuditVerifier(Verifier):
         score = max(0.0, 1.0 - total / 1000.0)
         sample_lines = [l for l in out.splitlines()
                         if l.strip().startswith("[") and "]" in l[:8]][:8]
-        return _result(PASS, score,
-                       f"{total} human-side deferral marker(s) across {cats} categories -- "
-                       "advisory; trend across runs is the signal",
-                       sample_lines)
+        return passed(score=score, summary=f"{total} human-side deferral marker(s) across {cats} categories -- "
+                       "advisory; trend across runs is the signal", details=sample_lines)
 
 
 
@@ -181,7 +177,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         import re as _re_mw
         mw_dir = os.path.join(_PROJECT, "tools", "HME", "proxy", "middleware")
         if not os.path.isdir(mw_dir):
-            return _result(SKIP, 1.0, "middleware dir not present", [mw_dir])
+            return skipped(summary="middleware dir not present", details=[mw_dir])
         # Mirror loadAll() exclusions: skip index.js, _-prefixed utilities, tests.
         def _is_middleware(f: str) -> bool:
             if not f.endswith(".js") or f == "index.js":
@@ -249,9 +245,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         if phase_issues:
             issues.extend(f"PHASE: {x}" for x in phase_issues)
         if not issues:
-            return _result(PASS, 1.0,
-                           f"{len(files)} middleware loadable, all NN_-prefixed and phased",
-                           [])
+            return passed(summary=f"{len(files)} middleware loadable, all NN_-prefixed and phased", details=[])
         score = 0.0 if load_failures else 0.6
         verdict = FAIL if load_failures else WARN
         return _result(verdict, score,
@@ -275,7 +269,7 @@ class AdapterBoundaryRegistryVerifier(Verifier):
             with open(registry_path) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(FAIL, 0.0, f"adapter boundary registry unreadable: {e}")
+            return failed(summary=f"adapter boundary registry unreadable: {e}")
         entries = data.get("boundaries", [])
         registered = {str(e.get("path", "")) for e in entries if isinstance(e, dict)}
         issues = []
@@ -310,8 +304,8 @@ class AdapterBoundaryRegistryVerifier(Verifier):
                     if rel not in registered:
                         issues.append(f"{rel}: bridge/shim/wrapper filename must be a declared adapter/domain boundary or be renamed")
         if issues:
-            return _result(FAIL, 0.0, f"{len(issues)} adapter boundary issue(s)", issues[:12])
-        return _result(PASS, 1.0, f"{len(entries)} adapter/domain boundary names declared; no compatibility registry remains")
+            return failed(summary=f"{len(issues)} adapter boundary issue(s)", details=issues[:12])
+        return passed(summary=f"{len(entries)} adapter/domain boundary names declared; no compatibility registry remains")
 
 
 @register
@@ -330,14 +324,14 @@ class ToolMetadataFactoryVerifier(Verifier):
             if not os.path.isfile(p):
                 issues.append(f"missing {os.path.relpath(p, _PROJECT)}")
         if issues:
-            return _result(FAIL, 0.0, "tool metadata factory missing", issues)
+            return failed(summary="tool metadata factory missing", details=issues)
         try:
             with open(registry) as f:
                 src = f.read()
             with open(factory) as f:
                 fac = f.read()
         except OSError as e:
-            return _result(ERROR, 0.0, f"tool metadata files unreadable: {e}")
+            return errored(summary=f"tool metadata files unreadable: {e}")
         for needle in ("tool_metadata(fn", "x_hme_metadata", "list_metadata"):
             if needle not in src:
                 issues.append(f"tool_registry.py missing {needle}")
@@ -345,8 +339,8 @@ class ToolMetadataFactoryVerifier(Verifier):
             if field not in fac:
                 issues.append(f"tool_metadata.py missing {field}")
         if issues:
-            return _result(FAIL, 0.0, f"{len(issues)} tool metadata issue(s)", issues)
-        return _result(PASS, 1.0, "tool metadata factory feeds tool schemas and registry metadata")
+            return failed(summary=f"{len(issues)} tool metadata issue(s)", details=issues)
+        return passed(summary="tool metadata factory feeds tool schemas and registry metadata")
 
 
 @register
@@ -365,7 +359,7 @@ class GeneratedISurfaceVerifier(Verifier):
             with open(reg_path) as f:
                 reg = json.load(f)
         except Exception as e:
-            return _result(FAIL, 0.0, f"i registry unreadable: {e}")
+            return failed(summary=f"i registry unreadable: {e}")
         issues = []
         if reg.get("generated_by") != "tools/HME/scripts/generate-i-shims.js":
             issues.append("i_registry.json missing generated_by=tools/HME/scripts/generate-i-shims.js")
@@ -399,8 +393,8 @@ class GeneratedISurfaceVerifier(Verifier):
                 issues.append("generate-i-shims.js --check failed")
                 issues.extend((proc.stderr or proc.stdout).splitlines()[:6])
         if issues:
-            return _result(FAIL, 0.0, f"{len(issues)} generated i-surface issue(s)", issues[:12])
-        return _result(PASS, 1.0, f"{len(commands)} i/ shims generated from i_registry.json")
+            return failed(summary=f"{len(issues)} generated i-surface issue(s)", details=issues[:12])
+        return passed(summary=f"{len(commands)} i/ shims generated from i_registry.json")
 
 
 
@@ -420,25 +414,23 @@ class InterControllerCoherenceVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-intercontroller-coherence.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         if payload.get("status") == "no_data":
-            return _result(PASS, 1.0, "no controller-effect data yet (fresh setup)")
+            return passed(summary="no controller-effect data yet (fresh setup)")
         cancelling = payload.get("cancelling_pairs", [])
         if not cancelling:
-            return _result(PASS, 1.0, f"{payload.get('controllers_observed')} controllers, no cancellation detected")
+            return passed(summary=f"{payload.get('controllers_observed')} controllers, no cancellation detected")
         top = cancelling[0]
         detail = [f"{'/'.join(p['controllers'])} score={p['cancellation_score']}" for p in cancelling[:5]]
         # Cancellation isn't a FAIL -- it's signal. Controllers may legitimately
         # oppose on some axes. Score accumulates as more pairs oppose.
         score = max(0.5, 1.0 - 0.1 * len(cancelling))
-        return _result(PASS, score,
-                       f"{len(cancelling)} controller pair(s) with mutual cancellation; top={top['cancellation_score']}",
-                       detail)
+        return passed(score=score, summary=f"{len(cancelling)} controller pair(s) with mutual cancellation; top={top['cancellation_score']}", details=detail)
 
 
 
@@ -461,12 +453,12 @@ class ShellHookAuditVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-shell-hooks.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
         try:
             payload = json.loads(out)
         except Exception:
-            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+            return errored(summary="could not parse audit output", details=[err[:500]])
         count = payload.get("violation_count", 0)
         detail = []
         for fileinfo in payload.get("files", []):
@@ -475,12 +467,10 @@ class ShellHookAuditVerifier(Verifier):
                     f"{fileinfo['file']}:{finding['line']} [{finding['rule']}] {finding['reason']}"
                 )
         if count == 0:
-            return _result(PASS, 1.0, "no shell-hook cache-trap violations", [])
+            return passed(summary="no shell-hook cache-trap violations", details=[])
         # Cache-trap hits silently disable hooks, so any hit is a failure.
         score = max(0.0, 1.0 - 0.2 * count)
-        return _result(FAIL, score,
-                       f"{count} shell-hook violation(s) -- BASH_SOURCE cache-trap risk",
-                       detail[:20])
+        return failed(score=score, summary=f"{count} shell-hook violation(s) -- BASH_SOURCE cache-trap risk", details=detail[:20])
 
 
 
@@ -500,7 +490,7 @@ class ActivityEventsDocSyncVerifier(Verifier):
     def run(self) -> VerdictResult:
         doc_path = os.path.join(_PROJECT, "tools", "HME", "activity", "EVENTS.md")
         if not os.path.isfile(doc_path):
-            return _result(SKIP, 1.0, "EVENTS.md not present", [doc_path])
+            return skipped(summary="EVENTS.md not present", details=[doc_path])
         with open(doc_path, encoding="utf-8") as f:
             doc_content = f.read()
         doc_events = set(re.findall(r"^-\s+\*\*`([a-z_]+)`\*\*", doc_content, re.MULTILINE))
@@ -565,8 +555,7 @@ class ActivityEventsDocSyncVerifier(Verifier):
                 stream_mismatches.append(f"{event}: emitted as signal, registry lacks signal")
 
         if not doc_missing and not doc_extra and not unregistered and not stream_mismatches:
-            return _result(PASS, 1.0,
-                           f"event registry covers {len(registry_events)} event(s); "
+            return passed(summary=f"event registry covers {len(registry_events)} event(s); "
                            f"live scan found {len(live)}")
 
         details = []
@@ -582,6 +571,6 @@ class ActivityEventsDocSyncVerifier(Verifier):
         if doc_missing or doc_extra or stream_mismatches:
             score = max(0.0, 1.0 - (len(doc_missing) + len(doc_extra)
                                     + len(stream_mismatches)) / 20.0)
-            return _result(FAIL, score, "event registry/doc stream drift", details)
+            return failed(score=score, summary="event registry/doc stream drift", details=details)
         score = max(0.5, 1.0 - len(unregistered) / 20.0)
-        return _result(WARN, score, f"{len(unregistered)} unregistered event(s)", details)
+        return warned(score=score, summary=f"{len(unregistered)} unregistered event(s)", details=details)

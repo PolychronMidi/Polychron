@@ -9,22 +9,27 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -78,14 +83,10 @@ class LogSizeVerifier(Verifier):
                 warn_hits.append(f"{rel}: {mb:.1f} MB (>=50 MB)")
 
         if fail_hits:
-            return _result(FAIL, 0.0,
-                           f"{len(fail_hits)} log file(s) over 200 MB",
-                           fail_hits + warn_hits)
+            return failed(summary=f"{len(fail_hits)} log file(s) over 200 MB", details=fail_hits + warn_hits)
         if warn_hits:
-            return _result(WARN, 0.75,
-                           f"{len(warn_hits)} log file(s) over 50 MB",
-                           warn_hits)
-        return _result(PASS, 1.0, "all watched logs under 50 MB")
+            return warned(score=0.75, summary=f"{len(warn_hits)} log file(s) over 50 MB", details=warn_hits)
+        return passed(summary="all watched logs under 50 MB")
 
 
 @register
@@ -99,12 +100,12 @@ class ErrorLogVerifier(Verifier):
     def run(self) -> VerdictResult:
         log = os.path.join(_PROJECT, "log", "hme-errors.log")
         if not os.path.isfile(log):
-            return _result(PASS, 1.0, "no error log (clean)")
+            return passed(summary="no error log (clean)")
         try:
             with open(log) as f:
                 lines = [l for l in f if l.strip()]
         except Exception as e:
-            return _result(ERROR, 0.0, f"could not read error log: {e}")
+            return errored(summary=f"could not read error log: {e}")
         watermark = os.path.join(_PROJECT, "tools", "HME", "runtime", "errors-lastread")
         last = 0
         if os.path.isfile(watermark):
@@ -118,7 +119,7 @@ class ErrorLogVerifier(Verifier):
                 last = 0
         unread = max(0, len(lines) - last)
         if unread == 0:
-            return _result(PASS, 1.0, f"all {len(lines)} historical errors acknowledged")
+            return passed(summary=f"all {len(lines)} historical errors acknowledged")
         score = max(0.0, 1.0 - unread / 10.0)
         return _result(FAIL if unread > 5 else WARN, score,
                        f"{unread} unacknowledged errors", lines[-min(5, unread):])
@@ -145,12 +146,12 @@ class LifesaverRateVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no effectiveness data yet -- run analyze-tool-effectiveness.py")
+            return skipped(summary="no effectiveness data yet -- run analyze-tool-effectiveness.py")
         try:
             with open(data_path) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         acute = data.get("lifesaver_acute_events", 0)
         medium = data.get("lifesaver_medium_events", 0)
         recent = data.get("lifesaver_recent_events", 0)
@@ -163,16 +164,13 @@ class LifesaverRateVerifier(Verifier):
             f"all-time={all_time}"
         )
         if acute >= 3:
-            return _result(
-                FAIL, score, summary,
-                ["3+ LIFESAVER events in the last HOUR -- acute problem",
-                 "investigate log/hme-errors.log"],
-            )
+            return failed(score=score, summary=summary, details=["3+ LIFESAVER events in the last HOUR -- acute problem",
+                 "investigate log/hme-errors.log"])
         if acute >= 1 or medium >= 5:
-            return _result(WARN, score, summary, ["recent LIFESAVER activity"])
+            return warned(score=score, summary=summary, details=["recent LIFESAVER activity"])
         if recent == 0:
-            return _result(PASS, 1.0, f"0 LIFESAVER events in last 24h (all-time: {all_time})")
-        return _result(PASS, score, summary + " (no acute activity)")
+            return passed(summary=f"0 LIFESAVER events in last 24h (all-time: {all_time})")
+        return passed(score=score, summary=summary + " (no acute activity)")
 
 
 @register
@@ -199,16 +197,16 @@ class PipelineBgScriptHealthVerifier(Verifier):
     def run(self) -> VerdictResult:
         log_dir = os.path.join(_PROJECT, "log")
         if not os.path.isdir(log_dir):
-            return _result(SKIP, 1.0, "log/ dir missing")
+            return skipped(summary="log/ dir missing")
         try:
             err_files = [
                 f for f in os.listdir(log_dir)
                 if f.startswith("hme-bg-") and f.endswith(".err")
             ]
         except OSError as e:
-            return _result(ERROR, 0.0, f"listdir failed: {e}")
+            return errored(summary=f"listdir failed: {e}")
         if not err_files:
-            return _result(SKIP, 1.0, "no hme-bg-*.err files yet -- pipeline hasn't run since hardening")
+            return skipped(summary="no hme-bg-*.err files yet -- pipeline hasn't run since hardening")
         summary = os.path.join(_PROJECT, "src", "output", "metrics", "pipeline-summary.json")
         summary_mtime = os.path.getmtime(summary) if os.path.isfile(summary) else 0
         failing = []
@@ -237,7 +235,7 @@ class PipelineBgScriptHealthVerifier(Verifier):
             failing.append((script, size, snippet))
         total = len(err_files)
         if not failing:
-            return _result(PASS, 1.0, f"{total}/{total} bg scripts ran clean")
+            return passed(summary=f"{total}/{total} bg scripts ran clean")
         score = max(0.0, 1.0 - len(failing) / max(total, 1))
         details = [f"{s} ({sz}B): {snip[:160]}" for s, sz, snip in failing]
         verdict = FAIL if len(failing) >= 3 else WARN

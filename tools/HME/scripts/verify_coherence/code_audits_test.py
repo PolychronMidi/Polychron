@@ -11,22 +11,26 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -44,10 +48,10 @@ class SilentFailureClassVerifier(Verifier):
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-silent-failure-class.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script])
         if rc == 0 and "no unmarked silent-catch sites found" in out:
-            return _result(PASS, 1.0, "no unmarked silent-catch sites found")
+            return passed(summary="no unmarked silent-catch sites found")
         # Parse the "N unmarked silent-catch sites across K files" header
         import re as _re_sf
         m = _re_sf.search(r"(\d+) unmarked silent-catch sites across (\d+) files", out)
@@ -56,14 +60,11 @@ class SilentFailureClassVerifier(Verifier):
             files = int(m.group(2))
             # Logarithmic scaling -- expected count is in the hundreds today;
             if count <= 50:
-                return _result(PASS, 1.0,
-                               f"only {count} unmarked silent-catch sites (<=50 threshold)")
+                return passed(summary=f"only {count} unmarked silent-catch sites (<=50 threshold)")
             score = max(0.0, 1.0 - (count - 50) / 1000.0)
             detail_lines = [l for l in out.splitlines() if ":" in l and "audit-silent-failure-class" not in l][:15]
-            return _result(WARN, score,
-                           f"{count} unmarked silent-catch sites across {files} files -- annotate with `silent-ok:` over time",
-                           detail_lines)
-        return _result(SKIP, 1.0, "could not parse audit output", [out[:200], err[:200]])
+            return warned(score=score, summary=f"{count} unmarked silent-catch sites across {files} files -- annotate with `silent-ok:` over time", details=detail_lines)
+        return skipped(summary="could not parse audit output", details=[out[:200], err[:200]])
 
 
 
@@ -94,7 +95,7 @@ class TestIsolationVerifier(Verifier):
     def run(self) -> VerdictResult:
         tests_dir = os.path.join(_PROJECT, "tools", "HME", "tests")
         if not os.path.isdir(tests_dir):
-            return _result(SKIP, 1.0, "tests dir not present")
+            return skipped(summary="tests dir not present")
         violations = []
         scanned = 0
         for r, _d, files in os.walk(tests_dir):
@@ -124,12 +125,9 @@ class TestIsolationVerifier(Verifier):
                     f"_withChainSandbox / _withSandbox / tmp PROJECT_ROOT"
                 )
         if not violations:
-            return _result(PASS, 1.0,
-                           f"{scanned} test file(s) scanned; all stop-chain tests sandbox PROJECT_ROOT")
+            return passed(summary=f"{scanned} test file(s) scanned; all stop-chain tests sandbox PROJECT_ROOT")
         score = max(0.0, 1.0 - len(violations) * 0.25)
-        return _result(FAIL, score,
-                       f"{len(violations)} unsandboxed stop-chain test(s)",
-                       violations[:10])
+        return failed(score=score, summary=f"{len(violations)} unsandboxed stop-chain test(s)", details=violations[:10])
 
 
 
@@ -152,7 +150,7 @@ class TestEnvUndefinedVerifier(Verifier):
     def run(self) -> VerdictResult:
         tests_dir = os.path.join(_PROJECT, "tools", "HME", "tests")
         if not os.path.isdir(tests_dir):
-            return _result(SKIP, 1.0, "tests dir not present")
+            return skipped(summary="tests dir not present")
         violations = []
         scanned = 0
         for r, _d, files in os.walk(tests_dir):
@@ -176,12 +174,9 @@ class TestEnvUndefinedVerifier(Verifier):
                 except OSError:
                     continue
         if not violations:
-            return _result(PASS, 1.0,
-                           f"{scanned} test file(s) scanned; no env-undefined antipattern")
+            return passed(summary=f"{scanned} test file(s) scanned; no env-undefined antipattern")
         score = max(0.0, 1.0 - len(violations) * 0.1)
-        return _result(FAIL, score,
-                       f"{len(violations)} env-undefined antipattern(s)",
-                       violations[:10])
+        return failed(score=score, summary=f"{len(violations)} env-undefined antipattern(s)", details=violations[:10])
 
 
 

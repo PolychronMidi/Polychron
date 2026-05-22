@@ -254,8 +254,4 @@ class CrossLanguageContractsVerifier(Verifier):
         if not issues:
             return passed(score=1.0, summary=f"{checked} cross-language contract(s) in lock-step")
         score = max(0.0, 1.0 - len(issues) / 10.0)
-        return _result(
-            FAIL, score,
-            f"{len(issues)} cross-language contract drift(s) across {checked} entries",
-            issues[:30],
-        )
+        return failed(score=score, summary=f"{len(issues)} cross-language contract drift(s) across {checked} entries", details=issues[:30])

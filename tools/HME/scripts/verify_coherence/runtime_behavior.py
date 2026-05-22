@@ -11,22 +11,27 @@ import time
 import threading
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -47,19 +52,19 @@ class TransientErrorFilterVerifier(Verifier):
         store_py = os.path.join(_SERVER_DIR, "..", "hme_http_store.py")
         store_py = os.path.normpath(store_py)
         if not os.path.isfile(store_py):
-            return _result(SKIP, 1.0, "hme_http_store.py not found")
+            return skipped(summary="hme_http_store.py not found")
         try:
             with open(store_py) as f:
                 src = f.read()
         except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
+            return errored(summary=f"read error: {e}")
         # Find the _log_error function
         m = re.search(
             r'def _log_error\([^)]*\)[^:]*:(.*?)(?=\ndef |\Z)',
             src, re.DOTALL,
         )
         if not m:
-            return _result(FAIL, 0.0, "could not find _log_error definition")
+            return failed(summary="could not find _log_error definition")
         body = m.group(1)
         # Source-based markers we REQUIRE
         has_source_set = (
@@ -74,19 +79,11 @@ class TransientErrorFilterVerifier(Verifier):
             or re.search(r'"/audit"\s+in\s+message', body)
         )
         if has_url_path_match:
-            return _result(
-                FAIL, 0.0,
-                "_log_error uses URL-path substring matching on message -- "
-                "drift-prone, will silently break when message format changes",
-                ['refactor to source-based: "if source in _transient_sources and \'timeout\' in message"'],
-            )
+            return failed(summary="_log_error uses URL-path substring matching on message -- "
+                "drift-prone, will silently break when message format changes", details=['refactor to source-based: "if source in _transient_sources and \'timeout\' in message"'])
         if not has_source_set:
-            return _result(
-                WARN, 0.5,
-                "_log_error transient detection is not source-based",
-                ["recommended: check source argument instead of substring-matching the message"],
-            )
-        return _result(PASS, 1.0, "_log_error uses source-based transient detection")
+            return warned(summary="_log_error transient detection is not source-based", details=["recommended: check source argument instead of substring-matching the message"])
+        return passed(summary="_log_error uses source-based transient detection")
 
 
 @register
@@ -103,7 +100,7 @@ class ServiceRegistryVerifier(Verifier):
             from service_registry import load_services, service_url
             services = load_services()
         except Exception as e:
-            return _result(FAIL, 0.0, f"services.json invalid/unreadable: {e}")
+            return failed(summary=f"services.json invalid/unreadable: {e}")
         issues = []
         seen = set()
         for service in services:
@@ -189,8 +186,8 @@ class ServiceRegistryVerifier(Verifier):
                 if needle not in src:
                     issues.append(f"{rel}: missing registry-owned {needle}")
         if issues:
-            return _result(FAIL, max(0.0, 1.0 - 0.1 * len(issues)), f"{len(issues)} service registry issue(s)", issues[:12])
-        return _result(PASS, 1.0, f"{len(services)} services registered; proxy bundle derives from services.json")
+            return failed(score=max(0.0, 1.0 - 0.1 * len(issues)), summary=f"{len(issues)} service registry issue(s)", details=issues[:12])
+        return passed(summary=f"{len(services)} services registered; proxy bundle derives from services.json")
 
 
 @register
@@ -206,7 +203,7 @@ class ExplicitListTrackingRuleVerifier(Verifier):
         try:
             text = open(path, encoding="utf-8").read()
         except OSError as e:
-            return _result(FAIL, 0.0, f"doc/templates/AGENTS.md unreadable: {e}")
+            return failed(summary=f"doc/templates/AGENTS.md unreadable: {e}")
         required = (
             "Explicit user lists track 1:1",
             "numbered/bulleted list",
@@ -214,8 +211,8 @@ class ExplicitListTrackingRuleVerifier(Verifier):
         )
         missing = [needle for needle in required if needle not in text]
         if missing:
-            return _result(FAIL, 0.0, "explicit-list tracking rule missing", missing)
-        return _result(PASS, 1.0, "doc/templates/AGENTS.md requires 1:1 tracking for explicit user lists")
+            return failed(summary="explicit-list tracking rule missing", details=missing)
+        return passed(summary="doc/templates/AGENTS.md requires 1:1 tracking for explicit user lists")
 
 
 @register
@@ -234,15 +231,15 @@ class ContextBudgetVerifier(Verifier):
     def run(self) -> VerdictResult:
         ctx_file = os.environ["HME_CTX_FILE"]
         if not os.path.isfile(ctx_file):
-            return _result(SKIP, 1.0, "no statusline data yet")
+            return skipped(summary="no statusline data yet")
         try:
             with open(ctx_file) as f:
                 ctx = json.load(f)
         except Exception as e:
-            return _result(ERROR, 0.0, f"ctx read failed: {e}")
+            return errored(summary=f"ctx read failed: {e}")
         used = ctx.get("used_pct")
         if used is None:
-            return _result(SKIP, 1.0, "no used_pct in statusline data")
+            return skipped(summary="no used_pct in statusline data")
 
         link_latest = os.path.join(METRICS_DIR, "chain-history", "latest.yaml")
         link_age_s = None
@@ -261,26 +258,20 @@ class ContextBudgetVerifier(Verifier):
         #   70-85%               -> FAIL if no link in last 10 min
         #   > 85%                -> FAIL if no link in last 5 min (compaction imminent)
         if used < 50:
-            return _result(PASS, 1.0, f"context at {used}% -- safe")
+            return passed(summary=f"context at {used}% -- safe")
         if used < 70:
             if link_age_s is None or link_age_s > 1800:
-                return _result(WARN, 0.7,
-                               f"context {used}%, no chain link in last 30min",
-                               ["run: python3 tools/HME/scripts/chain-snapshot.py --eager"])
-            return _result(PASS, 0.9, f"context {used}%, link age {link_age_s:.0f}s")
+                return warned(score=0.7, summary=f"context {used}%, no chain link in last 30min", details=["run: python3 tools/HME/scripts/chain-snapshot.py --eager"])
+            return passed(score=0.9, summary=f"context {used}%, link age {link_age_s:.0f}s")
         if used < 85:
             if link_age_s is None or link_age_s > 600:
-                return _result(FAIL, 0.3,
-                               f"context {used}% nearing compaction + no recent link",
-                               ["statusline preemption should have fired at 70%",
+                return failed(score=0.3, summary=f"context {used}% nearing compaction + no recent link", details=["statusline preemption should have fired at 70%",
                                 "run: python3 tools/HME/scripts/chain-snapshot.py --imminent"])
-            return _result(WARN, 0.6, f"context {used}%, link age {link_age_s:.0f}s")
+            return warned(score=0.6, summary=f"context {used}%, link age {link_age_s:.0f}s")
         # > 85% -- compaction imminent
         if link_age_s is None or link_age_s > 300:
-            return _result(FAIL, 0.0,
-                           f"context {used}% -- COMPACTION IMMINENT with no fresh chain link",
-                           ["CRITICAL: take a snapshot NOW before auto-compaction destroys state"])
-        return _result(WARN, 0.5, f"context {used}%, link age {link_age_s:.0f}s")
+            return failed(summary=f"context {used}% -- COMPACTION IMMINENT with no fresh chain link", details=["CRITICAL: take a snapshot NOW before auto-compaction destroys state"])
+        return warned(summary=f"context {used}%, link age {link_age_s:.0f}s")
 
 
 @register
@@ -306,7 +297,7 @@ class WarmContextFreshnessVerifier(Verifier):
     def run(self) -> VerdictResult:
         cache_dir = os.path.join(_PROJECT, "tools", "HME", "warm-context-cache")
         if not os.path.isdir(cache_dir):
-            return _result(SKIP, 1.0, "no warm-context-cache dir")
+            return skipped(summary="no warm-context-cache dir")
         # Exclude `*-checkpoint-*.json` -- the naming convention
         # (`warm-kv-checkpoint-<model>.json`) marks intentionally-preserved
         # snapshots, not actively-rotated warm caches. Without this
@@ -318,7 +309,7 @@ class WarmContextFreshnessVerifier(Verifier):
             if f.endswith(".json") and "checkpoint" not in f
         ]
         if not files:
-            return _result(SKIP, 1.0, "no warm context files yet")
+            return skipped(summary="no warm context files yet")
         oldest_age = 0.0
         oldest_file = ""
         for f in files:
@@ -331,24 +322,15 @@ class WarmContextFreshnessVerifier(Verifier):
 
         # Score: 0-4h = 1.0, 4-24h = WARN, >24h = FAIL
         if age_hours < 4:
-            return _result(PASS, 1.0,
-                           f"warmest cache fresh ({age_hours:.1f}h), oldest={oldest_file}")
+            return passed(summary=f"warmest cache fresh ({age_hours:.1f}h), oldest={oldest_file}")
         if age_hours < 24:
             # Attempt background auto-reprime -- fire-and-forget
             _trigger_warm_reprime()
-            return _result(
-                WARN, 0.7,
-                f"oldest warm cache {age_hours:.1f}h (re-prime triggered)",
-                [f"oldest: {oldest_file}",
-                 "auto-reprime: hme_admin(action='warm') fired in background"],
-            )
+            return warned(score=0.7, summary=f"oldest warm cache {age_hours:.1f}h (re-prime triggered)", details=[f"oldest: {oldest_file}",
+                 "auto-reprime: hme_admin(action='warm') fired in background"])
         _trigger_warm_reprime()
-        return _result(
-            FAIL, 0.3,
-            f"oldest warm cache {age_hours:.1f}h -- priming bitrot",
-            [f"oldest: {oldest_file}",
-             "auto-reprime triggered; if this persists, selftest warm ctx check is broken"],
-        )
+        return failed(score=0.3, summary=f"oldest warm cache {age_hours:.1f}h -- priming bitrot", details=[f"oldest: {oldest_file}",
+             "auto-reprime triggered; if this persists, selftest warm ctx check is broken"])
 
 
 def _trigger_warm_reprime() -> None:
@@ -408,7 +390,7 @@ class PlanOutputValidityVerifier(Verifier):
         import glob
         plan_files = sorted(glob.glob(os.path.join(os.environ["HME_AGENT_PLAN_DIR"], "hme-agent-*.md")))
         if not plan_files:
-            return _result(SKIP, 1.0, "no recent plan outputs to validate")
+            return skipped(summary="no recent plan outputs to validate")
         checked = 0
         bad = []
         for p in plan_files[-5:]:  # last 5
@@ -429,8 +411,8 @@ class PlanOutputValidityVerifier(Verifier):
                 if not os.path.isfile(full):
                     bad.append(f"{os.path.basename(p)}: claims {pth} -- not found")
         if checked == 0:
-            return _result(SKIP, 1.0, "no readable plan outputs")
+            return skipped(summary="no readable plan outputs")
         if not bad:
-            return _result(PASS, 1.0, f"{checked} plan(s) cite only real files")
+            return passed(summary=f"{checked} plan(s) cite only real files")
         score = 1.0 - min(1.0, len(bad) / 10.0)
-        return _result(WARN, score, f"{len(bad)} suspicious path claim(s) in plans", bad[:5])
+        return warned(score=score, summary=f"{len(bad)} suspicious path claim(s) in plans", details=bad[:5])

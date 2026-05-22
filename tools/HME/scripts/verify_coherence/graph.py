@@ -9,23 +9,27 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    PROJECT_METRICS_DIR,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
-    PROJECT_METRICS_DIR,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -40,16 +44,15 @@ class FeedbackGraphVerifier(Verifier):
     def run(self) -> VerdictResult:
         graph = os.path.join(PROJECT_METRICS_DIR, "feedback_graph.json")
         if not os.path.isfile(graph):
-            return _result(SKIP, 1.0, "no feedback_graph.json")
+            return skipped(summary="no feedback_graph.json")
         try:
             with open(graph) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(FAIL, 0.0, f"feedback_graph.json invalid: {e}")
+            return failed(summary=f"feedback_graph.json invalid: {e}")
         loops = data.get("loops", [])
         ports = data.get("firewallPorts", [])
-        return _result(PASS, 1.0,
-                       f"{len(loops)} loops + {len(ports)} firewall ports declared")
+        return passed(summary=f"{len(loops)} loops + {len(ports)} firewall ports declared")
 
 
 @register
@@ -69,14 +72,13 @@ class ReloadableModuleSyncVerifier(Verifier):
             )
             declared = all_reload_targets()
         except Exception as e:
-            return _result(ERROR, 0.0, f"reload registry import failed: {e}")
+            return errored(summary=f"reload registry import failed: {e}")
         missing = [
             name for name in declared
             if not any(path.is_file() for path in candidate_files(_PROJECT, name))
         ]
         if not missing:
-            return _result(PASS, 1.0, f"{len(declared)}/{len(declared)} reload targets resolve")
+            return passed(summary=f"{len(declared)}/{len(declared)} reload targets resolve")
         score = 1.0 - len(missing) / len(declared)
-        return _result(FAIL, score, f"{len(missing)}/{len(declared)} reload targets missing",
-                       missing)
+        return failed(score=score, summary=f"{len(missing)}/{len(declared)} reload targets missing", details=missing)
 

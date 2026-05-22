@@ -7,18 +7,23 @@ import subprocess
 import sys
 
 from ._base import (
-    register,
-    Verifier,
-    VerdictResult,
-    _result,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
     ERROR,
+    FAIL,
+    PASS,
+    SKIP,
+    VerdictResult,
+    Verifier,
+    WARN,
     _PROJECT,
-    _SERVER_DIR,
     _SCRIPTS_DIR,
+    _SERVER_DIR,
+    _result,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
 )
 
 
@@ -33,19 +38,19 @@ class TodoStoreSchemaVerifier(Verifier):
     def run(self) -> VerdictResult:
         store = os.path.join(_PROJECT, "tools", "HME", "KB", "todos.json")
         if not os.path.isfile(store):
-            return _result(SKIP, 1.0, "no todo store (fresh project)")
+            return skipped(summary="no todo store (fresh project)")
         try:
             sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
             from server.tools_analysis.todo_store import flat_entries, load_store, validate_store
             _raw, _meta, todos = load_store(store)
             violations = validate_store(store)
         except Exception as e:
-            return _result(FAIL, 0.0, f"todos.json validation errored: {e}")
+            return failed(summary=f"todos.json validation errored: {e}")
         entries = flat_entries(todos)
         score = 1.0 - min(1.0, len(violations) / max(1, len(entries)))
         if not violations:
-            return _result(PASS, 1.0, f"{len(entries)} entries pass strict schema check")
-        return _result(WARN, score, f"{len(violations)} schema violations", violations[:10])
+            return passed(summary=f"{len(entries)} entries pass strict schema check")
+        return warned(score=score, summary=f"{len(violations)} schema violations", details=violations[:10])
 
 
 @register
@@ -105,8 +110,8 @@ class TodoMarkdownSyncVerifier(Verifier):
             failures.append(f"TODO.md sync check errored: {e}")
         if failures:
             score = max(0.0, 1.0 - 0.25 * len(failures))
-            return _result(FAIL, score, f"{len(failures)} TODO sync violation(s)", failures)
-        return _result(PASS, 1.0, "TODO.md is canonical, synced, and hook-wired")
+            return failed(score=score, summary=f"{len(failures)} TODO sync violation(s)", details=failures)
+        return passed(summary="TODO.md is canonical, synced, and hook-wired")
 
 
 @register
@@ -228,8 +233,8 @@ class TodoCodexPlanSyncVerifier(Verifier):
         except Exception as e:
             failures.append(f"universal_pulse.json codex sync config unreadable: {e}")
         if failures:
-            return _result(FAIL, 0.0, f"{len(failures)} Codex TODO sync issue(s)", failures)
-        return _result(PASS, 1.0, "Codex update_plan sync has proxy, hook adapter, and pulse automatic paths")
+            return failed(summary=f"{len(failures)} Codex TODO sync issue(s)", details=failures)
+        return passed(summary="Codex update_plan sync has proxy, hook adapter, and pulse automatic paths")
 
 
 @register
@@ -276,10 +281,8 @@ class TodoOnboardingDecoupledVerifier(Verifier):
                     if needle in text:
                         failures.append(f"{rel} still references {needle!r} ({rule.get('id', 'unnamed')})")
         if failures:
-            return _result(FAIL, 0.0,
-                           f"{len(failures)} onboarding/TODO coupling issue(s)",
-                           failures[:12])
-        return _result(PASS, 1.0, "onboarding state is separate from persistent TODO storage")
+            return failed(summary=f"{len(failures)} onboarding/TODO coupling issue(s)", details=failures[:12])
+        return passed(summary="onboarding state is separate from persistent TODO storage")
 
 
 @register
@@ -316,13 +319,13 @@ class TodoArchiveContractVerifier(Verifier):
             index_failures.append(f"archive index unreadable: {e}")
         if not os.path.isdir(devlog):
             if index_failures:
-                return _result(FAIL, 0.0, "TODO archive index invalid", index_failures)
-            return _result(PASS, 1.0, "archive index valid; no local devlog directory")
+                return failed(summary="TODO archive index invalid", details=index_failures)
+            return passed(summary="archive index valid; no local devlog directory")
         try:
             sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
             from server.tools_analysis.todo_archive import validate_archive_text
         except Exception as e:
-            return _result(ERROR, 0.0, f"archive validator import failed: {e}")
+            return errored(summary=f"archive validator import failed: {e}")
         checked = 0
         legacy = 0
         failures: list[str] = []
@@ -347,6 +350,6 @@ class TodoArchiveContractVerifier(Verifier):
         if index_failures:
             failures.extend(index_failures)
         if failures:
-            return _result(FAIL, 0.0, f"{len(failures)} TODO archive contract violation(s)", failures[:10])
+            return failed(summary=f"{len(failures)} TODO archive contract violation(s)", details=failures[:10])
         suffix = f"; {legacy} legacy TODO archive(s) skipped" if legacy else ""
-        return _result(PASS, 1.0, f"{checked} current TODO archive(s) match contract{suffix}")
+        return passed(summary=f"{checked} current TODO archive(s) match contract{suffix}")

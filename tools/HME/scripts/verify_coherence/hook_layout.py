@@ -9,22 +9,25 @@ import sys
 import time
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 
@@ -49,10 +52,9 @@ class HookExecutabilityVerifier(Verifier):
             if not os.access(path, os.X_OK):
                 broken.append(f)
         if not broken:
-            return _result(PASS, 1.0, f"{total}/{total} dispatcher hooks are executable")
+            return passed(summary=f"{total}/{total} dispatcher hooks are executable")
         score = 1.0 - len(broken) / total
-        return _result(FAIL, score, f"{len(broken)}/{total} hooks not executable",
-                       [f"chmod +x tools/HME/hooks/{name}" for name in broken])
+        return failed(score=score, summary=f"{len(broken)}/{total} hooks not executable", details=[f"chmod +x tools/HME/hooks/{name}" for name in broken])
 
 
 @register
@@ -110,12 +112,11 @@ class DecoratorOrderVerifier(Verifier):
                     if not is_tool:
                         violations.append(f"{os.path.relpath(path, _PROJECT)}::{node.name} (@chained outside @ctx.mcp.tool())")
         if total == 0:
-            return _result(SKIP, 1.0, "no @chained tools found")
+            return skipped(summary="no @chained tools found")
         if not violations:
-            return _result(PASS, 1.0, f"{total}/{total} chained tools have correct order")
+            return passed(summary=f"{total}/{total} chained tools have correct order")
         score = 1.0 - len(violations) / total
-        return _result(FAIL, score, f"{len(violations)}/{total} chained tools wrong order",
-                       violations)
+        return failed(score=score, summary=f"{len(violations)}/{total} chained tools wrong order", details=violations)
 
 
 
@@ -136,7 +137,7 @@ class HookRegistrationVerifier(Verifier):
             with open(hooks_json) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(FAIL, 0.0, f"hooks.json invalid: {e}")
+            return failed(summary=f"hooks.json invalid: {e}")
         hooks = data.get("hooks", {})
         required = {
             "SessionStart", "PreToolUse", "PostToolUse", "UserPromptSubmit",
@@ -180,9 +181,9 @@ class HookRegistrationVerifier(Verifier):
         if total == 0:
             issues.append("no command hooks registered")
         if not issues:
-            return _result(PASS, 1.0, f"{len(required)} event-kernel hook registrations resolve")
+            return passed(summary=f"{len(required)} event-kernel hook registrations resolve")
         score = max(0.0, 1.0 - len(issues) / max(1, len(required)))
-        return _result(FAIL, score, f"{len(issues)} hook registration issue(s)", issues[:12])
+        return failed(score=score, summary=f"{len(issues)} hook registration issue(s)", details=issues[:12])
 
 
 @register
@@ -212,7 +213,7 @@ class HookMatcherValidityVerifier(Verifier):
         project_root = os.environ['PROJECT_ROOT']
         i_dir = os.path.join(project_root, "tools", "HME", "i")
         if not os.path.isdir(i_dir):
-            return _result(FAIL, 0.0, "tools/HME/i directory missing -- HME tool wrappers not installed")
+            return failed(summary="tools/HME/i directory missing -- HME tool wrappers not installed")
 
         # Enumerate wrappers (executable shell scripts in tools/HME/i/).
         wrappers = set()
@@ -224,7 +225,7 @@ class HookMatcherValidityVerifier(Verifier):
                 if os.path.isfile(p) and os.access(p, os.X_OK):
                     wrappers.add(name)
         except OSError as e:
-            return _result(FAIL, 0.0, f"i/ unreadable: {e}")
+            return failed(summary=f"i/ unreadable: {e}")
 
         # Read posttooluse_bash.sh and collect dispatched tool names.
         posthook_path = os.path.join(_HOOKS_DIR, "posttooluse", "posttooluse_bash.sh")
@@ -232,7 +233,7 @@ class HookMatcherValidityVerifier(Verifier):
             with open(posthook_path) as fp:
                 posthook_src = fp.read()
         except OSError as e:
-            return _result(FAIL, 0.0, f"posttooluse_bash.sh unreadable: {e}")
+            return failed(summary=f"posttooluse_bash.sh unreadable: {e}")
 
         # dispatch `i/<tool>` word-boundary pattern; r'\\b' bug fixed
         dispatched = set(re.findall(r'i/([a-z-]+)\b', posthook_src))
@@ -252,11 +253,8 @@ class HookMatcherValidityVerifier(Verifier):
 
         total_checks = len(wrappers) + len(dispatched)
         if total_checks == 0:
-            return _result(SKIP, 1.0, "no wrappers or dispatches to check")
+            return skipped(summary="no wrappers or dispatches to check")
         if not errors:
-            return _result(
-                PASS, 1.0,
-                f"{len(wrappers)} wrappers * {len(dispatched)} dispatches all resolve"
-            )
+            return passed(summary=f"{len(wrappers)} wrappers * {len(dispatched)} dispatches all resolve")
         score = 1.0 - len(errors) / total_checks
-        return _result(FAIL, score, f"{len(errors)} wrapper/dispatch mismatch(es)", errors)
+        return failed(score=score, summary=f"{len(errors)} wrapper/dispatch mismatch(es)", details=errors)

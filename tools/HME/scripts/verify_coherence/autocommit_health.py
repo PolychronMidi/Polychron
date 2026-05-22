@@ -12,22 +12,25 @@ import datetime
 import urllib.request
 
 from ._base import (
-    register,
-    Verifier,
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
     VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
     _result,
     _run_subprocess,
-    PASS,
-    WARN,
-    FAIL,
-    SKIP,
-    ERROR,
-    _PROJECT,
-    _HOOKS_DIR,
-    _SERVER_DIR,
-    _SCRIPTS_DIR,
-    _DOC_DIRS,
-    METRICS_DIR,
+    failed,
+    passed,
+    register,
+    warned,
 )
 
 
@@ -133,12 +136,10 @@ class AutocommitHealthVerifier(Verifier):
                     issues.append(f"autocommit heartbeat stale while worktree is dirty ({age/3600:.1f}h > {max_age/3600:.1f}h)")
 
         if not issues:
-            return _result(PASS, 1.0, "autocommit operational")
+            return passed(summary="autocommit operational")
         # FAIL with score 0: weight 5.0 means any failure here hits the
         # HCI hard, same tier as LifesaverIntegrity. That's the contract.
-        return _result(FAIL, 0.0,
-                       f"autocommit unhealthy ({len(issues)} issue(s))",
-                       issues)
+        return failed(summary=f"autocommit unhealthy ({len(issues)} issue(s))", details=issues)
 
 
 @register
@@ -156,8 +157,7 @@ class ShimHealthVerifier(Verifier):
             req = urllib.request.Request(service_url(service_map()["worker"]))
             with urllib.request.urlopen(req, timeout=2) as r:
                 if r.status == 200:
-                    return _result(PASS, 1.0, "worker /health responds 200")
-                return _result(WARN, 0.5, f"worker /health returned {r.status}")
+                    return passed(summary="worker /health responds 200")
+                return warned(summary=f"worker /health returned {r.status}")
         except Exception as e:
-            return _result(WARN, 0.0, f"worker unreachable: {type(e).__name__}",
-                           [str(e)])
+            return warned(score=0.0, summary=f"worker unreachable: {type(e).__name__}", details=[str(e)])
