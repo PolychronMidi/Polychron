@@ -107,6 +107,9 @@ if [ -f "$ERROR_LOG" ]; then
       done <<< "$_UNFIXED_CANARY"
     fi
     _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" | grep -vE "$_STATUS_LINE_RE" || true)
+    if _hme_stale_runtime_resolved_or_grace; then
+      _UNFIXED_NO_CANARY=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -v '\[stale_runtime\]' || true)
+    fi
     # Same source-tag + severity-axis classification as the new-errors
     UNFIXED_SELF_BY_TAG=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
     UNFIXED_REMAINING=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
