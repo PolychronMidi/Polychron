@@ -22,6 +22,12 @@ PATTERNS = [
     re.compile(r"\bgetenv\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
     re.compile(r"\$\{([A-Z0-9_]+)(?::-|-)"),
 ]
+ENV_INDEX_RE = re.compile(r"os\.environ\[\s*['\"]([A-Z0-9_]+)['\"]\s*\]")
+ENV_EXCEPT_RE = re.compile(r"^\s*except\s+(?:\(?\s*)?(KeyError|LookupError|Exception|BaseException)\b")
+ENV_LITERAL_FALLBACK_RE = re.compile(
+    r"^\s*(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?\s*=|return)\s*"
+    r"(?:['\"].*['\"]|None|False|True|\d+|\{\}|\[\])\s*(?:#.*)?$"
+)
 
 
 def declared_env_keys() -> set[str]:
