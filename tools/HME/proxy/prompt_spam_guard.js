@@ -27,6 +27,25 @@ function messageText(message) {
   return textFromContent(message.content);
 }
 
+function contentHasToolResult(content) {
+  return Array.isArray(content) && content.some((block) => block && typeof block === 'object' && block.type === 'tool_result');
+}
+
+function stripSystemReminderBlocks(text) {
+  return String(text || '').replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, '').trim();
+}
+
+function isNoopSystemReminderTurn(payload) {
+  if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return false;
+  const lastUser = [...payload.messages].reverse().find((message) => message && message.role === 'user');
+  if (!lastUser || contentHasToolResult(lastUser.content)) return false;
+  const text = messageText(lastUser);
+  const raw = String(text || '').trim();
+  if (!raw) return true;
+  if (!/<system-reminder>/i.test(raw)) return false;
+  return stripSystemReminderBlocks(raw) === '';
+}
+
 function responseInputText(item) {
   if (!item || typeof item !== 'object') return '';
   if (item.type === 'message' || item.role) return textFromContent(item.content);
