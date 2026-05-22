@@ -107,6 +107,7 @@ def main() -> int:
     )))
     if is_hook_feedback and (
         FP_CHECK_ONLY.match(raw_text)
+        or PROXY_NOOP_ONLY.match(raw_text)
         or PROXY_ERROR_ONLY.match(raw_text)
         or SUCCESS_ONLY.match(raw_text)
         or full_text in ("ok", "done", "noted", "got it", "ack")
