@@ -55,6 +55,7 @@ test('proxy route dispatcher handles health/version/stop and probe short-circuit
 
   for (const [url, expected] of [
     ['/health', { status: 200, field: 'status', value: 'ok' }],
+    ['/ready', { status: 200, field: 'status', value: 'ready' }],
     ['/version', { status: 200, field: 'version', value: 'test-version' }],
     ['/hme/stop-gate/health', { status: 200, field: 'component', value: 'hme-stop-gate' }],
     ['/', { status: 404, field: 'error', value: 'not_found' }],
