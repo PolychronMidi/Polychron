@@ -131,7 +131,7 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
 } else if (process.argv.includes('--test')) {
   runTestMode();
 } else {
-  const supervisor = require('./supervisor/index');
+  const supervisor = _supervisorModule;
   if (SUPERVISE) supervisor.start();
   else supervisor.installShutdownHandlers();
   const server = http.createServer(getHandleRequest());
