@@ -319,6 +319,7 @@ function stripSemanticRedundancy(payload) {
       patterns: Object.entries(patterns).map(([k, v]) => `${k}=${v}`).join(','),
     });
   }
+  _ensureAllUserMessagesNonEmpty(payload);
   return strippedCount;
 }
 
