@@ -222,27 +222,10 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   console.error(`[hme-proxy] swap-check: odMode=${requested} effective=${mode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${!!clientReq.headers['x-hme-upstream']}`);
   if (requested !== '0' && requested !== '1') console.error(`[hme-proxy] OVERDRIVE_MODE=${requested} retired; use 0 or 1.`);
   if (mode !== '1' || !payload || clientReq.headers['x-hme-upstream']) return result;
+  if (!requestedClaudeModel && !claudeModel) return result;
   if (requestedClaudeModel) {
-    result.wasStreaming = payload.stream === true;
-    result.injected = true;
-    let chainInfo;
-    try { chainInfo = buildMode1Chain({ ...payload, model: requestedClaudeModel }, env, cfg, { projectRoot }); }
-    catch (err) { console.error(`[hme-proxy] MODE=1 fallback chain build failed for Claude-primary route: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(requestedClaudeModel) }; }
-    const primary = findAnthropicModelByApiId(cfg, requestedClaudeModel) || { id: requestedClaudeModel, api_model: requestedClaudeModel, provider: 'anthropic' };
-    const primaryRoute = modelRouteKey(primary, env);
-    const fallbackChain = (chainInfo.chain || []).filter((m) => modelRouteKey(m, env) !== primaryRoute);
-    result.swapChain = [primary, ...fallbackChain];
-    result.swapModel = requestedClaudeModel;
-    result.omniProvider = 'anthropic';
-    result.swapMeta = primary;
     payload.model = requestedClaudeModel;
-    result.outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-    result.lastPayloadBytes = result.outBody.length;
-    result.applied = true;
-    console.error(`[hme-proxy] MODE=1 Claude-primary: ${payload.model} direct Anthropic first; fallback chain=${result.swapChain.map((m) => modelRouteKey(m, env)).join(' -> ')}`);
-    return result;
   }
-  if (!claudeModel) return result;
 
   const zenKey = env.OPENCODE_API_KEY || '';
   result.wasStreaming = payload.stream === true;
