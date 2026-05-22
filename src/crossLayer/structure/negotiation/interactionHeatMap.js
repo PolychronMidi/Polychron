@@ -1,4 +1,4 @@
-// src/crossLayer/interactionHeatMap.js - Passive cross-layer interaction observer.
+// src/crossLayer/structure/negotiation/interactionHeatMap.js - Passive cross-layer interaction observer.
 // Tracks which cross-layer systems fired each beat and how strongly. Over time,
 // builds an "interaction profile" for the piece. When interactions are dense,
 // signals to dial back; when sparse, signals to ramp up.

@@ -1,4 +1,4 @@
-// src/events.js - Lightweight event dispatcher for feedback loops
+// src/play/events.js - Lightweight event dispatcher for feedback loops
 
 moduleLifecycle.declare({
   name: 'eventBus',

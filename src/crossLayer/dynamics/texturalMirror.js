@@ -1,4 +1,4 @@
-// src/crossLayer/texturalMirror.js - Cross-layer texture management.
+// src/crossLayer/dynamics/texturalMirror.js - Cross-layer texture management.
 // Tracks each layer's texture mode and suggests complementary or contrasting
 // textures for the other layer. Consumes dynamicRoleSwap chordalBias/melodicBias
 // (dead-end signals) to drive texture decisions.

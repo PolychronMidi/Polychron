@@ -1,4 +1,4 @@
-// src/crossLayer/temporalGravity.js - Temporal gravity wells.
+// src/crossLayer/rhythm/temporalGravity.js - Temporal gravity wells.
 // Posts note density per ms window to ATG 'density' channel. When one layer
 // hits a dense cluster, the other layer's note ticks get micro-pulled toward
 // the cluster center - creating organic emergent rubato.

@@ -1,4 +1,4 @@
-// src/crossLayer/spectralComplementarity.js - Cross-layer spectral gap filling.
+// src/crossLayer/harmony/spectralComplementarity.js - Cross-layer spectral gap filling.
 // Tracks running pitch-class histogram per layer. When one layer concentrates
 // in a register, nudges the other to fill spectral gaps (bass or treble).
 // Ensures combined output always has full-spectrum coverage.

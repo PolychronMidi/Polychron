@@ -1,4 +1,4 @@
-// src/crossLayer/velocityInterference.js - Cross-layer velocity phase interference.
+// src/crossLayer/dynamics/velocityInterference.js - Cross-layer velocity phase interference.
 // Posts velocity contour snapshots to ATG 'velocity' channel. When both layers
 // are crescendoing toward the same ms point, velocities reinforce. When one
 // crescendos while the other decrescendos, spectral separation increases.

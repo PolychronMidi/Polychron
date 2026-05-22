@@ -1,4 +1,4 @@
-// src/crossLayer/stutterContagion.js - Cross-layer stutter infection via ATG.
+// src/crossLayer/rhythm/stutterContagion.js - Cross-layer stutter infection via ATG.
 // When one layer stutters, the other layer picks up a complementary stutter
 // at the same ms-derived tick with decaying intensity.
 

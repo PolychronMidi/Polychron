@@ -1,4 +1,4 @@
-// src/crossLayer/rhythmicComplementEngine.js - Deliberate rhythmic interlocking.
+// src/crossLayer/rhythm/rhythmicComplementEngine.js - Deliberate rhythmic interlocking.
 // Coordinates rhythmic complementarity between layers: hocket (alternating hits),
 // antiphony (call-response), and canon (delayed imitation).
 // Reads ATW for other layer timing to compute ideal complement positions.

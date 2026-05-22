@@ -1,4 +1,4 @@
-// src/conductor/crossLayerDensityBalancer.js - Per-layer onset density balancer.
+// src/conductor/texture/layers/crossLayerDensityBalancer.js - Per-layer onset density balancer.
 // Compares onset density across polyrhythmic layers and detects when one
 // layer dominates. Density bias to rebalance activity across layers.
 // Pure query API - no side effects.

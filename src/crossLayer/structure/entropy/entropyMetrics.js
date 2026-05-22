@@ -1,4 +1,4 @@
-// src/crossLayer/structure/entropyMetrics.js
+// src/crossLayer/structure/entropy/entropyMetrics.js
 // Pure entropy measurement helpers for entropyRegulator.
 // Extracted to keep entropyRegulator.js focused on regulation logic.
 

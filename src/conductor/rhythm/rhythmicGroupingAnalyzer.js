@@ -1,4 +1,4 @@
-// src/conductor/rhythmicGroupingAnalyzer.js - Binary vs. ternary grouping detector.
+// src/conductor/rhythm/rhythmicGroupingAnalyzer.js - Binary vs. ternary grouping detector.
 // Analyzes recent onset patterns for binary (2+2) vs. ternary (3+3) grouping,
 // providing signals for grouping type awareness and transition detection.
 // Pure query API - consumed via conductorState.

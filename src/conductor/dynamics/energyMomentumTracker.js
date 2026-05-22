@@ -1,4 +1,4 @@
-// src/conductor/energyMomentumTracker.js - Tracks the derivative of composite intensity.
+// src/conductor/dynamics/energyMomentumTracker.js - Tracks the derivative of composite intensity.
 // Detects rising, falling, or plateaued energy momentum.
 // Pure query API - advises conductor to inject contrast when momentum stalls.
 

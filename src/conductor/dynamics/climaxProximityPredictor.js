@@ -1,4 +1,4 @@
-// src/conductor/climaxProximityPredictor.js - Multi-signal climax prediction.
+// src/conductor/dynamics/climaxProximityPredictor.js - Multi-signal climax prediction.
 // Combines energy momentum, register pressure, density, and tension trends
 // to predict when a climax is approaching, occurring, or spent.
 // Pure query API - prepares density/register/dynamics ramp before peaks.

@@ -1,4 +1,4 @@
-// src/rhythm/drumMap.js - central drum map with local fallback
+// src/rhythm/drums/drumMap.js - central drum map with local fallback
 const LOCAL_DRUM_MAP = {
   snare1: { note: 31, velocityRange: [99, 111] },
   snare2: { note: 33, velocityRange: [99, 111] },

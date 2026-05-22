@@ -1,4 +1,4 @@
-// src/conductor/tonalAnchorDistanceTracker.js - Tonal distance from home key tracker.
+// src/conductor/harmony/tonalAnchorDistanceTracker.js - Tonal distance from home key tracker.
 // Measures distance in semitones from a running "home key" center,
 // signalling harmonic adventure level. Tension bias proportional to distance.
 // Pure query API - no side effects.

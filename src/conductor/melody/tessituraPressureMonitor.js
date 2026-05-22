@@ -1,4 +1,4 @@
-// src/conductor/tessituraPressureMonitor.js - Extreme-register duration tracker.
+// src/conductor/melody/tessituraPressureMonitor.js - Extreme-register duration tracker.
 // Monitors how long voices stay in extreme high or low registers and biases
 // density toward relief when tessitural pressure is sustained too long.
 // Pure query API - no side effects.

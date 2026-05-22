@@ -1,4 +1,4 @@
-// src/crossLayer/articulationComplement.js - Cross-layer articulation contrast.
+// src/crossLayer/dynamics/articulationComplement.js - Cross-layer articulation contrast.
 // When one layer plays legato (long sustains), steers the other toward staccato
 // (short, punchy notes) and vice versa. Creates complementary articulation
 // textures driven by dynamicRoleSwap and sectionIntentCurves.

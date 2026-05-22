@@ -1,4 +1,4 @@
-// src/conductor/durationalContourTracker.js - Tracks note-duration trajectory over time.
+// src/conductor/dynamics/durationalContourTracker.js - Tracks note-duration trajectory over time.
 // Pure query API - biases duration envelope for intentional temporal shaping.
 
 moduleLifecycle.declare({

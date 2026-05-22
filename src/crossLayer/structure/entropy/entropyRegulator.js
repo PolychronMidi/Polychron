@@ -1,4 +1,4 @@
-// src/crossLayer/entropyRegulator.js - Cross-layer entropy regulation.
+// src/crossLayer/structure/entropy/entropyRegulator.js - Cross-layer entropy regulation.
 // of both layers. Defines a target entropy curve (low - high - low for tension arcs).
 // Nudges all cross-layer systems up or down to steer total entropy toward the target.
 // Acts as a meta-conductor for the cross-layer systems themselves.

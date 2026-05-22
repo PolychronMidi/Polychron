@@ -1,4 +1,4 @@
-// src/conductor/chromaticSaturationMonitor.js - Pitch-class coverage tracker.
+// src/conductor/harmony/chromaticSaturationMonitor.js - Pitch-class coverage tracker.
 // Counts how many of the 12 chromatic pitch classes appear in recent material.
 // Biases toward variety when diatonic-locked, restraint when over-saturated.
 // Pure query API - no side effects.

@@ -1,4 +1,4 @@
-// src/conductor/intervalDirectionMemory.js - Interval+direction overuse tracker.
+// src/conductor/melody/intervalDirectionMemory.js - Interval+direction overuse tracker.
 // Remembers which interval/direction pairs (e.g., "+3", "-5") have been
 // heavily used recently, providing freshness signals and avoidance hints.
 // Pure query API - consumed via conductorState.

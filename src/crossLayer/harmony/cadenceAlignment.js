@@ -1,4 +1,4 @@
-// src/crossLayer/cadenceAlignment.js - Cross-layer cadence synchronization.
+// src/crossLayer/harmony/cadenceAlignment.js - Cross-layer cadence synchronization.
 // Posts harmonic tension values to ATG 'tension' channel. When both layers
 // independently approach high tension within the same ms window, forces
 // simultaneous resolution - syncing cadence points to the same ms-derived tick.

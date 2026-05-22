@@ -1,4 +1,4 @@
-// src/conductor/thematicRecallDetector.js - Cross-section pitch-sequence similarity.
+// src/conductor/melody/thematicRecallDetector.js - Cross-section pitch-sequence similarity.
 // Compares recent pitch patterns against stored section fingerprints.
 // Pure query API - signals thematic callback opportunities or staleness.
 

@@ -1,4 +1,4 @@
-// src/conductor/attackDensityProfiler.js - Attack vs. sustain note ratio tracker.
+// src/conductor/rhythm/attackDensityProfiler.js - Attack vs. sustain note ratio tracker.
 // Measures the ratio of short/percussive (attack-heavy) notes to long/legato
 // (sustain-heavy) notes. Density bias for articulation balance.
 // Pure query API - no side effects.

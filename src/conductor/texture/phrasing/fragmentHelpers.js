@@ -1,4 +1,4 @@
-// src/conductor/texture/fragmentHelpers.js - Shared pitch-class fragment extraction.
+// src/conductor/texture/phrasing/fragmentHelpers.js - Shared pitch-class fragment extraction.
 // Used by motivicDensityTracker.
 // Pure query - reads L0.
 

@@ -1,4 +1,4 @@
-// src/crossLayer/feedbackOscillator.js - Cross-layer feedback loop oscillation.
+// src/crossLayer/rhythm/feedbackOscillator.js - Cross-layer feedback loop oscillation.
 // Layer A posts a reaction - B picks it up and posts its own reaction -
 // A picks up B's reaction - etc. Each round-trip dampens the intensity,
 // creating convergent rhythmic dialogues between layers.

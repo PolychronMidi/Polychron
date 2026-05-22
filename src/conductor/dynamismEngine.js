@@ -1,4 +1,4 @@
-// src/composers/dynamismEngine.js - Unified probability modulation for note emission
+// src/conductor/dynamismEngine.js - Unified probability modulation for note emission
 
 moduleLifecycle.declare({
   name: 'dynamismEngine',

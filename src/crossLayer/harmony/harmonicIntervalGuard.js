@@ -1,4 +1,4 @@
-// src/crossLayer/harmonicIntervalGuard.js - Cross-layer consonance/dissonance steering.
+// src/crossLayer/harmony/harmonicIntervalGuard.js - Cross-layer consonance/dissonance steering.
 // Tracks which intervals appear simultaneously between layers.
 // When intent calls for consonance, nudges cross-layer intervals toward
 // perfect/imperfect consonances. When dissonance is desired, steers toward

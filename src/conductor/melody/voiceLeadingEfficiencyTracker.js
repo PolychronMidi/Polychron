@@ -1,4 +1,4 @@
-// src/conductor/voiceLeadingEfficiencyTracker.js - Voice-leading smoothness tracker.
+// src/conductor/melody/voiceLeadingEfficiencyTracker.js - Voice-leading smoothness tracker.
 // Measures total semitone displacement between successive chord tones across layers.
 // Smooth voice leading (minimal movement) - higher efficiency score.
 // Pure query API - density bias to allow resolution time when choppy.

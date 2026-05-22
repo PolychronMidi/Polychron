@@ -1,4 +1,4 @@
-// src/conductor/harmonicFieldDensityTracker.js - Vertical harmonic density tracker.
+// src/conductor/harmony/harmonicFieldDensityTracker.js - Vertical harmonic density tracker.
 // Measures how many simultaneous pitches sound at once (chord thickness)
 // and biases density to manage vertical pile-up or thinness.
 // Pure query API - no side effects.

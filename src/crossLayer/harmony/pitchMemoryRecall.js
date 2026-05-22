@@ -1,4 +1,4 @@
-// src/crossLayer/pitchMemoryRecall.js - Long-term thematic pitch memory.
+// src/crossLayer/harmony/pitchMemoryRecall.js - Long-term thematic pitch memory.
 // When convergence, cadence, or downbeat events occur, recalls earlier material
 // for thematic unity. This is the only cross-layer module that persists across
 // sections by design - it's the long-term memory of the composition.

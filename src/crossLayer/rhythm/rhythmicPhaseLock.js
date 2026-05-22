@@ -1,4 +1,4 @@
-// src/crossLayer/rhythmicPhaseLock.js - Rhythmic phase lock/drift oscillator.
+// src/crossLayer/rhythm/rhythmicPhaseLock.js - Rhythmic phase lock/drift oscillator.
 // Measures instantaneous phase relationship between L1 and L2 beat grids.
 // When phase difference is small, briefly lock them (quantize onsets to aligned grid).
 // When large, repel further. Creates breathing patterns: sync - desync - sync.

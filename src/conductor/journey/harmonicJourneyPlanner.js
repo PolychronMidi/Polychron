@@ -1,4 +1,4 @@
-// src/conductor/harmonicJourneyPlanner.js
+// src/conductor/journey/harmonicJourneyPlanner.js
 // Pure journey-planning helpers extracted from harmonicJourney.planJourney().
 // Resolves the starting key/mode and builds subsequent journey steps.
 

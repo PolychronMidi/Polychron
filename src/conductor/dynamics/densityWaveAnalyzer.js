@@ -1,4 +1,4 @@
-// src/conductor/densityWaveAnalyzer.js - Detects periodic density oscillations.
+// src/conductor/dynamics/densityWaveAnalyzer.js - Detects periodic density oscillations.
 // Distinguishes between intentional density waves and flat/monotone density envelopes.
 // Pure query API - amplifies or dampens density flicker for musical shape.
 

@@ -1,4 +1,4 @@
-// src/crossLayer/emergentDownbeat.js - Emergent downbeat detection and accentuation.
+// src/crossLayer/rhythm/emergentDownbeat.js - Emergent downbeat detection and accentuation.
 // Neither layer has a "true" downbeat since they're polyrhythmic. But convergence
 // points + cadence alignments + velocity reinforcements implicitly create perceived
 // downbeats. Detect these emergent downbeats and lean into them: accent notes,

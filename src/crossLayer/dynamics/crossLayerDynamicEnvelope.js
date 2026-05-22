@@ -1,4 +1,4 @@
-// src/crossLayer/crossLayerDynamicEnvelope.js - Phrase-level dynamic arcs.
+// src/crossLayer/dynamics/crossLayerDynamicEnvelope.js - Phrase-level dynamic arcs.
 // Coordinates velocity envelopes across layers: parallel arcs (both crescendo
 // together), complementary arcs (one rises while the other falls), or
 // independent arcs. Provides per-beat velocity scaling factors.

@@ -1,4 +1,4 @@
-// src/conductor/silenceDistributionTracker.js - Rest distribution across layers.
+// src/conductor/texture/form/silenceDistributionTracker.js - Rest distribution across layers.
 // Analyzes the spatial distribution and coordination of rests (silence gaps)
 // across the polyrhythmic layers. Signals clustered silence (tutti pause)
 // vs. staggered breathing for the conductor to modulate.

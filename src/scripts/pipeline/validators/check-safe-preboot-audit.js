@@ -1,5 +1,5 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
-// src/scripts/pipeline/check-safe-preboot-audit.js
+// src/scripts/pipeline/validators/check-safe-preboot-audit.js
 // Tracks safePreBoot.call() usage across the codebase to prevent debt growth.
 // safePreBoot silently catches errors when globals aren't ready -- structurally
 // equivalent to the || 0 pattern that Principle 2 (fail fast) prohibits.
