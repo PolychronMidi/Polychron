@@ -215,12 +215,12 @@ fi
 # observed below, but does not create an avoidable CLI outage during warmup.
 _waited=0
 while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
-  _port_healthy "$PROXY_READY_URL" && break
+  _proxy_listener_ready && break
   sleep 1
   _waited=$((_waited + 1))
 done
 
-if _port_healthy "$PROXY_READY_URL"; then
+if _proxy_listener_ready; then
   echo "[proxy-restart] proxy listener ready after ${_waited}s" >&2
 else
   echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
