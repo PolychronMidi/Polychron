@@ -133,5 +133,41 @@ class CrossContextIsolationTests(unittest.TestCase):
                              msg=f"infra reach got flagged: {r.details}")
 
 
+    def test_allowed_reach_waiver_silences_violation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _seed_tree(root, beta_uses_alpha_facade=False)
+            # Add waiver for beta_main.js -> alpha_main.js
+            reg_path = root / "tools/HME/config/proxy-contexts.json"
+            data = json.loads(reg_path.read_text())
+            data["allowed_reaches"] = [{
+                "from": "tools/HME/proxy/beta_main.js",
+                "to": "tools/HME/proxy/alpha_main.js",
+                "reason": "test cycle-break",
+            }]
+            reg_path.write_text(json.dumps(data))
+            r = with_project_root(root, _run)
+            self.assertEqual(r.status, "PASS",
+                             msg=f"waiver did not silence reach: {r.summary} {r.details}")
+
+    def test_stale_waiver_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _seed_tree(root, beta_uses_alpha_facade=True)
+            # Waiver for a reach that doesn't occur -- should FAIL as stale.
+            reg_path = root / "tools/HME/config/proxy-contexts.json"
+            data = json.loads(reg_path.read_text())
+            data["allowed_reaches"] = [{
+                "from": "tools/HME/proxy/beta_main.js",
+                "to": "tools/HME/proxy/alpha_main.js",
+                "reason": "stale -- beta goes through facade",
+            }]
+            reg_path.write_text(json.dumps(data))
+            r = with_project_root(root, _run)
+            self.assertEqual(r.status, "FAIL", msg=f"summary={r.summary}")
+            self.assertTrue(any("stale allowed_reach" in d for d in r.details),
+                            msg=f"details={r.details}")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -126,6 +126,15 @@ class CrossContextIsolationVerifier(Verifier):
         if not proxy_dir.is_dir():
             return skipped(summary=f"no proxy dir at {PROXY_DIR_REL}")
 
+        allowed_reaches: set[tuple[str, str]] = set()
+        allowed_entries = registry.get("allowed_reaches") or []
+        for entry in allowed_entries:
+            f = entry.get("from")
+            t = entry.get("to")
+            if isinstance(f, str) and isinstance(t, str):
+                allowed_reaches.add((f, t))
+
+        observed_reaches: set[tuple[str, str]] = set()
         violations: list[str] = []
         checked = 0
         for js in sorted(proxy_dir.rglob("*.js")):
@@ -154,11 +163,27 @@ class CrossContextIsolationVerifier(Verifier):
                 if resolved == facade:
                     continue
                 checked += 1
+                pair = (importer_rel, resolved)
+                if pair in allowed_reaches:
+                    observed_reaches.add(pair)
+                    continue
                 violations.append(
                     f"{importer_rel} ({importer_ctx}) -> {resolved} "
                     f"({target_ctx}, should go through "
                     f"contexts/{target_ctx}/)"
                 )
+
+        stale = []
+        for f, t in allowed_reaches - observed_reaches:
+            stale.append(
+                f"stale allowed_reach: {f} -> {t} no longer occurs; "
+                f"remove from {REGISTRY_REL}"
+            )
+        if stale:
+            return failed(
+                summary=f"{len(stale)} stale allowed_reach waiver(s)",
+                details=stale,
+            )
 
         if not violations:
             return passed(summary="no cross-context internal reaches detected")
