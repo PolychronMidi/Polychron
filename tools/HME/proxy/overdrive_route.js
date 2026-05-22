@@ -117,6 +117,18 @@ function findModelById(cfg, id) {
   return null;
 }
 
+function findAnthropicModelByApiId(cfg, apiModel) {
+  const wanted = String(apiModel || '');
+  if (!wanted) return null;
+  for (const tier of Object.values((cfg && cfg.tiers) || {})) {
+    for (const model of (tier && tier.models) || []) {
+      if (!model || String(model.provider || '') !== 'anthropic') continue;
+      if (upstreamModelId(model) === wanted) return model;
+    }
+  }
+  return null;
+}
+
 function rankedForTier(cfg, tier, env = process.env, routeHealth = {}) {
   const skipSet = providerSkipSet(cfg, env);
   const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || [])
