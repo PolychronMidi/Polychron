@@ -46,11 +46,17 @@ const PROXY_GIT_SHA = (() => {
   } catch (_) { return 'unknown'; }
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
-try {
+function writeRuntimeMetadata() {
   const runtimePath = require('path').resolve(__dirname, '..', 'runtime', 'proxy-runtime.json');
   require('fs').mkdirSync(require('path').dirname(runtimePath), { recursive: true });
   require('fs').writeFileSync(runtimePath, JSON.stringify({ git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, pid: process.pid }) + '\n');
-} catch (_e) { /* silent-ok: runtime metadata best-effort */ }
+}
+function logRuntimeMetadataFailure(err) {
+  try {
+    const errLog = require('path').resolve(__dirname, '..', '..', '..', 'log', 'hme-errors.log');
+    require('fs').appendFileSync(errLog, `[${new Date().toISOString()}] [proxy-runtime] ERROR failed to write runtime metadata after listen: ${err.message}\n`);
+  } catch (_e) { /* silent-ok: alert sink best-effort */ }
+}
 
 const proxyRouteMetrics = createRouteMetrics();
 const PORT = servicePort('proxy');
