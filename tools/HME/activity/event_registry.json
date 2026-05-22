@@ -2,39 +2,92 @@
   "_doc": "Canonical HME telemetry event registry. Edit this file, then run tools/HME/activity/render_events_doc.py to refresh EVENTS.md.",
   "events": [
     {
-      "name": "file_written",
-      "category": "File-system / edit lifecycle",
+      "name": "cascade_prediction_empty",
+      "category": "Cascade / prediction",
       "streams": [
         "activity"
       ],
       "groups": [
-        "filesystem"
+        "prediction"
       ],
-      "summary": "A watcher or proxy detected a write under an allow-listed path."
+      "summary": "A cascade-prediction call returned no candidates."
     },
     {
-      "name": "file_watcher_filtered",
-      "category": "File-system / edit lifecycle",
+      "name": "cascade_prediction_injected",
+      "category": "Cascade / prediction",
       "streams": [
         "activity"
       ],
       "groups": [
-        "filesystem"
+        "prediction"
       ],
-      "summary": "A watcher write was suppressed by ignore directories, extensions, or noise suffixes."
+      "summary": "Cascade prediction middleware injected a prediction snippet."
     },
     {
-      "name": "brief_recorded",
-      "category": "File-system / edit lifecycle",
+      "name": "coherence_violation",
+      "category": "Cascade / prediction",
       "streams": [
         "activity"
       ],
       "groups": [
-        "agent_loop",
-        "briefing",
-        "manual_brief"
+        "prediction"
       ],
-      "summary": "Read/Edit enrichment recorded a target brief before editing it."
+      "summary": "A read/edit or autocommit pattern matched a known-incoherent shape."
+    },
+    {
+      "name": "consensus_divergence",
+      "category": "Drift / regression signals",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "regression"
+      ],
+      "summary": "Two synthesis paths disagreed beyond the configured threshold."
+    },
+    {
+      "name": "consensus_regression",
+      "category": "Drift / regression signals",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "regression"
+      ],
+      "summary": "Consensus score dropped round-over-round."
+    },
+    {
+      "name": "harvester_ignored",
+      "category": "Drift / regression signals",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "regression"
+      ],
+      "summary": "The KB harvester rejected a candidate entry."
+    },
+    {
+      "name": "hci_regression",
+      "category": "Drift / regression signals",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "regression"
+      ],
+      "summary": "HCI score dropped by the configured regression threshold round-over-round."
+    },
+    {
+      "name": "legendary_drift_preemptive",
+      "category": "Drift / regression signals",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "regression"
+      ],
+      "summary": "The drift detector caught a known-bad pattern before it landed."
     },
     {
       "name": "auto_brief_injected",
@@ -50,6 +103,19 @@
       "summary": "A pretooluse hook chained the KB briefing automatically."
     },
     {
+      "name": "brief_recorded",
+      "category": "File-system / edit lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "agent_loop",
+        "briefing",
+        "manual_brief"
+      ],
+      "summary": "Read/Edit enrichment recorded a target brief before editing it."
+    },
+    {
       "name": "edit_without_brief",
       "category": "File-system / edit lifecycle",
       "streams": [
@@ -61,6 +127,28 @@
       "summary": "A src/ Edit fired without a prior brief."
     },
     {
+      "name": "file_watcher_filtered",
+      "category": "File-system / edit lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "filesystem"
+      ],
+      "summary": "A watcher write was suppressed by ignore directories, extensions, or noise suffixes."
+    },
+    {
+      "name": "file_written",
+      "category": "File-system / edit lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "filesystem"
+      ],
+      "summary": "A watcher or proxy detected a write under an allow-listed path."
+    },
+    {
       "name": "kb_draft_written",
       "category": "File-system / edit lifecycle",
       "streams": [
@@ -70,18 +158,6 @@
         "filesystem"
       ],
       "summary": "posttooluse_bash auto-wrote tmp/hme-learn-draft.json after a stable pipeline verdict."
-    },
-    {
-      "name": "productive_incoherence",
-      "category": "File-system / edit lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "filesystem",
-        "learn_suggestion"
-      ],
-      "summary": "An edit intentionally entered uncovered territory while preserving traceability."
     },
     {
       "name": "learn_suggested",
@@ -96,15 +172,27 @@
       "summary": "A hook suggested capturing novel findings into HME knowledge."
     },
     {
-      "name": "read_context",
-      "category": "KB / context",
+      "name": "productive_incoherence",
+      "category": "File-system / edit lifecycle",
       "streams": [
         "activity"
       ],
       "groups": [
-        "context"
+        "filesystem",
+        "learn_suggestion"
       ],
-      "summary": "Read context middleware enriched a Read result with KB titles."
+      "summary": "An edit intentionally entered uncovered territory while preserving traceability."
+    },
+    {
+      "name": "shortcut_expanded",
+      "category": "Interactive / shortcut",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "shortcut"
+      ],
+      "summary": "Proxy expanded an interactive shortcut command before forwarding."
     },
     {
       "name": "memory_redirect_flagged_preemptive",
@@ -116,6 +204,619 @@
         "context"
       ],
       "summary": "Memory redirect middleware caught a deprecated memory-path write before hook handling."
+    },
+    {
+      "name": "read_context",
+      "category": "KB / context",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "context"
+      ],
+      "summary": "Read context middleware enriched a Read result with KB titles."
+    },
+    {
+      "name": "omo_bridge_error",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "An OMO bridge call failed without crashing the native HME path."
+    },
+    {
+      "name": "omo_checkout_evaluated",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Evaluated the configured OMO checkout/package and optional plugin entrypoint import."
+    },
+    {
+      "name": "omo_context_injected",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Consumed OMO/HME context entries within a byte budget."
+    },
+    {
+      "name": "omo_context_registered",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Registered a bounded context entry for OMO/HME context injection."
+    },
+    {
+      "name": "omo_contract_validated",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Validated the HME/OMO compatibility contract against the resolved dependency."
+    },
+    {
+      "name": "omo_dependency_resolved",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Resolved the configured OMO dependency source, version, commit, and status."
+    },
+    {
+      "name": "omo_hook_invoked",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Invoked an OMO/OpenCode hook through the HME adapter and validation gate."
+    },
+    {
+      "name": "omo_policy_checked",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "An OMO-originated action was checked by HME policy."
+    },
+    {
+      "name": "omo_pruning_completed",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Completed OMO dynamic-pruning or compatibility pruning with byte/message stats."
+    },
+    {
+      "name": "omo_pruning_started",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Started OMO dynamic-pruning or compatibility pruning for a payload."
+    },
+    {
+      "name": "omo_session_snapshot",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Read a read-only OMO/OpenCode session snapshot for HME use."
+    },
+    {
+      "name": "omo_tool_blocked",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "An OMO-originated tool/action was blocked by HME policy."
+    },
+    {
+      "name": "omo_tool_bridge_exported",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "Exported canonical HME tool descriptors into OMO-facing shape."
+    },
+    {
+      "name": "omo_tool_invoked",
+      "category": "OMO bridge",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "omo_bridge",
+        "proxy"
+      ],
+      "summary": "An OMO-originated tool action entered the HME bridge invocation path."
+    },
+    {
+      "name": "axis_rebalance_cost",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline"
+      ],
+      "summary": "The coherence axis rebalancer applied a cost adjustment."
+    },
+    {
+      "name": "axis_share_deviation",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline"
+      ],
+      "summary": "A coherence axis share moved outside the target band."
+    },
+    {
+      "name": "epoch_transition_auto_applied",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline"
+      ],
+      "summary": "The pipeline auto-applied an epoch transition."
+    },
+    {
+      "name": "idle_round",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline"
+      ],
+      "summary": "A coherence-score window contained no human or agent file-written activity."
+    },
+    {
+      "name": "pipeline_baseline_delta",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline"
+      ],
+      "summary": "The pipeline recorded commit/file delta versus the previous run."
+    },
+    {
+      "name": "pipeline_finished",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "signal"
+      ],
+      "groups": [
+        "pipeline",
+        "pipeline_boundary"
+      ],
+      "summary": "The posttooluse Bash hook observed pipeline completion."
+    },
+    {
+      "name": "pipeline_run",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline",
+        "pipeline_boundary"
+      ],
+      "summary": "A pipeline run finished and recorded verdict, pass/fail, wall time, and HCI."
+    },
+    {
+      "name": "pipeline_start",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline",
+        "pipeline_boundary"
+      ],
+      "summary": "A pipeline run started."
+    },
+    {
+      "name": "review_complete",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline"
+      ],
+      "summary": "i/review completed and captured a verdict."
+    },
+    {
+      "name": "round_complete",
+      "category": "Pipeline / coherence",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "pipeline",
+        "pipeline_boundary",
+        "round_boundary"
+      ],
+      "summary": "A pipeline round finished and closed the activity window for coherence calculations."
+    },
+    {
+      "name": "context_compaction",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context"
+      ],
+      "summary": "Proxy compacted the request payload to fit upstream context limits."
+    },
+    {
+      "name": "context_token_usage",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "telemetry"
+      ],
+      "summary": "Proxy recorded token usage delta for a completed upstream request."
+    },
+    {
+      "name": "context_window_retry",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "retry"
+      ],
+      "summary": "Proxy retried after the upstream signaled context-window exhaustion."
+    },
+    {
+      "name": "model_route_quarantine",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "routing"
+      ],
+      "summary": "Proxy marked an OmniRoute model route as cooldown after a credential or limit failure."
+    },
+    {
+      "name": "omniroute_credential_failover",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "routing"
+      ],
+      "summary": "Proxy failed over to the next OmniRoute chain target after a credential failure on the primary."
+    },
+    {
+      "name": "request",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "Generic upstream request envelope emitted by the proxy."
+    },
+    {
+      "name": "upstream_midresponse_recovered",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "retry"
+      ],
+      "summary": "Proxy recovered from a mid-response upstream error without surfacing it to the client."
+    },
+    {
+      "name": "session_start",
+      "category": "Round / session",
+      "streams": [
+        "signal"
+      ],
+      "groups": [
+        "session_marker"
+      ],
+      "summary": "The session-start lifecycle hook initialized a new session boundary."
+    },
+    {
+      "name": "turn_complete",
+      "category": "Round / session",
+      "streams": [
+        "activity",
+        "signal"
+      ],
+      "groups": [
+        "agent_loop",
+        "turn_marker"
+      ],
+      "summary": "The Stop lifecycle hook marked the end of a chat turn."
+    },
+    {
+      "name": "turn_start",
+      "category": "Round / session",
+      "streams": [
+        "signal"
+      ],
+      "groups": [
+        "agent_loop",
+        "turn_marker"
+      ],
+      "summary": "The UserPromptSubmit lifecycle hook marked the start of a chat turn."
+    },
+    {
+      "name": "adhoc_spawn",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "The supervisor spawned an ad-hoc child process."
+    },
+    {
+      "name": "agent_jobs_empty_result",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "subagent"
+      ],
+      "summary": "Agent-job capture wrote an empty Agent result for a queued HME task."
+    },
+    {
+      "name": "agent_jobs_result_captured",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "subagent"
+      ],
+      "summary": "Agent-job capture wrote a non-empty Agent result for a queued HME task."
+    },
+    {
+      "name": "child_adopted",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "The supervisor adopted an existing child PID after restart or discovery."
+    },
+    {
+      "name": "child_exited",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "A supervised child exited cleanly."
+    },
+    {
+      "name": "child_force_killed",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "A child required SIGKILL after SIGTERM did not resolve it."
+    },
+    {
+      "name": "child_hang_killed",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "A child was killed for hanging past its timeout."
+    },
+    {
+      "name": "child_restart_limit",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "A child exceeded restart attempts and the supervisor stopped trying."
+    },
+    {
+      "name": "child_restarted",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "The supervisor restarted a failed child."
+    },
+    {
+      "name": "child_started",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "A supervised child process started successfully."
+    },
+    {
+      "name": "child_unhealthy",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "A child failed health check and restart handling is pending."
+    },
+    {
+      "name": "mcp_hang_kill",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "An MCP server was killed for hanging."
+    },
+    {
+      "name": "proxy_emergency",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor",
+        "upstream_failure"
+      ],
+      "summary": "The proxy entered an emergency state requiring backoff or intervention."
+    },
+    {
+      "name": "proxy_emergency_cleared",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "The emergency valve auto-cleared after the backoff window elapsed."
+    },
+    {
+      "name": "subagent_clean_gate_failed",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "subagent"
+      ],
+      "summary": "The subagent clean gate found advisory check failures for files mentioned by an Agent result."
+    },
+    {
+      "name": "subagent_clean_gate_ok",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "subagent"
+      ],
+      "summary": "The subagent clean gate passed its advisory checks for files mentioned by an Agent result."
+    },
+    {
+      "name": "supervisor_spawn_error",
+      "category": "Subagent / supervisor lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "supervisor"
+      ],
+      "summary": "The supervisor failed to spawn a child process."
+    },
+    {
+      "name": "edit_failure_raw_result_replaced",
+      "category": "Tool / lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "edit",
+        "tool"
+      ],
+      "summary": "Proxy substituted a raw failed Edit tool_result with a synthesized error envelope."
     },
     {
       "name": "bash_error_surfaced",
@@ -152,6 +853,50 @@
       "summary": "Backgrounded resolution exceeded its wait window."
     },
     {
+      "name": "bias_bounds_snapshot_queued",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "Post-write side effects queued a bias-bounds snapshot after a relevant edit."
+    },
+    {
+      "name": "boilerplate_stripped",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The proxy removed boilerplate prefixes from tool output."
+    },
+    {
+      "name": "cache_control_normalized",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The proxy promoted short cache_control TTLs to avoid upstream ordering failures."
+    },
+    {
+      "name": "dir_context",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "Directory-context middleware injected directory-intent context."
+    },
+    {
       "name": "dominance_prefetch_fired",
       "category": "Tool / proxy lifecycle",
       "streams": [
@@ -163,42 +908,7 @@
       "summary": "Dominance prefetch warmed cache for a likely-next call."
     },
     {
-      "name": "web_tool_call",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "tool_invocation"
-      ],
-      "summary": "The agent invoked a WebSearch or WebFetch tool."
-    },
-    {
-      "name": "mcp_tool_call",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "tool_invocation"
-      ],
-      "summary": "The agent invoked an MCP tool."
-    },
-    {
-      "name": "tool_call",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "agent_loop",
-        "agent_loop_tool",
-        "tool_invocation"
-      ],
-      "summary": "Generic proxy bookkeeping marker for a completed tool invocation."
-    },
-    {
-      "name": "hme_tool_result",
+      "name": "edit_context",
       "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
@@ -206,10 +916,22 @@
       "groups": [
         "proxy"
       ],
-      "summary": "The proxy received a result for an HME tool call."
+      "summary": "Edit-context middleware injected pre-edit KB context."
     },
     {
-      "name": "hme_continuation",
+      "name": "edit_failure_context_appended",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "error_surface"
+      ],
+      "summary": "Edit-failure middleware appended file context after an edit could not apply."
+    },
+    {
+      "name": "empty_tool_result_marked",
       "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
@@ -217,18 +939,7 @@
       "groups": [
         "proxy"
       ],
-      "summary": "The proxy emitted a continuation step on a multi-step HME tool flow."
-    },
-    {
-      "name": "hme_continuation_complete",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "A multi-step HME continuation completed."
+      "summary": "The proxy tagged an empty tool result body as SUCCESS or FAIL."
     },
     {
       "name": "enricher_acted_upon",
@@ -253,7 +964,7 @@
       "summary": "An enricher middleware appended content to a tool result."
     },
     {
-      "name": "empty_tool_result_marked",
+      "name": "hme_continuation",
       "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
@@ -261,10 +972,10 @@
       "groups": [
         "proxy"
       ],
-      "summary": "The proxy tagged an empty tool result body as SUCCESS or FAIL."
+      "summary": "The proxy emitted a continuation step on a multi-step HME tool flow."
     },
     {
-      "name": "status_inject",
+      "name": "hme_continuation_complete",
       "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
@@ -272,392 +983,7 @@
       "groups": [
         "proxy"
       ],
-      "summary": "i/status output was auto-injected as a system reminder."
-    },
-    {
-      "name": "jurisdiction_inject",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "The proxy injected a hypermeta jurisdiction warning into agent context."
-    },
-    {
-      "name": "neighborhood_enrichment",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Grep/glob neighborhood middleware appended sibling-file context."
-    },
-    {
-      "name": "semantic_redundancy_stripped",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "The proxy removed redundant sentences from a tool result before display."
-    },
-    {
-      "name": "boilerplate_stripped",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "The proxy removed boilerplate prefixes from tool output."
-    },
-    {
-      "name": "secret_sanitized",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Secret sanitizer middleware redacted credential patterns from tool output."
-    },
-    {
-      "name": "skill_reminder_stripped",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "The proxy removed repeated skill reminders or compacted low-signal Stop-hook feedback."
-    },
-    {
-      "name": "memory_redirect",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Middleware redirected a memory-directory write attempt."
-    },
-    {
-      "name": "nexus_cleared",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "The NEXUS state file was reset, typically at session start."
-    },
-    {
-      "name": "dir_context",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Directory-context middleware injected directory-intent context."
-    },
-    {
-      "name": "edit_context",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Edit-context middleware injected pre-edit KB context."
-    },
-    {
-      "name": "cache_control_normalized",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "The proxy promoted short cache_control TTLs to avoid upstream ordering failures."
-    },
-    {
-      "name": "bias_bounds_snapshot_queued",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Post-write side effects queued a bias-bounds snapshot after a relevant edit."
-    },
-    {
-      "name": "edit_failure_context_appended",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "error_surface"
-      ],
-      "summary": "Edit-failure middleware appended file context after an edit could not apply."
-    },
-    {
-      "name": "omo_dependency_resolved",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Resolved the configured OMO dependency source, version, commit, and status."
-    },
-    {
-      "name": "omo_contract_validated",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Validated the HME/OMO compatibility contract against the resolved dependency."
-    },
-    {
-      "name": "omo_checkout_evaluated",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Evaluated the configured OMO checkout/package and optional plugin entrypoint import."
-    },
-    {
-      "name": "omo_bridge_error",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "An OMO bridge call failed without crashing the native HME path."
-    },
-    {
-      "name": "omo_tool_bridge_exported",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Exported canonical HME tool descriptors into OMO-facing shape."
-    },
-    {
-      "name": "omo_tool_invoked",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "An OMO-originated tool action entered the HME bridge invocation path."
-    },
-    {
-      "name": "omo_tool_blocked",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "An OMO-originated tool/action was blocked by HME policy."
-    },
-    {
-      "name": "omo_policy_checked",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "An OMO-originated action was checked by HME policy."
-    },
-    {
-      "name": "omo_context_registered",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Registered a bounded context entry for OMO/HME context injection."
-    },
-    {
-      "name": "omo_context_injected",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Consumed OMO/HME context entries within a byte budget."
-    },
-    {
-      "name": "omo_pruning_started",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Started OMO dynamic-pruning or compatibility pruning for a payload."
-    },
-    {
-      "name": "omo_pruning_completed",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Completed OMO dynamic-pruning or compatibility pruning with byte/message stats."
-    },
-    {
-      "name": "omo_session_snapshot",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Read a read-only OMO/OpenCode session snapshot for HME use."
-    },
-    {
-      "name": "omo_hook_invoked",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "Invoked an OMO/OpenCode hook through the HME adapter and validation gate."
-    },
-    {
-      "name": "post_write_side_effect_failed",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "error_surface"
-      ],
-      "summary": "A post-write side-effect hook failed and emitted its diagnostic surface."
-    },
-    {
-      "name": "policy_rewrite",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "policy"
-      ],
-      "summary": "Policy middleware rewrote a tool payload while preserving the allowed operation."
-    },
-    {
-      "name": "stop_reminder_inject",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "briefing"
-      ],
-      "summary": "Stop-reminder middleware injected a compact continuity reminder."
-    },
-    {
-      "name": "todo_status_suppressed",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "briefing"
-      ],
-      "summary": "Todo status filtering suppressed repeated todo-state context."
-    },
-    {
-      "name": "upstream_stream_timeout_retry",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "upstream_failure"
-      ],
-      "summary": "The proxy retried an upstream stream after a timeout-class failure."
-    },
-    {
-      "name": "web_tool_failure",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "tool_invocation",
-        "error_surface"
-      ],
-      "summary": "Web tool enrichment observed a repeated failure for a target."
+      "summary": "A multi-step HME continuation completed."
     },
     {
       "name": "hme_log_error_escalated",
@@ -670,6 +996,40 @@
         "error_surface"
       ],
       "summary": "HME log watermark escalated ERROR lines into the lifesaver error log."
+    },
+    {
+      "name": "hme_tool_result",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The proxy received a result for an HME tool call."
+    },
+    {
+      "name": "inference_call",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "agent_loop",
+        "inference"
+      ],
+      "summary": "A local-inference subprocess was invoked."
+    },
+    {
+      "name": "jurisdiction_inject",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The proxy injected a hypermeta jurisdiction warning into agent context."
     },
     {
       "name": "lifesaver_injected",
@@ -708,6 +1068,28 @@
       "summary": "MCP fail-scan escalated FAIL lines into the lifesaver error log."
     },
     {
+      "name": "mcp_tool_call",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "tool_invocation"
+      ],
+      "summary": "The agent invoked an MCP tool."
+    },
+    {
+      "name": "memory_redirect",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "Middleware redirected a memory-directory write attempt."
+    },
+    {
       "name": "middleware_warning",
       "category": "Tool / proxy lifecycle",
       "streams": [
@@ -720,27 +1102,131 @@
       "summary": "Middleware recorded a non-fatal warning in telemetry instead of printing into tool output."
     },
     {
-      "name": "inference_call",
+      "name": "neighborhood_enrichment",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "Grep/glob neighborhood middleware appended sibling-file context."
+    },
+    {
+      "name": "nexus_cleared",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The NEXUS state file was reset, typically at session start."
+    },
+    {
+      "name": "policy_rewrite",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "policy"
+      ],
+      "summary": "Policy middleware rewrote a tool payload while preserving the allowed operation."
+    },
+    {
+      "name": "post_write_side_effect_failed",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "error_surface"
+      ],
+      "summary": "A post-write side-effect hook failed and emitted its diagnostic surface."
+    },
+    {
+      "name": "secret_sanitized",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "Secret sanitizer middleware redacted credential patterns from tool output."
+    },
+    {
+      "name": "semantic_redundancy_stripped",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The proxy removed redundant sentences from a tool result before display."
+    },
+    {
+      "name": "skill_reminder_stripped",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "The proxy removed repeated skill reminders or compacted low-signal Stop-hook feedback."
+    },
+    {
+      "name": "status_inject",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy"
+      ],
+      "summary": "i/status output was auto-injected as a system reminder."
+    },
+    {
+      "name": "stop_reminder_inject",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "briefing"
+      ],
+      "summary": "Stop-reminder middleware injected a compact continuity reminder."
+    },
+    {
+      "name": "todo_status_suppressed",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "briefing"
+      ],
+      "summary": "Todo status filtering suppressed repeated todo-state context."
+    },
+    {
+      "name": "tool_call",
       "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
       ],
       "groups": [
         "agent_loop",
-        "inference"
+        "agent_loop_tool",
+        "tool_invocation"
       ],
-      "summary": "A local-inference subprocess was invoked."
-    },
-    {
-      "name": "upstream_error",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "upstream_failure"
-      ],
-      "summary": "The proxy classified an upstream HTTP or SSE response as failed."
+      "summary": "Generic proxy bookkeeping marker for a completed tool invocation."
     },
     {
       "name": "upstream_conn_error",
@@ -754,6 +1240,17 @@
       "summary": "A TCP/TLS-level failure occurred before an upstream HTTP response."
     },
     {
+      "name": "upstream_error",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "upstream_failure"
+      ],
+      "summary": "The proxy classified an upstream HTTP or SSE response as failed."
+    },
+    {
       "name": "upstream_midresponse_error",
       "category": "Tool / proxy lifecycle",
       "streams": [
@@ -765,431 +1262,40 @@
       "summary": "The upstream began streaming and then failed or closed prematurely."
     },
     {
-      "name": "agent_jobs_result_captured",
-      "category": "Subagent / supervisor lifecycle",
+      "name": "upstream_stream_timeout_retry",
+      "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
       ],
       "groups": [
-        "subagent"
-      ],
-      "summary": "Agent-job capture wrote a non-empty Agent result for a queued HME task."
-    },
-    {
-      "name": "agent_jobs_empty_result",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "subagent"
-      ],
-      "summary": "Agent-job capture wrote an empty Agent result for a queued HME task."
-    },
-    {
-      "name": "subagent_clean_gate_ok",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "subagent"
-      ],
-      "summary": "The subagent clean gate passed its advisory checks for files mentioned by an Agent result."
-    },
-    {
-      "name": "subagent_clean_gate_failed",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "subagent"
-      ],
-      "summary": "The subagent clean gate found advisory check failures for files mentioned by an Agent result."
-    },
-    {
-      "name": "adhoc_spawn",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "The supervisor spawned an ad-hoc child process."
-    },
-    {
-      "name": "child_started",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "A supervised child process started successfully."
-    },
-    {
-      "name": "child_adopted",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "The supervisor adopted an existing child PID after restart or discovery."
-    },
-    {
-      "name": "child_exited",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "A supervised child exited cleanly."
-    },
-    {
-      "name": "child_unhealthy",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "A child failed health check and restart handling is pending."
-    },
-    {
-      "name": "child_hang_killed",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "A child was killed for hanging past its timeout."
-    },
-    {
-      "name": "child_force_killed",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "A child required SIGKILL after SIGTERM did not resolve it."
-    },
-    {
-      "name": "child_restarted",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "The supervisor restarted a failed child."
-    },
-    {
-      "name": "child_restart_limit",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "A child exceeded restart attempts and the supervisor stopped trying."
-    },
-    {
-      "name": "mcp_hang_kill",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "An MCP server was killed for hanging."
-    },
-    {
-      "name": "supervisor_spawn_error",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor"
-      ],
-      "summary": "The supervisor failed to spawn a child process."
-    },
-    {
-      "name": "proxy_emergency",
-      "category": "Subagent / supervisor lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "supervisor",
+        "proxy",
         "upstream_failure"
       ],
-      "summary": "The proxy entered an emergency state requiring backoff or intervention."
+      "summary": "The proxy retried an upstream stream after a timeout-class failure."
     },
     {
-      "name": "proxy_emergency_cleared",
-      "category": "Subagent / supervisor lifecycle",
+      "name": "web_tool_call",
+      "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
       ],
       "groups": [
-        "supervisor"
+        "tool_invocation"
       ],
-      "summary": "The emergency valve auto-cleared after the backoff window elapsed."
+      "summary": "The agent invoked a WebSearch or WebFetch tool."
     },
     {
-      "name": "cascade_prediction_empty",
-      "category": "Cascade / prediction",
+      "name": "web_tool_failure",
+      "category": "Tool / proxy lifecycle",
       "streams": [
         "activity"
       ],
       "groups": [
-        "prediction"
+        "proxy",
+        "tool_invocation",
+        "error_surface"
       ],
-      "summary": "A cascade-prediction call returned no candidates."
-    },
-    {
-      "name": "cascade_prediction_injected",
-      "category": "Cascade / prediction",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "prediction"
-      ],
-      "summary": "Cascade prediction middleware injected a prediction snippet."
-    },
-    {
-      "name": "coherence_violation",
-      "category": "Cascade / prediction",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "prediction"
-      ],
-      "summary": "A read/edit or autocommit pattern matched a known-incoherent shape."
-    },
-    {
-      "name": "hci_regression",
-      "category": "Drift / regression signals",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "regression"
-      ],
-      "summary": "HCI score dropped by the configured regression threshold round-over-round."
-    },
-    {
-      "name": "consensus_divergence",
-      "category": "Drift / regression signals",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "regression"
-      ],
-      "summary": "Two synthesis paths disagreed beyond the configured threshold."
-    },
-    {
-      "name": "consensus_regression",
-      "category": "Drift / regression signals",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "regression"
-      ],
-      "summary": "Consensus score dropped round-over-round."
-    },
-    {
-      "name": "legendary_drift_preemptive",
-      "category": "Drift / regression signals",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "regression"
-      ],
-      "summary": "The drift detector caught a known-bad pattern before it landed."
-    },
-    {
-      "name": "harvester_ignored",
-      "category": "Drift / regression signals",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "regression"
-      ],
-      "summary": "The KB harvester rejected a candidate entry."
-    },
-    {
-      "name": "axis_rebalance_cost",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline"
-      ],
-      "summary": "The coherence axis rebalancer applied a cost adjustment."
-    },
-    {
-      "name": "axis_share_deviation",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline"
-      ],
-      "summary": "A coherence axis share moved outside the target band."
-    },
-    {
-      "name": "epoch_transition_auto_applied",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline"
-      ],
-      "summary": "The pipeline auto-applied an epoch transition."
-    },
-    {
-      "name": "review_complete",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline"
-      ],
-      "summary": "i/review completed and captured a verdict."
-    },
-    {
-      "name": "pipeline_start",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline",
-        "pipeline_boundary"
-      ],
-      "summary": "A pipeline run started."
-    },
-    {
-      "name": "pipeline_baseline_delta",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline"
-      ],
-      "summary": "The pipeline recorded commit/file delta versus the previous run."
-    },
-    {
-      "name": "pipeline_run",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline",
-        "pipeline_boundary"
-      ],
-      "summary": "A pipeline run finished and recorded verdict, pass/fail, wall time, and HCI."
-    },
-    {
-      "name": "round_complete",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline",
-        "pipeline_boundary",
-        "round_boundary"
-      ],
-      "summary": "A pipeline round finished and closed the activity window for coherence calculations."
-    },
-    {
-      "name": "idle_round",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "pipeline"
-      ],
-      "summary": "A coherence-score window contained no human or agent file-written activity."
-    },
-    {
-      "name": "pipeline_finished",
-      "category": "Pipeline / coherence",
-      "streams": [
-        "signal"
-      ],
-      "groups": [
-        "pipeline",
-        "pipeline_boundary"
-      ],
-      "summary": "The posttooluse Bash hook observed pipeline completion."
-    },
-    {
-      "name": "session_start",
-      "category": "Round / session",
-      "streams": [
-        "signal"
-      ],
-      "groups": [
-        "session_marker"
-      ],
-      "summary": "The session-start lifecycle hook initialized a new session boundary."
-    },
-    {
-      "name": "turn_start",
-      "category": "Round / session",
-      "streams": [
-        "signal"
-      ],
-      "groups": [
-        "agent_loop",
-        "turn_marker"
-      ],
-      "summary": "The UserPromptSubmit lifecycle hook marked the start of a chat turn."
-    },
-    {
-      "name": "turn_complete",
-      "category": "Round / session",
-      "streams": [
-        "activity",
-        "signal"
-      ],
-      "groups": [
-        "agent_loop",
-        "turn_marker"
-      ],
-      "summary": "The Stop lifecycle hook marked the end of a chat turn."
+      "summary": "Web tool enrichment observed a repeated failure for a target."
     }
   ]
 }

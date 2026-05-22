@@ -40,8 +40,17 @@ function fakeClientRes() {
 }
 
 test('detectors shell policy has expanded timeout budget', () => {
-  assert.equal(shellPolicy('detectors').timeoutMs, 60001);
-  assert.equal(shellPolicy('post_hooks').timeoutMs, 30000);
+  const tmp_dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-shell-policy-'));
+  const prior = process.env.PROJECT_ROOT;
+  process.env.PROJECT_ROOT = tmp_dir;
+  try {
+    assert.equal(shellPolicy('detectors').timeoutMs, 60001);
+    assert.equal(shellPolicy('post_hooks').timeoutMs, 30000);
+  } finally {
+    if (prior === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = prior;
+    fs.rmSync(tmp_dir, { recursive: true, force: true });
+  }
 });
 
 
@@ -347,7 +356,9 @@ test('mode 1 top-level requests default to driver E5 manual top rank', () => {
       ] },
     },
   };
-  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
+  // Pass an empty routeHealth so cooldowns persisted on disk from earlier
+  // sessions don't influence this pure-cfg unit test.
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg, { routeHealth: {} });
   assert.equal(result.role, 'driver');
   assert.equal(result.tier, 'E5');
   assert.deepEqual(result.chain.map((m) => m.id), ['manual-sonnet-e3', 'gpt-top-e5', 'ranked-opus-e5']);
@@ -413,9 +424,13 @@ test('blank retry is disabled for max_tokens probes but NOT for manual top-rank 
 
 test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   const cfg = require('../../proxy/shared').loadModelsJson();
-  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
+  // Pass an empty routeHealth so on-disk credential cooldowns don't
+  // determine which model fronts the chain in this assertion.
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg, { routeHealth: {} });
   assert.equal(result.role, 'driver');
-  assert.equal(result.chain[0].id, 'gpt-5.5-xhigh');
+  // Driver routes through Anthropic Claude Opus first (Claude-primary via
+  // OmniRoute provider=claude); GPT-5.5 is the fallback for credential or
+  assert.equal(result.chain[0].id, 'claude-opus-4-7-max-e5');
   assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
 });
 
@@ -440,18 +455,21 @@ test('mode 1 same-chain fallback index advances even when chain has a manual top
   try {
     const { chainSignature } = require('../../proxy/overdrive_route');
     const cfg = require('../../proxy/shared').loadModelsJson();
-    const chainInfo = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
-    fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
-    // fail>0 + recent ts triggers honoring idx from state.
-    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(chainInfo.chain), fail: 1, ts: Date.now() }));
     const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
+    const probe = applyOverdriveRoute({
+      payload: { ...payload }, clientReq: { ...clientReq, headers: { ...clientReq.headers } }, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
+    });
+    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(probe.swapChain), fail: 1, ts: Date.now() }));
     const result = applyOverdriveRoute({
       payload, clientReq, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
       stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
     });
-    assert.equal(result.swapMeta.id, chainInfo.chain[1].id, 'fallback index 1 selects chain[1]');
+    assert.equal(result.swapMeta.id, result.swapChain[1].id, 'fallback index 1 selects swapChain[1] of the effective Claude-primary chain');
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
@@ -476,8 +494,10 @@ test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch
       cfg: anthropicOnlyCfg(),
     });
     assert.equal(result.applied, true);
-    assert.equal(result.swapMeta.id, 'claude-opus-4-7-max-e5');
-    assert.match(payload.model, /^claude\/claude-opus-4-7/);
+    // Claude-primary prepend uses the requested api_model when cfg has a match.
+    // anthropicOnlyCfg has only claude-opus-4-7-max-e5 (api_model='claude-opus-4-7'),
+    assert.equal(result.swapMeta.api_model || result.swapMeta.id, 'claude-sonnet-4-6');
+    assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
