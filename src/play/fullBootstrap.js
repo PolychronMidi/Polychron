@@ -476,6 +476,7 @@ moduleLifecycle.declare({
     'path',
     'COMPOSITION_OUTPUT_DIR',
     'METRICS_DIR',
+    '_hmeRequireEnv',
     'minMidi',
     'maxMidi',
     'channelStateField',
