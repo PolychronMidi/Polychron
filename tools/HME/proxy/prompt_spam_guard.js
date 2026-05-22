@@ -237,7 +237,10 @@ module.exports = {
   isSingleQuotaOpenAiResponsesPayload,
   isTodoWriteOnlyProbe,
   isStructuredOutputsProbe,
+  isNoopSystemReminderTurn,
+  shouldBlockNoopSystemReminderTurn,
   blockQuotaProbe,
   blockTodoWriteOnlyProbe,
   blockStructuredOutputsProbe,
+  blockNoopSystemReminderTurn,
 };
