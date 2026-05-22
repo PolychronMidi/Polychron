@@ -5,7 +5,10 @@ import os
 import stat
 from pathlib import Path
 
-from ._base import Verifier, _result, PASS, FAIL, WARN, _PROJECT, register
+from ._base import (
+    Verifier, _result, PASS, FAIL, WARN, _PROJECT, register,
+    passed, failed, warned,
+)
 
 
 @register
@@ -26,7 +29,7 @@ class CanonicalPrecommitHookVerifier(Verifier):
         installed_post = root / ".git" / "hooks" / "post-commit"
         missing = [str(p.relative_to(root)) for p in (policy, canonical, post_commit, validator, installer) if not p.exists()]
         if missing:
-            return _result(FAIL, 0.0, "repo hygiene precommit assets missing", missing)
+            return failed(score=0.0, summary="repo hygiene precommit assets missing", details=missing)
         problems = []
         c_text = canonical.read_text(encoding="utf-8", errors="replace")
         pc_text = post_commit.read_text(encoding="utf-8", errors="replace")
@@ -64,13 +67,13 @@ class CanonicalPrecommitHookVerifier(Verifier):
             if i_text != c_text:
                 problems.append("installed .git/hooks/pre-commit differs from canonical hook")
         else:
-            return _result(WARN, 0.8, "canonical hook present but not installed", ["run tools/HME/scripts/install-git-hooks.sh"])
+            return warned(score=0.8, summary="canonical hook present but not installed", details=["run tools/HME/scripts/install-git-hooks.sh"])
         if installed_post.exists():
             ip_text = installed_post.read_text(encoding="utf-8", errors="replace")
             if ip_text != pc_text:
                 problems.append("installed .git/hooks/post-commit differs from canonical hook")
         else:
-            return _result(WARN, 0.8, "canonical post-commit hook present but not installed", ["run tools/HME/scripts/install-git-hooks.sh"])
+            return warned(score=0.8, summary="canonical post-commit hook present but not installed", details=["run tools/HME/scripts/install-git-hooks.sh"])
         if problems:
-            return _result(FAIL, 0.0, "canonical precommit hook contract drift", problems)
-        return _result(PASS, 1.0, "canonical pre/post-commit hooks installed; post-commit records reload-needed without hot restart")
+            return failed(score=0.0, summary="canonical precommit hook contract drift", details=problems)
+        return passed(score=1.0, summary="canonical pre/post-commit hooks installed; post-commit records reload-needed without hot restart")

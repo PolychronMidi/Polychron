@@ -30,14 +30,17 @@ import re
 from pathlib import Path
 
 from ._base import (
-    register,
-    _PROJECT,
-    Verifier,
-    VerdictResult,
-    _result,
-    PASS,
     FAIL,
+    PASS,
     SKIP,
+    VerdictResult,
+    Verifier,
+    _PROJECT,
+    _result,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 REGISTRY_REL = "tools/HME/config/cross_language_contracts.json"
@@ -230,11 +233,11 @@ class CrossLanguageContractsVerifier(Verifier):
         root = Path(_PROJECT)
         registry_path = root / REGISTRY_REL
         if not registry_path.is_file():
-            return _result(SKIP, 1.0, f"no contract registry at {REGISTRY_REL}")
+            return skipped(summary=f"no contract registry at {REGISTRY_REL}")
         try:
             registry = json.loads(registry_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as e:
-            return _result(FAIL, 0.0, f"registry unreadable -- {e}")
+            return failed(score=0.0, summary=f"registry unreadable -- {e}")
 
         issues: list[str] = []
         checked = 0
@@ -249,10 +252,7 @@ class CrossLanguageContractsVerifier(Verifier):
             checked += 1
 
         if not issues:
-            return _result(
-                PASS, 1.0,
-                f"{checked} cross-language contract(s) in lock-step",
-            )
+            return passed(score=1.0, summary=f"{checked} cross-language contract(s) in lock-step")
         score = max(0.0, 1.0 - len(issues) / 10.0)
         return _result(
             FAIL, score,

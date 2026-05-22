@@ -19,13 +19,14 @@ import subprocess
 from pathlib import Path
 
 from ._base import (
-    register,
-    _PROJECT,
-    Verifier,
-    VerdictResult,
-    _result,
-    PASS,
     FAIL,
+    PASS,
+    VerdictResult,
+    Verifier,
+    _PROJECT,
+    _result,
+    passed,
+    register,
 )
 
 _FORBIDDEN = (
@@ -110,10 +111,7 @@ class ForbiddenApiKeysVerifier(Verifier):
                 break
 
         if not hits:
-            return _result(
-                PASS, 1.0,
-                "no forbidden API-key identifiers in tracked content",
-            )
+            return passed(score=1.0, summary="no forbidden API-key identifiers in tracked content")
         score = max(0.0, 1.0 - len(hits) / 5.0)
         return _result(
             FAIL, score,

@@ -17,14 +17,16 @@ import json
 from pathlib import Path
 
 from ._base import (
-    register,
-    _PROJECT,
-    Verifier,
-    VerdictResult,
-    _result,
-    PASS,
     FAIL,
+    PASS,
+    VerdictResult,
+    Verifier,
     WARN,
+    _PROJECT,
+    _result,
+    failed,
+    passed,
+    register,
 )
 
 WAIVERS_REL = "tools/HME/config/verifier_test_waivers.json"
@@ -75,7 +77,7 @@ class VerifierSelfCoverageVerifier(Verifier):
                     if isinstance(mod, str):
                         waivered.add(mod)
             except (OSError, json.JSONDecodeError) as e:
-                return _result(FAIL, 0.0, f"waiver file unreadable -- {e}")
+                return failed(score=0.0, summary=f"waiver file unreadable -- {e}")
 
         modules = _registry_modules()
         missing: list[str] = []
@@ -106,10 +108,7 @@ class VerifierSelfCoverageVerifier(Verifier):
                     f"{covered} verifier module(s) have tests; "
                     f"{len(waivered)} waivered (technical debt)",
                 )
-            return _result(
-                PASS, 1.0,
-                f"{covered} verifier module(s) have tests; no waivers",
-            )
+            return passed(score=1.0, summary=f"{covered} verifier module(s) have tests; no waivers")
         score = max(0.0, 1.0 - len(issues) / 10.0)
         status = FAIL
         summary = (

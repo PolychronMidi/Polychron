@@ -25,14 +25,17 @@ import subprocess
 from pathlib import Path
 
 from ._base import (
-    register,
-    _PROJECT,
-    Verifier,
-    VerdictResult,
-    _result,
-    PASS,
     FAIL,
+    PASS,
     SKIP,
+    VerdictResult,
+    Verifier,
+    _PROJECT,
+    _result,
+    failed,
+    passed,
+    register,
+    skipped,
 )
 
 REGISTRY_REL = "tools/HME/config/cross_language_contracts.json"
@@ -82,15 +85,15 @@ class MetricNameOrphansVerifier(Verifier):
         root = Path(_PROJECT)
         registry_path = root / REGISTRY_REL
         if not registry_path.is_file():
-            return _result(SKIP, 1.0, f"no registry at {REGISTRY_REL}")
+            return skipped(summary=f"no registry at {REGISTRY_REL}")
         try:
             registry = json.loads(registry_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as e:
-            return _result(FAIL, 0.0, f"registry unreadable -- {e}")
+            return failed(score=0.0, summary=f"registry unreadable -- {e}")
 
         sets = _metric_name_sets(registry)
         if not sets:
-            return _result(SKIP, 1.0, "no *_METRIC_NAMES entries in registry")
+            return skipped(summary="no *_METRIC_NAMES entries in registry")
 
         orphans: list[str] = []
         checked = 0
@@ -101,11 +104,8 @@ class MetricNameOrphansVerifier(Verifier):
                     orphans.append(f"{set_name}: {v} -- no tracked writer outside declarations")
 
         if not orphans:
-            return _result(
-                PASS, 1.0,
-                f"{checked} metric name(s) across {len(sets)} registry set(s) "
-                "all have writers",
-            )
+            return passed(score=1.0, summary=f"{checked} metric name(s) across {len(sets)} registry set(s) "
+                "all have writers")
         score = max(0.0, 1.0 - len(orphans) / max(checked, 1))
         return _result(
             FAIL, score,
