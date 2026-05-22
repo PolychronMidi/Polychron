@@ -108,6 +108,56 @@ test('responseHasErrorEvent detects SSE and JSON errors', () => {
   assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))), false);
 });
 
+test('OmniRoute context-window retry quarantines failing route and tries next model with tail payload', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-context-retry-'));
+  try {
+    const attempts = [];
+    const successBody = Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }));
+    const transport = {
+      request(opts, cb) {
+        const { EventEmitter } = require('node:events');
+        const req = new EventEmitter();
+        req.write = (buf) => { attempts.push({ opts, body: JSON.parse(buf.toString('utf8')) }); };
+        req.end = () => {
+          const res = new EventEmitter();
+          res.statusCode = 200;
+          res.headers = { 'content-type': 'application/json' };
+          cb(res);
+          process.nextTick(() => { res.emit('data', successBody); res.emit('end'); });
+        };
+        return req;
+      },
+    };
+    const fullBody = Buffer.from('event: error\ndata: {"error":{"message":"input exceeds the context window"}}\n\n');
+    const result = await retryOmniContextWindowExceeded({
+      isOmniRouteSwap: true,
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      fullBody,
+      payload: { model: 'cx/gpt-a', stream: true, max_tokens: 9000, thinking: { budget_tokens: 1 }, messages: Array.from({ length: 100 }, (_, i) => ({ role: 'user', content: String(i) })) },
+      swapChain: [{ id: 'gpt-a', provider: 'opencode' }, { id: 'gpt-b', provider: 'opencode' }],
+      omniProvider: 'cx',
+      swapModel: 'gpt-a',
+      transport,
+      upstreamOpts: { hostname: '127.0.0.1', port: 1, path: '/v1/messages', method: 'POST', headers: {} },
+      upstreamHeaders: { 'content-type': 'application/json' },
+      projectRoot: dir,
+      log() {},
+    });
+    assert.equal(result.status, 200);
+    assert.equal(attempts.length, 1);
+    assert.equal(attempts[0].body.stream, false);
+    assert.equal(attempts[0].body.max_tokens, 2048);
+    assert.equal(attempts[0].body.thinking, undefined);
+    assert.equal(attempts[0].body.messages.length, 80);
+    assert.match(attempts[0].body.model, /gpt-b/);
+    const state = loadModelRouteHealth(dir);
+    assert.equal(state['cx/gpt-a'].reason, 'context_window_exceeded');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('model route cooldown marks context-window quarantine and expires by time', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-route-health-'));
   try {
