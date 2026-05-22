@@ -90,7 +90,7 @@ _marker_sha() {
 }
 
 _record_stale_runtime_state() {
-  local runtime_sha="$1" head_sha="$2" marker_sha="$3" ts
+  local runtime_sha="${1-}" head_sha="${2-}" marker_sha="${3-}" ts
   ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)
   python3 - "$STALE_RUNTIME_STATE" "$runtime_sha" "$head_sha" "$marker_sha" "$ts" <<'PY' 2>/dev/null || true
 import json, sys
