@@ -43,10 +43,26 @@ function routeSkipReason(routeKey, routeHealth = {}, env = process.env, now = Da
   return quarantineReason(routeHealth[routeKey], now);
 }
 
+function markRouteCooldown(routeKey, reason, { ttlMs = 300_000, projectRoot = PROJECT_ROOT, now = Date.now() } = {}) {
+  if (!routeKey) return null;
+  const file = routeHealthPath(projectRoot);
+  const state = loadModelRouteHealth(projectRoot);
+  state[routeKey] = {
+    status: 'cooldown',
+    reason: String(reason || 'cooldown'),
+    since: new Date(now).toISOString(),
+    until: new Date(now + Math.max(0, ttlMs)).toISOString(),
+  };
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(state, null, 2) + '\n');
+  return state[routeKey];
+}
+
 module.exports = {
   routeHealthPath,
   loadModelRouteHealth,
   routeQuarantineForced,
   quarantineReason,
   routeSkipReason,
+  markRouteCooldown,
 };
