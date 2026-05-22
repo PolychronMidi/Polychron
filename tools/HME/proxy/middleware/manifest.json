@@ -19,6 +19,7 @@
     { "file": "04b_disable_todowrite_on_direct_tool_surface.js", "phase": "normalize", "name": "disable_todowrite_on_direct_tool_surface" },
     { "file": "05_dominance_prefetch.js", "phase": "enrich", "name": "dominance_prefetch" },
     { "file": "06_secret_sanitizer.js", "phase": "normalize", "name": "secret_sanitizer" },
+    { "file": "06a_file_unchanged_swap.js", "phase": "normalize", "name": "file_unchanged_swap" },
     { "file": "07_edit_context.js", "phase": "enrich", "name": "edit_context" },
     { "file": "08_cascade_prediction.js", "phase": "enrich", "name": "cascade_prediction" },
     { "file": "08a_read_limit.js", "phase": "enrich", "name": "read_limit" },
