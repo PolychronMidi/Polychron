@@ -172,6 +172,13 @@ def render_section(root: Path, orient: str = "LR") -> str:
     parts.append(build_overview(root, orient=orient))
     parts.append("```")
     for top in top_level:
+        # Skip subtrees that have no children -- the lone-node diagram
+        # duplicates what the Overview already shows.
+        if not any(
+            d != top and (str(d) == str(top) or str(d).startswith(str(top) + "/"))
+            for d in dirs
+        ):
+            continue
         parts.append("")
         parts.append(f"### `{top}/`")
         parts.append("")

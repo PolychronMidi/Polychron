@@ -68,13 +68,6 @@ flowchart LR
     root --> tools
 ```
 
-### `config/`
-
-```mermaid
-flowchart LR
-    config["config/<br/><i>Project-level runtime configuration files consumed by src/ entry points.</i>"]
-```
-
 ### `doc/`
 
 ```mermaid
