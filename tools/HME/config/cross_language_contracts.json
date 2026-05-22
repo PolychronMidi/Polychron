@@ -29,5 +29,12 @@
       }
     }
   ],
-  "schema_mirrors": []
+  "schema_mirrors": [
+    {
+      "name": "ProjectAdapter",
+      "schema": "tools/HME/config/project-adapter.schema.json",
+      "dataclass_file": "tools/HME/scripts/project_adapter.py",
+      "dataclass_name": "ProjectAdapter"
+    }
+  ]
 }

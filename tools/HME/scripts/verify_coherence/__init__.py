@@ -124,6 +124,9 @@ from .forbidden_api_keys import (  # noqa: F401
 from .cross_language_contracts import (  # noqa: F401
     CrossLanguageContractsVerifier,
 )
+from .verifier_self_coverage import (  # noqa: F401
+    VerifierSelfCoverageVerifier,
+)
 
 # Preserves the ordering from the original verify-coherence.py -- a few
 # downstream consumers (dashboard, diff scripts) expect this sequence.
@@ -134,6 +137,7 @@ REGISTRY = [
     MarkdownInvariantVerifier(),
     ForbiddenApiKeysVerifier(),
     CrossLanguageContractsVerifier(),
+    VerifierSelfCoverageVerifier(),
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
     EnvTamperVerifier(),

@@ -2,9 +2,26 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from hme_paths import PROJECT_ROOT
+
+
+@dataclass
+class ProjectAdapter:
+    project_id: str = ""
+    project_name: str = ""
+    domain: str = ""
+    source_roots: list = field(default_factory=list)
+    project_docs: list = field(default_factory=list)
+    primary_doc: str = ""
+    pipeline: dict = field(default_factory=dict)
+    artifacts: dict = field(default_factory=dict)
+    optional_artifacts: list = field(default_factory=list)
+    capabilities: dict = field(default_factory=dict)
+    health: dict = field(default_factory=dict)
+
 
 DEFAULT_ADAPTER = {
     "project_id": "generic",

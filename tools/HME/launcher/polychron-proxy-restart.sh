@@ -151,6 +151,15 @@ _label_in_proxy_bundle() {
   return 1
 }
 
+_HEAD_SHA="$(_current_head_sha)"
+if _proxy_listener_ready; then
+  _ADOPT_PID="$(_port_listener_pids | head -1)"
+  if [ -n "$_ADOPT_PID" ] && _assert_runtime_matches_listener "$_ADOPT_PID" "$_HEAD_SHA" 2>/dev/null; then
+    echo "[proxy-restart] adopted existing healthy proxy listener (pid=${_ADOPT_PID}, sha=${_HEAD_SHA:-unknown}); no restart needed" >&2
+    exit 0
+  fi
+fi
+
 # Prefer PID-targeted SIGTERM via the launcher's PID file when present --
 # pkill by pattern can match across user sessions on shared hosts.
 declare -a _proxy_pids=()

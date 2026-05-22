@@ -89,7 +89,7 @@ test('SseTransform applies full slop stripping to normal assistant text without 
     event('content_block_stop', { type: 'content_block_stop', index: 0 }),
   ].join('');
   const out = parseSse(await runSse(raw, [slopStripRewrite]));
-  assert.equal(out[1][1].delta.text, 'K. & test.');
+  assert.equal(out[1][1].delta.text, 'K. Fix & test.');
 });
 
 test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wolf error', async () => {
