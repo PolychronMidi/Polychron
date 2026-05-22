@@ -29,7 +29,7 @@
   "providers_to_skip": {
     "description": "Pause provider usage in case of credit shortage.",
     "providers": [
-      "anthropic"
+      ""
     ]
   },
   "provider_capabilities": {
@@ -90,7 +90,7 @@
 
 
   "manually_toprank": {
-    "E5": ["claude-opus-4-7-max-e5"],
+    "E5": [""],
     "E4": [],
     "E3": [],
     "E2": [],
