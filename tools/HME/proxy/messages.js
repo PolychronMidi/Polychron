@@ -147,6 +147,7 @@ function stripBoilerplate(payload) {
       patterns: Object.entries(stripped_samples).map(([k, v]) => `${k}=${v}`).join(','),
     });
   }
+  _ensureAllUserMessagesNonEmpty(payload);
   return strippedCount;
 }
 
