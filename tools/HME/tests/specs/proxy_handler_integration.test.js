@@ -144,3 +144,83 @@ test('Claude handler forwards to fake Anthropic upstream and returns success wit
     await close(upstream).catch(() => {});
   }
 });
+
+test('Claude handler answers system-reminder-only turns locally without upstream call', async () => {
+  clearProxyCache();
+  const prevEnv = {
+    host: process.env.HME_PROXY_UPSTREAM_HOST,
+    port: process.env.HME_PROXY_UPSTREAM_PORT,
+    tls: process.env.HME_PROXY_UPSTREAM_TLS,
+    inject: process.env.HME_INJECT_TOOLS,
+    proxyInject: process.env.HME_PROXY_INJECT,
+    quiet: process.env.HME_PROXY_QUIET_IMPORT,
+    overdrive: process.env.OVERDRIVE_MODE,
+  };
+  let upstreamCalls = 0;
+  const upstream = http.createServer((_req, res) => {
+    upstreamCalls++;
+    res.writeHead(500, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: 'should not be called' }));
+  });
+  const proxy = http.createServer();
+  try {
+    const upstreamPort = await listen(upstream);
+    process.env.HME_PROXY_UPSTREAM_HOST = '127.0.0.1';
+    process.env.HME_PROXY_UPSTREAM_PORT = String(upstreamPort);
+    process.env.HME_PROXY_UPSTREAM_TLS = '0';
+    process.env.HME_INJECT_TOOLS = '0';
+    process.env.HME_PROXY_INJECT = '0';
+    process.env.HME_PROXY_QUIET_IMPORT = '1';
+    process.env.OVERDRIVE_MODE = '0';
+    clearProxyCache();
+    const { createClaudeHandler } = require('../../proxy/hme_proxy_claude');
+    proxy.on('request', createClaudeHandler({
+      PORT: 9099,
+      PROXY_VERSION: 'test',
+      PROXY_GIT_SHA: 'test',
+      PROXY_STARTED_AT: 'test',
+      routeMetrics: {},
+      recordProxyRoute() {},
+      effectiveCompactThreshold() { return 250000; },
+      shrinkForPassthrough() { return 0; },
+      shrinkForContext() { return 0; },
+      injectContextHeader() {},
+      async acquireOpusSlot() { return () => {}; },
+      anthropicTextSseBuffer() { return Buffer.from(''); },
+      getConsecutive429s() { return 0; },
+      setConsecutive429s() {},
+      incConsecutive429s() { return 0; },
+      getLastInputTokensRemaining() { return null; },
+      setLastInputTokensRemaining() {},
+      getLastInputTokensLimit() { return null; },
+      setLastInputTokensLimit() {},
+      setLastPayloadBytes() {},
+      lifecycleInactive() { return false; },
+      runInlineFallback() {},
+      skipStopFallback: true,
+    }));
+    const proxyPort = await listen(proxy);
+    const payload = JSON.stringify({
+      model: 'claude-test',
+      max_tokens: 16,
+      stream: false,
+      messages: [{ role: 'user', content: [{ type: 'text', text: '<system-reminder>\n</system-reminder>' }] }],
+    });
+    const res = await request(proxyPort, payload);
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.content.length, 1);
+    assert.equal(upstreamCalls, 0);
+  } finally {
+    if (prevEnv.host === undefined) delete process.env.HME_PROXY_UPSTREAM_HOST; else process.env.HME_PROXY_UPSTREAM_HOST = prevEnv.host;
+    if (prevEnv.port === undefined) delete process.env.HME_PROXY_UPSTREAM_PORT; else process.env.HME_PROXY_UPSTREAM_PORT = prevEnv.port;
+    if (prevEnv.tls === undefined) delete process.env.HME_PROXY_UPSTREAM_TLS; else process.env.HME_PROXY_UPSTREAM_TLS = prevEnv.tls;
+    if (prevEnv.inject === undefined) delete process.env.HME_INJECT_TOOLS; else process.env.HME_INJECT_TOOLS = prevEnv.inject;
+    if (prevEnv.proxyInject === undefined) delete process.env.HME_PROXY_INJECT; else process.env.HME_PROXY_INJECT = prevEnv.proxyInject;
+    if (prevEnv.quiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevEnv.quiet;
+    if (prevEnv.overdrive === undefined) delete process.env.OVERDRIVE_MODE; else process.env.OVERDRIVE_MODE = prevEnv.overdrive;
+    clearProxyCache();
+    await close(proxy).catch(() => {});
+    await close(upstream).catch(() => {});
+  }
+});
