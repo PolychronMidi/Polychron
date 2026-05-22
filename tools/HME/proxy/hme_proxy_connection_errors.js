@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
-const { writeAnthropicStopSse } = require('./legacy_swap_response');
+const { writeAnthropicStopSse } = require('./contexts/response_transform');
 
 const RETRYABLE_CONN_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
 

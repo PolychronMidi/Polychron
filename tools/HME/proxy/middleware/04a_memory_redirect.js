@@ -23,7 +23,7 @@
 
 const http = require('http');
 const path = require('path');
-const { WORKER_PORT } = require('../supervisor/children');
+const { WORKER_PORT } = require('../contexts/lifecycle_bridge').supervisorChildren;
 
 const MEMORY_PATH_RE = /\/\.claude\/projects\/[^/]+\/memory\//;
 const BANNER = 'Memories feature is deprecated, replaced by HME KB.';
