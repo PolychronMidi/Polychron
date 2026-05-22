@@ -953,14 +953,14 @@ test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', as
 });
 
 
-test('OmniRoute preflight does not compact below configured high-water statusline usage', () => {
+test('OmniRoute preflight does not let Claude statusline force target payload compaction', () => {
   const oldEnv = { ...process.env };
   const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
   const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
   const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
   try {
     fs.mkdirSync(runtimeDir, { recursive: true });
-    fs.writeFileSync(statusline, JSON.stringify({ context_window: { total_input_tokens: 200000 } }));
+    fs.writeFileSync(statusline, JSON.stringify({ context_window: { total_input_tokens: 999000, context_window_size: 1000000 } }));
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
@@ -969,7 +969,7 @@ test('OmniRoute preflight does not compact below configured high-water statuslin
     process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '4';
     const budget = createContextBudget();
     const payload = { model: 'gpt-5.5-xhigh', messages: [] };
-    for (let i = 0; i < 16; i += 1) payload.messages.push({ role: 'user', content: 'x'.repeat(30000) });
+    for (let i = 0; i < 16; i += 1) payload.messages.push({ role: 'user', content: 'x'.repeat(12000) });
     const before = JSON.stringify(payload);
     assert.equal(budget.shrinkForContext(payload, 'gpt-5.5-xhigh'), 0);
     assert.equal(JSON.stringify(payload), before);
@@ -983,7 +983,7 @@ test('OmniRoute preflight does not compact below configured high-water statuslin
   }
 });
 
-test('OmniRoute preflight does not compact when statusline usage is unavailable', () => {
+test('OmniRoute preflight uses target payload pressure when statusline usage is unavailable', () => {
   const oldEnv = { ...process.env };
   const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
   const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
@@ -992,16 +992,26 @@ test('OmniRoute preflight does not compact when statusline usage is unavailable'
     try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
-    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.50';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '10';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '11';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.50';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '4';
     const budget = createContextBudget();
     const payload = { model: 'gpt-5.5-xhigh', messages: [] };
-    for (let i = 0; i < 16; i += 1) payload.messages.push({ role: 'user', content: 'x'.repeat(30000) });
+    for (let i = 0; i < 8; i += 1) {
+      const id = `omni-statusline-free-${i}`;
+      payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+      payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(210000) }] });
+    }
     const before = JSON.stringify(payload);
-    assert.equal(budget.shrinkForContext(payload, 'gpt-5.5-xhigh'), 0);
-    assert.equal(JSON.stringify(payload), before);
+    const beforeCount = payload.messages.length;
+    const changed = budget.shrinkForContext(payload, 'gpt-5.5-xhigh');
+    assert.ok(changed > 0);
+    assert.equal(payload.messages.length, beforeCount);
+    assert.ok(JSON.stringify(payload).length < before.length);
   } finally {
     process.env = oldEnv;
     if (prevStatusline != null) fs.writeFileSync(statusline, prevStatusline);
