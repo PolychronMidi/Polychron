@@ -70,8 +70,7 @@ class RepoMermaidFreshnessVerifier(Verifier):
             return failed(summary="generator module could not be loaded")
 
         try:
-            graph = gen.build_graph(root, max_depth=2)
-            fresh_block = gen.render_block(graph, max_depth=2)
+            fresh_block = gen.render_section(root)
         except Exception as e:
             return failed(summary=f"generator run failed -- {type(e).__name__}: {e}")
 
