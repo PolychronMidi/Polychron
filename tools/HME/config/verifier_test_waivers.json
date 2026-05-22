@@ -13,7 +13,6 @@
     {"module": "docs", "reason": "pre-dates self-coverage rule"},
     {"module": "env_settings", "reason": "pre-dates self-coverage rule"},
     {"module": "graph", "reason": "pre-dates self-coverage rule"},
-    {"module": "hook_existence", "reason": "pre-dates self-coverage rule"},
     {"module": "hook_layout", "reason": "pre-dates self-coverage rule"},
     {"module": "logs", "reason": "pre-dates self-coverage rule"},
     {"module": "meta_observers", "reason": "pre-dates self-coverage rule"},
