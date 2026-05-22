@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME SessionStart orientation; MUST RUN BEFORE userpromptsubmit.
-cat > /dev/null  # consume stdin
+_SS_STDIN=$(cat)  # capture for subagent-flag detection
+# Subagent fast-path: lifecycle_payload.js stamps _hme_subagent:true onto
+# the payload when HME_SUBAGENT=1 in the spawning shell. Detect that
+case "$_SS_STDIN" in
+  *'"_hme_subagent":true'*|*'"_hme_subagent": true'*)
+    exit 0
+    ;;
+esac
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HOOKS_DIR/../helpers/_nexus.sh"
 PROJECT="$PROJECT_ROOT"
