@@ -30,13 +30,11 @@ const COMPL_MAX = 2;
 const STARTUP_GRACE_MS = 90_000;
 
 function isStartupGraceTurn(ctx) {
-  const payload = ctx.payload || {};
-  const transcript = payload.transcript_path || '';
-  if (!transcript) return false;
-  const startMs = Number(payload.session_start_time_ms || payload.start_time_ms || 0);
-  if (startMs > 0 && Date.now() - startMs > STARTUP_GRACE_MS) return false;
   const text = String(ctx.shared && ctx.shared.lastRealUserText || '').trim().toLowerCase();
-  return text === 'hi' || text === 'hello' || text === 'hey';
+  if (!['hi', 'hello', 'hey'].includes(text)) return false;
+  const payload = ctx.payload || {};
+  const startMs = Number(payload.session_start_time_ms || payload.start_time_ms || 0);
+  return startMs <= 0 || Date.now() - startMs <= STARTUP_GRACE_MS;
 }
 
 function armFpGate(reason) {
