@@ -22,10 +22,11 @@ function run(cmd, args, timeout = 20000) {
 test('i/status mode=activity compact view hides routine event list but preserves full mode', () => {
   const compact = run(I_STATUS, ['mode=activity']);
   assert.equal(compact.status, 0, compact.stderr);
-  if (compact.stdout.includes('routine_compacted')) {
+  if (compact.stdout.includes('routine_events_hidden')) {
     assert.doesNotMatch(compact.stdout, /^\s+inference_call\s+\d+/m);
     assert.doesNotMatch(compact.stdout, /^\s+tool_call\s+\d+/m);
     assert.doesNotMatch(compact.stdout, /^\s+turn_complete\s+\d+/m);
+    assert.doesNotMatch(compact.stdout, /routine_compacted/);
   }
   const full = run(I_STATUS, ['mode=activity-full']);
   assert.equal(full.status, 0, full.stderr);
