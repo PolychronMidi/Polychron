@@ -194,7 +194,9 @@ async function handleUpstreamFailureOrSuccess({
   }
 
   const errInfo = _detectUpstreamFailure(status, headers, fullBody);
-  console.error(`[DEBUG-429] status=${status} type=${errInfo?.type} message=${errInfo?.message}`);
+  const { classifyFailure } = require('./omni_failure_policy');
+  const failureKind = classifyFailure(status, errInfo);
+  console.error(`[DEBUG-429] status=${status} type=${errInfo?.type} message=${errInfo?.message} kind=${failureKind}`);
   if (!errInfo) {
     recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
     return { status, headers, fullBody };
