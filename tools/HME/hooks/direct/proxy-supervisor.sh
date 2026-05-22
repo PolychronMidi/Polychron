@@ -303,6 +303,7 @@ _sv_loop() {
   local consecutive_spawn_fails=0
   local backoff_secs=0
   while true; do
+    _sv_reexec_if_self_changed
     # Exponential backoff after crash loop: skip health polling during
     if [ "$backoff_secs" -gt 0 ]; then
       sleep "$backoff_secs"
