@@ -1,3 +1,4 @@
+const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // init.js - global initialization & channel mapping.
 
 COMPOSITION_OUTPUT_DIR = _hmeRequireEnv('COMPOSITION_OUTPUT_DIR');

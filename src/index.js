@@ -1,5 +1,3 @@
-_hmeRequireEnv = require('../tools/HME/proxy/shared/load_env.js').requireEnv;
-
 require('./utils');
 require('./conductor');
 require('./rhythm');
