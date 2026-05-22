@@ -91,13 +91,17 @@ function createClaudeHandler(deps) {
       if (shouldBlockNoopSystemReminderTurn({ req: clientReq, payload, headers: clientReq.headers })) {
         try {
           const fs = require('fs');
+          const path = require('path');
+          const root = process.env.PROJECT_ROOT;
+          if (!root) throw new Error('PROJECT_ROOT not set');
           const ts = new Date().toISOString().replace(/[:.]/g, '-');
-          fs.writeFileSync(`$PROJECT_ROOT/tmp/noop-block-${ts}.json`, JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
+          fs.writeFileSync(path.join(root, 'tmp', `noop-block-${ts}.json`), JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
         } catch (_e) { /* best effort */ }
         blockNoopSystemReminderTurn({ req: clientReq, res: clientRes, payload });
         return;
       }
-      // DDoC instrumentation: capture payloads that pass guard but contain ONLY a system
+      // DDoC instrumentation: capture payloads that PASS guard but whose final
+      // user message reduces to empty after stripping system-reminder blocks.
       try {
         const lastUser = [...(payload && payload.messages || [])].reverse().find((m) => m && m.role === 'user');
         if (lastUser) {
@@ -107,8 +111,11 @@ function createClaudeHandler(deps) {
             const stripped = allText.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, '').trim();
             if (stripped === '' || stripped.length < 4) {
               const fs = require('fs');
+              const path = require('path');
+              const root = process.env.PROJECT_ROOT;
+          if (!root) throw new Error('PROJECT_ROOT not set');
               const ts = new Date().toISOString().replace(/[:.]/g, '-');
-              fs.writeFileSync(`$PROJECT_ROOT/tmp/noop-leak-${ts}.json`, JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
+              fs.writeFileSync(path.join(root, 'tmp', `noop-leak-${ts}.json`), JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
             }
           }
         }
