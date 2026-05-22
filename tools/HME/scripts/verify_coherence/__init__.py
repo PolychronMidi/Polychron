@@ -115,6 +115,9 @@ from .graph import (  # noqa: F401
 from .repo_hygiene import (  # noqa: F401
     CanonicalPrecommitHookVerifier,
 )
+from .markdown_invariant import (  # noqa: F401
+    MarkdownInvariantVerifier,
+)
 
 # Preserves the ordering from the original verify-coherence.py -- a few
 # downstream consumers (dashboard, diff scripts) expect this sequence.
@@ -122,6 +125,7 @@ REGISTRY = [
     DocDriftVerifier(),
     NumericClaimDriftVerifier(),
     DocCoreLayoutVerifier(),
+    MarkdownInvariantVerifier(),
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
     EnvTamperVerifier(),
