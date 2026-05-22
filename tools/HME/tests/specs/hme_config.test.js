@@ -42,6 +42,6 @@ test('config exposes structured proxy + paths + optional sections', () => {
   assert.equal(typeof cfg.projectRoot, 'string');
   assert.equal(typeof cfg.proxy.port, 'number');
   assert.equal(typeof cfg.paths.runtime, 'string');
-  assert.equal(typeof cfg.optional.anthropicApiKey, 'string');
+  assert.equal(typeof cfg.optional.opencodeApiKey, 'string');
   assert.ok(path.isAbsolute(cfg.projectRoot));
 });

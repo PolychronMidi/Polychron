@@ -230,7 +230,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     # Prefix with OmniRoute provider (codex uses "cx" alias, others match)
     if _provider == "codex":
         _omni_prefix = "cx"
-    elif _provider == "anthropic" and not ENV.optional("ANTHROPIC_API_KEY", ""):
+    elif _provider == "anthropic":
         _omni_prefix = "claude"
     else:
         _omni_prefix = _provider or "opencode-go"

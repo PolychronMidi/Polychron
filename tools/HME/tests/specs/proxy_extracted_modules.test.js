@@ -610,12 +610,12 @@ test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic model
       stripStaleToolResults: () => {},
       stripClaudeIdentity: () => {},
       shrinkForContext: () => {},
-      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', ANTHROPIC_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
       projectRoot: tmp,
       cfg: anthropicOnlyCfg(),
     });
     assert.equal(result.applied, true);
-    assert.match(payload.model, /^anthropic\/claude-opus-4-7/);
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinkingLevel'), false);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));

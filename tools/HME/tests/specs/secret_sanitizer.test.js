@@ -38,8 +38,8 @@ test('sanitize: OpenAI provider key', () => {
   assert.ok(!out.includes(F.openai), 'original key value must not survive');
 });
 
-test('sanitize: Anthropic and OpenRouter provider keys', () => {
-  const out = _scrub(`ANTHROPIC_API_KEY=${F.anthropic} OPENROUTER_API_KEY=${F.openrouter}`);
+test('sanitize: sk-ant and sk-or-v1 provider keys', () => {
+  const out = _scrub(`key1=${F.anthropic} key2=${F.openrouter}`);
   assert.equal((out.match(/<REDACTED:provider-key>/g) || []).length, 2);
   assert.ok(!out.includes(F.anthropic));
   assert.ok(!out.includes(F.openrouter));

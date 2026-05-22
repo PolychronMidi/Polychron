@@ -180,40 +180,11 @@ class RAGEngineSearchMixin:
         return results
 
     def _count_tokens(self, text: str) -> int:
-        """Count tokens: API (precise) -> BERT tokenizer (accurate, free) -> char estimate."""
+        """Count tokens via local tokenizer; falls back to char estimate."""
         cache_key = hash(text)
         if cache_key in self._token_cache:
             return self._token_cache[cache_key]
 
-        api_key = ENV.optional("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            for key_path in [os.path.expanduser("~/.anthropic/api_key"), os.path.expanduser("~/.config/anthropic/key")]:
-                try:
-                    api_key = open(key_path).read().strip()
-                    if api_key:
-                        break
-                except Exception as _e:
-                    logger.debug(f"count_tokens: cannot read {key_path} ({type(_e).__name__})")
-        if api_key and len(text) > 50:
-            # OVERDRIVE_MODE=1: skip all Anthropic API calls.
-            if ENV.optional("OVERDRIVE_MODE", "0") != "1":
-                try:
-                    import httpx
-                    resp = httpx.post(
-                        "https://api.anthropic.com/v1/messages/count_tokens",
-                        headers={"x-api-key": api_key, "content-type": "application/json", "anthropic-version": "2023-06-01"},
-                        json={"model": "sonnet", "messages": [{"role": "user", "content": text}]},
-                        timeout=3.0
-                    )
-                    if resp.status_code == 200:
-                        _body = resp.json()
-                        count = _body["input_tokens"] if "input_tokens" in _body else (len(text) // 4)
-                        self._token_cache[cache_key] = count
-                        return count
-                except Exception as _e:
-                    logger.debug(f"count_tokens: Anthropic API call failed ({type(_e).__name__})")
-
-        # BERT tokenizer: same model already loaded, much more accurate than len//4
         try:
             tok = getattr(self.model, "tokenizer", None)
             if tok is not None:

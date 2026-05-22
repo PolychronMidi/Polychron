@@ -44,9 +44,9 @@ test('provider capability matrix drives request overrides', () => {
   assert.equal(providerRequiresNonStream('openrouter', {}, cfg), false);
 });
 
-test('Anthropic config provider prefers Claude OAuth unless API key is present', () => {
+test('Anthropic config provider always maps to Claude OAuth', () => {
   assert.equal(omniProviderForConfigProvider('anthropic', {}), 'claude');
-  assert.equal(omniProviderForConfigProvider('anthropic', { ANTHROPIC_API_KEY: 'fake' }), 'anthropic');
+  assert.equal(omniProviderForConfigProvider('anthropic'), 'claude');
 });
 
 test('legacy chat fallback skips codex responses models', () => {

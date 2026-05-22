@@ -36,7 +36,6 @@ function load() {
       state: requireEnv('HME_STATE_DIR'),
     },
     optional: {
-      anthropicApiKey: readOptional('ANTHROPIC_API_KEY'),
       opencodeApiKey: readOptional('OPENCODE_API_KEY'),
       omniroutePassword: readOptional('OMNIROUTE_ADMIN_PASSWORD'),
     },
