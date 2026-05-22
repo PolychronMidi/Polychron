@@ -187,7 +187,7 @@ function blockNoopSystemReminderTurn({ req, res, payload, record, source = {} })
     });
   }
   if (isCountTokensRequest(req)) {
-    jsonResponse(res, 200, { input_tokens: 0 });
+    jsonResponse(res, 200, { input_tokens: approximateInputTokens(payload) });
     return;
   }
   if (isTextEventStream(payload)) {
