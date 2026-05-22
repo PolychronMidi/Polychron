@@ -547,6 +547,10 @@ module.exports = {
       } catch(_) {}
     }
     const lastUserInfo = lastRealUserPrompt(transcriptPath);
+    const { text: lastUser, turnIndex } = lastUserInfo;
+    if (!lastUser) return ctx.allow();
+    ctx.shared.lastRealUserText = lastUser;
+    if (isStartupGraceTurn(ctx)) return ctx.allow();
     if (firing.some((f) => f.name === 'CLAIM_WITHOUT_EVIDENCE') && hasSameTurnEvidence(lastUserInfo.tsMs)) {
       firing = firing.filter((f) => f.name !== 'CLAIM_WITHOUT_EVIDENCE');
     }
@@ -575,10 +579,6 @@ module.exports = {
       armFpGate('WORK_DEBT_ADMISSION');
       return ctx.deny(`${REASONS.WORK_DEBT_ADMISSION}\n\n${enumerated}`);
     }
-    const { text: lastUser, turnIndex } = lastUserInfo;
-    if (!lastUser) return ctx.allow();
-    ctx.shared.lastRealUserText = lastUser;
-    if (isStartupGraceTurn(ctx)) return ctx.allow();
     const parentDebt = parentTaskDebt(transcriptPath);
     if (parentDebt) { armFpGate('CORRECTION_PIVOT_PARENT_TASK'); return ctx.deny(parentDebt); }
 
