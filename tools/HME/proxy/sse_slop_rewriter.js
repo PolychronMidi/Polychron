@@ -284,7 +284,7 @@ function _stripSlop(text) {
   return { out, hits };
 }
 
-function _logSlopHits(hits, textPreview) {
+function _logSlopHits(hits, textPreview, blockType) {
   try {
     const fs = require('fs');
     const path = require('path');
@@ -293,6 +293,7 @@ function _logSlopHits(hits, textPreview) {
       path.join(PROJECT_ROOT, 'log', 'hme-slop-strips.jsonl'),
       JSON.stringify({
         ts: new Date().toISOString(),
+        block_type: blockType || 'unknown',
         hits,
         text_preview: textPreview.slice(0, 80),
       }) + '\n',
@@ -345,7 +346,7 @@ function slopStripRewrite(eventName, data, ctx) {
       events.push(['content_block_stop', data]);
       return { events };
     }
-    _logSlopHits(hits, assembled);
+    _logSlopHits(hits, assembled, state.blockType);
     // Re-emit: the original start, ONE replacement delta with stripped text,
     // then the stop. Original deltas dropped only when stripping changed text.
     if (out) {
