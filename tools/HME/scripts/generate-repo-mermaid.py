@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 """Generate a mermaid graph of the repo structure + dir_intent summaries.
 
-Walks tracked + non-ignored directories (via git ls-files), reads the
-first non-empty content line of each dir's README.md as the dir_intent
-summary, and emits a `graph TD` mermaid block. The script replaces
-content between the marker comments below in the main README.md.
+Walks tracked + non-ignored directories (via git ls-files), reads each
+dir's README.md dir_intent summary, and emits a sectioned block of
+mermaid diagrams: one overview (root + immediate children) followed
+by one full-depth subtree diagram per top-level dir. Splitting the
+content this way keeps each individual diagram small enough to render
+at a useful size; GitHub's mermaid renderer also supports click-to-
+expand / pan / zoom on each diagram independently.
+
+The whole section is replaced between the marker comments in README.md:
 
   <!-- BEGIN_REPO_MERMAID -->
-  ...auto-generated block...
+  ...auto-generated section...
   <!-- END_REPO_MERMAID -->
-
-Depth defaults to 3 levels so the diagram stays readable. Raise with
---max-depth.
 
 Run: python3 tools/HME/scripts/generate-repo-mermaid.py
 """
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import subprocess
 import sys
@@ -46,8 +47,8 @@ def dir_intent(abs_path: Path) -> str:
         text = readme.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return ""
-    # Stop before the auto-generated block so the root README's dir_intent
-    # is stable even after this script writes to it.
+    # Stop before the auto-generated block so the root README's
+    # dir_intent stays stable across regenerations.
     if BEGIN in text:
         text = text.split(BEGIN, 1)[0]
     for line in text.splitlines():
@@ -64,83 +65,118 @@ def dir_intent(abs_path: Path) -> str:
 
 
 def safe_id(rel: str) -> str:
-    """Mermaid-safe node identifier."""
     if rel == ".":
         return "root"
     return re.sub(r"[^A-Za-z0-9_]", "_", rel.replace("/", "__"))
 
 
 def safe_label(text: str) -> str:
-    """Quote-friendly mermaid label content."""
     return text.replace('"', "'").replace("\n", " ")
 
 
-def build_graph(root: Path, max_depth: int, orient: str = "LR") -> str:
-    files = tracked_files(root)
+def _node_line(root: Path, d: Path, indent: str = "    ") -> str:
+    node_id = safe_id(str(d))
+    label_main = "Polychron" if d == Path(".") else d.name + "/"
+    intent = dir_intent(root / d)
+    label = f"{label_main}<br/><i>{safe_label(intent)}</i>" if intent else label_main
+    return f'{indent}{node_id}["{safe_label(label)}"]'
+
+
+def _all_dirs(root: Path) -> set[Path]:
+    """Every tracked directory (root + every ancestor of every file)."""
     dirs: set[Path] = {Path(".")}
-    for f in files:
+    for f in tracked_files(root):
         for parent in f.parents:
             if str(parent) == ".":
                 continue
-            depth = len(parent.parts)
-            if depth > max_depth:
-                continue
             dirs.add(parent)
+    return dirs
 
-    parents: dict[Path, Path | None] = {Path("."): None}
-    for d in dirs:
-        if d == Path("."):
-            continue
-        parents[d] = Path(*d.parts[:-1]) if len(d.parts) > 1 else Path(".")
 
-    # Group second-level dirs under subgraphs per top-level parent so the
-    # diagram renders as a small number of vertical columns -- legible
-    top_level = sorted(
-        {d for d in dirs if d != Path(".") and len(d.parts) == 1},
+def _top_levels(dirs: set[Path]) -> list[Path]:
+    return sorted(
+        (d for d in dirs if d != Path(".") and len(d.parts) == 1),
         key=lambda p: str(p),
     )
-    children_of: dict[Path, list[Path]] = {t: [] for t in top_level}
-    for d in dirs:
-        if d == Path(".") or len(d.parts) == 1:
-            continue
-        top = Path(d.parts[0])
-        if top in children_of:
-            children_of[top].append(d)
-    for v in children_of.values():
-        v.sort(key=lambda p: (len(p.parts), str(p)))
 
-    def node_line(d: Path, indent: str = "    ") -> str:
-        node_id = safe_id(str(d))
-        label_main = "Polychron" if d == Path(".") else d.name + "/"
-        intent = dir_intent(root / d)
-        label = f"{label_main}<br/><i>{safe_label(intent)}</i>" if intent else label_main
-        return f'{indent}{node_id}["{safe_label(label)}"]'
 
-    lines: list[str] = [f"flowchart {orient}"]
-    lines.append(node_line(Path(".")))
-    for top in top_level:
-        sg_id = f"sg_{safe_id(str(top))}"
-        lines.append(f"    subgraph {sg_id}[\" \"]")
-        lines.append("        direction TB")
-        lines.append(node_line(top, indent="        "))
-        for child in children_of[top]:
-            lines.append(node_line(child, indent="        "))
-        lines.append("    end")
-
-    # Edges: root -> top-level, top-level -> child. Other depths skipped
-    # because max_depth=2 only emits root + 2 levels.
-    for top in top_level:
+def build_overview(root: Path, orient: str = "LR") -> str:
+    """Root + immediate top-level dirs, as a one-glance index."""
+    dirs = _all_dirs(root)
+    lines = [f"flowchart {orient}", _node_line(root, Path("."))]
+    for top in _top_levels(dirs):
+        lines.append(_node_line(root, top))
         lines.append(f"    root --> {safe_id(str(top))}")
-        for child in children_of[top]:
-            lines.append(f"    {safe_id(str(top))} --> {safe_id(str(child))}")
     return "\n".join(lines)
 
 
-def render_block(graph: str, max_depth: int) -> str:
+def build_subtree(root: Path, top: Path, orient: str = "LR") -> str:
+    """Full-depth map of the subtree rooted at `top`."""
+    dirs = _all_dirs(root)
+    top_str = str(top) + "/"
+    in_subtree: set[Path] = {top}
+    for d in dirs:
+        s = str(d)
+        if s == str(top) or s.startswith(top_str):
+            in_subtree.add(d)
+
+    parents: dict[Path, Path] = {}
+    for d in in_subtree:
+        if d == top:
+            continue
+        parents[d] = Path(*d.parts[:-1])
+
+    lines = [f"flowchart {orient}"]
+    for d in sorted(in_subtree, key=lambda p: (len(p.parts), str(p))):
+        lines.append(_node_line(root, d))
+    for d in sorted(parents.keys(), key=lambda p: (len(p.parts), str(p))):
+        lines.append(f"    {safe_id(str(parents[d]))} --> {safe_id(str(d))}")
+    return "\n".join(lines)
+
+
+# Back-compat shim: older callers (e.g. the freshness verifier in
+# earlier turns) used to import build_graph. The new section format
+def build_graph(root: Path, max_depth: int = 2, orient: str = "LR") -> str:
+    return build_overview(root, orient=orient)
+
+
+def render_section(root: Path, orient: str = "LR") -> str:
+    """Build the full BEGIN..END section: overview + per-subtree blocks."""
+    dirs = _all_dirs(root)
+    top_level = _top_levels(dirs)
+    parts: list[str] = []
+    parts.append(BEGIN)
+    parts.append(
+        "<!-- auto-generated by tools/HME/scripts/generate-repo-mermaid.py; "
+        "do not edit by hand. GitHub's mermaid renderer supports click-to-"
+        "expand and pan/zoom on each diagram below. -->"
+    )
+    parts.append("")
+    parts.append("### Overview")
+    parts.append("")
+    parts.append("```mermaid")
+    parts.append(build_overview(root, orient=orient))
+    parts.append("```")
+    for top in top_level:
+        parts.append("")
+        parts.append(f"### `{top}/`")
+        parts.append("")
+        parts.append("```mermaid")
+        parts.append(build_subtree(root, top, orient=orient))
+        parts.append("```")
+    parts.append(END)
+    parts.append("")
+    return "\n".join(parts)
+
+
+def render_block(graph: str, max_depth: int = 2) -> str:
+    """Back-compat shim used by the freshness verifier loaded from older
+    snapshots. The new generator's authoritative format is render_section,
+    but render_block(graph, ...) still wraps a single graph in the marker
+    block so old test fixtures don't crash."""
     return (
         f"{BEGIN}\n"
-        f"<!-- auto-generated by tools/HME/scripts/generate-repo-mermaid.py "
-        f"(max_depth={max_depth}); do not edit by hand -->\n"
+        f"<!-- auto-generated -->\n"
         f"```mermaid\n"
         f"{graph}\n"
         f"```\n"
@@ -148,14 +184,13 @@ def render_block(graph: str, max_depth: int) -> str:
     )
 
 
-def update_readme(block: str) -> bool:
+def update_readme(section: str) -> bool:
     text = README.read_text(encoding="utf-8")
     if BEGIN in text and END in text:
         pattern = re.compile(re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", re.DOTALL)
-        new = pattern.sub(block, text)
+        new = pattern.sub(section, text)
     else:
-        # Append before the last section if no markers yet.
-        new = text.rstrip() + "\n\n## Repo Map\n\n" + block
+        new = text.rstrip() + "\n\n## Repo Map\n\n" + section
     if new == text:
         return False
     README.write_text(new, encoding="utf-8")
@@ -164,20 +199,17 @@ def update_readme(block: str) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--max-depth", type=int, default=2,
-                    help="maximum directory depth to include (default 2)")
     ap.add_argument("--orient", choices=("LR", "TB", "TD"), default="LR",
                     help="mermaid flowchart orientation (default LR)")
     ap.add_argument("--dry-run", action="store_true",
-                    help="print the mermaid block to stdout instead of writing")
+                    help="print the section to stdout instead of writing")
     args = ap.parse_args()
 
-    graph = build_graph(REPO_ROOT, args.max_depth, orient=args.orient)
-    block = render_block(graph, args.max_depth)
+    section = render_section(REPO_ROOT, orient=args.orient)
     if args.dry_run:
-        sys.stdout.write(block)
+        sys.stdout.write(section)
         return 0
-    changed = update_readme(block)
+    changed = update_readme(section)
     print("README.md updated" if changed else "README.md already current")
     return 0
 
