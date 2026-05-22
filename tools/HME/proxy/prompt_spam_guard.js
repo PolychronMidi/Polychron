@@ -46,6 +46,14 @@ function isNoopSystemReminderTurn(payload) {
   return stripSystemReminderBlocks(raw) === '';
 }
 
+function isCountTokensRequest(req) {
+  return /\/v1\/messages\/count_tokens(?:\?|$)/.test(String((req && req.url) || ''));
+}
+
+function isTextEventStream(payload) {
+  return payload && payload.stream === true;
+}
+
 function responseInputText(item) {
   if (!item || typeof item !== 'object') return '';
   if (item.type === 'message' || item.role) return textFromContent(item.content);
