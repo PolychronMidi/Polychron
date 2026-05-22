@@ -163,21 +163,6 @@ def render_section(root: Path, orient: str = "LR") -> str:
     return "\n".join(parts)
 
 
-def render_block(graph: str, max_depth: int = 2) -> str:
-    """Back-compat shim used by the freshness verifier loaded from older
-    snapshots. The new generator's authoritative format is render_section,
-    but render_block(graph, ...) still wraps a single graph in the marker
-    block so old test fixtures don't crash."""
-    return (
-        f"{BEGIN}\n"
-        f"<!-- auto-generated -->\n"
-        f"```mermaid\n"
-        f"{graph}\n"
-        f"```\n"
-        f"{END}\n"
-    )
-
-
 def update_readme(section: str) -> bool:
     text = README.read_text(encoding="utf-8")
     if BEGIN in text and END in text:
