@@ -194,10 +194,6 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   if (mode !== '1' || !payload || typeof payload.model !== 'string' || !payload.model.startsWith('claude-') || clientReq.headers['x-hme-upstream']) return result;
 
   const zenKey = env.OPENCODE_API_KEY || '';
-  if (!zenKey) {
-    console.error('[hme-proxy] OVERDRIVE_MODE=1 active but OPENCODE_API_KEY missing -- swap skipped');
-    return result;
-  }
   result.wasStreaming = payload.stream === true;
   result.injected = true;
   let chainInfo;
