@@ -38,7 +38,7 @@ _hme_check_errors_inline() {
   # Severity-based classifier (mirrors lifesaver.sh).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   # Self-origin source tags -- same list as lifesaver.sh _SELF_TAG_RE.
-  local _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|hook-stop-block|hook-runtime-error|hook-ui-echo-leak|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
+  local _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|hook-stop-block|hook-runtime-error|hook-ui-echo-leak|hook-latency|hook-failure|autocommit:proxy|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   local _CANARY_RE='\[CANARY-'
   _hme_stale_runtime_resolved_or_grace() {
     local head live marker first marker_head now grace
