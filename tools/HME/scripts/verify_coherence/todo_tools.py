@@ -17,7 +17,6 @@ from ._base import (
     _PROJECT,
     _SCRIPTS_DIR,
     _SERVER_DIR,
-    _result,
     errored,
     failed,
     passed,

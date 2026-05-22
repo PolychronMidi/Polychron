@@ -15,7 +15,6 @@ from ._base import (
     WARN,
     _PROJECT,
     _SERVER_DIR,
-    _result,
     errored,
     failed,
     passed,

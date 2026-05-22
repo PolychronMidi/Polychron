@@ -6,8 +6,15 @@ import stat
 from pathlib import Path
 
 from ._base import (
-    Verifier, _result, PASS, FAIL, WARN, _PROJECT, register,
-    passed, failed, warned,
+    Verifier,
+    PASS,
+    FAIL,
+    WARN,
+    _PROJECT,
+    register,
+    passed,
+    failed,
+    warned,
 )
 
 

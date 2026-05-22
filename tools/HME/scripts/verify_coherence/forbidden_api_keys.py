@@ -24,7 +24,6 @@ from ._base import (
     VerdictResult,
     Verifier,
     _PROJECT,
-    _result,
     failed,
     passed,
     register,
