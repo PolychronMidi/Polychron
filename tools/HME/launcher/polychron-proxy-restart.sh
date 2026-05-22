@@ -48,6 +48,10 @@ _port_responding() {
   [ "$code" != "000" ]
 }
 
+_proxy_listener_ready() {
+  _port_healthy "$PROXY_READY_URL" || _port_healthy "$PROXY_VERSION_URL"
+}
+
 _port_listener_pids() {
   command -v ss >/dev/null 2>&1 || return 0
   ss -ltnp "sport = :${PROXY_PORT}" 2>/dev/null \
