@@ -5,6 +5,8 @@ LOG="$ROOT/log/hme-post-commit-restart.log"
 ERR="$ROOT/log/hme-errors.log"
 STATE="$ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
 RUNTIME="$ROOT/tools/HME/runtime/proxy-runtime.json"
+STALE_STATE="$ROOT/tools/HME/runtime/post-commit-stale-runtime.json"
+GRACE_SEC="${HME_POST_COMMIT_STALE_GRACE_SEC:-120}"
 mkdir -p "$(dirname "$LOG")" "$(dirname "$ERR")" "$(dirname "$STATE")"
 HEAD_SHA="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || true)"
 printf '%s\n' "$HEAD_SHA" >"$STATE"
@@ -16,8 +18,36 @@ if [ -f "$RUNTIME" ]; then
   LIVE_PID="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("pid") or "")' "$RUNTIME" 2>/dev/null || true)"
 fi
 TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-if [ -z "$LIVE_SHA" ]; then
-  printf '[%s] [stale_runtime] CRITICAL post-commit cannot read proxy runtime metadata after commit sha=%s; reload-needed marker written; proxy code may be stale.\n' "$TS" "$HEAD_SHA" >>"$ERR"
-elif [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "$LIVE_SHA" ]; then
-  printf '[%s] [stale_runtime] CRITICAL HME proxy runtime stale after commit: live_sha=%s head_sha=%s live_pid=%s; reload-needed marker written; not restarting synchronously to avoid active API ConnectionRefused.\n' "$TS" "$LIVE_SHA" "$HEAD_SHA" "$LIVE_PID" >>"$ERR"
+NOW="$(date +%s)"
+if [ -n "$HEAD_SHA" ] && [ -n "$LIVE_SHA" ] && [ "$HEAD_SHA" = "$LIVE_SHA" ]; then
+  rm -f "$STALE_STATE" 2>/dev/null || true
+elif [ -z "$LIVE_SHA" ] || { [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "$LIVE_SHA" ]; }; then
+  FIRST_SEEN="$NOW"
+  PREV_HEAD=""
+  if [ -f "$STALE_STATE" ]; then
+    FIRST_SEEN="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("first_seen_epoch") or "")' "$STALE_STATE" 2>/dev/null || true)"
+    PREV_HEAD="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("head_sha") or "")' "$STALE_STATE" 2>/dev/null || true)"
+  fi
+  case "$FIRST_SEEN" in ''|*[!0-9]*) FIRST_SEEN="$NOW" ;; esac
+  if [ "$PREV_HEAD" != "$HEAD_SHA" ]; then FIRST_SEEN="$NOW"; fi
+  python3 - "$STALE_STATE" "$FIRST_SEEN" "$HEAD_SHA" "$LIVE_SHA" "$LIVE_PID" <<'PY'
+import json, sys, pathlib
+p=pathlib.Path(sys.argv[1])
+p.write_text(json.dumps({
+    'first_seen_epoch': int(sys.argv[2]),
+    'head_sha': sys.argv[3],
+    'live_sha': sys.argv[4],
+    'live_pid': sys.argv[5],
+})+'\n')
+PY
+  AGE=$((NOW - FIRST_SEEN))
+  if [ "$AGE" -ge "$GRACE_SEC" ]; then
+    if [ -z "$LIVE_SHA" ]; then
+      printf '[%s] [stale_runtime] CRITICAL post-commit cannot read proxy runtime metadata after commit sha=%s for %ss; reload-needed marker still pending.\n' "$TS" "$HEAD_SHA" "$AGE" >>"$ERR"
+    else
+      printf '[%s] [stale_runtime] CRITICAL HME proxy runtime stale after commit for %ss: live_sha=%s head_sha=%s live_pid=%s; reload-needed marker still pending.\n' "$TS" "$AGE" "$LIVE_SHA" "$HEAD_SHA" "$LIVE_PID" >>"$ERR"
+    fi
+  else
+    printf '[post-commit] proxy runtime lag within grace: live_sha=%s head_sha=%s live_pid=%s age=%ss grace=%ss\n' "$LIVE_SHA" "$HEAD_SHA" "$LIVE_PID" "$AGE" "$GRACE_SEC" >>"$LOG"
+  fi
 fi
