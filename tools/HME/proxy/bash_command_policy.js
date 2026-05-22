@@ -182,11 +182,32 @@ function feedbackKbSpam(cmd) {
     : null;
 }
 
+const LIFESAVER_ESCALATION_STATE = 'tools/HME/runtime/lifesaver-escalation-since.ts';
+const LIFESAVER_ESCALATION_THRESHOLD_S = 300;
+
+function lifesaverEscalation(root) {
+  const file = path.join(root, LIFESAVER_ESCALATION_STATE);
+  let firstSeen;
+  try { firstSeen = parseInt(String(fs.readFileSync(file, 'utf8')).trim(), 10); }
+  catch (_e) { return null; /* silent-ok: no state = no escalation */ }
+  if (!Number.isFinite(firstSeen) || firstSeen <= 0) return null;
+  const age = Math.floor(Date.now() / 1000) - firstSeen;
+  if (age < LIFESAVER_ESCALATION_THRESHOLD_S) return null;
+  return deny(
+    `LIFESAVER ESCALATION (Bash blocked): agent-origin errors in log/hme-errors.log have been firing without resolution for ${age}s ` +
+    `(threshold ${LIFESAVER_ESCALATION_THRESHOLD_S}s). Diagnose and fix the root cause. Bash unblocks automatically on the next ` +
+    `inline-check (PostToolUse) that finds no new agent-origin errors above the watermark. To unblock fast: address the issue, ` +
+    `then run any non-bash tool (Read/Grep/Edit) so the PostToolUse handler runs and clears the streak state.`,
+  );
+}
+
 function evaluateBashInput(input = {}, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
   const next = { ...input };
   let cmd = String(next.command || next.cmd || '');
   if (!cmd) return allow(next);
+  const escalation = lifesaverEscalation(root);
+  if (escalation) return escalation;
   const trimmed = cmd.trimStart().split('\n')[0];
   const noopFailure = noopAfterFailureDecision(cmd, root);
   if (noopFailure) return noopFailure;
@@ -241,4 +262,4 @@ function toHookResponse(result, event = 'PreToolUse') {
   return JSON.stringify({ hookSpecificOutput: hso });
 }
 
-module.exports = { evaluateBashInput, toHookResponse, blockedCommand, readerGuard, contextHit };
+module.exports = { evaluateBashInput, toHookResponse, blockedCommand, readerGuard, contextHit, lifesaverEscalation };

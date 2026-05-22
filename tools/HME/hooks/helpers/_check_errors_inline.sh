@@ -10,17 +10,16 @@ _hme_check_errors_inline() {
   local PROJECT="${PROJECT_ROOT}"
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
   local INLINE_WATERMARK="$PROJECT/tools/HME/runtime/hme-errors.inline-watermark"
+  local ESC_STATE="$PROJECT/tools/HME/runtime/lifesaver-escalation-since.ts"
   # Heartbeat -- proves this helper actually ran.
   date +%s > "$PROJECT/tools/HME/runtime/heartbeat-inline-check.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
 
   if [ ! -f "$ERROR_LOG" ]; then
-    # Genuinely no log file yet (fresh repo) is a passthrough; an
-    # unreachable log file is a silent-fail vector we should surface.
+    rm -f "$ESC_STATE" 2>/dev/null
     return 0
   fi
 
   local TOTAL WATERMARK
-  # Don't suppress wc/cat stderr -- if reading fails (permission, missing
   TOTAL=$(wc -l < "$ERROR_LOG" | tr -d ' \t')
   TOTAL=${TOTAL:-0}
   if [ -f "$INLINE_WATERMARK" ]; then
@@ -30,8 +29,11 @@ _hme_check_errors_inline() {
     WATERMARK=0
   fi
 
-  # No new errors since last inline check.
-  [ "$TOTAL" -le "$WATERMARK" ] && return 0
+  # No new errors since last inline check -- clean state, clear escalation streak.
+  if [ "$TOTAL" -le "$WATERMARK" ]; then
+    rm -f "$ESC_STATE" 2>/dev/null
+    return 0
+  fi
 
   # Severity-based classifier (mirrors lifesaver.sh).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
@@ -84,6 +86,14 @@ _hme_check_errors_inline() {
   if ! echo "$TOTAL" > "$INLINE_WATERMARK"; then
     echo "_check_errors_inline: failed to update watermark at $INLINE_WATERMARK" >&2
     return 1
+  fi
+
+  # Escalation streak: keep first-seen ts of an unresolved agent-error window.
+  # Bash policy reads this; if age > threshold, Bash is denied until cleared.
+  if [ -n "$AGENT_ERRORS" ]; then
+    [ -f "$ESC_STATE" ] || date +%s > "$ESC_STATE" 2>/dev/null || true
+  else
+    rm -f "$ESC_STATE" 2>/dev/null
   fi
 
   # Only emit if there are agent-errors. Self/observation errors are
