@@ -31,6 +31,8 @@
     "KB",
     ".pytest_cache",
     ".claude",
-    "runtime"
+    "runtime",
+    "smolagents",
+    "omniroute"
   ]
 }

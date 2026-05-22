@@ -24,6 +24,18 @@
       "kind": "domain-module",
       "owner": "coupling-analysis",
       "reason": "Bridge is the domain concept analyzed by this module."
+    },
+    {
+      "path": "tools/HME/proxy/middleware/20a_omo_shadow_bridge.js",
+      "kind": "adapter-boundary",
+      "owner": "omo",
+      "reason": "Proxy middleware bridge between HME proxy pipeline and the external OMO plugin."
+    },
+    {
+      "path": "tools/HME/omo_bridge/client_shim.js",
+      "kind": "adapter-boundary",
+      "owner": "omo",
+      "reason": "OMO SDK-compatible read-only client shim that mediates session data into the OMO plugin."
     }
   ]
 }
