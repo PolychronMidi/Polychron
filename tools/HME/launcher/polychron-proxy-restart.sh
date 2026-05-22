@@ -138,7 +138,7 @@ if [ "$_killed_any" = "0" ]; then
   echo "[proxy-restart] proxy bundle exited cleanly via SIGTERM after ${_waited}s" >&2
 fi
 
-if _port_responding "${PROXY_URL}/health"; then
+if _port_responding "$PROXY_READY_URL"; then
   echo "[proxy-restart] proxy port :${PROXY_PORT} still responding after bundle kill; terminating listener pid(s)" >&2
   while IFS= read -r _listener_pid; do
     [ -n "$_listener_pid" ] || continue
@@ -150,9 +150,11 @@ if _port_responding "${PROXY_URL}/health"; then
     kill -KILL "$_listener_pid" 2>/dev/null || true  # silent-ok: optional fallback path.
   done < <(_port_listener_pids)
 fi
-if _port_responding "${PROXY_URL}/health"; then
-  echo "[proxy-restart] ERROR: proxy port :${PROXY_PORT} still responding after listener cleanup -- aborting" >&2
-  exit 1
+if _port_responding "$PROXY_READY_URL"; then
+  echo "[proxy-restart] WARN: proxy listener survived cleanup; adopting existing listener instead of aborting" >&2
+  _ADOPT_EXISTING_LISTENER=1
+else
+  _ADOPT_EXISTING_LISTENER=0
 fi
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
