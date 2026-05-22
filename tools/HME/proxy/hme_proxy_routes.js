@@ -1,6 +1,6 @@
 'use strict';
 
-const { execFileSync } = require('child_process');
+const { runSync } = require('./subprocess');
 const { PROJECT_ROOT } = require('./shared');
 
 function json(clientRes, status, body) {
@@ -10,16 +10,13 @@ function json(clientRes, status, body) {
 
 
 function currentRepoGitSha() {
-  try {
-    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
-      cwd: PROJECT_ROOT,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 1000,
-    }).trim();
-  } catch (_e) {
-    return null;
-  }
+  const r = runSync('git', ['rev-parse', '--short', 'HEAD'], {
+    cwd: PROJECT_ROOT,
+    timeoutMs: 1000,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  if (r.exit !== 0) return null;
+  return r.stdout.trim() || null;
 }
 
 function requiredSupervisorFailures(supervisor) {
