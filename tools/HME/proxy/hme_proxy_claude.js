@@ -29,9 +29,11 @@ const {
   isSingleQuotaProbe,
   isTodoWriteOnlyProbe,
   isStructuredOutputsProbe,
+  shouldBlockNoopSystemReminderTurn,
   blockQuotaProbe,
   blockTodoWriteOnlyProbe,
   blockStructuredOutputsProbe,
+  blockNoopSystemReminderTurn,
 } = require('./prompt_spam_guard');
 
 function lifecycleBridge() {
