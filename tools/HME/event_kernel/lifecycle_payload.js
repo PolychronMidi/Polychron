@@ -28,6 +28,14 @@ function newestJsonl(dir) {
   }
 }
 
+function transcriptForSession(dir, sessionId) {
+  if (!sessionId) return '';
+  try {
+    const match = fs.readdirSync(dir).find((f) => f === `${sessionId}.jsonl`);
+    return match ? path.join(dir, match) : '';
+  } catch (_err) { return ''; }
+}
+
 function normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole }) {
   const payload = parseJson(rawBody);
   payload._hme_host = host;
@@ -41,8 +49,15 @@ function normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole }
 
 function addClaudeTranscript(payload, root, event) {
   if (event !== 'Stop') return payload;
+  if (payload && payload.transcript_path && fs.existsSync(payload.transcript_path)) {
+    try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${payload.transcript_path}\n`); }
+    catch (err) { /* best-effort marker only */ }
+    return payload;
+  }
   const ccDir = path.join(path.dirname(root), '.claude', 'projects', '-home-jah-Polychron');
-  const transcript = newestJsonl(ccDir) || path.join(root, 'log', 'session-transcript.jsonl');
+  const transcript = transcriptForSession(ccDir, payload && payload.session_id)
+    || newestJsonl(ccDir)
+    || path.join(root, 'log', 'session-transcript.jsonl');
   if (!fs.existsSync(transcript)) return payload;
   payload.transcript_path = transcript;
   try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${transcript}\n`); }
