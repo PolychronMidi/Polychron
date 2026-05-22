@@ -202,6 +202,28 @@ _CASES = [
      ],
      "ok"),
 
+    ("exhaust_check", "completion-evidence-bullets-pass",
+     [
+         _user_msg("do all 5"),
+         _assistant_tool_use("Edit", {"file_path": "tools/HME/proxy/a.js", "old_string": "x", "new_string": "y"}),
+         _assistant_msg(
+             "Completed the hardening and made it live.\n\n"
+             "Changed behavior:\n"
+             "- Safe reload path now gates on listener readiness.\n"
+             "- Context-window errors now produce error SSE.\n"
+             "- Stale-runtime spam filters now drop resolved alerts.\n\n"
+             "Validation passed:\n"
+             "- node --test focused suite passed.\n"
+             "- precommit_validate.py passed.\n"
+             "- proxy health returned OK.\n\n"
+             "Final live state:\n"
+             "- working tree clean\n"
+             "- git_sha == current_git_sha\n"
+             "- runtime_stale: false"
+         ),
+     ],
+     "ok"),
+
     ("exhaust_check", "unaddressed-hardening-pass",
      [
          _user_msg("do all and do not leave issues"),
