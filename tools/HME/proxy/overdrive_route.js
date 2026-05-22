@@ -65,6 +65,17 @@ function modelTier(modelId) {
   return 'E5';
 }
 
+function claudeModelForOverdrive(modelId) {
+  const raw = String(modelId || '');
+  if (raw.startsWith('claude-')) return raw;
+  const slash = raw.indexOf('/');
+  if (slash < 0) return '';
+  const provider = raw.slice(0, slash).toLowerCase();
+  const bare = raw.slice(slash + 1);
+  if (provider !== 'anthropic' && provider !== 'claude') return '';
+  return bare.startsWith('claude-') ? bare : '';
+}
+
 function providerKey(provider, env = process.env) {
   return omniProviderForConfigProvider(provider, env).replace(/_/g, '-');
 }
