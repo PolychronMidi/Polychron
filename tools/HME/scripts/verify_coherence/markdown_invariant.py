@@ -26,6 +26,7 @@ unexplained directory is treated as drift.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -194,12 +195,20 @@ def _classify(rel_path: Path) -> tuple[str, str]:
     )
 
 
+_AUTO_BLOCK_RE = re.compile(
+    r"<!--\s*BEGIN_[A-Z0-9_]+\s*-->.*?<!--\s*END_[A-Z0-9_]+\s*-->\s*",
+    re.DOTALL,
+)
+
+
 def _readme_size(abs_path: Path) -> tuple[int, int]:
     try:
         raw = abs_path.read_bytes()
     except OSError:
         return 0, 0
     text = raw.decode("utf-8", errors="ignore")
+    text = _AUTO_BLOCK_RE.sub("", text)
+    raw = text.encode("utf-8")
     non_blank = sum(1 for line in text.splitlines() if line.strip())
     return non_blank, len(raw)
 
