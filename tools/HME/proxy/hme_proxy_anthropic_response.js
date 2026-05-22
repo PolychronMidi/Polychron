@@ -176,7 +176,7 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
   if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) return null;
   const routeKey = _omniRouteKeyFromModel(payload && payload.model, omniProvider);
   try {
-    markRouteCooldown(routeKey, 'context_window_exceeded', { ttlMs: 300_000, projectRoot: PROJECT_ROOT });
+    markRouteCooldown(routeKey, 'context_window_exceeded', { ttlMs: 300_000, projectRoot });
     emit({ event: 'model_route_quarantine', route: routeKey, reason: 'context_window_exceeded' });
   } catch (err) {
     log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
