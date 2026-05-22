@@ -56,6 +56,7 @@ class MarkdownInvariantTests(unittest.TestCase):
                 "doc/self-coherence.md",
                 "doc/self-coherence-full.md",
                 "README.md",
+                "src/README.md",
                 "src/composers/README.md",
             ):
                 _write(root, rel, "short\n" * 5)
@@ -124,6 +125,7 @@ class MarkdownInvariantTests(unittest.TestCase):
                 "doc/templates/anything.md",
             ):
                 _write(root, rel, "essay\n" * 200)
+            _write(root, "README.md", "root\n")
 
             def _run():
                 from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
@@ -147,12 +149,58 @@ class MarkdownInvariantTests(unittest.TestCase):
                 "log/dump.md",
             ):
                 _write(root, rel, "skip me\n" * 500)
+            _write(root, "README.md", "root\n")
 
             def _run():
                 from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
                 return MarkdownInvariantVerifier().run()
             r = _with_project_root(root, _run)
             self.assertEqual(r.status, "PASS", msg=f"details={r.details}")
+
+    def test_missing_dir_intent_readme_warns(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "doc/composition.md",
+                "doc/composition-full.md",
+                "doc/self-coherence.md",
+                "doc/self-coherence-full.md",
+                "README.md",
+                "src/composers/lib.js",
+            ):
+                _write(root, rel, "stub\n")
+
+            def _run():
+                from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
+                return MarkdownInvariantVerifier().run()
+            r = _with_project_root(root, _run)
+            self.assertEqual(r.status, "WARN", msg=f"summary={r.summary} details={r.details}")
+            self.assertTrue(any("src/" in d and "missing dir_intent" in d for d in r.details),
+                            msg=f"details={r.details}")
+            self.assertTrue(any("src/composers/" in d and "missing dir_intent" in d for d in r.details),
+                            msg=f"details={r.details}")
+
+    def test_doc_subtree_does_not_require_readme(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "doc/composition.md",
+                "doc/composition-full.md",
+                "doc/self-coherence.md",
+                "doc/self-coherence-full.md",
+                "doc/theory/essay.md",
+                "doc/templates/whatever.md",
+                "README.md",
+            ):
+                _write(root, rel, "x\n")
+
+            def _run():
+                from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
+                return MarkdownInvariantVerifier().run()
+            r = _with_project_root(root, _run)
+            self.assertEqual(r.status, "PASS", msg=f"summary={r.summary} details={r.details}")
+            for d in r.details:
+                self.assertNotIn("doc/", d, msg=f"doc/ subtree should not appear in details: {d}")
 
 
 if __name__ == "__main__":

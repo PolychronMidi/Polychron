@@ -16,10 +16,17 @@ upstream documentation does not register as repo policy.
 Concise readme defaults are intentionally permissive: 120 non-blank
 lines and 8 KiB on disk. Raising the limit is a policy change, not a
 per-readme escape hatch.
+
+Companion rule (dir_intent coverage): every directory in the repo
+that holds tracked or non-ignored content -- excluding the doc/
+subtree and anything matching the SKIP_DIRS set / .gitignore -- must
+ship a README.md. The README is the directory's stated intent; an
+unexplained directory is treated as drift.
 """
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 
 from ._base import (
@@ -71,9 +78,68 @@ SKIP_DIRS = {
 MAX_README_LINES = 120
 MAX_README_BYTES = 8 * 1024
 
+# Dirs exempt from the dir_intent README requirement. doc/ holds long-form
+# essays + canonical specs (which document themselves); the SKIP_DIRS set
+README_EXEMPT_PREFIXES = ("doc",)
+
 
 def _is_skipped(parts: tuple[str, ...]) -> bool:
     return any(p in SKIP_DIRS for p in parts)
+
+
+def _is_readme_exempt(rel_dir: Path) -> bool:
+    if rel_dir == Path("."):
+        return False
+    parts = rel_dir.parts
+    if parts[0] in README_EXEMPT_PREFIXES:
+        return True
+    if any(p in SKIP_DIRS for p in parts):
+        return True
+    if any(p.startswith(".") for p in parts):
+        return True
+    return False
+
+
+def _list_dirs_for_readme_check(root: Path) -> set[Path]:
+    """Return relative dirs under ``root`` that owe a dir_intent README.
+
+    Prefers ``git ls-files`` so .gitignore is respected exactly the way
+    git sees it. Falls back to an os.walk that honors SKIP_DIRS when
+    git is unavailable (e.g. inside a unit-test tempdir).
+    """
+    files: list[Path] = []
+    try:
+        rc = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--cached", "--others",
+             "--exclude-standard"],
+            capture_output=True, text=True, timeout=30, check=True,
+        )
+        for line in rc.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            files.append(Path(line))
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+            FileNotFoundError, OSError):
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [
+                d for d in dirnames
+                if d not in SKIP_DIRS and not d.startswith(".")
+            ]
+            for fn in filenames:
+                try:
+                    rel = (Path(dirpath) / fn).relative_to(root)
+                except ValueError:
+                    continue
+                files.append(rel)
+
+    dirs: set[Path] = {Path(".")}
+    for f in files:
+        for parent in f.parents:
+            if parent == Path("."):
+                continue
+            dirs.add(parent)
+    return dirs
 
 
 def _walk_markdown(root: str):
@@ -129,6 +195,7 @@ class MarkdownInvariantVerifier(Verifier):
         violations: list[str] = []
         readme_overruns: list[str] = []
         misplaced: list[str] = []
+        readmes_seen: set[Path] = set()
         allowed_count = 0
         readme_count = 0
         for abs_path in _walk_markdown(str(root)):
@@ -147,6 +214,7 @@ class MarkdownInvariantVerifier(Verifier):
                 misplaced.append(detail)
                 continue
             if kind == "readme":
+                readmes_seen.add(rel_path.parent)
                 non_blank, size = _readme_size(abs_path)
                 if non_blank > MAX_README_LINES or size > MAX_README_BYTES:
                     readme_overruns.append(
@@ -158,7 +226,19 @@ class MarkdownInvariantVerifier(Verifier):
                 continue
             violations.append(detail)
 
-        all_issues = violations + misplaced + readme_overruns
+        missing_readmes: list[str] = []
+        dirs_needing_readme = _list_dirs_for_readme_check(root)
+        for d in sorted(dirs_needing_readme, key=lambda p: str(p)):
+            if _is_readme_exempt(d):
+                continue
+            if d in readmes_seen:
+                continue
+            if (root / d / "README.md").is_file():
+                continue
+            display = "." if d == Path(".") else str(d).replace(os.sep, "/")
+            missing_readmes.append(f"{display}/ -- missing dir_intent README.md")
+
+        all_issues = violations + misplaced + readme_overruns + missing_readmes
         if not all_issues:
             return _result(
                 PASS,
@@ -167,13 +247,13 @@ class MarkdownInvariantVerifier(Verifier):
                 f"{readme_count} concise README(s); no other .md files",
             )
 
-        # Score scales linearly with violations: 20+ violations -> 0.0.
         score = max(0.0, 1.0 - len(all_issues) / 20.0)
         status = FAIL if violations else WARN
         summary = (
             f"{len(violations)} disallowed .md file(s)"
             + (f", {len(misplaced)} misplaced canonical(s)" if misplaced else "")
             + (f", {len(readme_overruns)} oversized README(s)" if readme_overruns else "")
+            + (f", {len(missing_readmes)} dir(s) missing README" if missing_readmes else "")
         )
         details = all_issues[:30]
         return _result(status, score, summary, details)
