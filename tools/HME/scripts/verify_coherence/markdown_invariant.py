@@ -91,6 +91,12 @@ MAX_README_BYTES = 8 * 1024
 # essays + canonical specs (which document themselves); the SKIP_DIRS set
 README_EXEMPT_PREFIXES = ("doc",)
 
+# Specific subtrees exempt from the dir_intent README requirement. These
+# are generated or registry-managed dirs whose contents are constrained by
+README_EXEMPT_PATHS = (
+    "tools/HME/i",
+)
+
 
 def _is_skipped(parts: tuple[str, ...]) -> bool:
     return any(p in SKIP_DIRS for p in parts)
@@ -105,6 +111,9 @@ def _is_readme_exempt(rel_dir: Path) -> bool:
     if any(p in SKIP_DIRS for p in parts):
         return True
     if any(p.startswith(".") for p in parts):
+        return True
+    rel_str = str(rel_dir).replace(os.sep, "/")
+    if any(rel_str == p or rel_str.startswith(p + "/") for p in README_EXEMPT_PATHS):
         return True
     return False
 
