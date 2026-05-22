@@ -172,24 +172,26 @@ if [ "$_killed_any" = "0" ]; then
   echo "[proxy-restart] proxy bundle exited cleanly via SIGTERM after ${_waited}s" >&2
 fi
 
-if _proxy_listener_ready; then
-  echo "[proxy-restart] proxy port :${PROXY_PORT} still responding after bundle kill; terminating listener pid(s)" >&2
-  while IFS= read -r _listener_pid; do
+_remaining_listener_pids="$(_port_listener_pids | tr '\n' ' ')"
+if [ -n "$_remaining_listener_pids" ]; then
+  echo "[proxy-restart] proxy port :${PROXY_PORT} still owned after bundle kill; terminating listener pid(s): $_remaining_listener_pids" >&2
+  for _listener_pid in $_remaining_listener_pids; do
     [ -n "$_listener_pid" ] || continue
     kill -TERM "$_listener_pid" 2>/dev/null || true  # silent-ok: optional fallback path.
-  done < <(_port_listener_pids)
+  done
   sleep 1
-  while IFS= read -r _listener_pid; do
+  _remaining_listener_pids="$(_port_listener_pids | tr '\n' ' ')"
+  for _listener_pid in $_remaining_listener_pids; do
     [ -n "$_listener_pid" ] || continue
     kill -KILL "$_listener_pid" 2>/dev/null || true  # silent-ok: optional fallback path.
-  done < <(_port_listener_pids)
+  done
 fi
-if _proxy_listener_ready; then
-  echo "[proxy-restart] ERROR: proxy listener survived cleanup on :${PROXY_PORT}; refusing to adopt potentially stale code" >&2
-  echo "[proxy-restart]   remaining listener pid(s): $(_port_listener_pids | tr '\n' ' ')" >&2
+_remaining_listener_pids="$(_port_listener_pids | tr '\n' ' ')"
+if [ -n "$_remaining_listener_pids" ]; then
+  echo "[proxy-restart] ERROR: proxy listener survived cleanup on :${PROXY_PORT}; refusing to start over stale code" >&2
+  echo "[proxy-restart]   remaining listener pid(s): $_remaining_listener_pids" >&2
   exit 1
 fi
-_ADOPT_EXISTING_LISTENER=0
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
 _VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"
