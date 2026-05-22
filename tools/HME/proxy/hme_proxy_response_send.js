@@ -204,7 +204,7 @@ function _maybeRewriteNonSseEdit(buf, payload) {
 }
 
 function maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive, runInlineFallback }) {
-  if (!isAnthropic || responseHasToolUse(outBuf) || !lifecycleInactive('Stop')) return;
+  if (!isAnthropic || responseHasToolUse(outBuf) || responseHasErrorEvent(outBuf) || !lifecycleInactive('Stop')) return;
   try {
     const stopSession = payload ? sessionKey(payload) : 'unknown';
     const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });
