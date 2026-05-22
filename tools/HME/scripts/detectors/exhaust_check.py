@@ -234,6 +234,32 @@ def _emit_stats(verdict: str, detail: str) -> None:
 _LIST_ITEM_RE = re.compile(r"^\s*(?:\d+[.)]\s+\S|[-*]\s+\S)", re.MULTILINE)
 _STRUCTURAL_ENUMERATION_THRESHOLD = 3
 
+_COMPLETION_EVIDENCE_RE = re.compile(
+    r"\b(implemented|landed|changed|patched|fixed|validated|verified|tests?\s+(?:passed|green)|"
+    r"health\s+(?:ok|returned|shows)|working\s+tree\s+clean|runtime_stale\s*:\s*false|"
+    r"git_sha\s*==|head\s*:|reloaded|made\s+.+\s+live)\b",
+    re.IGNORECASE,
+)
+_UNDONE_RE = re.compile(
+    r"\b(?:remaining|pending|todo|tbd|not\s+(?:fixed|implemented|wired|verified|done)|"
+    r"still\s+(?:needs?|missing|broken|unresolved|not)|next\s+(?:step|action|pass|time)|"
+    r"would\s+like\s+me\s+to|want\s+me\s+to|should\s+i|let\s+me\s+know\s+if)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_completed_evidence_summary(text: str) -> bool:
+    """True for closing bullet inventories that describe completed work and
+    verification evidence, not handoff/debt. Prevents structural enumeration
+    from punishing the exact completion summary shape it otherwise requests.
+    """
+    if _UNDONE_RE.search(text):
+        return False
+    items = _LIST_ITEM_RE.findall(text)
+    if len(items) < _STRUCTURAL_ENUMERATION_THRESHOLD:
+        return False
+    return bool(_COMPLETION_EVIDENCE_RE.search(text))
+
 
 def _has_tool_call_after_last_text(events: list) -> bool:
     """True if any tool_use appears after the last text block."""
