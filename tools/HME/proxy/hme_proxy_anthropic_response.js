@@ -105,7 +105,12 @@ function emitContextTokenUsage(args) {
   catch (_e) { /* silent-ok: telemetry must not affect response path */ }
 }
 
-function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel, anthropicTextSseBuffer, log = console.error }) {
+function _anthropicErrorSseBuffer(type, message) {
+  const data = { type: 'error', error: { type, message } };
+  return Buffer.from(`event: error\ndata: ${JSON.stringify(data)}\n\n`, 'utf8');
+}
+
+function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel: _swapModel, anthropicTextSseBuffer: _anthropicTextSseBuffer, log = console.error }) {
   if (!isOmniRouteSwap || status < 200 || status >= 300
       || !(outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
     return { outHeaders, outBuf };
@@ -114,11 +119,16 @@ function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, ou
   if (text.includes('event: message_start') || !/input exceeds the context window/i.test(text)) {
     return { outHeaders, outBuf };
   }
-  const msg = 'Context window exceeded upstream before Claude Code could compact. Please send /compact or start a fresh turn; hme-proxy will preflight-shrink future near-limit OmniRoute requests.';
-  log(`[hme-proxy] OmniRoute context-window SSE normalized to Anthropic text event (${outBuf.length}B error body)`);
-  const headers = { ...outHeaders, 'content-type': 'text/event-stream; charset=utf-8' };
+  const msg = 'Upstream context window exceeded: input exceeds the context window. Compact or start a fresh turn before retrying this transcript.';
+  log(`[hme-proxy] OmniRoute context-window SSE preserved as Anthropic error event (${outBuf.length}B error body)`);
+  const headers = {
+    ...outHeaders,
+    'content-type': 'text/event-stream; charset=utf-8',
+    'x-hme-proxy-error': 'context_window_exceeded',
+    'x-hme-context-window-exceeded': '1',
+  };
   delete headers['content-length'];
-  return { outHeaders: headers, outBuf: anthropicTextSseBuffer(swapModel, msg) };
+  return { outHeaders: headers, outBuf: _anthropicErrorSseBuffer('context_window_exceeded', msg) };
 }
 
 async function handleAnthropicResponseComplete({
