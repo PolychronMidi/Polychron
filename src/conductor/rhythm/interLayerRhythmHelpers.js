@@ -1,4 +1,4 @@
-// src/conductor/rhythmic/interLayerRhythmHelpers.js
+// src/conductor/rhythm/interLayerRhythmHelpers.js
 // Pure computation helpers extracted from interLayerRhythmAnalyzer.
 // Five analysis functions operating on L0 data.
 

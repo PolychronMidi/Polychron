@@ -107,11 +107,11 @@ flowchart LR
     src__composers__utils["composers/utils/<br/><i>Composer-local helpers shared across the per-style composer modules</i>"]
     src__composers__voice["composers/voice/<br/><i>Per-voice note selection and voice-leading optimization. `VoiceManager` is th...</i>"]
     src__conductor__dynamics["conductor/dynamics/<br/><i>Dynamic-level signal extraction -- energy momentum, climax proximity, density...</i>"]
-    src__conductor__harmonic["conductor/harmonic/<br/><i>Harmonic signal extraction -- tonality, chord function, chromatic saturation,...</i>"]
+    src__conductor__harmony["conductor/harmony/<br/><i>Harmonic signal extraction -- tonality, chord function, chromatic saturation,...</i>"]
     src__conductor__journey["conductor/journey/<br/><i>Tonal trajectory planning across sections. `harmonicJourney` plans a key/mode...</i>"]
-    src__conductor__melodic["conductor/melodic/<br/><i>Melodic signal extraction -- pitch trajectory, contour shape, interval balanc...</i>"]
+    src__conductor__melody["conductor/melody/<br/><i>Melodic signal extraction -- pitch trajectory, contour shape, interval balanc...</i>"]
     src__conductor__profiles["conductor/profiles/<br/><i>Static ensemble-configuration profiles (instrument ranges, ensemble</i>"]
-    src__conductor__rhythmic["conductor/rhythmic/<br/><i>Rhythmic signal extraction -- phase relationships, timing drift, onset densit...</i>"]
+    src__conductor__rhythm["conductor/rhythm/<br/><i>Rhythmic signal extraction -- phase relationships, timing drift, onset densit...</i>"]
     src__conductor__signal["conductor/signal/<br/><i>Conductor signal-layer modules: dynamics, expressive shaping, narrative arc.</i>"]
     src__conductor__texture["conductor/texture/<br/><i>Conductor texture-layer modules: voicing, articulation, balance.</i>"]
     src__crossLayer__dynamics["crossLayer/dynamics/<br/><i>Per-beat dynamic arc coordination -- velocity envelopes, articulation complem...</i>"]
@@ -170,11 +170,11 @@ flowchart LR
     src__composers --> src__composers__utils
     src__composers --> src__composers__voice
     src__conductor --> src__conductor__dynamics
-    src__conductor --> src__conductor__harmonic
+    src__conductor --> src__conductor__harmony
     src__conductor --> src__conductor__journey
-    src__conductor --> src__conductor__melodic
+    src__conductor --> src__conductor__melody
     src__conductor --> src__conductor__profiles
-    src__conductor --> src__conductor__rhythmic
+    src__conductor --> src__conductor__rhythm
     src__conductor --> src__conductor__signal
     src__conductor --> src__conductor__texture
     src__crossLayer --> src__crossLayer__dynamics
@@ -287,6 +287,10 @@ flowchart LR
     tools__HME__hooks__lifecycle__stop["HME/hooks/lifecycle/stop/<br/><i>Stop-event sub-hooks that compose the Stop lifecycle pipeline.</i>"]
     tools__HME__hooks__pretooluse__bash["HME/hooks/pretooluse/bash/<br/><i>`pretooluse_bash.sh` auto-loads gates by phase via `bash/<phase>/*.sh`:</i>"]
     tools__HME__proxy__contexts__failure_policy["HME/proxy/contexts/failure_policy/<br/><i>Failure-policy bounded context: classify upstream failures and select a recov...</i>"]
+    tools__HME__proxy__contexts__lifecycle_bridge["HME/proxy/contexts/lifecycle_bridge/<br/><i>Bounded-context façade: maps Claude Code lifecycle events (PreToolUse,</i>"]
+    tools__HME__proxy__contexts__request_mutation["HME/proxy/contexts/request_mutation/<br/><i>Bounded-context façade: transforms the inbound client request before</i>"]
+    tools__HME__proxy__contexts__response_transform["HME/proxy/contexts/response_transform/<br/><i>Bounded-context façade: buffers and rewrites the upstream response</i>"]
+    tools__HME__proxy__contexts__upstream_dispatch["HME/proxy/contexts/upstream_dispatch/<br/><i>Bounded-context façade: resolves upstream + sends the request (OmniRoute</i>"]
     tools__HME__proxy__stop_chain__policies["HME/proxy/stop_chain/policies/<br/><i>Stop-chain policy modules (per-condition allow/deny/defer).</i>"]
     tools__HME__scripts__detectors__fixtures["HME/scripts/detectors/fixtures/<br/><i>Static transcript fixtures used by the detector test suite.</i>"]
     tools__HME__scripts__pipeline__hme["HME/scripts/pipeline/hme/<br/><i>HME-specific pipeline stages: match-patterns, scoring, write-out.</i>"]
@@ -377,6 +381,10 @@ flowchart LR
     tools__HME__hooks__lifecycle --> tools__HME__hooks__lifecycle__stop
     tools__HME__hooks__pretooluse --> tools__HME__hooks__pretooluse__bash
     tools__HME__proxy__contexts --> tools__HME__proxy__contexts__failure_policy
+    tools__HME__proxy__contexts --> tools__HME__proxy__contexts__lifecycle_bridge
+    tools__HME__proxy__contexts --> tools__HME__proxy__contexts__request_mutation
+    tools__HME__proxy__contexts --> tools__HME__proxy__contexts__response_transform
+    tools__HME__proxy__contexts --> tools__HME__proxy__contexts__upstream_dispatch
     tools__HME__proxy__stop_chain --> tools__HME__proxy__stop_chain__policies
     tools__HME__scripts__detectors --> tools__HME__scripts__detectors__fixtures
     tools__HME__scripts__pipeline --> tools__HME__scripts__pipeline__hme

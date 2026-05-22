@@ -1,4 +1,4 @@
-// src/conductor/melodic/perceptualTensionBias.js
+// src/conductor/melody/perceptualTensionBias.js
 // Cross-run perceptual feedback: previous run's EnCodec CB0 entropy per section
 // drives a small tension bias modifier, closing the tension->CB0->tension loop.
 // Validated correlation: conductor tension r=0.644 with CB0 entropy.

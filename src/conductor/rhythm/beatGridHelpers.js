@@ -1,4 +1,4 @@
-// src/conductor/rhythmic/beatGridHelpers.js - Shared beat-grid utility.
+// src/conductor/rhythm/beatGridHelpers.js - Shared beat-grid utility.
 // Used by accentPatternTracker, syncopationDensityTracker, interLayerRhythmAnalyzer,
 // articulationProfiler, durationalContourTracker, rhythmicSymmetryDetector,
 // rhythmicGroupingAnalyzer, onsetRegularityMonitor.

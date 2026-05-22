@@ -1,4 +1,4 @@
-// src/conductor/harmonic/pitchClassHelpers.js - Shared pitch-class utilities.
+// src/conductor/harmony/pitchClassHelpers.js - Shared pitch-class utilities.
 // Used by chromaticSaturationMonitor, modalColorTracker, pitchClassGravityMap,
 // tonalAnchorDistanceTracker, consonanceDissonanceTracker, tensionResolutionTracker,
 // layerCoherenceScorer.

@@ -39,9 +39,9 @@ require('./conductorIntelligence');
 
 require('./signal');
 // Intelligence modules - grouped by domain
-require('./harmonic');
-require('./melodic');
-require('./rhythmic');
+require('./harmony');
+require('./melody');
+require('./rhythm');
 require('./dynamics');
 
 
