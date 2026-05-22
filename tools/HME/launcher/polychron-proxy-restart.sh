@@ -63,6 +63,17 @@ _port_listener_pids() {
     | sort -u
 }
 
+_bundle_pattern_pids() {
+  local pat="$1"
+  ps -eo pid=,args= 2>/dev/null | awk -v pat="$pat" -v self="$$" -v ppid="$PPID" '
+    $1 == self || $1 == ppid { next }
+    $0 ~ /polychron-proxy-restart\.sh/ { next }
+    $0 ~ /tools\/HME\/launcher\/polychron-proxy-restart\.sh/ { next }
+    $0 ~ /awk -v pat=/ { next }
+    index($0, pat) { print $1 }
+  ' | sort -u
+}
+
 _runtime_value() {
   local key="$1"
   [ -f "$RUNTIME_FILE" ] || return 0
