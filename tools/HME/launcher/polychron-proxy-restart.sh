@@ -293,8 +293,8 @@ done
 if _proxy_listener_ready; then
   _LISTENER_PID="$(_port_listener_pids | head -1)"
   echo "[proxy-restart] proxy listener ready after ${_waited}s (pid=${_LISTENER_PID:-unknown})" >&2
-  if ! _assert_runtime_matches_listener "$_LISTENER_PID"; then
-    echo "[proxy-restart] ERROR: runtime metadata does not match the active listener/current checkout" >&2
+  if ! _assert_runtime_matches_listener "$_LISTENER_PID" "$_EXPECTED_SHA"; then
+    echo "[proxy-restart] ERROR: runtime metadata does not match the active listener/expected checkout" >&2
     exit 1
   fi
 else
