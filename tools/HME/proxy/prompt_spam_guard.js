@@ -84,6 +84,8 @@ function jsonResponse(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+const NOOP_TURN_TEXT = String.fromCharCode(0x2063);
+
 function anthropicEmptyResponse(payload, prefix = 'hme_empty') {
   return {
     id: `${prefix}_${Date.now()}`,
@@ -95,6 +97,27 @@ function anthropicEmptyResponse(payload, prefix = 'hme_empty') {
     stop_sequence: null,
     usage: { input_tokens: 0, output_tokens: 0 },
   };
+}
+
+function anthropicTextResponse(payload, text, prefix = 'hme_text') {
+  return {
+    ...anthropicEmptyResponse(payload, prefix),
+    content: [{ type: 'text', text: String(text || '') }],
+  };
+}
+
+function anthropicTextSse(payload, text, prefix = 'hme_text') {
+  const id = `${prefix}_${Date.now()}`;
+  const model = payload && payload.model ? payload.model : 'hme-proxy';
+  const events = [
+    ['message_start', { type: 'message_start', message: { id, type: 'message', role: 'assistant', content: [], model, stop_reason: null, stop_sequence: null, usage: { input_tokens: 0, output_tokens: 0 } } }],
+    ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: String(text || '') } }],
+    ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+    ['message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 0 } }],
+    ['message_stop', { type: 'message_stop' }],
+  ];
+  return events.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`).join('');
 }
 
 function anthropicQuotaProbeResponse(payload) {
