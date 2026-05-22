@@ -111,6 +111,14 @@ _sv_bundle_healthy() {
   [ -z "$(_sv_bundle_health_issue)" ]
 }
 
+_sv_reload_marker_pending() {
+  [ -f "$_SV_RELOAD_MARKER" ] || return 1
+  local wanted live
+  wanted=$(cat "$_SV_RELOAD_MARKER" 2>/dev/null | head -1)
+  live=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true)
+  [ -n "$wanted" ] && [ "$wanted" != "$live" ]
+}
+
 _sv_wait_bundle_healthy() {
   local waited=0
   while [ "$waited" -lt "$_SV_BUNDLE_HEALTH_TIMEOUT" ]; do
