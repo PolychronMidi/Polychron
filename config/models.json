@@ -130,7 +130,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; max effort variant.",
-          "tier_score": 9,
+          "tier_score": 10,
           "context_length": 1000000,
           "max_output_tokens": 128000,
           "max_input_tokens": 872000
