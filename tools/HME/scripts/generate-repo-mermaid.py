@@ -75,7 +75,7 @@ def safe_label(text: str) -> str:
     return text.replace('"', "'").replace("\n", " ")
 
 
-def build_graph(root: Path, max_depth: int) -> str:
+def build_graph(root: Path, max_depth: int, orient: str = "LR") -> str:
     files = tracked_files(root)
     dirs: set[Path] = {Path(".")}
     for f in files:
@@ -93,22 +93,46 @@ def build_graph(root: Path, max_depth: int) -> str:
             continue
         parents[d] = Path(*d.parts[:-1]) if len(d.parts) > 1 else Path(".")
 
-    lines = ["graph TD"]
-    # Stable ordering for diff-friendliness.
-    for d in sorted(dirs, key=lambda p: (len(p.parts), str(p))):
+    # Group second-level dirs under subgraphs per top-level parent so the
+    # diagram renders as a small number of vertical columns -- legible
+    top_level = sorted(
+        {d for d in dirs if d != Path(".") and len(d.parts) == 1},
+        key=lambda p: str(p),
+    )
+    children_of: dict[Path, list[Path]] = {t: [] for t in top_level}
+    for d in dirs:
+        if d == Path(".") or len(d.parts) == 1:
+            continue
+        top = Path(d.parts[0])
+        if top in children_of:
+            children_of[top].append(d)
+    for v in children_of.values():
+        v.sort(key=lambda p: (len(p.parts), str(p)))
+
+    def node_line(d: Path, indent: str = "    ") -> str:
         node_id = safe_id(str(d))
-        if d == Path("."):
-            label_main = "Polychron"
-        else:
-            label_main = d.name + "/"
+        label_main = "Polychron" if d == Path(".") else d.name + "/"
         intent = dir_intent(root / d)
         label = f"{label_main}<br/><i>{safe_label(intent)}</i>" if intent else label_main
-        lines.append(f'    {node_id}["{safe_label(label)}"]')
-    for d in sorted(dirs, key=lambda p: (len(p.parts), str(p))):
-        parent = parents[d]
-        if parent is None:
-            continue
-        lines.append(f"    {safe_id(str(parent))} --> {safe_id(str(d))}")
+        return f'{indent}{node_id}["{safe_label(label)}"]'
+
+    lines: list[str] = [f"flowchart {orient}"]
+    lines.append(node_line(Path(".")))
+    for top in top_level:
+        sg_id = f"sg_{safe_id(str(top))}"
+        lines.append(f"    subgraph {sg_id}[\" \"]")
+        lines.append("        direction TB")
+        lines.append(node_line(top, indent="        "))
+        for child in children_of[top]:
+            lines.append(node_line(child, indent="        "))
+        lines.append("    end")
+
+    # Edges: root -> top-level, top-level -> child. Other depths skipped
+    # because max_depth=2 only emits root + 2 levels.
+    for top in top_level:
+        lines.append(f"    root --> {safe_id(str(top))}")
+        for child in children_of[top]:
+            lines.append(f"    {safe_id(str(top))} --> {safe_id(str(child))}")
     return "\n".join(lines)
 
 
@@ -140,13 +164,15 @@ def update_readme(block: str) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--max-depth", type=int, default=3,
-                    help="maximum directory depth to include (default 3)")
+    ap.add_argument("--max-depth", type=int, default=2,
+                    help="maximum directory depth to include (default 2)")
+    ap.add_argument("--orient", choices=("LR", "TB", "TD"), default="LR",
+                    help="mermaid flowchart orientation (default LR)")
     ap.add_argument("--dry-run", action="store_true",
                     help="print the mermaid block to stdout instead of writing")
     args = ap.parse_args()
 
-    graph = build_graph(REPO_ROOT, args.max_depth)
+    graph = build_graph(REPO_ROOT, args.max_depth, orient=args.orient)
     block = render_block(graph, args.max_depth)
     if args.dry_run:
         sys.stdout.write(block)
