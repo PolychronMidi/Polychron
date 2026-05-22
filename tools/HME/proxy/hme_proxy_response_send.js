@@ -46,6 +46,19 @@ function responseHasToolUse(outBuf) {
   }
 }
 
+function responseHasErrorEvent(outBuf) {
+  try {
+    const outStr = (outBuf && typeof outBuf.toString === 'function') ? outBuf.toString('utf8') : '';
+    if (!outStr) return false;
+    if (/(^|\n)event:\s*error\b/m.test(outStr)) return true;
+    if (!outStr.trimStart().startsWith('{')) return false;
+    const parsed = JSON.parse(outStr);
+    return !!(parsed && (parsed.type === 'error' || parsed.error));
+  } catch (_) {
+    return false;
+  }
+}
+
 function maybeStripNonSseBareAck({ payload, outBuf }) {
   try {
     const deny = userWasDeny(payload);
