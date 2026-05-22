@@ -117,6 +117,12 @@ _sv_reload_marker_pending() {
   local wanted live
   wanted=$(cat "$_SV_RELOAD_MARKER" 2>/dev/null | head -1)
   live=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true)
+  # Trace one-shot per (wanted,live) pair so silent skips become diagnosable.
+  local trace_key="${wanted}:${live}"
+  if [ "$trace_key" != "${_SV_RELOAD_TRACE_LAST:-}" ]; then
+    _sv_log "reload-marker probe wanted=[$wanted] live=[$live]"
+    _SV_RELOAD_TRACE_LAST="$trace_key"
+  fi
   [ -n "$wanted" ] && [ "$wanted" != "$live" ]
 }
 
