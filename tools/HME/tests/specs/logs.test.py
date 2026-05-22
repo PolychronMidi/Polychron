@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -26,8 +25,7 @@ class LogsModuleTests(unittest.TestCase):
             assert_class_shape(self, cls)
 
     def test_smoke_run(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            smoke_run(self, tmp, _classes())
+        smoke_run(self, _classes())
 
 
 if __name__ == "__main__":
