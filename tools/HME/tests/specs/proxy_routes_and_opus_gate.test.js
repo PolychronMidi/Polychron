@@ -33,13 +33,31 @@ function fakeRes() {
   };
 }
 
-test('proxy route health reports stale runtime degraded while ready stays listener-only', () => {
+test('proxy route health reports stale runtime degraded', () => {
   const { healthVerdict } = require('../../proxy/hme_proxy_routes');
   const degraded = healthVerdict({ worker: { healthy: true, required: true } }, 'not-head', () => 'head');
   assert.equal(degraded.ok, false);
   assert.equal(degraded.httpStatus, 503);
   assert.equal(degraded.runtime_stale, true);
   assert.equal(degraded.listener_ready, true);
+});
+
+test('proxy ready fails closed for stale runtime', () => {
+  clearProxyCache();
+  const { createProxyRouteDispatcher } = require('../../proxy/hme_proxy_routes');
+  const dispatch = createProxyRouteDispatcher({
+    PORT: 9099,
+    PROXY_VERSION: 'test-version',
+    PROXY_GIT_SHA: 'not-head',
+    PROXY_STARTED_AT: 'test-start',
+    routeMetrics: {},
+    stopGateHealth: () => ({}),
+    supervisorStatus: () => ({ worker: { healthy: true } }),
+  });
+  const res = fakeRes();
+  assert.equal(dispatch(fakeReq('/ready'), res), true);
+  assert.equal(res.statusCode, 503);
+  assert.equal(JSON.parse(res.body).status, 'stale');
 });
 
 test('proxy route dispatcher handles health/version/stop and probe short-circuits', () => {
