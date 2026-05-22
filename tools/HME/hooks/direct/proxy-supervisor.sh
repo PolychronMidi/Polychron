@@ -70,6 +70,21 @@ _sv_log() {
   echo "[$ts] [proxy-supervisor] $*" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 }
 
+_sv_file_fingerprint() {
+  python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$1" 2>/dev/null
+}
+
+_sv_reexec_if_self_changed() {
+  local current
+  current="$(_sv_file_fingerprint "$_SV_SELF")"
+  [ -n "$current" ] || return 0
+  [ -n "${_SV_SELF_FINGERPRINT:-}" ] || _SV_SELF_FINGERPRINT="$current"
+  if [ "$current" != "$_SV_SELF_FINGERPRINT" ]; then
+    _sv_log "supervisor source changed; re-execing fresh supervisor loop"
+    exec bash -c "source '$_SV_SELF' _loop"
+  fi
+}
+
 _sv_is_maintenance_active() {
   [ -f "$_SV_MAINT_FLAG" ] || return 1
   local start ttl
