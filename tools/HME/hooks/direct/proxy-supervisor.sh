@@ -401,8 +401,8 @@ case "$_action" in
       if [ -n "$existing" ] && kill -0 "$existing" 2>/dev/null; then
         current_fingerprint="$(_sv_file_fingerprint "$_SV_SELF")"
         running_fingerprint="$(_sv_state_fingerprint "$_SV_STATE_FILE")"
-        if [ -n "$current_fingerprint" ] && [ -n "$running_fingerprint" ] && [ "$current_fingerprint" != "$running_fingerprint" ]; then
-          _sv_log "supervisor start replacing stale supervisor pid=$existing (source fingerprint changed)"
+        if [ -n "$current_fingerprint" ] && { [ -z "$running_fingerprint" ] || [ "$current_fingerprint" != "$running_fingerprint" ]; }; then
+          _sv_log "supervisor start replacing stale supervisor pid=$existing (source fingerprint missing/changed)"
           kill "$existing" 2>/dev/null || true
           waited=0
           while [ "$waited" -lt 5 ] && kill -0 "$existing" 2>/dev/null; do
