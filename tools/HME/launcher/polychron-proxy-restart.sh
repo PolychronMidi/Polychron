@@ -63,6 +63,31 @@ _port_listener_pids() {
     | sort -u
 }
 
+_runtime_value() {
+  local key="$1"
+  [ -f "$RUNTIME_FILE" ] || return 0
+  python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get(sys.argv[2]) or "")' "$RUNTIME_FILE" "$key" 2>/dev/null || true
+}
+
+_current_head_sha() {
+  git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || true
+}
+
+_assert_runtime_matches_listener() {
+  local expected_pid="$1" head_sha runtime_pid runtime_sha ts
+  head_sha="$(_current_head_sha)"
+  runtime_pid="$(_runtime_value pid)"
+  runtime_sha="$(_runtime_value git_sha)"
+  if [ -z "$runtime_pid" ] || [ -z "$runtime_sha" ] || [ "$runtime_pid" != "$expected_pid" ] || { [ -n "$head_sha" ] && [ "$runtime_sha" != "$head_sha" ]; }; then
+    ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)
+    mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null || true
+    echo "[$ts] [proxy-restart] CRITICAL runtime/listener mismatch after restart: listener_pid=${expected_pid:-none} runtime_pid=${runtime_pid:-none} runtime_sha=${runtime_sha:-none} head_sha=${head_sha:-none}" >> "$ERROR_LOG"
+    return 1
+  fi
+  rm -f "$RELOAD_MARKER" "$STALE_RUNTIME_STATE" 2>/dev/null || true
+  return 0
+}
+
 mapfile -t _PROXY_BUNDLE_PATTERNS < <(_hme_bundle_process_patterns proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
 if [ "${#_PROXY_BUNDLE_PATTERNS[@]}" -eq 0 ]; then
   _PROXY_BUNDLE_PATTERNS=("hme_proxy.js" "worker.py" "llamacpp_daemon")
