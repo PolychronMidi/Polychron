@@ -23,7 +23,7 @@
       }
     },
     "toprank_rationale": {
-      "E5": "gpt5.5 frontier with abundant usage credits."
+      "E5": "frontier with abundant usage credits."
     }
   },
   "providers_to_skip": {
@@ -90,7 +90,7 @@
 
 
   "manually_toprank": {
-    "E5": [""],
+    "E5": ["claude-opus-4-7-max-e5"],
     "E4": [],
     "E3": [],
     "E2": [],
