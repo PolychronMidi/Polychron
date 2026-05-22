@@ -194,24 +194,39 @@ _PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)" 
 echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
 echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
 
-# 8. Health-gate. Same timeout the launcher uses.
+# 8. Listener readiness gate: /ready proves :${PROXY_PORT} is serving the new
+# process without waiting for slower required workers. Full /health is still
+# observed below, but does not create an avoidable CLI outage during warmup.
 _waited=0
-while [ "$_waited" -lt "$PROXY_STARTUP_TIMEOUT" ]; do
-  _port_healthy "${PROXY_URL}/health" && break
+while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
+  _port_healthy "$PROXY_READY_URL" && break
   sleep 1
   _waited=$((_waited + 1))
 done
 
-if _port_healthy "${PROXY_URL}/health"; then
-  echo "[proxy-restart] proxy ready after ${_waited}s" >&2
+if _port_healthy "$PROXY_READY_URL"; then
+  echo "[proxy-restart] proxy listener ready after ${_waited}s" >&2
 else
-  echo "[proxy-restart] ERROR: proxy did not become healthy within ${PROXY_STARTUP_TIMEOUT}s" >&2
+  echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
   echo "[proxy-restart]   tail $PROJECT_ROOT/log/hme-proxy.out for diagnostics" >&2
   exit 1
 fi
 
-# 9. Worker comes up async (proxy supervises it). Report status as
-# informational, not gating -- a slow worker shouldn't fail the restart.
+# 9. Full bundle health gate is bounded and informational. It should usually
+# turn green after worker warmup, but reload success is listener-readiness.
+_health_waited=0
+while [ "$_health_waited" -lt "$PROXY_STARTUP_TIMEOUT" ]; do
+  _port_healthy "$PROXY_HEALTH_URL" && break
+  sleep 1
+  _health_waited=$((_health_waited + 1))
+done
+if _port_healthy "$PROXY_HEALTH_URL"; then
+  echo "[proxy-restart] proxy bundle healthy after ${_health_waited}s" >&2
+else
+  echo "[proxy-restart] WARN: proxy bundle not fully healthy within ${PROXY_STARTUP_TIMEOUT}s; listener remains ready, supervisor continues warmup" >&2
+fi
+
+# 10. Worker comes up async (proxy supervises it). Report status.
 # silent-ok: optional fallback path.
 _worker_status=$(curl -sf --max-time 3 "${WORKER_URL}/health" 2>/dev/null \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null \
