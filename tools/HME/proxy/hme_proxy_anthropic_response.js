@@ -195,7 +195,7 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
       const retry = await _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload: retryPayload });
       if (retry.status >= 200 && retry.status < 300
           && !_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
-        swapStore.recordSuccess(swapChain, retryIdx, PROJECT_ROOT);
+        swapStore.recordSuccess(swapChain, retryIdx, projectRoot);
         emit({ event: 'context_window_retry', outcome: 'success', route: retryPayload.model, prior_route: routeKey });
         return retry;
       }
