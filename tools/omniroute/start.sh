@@ -37,6 +37,31 @@ mkdir -p "$_OMNI_RUNTIME_DIR" 2>/dev/null || true
 _OMNI_SETUP_COOKIE="$_OMNI_RUNTIME_DIR/omni-setup-cookies.txt"
 _OMNI_REPAIR_COOKIE="$_OMNI_RUNTIME_DIR/omni-repair.txt"
 
+_prune_untrusted_claude_connections() {
+  [ "${HME_OMNIROUTE_TRUST_STORED_CREDS:-0}" = "1" ] && return 0
+  local _db="$HOME/.omniroute/storage.sqlite"
+  [ -f "$_db" ] || return 0
+  python3 - <<'PY' "$_db"
+import shutil, sqlite3, sys
+from pathlib import Path
+p = Path(sys.argv[1])
+con = sqlite3.connect(p)
+rows = con.execute("select id from provider_connections where provider in ('claude','anthropic')").fetchall()
+if not rows:
+    con.close()
+    raise SystemExit(0)
+backup = p.with_name(f"{p.name}.pre-claude-prune.bak")
+if not backup.exists():
+    shutil.copy2(p, backup)
+ids = [r[0] for r in rows]
+con.executemany("delete from provider_connections where id=?", [(i,) for i in ids])
+con.commit()
+con.close()
+print("[omniroute] pruned untrusted Claude/Anthropic provider connection(s): " + ",".join(ids))
+PY
+}
+_prune_untrusted_claude_connections
+
 # Prefer nvm v24 node for watchdog/supervisor shells.
 _NODE_BIN="$(command -v node 2>/dev/null || echo node)"
 if [ -d "$HOME/.nvm/versions/node" ]; then
