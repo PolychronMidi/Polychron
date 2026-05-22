@@ -18,7 +18,6 @@
     {"module": "logs", "reason": "pre-dates self-coverage rule"},
     {"module": "meta_observers", "reason": "pre-dates self-coverage rule"},
     {"module": "onboarding", "reason": "pre-dates self-coverage rule"},
-    {"module": "repo_hygiene", "reason": "pre-dates self-coverage rule"},
     {"module": "runtime_behavior", "reason": "pre-dates self-coverage rule"},
     {"module": "runtime_perf", "reason": "pre-dates self-coverage rule"},
     {"module": "runtime_safety", "reason": "pre-dates self-coverage rule"},
