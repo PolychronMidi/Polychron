@@ -61,6 +61,9 @@ if [ -f "$ERROR_LOG" ]; then
     fi
     # Strip canaries before agent/self classification.
     _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_CANARY_RE" | grep -vE "$_STATUS_LINE_RE" || true)
+    if _hme_stale_runtime_resolved_or_grace; then
+      _NEW_NO_CANARY=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -v '\[stale_runtime\]' || true)
+    fi
     # Self-origin = lines tagged with a known self-health writer (regardless
     SELF_BY_TAG=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
     REMAINING=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
