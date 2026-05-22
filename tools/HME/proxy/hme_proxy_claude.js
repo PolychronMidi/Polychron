@@ -88,6 +88,10 @@ function createClaudeHandler(deps) {
         blockQuotaProbe({ res: clientRes, payload });
         return;
       }
+      if (shouldBlockNoopSystemReminderTurn({ req: clientReq, payload, headers: clientReq.headers })) {
+        blockNoopSystemReminderTurn({ req: clientReq, res: clientRes, payload });
+        return;
+      }
       if (isStructuredOutputsProbe(payload, clientReq.headers)) {
         blockStructuredOutputsProbe({ res: clientRes, payload });
         return;
