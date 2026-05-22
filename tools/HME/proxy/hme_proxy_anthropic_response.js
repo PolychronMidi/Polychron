@@ -476,5 +476,6 @@ module.exports = {
   _contextTokenUsageFields,
   _extractUsageFromBody,
   normalizeOmniContextWindowSse,
+  retryOmniContextWindowExceeded,
   handleAnthropicResponseComplete,
 };
