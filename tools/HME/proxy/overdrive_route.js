@@ -200,9 +200,15 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     requestedMode: requested,
     lastPayloadBytes: 0,
   };
+  const claudeModel = payload && typeof payload.model === 'string' ? claudeModelForOverdrive(payload.model) : '';
   console.error(`[hme-proxy] swap-check: odMode=${requested} effective=${mode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${!!clientReq.headers['x-hme-upstream']}`);
   if (requested !== '0' && requested !== '1') console.error(`[hme-proxy] OVERDRIVE_MODE=${requested} retired; use 0 or 1.`);
-  if (mode !== '1' || !payload || typeof payload.model !== 'string' || !payload.model.startsWith('claude-') || clientReq.headers['x-hme-upstream']) return result;
+  if (mode !== '1' || !payload || !claudeModel || clientReq.headers['x-hme-upstream']) return result;
+
+  if (payload.model !== claudeModel) {
+    console.error(`[hme-proxy] MODE=1 normalize prefixed Claude model: ${payload.model} -> ${claudeModel}`);
+    payload.model = claudeModel;
+  }
 
   const zenKey = env.OPENCODE_API_KEY || '';
   result.wasStreaming = payload.stream === true;
