@@ -173,17 +173,20 @@ _sv_spawn_and_verify() {
     fi
   fi
 
-  if curl -sf --max-time 1 "$_SV_URL" >/dev/null 2>&1; then
+  local proxy_code
+  proxy_code=$(curl -sS --max-time 1 -o /dev/null -w '%{http_code}' "$_SV_URL" 2>/dev/null || echo 000)
+  if [ "$proxy_code" != "000" ]; then
     if _sv_bundle_healthy; then
       return 0
     fi
     local restart_script="$_SV_ROOT/tools/HME/launcher/polychron-proxy-restart.sh"
     if [ -x "$restart_script" ]; then
-      _sv_log "proxy up but bundle unhealthy; running polychron-proxy-restart.sh"
+      _sv_log "proxy responding with unhealthy state (http=${proxy_code}); running polychron-proxy-restart.sh"
       PROJECT_ROOT="$_SV_ROOT" "$restart_script" >> "$_SV_LIFECYCLE_LOG" 2>&1
       _sv_wait_bundle_healthy
       return $?
     fi
+    return 1
   fi
 
   _sv_spawn_proxy
