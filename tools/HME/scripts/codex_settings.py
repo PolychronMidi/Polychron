@@ -1,4 +1,11 @@
-"""Codex CLI settings materialization for HME hooks and Responses proxy."""
+"""Codex CLI settings materialization for HME hooks and Responses proxy.
+
+Codex hook manifests are projected from the canonical Claude
+`tools/HME/hooks/hooks.json` plus the Codex-only deltas in
+`tools/HME/hooks/codex-extensions.json` so there is a single source of
+truth for both Claude Code and Codex CLI hook layouts. The projection
+logic lives in `claude_settings.codex_expected_settings`.
+"""
 from __future__ import annotations
 
 import copy
@@ -9,12 +16,17 @@ import shlex
 from pathlib import Path
 from typing import Any
 
+from claude_settings import (
+    CODEX_EXTENSIONS_JSON,
+    HOOKS_JSON,
+    codex_expected_settings,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CODEX_HOME = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex")
 CONFIG_PATH = CODEX_HOME / "config.toml"
 CODEX_MODELS_CACHE_JSON = CODEX_HOME / "models_cache.json"
-HOOKS_JSON = PROJECT_ROOT / "tools" / "HME" / "hooks" / "codex_hooks.json"
 LIVE_HOOKS_JSON = CODEX_HOME / "hooks.json"
 AGENTS_MD = PROJECT_ROOT / "doc" / "templates" / "AGENTS.md"
 CANONICAL_SYSTEM_PROMPT = PROJECT_ROOT / "doc" / "templates" / "canonical-system-prompt.md"
