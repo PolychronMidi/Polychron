@@ -232,10 +232,14 @@ function createContextBudget() {
   function injectContextHeader(headers, _swapModel) {
     const { used, size } = statuslineContextUsage();
     if (!used || !size) return;
-    if ((used / size) < compactStartFraction) return;
+    // Always normalize Claude Code's view of context budget using statusline
+    // ground truth. Upstream Anthropic rate-limit headers
     const remaining = Math.max(0, size - used);
-    if (remaining < size * contextSignalRemainingFraction) {
-      headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
+    headers['anthropic-ratelimit-input-tokens-limit'] = String(size);
+    headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
+    delete headers['anthropic-ratelimit-input-tokens-reset'];
+    if ((used / size) >= compactStartFraction
+        && remaining < size * contextSignalRemainingFraction) {
       console.error(`[hme-proxy] context signal: ~${used}/${size} Claude-window tokens (${remaining} remaining) -> triggering /compact`);
     }
   }
