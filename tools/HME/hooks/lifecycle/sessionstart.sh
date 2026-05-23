@@ -241,8 +241,13 @@ if [ -f "$TRAJ_SCRIPT" ]; then
     env PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT"
 fi
 
-# Surface the current HCI trajectory summary so agents see the health arc.
-if [ -f "$TRAJ_SCRIPT" ]; then
+# Read cached HCI trajectory summary; the BG analyze-hci-trajectory invocation
+# above writes ${METRICS_DIR}/hme-trajectory.json.summary. Reading the cache
+# avoids a 1-2s python3 launch on the SessionStart hot path. Only fall back to
+_TRAJ_CACHE="${METRICS_DIR}/hme-trajectory.json.summary"
+if [ -s "$_TRAJ_CACHE" ]; then
+  cat "$_TRAJ_CACHE" >&2
+elif [ -f "$TRAJ_SCRIPT" ]; then
   _SS_TRAJ_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_ss_traj_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_ss_traj_err_$$")  # silent-ok: optional fallback path.
   set +e
   TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" timeout 10s python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
