@@ -186,6 +186,13 @@ def _command_family(cmd: str) -> str:
         return "node-syntax-check"
     if len(tokens) >= 2 and tokens[0] == "python3" and tokens[1] == "-m":
         return "python-module"
+    # i/* dispatcher invocations are idempotent diagnostic reads whose
+    # output varies on every call (process lists, git status, health).
+    if tokens and tokens[0].startswith("i/"):
+        return "i-dispatch"
+    if len(tokens) >= 2 and tokens[0] == "node" \
+            and ("hme-i-dispatch" in tokens[1] or tokens[1].endswith("/i") or tokens[1].endswith("/i/status")):
+        return "i-dispatch"
     return ""
 
 
