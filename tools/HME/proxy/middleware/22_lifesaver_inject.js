@@ -18,6 +18,21 @@ const HOOK_WATCHDOG_MISSING_RE = /^\[hook-watchdog\]\s+\[ALERT\]\s+UserPromptSub
 const CRITICAL_INFRA_SELF_RE = /^\[(universal_pulse|supervisor)\].*\b(CRITICAL|FAIL|child_restart_limit|restart_limit|giving up|gave up|unhealthy|required)\b/i;
 const CRYING_WOLF_RE = /^\[crying_wolf\]\s+CRITICAL\b/i;
 
+function _sessionstartProxyDownResolved(projectRoot) {
+  // Treat `[sessionstart] proxy not running on :PORT` as resolved when the
+  // probe cache is fresh and reports `ok` -- the underlying outage is over,
+  try {
+    const probePath = path.join(projectRoot, 'tools/HME/runtime/sessionstart-probe.result');
+    const stat = fs.statSync(probePath);
+    const ageS = (Date.now() / 1000) - (stat.mtimeMs / 1000);
+    if (ageS > 60) return false;
+    const status = fs.readFileSync(probePath, 'utf8').trim();
+    return status === 'ok';
+  } catch (_e) {
+    return false;
+  }
+}
+
 function _staleRuntimeResolvedOrGrace(projectRoot) {
   try {
     const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000 }).trim();
