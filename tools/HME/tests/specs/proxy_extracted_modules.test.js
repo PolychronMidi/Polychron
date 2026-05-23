@@ -1,3 +1,6 @@
+// CONVENTIONS: see ../../proxy/CONVENTIONS.md — import from source files,
+// never from barrel index.js re-exports. This test asserts every import
+// resolves to a function; circular dependencies manifest as `undefined`.
 'use strict';
 
 const { test } = require('node:test');
@@ -22,6 +25,44 @@ const { responseHasErrorEvent } = require('../../proxy/hme_proxy_response_send')
 const { markRouteCooldown, loadModelRouteHealth, routeSkipReason } = require('../../proxy/contexts/failure_policy/model_route_health');
 const codexFallback = require('../../proxy/contexts/failure_policy/hme_proxy_codex');
 const { shellPolicy } = require('../../proxy/stop_chain/shell_policy');
+
+// Invariant: if a circular dependency causes any import to resolve as undefined,
+// fail fast before any test logic runs. Each entry is [name, value, expectedType].
+test('no circular dependency nullifies imported bindings', () => {
+  const checks = [
+    ['sessionKey', sessionKey, 'function'],
+    ['stripStaleToolResults', stripStaleToolResults, 'function'],
+    ['shrinkForPassthrough', shrinkForPassthrough, 'function'],
+    ['createContextBudget', createContextBudget, 'function'],
+    ['mutateClaudeRequest', mutateClaudeRequest, 'function'],
+    ['handleLegacySwapResponse', handleLegacySwapResponse, 'function'],
+    ['writeAnthropicStopSse', writeAnthropicStopSse, 'function'],
+    ['effectiveMode', effectiveMode, 'function'],
+    ['buildMode1Chain', buildMode1Chain, 'function'],
+    ['applyOverdriveRoute', applyOverdriveRoute, 'function'],
+    ['upstreamModelId', upstreamModelId, 'function'],
+    ['roleFromPayload', roleFromPayload, 'function'],
+    ['reasoningTextFromData', reasoningTextFromData, 'function'],
+    ['providerReasoningToThinkingRewrite', providerReasoningToThinkingRewrite, 'function'],
+    ['_jsonStats', _jsonStats, 'function'],
+    ['loadEnv', loadEnv, 'function'],
+    ['requireEnvInt', requireEnvInt, 'function'],
+    ['_contextTokenUsageFields', _contextTokenUsageFields, 'function'],
+    ['_extractUsageFromBody', _extractUsageFromBody, 'function'],
+    ['normalizeOmniContextWindowSse', normalizeOmniContextWindowSse, 'function'],
+    ['retryOmniContextWindowExceeded', retryOmniContextWindowExceeded, 'function'],
+    ['responseHasErrorEvent', responseHasErrorEvent, 'function'],
+    ['markRouteCooldown', markRouteCooldown, 'function'],
+    ['loadModelRouteHealth', loadModelRouteHealth, 'function'],
+    ['routeSkipReason', routeSkipReason, 'function'],
+    ['shellPolicy', shellPolicy, 'function'],
+    ['codexFallback', codexFallback, 'object'],
+  ];
+  for (const [name, value, expect] of checks) {
+    assert.equal(typeof value, expect,
+      `${name} resolved as ${typeof value} instead of ${expect} — circular dependency?`);
+  }
+});
 
 function quiet(fn) {
   const orig = console.error;

@@ -62,18 +62,17 @@ fi
 source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
-# HME Proxy + Supervisor. Ports come from services.json through _safety.sh.
-PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
+# HME Proxy health check. Launchers (polychron-launch.sh / polychron-proxy-restart.sh)
+# own the proxy lifecycle; SessionStart hooks fire too frequently (subagents,
+# background tasks) to safely spawn. If proxy is down, surface a warning so
+# the operator knows to run the launcher.
 if [ "${HME_PROXY_ENABLED}" = "1" ]; then
+  PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
   if ! curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
-    PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
-    if [ -f "$PROXY_SCRIPT" ]; then
-      HME_PROXY_PORT="$PROXY_PORT" nohup node "$PROXY_SCRIPT" \
-        >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 &
-      echo "HME proxy+supervisor started on :${PROXY_PORT} (pid $!) -- worker will spawn as a child" >&2
-    fi
-  else
-    echo "HME proxy already running on :${PROXY_PORT}" >&2
+    echo "[ALERT] HME proxy not running on :${PROXY_PORT} -- run polychron-launch.sh or polychron-proxy-restart.sh to start it" >&2
+    TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+    mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null
+    echo "[$TS] [sessionstart] proxy not running on :${PROXY_PORT} — proxy lifecycle belongs to launchers, not session hooks" >> "$ERROR_LOG" 2>/dev/null
   fi
 fi
 

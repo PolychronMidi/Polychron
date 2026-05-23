@@ -48,15 +48,6 @@ function _stripHmePrefixOutgoing(payload) {
   return changed;
 }
 
-// Upstream failure detection across both Anthropic error shapes (HTTP 4xx/5xx
-// with JSON error, OR HTTP 200 + SSE `event: error`). Implementation in
-// failure_classification.js; binding into local names preserves call sites.
-const {
-  _tryParseJson,
-  detectUpstreamFailure: _detectUpstreamFailure,
-  alertCooldownActive: _alertCooldownActive,
-} = require('./contexts/failure_policy');
-
 const _STALE_TOOL_KEEP_TURNS = requireEnvInt('HME_PROXY_STALE_TOOL_KEEP_TURNS');
 
 function _anthropicTextSseBuffer(model, text) {
