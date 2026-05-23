@@ -238,6 +238,18 @@ function createContextBudget() {
     headers['anthropic-ratelimit-input-tokens-limit'] = String(size);
     headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
     delete headers['anthropic-ratelimit-input-tokens-reset'];
+    // Telemetry sink read by event_kernel/statusline.js LIFESAVER fail-fast.
+    // Absence or staleness of this file signals the autocompact widget is
+    try {
+      const sink = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'proxy-context-norm.json');
+      fs.writeFileSync(sink, JSON.stringify({
+        ts_ms: Date.now(),
+        pid: process.pid,
+        used,
+        size,
+        remaining,
+      }));
+    } catch (_e) { /* best effort */ }
     if ((used / size) >= compactStartFraction
         && remaining < size * contextSignalRemainingFraction) {
       console.error(`[hme-proxy] context signal: ~${used}/${size} Claude-window tokens (${remaining} remaining) -> triggering /compact`);
