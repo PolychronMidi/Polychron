@@ -34,8 +34,14 @@ def run_engine() -> dict:
     results: dict = {}
     by_category: dict = {}
     by_kind: dict = {"static": [], "runtime": []}
+    _trace = os.environ.get("VERIFY_COHERENCE_TRACE") == "1"
     for v in REGISTRY:
+        _t0 = time.time()
+        if _trace:
+            print(f"[trace] {v.name} ...", file=sys.stderr, flush=True)
         result = v.execute()
+        if _trace:
+            print(f"[trace] {v.name} done in {time.time()-_t0:.2f}s", file=sys.stderr, flush=True)
         kind = _kind_for(v)
         results[v.name] = {
             "category": v.category,
