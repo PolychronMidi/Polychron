@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { sessionKey, emit, PROJECT_ROOT } = require('./shared');
 const { isPassthroughMode } = require('./upstream');
 const { routeDecision } = require('./model_route_resolver');
