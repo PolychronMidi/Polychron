@@ -43,8 +43,42 @@ function loadConfig(root = PROJECT_ROOT) {
 function editedThisTurn(file, root = PROJECT_ROOT) {
   const base = path.basename(String(file || '')).replace(/\.[^.]*$/, '');
   if (!base) return false;
-  try { return fs.readFileSync(path.join(root, 'tmp/hme-turn-edits.txt'), 'utf8').split(/\r?\n/).includes(base); }
-  catch (_e) { return false; /* silent-ok: no turn edit state yet. */ }
+  try {
+    const entries = fs.readFileSync(path.join(root, 'tmp/hme-turn-edits.txt'), 'utf8').split(/\r?\n/);
+    return entries.some((line) => line === base || line.startsWith(`${base}:`));
+  } catch (_e) { return false; /* silent-ok: no turn edit state yet. */ }
+}
+
+// Return the set of edited line ranges (1-based inclusive [start, end]) for
+// the given file's basename. `[0,0]` is a sentinel meaning "whole file /
+function editedRangesThisTurn(file, root = PROJECT_ROOT) {
+  const base = path.basename(String(file || '')).replace(/\.[^.]*$/, '');
+  if (!base) return [];
+  try {
+    const out = [];
+    const entries = fs.readFileSync(path.join(root, 'tmp/hme-turn-edits.txt'), 'utf8').split(/\r?\n/);
+    for (const line of entries) {
+      if (line === base) { out.push([0, 0]); continue; }
+      if (!line.startsWith(`${base}:`)) continue;
+      const m = line.slice(base.length + 1).match(/^(\d+)-(\d+)$/);
+      if (!m) { out.push([0, 0]); continue; }
+      out.push([Number(m[1]), Number(m[2])]);
+    }
+    return out;
+  } catch (_e) { return []; /* silent-ok: no turn edit state yet. */ }
+}
+
+function _readWindowOverlapsEdits(input, ranges) {
+  // Whole-file edit / non-locatable -> always overlaps.
+  if (ranges.some(([s, e]) => s === 0 && e === 0)) return true;
+  const limit = Number(input.limit || 0);
+  const offset = Number(input.offset || 0);
+  // Unbounded read covers the whole file -> overlaps any edit.
+  if (!limit && !offset) return true;
+  // 1-based inclusive [readStart, readEnd]. Read tool offset is 1-based start.
+  const readStart = offset > 0 ? offset : 1;
+  const readEnd = limit > 0 ? readStart + limit - 1 : Number.MAX_SAFE_INTEGER;
+  return ranges.some(([s, e]) => s <= readEnd && e >= readStart);
 }
 
 function evaluateReadInput(input = {}, opts = {}) {
