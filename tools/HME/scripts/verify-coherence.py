@@ -17,6 +17,12 @@ import sys
 # Ensure this directory is on sys.path so `verify_coherence` resolves.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Load .env strictly BEFORE importing verify_coherence; the package's _base.py
+# uses os.environ['KEY'] subscripts (no silent fallbacks). Entrypoint shim
+# owns env loading; library modules consume.
+from _env_loader import load_env  # noqa: E402
+load_env()
+
 from verify_coherence.__main__ import main  # noqa: E402
 
 if __name__ == "__main__":
