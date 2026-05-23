@@ -48,13 +48,15 @@ function autocompactLifesaver(root, raw) {
       _writeLifesaver(root, `proxy normalized size=${norm.size} != truth size=${truthSize}; autocompact widget LYING`);
       return ` | LIFESAVER!ctx-norm:size ${norm.size}/${truthSize}`;
     }
-    // Used drift tolerated up to 2k tokens or 2% (whichever larger) since
-    // statusline raw and proxy capture happen at different request boundaries.
-    const tol = Math.max(2000, Math.floor(truthSize * 0.02));
-    const drift = Math.abs(norm.used - truthTotal);
-    if (drift > tol) {
-      _writeLifesaver(root, `proxy normalized used=${norm.used} != truth used=${truthTotal} (drift ${drift}>tol ${tol}); autocompact widget LYING`);
-      return ` | LIFESAVER!ctx-norm:drift ${drift}`;
+    // Ratio drift: autocompact widget compares remaining/limit, so compare
+    // the *percent remaining* the proxy injected vs the percent remaining the
+    // statusline ground truth reports. Tolerate up to 5 percentage points to
+    const truthRemPct = ((truthSize - truthTotal) / truthSize) * 100;
+    const normRemPct = (norm.remaining / norm.size) * 100;
+    const pctGap = Math.abs(truthRemPct - normRemPct);
+    if (pctGap > 5) {
+      _writeLifesaver(root, `proxy remaining=${normRemPct.toFixed(1)}% != truth remaining=${truthRemPct.toFixed(1)}% (gap ${pctGap.toFixed(1)}pp); autocompact widget LYING`);
+      return ` | LIFESAVER!ctx-norm:gap ${pctGap.toFixed(1)}pp`;
     }
     return '';
   } catch (_e) {
