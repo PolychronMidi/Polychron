@@ -14,6 +14,8 @@ const {
 } = require('./hme_proxy_anthropic_response');
 const middleware = require('./middleware');
 function mutateClaudeRequest(...args) {
+  // LAZY: breaks import cycle hme_proxy_claude -> hme_proxy_request_mutation
+  //       -> overdrive_route -> hme_proxy_claude.
   return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
 }
 const lifecycleBridge = require('./lifecycle_bridge');
