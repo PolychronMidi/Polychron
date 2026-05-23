@@ -24,6 +24,26 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
+
+def _startup_snapshot_nonblocking() -> dict:
+    try:
+        from tools.HME.service.server.context import startup_status_snapshot
+        return startup_status_snapshot()
+    except Exception as exc:
+        return {"ready": False, "loading": False, "failed": True, "error": str(exc)}
+
+
+def _degraded_startup_status(snapshot: dict, mode: str) -> dict:
+    state = "loading" if snapshot.get("loading") else "failed" if snapshot.get("failed") else "not_ready"
+    return {
+        "ok": False,
+        "status": "degraded",
+        "state": state,
+        "mode": mode,
+        "startup": snapshot,
+        "message": "HME startup is not ready; returning bounded degraded status.",
+    }
+
 def status(mode: str = "all") -> str:
     """System health hub. 35+ modes surface Phase 2-6 observability signals.
     mode='all' (default): pipeline + selftest + auto-warm + cascade status.
@@ -36,6 +56,13 @@ def status(mode: str = "all") -> str:
     introspect, resume."""
     _track("status")
     append_session_narrative("status", f"status({mode})")
+    mode = str(args.get("mode") or "summary")
+    if mode == "list":
+        return list_status(args, ctx)
+    startup_snapshot = _startup_snapshot_nonblocking()
+    if not startup_snapshot.get("ready"):
+        return _degraded_startup_status(startup_snapshot, mode)
+
     ctx.ensure_ready_sync()
 
     if mode == "list":

@@ -12,7 +12,7 @@ const {
   upstreamModelId,
   swapStore,
   omniroute,
-} = require('../../contexts/upstream_dispatch');
+} = require('../../upstream');
 const {
   detectUpstreamFailure: _detectUpstreamFailure,
   alertCooldownActive: _alertCooldownActive,

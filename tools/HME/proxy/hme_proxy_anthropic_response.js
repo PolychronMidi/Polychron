@@ -1,19 +1,19 @@
 'use strict';
 
 const { emit, PROJECT_ROOT } = require('./shared');
-const { hmeDispatcher } = require('./contexts/lifecycle_bridge');
+const { hmeDispatcher } = require('./lifecycle_bridge');
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const {
   handleUpstreamFailureOrSuccess,
   markRouteCooldown,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/hme_proxy_upstream_failure');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
 const {
   omniProviderForConfigProvider,
   upstreamModelId,
   swapStore,
-} = require('./contexts/upstream_dispatch');
+} = require('./upstream');
 
 function captureRateLimitTelemetry({ headers, status, setLastInputTokensRemaining, setLastInputTokensLimit, log = console.error }) {
   const hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];

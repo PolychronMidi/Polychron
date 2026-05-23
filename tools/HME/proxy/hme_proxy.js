@@ -10,6 +10,16 @@
 'use strict';
 
 const http = require('http');
+
+function probeExistingProxyOnAddrInUse(port, cb) {
+  const req = http.get({ hostname: '127.0.0.1', port, path: '/health', timeout: 1000 }, (res) => {
+    res.resume();
+    cb(res.statusCode && res.statusCode < 500);
+  });
+  req.on('timeout', () => req.destroy(new Error('timeout')));
+  req.on('error', () => cb(false));
+}
+
 const path = require('path');
 const { loadEnv } = require('./shared/load_env');
 
@@ -23,11 +33,11 @@ const {
   buildJurisdictionContext,
   scanMessages,
 } = require('./contexts/request_mutation');
-const { servicePort } = require('./contexts/upstream_dispatch');
+const { servicePort } = require('./service_registry');
 const {
   emitStartMarker,
   supervisor: _supervisorModule,
-} = require('./contexts/lifecycle_bridge');
+} = require('./supervisor');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createContextBudget } = require('./hme_proxy_context_budget');
 const { createOpusGate } = require('./hme_proxy_opus_gate');
@@ -65,7 +75,7 @@ function logRuntimeMetadataFailure(err) {
 const proxyRouteMetrics = createRouteMetrics();
 const PORT = servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
-const { WORKER_PORT } = require('./contexts/lifecycle_bridge').supervisorChildren;
+const { WORKER_PORT } = require('./supervisor/children');
 
 const contextBudget = createContextBudget();
 const opusGate = createOpusGate();
@@ -150,6 +160,7 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
       listenFallbackTried = true;
       console.warn(`Acceptable warning: listen warning: IPv6 dual-stack unavailable (${err.code}); falling back to 127.0.0.1`);
       server.listen(PORT, '127.0.0.1', () => {
+  if (SUPERVISE) supervisor.start();
         try { writeRuntimeMetadata(); } catch (metaErr) { logRuntimeMetadataFailure(metaErr); }
         announceListen(`http://127.0.0.1:${PORT}`);
       });

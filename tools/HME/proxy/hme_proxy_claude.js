@@ -12,16 +12,16 @@ const {
   handleLegacySwapResponse,
   handleAnthropicResponseComplete,
 } = require('./contexts/response_transform');
-const requestMutationCtx = require('./contexts/request_mutation');
+const requestMutationCtx = require('./hme_proxy_request_mutation');
 const { middleware, mutateClaudeRequest } = requestMutationCtx;
 const {
   createProxyRouteDispatcher,
   lifecycleBridge: _lifecycleBridgeModule,
-} = require('./contexts/lifecycle_bridge');
+} = require('./lifecycle_bridge');
 const {
   handleMidResponseError,
   handleConnectionError,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/hme_proxy_upstream_failure');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,

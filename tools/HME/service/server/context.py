@@ -233,7 +233,25 @@ def _fmt_startup_error(err: Exception) -> str:
     return f"{etype}: {msg}{tb_info}"
 
 
-def ensure_ready_sync(timeout: float = 45.0) -> None:
+
+def startup_status_snapshot() -> dict[str, object]:
+    """Return HME startup state without blocking hook-visible callers."""
+    try:
+        failed = bool(_startup_failed)
+        loading = bool(_startup_task and not _startup_task.done())
+        ready = bool(_ctx is not None and not failed and not loading)
+        err = None
+        if _startup_error is not None:
+            err = str(_startup_error)
+        elif failed:
+            err = "startup failed"
+        return {"ready": ready, "loading": loading, "failed": failed, "error": err}
+    except Exception as exc:
+        return {"ready": False, "loading": False, "failed": True, "error": str(exc)}
+
+def ensure_ready_sync(timeout: float = 5.0) -> None:
+    if os.environ.get("HME_ALLOW_LONG_READY_WAIT") != "1":
+        timeout = min(timeout, 5.0)
     """Block until background model/engine initialization completes.
 
     FastMCP runs sync tools via asyncio.to_thread(), so this blocking wait
