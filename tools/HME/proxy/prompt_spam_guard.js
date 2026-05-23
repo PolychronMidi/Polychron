@@ -137,7 +137,7 @@ function anthropicQuotaProbeResponse(payload) {
   return anthropicEmptyResponse(payload, 'hme_quota_probe');
 }
 
-function blockQuotaProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
+function blockQuotaProbe({ res, payload, record, source = {}, component: _component = 'hme-proxy' }) {
   if (record) {
     record({
       kind: 'quota-probe-blocked',
