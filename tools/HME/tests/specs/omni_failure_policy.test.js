@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { classifyFailure, policyFor, actionsFor } = require('../../proxy/omni_failure_policy');
+const { classifyFailure, policyFor, actionsFor } = require('../../proxy/contexts/failure_policy/omni_failure_policy');
 
 test('429 -> rate_limit', () => {
   assert.equal(classifyFailure(429, { type: 'rate_limit_error' }), 'rate_limit');
