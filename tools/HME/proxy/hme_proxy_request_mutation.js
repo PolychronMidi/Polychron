@@ -102,6 +102,10 @@ async function mutateClaudeRequest({
   middleware,
 }) {
   const passthrough = isPassthroughMode();
+  if (isAnthropic && _detectAutocompactRequest(payload)) {
+    _writeAutocompactLifesaver(PROJECT_ROOT, payload);
+    emit({ event: 'autocompact_fired_despite_disable', session: sessionKey(payload), model: payload && payload.model });
+  }
   if (passthrough && isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     const dropped = shrinkForPassthrough(payload);
     if (dropped > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
