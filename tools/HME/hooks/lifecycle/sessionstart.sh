@@ -73,13 +73,19 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
   _SS_PROBE_DIR="$PROJECT/tools/HME/runtime"
   _SS_PROBE_LOCK="$_SS_PROBE_DIR/sessionstart-probe.lock"
   _SS_PROBE_RESULT="$_SS_PROBE_DIR/sessionstart-probe.result"
-  _SS_PROBE_TTL_S=5
+  _SS_PROBE_TTL_OK=30
+  _SS_PROBE_TTL_DOWN=5
   mkdir -p "$_SS_PROBE_DIR" 2>/dev/null
   _ss_probe_fresh() {
     [ -s "$_SS_PROBE_RESULT" ] || return 1
-    local age_s
+    local age_s ttl
     age_s=$(( $(date +%s) - $(stat -c %Y "$_SS_PROBE_RESULT" 2>/dev/null || echo 0) ))
-    [ "$age_s" -lt "$_SS_PROBE_TTL_S" ] || return 1
+    if [ "$(cat "$_SS_PROBE_RESULT" 2>/dev/null)" = "ok" ]; then
+      ttl="$_SS_PROBE_TTL_OK"
+    else
+      ttl="$_SS_PROBE_TTL_DOWN"
+    fi
+    [ "$age_s" -lt "$ttl" ] || return 1
     return 0
   }
   _ss_probe_status=""
