@@ -135,7 +135,7 @@ async function handleMessagesPost(req, res, sessionId) {
   let msg;
   try {
     msg = await _parseBody(req);
-  } catch (err) {
+  } catch (_err) {
     // silent-ok: optional fallback path.
     res.writeHead(400, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: 'bad JSON body' }));

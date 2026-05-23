@@ -223,10 +223,6 @@ function createContextBudget() {
     } catch (_e) { return { used: 0, size: 0 }; }
   }
 
-  function statuslineInputTokens() {
-    return statuslineContextUsage().used;
-  }
-
   function omniContextThresholdBytes(swapModel) {
     const budget = resolveModelCtx(String(swapModel || ''));
     const startTokens = Math.floor(budget * compactStartFraction);

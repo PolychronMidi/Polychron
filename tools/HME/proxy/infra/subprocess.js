@@ -1,6 +1,6 @@
 'use strict';
 
-const { spawn, spawnSync, execFile, execFileSync } = require('child_process');
+const { spawn, spawnSync, execFile: _execFile, execFileSync: _execFileSync } = require('child_process');
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
