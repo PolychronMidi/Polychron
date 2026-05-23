@@ -143,6 +143,10 @@ fi
 # Persist HME env vars for the session
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
+  # Belt-and-suspenders autocompact kill: settings.json env may be ignored by
+  # an already-running parent shell when CLAUDE_ENV_FILE is sourced. Hard-bind
+  echo "export DISABLE_AUTO_COMPACT=1" >> "$CLAUDE_ENV_FILE"
+  echo "export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=100" >> "$CLAUDE_ENV_FILE"
 fi
 
 # Worker health: surface recent_errors without delaying SessionStart.
