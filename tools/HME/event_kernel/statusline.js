@@ -52,14 +52,15 @@ function modelInputBudget(root, modelId) {
   } catch (_e) { return 0; }
 }
 
-function autocompactLifesaver(root, raw) {
+function autocompactLifesaver(root, raw, trueSize) {
   // Fail-fast: Claude Code's "% until autocompact" widget is computed from
-  // `anthropic-ratelimit-input-tokens-{limit,remaining}` headers. Upstream
+  // `anthropic-ratelimit-input-tokens-{limit,remaining}` headers. Truth size
   try {
     const ctx = (raw && raw.context_window) || {};
     const truthTotal = Number(ctx.total_input_tokens || 0);
-    const truthSize = Number(ctx.context_window_size || 0);
-    if (!truthTotal || !truthSize) return '';
+    const truthSizeResolved = Number(trueSize || ctx.context_window_size || 0);
+    if (!truthTotal || !truthSizeResolved) return '';
+    const truthSize = truthSizeResolved;
     const sink = path.join(root, 'tools', 'HME', 'runtime', 'proxy-context-norm.json');
     let normStat;
     try { normStat = fs.statSync(sink); } catch (_e) { /* missing */ }
