@@ -21,7 +21,9 @@ _TURN_EDIT_STATE="${PROJECT_ROOT}/${_TMP_SUBDIR}/hme-turn-edits.txt"
 _MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
 if [ -n "$_MODULE_BASE" ] && [ -f "${PROJECT_ROOT}/src/output/metrics/hme-coupling.json" ]; then
   if [ -f "$_TURN_EDIT_STATE" ]; then
-    while IFS= read -r _prior_mod; do
+    while IFS= read -r _prior_entry; do
+      [ -z "$_prior_entry" ] && continue
+      _prior_mod="${_prior_entry%%:*}"
       [ -z "$_prior_mod" ] && continue
       [ "$_prior_mod" = "$_MODULE_BASE" ] && continue
       _AB_HIT=$(python3 - "$_MODULE_BASE" "$_prior_mod" "${PROJECT_ROOT}/src/output/metrics/hme-coupling.json" <<'PYEOF' 2>/dev/null
