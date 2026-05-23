@@ -20,8 +20,8 @@ const NATIVE_EDIT_ERROR_PHRASE_RE = new RegExp([
   ['old_string not', 'found'].join(' '),
   ['old_string is', 'not unique'].join(' '),
 ].map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'));
-const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[●•]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?[^\n]*(?:\n[^\n]*){0,6}/gi;
-const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[⎿│>\- ]*\s*)?(?:Error:\s*)?[^\n]*(?:old_string|File|Read)[^\n]*/gi;
+const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[●•]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[⎿│> -]*\s*)?(?:Error:\s*)?[^\n]*(?:\n[^\n]*){0,6}/gi;
+const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[⎿│> -]*\s*)?(?:Error:\s*)?[^\n]*(?:old_string|File|Read)[^\n]*/gi;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
 const ERROR_LOG = path.join('log', 'hme-errors.log');
 const SEEN_FILE = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-seen.json');
