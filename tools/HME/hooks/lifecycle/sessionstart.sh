@@ -293,34 +293,64 @@ PY
 )
 [ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
 
-# Stale-soft-warn auditor: surface promotion-review candidates.
+# Stale-soft-warn auditor: read cached output from prior BG run; refresh in
+# background. Mirrors the _TRAJ_CACHE pattern (L247-249) -- the synchronous
+# python3 invocation was a ~500ms hot-path tax that pushed SessionStart over
+# its 5s warn budget. The conditional surface ("need review") still fires
+# from the cache; freshness is one session behind, which is fine for a
+# promotion-review hint.
 _SOFT_AUDIT="$PROJECT_ROOT/tools/HME/scripts/detectors/audit_stale_soft_warns.py"
+_SOFT_CACHE="$PROJECT/tmp/hme-stale-soft-warns.cache"
+if [ -s "$_SOFT_CACHE" ]; then
+  case "$(cat "$_SOFT_CACHE")" in
+    *"need review"*) cat "$_SOFT_CACHE" >&2 ;;
+  esac
+fi
 if [ -x "$_SOFT_AUDIT" ]; then
-  _SOFT_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_SOFT_AUDIT" 2>/dev/null || true)  # silent-ok: optional fallback path.
-  case "$_SOFT_OUT" in
-    *"need review"*) echo "$_SOFT_OUT" >&2 ;;
-  esac
+  export _SOFT_AUDIT _SOFT_CACHE
+  _hme_bg_shell_timeout 20 audit-stale-soft-warns "$PROJECT/log/hme-bg-audit-stale-soft-warns.err" '
+    tmp="${_SOFT_CACHE}.$$.tmp"
+    PROJECT_ROOT="'"$PROJECT_ROOT"'" python3 "$_SOFT_AUDIT" >"$tmp" 2>>"'"$PROJECT/log/hme-bg-audit-stale-soft-warns.err"'" \
+      && mv "$tmp" "$_SOFT_CACHE" || rm -f "$tmp"
+  '
 fi
 
-# Fork-watchdog: surface silently-dropped completion notifications (recent only).
+# Fork-watchdog: same cache+bg pattern.
 _FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
-if [ -x "$_FORK_WATCHDOG" ]; then
-  _FW_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_FORK_WATCHDOG" 2>/dev/null || true)  # silent-ok: optional fallback path.
-  case "$_FW_OUT" in
-    *"notification not delivered"*|*"may be stuck"*) echo "$_FW_OUT" >&2 ;;
+_FW_CACHE="$PROJECT/tmp/hme-fork-watchdog.cache"
+if [ -s "$_FW_CACHE" ]; then
+  case "$(cat "$_FW_CACHE")" in
+    *"notification not delivered"*|*"may be stuck"*) cat "$_FW_CACHE" >&2 ;;
   esac
 fi
+if [ -x "$_FORK_WATCHDOG" ]; then
+  export _FORK_WATCHDOG _FW_CACHE
+  _hme_bg_shell_timeout 20 fork-watchdog "$PROJECT/log/hme-bg-fork-watchdog.err" '
+    tmp="${_FW_CACHE}.$$.tmp"
+    PROJECT_ROOT="'"$PROJECT_ROOT"'" python3 "$_FORK_WATCHDOG" >"$tmp" 2>>"'"$PROJECT/log/hme-bg-fork-watchdog.err"'" \
+      && mv "$tmp" "$_FW_CACHE" || rm -f "$tmp"
+  '
+fi
 
-# Learning-surface: prime patterns for the first active TODO item.
+# Learning-surface: same cache+bg pattern; the keyword (first TODO item) is
+# captured at scheduling time so the BG worker has a stable input even if
+# TODO.md changes mid-session.
 _LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
 _TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
+_LE_CACHE="$PROJECT/tmp/hme-learning-surface.cache"
+[ -s "$_LE_CACHE" ] && cat "$_LE_CACHE" >&2
 if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
   _TODO_TITLE=$(grep -E "^[[:space:]]*-[[:space:]]+\\[[[:space:]]\\][[:space:]]+\\[(E[1-5]|easy|medium|hard)\\]" "$_TODO_FILE" | head -1 \
     | sed -E 's/^[[:space:]]*-[[:space:]]+\[[[:space:]]\][[:space:]]+\[(E[1-5]|easy|medium|hard)\][[:space:]]+//' | tr -d '[:cntrl:]' | xargs || true)
   if [ -n "$_TODO_TITLE" ]; then
     _FIRST_KW=$(echo "$_TODO_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
     if [ -n "$_FIRST_KW" ]; then
-      PROJECT_ROOT="$PROJECT_ROOT" python3 "$_LE" surface --keyword "$_FIRST_KW" --top 3 2>/dev/null >&2 || true  # silent-ok: optional fallback path.
+      export _LE _LE_CACHE _FIRST_KW
+      _hme_bg_shell_timeout 20 learning-surface "$PROJECT/log/hme-bg-learning-surface.err" '
+        tmp="${_LE_CACHE}.$$.tmp"
+        PROJECT_ROOT="'"$PROJECT_ROOT"'" python3 "$_LE" surface --keyword "$_FIRST_KW" --top 3 >"$tmp" 2>>"'"$PROJECT/log/hme-bg-learning-surface.err"'" \
+          && mv "$tmp" "$_LE_CACHE" || rm -f "$tmp"
+      '
     fi
   fi
 fi
