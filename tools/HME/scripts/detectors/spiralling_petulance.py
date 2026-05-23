@@ -72,6 +72,15 @@ def reset_repeat_state() -> None:
     _save_state(state)
 
 
+def reset_session_attempts() -> None:
+    """Clear cross-session leak: prior-session bash attempts must not block the
+    first commands of a freshly-resumed session. Preserve last_edit_ts so the
+    edit-tracking semantics still hold across the session boundary."""
+    state = _load_state()
+    state["attempts"] = []
+    _save_state(state)
+
+
 def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
     key = _command_key(cmd)
     if not key:
