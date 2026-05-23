@@ -81,8 +81,15 @@ def _expand(values: "dict[str, str]") -> "dict[str, str]":
 
 
 def _validate_against_template(env_path: Path, values: "dict[str, str]") -> None:
-    # No .env fallback: HME_ENV_FAILFAST_TEMPLATE must be declared in .env.
-    tpl_rel = os.environ['HME_ENV_FAILFAST_TEMPLATE']
+    # No .env fallback: HME_ENV_FAILFAST_TEMPLATE must be declared in .env
+    # itself. Read from the just-parsed values dict (the .env file is the
+    # source of truth at this stage; os.environ has not been written yet).
+    if "HME_ENV_FAILFAST_TEMPLATE" not in values:
+        raise KeyError(
+            "missing required .env key HME_ENV_FAILFAST_TEMPLATE; "
+            "declare in .env and doc/templates/.env.example"
+        )
+    tpl_rel = values["HME_ENV_FAILFAST_TEMPLATE"]
     tpl = (env_path.parent / tpl_rel).resolve()
     if not tpl.exists():
         raise FileNotFoundError(
