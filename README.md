@@ -259,6 +259,7 @@ flowchart LR
     tools__HME__policies__builtin["HME/policies/builtin/<br/><i>Built-in HME policy implementations (read/write/bash gates).</i>"]
     tools__HME__policies__examples["HME/policies/examples/<br/><i>Example HME policy stubs for reference / starter templates.</i>"]
     tools__HME__proxy__contexts["HME/proxy/contexts/<br/><i>Each subdirectory in `contexts/` is the **single façade** for a bounded</i>"]
+    tools__HME__proxy__infra["HME/proxy/infra/"]
     tools__HME__proxy__mcp_server["HME/proxy/mcp_server/<br/><i>In-process MCP (Model Context Protocol) server, hosted by `hme_proxy.js`</i>"]
     tools__HME__proxy__middleware["HME/proxy/middleware/<br/><i>Per-tool enrichment and side-effect modules. The proxy's `messages.js` pipeli...</i>"]
     tools__HME__proxy__shared["HME/proxy/shared/<br/><i>Shared utilities used across HME proxy modules.</i>"]
@@ -353,6 +354,7 @@ flowchart LR
     tools__HME__policies --> tools__HME__policies__builtin
     tools__HME__policies --> tools__HME__policies__examples
     tools__HME__proxy --> tools__HME__proxy__contexts
+    tools__HME__proxy --> tools__HME__proxy__infra
     tools__HME__proxy --> tools__HME__proxy__mcp_server
     tools__HME__proxy --> tools__HME__proxy__middleware
     tools__HME__proxy --> tools__HME__proxy__shared
