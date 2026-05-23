@@ -167,7 +167,7 @@ function _attemptCommit(root, caller) {
   // can't sneak `git add` in while another's `git commit` holds .git/index.lock.
   // Earlier design released flock between stage and commit, opening that race.
   const lockPath = path.join(root, LOCK_REL);
-  try { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); } catch (_) {}
+  try { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); } catch (_) { /* lock dir may already exist */ }
   const tstamp = new Date().toISOString().slice(0, 19);
   // Forbid broad git add forms per AGENTS.md.
   // Stage tracked-only via -u, then add untracked files matching safe extensions.
