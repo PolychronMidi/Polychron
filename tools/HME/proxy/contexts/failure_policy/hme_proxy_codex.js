@@ -99,7 +99,7 @@ async function retryBlankOmniRouteResponse({
             console.error(`[hme-proxy] BLANK retry OK: ${tp}/${tid} -> "${retryText.slice(0,80)}"`);
             return { outStatus: retryRes.status, outBuf: Buffer.from(retryRes.body), outHeaders: headers };
           }
-        } catch (_) {}
+        } catch (_) { /* best effort */ }
       }
     } catch (err) {
       console.error(`[hme-proxy] BLANK retry fail: ${err.message}`);
