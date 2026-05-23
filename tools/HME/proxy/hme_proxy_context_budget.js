@@ -221,10 +221,10 @@ function createContextBudget() {
       const data = JSON.parse(fs.readFileSync(file, 'utf8'));
       const ctx = data && data.context_window || {};
       const usage = ctx.current_usage || {};
-      const used = positiveNumber(ctx.total_input_tokens)
-        || positiveNumber(usage.input_tokens)
+      const used = positiveNumber(usage.input_tokens)
           + positiveNumber(usage.cache_read_input_tokens)
-          + positiveNumber(usage.cache_creation_input_tokens);
+          + positiveNumber(usage.cache_creation_input_tokens)
+        || positiveNumber(ctx.total_input_tokens);
       return { used, size: positiveNumber(ctx.context_window_size) };
     } catch (_e) { return { used: 0, size: 0 }; }
   }
