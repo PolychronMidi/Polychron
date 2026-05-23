@@ -323,7 +323,7 @@ async function handleAnthropicResponseComplete({
               try {
                 const d = JSON.parse(line.slice(6));
                 if (d && d.delta && d.delta.text) text.push(d.delta.text);
-              } catch (_) {}
+              } catch (_) { /* best effort */ }
             }
           }
         }
