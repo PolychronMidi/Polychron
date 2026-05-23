@@ -27,7 +27,7 @@ Use `_emit_block "reason"` only for rules the agent MUST NOT violate. For soft g
 
 ## Dispatch
 
-`hooks.json` and `codex_hooks.json` are the live manifests. Sync them with `sync-claude-settings.py` / `sync-codex-settings.py`; audit with the matching `audit-*settings.py` scripts. Codex user hooks may need one-time approval from `/hooks`.
+`hooks.json` is the single source of truth for both Claude Code and Codex CLI hook layouts. `codex-extensions.json` carries Codex-only event deltas (e.g. `PermissionRequest`); `sync-codex-settings.py` materializes `~/.codex/hooks.json` by projecting the canonical manifest plus extensions through `claude_settings.codex_expected_settings` (collapses SessionStart matchers, swaps `claude_adapter.js` for `codex_adapter.js`, adds `matcher: "*"` for Codex tool-use events, drops StatusLine). Sync Claude with `sync-claude-settings.py`; audit both with the matching `audit-*settings.py` scripts. Codex user hooks may need one-time approval from `/hooks`.
 
 ```text
 proxy up:   Host event -> *_adapter.js -> POST /hme/lifecycle -> lifecycle_bridge.js -> dispatcher.js
