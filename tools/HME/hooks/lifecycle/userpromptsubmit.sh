@@ -20,6 +20,11 @@ if [ -n "$PROJECT_ROOT" ]; then
         "${_HME_PROJECT_TMP}/hme-turn-briefs.txt" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
+# Petulance attempts reset: each new user prompt is a fresh "initial request".
+# Prior-prompt bash attempts must not block the first command of a new turn;
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" --reset-user-prompt 2>/dev/null || true
+
 if [ -n "$PROJECT_ROOT" ] && [ -f "${PROJECT_ROOT}/doc/templates/TODO.md" ]; then
   mkdir -p "${_HME_PROJECT_TMP}" 2>/dev/null
   cp "${PROJECT_ROOT}/doc/templates/TODO.md" "${_HME_PROJECT_TMP}/todo-turn-start.md" 2>/dev/null || true  # silent-ok: optional fallback path.
