@@ -21,6 +21,28 @@ else
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT}"
+
+# 5-minute restart throttle: rapid-fire restarts (one per file-edit cycle)
+# churn the proxy, kill in-flight requests, and waste 30-60s of warmup each
+_RESTART_THROTTLE_SEC="${HME_PROXY_RESTART_THROTTLE_SEC:-300}"
+_RESTART_SENTINEL="$PROJECT_ROOT/tools/HME/runtime/proxy-last-restart.ts"
+_FORCE_RESTART=0
+for _arg in "$@"; do
+  case "$_arg" in
+    --force|-f) _FORCE_RESTART=1 ;;
+  esac
+done
+if [ "$_FORCE_RESTART" = "0" ] && [ -s "$_RESTART_SENTINEL" ]; then
+  _last_ts="$(cat "$_RESTART_SENTINEL" 2>/dev/null || echo 0)"
+  _now_ts="$(date +%s)"
+  _age=$(( _now_ts - _last_ts ))
+  if [ "$_age" -ge 0 ] && [ "$_age" -lt "$_RESTART_THROTTLE_SEC" ]; then
+    _wait=$(( _RESTART_THROTTLE_SEC - _age ))
+    echo "[proxy-restart] THROTTLED: last restart ${_age}s ago (< ${_RESTART_THROTTLE_SEC}s); ${_wait}s remaining. Use --force to override." >&2
+    exit 0
+  fi
+fi
+
 source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
 WORKER_PORT="$(_hme_service_port worker 2>/dev/null || printf '%s' "${HME_WORKER_PORT:-9098}")"  # silent-ok: optional fallback path.
