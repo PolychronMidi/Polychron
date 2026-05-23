@@ -76,15 +76,27 @@ function scrubOrphanToolPairs(payload) {
 
 function sanitizeMessages(payload, placeholder = SUCCESS_EMPTY) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
-  let dropped = 0;
+  let changed = 0;
   for (const msg of payload.messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
     const before = msg.content.length;
     msg.content = msg.content.filter((b) => b && !(b.type === 'text' && typeof b.text === 'string' && b.text.trim().length === 0));
-    dropped += before - msg.content.length;
+    changed += before - msg.content.length;
+    for (const block of msg.content) {
+      if (!block || block.type !== 'tool_result') continue;
+      const text = blockText(block);
+      if (text && text.trim().length > 0) continue;
+      const marker = block.is_error === true ? '[FAIL] tool returned no error text' : placeholder;
+      if (Array.isArray(block.content)) {
+        block.content = [{ type: 'text', text: marker }];
+      } else {
+        block.content = marker;
+      }
+      changed++;
+    }
     if (msg.content.length === 0) msg.content = [{ type: 'text', text: placeholder }];
   }
-  return dropped;
+  return changed;
 }
 
 function toGraph(payload) {
