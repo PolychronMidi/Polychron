@@ -68,7 +68,51 @@ _onb_init
 # the operator knows to run the launcher.
 if [ "${HME_PROXY_ENABLED}" = "1" ]; then
   PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
-  if ! curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
+  # Thundering-herd guard: when N hooks fire concurrently (subagents,
+  # background scripts), only ONE curl probe runs. The others read the
+  _SS_PROBE_DIR="$PROJECT/tools/HME/runtime"
+  _SS_PROBE_LOCK="$_SS_PROBE_DIR/sessionstart-probe.lock"
+  _SS_PROBE_RESULT="$_SS_PROBE_DIR/sessionstart-probe.result"
+  _SS_PROBE_TTL_S=5
+  mkdir -p "$_SS_PROBE_DIR" 2>/dev/null
+  _ss_probe_fresh() {
+    [ -s "$_SS_PROBE_RESULT" ] || return 1
+    local age_s
+    age_s=$(( $(date +%s) - $(stat -c %Y "$_SS_PROBE_RESULT" 2>/dev/null || echo 0) ))
+    [ "$age_s" -lt "$_SS_PROBE_TTL_S" ] || return 1
+    return 0
+  }
+  _ss_probe_status=""
+  if _ss_probe_fresh; then
+    _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
+  else
+    {
+      if command -v flock >/dev/null 2>&1 && flock -n 198 2>/dev/null; then
+        if _ss_probe_fresh; then
+          _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
+        else
+          if curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
+            _ss_probe_status=ok
+          else
+            _ss_probe_status=down
+          fi
+          printf '%s\n' "$_ss_probe_status" > "$_SS_PROBE_RESULT" 2>/dev/null
+        fi
+      else
+        # Couldn't acquire lock; another hook is probing. Brief wait for
+        # the cache to land, then read it (or fall back to a direct probe).
+        sleep 0.2
+        if _ss_probe_fresh; then
+          _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
+        elif curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
+          _ss_probe_status=ok
+        else
+          _ss_probe_status=down
+        fi
+      fi
+    } 198>"$_SS_PROBE_LOCK"
+  fi
+  if [ "$_ss_probe_status" != "ok" ]; then
     echo "[ALERT] HME proxy not running on :${PROXY_PORT} -- run polychron-launch.sh or polychron-proxy-restart.sh to start it" >&2
     TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
     mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null
