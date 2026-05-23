@@ -213,7 +213,13 @@ function createContextBudget() {
           + positiveNumber(usage.cache_read_input_tokens)
           + positiveNumber(usage.cache_creation_input_tokens)
         || positiveNumber(ctx.total_input_tokens);
-      return { used, size: positiveNumber(ctx.context_window_size) };
+      // Claude Code's context_window_size is unreliable -- it often reports
+      // the legacy 200k window for models whose registry max_input_tokens is
+      const rawSize = positiveNumber(ctx.context_window_size);
+      const modelId = String((data && data.model && (data.model.id || data.model.api_model)) || '');
+      const registrySize = modelId ? resolveModelCtx(modelId) : 0;
+      const size = Math.max(rawSize, registrySize && registrySize !== 1000000 ? registrySize : 0) || rawSize;
+      return { used, size };
     } catch (_e) { return { used: 0, size: 0 }; }
   }
 
