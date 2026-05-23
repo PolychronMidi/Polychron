@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const FAILURE_MOD = '../../proxy/hme_proxy_upstream_failure';
+const FAILURE_MOD = '../../proxy/contexts/failure_policy/hme_proxy_upstream_failure';
 
 function makeTransport({ statusCode, body = '{}', headers = { 'content-type': 'application/json' }, throws = null, calls = [] }) {
   return {
