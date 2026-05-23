@@ -573,7 +573,7 @@ module.exports = {
     const FIRING_RULES = DETECTOR_REGISTRY
       .filter((d) => d.deny)
       .map((d) => [d.bash_var, d.fires_when, d.reason_key]);
-    const willDeny = FIRING_RULES.some(([f, val]) => v[f] === val);
+    const _willDeny = FIRING_RULES.some(([f, val]) => v[f] === val);
     let firing = [];
     for (const [field, value, reasonKey] of FIRING_RULES) {
       if (v[field] === value) firing.push({ name: reasonKey || field, reason: REASONS[reasonKey] || REASONS[field] });
