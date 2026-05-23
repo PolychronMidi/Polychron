@@ -162,10 +162,12 @@ async function main() {
     const trueSize = registrySize > 0 ? registrySize : claimedSize;
     const usedPct = trueSize > 0 ? Math.round((usedTokens / trueSize) * 100) : Math.round(Number(ctx.used_percentage || 0));
     const remainingPct = trueSize > 0 ? Math.max(0, 100 - usedPct) : Math.round(Number(ctx.remaining_percentage || 0));
+    // Quiet info tag: proxy's injectContextHeader already overrides upstream
+    // rate-limit headers to registry truth, so Claude Code's autocompact
+    // widget sees the right denominator. The raw claim mismatch is mitigated;
     let sizeAlert = '';
     if (registrySize > 0 && claimedSize > 0 && claimedSize !== registrySize) {
-      _writeLifesaver(root, `Claude Code claims context_window_size=${claimedSize} for model=${modelId} but registry truth=${registrySize}; autocompact widget LYING (denominator wrong by ${(registrySize / claimedSize).toFixed(1)}x)`);
-      sizeAlert = ` | LIFESAVER!ctx-window:claim ${claimedSize} truth ${registrySize}`;
+      sizeAlert = ` | ctx-claim-overridden:${claimedSize}->${registrySize}`;
     }
     const out = {
       used_pct: usedPct,
