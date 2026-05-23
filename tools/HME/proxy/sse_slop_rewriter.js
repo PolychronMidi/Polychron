@@ -4,38 +4,38 @@
 const _SLOP_PATTERNS = [
   // #1 Narrator setup.
   { name: 'narrator_setup',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:Here'?s the thing[,:]?|Here'?s where it gets interesting[,:]?|Here'?s where the real [a-zA-Z]+ lives[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:Here'?s the thing[,:]?|Here'?s where it gets interesting[,:]?|Here'?s where the real [a-zA-Z]+ lives[,:]?)\s*/gi,
     repl: '$1' },
   // #2 Dramatic rhetorical framing.
   { name: 'dramatic_framing',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:The part that (?:actually|really) matters\?|But here'?s the part where[^.]*\.|And that'?s when (?:it clicked|everything (?:changed|clicked))\.?|Want to (?:know|hear) the (?:crazy|wild|interesting) part\??)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:The part that (?:actually|really) matters\?|But here'?s the part where[^.]*\.|And that'?s when (?:it clicked|everything (?:changed|clicked))\.?|Want to (?:know|hear) the (?:crazy|wild|interesting) part\??)\s*/gi,
     repl: '$1' },
   // #7 Authority signaling.
   { name: 'authority_signal',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:Let me be clear[,:]?|The uncomfortable truth is(?: that)?[,:]?|Here'?s what nobody tells you[,:]?|The hard truth is(?: that)?[,:]?|Here'?s the reality[,:]?|What most people miss is(?: that)?[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:Let me be clear[,:]?|The uncomfortable truth is(?: that)?[,:]?|Here'?s what nobody tells you[,:]?|The hard truth is(?: that)?[,:]?|Here'?s the reality[,:]?|What most people miss is(?: that)?[,:]?)\s*/gi,
     repl: '$1' },
   // #8 False dichotomy lead-in. "It's not about X, it's about Y" /
   // "Stop doing X. Start doing Y." -- catch the rhetorical scaffold.
   { name: 'false_dichotomy',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s not (?:about|that) [^,.]+,\s*it'?s (?:about|that)\s+|Stop (?:doing|thinking|trying)[^.]*\.\s*Start\s+)/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:It'?s not (?:about|that) [^,.]+,\s*it'?s (?:about|that)\s+|Stop (?:doing|thinking|trying)[^.]*\.\s*Start\s+)/gi,
     repl: '$1' },
   // #9 Self-branded concepts. "This is what I call the X" / "I have a
   // framework called X" -- naming a pattern before showing it works.
   { name: 'self_branded_concept',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:This is what I call (?:the|a)?\s*|I (?:have|use|developed) a (?:framework|model|system|method) (?:called|named)\s+)/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:This is what I call (?:the|a)?\s*|I (?:have|use|developed) a (?:framework|model|system|method) (?:called|named)\s+)/gi,
     repl: '$1' },
   // #10 Artificial drama sentences. Short paired contrasts.
   { name: 'artificial_drama',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:The shift sounds simple\.\s*It'?s not\.|Easy to say\.\s*Hard to (?:execute|do)\.|Sounds (?:obvious|simple)\.\s*It'?s not\.|Simple in theory\.\s*Hard in practice\.)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:The shift sounds simple\.\s*It'?s not\.|Easy to say\.\s*Hard to (?:execute|do)\.|Sounds (?:obvious|simple)\.\s*It'?s not\.|Simple in theory\.\s*Hard in practice\.)\s*/gi,
     repl: '$1' },
   // #11 Empathy openers. Even in tool output these sometimes appear
   // (e.g. an agent prefacing a fix with "We've all been there").
   { name: 'empathy_opener',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:We'?ve all been there\.?|You know (?:that|the) feeling when[^.?]*[.?]|Sound familiar\??)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:We'?ve all been there\.?|You know (?:that|the) feeling when[^.?]*[.?]|Sound familiar\??)\s*/gi,
     repl: '$1' },
   // #12 Wisdom packaging.
   { name: 'wisdom_packaging',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:The lesson\??[:.]?|The takeaway(?:\s+here)?\s+is(?:\s+simple)?[:.]?|What this really means is(?: that)?[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:The lesson\??[:.]?|The takeaway(?:\s+here)?\s+is(?:\s+simple)?[:.]?|What this really means is(?: that)?[,:]?)\s*/gi,
     repl: '$1' },
   // #13 Em-dash crutch. Replace bracketing em-dashes / `--` with
   // commas when used as parenthetical bridges between word characters.
@@ -50,25 +50,25 @@ const _SLOP_PATTERNS = [
   // #19 The perfect pivot. "But then I realized...", "That's when
   // everything changed."
   { name: 'perfect_pivot',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:But then I realized(?:\s+that)?[,:]?|That'?s when everything changed\.?|That'?s when it (?:hit|clicked) me\.?|And then it hit me[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:But then I realized(?:\s+that)?[,:]?|That'?s when everything changed\.?|That'?s when it (?:hit|clicked) me\.?|And then it hit me[,:]?)\s*/gi,
     repl: '$1' },
   // #20 Engagement-bait endings.
   { name: 'engagement_bait',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:So here'?s my question for you[:.]?[^.]*\.?|Curious to hear your thoughts\.?|What do you think\?|Let me know (?:what you think|your thoughts)[\.\?]?|Drop (?:a comment|your thoughts) below\.?)\s*$/gim,
+    re: /(^|[.!?]\s+|\n\s*)(?:So here'?s my question for you[:.]?[^.]*\.?|Curious to hear your thoughts\.?|What do you think\?|Let me know (?:what you think|your thoughts)[\.\?]?|Drop (?:a comment|your thoughts) below\.?)\s*$/gim,
     repl: '$1' },
   // #21 Humble-brag disclaimer.
   { name: 'humble_brag',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:I don'?t have all the answers,? but|Not claiming to be (?:an? )?expert,? but|Just my (?:two cents|2c|opinion),? but)\s+/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:I don'?t have all the answers,? but|Not claiming to be (?:an? )?expert,? but|Just my (?:two cents|2c|opinion),? but)\s+/gi,
     repl: '$1' },
   // #23 "Most people" strawman. "Most people think X." / "Everyone
   // focuses on X. Nobody talks about Y."
   { name: 'most_people_strawman',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:Most people (?:think|believe|assume)[^.]*\.\s*They'?re wrong\.?|Everyone focuses on [^.]*\.\s*Nobody (?:talks about|mentions|sees)\s+|Most people (?:miss this|don'?t see this)[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:Most people (?:think|believe|assume)[^.]*\.\s*They'?re wrong\.?|Everyone focuses on [^.]*\.\s*Nobody (?:talks about|mentions|sees)\s+|Most people (?:miss this|don'?t see this)[,:]?)\s*/gi,
     repl: '$1' },
   // #25 The reframe play. "X isn't [obvious]. It's [slight tweak]."
   // Pure rhetorical flourish; the slight tweak is rarely action-changing.
   { name: 'reframe_play',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s not (?:really )?(?:about|a question of) [^,.]+\.\s*It'?s (?:about|a question of)\s+)/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:It'?s not (?:really )?(?:about|a question of) [^,.]+\.\s*It'?s (?:about|a question of)\s+)/gi,
     repl: '$1' },
   // #26 Adverb overload. Delete intensifying adverbs that add weight to
   // sentences that should stand on their own. Word-boundary anchored
@@ -79,11 +79,11 @@ const _SLOP_PATTERNS = [
     repl: '' },
   // #27 Qualifying hedge.
   { name: 'qualifying_hedge',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s worth noting that|Interestingly(?: enough)?[,:]?|What'?s (?:fascinating|interesting) is(?: that)?[,:]?|It'?s important to note that|Notably[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:It'?s worth noting that|Interestingly(?: enough)?[,:]?|What'?s (?:fascinating|interesting) is(?: that)?[,:]?|It'?s important to note that|Notably[,:]?)\s*/gi,
     repl: '$1' },
   // #28 Overly smooth transitions.
   { name: 'smooth_transition',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:Speaking of which[,:]?|This brings us to[^.]*\.|Building on (?:this|that)(?:\s+idea)?[,:]?|With that (?:in mind|said)[,:]?)\s*/gi,
+    re: /(^|[.!?]\s+|\n\s*)(?:Speaking of which[,:]?|This brings us to[^.]*\.|Building on (?:this|that)(?:\s+idea)?[,:]?|With that (?:in mind|said)[,:]?)\s*/gi,
     repl: '$1' },
   // #29 Parenthetical asides for relatability. "(yes, really)",
   // "(trust me on this)", "(I learned this the hard way)"
