@@ -161,35 +161,31 @@ LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 ONB_STEP="$(_onb_step_label)"
 echo -e "Onboarding: $ONB_STEP$MSG" >&2
 
-# Surface carried-over todos; log carry-over loader failures loudly.
-_SS_CARRY_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_ss_carry_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_ss_carry_err_$$")
-set +e
-CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_SS_CARRY_ERR"
+# Surface carried-over todos from cached prior BG run; refresh in background.
+# The inline heredoc with PYTHONPATH-loaded server imports was a ~500ms-1s
+# hot-path tax on every SessionStart -- same BG+cache pattern as _TRAJ_CACHE
+_CARRY_CACHE="$PROJECT/tmp/hme-carried-over.cache"
+[ -s "$_CARRY_CACHE" ] && cat "$_CARRY_CACHE" >&2
+export _CARRY_CACHE
+_hme_bg_shell_timeout 20 list-carried-over "$PROJECT/log/hme-bg-list-carried-over.err" '
+  tmp="${_CARRY_CACHE}.$$.tmp"
+  PROJECT_ROOT="'"$PROJECT"'" PYTHONPATH="'"$PROJECT/tools/HME/service"'" \
+    python3 -c "
 from server.tools_analysis.todo import list_carried_over
 items = list_carried_over()
 if items:
-    print("\nCarried-over HME todos (" + str(len(items)) + " open):")
-    crit = [i for i in items if i['critical']]
-    normal = [i for i in items if not i['critical']]
+    print(\"\nCarried-over HME todos (\" + str(len(items)) + \" open):\")
+    crit = [i for i in items if i[\"critical\"]]
+    normal = [i for i in items if not i[\"critical\"]]
     for i in crit:
-        print("  !!! #" + str(i['id']) + " " + i['text'][:120] + " [" + i['source'] + "]")
+        print(\"  !!! #\" + str(i[\"id\"]) + \" \" + i[\"text\"][:120] + \" [\" + i[\"source\"] + \"]\")
     for i in normal:
-        tag = " (" + str(i['open_subs']) + " open subs)" if i['open_subs'] else ""
-        src = " [" + i['source'] + "]" if i['source'] else ""
-        print("  [ ] #" + str(i['id']) + " " + i['text'][:100] + tag + src)
-PYEOF
-)
-_SS_CARRY_RC=$?
-set -e
-if [ "$_SS_CARRY_RC" -ne 0 ] && [ -s "$_SS_CARRY_ERR" ] && [ -d "$PROJECT/log" ]; then
-  _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
-  while IFS= read -r _ss_line; do
-    [ -n "$_ss_line" ] && echo "[$_SS_TS] [sessionstart:list_carried_over] python3 failed: $_ss_line" \
-      >> "$PROJECT/log/hme-errors.log"
-  done < "$_SS_CARRY_ERR"
-fi
-rm -f "$_SS_CARRY_ERR" 2>/dev/null
-[ -n "$CARRIED" ] && echo "$CARRIED" >&2
+        tag = \" (\" + str(i[\"open_subs\"]) + \" open subs)\" if i[\"open_subs\"] else \"\"
+        src = \" [\" + i[\"source\"] + \"]\" if i[\"source\"] else \"\"
+        print(\"  [ ] #\" + str(i[\"id\"]) + \" \" + i[\"text\"][:100] + tag + src)
+" >"$tmp" 2>>"'"$PROJECT/log/hme-bg-list-carried-over.err"'" \
+    && mv "$tmp" "$_CARRY_CACHE" || rm -f "$tmp"
+'
 
 # Surface doc/templates/TODO.md in-flight continuity state.
 _TODO_MD="$PROJECT/doc/templates/TODO.md"
