@@ -171,19 +171,20 @@ class TodoCodexPlanSyncVerifier(Verifier):
             )
             if proc.returncode != 0:
                 failures.append(f"{rel} does not compile: {proc.stderr.strip()}")
-        hooks_json = os.path.join(_PROJECT, "tools", "HME", "hooks", "codex_hooks.json")
         try:
-            hooks_doc = json.load(open(hooks_json, encoding="utf-8"))
+            sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "scripts"))
+            from codex_settings import expected_hooks as _codex_expected_hooks  # noqa: E402
+            hooks_doc = _codex_expected_hooks()
             hooks = hooks_doc.get("hooks", {})
             for event in ["SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse", "PreCompact", "PostCompact", "Stop"]:
                 groups = hooks.get(event)
                 if not groups:
-                    failures.append(f"codex_hooks.json missing {event}")
+                    failures.append(f"codex hook projection missing {event}")
                     continue
                 if "codex_adapter.js" not in json.dumps(groups):
-                    failures.append(f"codex_hooks.json {event} does not route through codex_adapter.js")
+                    failures.append(f"codex hook projection {event} does not route through codex_adapter.js")
         except Exception as e:
-            failures.append(f"codex_hooks.json invalid: {e}")
+            failures.append(f"codex hook projection invalid: {e}")
         try:
             services = json.load(open(os.path.join(_PROJECT, "tools", "HME", "config", "services.json"), encoding="utf-8")).get("services", [])
             if not any(s.get("id") == "codex_proxy" for s in services if isinstance(s, dict)):
