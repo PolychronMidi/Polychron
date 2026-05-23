@@ -60,6 +60,8 @@ function _isAgentActionable(line, projectRoot) {
   const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
   const criticalInfra = CRITICAL_INFRA_SELF_RE.test(body);
   if (CANARY_RE.test(body)) return false;
+  if (/^\[sessionstart\]\s+proxy\s+not\s+running\s+on\s+:\d+/.test(body)
+      && _sessionstartProxyDownResolved(projectRoot)) return false;
   if (/^\[stale_runtime\]/.test(body) && _staleRuntimeResolvedOrGrace(projectRoot)) return false;
   if (CRYING_WOLF_RE.test(body)) return true;
   if (SELF_TAG_RE.test(body) && !criticalInfra) return false;
