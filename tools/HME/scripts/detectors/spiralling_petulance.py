@@ -451,6 +451,11 @@ def main() -> int:
     if len(sys.argv) >= 2 and sys.argv[1] == "--reset-session":
         reset_session_attempts()
         return 0
+    if len(sys.argv) >= 2 and sys.argv[1] == "--reset-user-prompt":
+        # Each new user prompt is a fresh "initial request" -- prior-prompt
+        # bash attempts must not block the first command of a new turn.
+        reset_session_attempts()
+        return 0
     if len(sys.argv) < 2:
         print("ok")
         return 0
