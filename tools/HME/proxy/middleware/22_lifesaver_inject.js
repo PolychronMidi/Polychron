@@ -57,7 +57,7 @@ function _staleRuntimeResolvedOrGrace(projectRoot) {
 
 function _isAgentActionable(line, projectRoot) {
   // tag-anchored regex matches at line start.
-  const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
+  const body = line.replace(/^\[[0-9TZ:.-]+\]\s*/, '');
   const criticalInfra = CRITICAL_INFRA_SELF_RE.test(body);
   if (CANARY_RE.test(body)) return false;
   if (/^\[sessionstart\]\s+proxy\s+not\s+running\s+on\s+:\d+/.test(body)

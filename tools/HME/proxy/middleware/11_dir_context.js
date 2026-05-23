@@ -82,7 +82,7 @@ function _extractTargetPath(toolUse) {
     const searchPath = input.path || '';
     if (searchPath) return searchPath;
     // strip glob wildcards from pattern to get dir
-    const cleaned = pattern.replace(/\*\*?.*$/, '').replace(/\/[^\/]*\*.*$/, '');
+    const cleaned = pattern.replace(/\*\*?.*$/, '').replace(/\/[^/]*\*.*$/, '');
     return cleaned;
   }
   // Grep: path param when given, else skip (too broad)

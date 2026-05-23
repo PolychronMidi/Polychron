@@ -64,7 +64,7 @@ function _callerModule() {
   // common shape `at fn (.../middleware/foo.js:NN)` parses reliably.
   const err = new Error();
   const stack = err.stack || '';
-  const re = /\/middleware\/([A-Za-z_][A-Za-z0-9_]*)\.js[:\)]/g;
+  const re = /\/middleware\/([A-Za-z_][A-Za-z0-9_]*)\.js[:)]/g;
   let match;
   let last = 'unknown';
   while ((match = re.exec(stack)) !== null) {

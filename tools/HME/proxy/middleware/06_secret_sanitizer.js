@@ -36,7 +36,7 @@
 // anti-fork-begin: secret-sanitizer-patterns min=12
 const PATTERNS = [
   // OpenAI / Anthropic / Stripe / GitHub / generic "sk-" provider keys.
-  [/\bsk-(?:proj-|ant-|live_|test_)?[A-Za-z0-9_\-]{24,}\b/g, '<REDACTED:provider-key>'],
+  [/\bsk-(?:proj-|ant-|live_|test_)?[A-Za-z0-9_-]{24,}\b/g, '<REDACTED:provider-key>'],
   [/\bgsk_[A-Za-z0-9]{24,}\b/g, '<REDACTED:provider-key>'],
   [/\bgh[opsuar]_[A-Za-z0-9]{30,}\b/g, '<REDACTED:github-token>'],
   [/\bgithub_pat_[A-Za-z0-9_]{60,}\b/g, '<REDACTED:github-pat>'],
@@ -46,13 +46,13 @@ const PATTERNS = [
   [/aws_secret_access_key\s*=\s*[A-Za-z0-9/+=]{40}/gi, 'aws_secret_access_key=<REDACTED:aws-secret>'],
   // Slack tokens (xox[abposr]-).
   [/\bxox[abposr]-[A-Za-z0-9-]{10,}\b/g, '<REDACTED:slack-token>'],
-  [/\bAIza[0-9A-Za-z_\-]{35}\b/g, '<REDACTED:google-key>'],
+  [/\bAIza[0-9A-Za-z_-]{35}\b/g, '<REDACTED:google-key>'],
   // Discord bot tokens (3-segment, base64ish).
   [/\b[MN][A-Za-z\d]{23}\.[\w-]{6}\.[\w-]{27,}\b/g, '<REDACTED:discord-token>'],
 
   // JSON Web Tokens -- three-segment base64url separated by dots, header
   // typically begins with eyJ (decoded `{"`).
-  [/\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b/g, '<REDACTED:jwt>'],
+  [/\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, '<REDACTED:jwt>'],
 
   // Authorization Bearer headers (HTTP).
   [/\bBearer\s+[A-Za-z0-9._\-+/=]{16,}\b/g, 'Bearer <REDACTED:bearer-token>'],
@@ -69,7 +69,7 @@ const PATTERNS = [
   // Database connection strings with embedded credentials.
   // postgres://user:password@host, mysql://, mongodb(+srv)://, redis://
   [
-    /\b(postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp|rediss):\/\/[^\s:@\/]+:[^\s@\/]+@[^\s\/]+/gi,
+    /\b(postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp|rediss):\/\/[^\s:@/]+:[^\s@/]+@[^\s/]+/gi,
     (m) => m.replace(/:\/\/[^@]+@/, '://<REDACTED:db-creds>@'),
   ],
 ];
@@ -77,7 +77,7 @@ const PATTERNS = [
 
 // Substitution markers we ALREADY emit -- used to suppress double-redaction
 // across proxy restarts where tool_results re-enter the pipeline.
-const REDACTED_MARKER_RE = /<REDACTED:[a-z\-]+>/;
+const REDACTED_MARKER_RE = /<REDACTED:[a-z-]+>/;
 
 function _textOf(toolResult) {
   const c = toolResult.content;
