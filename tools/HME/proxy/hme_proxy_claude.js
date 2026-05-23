@@ -12,7 +12,7 @@ const {
   handleLegacySwapResponse,
   handleAnthropicResponseComplete,
 } = require('./contexts/response_transform');
-const { middleware } = require('./middleware');
+const middleware = require('./middleware');
 function mutateClaudeRequest(...args) {
   return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
 }

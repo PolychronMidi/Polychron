@@ -9,11 +9,9 @@ const {
   markRouteCooldown,
 } = require('./contexts/failure_policy/hme_proxy_upstream_failure');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
-const {
-  omniProviderForConfigProvider,
-  upstreamModelId,
-  swapStore,
-} = require('./upstream');
+const { omniProviderForConfigProvider } = require('./omniroute_protocol');
+const swapStore = require('./swap_state_store');
+const { upstreamModelId } = require('./overdrive_route');
 
 function captureRateLimitTelemetry({ headers, status, setLastInputTokensRemaining, setLastInputTokensLimit, log = console.error }) {
   const hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];

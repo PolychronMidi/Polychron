@@ -69,7 +69,7 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
     PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
     if [ -f "$PROXY_SCRIPT" ]; then
       HME_PROXY_PORT="$PROXY_PORT" nohup node "$PROXY_SCRIPT" \
-        > "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 &
+        >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 &
       echo "HME proxy+supervisor started on :${PROXY_PORT} (pid $!) -- worker will spawn as a child" >&2
     fi
   else

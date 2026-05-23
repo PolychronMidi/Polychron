@@ -3,11 +3,10 @@
 const http = require('http');
 const {
   servicePort,
-  omniProviderForConfigProvider,
-  omniTargetFormat,
-  isManualTopActive,
 } = require('../../service_registry');
+const { omniProviderForConfigProvider, omniTargetFormat } = require('../../omniroute_protocol');
 const swapStore = require('../../swap_state_store');
+function isManualTopActive(chain) { return !!(chain && chain[0] && chain[0]._manual_toprank === true); }
 const { chainSignature } = swapStore;
 
 function upstreamModelId(model) {

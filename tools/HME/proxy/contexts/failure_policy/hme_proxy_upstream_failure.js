@@ -8,11 +8,11 @@ const {
   recordUpstreamSuccess,
   recordUpstreamFailure,
   refreshOauthToken,
-  omniProviderForConfigProvider,
-  upstreamModelId,
-  swapStore,
-  omniroute,
 } = require('../../upstream');
+const { omniProviderForConfigProvider } = require('../../omniroute_protocol');
+const omniroute = require('../../omniroute_client');
+const swapStore = require('../../swap_state_store');
+const { upstreamModelId } = require('./hme_proxy_codex');
 const {
   detectUpstreamFailure: _detectUpstreamFailure,
   alertCooldownActive: _alertCooldownActive,

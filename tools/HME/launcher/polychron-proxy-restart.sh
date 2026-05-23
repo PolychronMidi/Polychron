@@ -33,10 +33,8 @@ PROXY_READY_TIMEOUT="${HME_PROXY_READY_TIMEOUT:-8}"
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-45}"
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
-RELOAD_MARKER="$PROJECT_ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
-STALE_RUNTIME_STATE="$PROJECT_ROOT/tools/HME/runtime/post-commit-stale-runtime.json"
-RUNTIME_FILE="$PROJECT_ROOT/tools/HME/runtime/proxy-runtime.json"
 ERROR_LOG="$PROJECT_ROOT/log/hme-errors.log"
+_SUPERVISOR_SCRIPT="$PROJECT_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
 
 _http_code() {
   curl -sS --max-time 1 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || echo 000
@@ -74,64 +72,6 @@ _bundle_pattern_pids() {
   ' | sort -u
 }
 
-_runtime_value() {
-  local key="$1"
-  [ -f "$RUNTIME_FILE" ] || return 0
-  python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get(sys.argv[2]) or "")' "$RUNTIME_FILE" "$key" 2>/dev/null || true
-}
-
-_current_head_sha() {
-  git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || true
-}
-
-_marker_sha() {
-  [ -f "$RELOAD_MARKER" ] || return 0
-  head -1 "$RELOAD_MARKER" 2>/dev/null || true
-}
-
-_record_stale_runtime_state() {
-  local runtime_sha="${1-}" head_sha="${2-}" marker_sha="${3-}" ts
-  ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)
-  python3 - "$STALE_RUNTIME_STATE" "$runtime_sha" "$head_sha" "$marker_sha" "$ts" <<'PY' 2>/dev/null || true
-import json, sys
-path, runtime_sha, head_sha, marker_sha, ts = sys.argv[1:]
-with open(path, 'w', encoding='utf-8') as f:
-    json.dump({
-        'runtime_sha': runtime_sha,
-        'head_sha': head_sha,
-        'marker_sha': marker_sha,
-        'recorded_at': ts,
-        'reason': 'head advanced during proxy restart; marker retained for next supervisor poll',
-    }, f, sort_keys=True)
-    f.write('\n')
-PY
-}
-
-_assert_runtime_matches_listener() {
-  local expected_pid="${1-}" expected_sha="${2-}" head_sha marker_sha runtime_pid runtime_sha ts
-  head_sha="$(_current_head_sha)"
-  marker_sha="$(_marker_sha)"
-  runtime_pid="$(_runtime_value pid)"
-  runtime_sha="$(_runtime_value git_sha)"
-  if [ -z "$runtime_pid" ] || [ -z "$runtime_sha" ] || [ "$runtime_pid" != "$expected_pid" ] || { [ -n "$expected_sha" ] && [ "$runtime_sha" != "$expected_sha" ]; }; then
-    ts=$(date -u +'%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo unknown)
-    mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null || true
-    echo "[$ts] [proxy-restart] CRITICAL runtime/listener mismatch after restart: listener_pid=${expected_pid:-none} runtime_pid=${runtime_pid:-none} runtime_sha=${runtime_sha:-none} expected_sha=${expected_sha:-none} head_sha=${head_sha:-none}" >> "$ERROR_LOG"
-    return 1
-  fi
-  if [ -n "$head_sha" ] && [ "$runtime_sha" != "$head_sha" ]; then
-    _record_stale_runtime_state "$runtime_sha" "$head_sha" "$marker_sha"
-    echo "[proxy-restart] NOTICE: HEAD advanced during restart (${runtime_sha} -> ${head_sha}); marker retained for supervisor follow-up" >&2
-    return 0
-  fi
-  if [ -n "$marker_sha" ] && [ "$marker_sha" != "$runtime_sha" ]; then
-    _record_stale_runtime_state "$runtime_sha" "$head_sha" "$marker_sha"
-    echo "[proxy-restart] NOTICE: reload marker targets ${marker_sha} after runtime ${runtime_sha}; marker retained for supervisor follow-up" >&2
-    return 0
-  fi
-  rm -f "$RELOAD_MARKER" "$STALE_RUNTIME_STATE" 2>/dev/null || true
-  return 0
-}
 
 mapfile -t _PROXY_BUNDLE_PATTERNS < <(_hme_bundle_process_patterns proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
 if [ "${#_PROXY_BUNDLE_PATTERNS[@]}" -eq 0 ]; then
@@ -151,22 +91,6 @@ _label_in_proxy_bundle() {
   return 1
 }
 
-_HEAD_SHA="$(_current_head_sha)"
-if _proxy_listener_ready; then
-  _ADOPT_PID="$(_port_listener_pids | head -1)"
-  _ADOPT_RUNTIME_PID="$(_runtime_value pid)"
-  _ADOPT_RUNTIME_SHA="$(_runtime_value git_sha)"
-  if [ -n "$_ADOPT_PID" ] \
-     && [ -n "$_ADOPT_RUNTIME_PID" ] \
-     && [ "$_ADOPT_RUNTIME_PID" = "$_ADOPT_PID" ] \
-     && [ -n "$_ADOPT_RUNTIME_SHA" ] \
-     && [ -n "$_HEAD_SHA" ] \
-     && [ "$_ADOPT_RUNTIME_SHA" = "$_HEAD_SHA" ]; then
-    echo "[proxy-restart] adopted existing healthy proxy listener (pid=${_ADOPT_PID}, sha=${_HEAD_SHA}); no restart needed" >&2
-    exit 0
-  fi
-fi
-
 # Prefer PID-targeted SIGTERM via the launcher's PID file when present --
 # pkill by pattern can match across user sessions on shared hosts.
 declare -a _proxy_pids=()
@@ -174,6 +98,13 @@ if [ -f "$PID_FILE" ]; then
   while IFS='=' read -r label pid; do
     _label_in_proxy_bundle "$label" && [ -n "$pid" ] && _proxy_pids+=("$label:$pid")
   done < "$PID_FILE"
+fi
+
+# Stop the external supervisor so it doesn't respawn the proxy while we kill it.
+if [ -f "$_SUPERVISOR_SCRIPT" ]; then
+  echo "[proxy-restart] stopping proxy supervisor before bundle kill..." >&2
+  bash "$_SUPERVISOR_SCRIPT" stop 2>/dev/null || true
+  sleep 1
 fi
 
 for entry in "${_proxy_pids[@]:-}"; do
@@ -229,31 +160,39 @@ for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
     pkill -KILL -f "$pat" 2>/dev/null \
       && echo "[proxy-restart] SIGKILL -> pattern: $pat" >&2 \
       && _killed_any=1
-  fi
+fi
 done
-if [ "$_killed_any" = "0" ]; then
-  echo "[proxy-restart] proxy bundle exited cleanly via SIGTERM after ${_waited}s" >&2
+_survivors="$(_port_listener_pids | tr '\n' ' ')"
+if [ -n "$_survivors" ]; then
+  echo "[proxy-restart] proxy port :${PROXY_PORT} still owned after bundle kill; nuking listener pid(s): $_survivors" >&2
+  for _listener_pid in $_survivors; do
+    [ -n "$_listener_pid" ] || continue
+    kill -KILL "$_listener_pid" 2>/dev/null || true
+  done
 fi
 
 _remaining_listener_pids="$(_port_listener_pids | tr '\n' ' ')"
 if [ -n "$_remaining_listener_pids" ]; then
-  echo "[proxy-restart] proxy port :${PROXY_PORT} still owned after bundle kill; terminating listener pid(s): $_remaining_listener_pids" >&2
-  for _listener_pid in $_remaining_listener_pids; do
-    [ -n "$_listener_pid" ] || continue
-    kill -TERM "$_listener_pid" 2>/dev/null || true  # silent-ok: optional fallback path.
+  echo "[proxy-restart] WARNING: proxy listener still on :${PROXY_PORT} (pid(s): $_remaining_listener_pids) -- retrying kill loop..." >&2
+  _cleanup_retries=0
+  while [ "$_cleanup_retries" -lt 5 ] && [ -n "$(_port_listener_pids)" ]; do
+    for _listener_pid in $(_port_listener_pids); do
+      [ -n "$_listener_pid" ] || continue
+      kill -KILL "$_listener_pid" 2>/dev/null || true
+    done
+    _cleanup_retries=$((_cleanup_retries + 1))
+    sleep 1
   done
-  sleep 1
-  _remaining_listener_pids="$(_port_listener_pids | tr '\n' ' ')"
-  for _listener_pid in $_remaining_listener_pids; do
-    [ -n "$_listener_pid" ] || continue
-    kill -KILL "$_listener_pid" 2>/dev/null || true  # silent-ok: optional fallback path.
-  done
-fi
-_remaining_listener_pids="$(_port_listener_pids | tr '\n' ' ')"
-if [ -n "$_remaining_listener_pids" ]; then
-  echo "[proxy-restart] ERROR: proxy listener survived cleanup on :${PROXY_PORT}; refusing to start over stale code" >&2
-  echo "[proxy-restart]   remaining listener pid(s): $_remaining_listener_pids" >&2
-  exit 1
+  if [ -n "$(_port_listener_pids)" ]; then
+    echo "[proxy-restart] WARNING: proxy listener survived cleanup on :${PROXY_PORT} -- checking if healthy..." >&2
+    if _proxy_listener_ready; then
+      echo "[proxy-restart] surviving proxy is healthy (pid=$(_port_listener_pids | head -1)); skipping spawn" >&2
+      _ALREADY_RUNNING=true
+    else
+      echo "[proxy-restart] ERROR: surviving proxy is unhealthy; giving up" >&2
+      exit 1
+    fi
+  fi
 fi
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
@@ -280,10 +219,9 @@ if [ -f "$PID_FILE" ]; then
   mv "$_tmp_pid_file" "$PID_FILE"
 fi
 
-# 6. Spawn proxy with same invocation as polychron-launch.sh's step 1.
+# 6. Spawn proxy fresh.
 _PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
-_EXPECTED_SHA="$(_current_head_sha)"
-echo "[proxy-restart] starting HME proxy on :${PROXY_PORT} (expected_sha=${_EXPECTED_SHA:-unknown})..." >&2
+echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
 cd "$PROJECT_ROOT"
 HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
   setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
@@ -292,32 +230,20 @@ _PROXY_PID=$!
 disown 2>/dev/null || true
 echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
 
-# 7. Append the new proxy PID to the PID file so the next full-stack
-# shutdown finds it.
-echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
+  echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
 
-# 8. Listener readiness gate: /ready proves :${PROXY_PORT} is serving the new
-# process without waiting for slower required workers. Full /health is still
-# observed below, but does not create an avoidable CLI outage during warmup.
-_waited=0
-while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
-  _proxy_listener_ready && break
-  sleep 1
-  _waited=$((_waited + 1))
-done
-
-if _proxy_listener_ready; then
-  _LISTENER_PID="$(_port_listener_pids | head -1)"
-  echo "[proxy-restart] proxy listener ready after ${_waited}s (pid=${_LISTENER_PID:-unknown})" >&2
-  if ! _assert_runtime_matches_listener "$_LISTENER_PID" "$_EXPECTED_SHA"; then
-    echo "[proxy-restart] ERROR: runtime metadata does not match the active listener/expected checkout" >&2
+  _waited=0
+  while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
+    _proxy_listener_ready && break
+    sleep 1
+    _waited=$((_waited + 1))
+  done
+  if ! _proxy_listener_ready; then
+    echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
+    echo "[proxy-restart]   tail $PROJECT_ROOT/log/hme-proxy.out for diagnostics" >&2
     exit 1
   fi
-else
-  echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
-  echo "[proxy-restart]   tail $PROJECT_ROOT/log/hme-proxy.out for diagnostics" >&2
-  exit 1
-fi
+  echo "[proxy-restart] proxy listener ready after ${_waited}s" >&2
 
 # 9. Full bundle health gate is bounded and informational. It should usually
 # turn green after worker warmup, but reload success is listener-readiness.
@@ -331,6 +257,13 @@ if _port_healthy "$PROXY_HEALTH_URL"; then
   echo "[proxy-restart] proxy bundle healthy after ${_health_waited}s" >&2
 else
   echo "[proxy-restart] WARN: proxy bundle not fully healthy within ${PROXY_STARTUP_TIMEOUT}s; listener remains ready, supervisor continues warmup" >&2
+fi
+
+# Restart the supervisor since the proxy is now up.
+if [ -f "$_SUPERVISOR_SCRIPT" ]; then
+  echo "[proxy-restart] restarting proxy supervisor..." >&2
+  nohup bash "$_SUPERVISOR_SCRIPT" start >> "$PROJECT_ROOT/log/hme-proxy-lifecycle.log" 2>&1 < /dev/null &
+  disown 2>/dev/null || true
 fi
 
 # 10. Worker comes up async (proxy supervises it). Report status.

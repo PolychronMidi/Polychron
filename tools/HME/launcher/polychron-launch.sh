@@ -118,7 +118,7 @@ else
   cd "$PROJECT_ROOT"
   HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
     setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
-      > "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
+      >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
   _PROXY_PID=$!
   disown 2>/dev/null || true
   _record_pid "$PROXY_PID_LABEL" "$_PROXY_PID"
