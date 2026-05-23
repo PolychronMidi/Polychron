@@ -1,6 +1,6 @@
 'use strict';
 
-const { servicePort, resolver } = require('./contexts/upstream_dispatch');
+const { servicePort, resolver } = require('./upstream');
 
 function targetChain(body, directUrl, loadConfig, env = process.env) {
   return resolver.codexTargetChain({ body, upstreamUrl: directUrl, cfg: loadConfig(), env, servicePort });

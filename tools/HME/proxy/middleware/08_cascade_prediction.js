@@ -25,7 +25,7 @@
 
 const http = require('http');
 const path = require('path');
-const { servicePort } = require('../contexts/upstream_dispatch');
+const { servicePort } = require('../service_registry');
 
 const WORKER_PORT = servicePort('worker');
 

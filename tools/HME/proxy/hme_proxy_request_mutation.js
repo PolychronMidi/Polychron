@@ -4,7 +4,7 @@ const { sessionKey, emit, PROJECT_ROOT } = require('./shared');
 const {
   isPassthroughMode,
   routeDecision,
-} = require('./contexts/upstream_dispatch');
+} = require('./upstream');
 const { shouldInject, consumeStatusContext, buildJurisdictionContext, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');

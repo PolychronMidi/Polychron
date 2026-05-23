@@ -25,7 +25,7 @@
  */
 
 const http = require('http');
-const { servicePort } = require('../contexts/upstream_dispatch');
+const { servicePort } = require('../service_registry');
 
 const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
 const WORKER_PORT = servicePort('worker');

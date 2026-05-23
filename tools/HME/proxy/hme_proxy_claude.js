@@ -11,7 +11,7 @@ const { applyOverdriveRoute } = require('./overdrive_route');
 const {
   handleLegacySwapResponse,
   handleAnthropicResponseComplete,
-} = require('./contexts/response_transform');
+} = require('./hme_proxy_anthropic_response');
 const middleware = require('./middleware');
 function mutateClaudeRequest(...args) {
   return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
