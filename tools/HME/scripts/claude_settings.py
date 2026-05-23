@@ -29,7 +29,8 @@ REQUIRED_EVENTS = (
     "PostCompact",
     "Stop",
 )
-CODEX_MATCHER_STAR_EVENTS = ("PreToolUse", "PostToolUse")
+CODEX_MATCHER_STAR_EVENTS = ("PreToolUse", "PostToolUse", "PermissionRequest")
+CODEX_ADAPTER_SUBSTITUTION = ("claude_adapter.js", "codex_adapter.js")
 LEGACY_COMMAND_FRAGMENTS = (
     "_proxy_bridge.sh",
     "/hooks/statusline.sh",
