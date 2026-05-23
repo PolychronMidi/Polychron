@@ -15,7 +15,9 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 HOOKS_JSON = PROJECT_ROOT / "tools" / "HME" / "hooks" / "hooks.json"
+CODEX_EXTENSIONS_JSON = PROJECT_ROOT / "tools" / "HME" / "hooks" / "codex-extensions.json"
 SETTINGS_PATH = Path.home() / ".claude" / "settings.json"
+CODEX_SETTINGS_PATH = Path.home() / ".codex" / "hooks.json"
 PLUGIN_ROOT_VAR = "${CLAUDE_PLUGIN_ROOT}"
 STATUSLINE_EVENT = "StatusLine"
 REQUIRED_EVENTS = (
@@ -27,6 +29,7 @@ REQUIRED_EVENTS = (
     "PostCompact",
     "Stop",
 )
+CODEX_MATCHER_STAR_EVENTS = ("PreToolUse", "PostToolUse")
 LEGACY_COMMAND_FRAGMENTS = (
     "_proxy_bridge.sh",
     "/hooks/statusline.sh",
