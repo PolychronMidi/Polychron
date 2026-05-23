@@ -12,8 +12,10 @@ const {
   handleLegacySwapResponse,
   handleAnthropicResponseComplete,
 } = require('./contexts/response_transform');
-const requestMutationCtx = require('./hme_proxy_request_mutation');
-const { middleware, mutateClaudeRequest } = requestMutationCtx;
+const { middleware } = require('./middleware');
+function mutateClaudeRequest(...args) {
+  return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
+}
 const {
   createProxyRouteDispatcher,
   lifecycleBridge: _lifecycleBridgeModule,
@@ -42,7 +44,7 @@ const {
   blockTodoWriteOnlyProbe,
   blockStructuredOutputsProbe,
   blockNoopSystemReminderTurn,
-} = requestMutationCtx;
+} = require('./prompt_spam_guard');
 
 function lifecycleBridge() {
   return _lifecycleBridgeModule;
