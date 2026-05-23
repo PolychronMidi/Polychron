@@ -74,9 +74,24 @@ function dispatchAudit(args) {
 }
 
 function dispatchStatus(args) {
-  const local = ['state', 'timeline', 'holograph', 'substrate', 'team', 'project', 'project-detect', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns', 'codex-route', 'codex_proxy', 'codex-proxy'];
+  const local = ['state', 'timeline', 'holograph', 'substrate', 'activity', 'team', 'project', 'project-detect', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns', 'codex-route', 'codex_proxy', 'codex-proxy'];
   const { mode, rest } = selector(args, local);
   if (!mode && args.length === 0) run('python3', [path.join(ROOT, 'tools/HME/scripts/substrate-view.py'), 'brief']);
+  if (mode === 'activity') {
+    run('bash', ['-lc', `
+      set +e
+      printf '== git ==\\n'
+      git -C "$PROJECT_ROOT" status --porcelain=v1
+      printf '\\n== load ==\\n'
+      uptime
+      printf '\\n== selected HME process counts ==\\n'
+      pgrep -af '/tools/HME/(activity/universal_pulse.py|hooks/direct/universal-pulse-supervisor.sh|scripts/(snapshot-holograph|verify-coherence|verify-doc-sync|verify-numeric-drift|compact-lance-tables|analyze-hci-trajectory|detectors/test_detector_chain))|server.tools_analysis.todo import list_carried_over' | wc -l
+      printf '\\n== top selected HME processes ==\\n'
+      pgrep -af '/tools/HME/(activity/universal_pulse.py|hooks/direct/universal-pulse-supervisor.sh|scripts/(snapshot-holograph|verify-coherence|verify-doc-sync|verify-numeric-drift|compact-lance-tables|analyze-hci-trajectory|detectors/test_detector_chain))|server.tools_analysis.todo import list_carried_over' | sed -n '1,80p'
+      printf '\\n== top cpu ==\\n'
+      ps -eo pid,ppid,stat,pcpu,pmem,cmd --sort=-pcpu | head -25
+    `]);
+  }
   const r = rest.map((a) => a.startsWith('submode=') || a.startsWith('view=') ? `mode=${a.split('=').slice(1).join('=')}` : a === 'brief=true' ? 'mode=brief' : a === 'trajectory=true' ? 'mode=trajectory' : a.startsWith('pattern=') ? a.slice(8) : a);
   const py = {
     state: 'tools/HME/scripts/state-panel.py',
