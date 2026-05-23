@@ -179,6 +179,28 @@ def _command_key(cmd: str) -> str:
     return (cmd or "").replace("\r\n", "\n").strip()
 
 
+def _strip_runner_prefixes(tokens: list[str]) -> list[str]:
+    """Skip transparent runner prefixes (timeout/nice/env) so the family is
+    detected on the actual interpreter, not the wrapper."""
+    i = 0
+    while i < len(tokens):
+        t = tokens[i]
+        if t == "timeout" and i + 1 < len(tokens):
+            i += 2
+            continue
+        if t == "nice" and i + 1 < len(tokens) and tokens[i + 1] == "-n" and i + 2 < len(tokens):
+            i += 3
+            continue
+        if t == "env":
+            j = i + 1
+            while j < len(tokens) and "=" in tokens[j]:
+                j += 1
+            i = j
+            continue
+        break
+    return tokens[i:]
+
+
 def _command_family(cmd: str) -> str:
     key = _command_key(cmd)
     if not key:
@@ -188,7 +210,7 @@ def _command_family(cmd: str) -> str:
         return "python-heredoc"
     if first.startswith("node - <<"):
         return "node-heredoc"
-    tokens = first.split()
+    tokens = _strip_runner_prefixes(first.split())
     if len(tokens) >= 3 and tokens[0] == "node" and tokens[1] == "--test":
         return "node-test"
     if len(tokens) >= 2 and tokens[0] == "node" and tokens[1] == "-c":
