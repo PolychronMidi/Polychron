@@ -76,7 +76,7 @@ function evaluateReadInput(input = {}, opts = {}) {
   if (isTimeOrdered(rel)) {
     const rewritten = autoTailRewrite(input, file);
     if (rewritten) {
-      return { decision: 'allow', input: rewritten, changed: true, reason: `auto-tail: ${rel} is time-ordered; offset=${rewritten.offset} so Read(limit=${input.limit}) returns the latest rows instead of the stalest.` };
+      return { decision: 'allow', input: rewritten, changed: true };
     }
   }
   if (cfg) {
