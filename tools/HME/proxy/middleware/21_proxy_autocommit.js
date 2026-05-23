@@ -199,8 +199,14 @@ function _attemptCommit(root, caller) {
   if (r.status === 0) { _recordSuccess(root); return; }
   combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
-  _recordFailure(root, caller,
-    `git commit failed twice: ${(combined || 'unknown').slice(0, 300)}`);
+  // When the pre-commit hook rejects, git often funnels its stderr away from
+  // spawn's pipe (the hook runs in its own process group). Re-run
+  // precommit_validate.py directly so the actual blocker (file:line + reason)
+  // lands in autocommit.fail + hme-errors.log instead of 'unknown'.
+  const precommitDetail = _capturePrecommitFailures(root);
+  const head = (combined || '').trim().slice(0, 300) || 'no git stderr';
+  const tail = precommitDetail ? ` | precommit: ${precommitDetail}` : '';
+  _recordFailure(root, caller, `git commit failed twice: ${head}${tail}`);
 }
 
 module.exports = {
