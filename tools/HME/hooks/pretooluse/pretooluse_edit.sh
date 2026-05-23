@@ -279,7 +279,7 @@ if [ -n "$_MODULE_BASE" ]; then
   mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
   _RANGE="0 0"
   if [ -n "$FILE" ] && [ -f "${PROJECT_ROOT}/tools/HME/scripts/edit_range.js" ]; then
-    _RANGE=$(printf '%s' "$INPUT" | _safe_jq_stdin '.tool_input' 2>/dev/null \
+    _RANGE=$(printf '%s' "$INPUT" | jq -c '.tool_input' 2>/dev/null \
              | node "${PROJECT_ROOT}/tools/HME/scripts/edit_range.js" 2>/dev/null || echo "0 0")
     case "$_RANGE" in ''|*[!0-9\ ]*) _RANGE="0 0" ;; esac
   fi
