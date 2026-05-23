@@ -10,8 +10,8 @@ const STOP_SECTION_RE = /\n?\s*---\s*\[\d+\/\d+\]\s+[A-Z_ -]+\s*---[\s\S]{0,2500
 const STOP_POLICY_RE = /\b(?:MULTI-FLAG STOP|EXHAUST PROTOCOL VIOLATION|SPIRALLING_PETULANCE|AUTO-COMPLETENESS CHECK|UNFINISHED TASK-LIST VIOLATION|PLAN-ABANDONMENT DETECTED|STOP-WORK ANTIPATTERN)\b/i;
 const STOP_DIRECTIVE_RE = /\b(?:Stop answering the gate|concrete corrective action|repeated failed Reads|modify the target file\/state|verify it, then stop|enumerated item must be fixed|silence is the correct response|Resume and implement)\b/i;
 const RAN_STOP_HOOK_LINE_RE = /^\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook\s*$/i;
-const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
-const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>\-]*\s*)?Stop hook error:/i;
+const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
+const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>-]*\s*)?Stop hook error:/i;
 const NATIVE_EDIT_ERROR_PHRASE_RE = new RegExp([
   ['File has not', 'been read yet'].join(' '),
   ['Read it first', 'before writing to it'].join(' '),
