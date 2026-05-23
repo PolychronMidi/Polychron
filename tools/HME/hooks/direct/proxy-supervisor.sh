@@ -177,6 +177,25 @@ _sv_wait_bundle_healthy() {
   return 1
 }
 
+_sv_spawn_rate_limit_ok() {
+  # Returns 0 when a new spawn is permitted (>= _SV_SPAWN_MIN_INTERVAL_S
+  # since the last attempt), 1 when the caller must back off.
+  local now last delta
+  now=$(date +%s 2>/dev/null || echo 0)
+  last=$(cat "$_SV_LAST_SPAWN_FILE" 2>/dev/null)
+  case "$last" in
+    ''|*[!0-9]*) last=0 ;;
+  esac
+  delta=$((now - last))
+  if [ "$last" -gt 0 ] && [ "$delta" -lt "$_SV_SPAWN_MIN_INTERVAL_S" ]; then
+    _sv_log "spawn-rate ceiling: only ${delta}s since last spawn (<${_SV_SPAWN_MIN_INTERVAL_S}s); refusing"
+    return 1
+  fi
+  mkdir -p "$(dirname "$_SV_LAST_SPAWN_FILE")" 2>/dev/null
+  printf '%s\n' "$now" > "$_SV_LAST_SPAWN_FILE" 2>/dev/null
+  return 0
+}
+
 _sv_spawn_proxy() {
   if [ ! -f "$_SV_PROXY_SCRIPT" ]; then
     _sv_log "spawn aborted: $_SV_PROXY_SCRIPT missing"
@@ -184,6 +203,9 @@ _sv_spawn_proxy() {
   fi
   if ! command -v node >/dev/null 2>&1; then
     _sv_log "spawn aborted: node not on PATH"
+    return 1
+  fi
+  if ! _sv_spawn_rate_limit_ok; then
     return 1
   fi
   HME_PROXY_PORT="$_SV_PORT" PROJECT_ROOT="$_SV_ROOT" \
