@@ -45,7 +45,7 @@ function removeTurnEdit(root, file) {
   } catch (_err) { /* no state yet */ }
 }
 
-function contextWindow(root, file, oldString = '', newString = '', reason = 'edit failed') {
+function contextWindow(root, file, oldString = '', newString = '', _reason = 'edit failed') {
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
     return { text: `\n[READ current context unavailable: ${relPath(file, root)} is not a readable file]`, readable: false };
   }
