@@ -26,6 +26,12 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Load .env strictly BEFORE importing capture modules; downstream modules
+# (and the verify_coherence package they invoke) use os.environ['KEY']
+from _env_loader import load_env  # noqa: E402
+load_env()
+
 from snapshot_holograph_capture import (  # noqa: E402
     METRICS_DIR, _PROJECT,
     capture_audit_state, capture_codebase, capture_git_state,
