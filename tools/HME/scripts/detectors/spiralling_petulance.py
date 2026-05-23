@@ -196,24 +196,17 @@ def _command_family(cmd: str) -> str:
     return ""
 
 
-_IDEMPOTENT_DIAGNOSTIC_FAMILIES = {"i-dispatch"}
-
-
 def _is_distinct_diagnostic_repeat(current: str, previous: str) -> bool:
     """Allow same diagnostic family with changed payload.
 
     Repeating a literal command is often spam. Repeating the same interpreter
     wrapper with different embedded code/test targets is normal debugging.
-    Families in _IDEMPOTENT_DIAGNOSTIC_FAMILIES (i/status etc.) return
-    different data on every call, so even literal repeats are allowed.
     """
     cur_key = _command_key(current)
     prev_key = _command_key(previous)
-    if not cur_key or not prev_key:
+    if not cur_key or not prev_key or cur_key == prev_key:
         return False
     cur_family = _command_family(cur_key)
-    if cur_key == prev_key:
-        return cur_family in _IDEMPOTENT_DIAGNOSTIC_FAMILIES
     return bool(cur_family and cur_family == _command_family(prev_key))
 
 
