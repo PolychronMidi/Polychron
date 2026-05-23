@@ -40,7 +40,7 @@ const { slopStripRewrite } = require('./sse_slop_rewriter');
 
 const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);
-const READ_TOOL_NAMES = new Set(['Read']);
+const _READ_TOOL_NAMES = new Set(['Read']);
 
 function _buildSpawnCommand(originalCmd, description) {
   const payload = JSON.stringify({
