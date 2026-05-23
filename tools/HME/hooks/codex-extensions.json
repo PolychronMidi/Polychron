@@ -1,0 +1,17 @@
+{
+  "description": "Codex-only hook events appended to the canonical hooks.json projection. PermissionRequest is a Codex CLI lifecycle that Claude Code does not emit; everything else (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PreCompact, PostCompact, Stop) is projected from tools/HME/hooks/hooks.json with the codex_adapter binary substituted.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/codex_adapter.js PermissionRequest",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
