@@ -179,10 +179,10 @@ async function main() {
     fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'claude-context.json'), JSON.stringify(out));
     maybeSnapshot(root, usedPct);
     const label = model.display_name || model.id || '';
-    const lifesaver = autocompactLifesaver(root, data);
-    process.stdout.write(`ctx:${remainingPct}%${label ? ` | ${label}` : ''}${latestClassifier(root)}${lifesaver}\n`);
-    if (lifesaver) {
-      process.stderr.write(`LIFESAVER! autocompact widget is being fed wrong context% -- see log/hme-lifesaver.log${lifesaver}\n`);
+    const lifesaver = autocompactLifesaver(root, data, trueSize);
+    process.stdout.write(`ctx:${remainingPct}%${label ? ` | ${label}` : ''}${latestClassifier(root)}${sizeAlert}${lifesaver}\n`);
+    if (sizeAlert || lifesaver) {
+      process.stderr.write(`LIFESAVER! autocompact widget is being fed wrong context% -- see log/hme-lifesaver.log${sizeAlert}${lifesaver}\n`);
     }
   } catch (_e) {
     // silent-ok: optional fallback path.
