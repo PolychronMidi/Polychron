@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const _os = require('os');
 const { PROJECT_ROOT } = require('./shared');
 
 const REGISTRY = new Map();
