@@ -110,7 +110,7 @@ const REASONS = {
     "AUTO-COMPLETENESS CHECK (round 2/2 -- safety net): Last pass. If genuine substantive work remains, do it. If complete, the next response may be empty or just the fp-gate marker when prompted. No 'Nothing missed' boilerplate required.",
 };
 
-const ENFORCEMENT_REMINDER =
+const _ENFORCEMENT_REMINDER =
   'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.';
 
 // anti-fork-begin: hook-inject-prefixes min=7
