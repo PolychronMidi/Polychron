@@ -208,7 +208,47 @@ function claudeRelayFields(event, result) {
   return { stdout, stderr, exit_code: code };
 }
 
+
+function extractFirstJsonDocument(text) {
+  const src = String(text || '').trim();
+  if (!src) return '';
+  const start = src.search(/[\[{]/);
+  if (start < 0) return '';
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  const open = src[start];
+  const close = open === '{' ? '}' : ']';
+  for (let i = start; i < src.length; i += 1) {
+    const ch = src[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === '\\') escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === open) depth += 1;
+    else if (ch === close) {
+      depth -= 1;
+      if (depth === 0) return src.slice(start, i + 1);
+    }
+  }
+  return '';
+}
+
+function normalizeClaudeHookJsonStdout(rawStdout) {
+  const doc = extractFirstJsonDocument(rawStdout);
+  if (!doc) return '{}';
+  try {
+    return `${JSON.stringify(JSON.parse(doc))}\n`;
+  } catch (_) {
+    return '{}';
+  }
+}
+
 module.exports = {
+  normalizeClaudeHookJsonStdout,
   parseJson,
   unsupportedCodexPreToolDecision,
   sanitizeHookSpecific,

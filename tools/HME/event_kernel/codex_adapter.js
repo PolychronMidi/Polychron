@@ -72,6 +72,37 @@ function normalizeCodexHookStdout(event, stdout) {
   return `${JSON.stringify(doc)}\n`;
 }
 
+
+function adapterExtractFirstJson(text) {
+  const src = String(text || '').trim();
+  const start = src.search(/[\[{]/);
+  if (start < 0) return '{}';
+  let depth = 0, inString = false, escape = false;
+  const open = src[start];
+  const close = open === '{' ? '}' : ']';
+  for (let i = start; i < src.length; i += 1) {
+    const ch = src[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === '\\') escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === open) depth += 1;
+    else if (ch === close && --depth === 0) {
+      try { return `${JSON.stringify(JSON.parse(src.slice(start, i + 1)))}\n`; }
+      catch (_) { return '{}'; }
+    }
+  }
+  return '{}';
+}
+
+function enforceClaudeJsonStdout(event, stdout) {
+  if (event !== 'UserPromptSubmit' && event !== 'SessionStart') return stdout;
+  return adapterExtractFirstJson(stdout);
+}
+
 async function main() {
   const event = process.argv[2] || 'unknown';
   await runHostAdapter({
