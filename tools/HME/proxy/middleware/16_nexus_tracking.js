@@ -17,7 +17,7 @@ function _isTrackedPath(fp) {
 module.exports = {
   name: 'nexus_tracking',
 
-  onToolResult({ toolUse, toolResult, ctx }) {
+  onToolResult({ toolUse, toolResult: _toolResult, ctx }) {
     const name = toolUse.name || '';
     const input = toolUse.input || {};
     const fp = input.file_path || input.path || '';
