@@ -16,9 +16,7 @@ const { middleware } = require('./middleware');
 function mutateClaudeRequest(...args) {
   return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
 }
-const {
-  lifecycleBridge: _lifecycleBridgeModule,
-} = require('./lifecycle_bridge');
+const lifecycleBridge = require('./lifecycle_bridge');
 const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
 const {
   handleMidResponseError,
@@ -46,9 +44,6 @@ const {
   blockNoopSystemReminderTurn,
 } = require('./prompt_spam_guard');
 
-function lifecycleBridge() {
-  return _lifecycleBridgeModule;
-}
 
 function createClaudeHandler(deps) {
   const {
@@ -80,7 +75,7 @@ function createClaudeHandler(deps) {
     routeMetrics: _routeMetrics,
     stopGateHealth: _stopGateHealth,
     loadedMiddleware,
-    handleLifecycleRoute: (req, res) => lifecycleBridge().handleLifecycleRoute(req, res),
+    handleLifecycleRoute: (req, res) => lifecycleBridge.handleLifecycleRoute(req, res),
   });
 
   function handleRequest(clientReq, clientRes) {
@@ -201,8 +196,8 @@ function createClaudeHandler(deps) {
         injectHmeTools: _injectHmeTools,
         sanitizePayload: _sanitizePayload,
         injectStopReminderSystem: _injectStopReminderSystem,
-        lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge().lifecycleInactive(event)),
-        runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson)),
+        lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge.lifecycleInactive(event)),
+        runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge.runInlineFallback(event, stdinJson)),
         middleware,
       });
       outBody = mutation.outBody;
@@ -312,8 +307,8 @@ function createClaudeHandler(deps) {
               omniContextThresholdBytes,
               injectContextHeader: _injectContextHeader,
               anthropicTextSseBuffer: _anthropicTextSseBuffer,
-              lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge().lifecycleInactive(event)),
-              runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson)),
+              lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge.lifecycleInactive(event)),
+              runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge.runInlineFallback(event, stdinJson)),
               skipStopFallback: deps.skipStopFallback === true,
             });
           } catch (fatalErr) {

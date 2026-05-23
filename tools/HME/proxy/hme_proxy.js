@@ -31,10 +31,8 @@ const { sessionKey } = require('./shared');
 const {
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
-const {
-  buildJurisdictionContext,
-  scanMessages,
-} = require('./contexts/request_mutation');
+const { buildJurisdictionContext } = require('./context');
+const { scanMessages } = require('./messages');
 const { servicePort } = require('./service_registry');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createContextBudget } = require('./hme_proxy_context_budget');
@@ -82,7 +80,7 @@ let loadedMiddleware = null;
 let handleRequest = null;
 function getHandleRequest() {
   if (handleRequest) return handleRequest;
-  const { middleware } = require('./contexts/request_mutation');
+  const { middleware } = require('./middleware');
   const { createClaudeHandler } = require('./hme_proxy_claude');
   loadedMiddleware = middleware.loadAll();
   if (process.env.HME_PROXY_QUIET_IMPORT !== '1') console.log(`loaded middleware: ${loadedMiddleware.join(', ')}`);
@@ -139,13 +137,19 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
 } else if (process.argv.includes('--test')) {
   runTestMode();
 } else {
-    if (SUPERVISE) supervisor.start();
-  else supervisor.installShutdownHandlers();
   const server = http.createServer(getHandleRequest());
   supervisor.registerServer(server);
   let listenFallbackTried = false;
+  let lifecycleStarted = false;
+  const startLifecycle = () => {
+    if (lifecycleStarted) return;
+    lifecycleStarted = true;
+    if (SUPERVISE) supervisor.start();
+    else supervisor.installShutdownHandlers();
+  };
   const announceListen = (hostLabel) => {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
+    startLifecycle();
     emitStartMarker('hme_proxy', { port: PORT, git: PROXY_GIT_SHA });
     console.log(`hme-proxy listening on ${hostLabel}`);
     console.log(`  Anthropic upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT}`);
@@ -153,11 +157,22 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
     if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
   };
   server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      probeExistingProxyOnAddrInUse(PORT, (ok) => {
+        if (ok) {
+          console.log(`hme-proxy already listening on port ${PORT}; reusing existing listener`);
+          process.exit(0);
+        }
+        proxyRouteMetrics.recordError(err);
+        console.error('listen error:', err.message);
+        process.exit(1);
+      });
+      return;
+    }
     if (!listenFallbackTried && ['EAFNOSUPPORT', 'EINVAL'].includes(err.code)) {
       listenFallbackTried = true;
       console.warn(`Acceptable warning: listen warning: IPv6 dual-stack unavailable (${err.code}); falling back to 127.0.0.1`);
       server.listen(PORT, '127.0.0.1', () => {
-  if (SUPERVISE) supervisor.start();
         try { writeRuntimeMetadata(); } catch (metaErr) { logRuntimeMetadataFailure(metaErr); }
         announceListen(`http://127.0.0.1:${PORT}`);
       });
