@@ -107,12 +107,12 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i\s+have|my|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|you|your|our|right|okay|hmm|was|has|need|too|also|needs|is|the|but|now|that|then|agreed|implement|implementing|continuing|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i\s+have|my|me|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|you|your|our|right|okay|hmm|was|has|need|too|also|needs|is|the|but|now|that|then|agreed|implement|implementing|continuing|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
   {
     name: 'caveman_abbreviations',
     // Matches common words, tech terms, and long vocabulary for heavy token/space saving.
-    re: /\b(in\s+order\s+to|as\s+well\s+as|for\s+the\s+purpose\s+of|with\s+respect\s+to|in\s+terms\s+of|at\s+the\s+present\s+time|due\s+to\s+the\s+fact\s+that|by\s+means\s+of|on\s+the\s+other\s+hand|in\s+light\s+of\s+the\s+fact\s+that|without|with|between|before|amount|because|and|into|to\s|acknowledged|approximately|characteristically|chronologically|collaboratively|communication|communications|consequently|demonstration|demonstrations|dissemination|ecclesiastical|enthusiastically|environmentally|identification|implementation|implementations|inappropriately|indistinguishable|infrastructure|institutionalized|metaphorically|microarchitecture|misunderstanding|misunderstandings|multi-threading|operationalization|particularization|professionalism|recommendation|recommendations|representative|representatives|responsibility|responsibilities|revolutionary|specifications|specification|synchronization|synchronizations|transformation|transformations|uncharacteristically|unconditionally|understandable|maintenance|system|diagnosing|diagnose|command|information|application|applications|configuration|configurations|repository|repositories|environment|environments|developer|developers|development|management|organization|organizations|architecture|architectures|performance|parameters|parameter|temporary|version|versions)([.!?,;:]?)/gi,
+    re: /\b(in\s+order\s+to|as\s+well\s+as|for\s+the\s+purpose\s+of|with\s+respect\s+to|in\s+terms\s+of|at\s+the\s+present\s+time|due\s+to\s+the\s+fact\s+that|by\s+means\s+of|on\s+the\s+other\s+hand|in\s+light\s+of\s+the\s+fact\s+that|without|with|between|before|amount|because|and|into|to\s|acknowledged|why|in|complete|completed|approximately|characteristically|chronologically|collaboratively|communication|communications|consequently|demonstration|demonstrations|dissemination|ecclesiastical|enthusiastically|environmentally|identification|implementation|implementations|inappropriately|indistinguishable|infrastructure|institutionalized|metaphorically|microarchitecture|misunderstanding|misunderstandings|multi-threading|operationalization|particularization|professionalism|recommendation|recommendations|representative|representatives|responsibility|responsibilities|revolutionary|specifications|specification|synchronization|synchronizations|transformation|transformations|uncharacteristically|unconditionally|understandable|maintenance|system|diagnosing|diagnose|command|information|application|applications|configuration|configurations|repository|repositories|environment|environments|developer|developers|development|management|organization|organizations|architecture|architectures|performance|parameters|parameter|temporary|version|versions)([.!?,;:]?)/gi,
     repl: (_match, word, punct = '') => {
       const compactMap = {
         'in order to': 'to',
@@ -135,6 +135,10 @@ const _SLOP_PATTERNS = [
         'into': '2',
         'to': '-',
         'acknowledged': 'k',
+        'why': 'y',
+        'in': 'n',
+        'complete': 'done',
+        'completed': 'done',
 
         // Long Vocabulary Concordance
         'approximately': '~',
