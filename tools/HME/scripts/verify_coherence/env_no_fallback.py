@@ -107,10 +107,11 @@ def _scan_file(path: Path, declared_keys: "set[str]") -> "list[str]":
 class EnvNoFallbackVerifier(Verifier):
     """Enforce: required .env keys are accessed strictly; no `.get(...)` at all."""
 
-    name = "env_no_fallback"
+    name = "env-no-fallback"
     category = "code"
+    subtag = "interface-contract"
 
-    def verify(self) -> VerdictResult:
+    def run(self) -> VerdictResult:
         declared = _declared_env_keys(_TEMPLATE)
         if not declared:
             return failed(
