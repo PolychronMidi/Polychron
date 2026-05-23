@@ -18,7 +18,16 @@ function mutateClaudeRequest(...args) {
   //       -> overdrive_route -> hme_proxy_claude.
   return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
 }
-const lifecycleBridge = require('./lifecycle_bridge');
+const _lifecycleBridgeRaw = require('./lifecycle_bridge');
+// Fail-loud at require time if the bridge regressed back into a cycle and
+// resolved to undefined / missing exports. Either case would cause runtime
+if (!_lifecycleBridgeRaw
+    || typeof _lifecycleBridgeRaw.lifecycleInactive !== 'function'
+    || typeof _lifecycleBridgeRaw.runInlineFallback !== 'function') {
+  throw new Error('lifecycle_bridge import resolved without required exports'
+    + ' (likely a re-introduced circular dependency); refusing to boot proxy');
+}
+const lifecycleBridge = _lifecycleBridgeRaw;
 const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
 const {
   handleMidResponseError,
