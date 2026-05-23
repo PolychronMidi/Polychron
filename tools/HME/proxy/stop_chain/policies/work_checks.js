@@ -442,9 +442,9 @@ function scanUnfinishedTaskReminder(text) {
       else if (/UNFINISHED TASK-LIST VIOLATION|Open task evidence:|\{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
       else if (/^\d+\.\s*\d+:\[\d{4}-\d{2}-\d{2}T.*\[proxy-supervisor\]/.test(trimmed)) continue;
     }
-    if (/^\d+\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
-    if (/^stdout\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
-    if (/\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+    if (/^\d+\s+\{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+    if (/^stdout\s+\{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+    if (/\{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
     if (!/\b(in_progress|pending)\b/i.test(trimmed)) continue;
     if (!isStructuredTaskReminderLine(trimmed)) continue;
     hits.push(trimmed.slice(0, 240));
