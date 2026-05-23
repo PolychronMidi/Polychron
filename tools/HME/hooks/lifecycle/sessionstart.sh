@@ -140,8 +140,20 @@ MSG=""
 # Pipeline verdict + wall time
 PS="${METRICS_DIR}/pipeline-summary.json"
 if [ -f "$PS" ]; then
-  VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
-  WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
+  # Single python startup parses both fields (was 2 invocations, ~1s combined).
+  _PS_PARSE=$(PS="$PS" python3 -c "
+import json, os
+try:
+    d=json.load(open(os.environ['PS']))
+    v=d.get('verdict','') or ''
+    w=d.get('wallTimeSeconds',0)
+    ws=f'{w:.0f}s' if w else ''
+    print(v); print(ws)
+except Exception:
+    print(); print()
+" 2>/dev/null)
+  VERDICT=$(printf '%s\n' "$_PS_PARSE" | sed -n '1p')
+  WALL=$(printf '%s\n' "$_PS_PARSE" | sed -n '2p')
   [ -n "$VERDICT" ] && MSG="$MSG\nPipeline: $VERDICT${WALL:+ (${WALL})}"
 fi
 
