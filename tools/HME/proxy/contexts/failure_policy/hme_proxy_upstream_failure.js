@@ -155,7 +155,7 @@ async function retryOmniCredentialFailure({
       }
       const retryErr = _detectUpstreamFailure(retry.status, retry.headers, retry.fullBody);
       if (isOmniRouteCredentialFailure(retry.status, retryErr)) {
-        try { markRouteCooldown(route, `credential_failure_${retry.status}`, { ttlMs: 3_600_000, projectRoot }); } catch (_e) {}
+        try { markRouteCooldown(route, `credential_failure_${retry.status}`, { ttlMs: 3_600_000, projectRoot }); } catch (_e) { /* best effort */ }
       }
       emit({ event: 'omniroute_credential_failover', outcome: 'failed', status: retry.status, prior_route: failedRoute, route });
       console.error(`[hme-proxy] OmniRoute credential failover target failed: ${route} status=${retry.status}`);
