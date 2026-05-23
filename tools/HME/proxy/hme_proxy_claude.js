@@ -17,9 +17,9 @@ function mutateClaudeRequest(...args) {
   return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
 }
 const {
-  createProxyRouteDispatcher,
   lifecycleBridge: _lifecycleBridgeModule,
 } = require('./lifecycle_bridge');
+const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
 const {
   handleMidResponseError,
   handleConnectionError,
