@@ -122,7 +122,7 @@ _sv_is_maintenance_active() {
   [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
 }
 
-_sv_bundle_health_issue() {
+_sv_proxy_health_issue() {
   local http_code
   http_code=$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' "$_SV_URL" 2>/dev/null || echo 000)  # silent-ok: health probe may race proxy boot.
   if [ "$http_code" = "000" ]; then
@@ -136,6 +136,9 @@ _sv_bundle_health_issue() {
     echo "proxy runtime stale at $_SV_URL"
     return 0
   fi
+}
+
+_sv_child_health_issue() {
   local child_id child_url
   while read -r child_id child_url; do
     [ -n "$child_id" ] || continue
@@ -146,8 +149,19 @@ _sv_bundle_health_issue() {
   done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
 }
 
+_sv_bundle_health_issue() {
+  local issue
+  issue=$(_sv_proxy_health_issue)
+  [ -n "$issue" ] && { echo "$issue"; return 0; }
+  _sv_child_health_issue
+}
+
 _sv_bundle_healthy() {
   [ -z "$(_sv_bundle_health_issue)" ]
+}
+
+_sv_proxy_healthy() {
+  [ -z "$(_sv_proxy_health_issue)" ]
 }
 
 _sv_reload_marker_pending() {
