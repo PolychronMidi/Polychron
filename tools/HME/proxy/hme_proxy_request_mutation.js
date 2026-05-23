@@ -99,7 +99,8 @@ async function mutateClaudeRequest({
       }
       try {
         const mwDirtied = await middleware.runPipeline(payload, scan, session);
-        if (mwDirtied) bodyDirtiedByStrip = true;
+        const postMwSanitized = sanitizePayload(payload);
+        if (mwDirtied || postMwSanitized > 0) bodyDirtiedByStrip = true;
       } catch (err) {
         console.error('middleware pipeline error:', err.message);
       }
