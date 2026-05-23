@@ -202,7 +202,7 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
         return retry;
       }
       if (_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
-        try { markRouteCooldown(retryPayload.model, 'context_window_exceeded', { ttlMs: 300_000, projectRoot }); } catch (_e) {}
+        try { markRouteCooldown(retryPayload.model, 'context_window_exceeded', { ttlMs: 300_000, projectRoot }); } catch (_e) { /* best effort */ }
       }
       emit({ event: 'context_window_retry', outcome: 'failed', status: retry.status, route: retryPayload.model, prior_route: routeKey });
     } catch (err) {
