@@ -1,7 +1,7 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const _fs = require('fs');
+const _path = require('path');
 const { PROJECT_ROOT, loadModelsJson } = require('./shared');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, providerRequestOverrides, firstLegacyChatCandidate,
