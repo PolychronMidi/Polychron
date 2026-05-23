@@ -98,27 +98,37 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
     _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
   else
     {
+      # Mid-restart blip guard: if the runtime PID is alive, treat probe
+      # transient failures as `ok` rather than `down`. The proxy is owned by
+      # the supervisor; if its PID exists, the operator does NOT need to
+      _ss_runtime_pid_alive() {
+        local pid
+        pid=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("pid") or "")' \
+              "$PROJECT/tools/HME/runtime/proxy-runtime.json" 2>/dev/null || true)
+        [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+      }
+      _ss_probe_once() {
+        curl -s --max-time 3 --retry 1 --retry-delay 0 -o /dev/null \
+             -w '%{http_code}' "http://127.0.0.1:${PROXY_PORT}/health" 2>/dev/null \
+          | grep -qE '^[1-5][0-9][0-9]$'
+      }
       if command -v flock >/dev/null 2>&1 && flock -n 198 2>/dev/null; then
         if _ss_probe_fresh; then
           _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
         else
-          if curl -s --max-time 3 --retry 1 --retry-delay 0 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PROXY_PORT}/health" 2>/dev/null | grep -qE '^[1-5][0-9][0-9]$'; then
-            _ss_probe_status=ok
-          else
-            _ss_probe_status=down
+          if _ss_probe_once; then _ss_probe_status=ok
+          elif _ss_runtime_pid_alive; then _ss_probe_status=ok
+          else _ss_probe_status=down
           fi
           printf '%s\n' "$_ss_probe_status" > "$_SS_PROBE_RESULT" 2>/dev/null
         fi
       else
-        # Couldn't acquire lock; another hook is probing. Brief wait for
-        # the cache to land, then read it (or fall back to a direct probe).
         sleep 0.2
         if _ss_probe_fresh; then
           _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
-        elif curl -s --max-time 3 --retry 1 --retry-delay 0 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PROXY_PORT}/health" 2>/dev/null | grep -qE '^[1-5][0-9][0-9]$'; then
-          _ss_probe_status=ok
-        else
-          _ss_probe_status=down
+        elif _ss_probe_once; then _ss_probe_status=ok
+        elif _ss_runtime_pid_alive; then _ss_probe_status=ok
+        else _ss_probe_status=down
         fi
       fi
     } 198>"$_SS_PROBE_LOCK"
