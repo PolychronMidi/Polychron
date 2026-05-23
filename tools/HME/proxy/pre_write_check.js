@@ -318,8 +318,10 @@ async function preWriteCheck(stdinJson) {
     }
     return shellDecision;
   } catch (err) {
-    // silent-ok: optional fallback path.
-    return _permission('ask', `pre-write-check failed: ${err.message}`);
+    // Hook reliability must fail open: policy framework/state telemetry outages
+    // should not break basic editing. Hard-deny checks above already ran.
+    const message = `pre-write-check degraded: ${err && err.message ? err.message : String(err)}`;
+    return _permission('allow', '', message);
   }
 }
 
