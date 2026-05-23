@@ -31,7 +31,7 @@ function autoTailRewrite(input, file) {
   return { ...input, offset: lines - limit };
 }
 
-function permission(decision, reason = '') { return { decision, reason }; }
+function _permission(decision, reason = '') { return { decision, reason }; }
 function relPath(file, root = PROJECT_ROOT) {
   const f = String(file || '');
   return root && f.startsWith(root + '/') ? f.slice(root.length + 1) : f.replace(/^\.\//, '');
