@@ -136,7 +136,7 @@ function _validateToolInput(name, input) {
 }
 
 function executeToolUse(use, opts) {
-  const root = (opts && opts.projectRoot) || PROJECT_ROOT;
+  const _root = (opts && opts.projectRoot) || PROJECT_ROOT;
   if (use.name === 'Bash') {
     const result = runBashTool(use.input);
     return { type: 'tool_result', tool_use_id: use.id, content: toolOutput(result) };
