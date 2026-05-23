@@ -582,7 +582,7 @@ module.exports = {
     if (!transcriptPath) {
       try {
         transcriptPath = fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-transcript-path.txt'), 'utf8').trim();
-      } catch(_) {}
+      } catch(_) { /* transcript-path file may not exist yet */ }
     }
     const lastUserInfo = lastRealUserPrompt(transcriptPath);
     const { text: lastUser, turnIndex } = lastUserInfo;
