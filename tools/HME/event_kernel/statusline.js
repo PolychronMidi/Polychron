@@ -18,6 +18,40 @@ function projectRoot() {
   return _hmeRequireEnv('PROJECT_ROOT');
 }
 
+let _modelCtxCache = { mtimeMs: 0, map: null };
+function modelInputBudget(root, modelId) {
+  // Mirrors hme_proxy_context_budget.inputBudget; statusline must NOT trust
+  // Claude Code's claimed context_window_size, which often reports legacy
+  if (!modelId) return 0;
+  try {
+    const modelsPath = path.join(root, 'config', 'models.json');
+    const stat = fs.statSync(modelsPath);
+    if (!_modelCtxCache.map || stat.mtimeMs !== _modelCtxCache.mtimeMs) {
+      const text = fs.readFileSync(modelsPath, 'utf8');
+      const stripped = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+      const cfg = JSON.parse(stripped);
+      const map = new Map();
+      for (const tier of Object.values(cfg.tiers || {})) {
+        for (const m of tier.models || []) {
+          const input = Number(m.max_input_tokens);
+          const ctx = Number(m.context_length);
+          const output = Number(m.max_output_tokens);
+          let budget = 0;
+          if (Number.isFinite(input) && input > 0) budget = input;
+          else if (Number.isFinite(ctx) && ctx > 0) budget = (Number.isFinite(output) && output > 0 && ctx > output) ? ctx - output : ctx;
+          if (budget > 0 && m.id) map.set(String(m.id), budget);
+          if (budget > 0 && m.api_model) map.set(String(m.api_model), budget);
+        }
+      }
+      _modelCtxCache = { mtimeMs: stat.mtimeMs, map };
+    }
+    const reg = _modelCtxCache.map;
+    if (reg.has(modelId)) return reg.get(modelId);
+    for (const [k, v] of reg) if (modelId.includes(k)) return v;
+    return 0;
+  } catch (_e) { return 0; }
+}
+
 function autocompactLifesaver(root, raw) {
   // Fail-fast: Claude Code's "% until autocompact" widget is computed from
   // `anthropic-ratelimit-input-tokens-{limit,remaining}` headers. Upstream
