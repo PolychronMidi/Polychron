@@ -24,7 +24,7 @@ function _countLines(text) {
   return (text.match(/\n/g) || []).length + 1;
 }
 
-function onToolResult(toolResult, toolUse, sessionId) {
+function onToolResult(toolResult, toolUse, _sessionId) {
   if (!toolResult || toolUse?.name !== 'Read' || !toolResult.content) return;
   const now = Date.now();
   if (now - _lastReadAt > PER_TURN_RESET_MS) _turnLines = 0;
