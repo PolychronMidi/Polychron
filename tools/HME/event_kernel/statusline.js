@@ -153,12 +153,26 @@ async function main() {
     const data = JSON.parse(input);
     const ctx = data.context_window || {};
     const model = data.model || {};
-    const usedPct = Math.round(Number(ctx.used_percentage || 0));
-    const remainingPct = Math.round(Number(ctx.remaining_percentage || 0));
+    const claimedSize = Number(ctx.context_window_size || 0);
+    const usedTokens = Number(ctx.total_input_tokens || 0);
+    const modelId = String(model.id || model.api_model || '');
+    const registrySize = modelInputBudget(root, modelId);
+    // Trust registry over Claude Code's claim when registry has the model.
+    const trueSize = registrySize > 0 ? registrySize : claimedSize;
+    const usedPct = trueSize > 0 ? Math.round((usedTokens / trueSize) * 100) : Math.round(Number(ctx.used_percentage || 0));
+    const remainingPct = trueSize > 0 ? Math.max(0, 100 - usedPct) : Math.round(Number(ctx.remaining_percentage || 0));
+    let sizeAlert = '';
+    if (registrySize > 0 && claimedSize > 0 && claimedSize !== registrySize) {
+      _writeLifesaver(root, `Claude Code claims context_window_size=${claimedSize} for model=${modelId} but registry truth=${registrySize}; autocompact widget LYING (denominator wrong by ${(registrySize / claimedSize).toFixed(1)}x)`);
+      sizeAlert = ` | LIFESAVER!ctx-window:claim ${claimedSize} truth ${registrySize}`;
+    }
     const out = {
       used_pct: usedPct,
       remaining_pct: remainingPct,
-      size: Number(ctx.context_window_size || 0),
+      size: trueSize,
+      claimed_size: claimedSize,
+      registry_size: registrySize,
+      used_tokens: usedTokens,
       model_id: model.id || '',
       model_name: model.display_name || '',
     };
