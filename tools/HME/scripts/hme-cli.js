@@ -60,7 +60,22 @@ const CLI_VERSION = (() => {
 const HOST = serviceHost('worker');
 const PORT = servicePort('worker');
 // Timeouts removed per request: handled at lower layers
-const TIMEOUT_MS = 0;
+const TIMEOUT_MS = Math.max(1, Number(process.env.HME_CLI_TIMEOUT_MS || 8000));
+const STATUS_TIMEOUT_MS = Math.max(1, Number(process.env.HME_CLI_STATUS_TIMEOUT_MS || 4500));
+
+function timeoutMsForRequestPath(pathname) {
+  const value = String(pathname || '');
+  return value.includes('/status') || value.endsWith('status') ? STATUS_TIMEOUT_MS : TIMEOUT_MS;
+}
+
+function installRequestTimeout(req, pathname) {
+  const timeoutMs = timeoutMsForRequestPath(pathname);
+  req.setTimeout(timeoutMs, () => {
+    const err = new Error(`hme-cli request timed out after ${timeoutMs}ms`);
+    err.code = 'HME_CLI_TIMEOUT';
+    req.destroy(err);
+  });
+}
 
 function parseArgs(argv) {
   const args = {};
@@ -161,6 +176,7 @@ function postTool(name, args) {
       reject(new Error(`hme-cli: request '${name}' exceeded ${timeoutMs}ms -- worker hung or slow`));
     });
     req.write(body);
+    installRequestTimeout(req, (typeof options !== 'undefined' && options.path) || (typeof requestOptions !== 'undefined' && requestOptions.path) || (typeof path !== 'undefined' && path) || '');
     req.end();
   });
 }
@@ -179,6 +195,7 @@ function _getVersion(host, port, timeoutMs) {
     );
     req.on('error', () => resolve(null));
     req.on('timeout', () => { req.destroy(); resolve(null); });
+    installRequestTimeout(req, (typeof options !== 'undefined' && options.path) || (typeof requestOptions !== 'undefined' && requestOptions.path) || (typeof path !== 'undefined' && path) || '');
     req.end();
   });
 }

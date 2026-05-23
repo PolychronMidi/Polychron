@@ -26,7 +26,7 @@ function finalRelay(event, result, body = '{}') {
   const root = payload._hme_project_root || process.env.PROJECT_ROOT;
   const thread_id = timeTravel.threadId({ host: 'codex', event, payload });
   timeTravel.checkpoint({ root, host: 'codex', event, payload, phase: 'relay:raw', values: { thread_id, raw_stdout: rawStdout, raw_stderr: result.stderr || '', exit_code: result.exit_code } });
-  const stdout = sanitizeStdout(event, rawStdout);
+  const stdout = normalizeCodexHookStdout(event, sanitizeStdout(event, rawStdout));
   timeTravel.checkpoint({ root, host: 'codex', event, payload, phase: 'relay:validated', values: { thread_id, relay_stdout: stdout, relay_stderr: result.stderr || '', exit_code: result.exit_code } });
   recordHookDecision(root, event, rawStdout, stdout, payload);
   const stderr = result.stderr && result.stderr.trim() ? result.stderr : '';
@@ -34,6 +34,42 @@ function finalRelay(event, result, body = '{}') {
   if (stdout) process.stdout.write(stdout);
   if (stderr) process.stderr.write(stderr.endsWith('\n') ? stderr : `${stderr}\n`);
   process.exit(code);
+}
+
+
+function firstJsonDocument(text) {
+  const src = String(text || '');
+  const start = src.search(/[\[{]/);
+  if (start < 0) return null;
+  const stack = [];
+  let quoted = false;
+  let escaped = false;
+  for (let i = start; i < src.length; i += 1) {
+    const ch = src[i];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') quoted = false;
+      continue;
+    }
+    if (ch === '"') { quoted = true; continue; }
+    if (ch === '{' || ch === '[') { stack.push(ch); continue; }
+    if (ch !== '}' && ch !== ']') continue;
+    const open = stack.pop();
+    if ((open !== '{' || ch !== '}') && (open !== '[' || ch !== ']')) return null;
+    if (stack.length === 0) {
+      try { return JSON.parse(src.slice(start, i + 1)); }
+      catch (_) { return null; }
+    }
+  }
+  return null;
+}
+
+function normalizeCodexHookStdout(event, stdout) {
+  if (event !== 'UserPromptSubmit') return stdout;
+  const parsed = firstJsonDocument(stdout);
+  const doc = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  return `${JSON.stringify(doc)}\n`;
 }
 
 async function main() {
