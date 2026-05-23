@@ -162,42 +162,32 @@ function _attemptCommit(root, caller) {
     return;
   }
 
-  // Acquire the same flock _autocommit.sh uses so JS + bash autocommit
-  // serialize on a single lock; eliminates the recurring .git/index.lock race.
+  // Hold one flock across stage AND commit so a concurrent autocommit caller
+  // (proxy onRequest, _autocommit.sh from stop hook, or autocommit-direct.sh)
+  // can't sneak `git add` in while another's `git commit` holds .git/index.lock.
+  // Earlier design released flock between stage and commit, opening that race.
   const lockPath = path.join(root, LOCK_REL);
   try { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); } catch (_) {}
   const tstamp = new Date().toISOString().slice(0, 19);
   // Forbid broad git add forms per AGENTS.md.
   // Stage tracked-only via -u, then add untracked files matching safe extensions.
-  const stageScript = [
+  // Commit inside the same flock; retry once for transient lock contention.
+  const stageAndCommitScript = [
+    'set -e',
     'git add -u',
     "git ls-files -o --exclude-standard -z " +
       "':(exclude)*.env' ':(exclude).env*' ':(exclude)*.pem' ':(exclude)*.key' " +
       "':(exclude)*.crt' ':(exclude)*credentials*' ':(exclude)*secret*' " +
       "':(exclude)*.bin' ':(exclude)*.so' ':(exclude)*.dll' ':(exclude)*.dylib' " +
       "| xargs -0 -r git add --",
+    `git commit -m ${JSON.stringify(tstamp)} --quiet || ` +
+      `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet`,
   ].join(' && ');
-  try {
-    execSync(`flock -w 30 ${JSON.stringify(lockPath)} bash -c ${JSON.stringify(stageScript)}`,
-      { cwd: root, timeout: 35000, shell: '/bin/bash' });
-  } catch (err) {
-    // silent-ok: optional fallback path.
-    _recordFailure(root, caller,
-      `git add (flocked) failed: ${String(err.message || err).slice(0, 300)}`);
-    return;
-  }
   let r = spawnSync('flock', ['-w', '30', lockPath,
-    'git', 'commit', '-m', tstamp, '--quiet'],
-    { cwd: root, timeout: 35000, encoding: 'utf8' });
+    'bash', '-c', stageAndCommitScript],
+    { cwd: root, timeout: 60000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
   let combined = (r.stderr || '') + (r.stdout || '');
-  if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
-  // Retry once -- transient lock-contention is expected on rapid fires.
-  r = spawnSync('flock', ['-w', '30', lockPath,
-    'git', 'commit', '-m', `${tstamp}-retry`, '--quiet'],
-    { cwd: root, timeout: 35000, encoding: 'utf8' });
-  if (r.status === 0) { _recordSuccess(root); return; }
-  combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
   // When the pre-commit hook rejects, git often funnels its stderr away from
   // spawn's pipe (the hook runs in its own process group). Re-run
