@@ -172,6 +172,9 @@ function _attemptCommit(root, caller) {
   // Forbid broad git add forms per AGENTS.md.
   // Stage tracked-only via -u, then add untracked files matching safe extensions.
   // Commit inside the same flock; retry once for transient lock contention.
+  // Gate commit on `git diff --cached --quiet` because `git commit --quiet`
+  // exits 1 with NO stderr/stdout when index is empty -- previously surfaced
+  // as the cryptic "git commit failed twice: no git stderr" failure spam.
   const stageAndCommitScript = [
     'set -e',
     'git add -u',
@@ -180,8 +183,10 @@ function _attemptCommit(root, caller) {
       "':(exclude)*.crt' ':(exclude)*credentials*' ':(exclude)*secret*' " +
       "':(exclude)*.bin' ':(exclude)*.so' ':(exclude)*.dll' ':(exclude)*.dylib' " +
       "| xargs -0 -r git add --",
-    `git commit -m ${JSON.stringify(tstamp)} --quiet || ` +
-      `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet`,
+    `if ! git diff --cached --quiet; then ` +
+      `git commit -m ${JSON.stringify(tstamp)} --quiet || ` +
+      `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet; ` +
+    `fi`,
   ].join(' && ');
   let r = spawnSync('flock', ['-w', '30', lockPath,
     'bash', '-c', stageAndCommitScript],
