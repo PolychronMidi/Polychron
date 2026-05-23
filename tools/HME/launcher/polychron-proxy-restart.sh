@@ -297,4 +297,7 @@ echo "[proxy-restart]   worker -> ${_worker_status}" >&2
 python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
   --mode proxy-restart-success --reason proxy-restart-success --quiet >/dev/null 2>&1 || true
 
+mkdir -p "$(dirname "$_RESTART_SENTINEL")" 2>/dev/null
+date +%s > "$_RESTART_SENTINEL"
+
 echo "[proxy-restart] proxy-only restart complete -- llama-server and VSCode untouched" >&2
