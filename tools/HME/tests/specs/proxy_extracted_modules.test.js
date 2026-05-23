@@ -19,8 +19,8 @@ const { _jsonStats } = require('../../proxy/hme_proxy_response_trace');
 const { loadEnv, requireEnvInt } = require('../../proxy/shared/load_env');
 const { _contextTokenUsageFields, _extractUsageFromBody, normalizeOmniContextWindowSse, retryOmniContextWindowExceeded } = require('../../proxy/hme_proxy_anthropic_response');
 const { responseHasErrorEvent } = require('../../proxy/hme_proxy_response_send');
-const { markRouteCooldown, loadModelRouteHealth, routeSkipReason } = require('../../proxy/model_route_health');
-const codexFallback = require('../../proxy/hme_proxy_codex');
+const { markRouteCooldown, loadModelRouteHealth, routeSkipReason } = require('../../proxy/contexts/failure_policy/model_route_health');
+const codexFallback = require('../../proxy/contexts/failure_policy/hme_proxy_codex');
 const { shellPolicy } = require('../../proxy/stop_chain/shell_policy');
 
 function quiet(fn) {

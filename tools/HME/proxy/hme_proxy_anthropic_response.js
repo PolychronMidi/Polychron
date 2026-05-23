@@ -6,8 +6,8 @@ const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const {
   handleUpstreamFailureOrSuccess,
-  markRouteCooldown,
 } = require('./contexts/failure_policy/hme_proxy_upstream_failure');
+const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
 const { omniProviderForConfigProvider } = require('./omniroute_protocol');
 const swapStore = require('./swap_state_store');

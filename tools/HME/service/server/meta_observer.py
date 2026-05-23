@@ -219,7 +219,6 @@ def _meta_loop() -> None:
                 _last_env_ts = now
                 for alert in _last_env_snapshot.get("alerts", []):
                     logger.warning(f"Meta-observer L16: {alert['type']} -- {alert['message']}")
-
             # L17: conversation entanglement checkpoint
             if now - _last_entangle_ts >= _ENTANGLE_INTERVAL:
                 meta_layers._checkpoint_entanglement()
