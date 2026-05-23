@@ -27,6 +27,7 @@ const codexFallback = require('../../proxy/contexts/failure_policy/hme_proxy_cod
 const { shellPolicy } = require('../../proxy/stop_chain/shell_policy');
 const { isPassthroughMode } = require('../../proxy/upstream');
 const { routeDecision } = require('../../proxy/model_route_resolver');
+const hmeDispatcher = require('../../proxy/hme_dispatcher');
 
 // Invariant: if a circular dependency causes any import to resolve as undefined,
 // fail fast before any test logic runs. Each entry is [name, value, expectedType].
@@ -61,6 +62,7 @@ test('no circular dependency nullifies imported bindings', () => {
     ['codexFallback', codexFallback, 'object'],
     ['isPassthroughMode', isPassthroughMode, 'function'],
     ['routeDecision', routeDecision, 'function'],
+    ['hmeDispatcher', hmeDispatcher, 'object'],
   ];
   for (const [name, value, expect] of checks) {
     assert.equal(typeof value, expect,
