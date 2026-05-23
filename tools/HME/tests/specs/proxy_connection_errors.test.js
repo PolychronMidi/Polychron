@@ -10,7 +10,7 @@ const {
   handleMidResponseError,
   shouldRetryConnectionError,
   handleConnectionError,
-} = require('../../proxy/hme_proxy_connection_errors');
+} = require('../../proxy/contexts/failure_policy/hme_proxy_connection_errors');
 
 function fakeRes(headersSent = false) {
   return {
