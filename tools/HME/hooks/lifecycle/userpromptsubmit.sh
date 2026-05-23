@@ -144,22 +144,26 @@ ${NEW_ERRORS}"
   fi
 fi
 
-# HME critical todos: surface unresolved critical+open items at turn start.
-# FAIL-LOUD: python stderr -> hme-errors.log so import failures don't go silent.
-_UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "$_HME_OS_TMP/_ups_crit_err_$$")  # silent-ok: optional fallback path.
-set +e
-CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" \
-  python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" critical-todos 2>"$_UPS_CRIT_ERR")
-_UPS_CRIT_RC=$?
-set -e
-if [ "$_UPS_CRIT_RC" -ne 0 ] && [ -s "$_UPS_CRIT_ERR" ] && [ -d "$PROJECT/log" ]; then
-  _UPS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
-  while IFS= read -r _ups_line; do
-    [ -n "$_ups_line" ] && echo "[$_UPS_TS] [userpromptsubmit:list_critical] python3 failed: $_ups_line" \
-      >> "$PROJECT/log/hme-errors.log"
-  done < "$_UPS_CRIT_ERR"
+# HME critical todos: surface cached output from prior BG refresh; refresh in
+# background. The synchronous python3 invocation here was a ~500ms hot-path tax
+# that pushed UserPromptSubmit over its 3s warn budget. Cache lag is one turn,
+# which is acceptable for a critical-todos surface (the items change only when
+# todo.md / KB are touched, both already trigger pretooluse/posttooluse hooks).
+# Stderr from the BG worker still lands in hme-bg-critical-todos.err for
+# fail-loud auditing.
+_CRIT_CACHE="$_HME_PROJECT_TMP/hme-critical-todos.cache"
+CRIT_OUT=""
+if [ -s "$_CRIT_CACHE" ]; then
+  CRIT_OUT=$(cat "$_CRIT_CACHE")
 fi
-rm -f "$_UPS_CRIT_ERR" 2>/dev/null
+export _CRIT_CACHE
+_hme_bg_shell_timeout 15 critical-todos "$PROJECT/log/hme-bg-critical-todos.err" '
+  tmp="${_CRIT_CACHE}.$$.tmp"
+  PROJECT_ROOT="'"$PROJECT"'" PYTHONPATH="'"$PROJECT/tools/HME/service"'" \
+    python3 "'"$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py"'" critical-todos \
+    >"$tmp" 2>>"'"$PROJECT/log/hme-bg-critical-todos.err"'" \
+    && mv "$tmp" "$_CRIT_CACHE" || rm -f "$tmp"
+'
 if [ -n "$CRIT_OUT" ]; then
   echo "" >&2
   echo "$CRIT_OUT" >&2
