@@ -7,6 +7,50 @@ source "${_HME_HELPERS_DIR}/_hooks_bootstrap.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
+# rationale: fast-path bypass eliminates cold `node -e` startup (~500-2000ms)
+# for commands that cannot possibly trip any policy gate in bash_command_policy.
+# Policy gates target: shell-meta pipelines, mkdir/rm/curl|sh, reader-guard cmds
+# (cat/head/tail/sed/awk/grep/git diff|show|log|blame|cat-file), npm run main|
+# snapshot|lint, snapshot-fingerprint, run.lock writes, polling tail/cat on
+# tmp/*.output, i/<tool> short-form rewrite, lifesaver escalation.
+# A CMD with NO shell metas AND a leading binary that is none of the above is
+# guaranteed allow-noop. The node policy stays authoritative for everything
+# else; this is a pure performance gate, not a semantic divergence.
+_HME_BASH_FAST_OK=0
+case "$CMD" in
+  ''|':'|'true'|'false') _HME_BASH_FAST_OK=1 ;;
+  *[\|\;\&\<\>\`\$\(\)\{\}\*\?\[\]]*) ;;  # shell meta -> full eval
+  *'  '*) ;;                              # multi-line/odd whitespace -> full eval
+  *)
+    # Single leading binary, no metas. Whitelist binaries that never trip policy.
+    _HME_BASH_FIRST=${CMD%% *}
+    case "$_HME_BASH_FIRST" in
+      ls|pwd|date|whoami|hostname|uname|id|true|false|:|echo|printf|sleep|wait|jobs|type|which|command|test|\[|basename|dirname|readlink|realpath)
+        _HME_BASH_FAST_OK=1 ;;
+    esac ;;
+esac
+if [ "${_HME_BASH_FAST_OK}" = "1" ]; then
+  # rationale: post-policy gates may still need to run; honor them. Pre gates
+  # (bash/pre/*.sh) are deny-first and cheap, so always run them too.
+  for _pre in "${SCRIPT_DIR}/bash/pre/"*.sh; do
+    [ -f "$_pre" ] || continue
+    set +u +e; source "$_pre"; _pre_rc=$?; set -u -e
+    [ "$_pre_rc" = "0" ] || exit "$_pre_rc"
+  done
+  for _post in "${SCRIPT_DIR}/bash/post/"*.sh; do
+    [ -f "$_post" ] || continue
+    set +u +e; source "$_post"; _rc=$?; set -u -e
+    if [ "$_rc" -ne 0 ] && [ "$_rc" -ne 2 ]; then
+      _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+      _log="${PROJECT_ROOT}/log/hme-errors.log"
+      mkdir -p "$(dirname "$_log")" 2>/dev/null
+      printf '[%s] [pretooluse_bash.sh] sub-file %s exited rc=%d -- downstream gates may have been skipped; investigate\n' \
+        "$_ts" "$(basename "$_post")" "$_rc" >> "$_log" 2>/dev/null  # silent-ok: optional fallback path.
+    fi
+  done
+  exit 0
+fi
+
 # rationale: pre-policy gates auto-load from bash/pre/*.sh (deny-first phase).
 for _pre in "${SCRIPT_DIR}/bash/pre/"*.sh; do
   [ -f "$_pre" ] || continue
