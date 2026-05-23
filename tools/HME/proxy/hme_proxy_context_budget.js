@@ -180,27 +180,15 @@ function createContextBudget() {
     const bytes = payload ? Buffer.byteLength(JSON.stringify(payload), 'utf8') : lastPayloadBytes;
     const usedTokens = Math.ceil(bytes / contextBytesPerTokenEst);
     const modelInfo = payloadModelInfo(payload);
-    let budgetTokens = lastInputTokensLimit || modelInfo.budget;
-    if ((!budgetTokens || budgetTokens <= 0) && lastInputTokensRemaining != null) {
-      budgetTokens = usedTokens + lastInputTokensRemaining;
-    }
+    // Compaction must be driven by the MODEL CONTEXT WINDOW, never by the
+    // Anthropic rate-limit headers (anthropic-ratelimit-input-tokens-*). The
+    const budgetTokens = modelInfo.budget;
     let plan = planForUsage({ usedTokens, budgetTokens, fallbackBytes: passthroughCompactBytes });
     let cappedByBytes = false;
-    let telemetryLimited = false;
+    const telemetryLimited = false;
     if (compactBytesExplicit && plan.maxTier > 0 && passthroughCompactBytes < plan.threshold) {
       plan = { ...plan, threshold: passthroughCompactBytes };
       cappedByBytes = true;
-    }
-    if (lastInputTokensRemaining != null && lastInputTokensRemaining >= 0 && budgetTokens > 0) {
-      const telemetryUsed = Math.max(0, budgetTokens - lastInputTokensRemaining);
-      const telemetryPlan = planForUsage({ usedTokens: telemetryUsed, budgetTokens, fallbackBytes: passthroughCompactBytes });
-      if (telemetryPlan.maxTier > plan.maxTier) {
-        plan = telemetryPlan;
-        telemetryLimited = true;
-      } else if (telemetryPlan.maxTier === plan.maxTier && telemetryPlan.maxTier > 0 && telemetryPlan.threshold < plan.threshold) {
-        plan = { ...plan, threshold: telemetryPlan.threshold };
-        telemetryLimited = true;
-      }
     }
     if (consecutive429s > 0) {
       const cap = Math.max(1, Math.floor((budgetTokens || 128000) * 0.5 * contextBytesPerTokenEst / Math.pow(2, consecutive429s)));
