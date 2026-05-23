@@ -18,6 +18,59 @@ function projectRoot() {
   return _hmeRequireEnv('PROJECT_ROOT');
 }
 
+function autocompactLifesaver(root, raw) {
+  // Fail-fast: Claude Code's "% until autocompact" widget is computed from
+  // `anthropic-ratelimit-input-tokens-{limit,remaining}` headers. Upstream
+  try {
+    const ctx = (raw && raw.context_window) || {};
+    const truthTotal = Number(ctx.total_input_tokens || 0);
+    const truthSize = Number(ctx.context_window_size || 0);
+    if (!truthTotal || !truthSize) return '';
+    const sink = path.join(root, 'tools', 'HME', 'runtime', 'proxy-context-norm.json');
+    let normStat;
+    try { normStat = fs.statSync(sink); } catch (_e) { /* missing */ }
+    if (!normStat) {
+      _writeLifesaver(root, 'proxy-context-norm.json missing -- proxy not injecting normalized rate-limit headers; autocompact widget LYING');
+      return ' | LIFESAVER!ctx-norm:missing';
+    }
+    const ageMs = Date.now() - normStat.mtimeMs;
+    if (ageMs > 10 * 60 * 1000) {
+      _writeLifesaver(root, `proxy-context-norm.json stale ${Math.round(ageMs / 1000)}s -- proxy may be down or pre-fix; autocompact widget LYING`);
+      return ` | LIFESAVER!ctx-norm:stale ${Math.round(ageMs / 60000)}m`;
+    }
+    let norm;
+    try { norm = JSON.parse(fs.readFileSync(sink, 'utf8')); } catch (_e) { /* bad JSON */ }
+    if (!norm || !Number.isFinite(norm.used) || !Number.isFinite(norm.size)) {
+      _writeLifesaver(root, 'proxy-context-norm.json unreadable -- cannot verify autocompact widget; assume LYING');
+      return ' | LIFESAVER!ctx-norm:bad-json';
+    }
+    if (norm.size !== truthSize) {
+      _writeLifesaver(root, `proxy normalized size=${norm.size} != truth size=${truthSize}; autocompact widget LYING`);
+      return ` | LIFESAVER!ctx-norm:size ${norm.size}/${truthSize}`;
+    }
+    // Used drift tolerated up to 2k tokens or 2% (whichever larger) since
+    // statusline raw and proxy capture happen at different request boundaries.
+    const tol = Math.max(2000, Math.floor(truthSize * 0.02));
+    const drift = Math.abs(norm.used - truthTotal);
+    if (drift > tol) {
+      _writeLifesaver(root, `proxy normalized used=${norm.used} != truth used=${truthTotal} (drift ${drift}>tol ${tol}); autocompact widget LYING`);
+      return ` | LIFESAVER!ctx-norm:drift ${drift}`;
+    }
+    return '';
+  } catch (_e) {
+    return '';
+  }
+}
+
+function _writeLifesaver(root, msg) {
+  try {
+    const logDir = path.join(root, 'log');
+    fs.mkdirSync(logDir, { recursive: true });
+    const ts = new Date().toISOString();
+    fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'), `[${ts}] [statusline-autocompact] ${msg}\n`);
+  } catch (_e) { /* best effort */ }
+}
+
 function latestClassifier(root) {
   const file = path.join(root, 'src', 'output', 'metrics', 'mode-classifier.jsonl');
   try {
