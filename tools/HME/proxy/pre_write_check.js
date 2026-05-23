@@ -107,8 +107,8 @@ function _editCurrentFileDecision(payload) {
   const file = input.file_path || '';
   try {
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return _permission('deny', `BLOCKED: Edit target is not an existing file: ${String(file).slice(0, 160)}`);
-    const sessionState = require('./session_state');
-    const sid = payload.session_id || '';
+    const _sessionState = require('./session_state');
+    const _sid = payload.session_id || '';
     const current = fs.readFileSync(file, 'utf8');
     if (!current.includes(input.old_string)) {
       if (input.new_string && current.includes(input.new_string)) {
