@@ -44,7 +44,7 @@ def capture_hci() -> dict:
         return {"_skipped": "verifier script missing"}
     rc = subprocess.run(
         ["python3", script, "--json"],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True, text=True, timeout=240,
         env={**os.environ, "PROJECT_ROOT": _PROJECT},
     )
     try:
