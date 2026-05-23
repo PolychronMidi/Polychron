@@ -214,7 +214,7 @@ function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component:
   jsonResponse(res, 200, anthropicEmptyResponse(payload, 'hme_todowrite_probe'));
 }
 
-function blockStructuredOutputsProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
+function blockStructuredOutputsProbe({ res, payload, record, source = {}, component: _component = 'hme-proxy' }) {
   if (record) {
     record({
       kind: 'structured-outputs-probe-blocked',
