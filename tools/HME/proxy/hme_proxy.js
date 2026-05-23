@@ -10,6 +10,8 @@
 'use strict';
 
 const http = require('http');
+const { emitStartMarker } = require('./start_marker');
+const supervisor = require('./supervisor');
 
 function probeExistingProxyOnAddrInUse(port, cb) {
   const req = http.get({ hostname: '127.0.0.1', port, path: '/health', timeout: 1000 }, (res) => {
@@ -34,10 +36,6 @@ const {
   scanMessages,
 } = require('./contexts/request_mutation');
 const { servicePort } = require('./service_registry');
-const {
-  emitStartMarker,
-  supervisor: _supervisorModule,
-} = require('./supervisor');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createContextBudget } = require('./hme_proxy_context_budget');
 const { createOpusGate } = require('./hme_proxy_opus_gate');
@@ -141,8 +139,7 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
 } else if (process.argv.includes('--test')) {
   runTestMode();
 } else {
-  const supervisor = _supervisorModule;
-  if (SUPERVISE) supervisor.start();
+    if (SUPERVISE) supervisor.start();
   else supervisor.installShutdownHandlers();
   const server = http.createServer(getHandleRequest());
   supervisor.registerServer(server);
