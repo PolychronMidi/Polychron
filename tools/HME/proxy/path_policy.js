@@ -77,7 +77,7 @@ function mkdirHasMisplacedMetrics(cmd, root = PROJECT_ROOT) {
   return mkdirTargets(cmd).some((target) => isMisplacedMetricsPath(target, root));
 }
 
-function rootOnlyDirMessage(verb, root = PROJECT_ROOT, extra = '') {
+function rootOnlyDirMessage(verb, _root = PROJECT_ROOT, extra = '') {
   const suffix = extra ? ` ${extra}` : '';
   return `BLOCKED: log/ and tmp/ only exist at project root. Do not ${verb} files inside subdirectory variants. Route output through $PROJECT_ROOT/{log,tmp}/.${suffix}`;
 }
