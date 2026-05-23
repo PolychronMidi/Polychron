@@ -248,6 +248,7 @@ function normalizeClaudeHookJsonStdout(rawStdout) {
 }
 
 module.exports = {
+  extractFirstJsonDocument,
   normalizeClaudeHookJsonStdout,
   parseJson,
   unsupportedCodexPreToolDecision,
