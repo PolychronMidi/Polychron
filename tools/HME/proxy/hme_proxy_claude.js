@@ -32,7 +32,7 @@ const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
 const {
   handleMidResponseError,
   handleConnectionError,
-} = require('./contexts/failure_policy/hme_proxy_upstream_failure');
+} = require('./contexts/failure_policy/hme_proxy_connection_errors');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
