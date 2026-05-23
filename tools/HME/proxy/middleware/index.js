@@ -241,6 +241,7 @@ const ctx = {
     const n = (_retryCount.get(toolUseId) || 0) + 1;
     _retryCount.set(toolUseId, n);
     if (n < _MAX_RETRIES) {
+      // eslint-disable-next-line no-use-before-define -- _processed Map declared in dedu
       _processed.delete(toolUseId);
     }
     return n;
