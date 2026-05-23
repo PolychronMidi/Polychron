@@ -258,8 +258,13 @@ def main(argv: list) -> int:
     os.makedirs(os.path.dirname(_OUTPUT), exist_ok=True)
     with open(_OUTPUT, "w") as f:
         json.dump(traj, f, indent=2)
+    # Sidecar summary cache; sessionstart.sh reads this instead of re-launching
+    # python just to render `--summary`, cutting ~1.5s off SessionStart.
+    summary_text = format_summary(traj)
+    with open(_OUTPUT + ".summary", "w") as f:
+        f.write(summary_text + "\n")
     print(f"Trajectory written: {_OUTPUT}")
-    print(format_summary(traj))
+    print(summary_text)
     return 0
 
 
