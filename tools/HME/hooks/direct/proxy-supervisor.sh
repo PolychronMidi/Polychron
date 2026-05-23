@@ -67,7 +67,7 @@ _SV_BACKOFF_INITIAL=30    # seconds after first crash-loop detection
 _SV_BACKOFF_MAX=600       # cap at 10 minutes
 # Spawn-rate ceiling: regardless of crash-loop logic, never spawn faster
 # than this. Prevents fork-bomb regressions if a future hook/lifecycle
-_SV_SPAWN_MIN_INTERVAL_S=5
+_SV_SPAWN_MIN_INTERVAL_S=30
 _SV_LAST_SPAWN_FILE="$_SV_ROOT/tools/HME/runtime/proxy-supervisor-last-spawn.ts"
 
 _sv_log() {
