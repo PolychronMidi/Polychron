@@ -4,8 +4,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const HOST_STOP_ECHO_RE = /(?:^|\n)\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook[\s\S]{0,4000}?(?=(?:\n\s*(?:[●•]\s*)?Ran\s+\d+\s+\w+\s+hook\b)|\n\s*\S(?![⎿\-]|node\b|Stop hook error:)|$)/gi;
-const STOP_ERROR_BLOCK_RE = /(?:^|\n)\s*(?:[⎿│>\-]*\s*)?Stop hook error:\s*[\s\S]{0,4000}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t]|---\s*\[\d+\/\d+\])|$)/gi;
+const HOST_STOP_ECHO_RE = /(?:^|\n)\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook[\s\S]{0,4000}?(?=(?:\n\s*(?:[●•]\s*)?Ran\s+\d+\s+\w+\s+hook\b)|\n\s*\S(?![⎿-]|node\b|Stop hook error:)|$)/gi;
+const STOP_ERROR_BLOCK_RE = /(?:^|\n)\s*(?:[⎿│>-]*\s*)?Stop hook error:\s*[\s\S]{0,4000}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t]|---\s*\[\d+\/\d+\])|$)/gi;
 const STOP_SECTION_RE = /\n?\s*---\s*\[\d+\/\d+\]\s+[A-Z_ -]+\s*---[\s\S]{0,2500}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t])|$)/g;
 const STOP_POLICY_RE = /\b(?:MULTI-FLAG STOP|EXHAUST PROTOCOL VIOLATION|SPIRALLING_PETULANCE|AUTO-COMPLETENESS CHECK|UNFINISHED TASK-LIST VIOLATION|PLAN-ABANDONMENT DETECTED|STOP-WORK ANTIPATTERN)\b/i;
 const STOP_DIRECTIVE_RE = /\b(?:Stop answering the gate|concrete corrective action|repeated failed Reads|modify the target file\/state|verify it, then stop|enumerated item must be fixed|silence is the correct response|Resume and implement)\b/i;
