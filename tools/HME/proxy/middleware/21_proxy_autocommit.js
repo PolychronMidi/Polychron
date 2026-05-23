@@ -90,6 +90,44 @@ function _incrementCounter(root) {
   } catch (_) { /* best-effort */ }
 }
 
+// Sweep stale .git/index.lock. Git removes its own lock on clean exit, but
+// SIGKILL'd children (timeouts, OOM, ENOSPC mid-write) leave it behind. The
+// agent should never have to `rm .git/index.lock` by hand -- this is that
+// maintenance, automated. Only removes when (a) no live git process owns
+// the lock (lsof unavailable, so we use age) and (b) the lock is older than
+// a generous threshold so we don't fight an active git invocation.
+function _sweepStaleIndexLock(root) {
+  const lock = path.join(root, '.git', 'index.lock');
+  let st;
+  try { st = fs.statSync(lock); } catch (_) { return false; }
+  const ageMs = Date.now() - st.mtimeMs;
+  // 20s is well past any realistic interactive git op; flock/git timeouts
+  // here are <=35s but the lock is held only across atomic index writes.
+  if (ageMs < 20000) return false;
+  try {
+    fs.unlinkSync(lock);
+    fs.appendFileSync(path.join(root, ERR_LOG),
+      `[${_ts()}] [autocommit:proxy] swept stale .git/index.lock (age=${Math.round(ageMs)}ms)\n`);
+    return true;
+  } catch (_) { return false; }
+}
+
+// Capture precommit_validate.py output directly so failures surface with
+// file:line and reason in autocommit.fail + hme-errors.log. Without this,
+// `git commit` failures showed up as 'git commit failed twice: unknown'.
+function _capturePrecommitFailures(root) {
+  const script = path.join(root, 'tools', 'HME', 'scripts', 'precommit_validate.py');
+  if (!fs.existsSync(script)) return '';
+  try {
+    const r = spawnSync('python3', [script],
+      { cwd: root, timeout: 10000, encoding: 'utf8',
+        env: { ...process.env, PROJECT_ROOT: root } });
+    if (r.status === 0) return '';
+    const out = ((r.stdout || '') + (r.stderr || '')).trim();
+    return out.slice(0, 1500);
+  } catch (_) { return ''; }
+}
+
 function _attemptCommit(root, caller) {
   _incrementCounter(root);
 
@@ -103,6 +141,9 @@ function _attemptCommit(root, caller) {
     _recordFailure(root, caller, `src/ not found at ${root} -- not a Polychron checkout`);
     return;
   }
+
+  // Self-heal: clear stale .git/index.lock left by interrupted children.
+  _sweepStaleIndexLock(root);
 
   // git status porcelain also serves as "is git healthy" probe.
   let dirty = '';
