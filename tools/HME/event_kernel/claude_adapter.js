@@ -7,7 +7,7 @@ const path = require('path');
 const { requireEnv } = require('../proxy/shared/load_env');
 const { runHostAdapter, append } = require('./host_adapter_common');
 const { buildHostPayload, writeJsonAtomic } = require('./lifecycle_payload');
-const { claudeRelayFields } = require('./decision_normalizer');
+const { claudeRelayFields, extractFirstJsonDocument } = require('./decision_normalizer');
 const { recordHookDecision } = require('./hook_decision_log');
 const timeTravel = require('./lifecycle_time_travel');
 
@@ -182,7 +182,7 @@ function validateClaudeStdout(event, stdout, root) {
   }
   let parsed;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(extractFirstJsonDocument(text) || text);
   } catch (err) {
     const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
     logHookError(root, event, message, 'hook-output-validation');
