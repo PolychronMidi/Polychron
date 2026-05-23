@@ -30,6 +30,12 @@ module.exports = {
         const reqStr = String(arg.value);
         if (!reqStr.startsWith('.')) return; // package require - always allowed
 
+        // HME envloader injection is canonical: src/* files that need .env
+        // validation at module load time pull tools/HME/proxy/shared/load_env.
+        // Allowed everywhere because the rule's intent (limit ad-hoc relative
+        // requires) explicitly excludes infra wiring.
+        if (/tools\/HME\/proxy\/shared\/load_env(?:\.js)?$/.test(reqStr)) return;
+
         // Allow require in index.js files
         if (basename === 'index.js') return;
 
