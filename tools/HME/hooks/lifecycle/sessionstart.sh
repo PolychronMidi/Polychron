@@ -40,6 +40,11 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-nexus.state"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
+# Clear spiralling_petulance cross-session leak: prior-session bash attempts
+# must not block the first commands of a freshly-resumed session. Preserve
+[ -x "${PROJECT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \
+  PROJECT_ROOT="${PROJECT}" python3 "${PROJECT}/tools/HME/scripts/detectors/spiralling_petulance.py" --reset-session 2>/dev/null || true
+
 # Refresh adaptive config and coherence health on every session start.
 _hme_bg_timeout 20 adapt-from-activity "$PROJECT/log/hme-bg-adapt-from-activity.err" \
   python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py"
