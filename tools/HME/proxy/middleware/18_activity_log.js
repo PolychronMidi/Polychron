@@ -12,7 +12,7 @@ function _extractModule(fp) {
 module.exports = {
   name: 'activity_log',
 
-  onToolResult({ toolUse, toolResult, session, ctx }) {
+  onToolResult({ toolUse, toolResult: _toolResult, session, ctx }) {
     const name = toolUse.name || '?';
     const input = toolUse.input || {};
     const filePath = input.file_path || input.path || '';
