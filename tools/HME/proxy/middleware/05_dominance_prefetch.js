@@ -92,7 +92,7 @@ function _triggersFromPayload(payload) {
   const out = [];
 
   // "why did X break" / "look at X" / "find X" / "investigate X"
-  const action = text.match(/\b(?:why (?:did|is|does)|look at|find|investigate|check|inspect)\s+(\w[\w./\-]{1,60})/i);
+  const action = text.match(/\b(?:why (?:did|is|does)|look at|find|investigate|check|inspect)\s+(\w[\w./-]{1,60})/i);
   if (action) {
     const target = action[1];
     out.push({
@@ -102,7 +102,7 @@ function _triggersFromPayload(payload) {
   }
 
   // Bare filename-like tokens at reasonable length
-  const fileMatch = text.match(/\b([a-zA-Z_][\w\-]{2,40}\.(?:js|ts|py|sh|json|md))\b/);
+  const fileMatch = text.match(/\b([a-zA-Z_][\w-]{2,40}\.(?:js|ts|py|sh|json|md))\b/);
   if (fileMatch) {
     out.push({
       key: `enrich:${fileMatch[1]}`,
