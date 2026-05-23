@@ -399,19 +399,23 @@ _sv_loop() {
         consecutive_spawn_fails=$((consecutive_spawn_fails + 1))
         _sv_log "post-commit reload failed (consecutive_fails=$consecutive_spawn_fails)"
       fi
-    elif _sv_bundle_healthy; then
+    elif _sv_proxy_healthy; then
       if [ "$misses" -gt 0 ]; then
         _sv_log "proxy healthy again after $misses miss(es)"
       fi
       misses=0
       consecutive_spawn_fails=0
+      local child_issue
+      child_issue=$(_sv_child_health_issue)
+      if [ -n "$child_issue" ]; then
+        _sv_log "child-only issue (proxy healthy, NOT restarting bundle): $child_issue"
+      fi
     else
       misses=$((misses + 1))
       if _sv_is_maintenance_active; then
-        # During maintenance, ignore misses -- the caller will bring the
         misses=0
       elif [ "$misses" -ge "$_SV_MISS_THRESHOLD" ]; then
-        _sv_log "proxy bundle unhealthy for $misses polls: $(_sv_bundle_health_issue)"
+        _sv_log "proxy itself unhealthy for $misses polls: $(_sv_proxy_health_issue)"
         if _sv_spawn_and_verify; then
           _sv_log "spawn verified healthy"
           consecutive_spawn_fails=0
