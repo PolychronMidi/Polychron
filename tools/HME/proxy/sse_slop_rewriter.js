@@ -54,7 +54,7 @@ const _SLOP_PATTERNS = [
     repl: '$1' },
   // #20 Engagement-bait endings.
   { name: 'engagement_bait',
-    re: /(^|[.!?]\s+|\n\s*)(?:So here'?s my question for you[:.]?[^.]*\.?|Curious to hear your thoughts\.?|What do you think\?|Let me know (?:what you think|your thoughts)[\.\?]?|Drop (?:a comment|your thoughts) below\.?)\s*$/gim,
+    re: /(^|[.!?]\s+|\n\s*)(?:So here'?s my question for you[:.]?[^.]*\.?|Curious to hear your thoughts\.?|What do you think\?|Let me know (?:what you think|your thoughts)[.?]?|Drop (?:a comment|your thoughts) below\.?)\s*$/gim,
     repl: '$1' },
   // #21 Humble-brag disclaimer.
   { name: 'humble_brag',
