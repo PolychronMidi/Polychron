@@ -223,7 +223,10 @@ def expected_config_text(existing: str, *, port: int) -> str:
 
 
 def compare_hooks(live: dict[str, Any], expected: dict[str, Any]) -> list[str]:
-    return [] if live == expected else ["~/.codex/hooks.json differs from tools/HME/hooks/codex_hooks.json materialization"]
+    return [] if live == expected else [
+        "~/.codex/hooks.json differs from projection of "
+        "tools/HME/hooks/hooks.json + tools/HME/hooks/codex-extensions.json"
+    ]
 
 
 def compare_config(live_text: str, *, port: int) -> list[str]:
