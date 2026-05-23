@@ -97,7 +97,7 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
         if _ss_probe_fresh; then
           _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
         else
-          if curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
+          if curl -sf --max-time 3 --retry 1 --retry-delay 0 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
             _ss_probe_status=ok
           else
             _ss_probe_status=down
@@ -110,7 +110,7 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
         sleep 0.2
         if _ss_probe_fresh; then
           _ss_probe_status=$(cat "$_SS_PROBE_RESULT" 2>/dev/null)
-        elif curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
+        elif curl -sf --max-time 3 --retry 1 --retry-delay 0 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
           _ss_probe_status=ok
         else
           _ss_probe_status=down
