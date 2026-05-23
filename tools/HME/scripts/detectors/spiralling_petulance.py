@@ -93,14 +93,12 @@ def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
         prior_cmd = str(row.get("cmd") or "")
         recent.append({"hash": ch, "ts": ts, "cmd": prior_cmd})
         family = _command_family(key)
-        # Diagnostic-family exemption must run BEFORE the hash-equality
-        # counter; otherwise identical i/status repeats (whose output
-        if _is_distinct_diagnostic_repeat(key, prior_cmd):
+        if ch == h:
+            prior_same += 1
+        elif _is_distinct_diagnostic_repeat(key, prior_cmd):
             if family:
                 family_seen[family] = prior_cmd
             continue
-        if ch == h:
-            prior_same += 1
     if _command_family(key) in family_seen:
         recent = [row for row in recent if row.get("cmd") != family_seen[_command_family(key)]]
     recent.append({"hash": h, "ts": now, "cmd": key})
