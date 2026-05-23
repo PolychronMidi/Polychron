@@ -40,7 +40,7 @@ function loadConfig(root = PROJECT_ROOT) {
   try { return JSON.parse(fs.readFileSync(path.join(root, 'tools/HME/config/context-guards.json'), 'utf8')); }
   catch (_e) { return null; /* silent-ok: absent config means no read policy. */ }
 }
-function editedThisTurn(file, root = PROJECT_ROOT) {
+function _editedThisTurn(file, root = PROJECT_ROOT) {
   const base = path.basename(String(file || '')).replace(/\.[^.]*$/, '');
   if (!base) return false;
   try {
