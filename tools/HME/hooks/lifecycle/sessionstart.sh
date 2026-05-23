@@ -265,29 +265,35 @@ if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
 fi
 
-# Substrate pre-turn briefing from precomputed metrics only.
-SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true  # silent-ok: optional fallback path.
+# Substrate pre-turn briefing -- read cached output; refresh in background.
+# Last synchronous python invocation on the SessionStart hot path (~500ms).
+# Cache lag one session is fine; underlying metrics (next-actions, consensus,
+_SUBSTRATE_CACHE="$PROJECT/tmp/hme-substrate-brief.cache"
+[ -s "$_SUBSTRATE_CACHE" ] && { echo "" >&2; cat "$_SUBSTRATE_CACHE" >&2; }
+export _SUBSTRATE_CACHE
+_hme_bg_shell_timeout 15 substrate-brief "$PROJECT/log/hme-bg-substrate-brief.err" '
+  tmp="${_SUBSTRATE_CACHE}.$$.tmp"
+  PROJECT_ROOT="'"$PROJECT"'" METRICS_DIR="'"$METRICS_DIR"'" python3 -c "
 import json, os
-root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "."
-metrics_dir = os.environ["METRICS_DIR"]
+metrics_dir = os.environ[\"METRICS_DIR\"]
 def _j(name):
     try:
-        with open(os.path.join(metrics_dir, name), encoding="utf-8") as f:
+        with open(os.path.join(metrics_dir, name), encoding=\"utf-8\") as f:
             return json.load(f)
     except Exception:
         return {}
-na = _j("hme-next-actions.json")
-con = _j("hme-consensus.json")
-dr = _j("hme-legendary-drift.json")
-n_act = na.get("total_actions", 0)
-bits = [f'substrate: consensus={con.get("mean","?")} stdev={con.get("stdev","?")} drift={dr.get("drift_score","?")} actions={n_act}']
+na = _j(\"hme-next-actions.json\")
+con = _j(\"hme-consensus.json\")
+dr = _j(\"hme-legendary-drift.json\")
+n_act = na.get(\"total_actions\", 0)
+bits = [f\"substrate: consensus={con.get(chr(39)+chr(109)+chr(101)+chr(97)+chr(110)+chr(39),\\\"?\\\")} stdev={con.get(chr(39)+chr(115)+chr(116)+chr(100)+chr(101)+chr(118)+chr(39),\\\"?\\\")} drift={dr.get(chr(39)+chr(100)+chr(114)+chr(105)+chr(102)+chr(116)+chr(95)+chr(115)+chr(99)+chr(111)+chr(114)+chr(101)+chr(39),\\\"?\\\")} actions={n_act}\"]
 if n_act > 0:
-    for a in (na.get("actions") or [])[:3]:
-        bits.append(f'  -> [{a.get("source","?")}] {a.get("id","?")}')
-print("\n".join(bits))
-PY
-)
-[ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
+    for a in (na.get(\"actions\") or [])[:3]:
+        bits.append(f\"  -> [{a.get(chr(39)+chr(115)+chr(111)+chr(117)+chr(114)+chr(99)+chr(101)+chr(39),\\\"?\\\")}] {a.get(chr(39)+chr(105)+chr(100)+chr(39),\\\"?\\\")}\")
+print(\"\\n\".join(bits))
+" >"$tmp" 2>>"'"$PROJECT/log/hme-bg-substrate-brief.err"'" \
+    && mv "$tmp" "$_SUBSTRATE_CACHE" || rm -f "$tmp"
+'
 
 # Stale-soft-warn auditor: read cached output from prior BG run; refresh in
 # background. Mirrors the _TRAJ_CACHE pattern (L247-249) -- the synchronous
