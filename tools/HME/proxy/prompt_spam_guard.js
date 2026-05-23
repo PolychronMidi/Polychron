@@ -202,7 +202,7 @@ function shouldBlockNoopSystemReminderTurn({ req, payload }) {
   return isCountTokensRequest(req) || isNoopSystemReminderTurn(payload);
 }
 
-function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
+function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component: _component = 'hme-proxy' }) {
   if (record) {
     record({
       kind: 'todowrite-only-probe-blocked',
