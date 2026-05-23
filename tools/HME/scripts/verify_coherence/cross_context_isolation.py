@@ -57,7 +57,15 @@ def _build_membership(registry: dict, root: Path) -> tuple[dict, dict]:
     """Return ({rel_path: context_name}, {context_name: facade_rel_path})."""
     membership: dict[str, str] = {}
     facades: dict[str, str] = {}
-    for name, entry in (registry.get("contexts") or {}).items():
+    contexts = (registry.get("contexts") or {})
+    needs_walk = any(entry.get("file_patterns") for entry in contexts.values())
+    js_rels: list[str] = []
+    if needs_walk:
+        js_rels = [
+            str(f.relative_to(root)).replace("\\", "/")
+            for f in root.rglob("*.js")
+        ]
+    for name, entry in contexts.items():
         facade = entry.get("facade") or ""
         facades[name] = facade
         for f in entry.get("files") or []:
@@ -67,8 +75,7 @@ def _build_membership(registry: dict, root: Path) -> tuple[dict, dict]:
                 rx = re.compile(pat)
             except re.error:
                 continue
-            for f in (root).rglob("*.js"):
-                rel = str(f.relative_to(root)).replace("\\", "/")
+            for rel in js_rels:
                 if rx.search(rel):
                     membership.setdefault(rel, name)
     return membership, facades
