@@ -439,7 +439,7 @@ function scanUnfinishedTaskReminder(text) {
     }
     if (inStopHookPayload) {
       if (/^\s*(Carried-over HME todos|Here are the existing tasks|TaskList|#\d+\.?\s*\[(?:in_progress|pending)\])/i.test(trimmed)) inStopHookPayload = false;
-      else if (/UNFINISHED TASK-LIST VIOLATION|Open task evidence:|\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
+      else if (/UNFINISHED TASK-LIST VIOLATION|Open task evidence:|\{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
       else if (/^\d+\.\s*\d+:\[\d{4}-\d{2}-\d{2}T.*\[proxy-supervisor\]/.test(trimmed)) continue;
     }
     if (/^\d+\s+\{\"decision\":\"block\",\"reason\":\"UNFINISHED TASK-LIST VIOLATION:/i.test(trimmed)) continue;
