@@ -120,9 +120,18 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
   fi
   if [ "$_ss_probe_status" != "ok" ]; then
     echo "[ALERT] HME proxy not running on :${PROXY_PORT} -- run polychron-launch.sh or polychron-proxy-restart.sh to start it" >&2
-    TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-    mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null
-    echo "[$TS] [sessionstart] proxy not running on :${PROXY_PORT} — proxy lifecycle belongs to launchers, not session hooks" >> "$ERROR_LOG" 2>/dev/null
+    _SS_ALERT_STAMP="$_SS_PROBE_DIR/sessionstart-down-alert.stamp"
+    _ss_alert_recent=0
+    if [ -s "$_SS_ALERT_STAMP" ]; then
+      _alert_age=$(( $(date +%s) - $(stat -c %Y "$_SS_ALERT_STAMP" 2>/dev/null || echo 0) ))
+      [ "$_alert_age" -lt 60 ] && _ss_alert_recent=1
+    fi
+    if [ "$_ss_alert_recent" = "0" ]; then
+      TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+      mkdir -p "$(dirname "$ERROR_LOG")" 2>/dev/null
+      echo "[$TS] [sessionstart] proxy not running on :${PROXY_PORT} — proxy lifecycle belongs to launchers, not session hooks" >> "$ERROR_LOG" 2>/dev/null
+      : > "$_SS_ALERT_STAMP"
+    fi
   fi
 fi
 
