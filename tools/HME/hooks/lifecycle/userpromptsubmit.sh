@@ -27,19 +27,17 @@ fi
 
 _signal_emit turn_start userpromptsubmit turn '{}'
 
-# SatisfactionCapture: score the prompt 1-10 -> tools/HME/runtime/metrics/satisfaction.jsonl
-# (neutral=5, never null). Best-effort; never blocks the turn.
+# Three fire-and-forget python invocations whose output the hook never reads.
+# Backgrounding cuts ~1.5-3s off UserPromptSubmit (each python startup ~500ms).
+# Outputs already discarded; failure recorded by _hme_bg_timeout into the log.
 if [ -n "$PROJECT_ROOT" ] && [ -n "$PROMPT" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
+  _hme_bg_timeout 10 satisfaction-capture "$PROJECT_ROOT/log/hme-bg-satisfaction.err" \
+    env PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT"
+  _hme_bg_timeout 10 tier-classifier "$PROJECT_ROOT/log/hme-bg-tier-classifier.err" \
+    env PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json
 fi
-
-if [ -n "$PROJECT_ROOT" ] && [ -n "$PROMPT" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json >/dev/null 2>&1 || true
-fi
-
-# Stale-state sweep: per-turn cleanup of tools/HME/runtime/ files whose owner
-# forgot the cleanup path (catches the supervisor-abandoned bug class).
-python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 || true
+_hme_bg_timeout 15 stale-state-sweep "$PROJECT_ROOT/log/hme-bg-stale-state-sweep.err" \
+  python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py"
 
 # UserPromptSubmit must not run synchronous git/precommit work. Request-side
 # proxy_autocommit owns autocommit and writes the same sticky fail flag; this
