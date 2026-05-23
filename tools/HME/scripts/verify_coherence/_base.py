@@ -12,15 +12,13 @@ import subprocess
 import time
 from pathlib import Path
 
-_PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
-)
-METRICS_DIR = os.environ.get("HME_METRICS_DIR") or os.path.join(_PROJECT, "tools", "HME", "runtime", "metrics")
-PROJECT_METRICS_DIR = (
-    os.environ.get("COMPOSITION_METRICS_DIR")
-    or os.environ.get("METRICS_DIR")
-    or os.path.join(_PROJECT, "tmp", "metrics")
-)
+# Invariant: no silent .env fallbacks. Required env keys MUST be present
+# via .env (loaded by the entrypoint shim). Missing keys fail loud with a
+# clear pointer. Enforced by EnvNoFallbackVerifier; do not reintroduce
+# `os.environ.get(<KEY>) or <default>` for keys declared in .env.
+_PROJECT = os.environ['PROJECT_ROOT']
+METRICS_DIR = os.environ['HME_METRICS_DIR']
+PROJECT_METRICS_DIR = os.environ.get("COMPOSITION_METRICS_DIR") or os.environ['METRICS_DIR']
 _HOOKS_DIR = os.path.join(_PROJECT, "tools", "HME", "hooks")
 _SERVER_DIR = os.path.join(_PROJECT, "tools", "HME", "service", "server")
 _SCRIPTS_DIR = os.path.join(_PROJECT, "tools", "HME", "scripts")
