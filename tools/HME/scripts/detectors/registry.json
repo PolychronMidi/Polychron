@@ -412,7 +412,6 @@
       "fires_when": "spiralling_petulance",
       "bash_var": "SPIRALLING_PETULANCE",
       "deny": true,
-      "reason_key": "SPIRALLING_PETULANCE",
       "category": "universal",
       "scope": "transcript",
       "owning_invariant": "universal agent-work hygiene",
