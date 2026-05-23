@@ -1,6 +1,6 @@
 'use strict';
 
-function omniProviderForConfigProvider(provider, env = process.env) {
+function omniProviderForConfigProvider(provider, _env = process.env) {
   const p = String(provider || '').trim();
   if (p === 'codex') return 'cx';
   if (p === 'anthropic') return 'claude';
