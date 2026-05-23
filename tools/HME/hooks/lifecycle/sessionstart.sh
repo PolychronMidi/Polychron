@@ -216,7 +216,7 @@ if [ -f "$HOLO_SCRIPT" ]; then
   SNAP_LOG="$PROJECT/log/hme-bg-snapshot-holograph.err"
   : > "$SNAP_LOG"
   export PROJECT SESSION_HOLO HOLO_SCRIPT SNAP_LOG
-  _hme_bg_shell_timeout 25 snapshot-holograph "$SNAP_LOG" '
+  _hme_bg_shell_timeout 300 snapshot-holograph "$SNAP_LOG" '
     tmp="${SESSION_HOLO}.$$.tmp"
     PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout >"$tmp" 2>>"$SNAP_LOG" \
       && mv "$tmp" "$SESSION_HOLO" || rm -f "$tmp"
