@@ -80,7 +80,7 @@ let loadedMiddleware = null;
 let handleRequest = null;
 function getHandleRequest() {
   if (handleRequest) return handleRequest;
-  const { middleware } = require('./middleware');
+  const middleware = require('./middleware');
   const { createClaudeHandler } = require('./hme_proxy_claude');
   loadedMiddleware = middleware.loadAll();
   if (process.env.HME_PROXY_QUIET_IMPORT !== '1') console.log(`loaded middleware: ${loadedMiddleware.join(', ')}`);
