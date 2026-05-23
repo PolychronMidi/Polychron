@@ -105,6 +105,119 @@ def managed_settings(base: dict[str, Any], expected: dict[str, Any]) -> dict[str
     return merged
 
 
+def _codex_collapse_session_start(groups: list[Any]) -> list[Any]:
+    if not isinstance(groups, list) or not groups:
+        return groups
+    first = copy.deepcopy(groups[0])
+    if isinstance(first, dict):
+        first.pop("matcher", None)
+    return [first]
+
+
+def _codex_swap_adapter(command: str) -> str:
+    old, new = CODEX_ADAPTER_SUBSTITUTION
+    return command.replace(old, new)
+
+
+def _codex_project_event(event: str, groups: Any) -> Any:
+    if not isinstance(groups, list):
+        return groups
+    out: list[Any] = []
+    for group in groups:
+        if not isinstance(group, dict):
+            out.append(group)
+            continue
+        new_group: dict[str, Any] = {}
+        if event in CODEX_MATCHER_STAR_EVENTS or "matcher" in group:
+            new_group["matcher"] = "*"
+        hooks_list = group.get("hooks", [])
+        new_hooks: list[Any] = []
+        if isinstance(hooks_list, list):
+            for hook in hooks_list:
+                if isinstance(hook, dict):
+                    nh = dict(hook)
+                    if isinstance(nh.get("command"), str):
+                        nh["command"] = _codex_swap_adapter(nh["command"])
+                    new_hooks.append(nh)
+                else:
+                    new_hooks.append(hook)
+        new_group["hooks"] = new_hooks
+        out.append(new_group)
+    return out
+
+
+def codex_expected_settings(
+    project_root: Path = PROJECT_ROOT,
+    hooks_json: Path = HOOKS_JSON,
+    extensions_json: Path = CODEX_EXTENSIONS_JSON,
+) -> dict[str, Any]:
+    manifest = load_json(hooks_json)
+    hooks = manifest.get("hooks")
+    if not isinstance(hooks, dict):
+        raise ValueError(f"{hooks_json}: hooks must be an object")
+
+    missing = [event for event in REQUIRED_EVENTS if event not in hooks]
+    if missing:
+        raise ValueError(f"{hooks_json}: missing required hook event(s): {', '.join(missing)}")
+
+    extensions: dict[str, Any] = {}
+    if extensions_json.exists():
+        ext_manifest = load_json(extensions_json)
+        ext_hooks = ext_manifest.get("hooks") if isinstance(ext_manifest, dict) else None
+        if ext_hooks is not None and not isinstance(ext_hooks, dict):
+            raise ValueError(f"{extensions_json}: hooks must be an object")
+        extensions = ext_hooks or {}
+
+    overlap = set(extensions.keys()) & set(hooks.keys())
+    if overlap:
+        raise ValueError(
+            f"{extensions_json}: extension events overlap canonical hooks.json: {sorted(overlap)}"
+        )
+
+    materialized: dict[str, Any] = {"hooks": {}}
+    for event, groups in hooks.items():
+        if event == STATUSLINE_EVENT:
+            continue
+        expanded = _expand_obj(copy.deepcopy(groups), project_root)
+        if event == "SessionStart":
+            expanded = _codex_collapse_session_start(expanded)
+        materialized["hooks"][event] = _codex_project_event(event, expanded)
+    for event, groups in extensions.items():
+        expanded = _expand_obj(copy.deepcopy(groups), project_root)
+        materialized["hooks"][event] = _codex_project_event(event, expanded)
+    return materialized
+
+
+def codex_managed_settings(base: dict[str, Any], expected: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    merged["hooks"] = expected["hooks"]
+    return merged
+
+
+def codex_compare_managed(live: dict[str, Any], expected: dict[str, Any]) -> list[str]:
+    violations: list[str] = []
+    live_hooks = live.get("hooks")
+    expected_hooks = expected.get("hooks")
+    if live_hooks != expected_hooks:
+        live_events = set(live_hooks.keys()) if isinstance(live_hooks, dict) else set()
+        expected_events = set(expected_hooks.keys()) if isinstance(expected_hooks, dict) else set()
+        for event in sorted(expected_events - live_events):
+            violations.append(f"{event}: missing managed hook from live codex settings")
+        for event in sorted(live_events - expected_events):
+            violations.append(
+                f"{event}: extra hook in live codex settings; "
+                "edit hooks.json or codex-extensions.json instead"
+            )
+        for event in sorted(live_events & expected_events):
+            if live_hooks[event] != expected_hooks[event]:
+                violations.append(
+                    f"{event}: live codex command differs from projected materialization"
+                )
+        if not isinstance(live_hooks, dict):
+            violations.append(f"hooks: expected object, got {type(live_hooks).__name__}")
+    return violations
+
+
 def compare_managed(live: dict[str, Any], expected: dict[str, Any]) -> list[str]:
     violations: list[str] = []
     live_hooks = live.get("hooks")
