@@ -151,7 +151,7 @@ function createContextBudget() {
     const reg = loadModelCtxRegistry();
     if (reg.has(id)) return reg.get(id);
     for (const [k, v] of reg) if (id.includes(k)) return v;
-    return 1000000;
+    return 0;
   }
 
   function payloadModelInfo(payload) {
@@ -159,7 +159,7 @@ function createContextBudget() {
     const candidates = [payload.model, payload.original_model, payload.target_model].filter(Boolean).map(String);
     for (const id of candidates) {
       const ctx = resolveModelCtx(id);
-      if (ctx && ctx !== 1000000) return { model: id, budget: ctx };
+      if (ctx > 0) return { model: id, budget: ctx };
     }
     return { model: candidates[0] || '', budget: 0 };
   }
@@ -218,7 +218,7 @@ function createContextBudget() {
       const rawSize = positiveNumber(ctx.context_window_size);
       const modelId = String((data && data.model && (data.model.id || data.model.api_model)) || '');
       const registrySize = modelId ? resolveModelCtx(modelId) : 0;
-      const size = Math.max(rawSize, registrySize && registrySize !== 1000000 ? registrySize : 0) || rawSize;
+      const size = registrySize > 0 ? registrySize : rawSize;
       return { used, size };
     } catch (_e) { return { used: 0, size: 0 }; }
   }
