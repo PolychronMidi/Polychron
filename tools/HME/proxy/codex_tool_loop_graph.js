@@ -12,7 +12,7 @@ const FINALIZE_TOOL_LOOP_DEPTH = MAX_TOOL_LOOP_DEPTH - 1;
 function nowIso() { return new Date().toISOString(); }
 function asArray(value) { return Array.isArray(value) ? value : []; }
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
-function hasText(value) { return String(value || '').trim().length > 0; }
+function _hasText(value) { return String(value || '').trim().length > 0; }
 
 function safeName(value) {
   return String(value || '').replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 180) || `turn_${Date.now()}`;

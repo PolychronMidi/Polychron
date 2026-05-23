@@ -14,7 +14,7 @@ const CANONICAL_NAMES = canonicalToolNames();
 const BRIDGE_NAMES = new Set(Object.entries(TOOL_META).filter(([, meta]) => meta.hme && meta.hme.passthrough_target === TARGET_TOOL && meta.name !== 'Bash').map(([name]) => name));
 const RENAME_TARGETS = Object.fromEntries(Object.entries(TOOL_META).filter(([, meta]) => meta.hme && meta.hme.passthrough_target && !BRIDGE_NAMES.has(meta.name)).map(([name, meta]) => [name, meta.hme.passthrough_target]));
 
-function toolName(tool) {
+function _toolName(tool) {
   if (!tool || typeof tool !== 'object') return '';
   return tool.name || (tool.function && tool.function.name) || '';
 }

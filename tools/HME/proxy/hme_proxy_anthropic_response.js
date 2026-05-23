@@ -174,7 +174,7 @@ function _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload }
   });
 }
 
-async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, swapChain, omniProvider, swapModel, transport, upstreamOpts, upstreamHeaders, projectRoot = PROJECT_ROOT, log = console.error }) {
+async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, swapChain, omniProvider, swapModel: _swapModel, transport, upstreamOpts, upstreamHeaders, projectRoot = PROJECT_ROOT, log = console.error }) {
   if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) return null;
   const routeKey = _omniRouteKeyFromModel(payload && payload.model, omniProvider);
   try {

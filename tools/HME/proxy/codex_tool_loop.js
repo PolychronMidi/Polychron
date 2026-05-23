@@ -76,7 +76,7 @@ function collectSseToolCalls(text) {
   const calls = [];
   const seenObjects = new Set();
   const byKey = new Map();
-  let lastCall = null;
+  let _lastCall = null;
 
   function remember(seed = {}) {
     const keys = sseKeyCandidates(seed);
@@ -91,7 +91,7 @@ function collectSseToolCalls(text) {
     if (seed.item_id && !call.id) call.id = seed.item_id;
     if (seed.arguments != null && seed.arguments !== '') call.arguments = seed.arguments;
     for (const key of sseKeyCandidates({ ...seed, call_id: call.call_id, id: call.id })) byKey.set(key, call);
-    lastCall = call;
+    _lastCall = call;
     return call;
   }
 

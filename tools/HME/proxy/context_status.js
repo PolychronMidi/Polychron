@@ -4,8 +4,8 @@
 // 5-min Anthropic prompt-cache window.
 
 const fs = require('fs');
-const path = require('path');
-const { PROJECT_ROOT } = require('./shared');
+const _path = require('path');
+const { PROJECT_ROOT: _PROJECT_ROOT } = require('./shared');
 const hmePaths = require('./infra/hme_paths');
 const { runtimePath, logPath, tmpPath } = require('./infra/paths');
 

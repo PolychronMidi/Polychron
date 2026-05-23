@@ -3,8 +3,8 @@
 // Heavy lifting lives in context_jurisdiction.js / context_status.js.
 
 const fs = require('fs');
-const path = require('path');
-const { PROJECT_ROOT } = require('./shared');
+const _path = require('path');
+const { PROJECT_ROOT: _PROJECT_ROOT } = require('./shared');
 const hmePaths = require('./infra/hme_paths');
 
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
