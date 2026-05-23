@@ -258,7 +258,9 @@ async function handleAnthropicResponseComplete({
   const upstreamRateLimitHeaders = { ...headers };
 
   captureRateLimitTelemetry({ headers: upstreamRateLimitHeaders, status, setLastInputTokensRemaining, setLastInputTokensLimit });
-  if (isOmniRouteSwap) injectContextHeader(headers, swapModel);
+  // Always normalize rate-limit headers using Claude statusline ground truth,
+  // not just on omni-swap. Forwarding raw upstream Anthropic per-minute quota
+  injectContextHeader(headers, swapModel);
 
   const failureResult = await handleUpstreamFailureOrSuccess({
     status,
