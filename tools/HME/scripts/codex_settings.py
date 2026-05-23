@@ -86,15 +86,21 @@ def _expand_obj(value: Any, project_root: Path) -> Any:
 def expected_hooks(
     project_root: Path = PROJECT_ROOT,
     hooks_json: Path = HOOKS_JSON,
+    extensions_json: Path = CODEX_EXTENSIONS_JSON,
 ) -> dict[str, Any]:
-    manifest = load_json(hooks_json)
-    hooks = manifest.get("hooks")
-    if not isinstance(hooks, dict):
-        raise ValueError(f"{hooks_json}: hooks must be an object")
+    projected = codex_expected_settings(
+        project_root=project_root,
+        hooks_json=hooks_json,
+        extensions_json=extensions_json,
+    )
+    hooks = projected.get("hooks") or {}
     missing = [event for event in REQUIRED_EVENTS if event not in hooks]
     if missing:
-        raise ValueError(f"{hooks_json}: missing required hook event(s): {', '.join(missing)}")
-    return {"hooks": _expand_obj(copy.deepcopy(hooks), project_root)}
+        raise ValueError(
+            f"projected codex hooks missing required event(s): {', '.join(missing)} "
+            f"(check {hooks_json} and {extensions_json})"
+        )
+    return projected
 
 
 def codex_proxy_base_url(port: int) -> str:
