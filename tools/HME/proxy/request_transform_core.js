@@ -11,7 +11,7 @@ const { sanitizeMessages } = require('./conversation_graph');
 
 const EMPTY_TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
 
-function jsonBytes(value) { try { return Buffer.byteLength(JSON.stringify(value)); } catch (err) { return 0; } }
+function jsonBytes(value) { try { return Buffer.byteLength(JSON.stringify(value)); } catch (_err) { return 0; } }
 function byteLen(value) { return Buffer.byteLength(String(value || '')); }
 function bump(map, key) { if (key) map[key] = (map[key] || 0) + 1; }
 
