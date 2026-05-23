@@ -26,6 +26,18 @@ logger = logging.getLogger("HME")
 @ctx.mcp.tool()
 
 def _startup_snapshot_nonblocking() -> dict:
+    """Public MCP tool: non-blocking startup readiness snapshot.
+
+    Returns the HME service's current startup-status without forcing a
+    blocking warm-up. Status tools (status/all, status/health, etc.) call
+    this to decide whether to dispatch full reads or fall back to a
+    bounded "degraded" response when imports/threads are still spinning.
+
+    Return shape:
+        ready:   True once context is fully initialized.
+        loading: True while warm-up is in progress.
+        failed:  True if startup raised; `error` carries the exception str.
+    """
     try:
         from tools.HME.service.server.context import startup_status_snapshot
         return startup_status_snapshot()
