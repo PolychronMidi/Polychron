@@ -86,13 +86,16 @@ function evaluateReadInput(input = {}, opts = {}) {
   const file = input.file_path || input.path || '';
   if (!file) return { decision: 'allow' };
   const rel = relPath(file, root);
-  // verify-landed antipattern only fires for UNBOUNDED reads. A Read with
-  // explicit offset+limit is targeted navigation (e.g., inspecting a different
-  // region of the same file the agent just edited); blocking those is a
-  const _hasReadWindow = Number(input.limit || 0) > 0 || Number(input.offset || 0) > 0;
-  if (opts.verifyLanded !== false && !_hasReadWindow && editedThisTurn(file, root)) {
-    const base = path.basename(file).replace(/\.[^.]*$/, '');
-    return { decision: 'deny', reason: `BLOCKED: verify-landed antipattern -- unbounded Read of ${base} which was Edit/Written this turn. The Edit tool already returned [SUCCESS]; re-reading is context-burn. Use offset+limit to target a different region if needed.` };
+  // verify-landed antipattern: fires only when the Read window actually
+  // overlaps an edited line range. Reads of different regions, or reads of
+  // unedited files, proceed normally.
+  if (opts.verifyLanded !== false) {
+    const ranges = editedRangesThisTurn(file, root);
+    if (ranges.length > 0 && _readWindowOverlapsEdits(input, ranges)) {
+      const base = path.basename(file).replace(/\.[^.]*$/, '');
+      const rng = ranges.map(([s, e]) => (s === 0 && e === 0 ? 'whole-file' : `${s}-${e}`)).join(',');
+      return { decision: 'deny', reason: `BLOCKED: verify-landed antipattern -- Read of ${base} overlaps edited range(s) [${rng}] from this turn. The Edit tool already returned [SUCCESS]; re-reading the just-edited region is context-burn. Read a non-overlapping window via offset+limit if you need a different part.` };
+    }
   }
   if (/\.claude\/projects\/.*\/(memory\/|MEMORY\.md)/.test(file)) {
     return { decision: 'deny', reason: 'BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn query="<what you need>".' };
