@@ -24,7 +24,7 @@ test('Claude proxy binds dual-stack localhost', () => {
 
 
 test('Claude upstream-failure module imports failure classification under call-site aliases', () => {
-  const failureSource = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy_upstream_failure.js'), 'utf8');
+  const failureSource = fs.readFileSync(path.join(repo, 'tools/HME/proxy/contexts/failure_policy/hme_proxy_upstream_failure.js'), 'utf8');
   assert.match(failureSource, /detectUpstreamFailure:\s*_detectUpstreamFailure/);
   assert.match(failureSource, /alertCooldownActive:\s*_alertCooldownActive/);
 });
