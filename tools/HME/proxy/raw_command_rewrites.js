@@ -5,7 +5,7 @@ const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 
 const CONTROL_RE = /[|;&<>`]/;
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__']);
+const _SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__']);
 
 function shellWords(text) {
   const out = [];
