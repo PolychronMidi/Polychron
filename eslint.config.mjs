@@ -252,5 +252,28 @@ export default [
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
       'no-restricted-syntax': 'off'
     }
+  },
+  {
+    // Whole-proxy CommonJS lint, only active under `npm run lint:proxy` which
+    // passes --no-ignore. Rules match proxy conventions (CommonJS, _-prefix
+    files: ['tools/HME/proxy/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      ecmaVersion: 'latest',
+      globals: { ...globalsPkg.nodeBuiltin }
+    },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-redeclare': 'off',
+      'no-restricted-syntax': 'off',
+      'no-unreachable': 'error',
+      'no-dupe-keys': 'error',
+      'no-dupe-args': 'error',
+      'no-dupe-else-if': 'error',
+      'no-duplicate-case': 'error',
+      'no-cond-assign': 'error',
+      'no-constant-condition': ['error', { checkLoops: false }]
+    }
   }
 ];
