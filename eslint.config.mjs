@@ -254,6 +254,22 @@ export default [
     }
   },
   {
+    // event_kernel CommonJS adapters (statusline.js etc.). Same relaxed rule
+    // set as proxy: caught-error and arg/var ignore patterns + nodeBuiltin
+    files: ['tools/HME/event_kernel/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      ecmaVersion: 'latest',
+      globals: { ...globalsPkg.nodeBuiltin }
+    },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-redeclare': 'off',
+      'no-restricted-syntax': 'off'
+    }
+  },
+  {
     // Whole-proxy CommonJS lint, only active under `npm run lint:proxy` which
     // passes --no-ignore. Rules match proxy conventions (CommonJS, _-prefix
     files: ['tools/HME/proxy/**/*.js'],
