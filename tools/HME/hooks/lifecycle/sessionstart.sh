@@ -43,7 +43,7 @@ mkdir -p "${PROJECT}/tmp"
 # Refresh adaptive config and coherence health on every session start.
 _hme_bg_timeout 20 adapt-from-activity "$PROJECT/log/hme-bg-adapt-from-activity.err" \
   python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py"
-_hme_bg_timeout 30 verify-coherence-registry "$PROJECT/log/hme-bg-verify-coherence-registry.err" \
+_hme_bg_timeout 90 verify-coherence-registry "$PROJECT/log/hme-bg-verify-coherence-registry.err" \
   python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py"
 
 _signal_emit session_start sessionstart session '{}'
