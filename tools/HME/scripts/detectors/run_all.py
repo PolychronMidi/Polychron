@@ -30,6 +30,20 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+_PROJECT_ROOT = Path(__file__).resolve().parents[4]
+_ENV_FILE = _PROJECT_ROOT / ".env"
+if "PROJECT_ROOT" not in os.environ:
+    os.environ["PROJECT_ROOT"] = str(_PROJECT_ROOT)
+if _ENV_FILE.is_file():
+    for _line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith("#") or "=" not in _line:
+            continue
+        _key, _value = _line.split("=", 1)
+        _key = _key.strip()
+        _value = _value.split(" #", 1)[0].strip()
+        if _key and _key not in os.environ:
+            os.environ[_key] = _value.replace("${PROJECT_ROOT}", os.environ["PROJECT_ROOT"])
 
 
 # Load detector list from registry.json (single source of truth).
