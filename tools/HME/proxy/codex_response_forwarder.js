@@ -217,7 +217,7 @@ function createCodexResponseForwarder(deps) {
       if (clientSse.started) return true;
       if (res.headersSent) return false;
       clientSse.started = true;
-      clientSse.responseId = sseId('hme_visible_response');
+      clientSse.responseId = clientSse.responseId || sseId('hme_visible_response');
       clientSse.itemId = sseId('hme_visible_message');
       record({ kind: 'codex-client-sse-started', route: target.kind, ...traceFields(target) });
       const outHeaders = { ...headers, 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache', 'x-accel-buffering': 'no' };
