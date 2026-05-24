@@ -5,6 +5,12 @@ function from(modulePath, name) {
 }
 
 module.exports = {
+  classifyFailure: from('./omni_failure_policy', 'classifyFailure'),
+  policyFor: from('./omni_failure_policy', 'policyFor'),
+  actionsFor: from('./omni_failure_policy', 'actionsFor'),
+  get POLICY_TABLE() { return require('./omni_failure_policy').POLICY_TABLE; },
+  detectUpstreamFailure: from('./failure_classification', 'detectUpstreamFailure'),
+  alertCooldownActive: from('./failure_classification', 'alertCooldownActive'),
   handleUpstreamFailureOrSuccess: from('./hme_proxy_upstream_failure', 'handleUpstreamFailureOrSuccess'),
   recordSuccessAndReset: from('./hme_proxy_upstream_failure', 'recordSuccessAndReset'),
   recordOmniRouteFailureAdvance: from('./hme_proxy_codex', 'recordOmniRouteFailureAdvance'),
