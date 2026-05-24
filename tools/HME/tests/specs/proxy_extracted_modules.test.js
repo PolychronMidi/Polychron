@@ -546,7 +546,7 @@ test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch
 
 test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
   const cfg = {
-    providers_to_skip: { providers: ['opencode_go'] },
+    providers_to_skip: { providers: ['opencode-go'] },
     ranking_rules: { cost_order: ['subscription', 'free'] },
     manually_toprank: { E5: ['anthropic-top'] },
     team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },

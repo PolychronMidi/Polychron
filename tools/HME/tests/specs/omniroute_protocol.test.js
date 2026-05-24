@@ -20,7 +20,7 @@ test('codex config provider resolves to cx responses target', () => {
 });
 
 test('non-codex providers keep provider-default target format', () => {
-  assert.equal(omniProviderForConfigProvider('opencode_go'), 'opencode-go');
+  assert.equal(omniProviderForConfigProvider('opencode-go'), 'opencode-go');
   assert.equal(omniProviderForConfigProvider('kilo'), 'kilo-gateway');
   assert.equal(omniProviderForConfigProvider('kilo-gateway'), 'kilo-gateway');
   assert.equal(omniProviderForConfigProvider('aihubmix'), 'aihubmix');
