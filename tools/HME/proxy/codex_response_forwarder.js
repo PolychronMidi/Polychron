@@ -4,7 +4,7 @@ const http = require('http');
 const https = require('https');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, followupBody, missingRequiredToolFields, toolOutputIsError, codexToolOutputs } = require('./codex_tool_loop');
-const { MAX_TOOL_LOOP_DEPTH, runCodexToolLoopGraph } = require('./codex_tool_loop_graph');
+const { runCodexToolLoopGraph } = require('./codex_tool_loop_graph');
 
 
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
