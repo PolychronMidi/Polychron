@@ -476,8 +476,17 @@ function createCodexResponseForwarder(deps) {
         });
       });
       upstreamReq.on('error', (err) => {
-        record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message, ...traceFields(target) });
-        if (target.fallbackDirect && targets[index + 1] && !res.headersSent) return attemptTarget(index + 1);
+        record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message, client_sse_started: clientSse.started, tool_loop_count: clientSse.toolLoops, ...traceFields(target) });
+        // Fallback is possible only when client hasn't seen any bytes yet.
+        // Once clientSse fabricated headers committed, we cannot switch routes
+        if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
+        // If fake SSE envelope was already opened, close it gracefully so
+        // Codex CLI captures the partial assistant text + any tool outputs
+        if (clientSse.started && !res.writableEnded) {
+          try { completeClientSse(target, 502, err.message, null); }
+          catch (_e) { try { res.end(); } catch (_) { /* socket already closed */ } }
+          return;
+        }
         finishResponse(target, 502, err.message);
         if (!res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json' });
