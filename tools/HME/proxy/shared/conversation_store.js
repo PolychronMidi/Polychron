@@ -5,11 +5,31 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { PROJECT_ROOT } = require('../shared');
 
 const SESSIONS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'codex-sessions');
 const MAX_ITEMS_PER_SESSION = 2000;
 const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
+function _itemHash(item) {
+  try { return crypto.createHash('sha1').update(JSON.stringify(item)).digest('hex').slice(0, 16); }
+  catch (_) { return ''; }
+}
+
+// In-memory hash cache per session: avoids re-hashing entire stored history
+// on every appendItems call. Hydrates from disk on first access per session.
+const _hashCache = new Map();
+function _ensureHashCache(sessionId) {
+  if (_hashCache.has(sessionId)) return _hashCache.get(sessionId);
+  const set = new Set();
+  for (const it of loadHistory(sessionId)) {
+    const h = _itemHash(it);
+    if (h) set.add(h);
+  }
+  _hashCache.set(sessionId, set);
+  return set;
+}
 
 function _safeSessionId(sessionId) {
   return String(sessionId || '').replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 128) || 'unknown';
