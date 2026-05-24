@@ -419,20 +419,11 @@ test('Codex proxy routes through OmniRoute Responses for dashboard visibility', 
   }
 });
 
-test('Codex proxy falls back direct when OmniRoute is unavailable', async () => {
+test('Codex proxy returns 502 after exhausting OmniRoute retries (no silent direct fallback)', async () => {
   const sandbox = withSandbox();
   const proxyPort = await freePort();
   const missingOmniPort = await freePort();
-  let directBody = null;
-  const upstream = http.createServer((req, res) => {
-    const chunks = [];
-    req.on('data', (chunk) => chunks.push(chunk));
-    req.on('end', () => {
-      directBody = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ id: 'resp_direct', usage: { input_tokens: 2, output_tokens: 1 }, output: [] }));
-    });
-  });
+  const upstream = http.createServer((req, res) => { req.resume(); res.writeHead(500); res.end(); });
   const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
   const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
     cwd: repoRoot,
@@ -466,9 +457,10 @@ test('Codex proxy falls back direct when OmniRoute is unavailable', async () => 
       tools: [],
       stream: false,
     });
-    assert.strictEqual(response.status, 200);
-    assert.strictEqual(JSON.parse(response.body).id, 'resp_direct');
-    assert.strictEqual(directBody.model, 'gpt-5.5');
+    assert.strictEqual(response.status, 502);
+    const body = JSON.parse(response.body);
+    assert.strictEqual(body.error, 'codex_proxy_upstream_error');
+    assert.ok(body.attempts >= 1, `attempts should be recorded, got ${JSON.stringify(body)}`);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
