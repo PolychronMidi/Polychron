@@ -446,6 +446,13 @@ function createCodexResponseForwarder(deps) {
       const events = parseSseEvents(full);
       const calls = collectSseToolCalls(full);
       const parsed = sseFinalResponse(events);
+      // Last-ditch upstream id extraction: scan raw SSE bytes for resp_* token
+      // when structured parsing failed. Without a real upstream id, the chain
+      if (!parsed.id) {
+        const m = full.match(/"id"\s*:\s*"(resp_[A-Za-z0-9_-]{8,})"/);
+        if (m) parsed.id = m[1];
+      }
+      if (parsed.id && !clientSse.started) clientSse.responseId = String(parsed.id);
       if (calls.length) {
         const decision = runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'sse' }, { record });
         if (continueAfterTools(target.index, target, parsed, calls, null, decision)) return;
