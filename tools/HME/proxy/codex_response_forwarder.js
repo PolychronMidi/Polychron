@@ -393,25 +393,20 @@ function createCodexResponseForwarder(deps) {
         clientSse.callIds.push(...actionableCalls.map((call) => call.id).filter(Boolean));
         if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: actionableCalls.map((call) => ({ call_id: call.id, name: call.name })), ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
       }
-      const finalizing = !forcedResults && decision.finalizing;
       clientSse.toolLoops += forcedResults ? 0 : 1;
       const hiddenStreamLoop = Boolean(target.body && target.body.stream && !forcedResults && clientSse.progressEvents === 0);
       if (hiddenStreamLoop) record({ kind: 'codex-hidden-tool-loop-violation', route: target.kind, depth: depth + 1, reason: 'streamed tool loop executed without client-visible progress', ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
-      record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: toolOutputIsError(r) })), client_visible: clientSse.started, ...traceFields(target, { call_ids: results.map((r) => r.call_id).filter(Boolean) }) });
-      let nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
-      if (finalizing) {
-        const finalizeInput = { type: 'message', role: 'user', content: [{ type: 'input_text', text: finalizePrompt(target, results) }] };
-        nextBody = { ...nextBody, input: [...codexToolOutputs(results), finalizeInput], tools: [], tool_choice: 'none' };
-      }
-      attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: finalizing || target.finalizing_tool_loop, finalization_repairs: target.finalization_repairs || 0 });
+      record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: toolOutputIsError(r) })), client_visible: clientSse.started, ...traceFields(target, { call_ids: results.map((r) => r.call_id).filter(Boolean) }) });
+      const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
+      attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
       return true;
     }
 
-    function retryAfterFinalizationToolCalls(target, parsed, calls) {
-      if (!target.finalizing_tool_loop || !calls.length) return false;
+    function _unusedFinalizationStub(target, parsed, calls) {
+      if (!calls.length) return false;
       const depth = target.tool_loop_depth || 0;
-      const repairs = target.finalization_repairs || 0;
-      record({ kind: 'codex-finalization-tool-call-blocked', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })), ...traceFields(target, { call_ids: calls.map((call) => call.id).filter(Boolean) }) });
+      const repairs = 0;
+      record({ kind: 'codex-finalization-tool-call-blocked-removed', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })), ...traceFields(target, { call_ids: calls.map((call) => call.id).filter(Boolean) }) });
       if (repairs >= 1) return false;
       const nextBody = appendFinalizationToolBlockPrompt(target.body, calls);
       attemptTarget(target.index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: true, finalization_repairs: repairs + 1 });
