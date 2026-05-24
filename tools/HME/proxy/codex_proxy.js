@@ -149,9 +149,11 @@ function guardSession(sessionId) {
   const now = Date.now();
   if (now - _lastGuardMs < 30000) return;
   _lastGuardMs = now;
+  // Observe only. Killing duplicate codex wrapper processes from inside the
+  // request path can terminate the active interactive TUI as soon as a prompt
   try {
-    const result = ensureSession(sessionId);
-    if (result.killed && result.killed.length) record({ kind: 'codex-session-reaped', session_id: sessionId, killed: result.killed.length, lock_pid: result.lock_pid });
+    const result = codexSessionStatus();
+    if (result.duplicates && result.duplicates.length) record({ kind: 'codex-session-duplicates-observed', session_id: sessionId, duplicates: result.duplicates.length });
   } catch (err) {
     record({ kind: 'codex-session-guard-error', message: err.message });
   }
