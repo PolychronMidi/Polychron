@@ -259,10 +259,12 @@ flowchart LR
     tools__HME__policies__builtin["HME/policies/builtin/<br/><i>Built-in HME policy implementations (read/write/bash gates).</i>"]
     tools__HME__policies__examples["HME/policies/examples/<br/><i>Example HME policy stubs for reference / starter templates.</i>"]
     tools__HME__proxy__contexts["HME/proxy/contexts/<br/><i>Each subdirectory in `contexts/` is the **single façade** for a bounded</i>"]
-    tools__HME__proxy__infra["HME/proxy/infra/"]
+    tools__HME__proxy__infra["HME/proxy/infra/<br/><i>Foundational infrastructure for the HME proxy: filesystem paths, config</i>"]
     tools__HME__proxy__mcp_server["HME/proxy/mcp_server/<br/><i>In-process MCP (Model Context Protocol) server, hosted by `hme_proxy.js`</i>"]
     tools__HME__proxy__middleware["HME/proxy/middleware/<br/><i>Per-tool enrichment and side-effect modules. The proxy's `messages.js` pipeli...</i>"]
     tools__HME__proxy__shared["HME/proxy/shared/<br/><i>Shared utilities used across HME proxy modules.</i>"]
+    tools__HME__proxy__shuffler["HME/proxy/shuffler/<br/><i>Active-active proxy slot routing and zero-downtime handoff helpers.</i>"]
+    tools__HME__proxy__sse_stop_hook_rewriters["HME/proxy/sse_stop_hook_rewriters/<br/><i>Focused SSE stop-hook rewriter strategies used by the response transform pipe...</i>"]
     tools__HME__proxy__stop_chain["HME/proxy/stop_chain/<br/><i>Stop-event chain: ordered handlers run when Claude Code emits Stop.</i>"]
     tools__HME__proxy__supervisor["HME/proxy/supervisor/<br/><i>Proxy supervisor: spawns worker + daemon, monitors health, restarts on failure.</i>"]
     tools__HME__scripts__chaos["HME/scripts/chaos/<br/><i>Chaos-engineering harnesses that perturb HME subsystems to test resilience.</i>"]
@@ -302,6 +304,7 @@ flowchart LR
     tools__HME__hooks__pretooluse__bash___disabled["HME/hooks/pretooluse/bash/_disabled/<br/><i>Bash-policy hooks currently disabled; kept for reference.</i>"]
     tools__HME__hooks__pretooluse__bash__post["HME/hooks/pretooluse/bash/post/<br/><i>Bash-policy post-evaluation hooks (run after the primary policy decision).</i>"]
     tools__HME__hooks__pretooluse__bash__pre["HME/hooks/pretooluse/bash/pre/<br/><i>Bash-policy pre-evaluation hooks (early-exit checks before main policy).</i>"]
+    tools__HME__proxy__stop_chain__policies__work_checks["HME/proxy/stop_chain/policies/work_checks/<br/><i>Focused helpers for the ordered work-check Strategy pipeline.</i>"]
     tools__HME__service__server__tools_analysis__coupling["HME/service/server/tools_analysis/coupling/<br/><i>Coupling-matrix analytics. Reads `systemDynamicsProfiler.getSnapshot().coupli...</i>"]
     tools__HME__service__server__tools_analysis__evolution["HME/service/server/tools_analysis/evolution/<br/><i>Evolution-loop internals. `evolution_evolve.py` is the public dispatcher; thi...</i>"]
     tools__HME__service__server__tools_analysis__status_unified["HME/service/server/tools_analysis/status_unified/<br/><i>Unified status tool implementation (dispatch + per-mode renderers).</i>"]
@@ -358,6 +361,8 @@ flowchart LR
     tools__HME__proxy --> tools__HME__proxy__mcp_server
     tools__HME__proxy --> tools__HME__proxy__middleware
     tools__HME__proxy --> tools__HME__proxy__shared
+    tools__HME__proxy --> tools__HME__proxy__shuffler
+    tools__HME__proxy --> tools__HME__proxy__sse_stop_hook_rewriters
     tools__HME__proxy --> tools__HME__proxy__stop_chain
     tools__HME__proxy --> tools__HME__proxy__supervisor
     tools__HME__scripts --> tools__HME__scripts__chaos
@@ -397,6 +402,7 @@ flowchart LR
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash___disabled
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash__post
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash__pre
+    tools__HME__proxy__stop_chain__policies --> tools__HME__proxy__stop_chain__policies__work_checks
     tools__HME__service__server__tools_analysis --> tools__HME__service__server__tools_analysis__coupling
     tools__HME__service__server__tools_analysis --> tools__HME__service__server__tools_analysis__evolution
     tools__HME__service__server__tools_analysis --> tools__HME__service__server__tools_analysis__status_unified

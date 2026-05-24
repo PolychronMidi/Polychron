@@ -82,6 +82,11 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`request`** [activity] -- Generic upstream request envelope emitted by the proxy.
 - **`upstream_midresponse_recovered`** [activity] -- Proxy recovered from a mid-response upstream error without surfacing it to the client.
 
+## Proxy request mutation
+
+- **`autocompact_fired_despite_disable`** [activity] -- The proxy observed an autocompact marker even though compaction disablement was expected.
+- **`undefined_user_prompt_corrupted`** [activity] -- The proxy detected an undefined/corrupted final user prompt during request mutation.
+
 ## Round / session
 
 - **`session_start`** [signal] -- The session-start lifecycle hook initialized a new session boundary.

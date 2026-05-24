@@ -583,6 +583,32 @@
       "summary": "Proxy recovered from a mid-response upstream error without surfacing it to the client."
     },
     {
+      "name": "autocompact_fired_despite_disable",
+      "category": "Proxy request mutation",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "request_mutation",
+        "compaction"
+      ],
+      "summary": "The proxy observed an autocompact marker even though compaction disablement was expected."
+    },
+    {
+      "name": "undefined_user_prompt_corrupted",
+      "category": "Proxy request mutation",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "request_mutation",
+        "prompt_integrity"
+      ],
+      "summary": "The proxy detected an undefined/corrupted final user prompt during request mutation."
+    },
+    {
       "name": "session_start",
       "category": "Round / session",
       "streams": [

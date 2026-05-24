@@ -1,17 +1,17 @@
 'use strict';
 
 const { emit, PROJECT_ROOT } = require('./shared');
-const hmeDispatcher = require('./hme_dispatcher');
+const hmeDispatcher = require('./contexts/lifecycle_bridge').hmeDispatcher;
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const {
   handleUpstreamFailureOrSuccess,
-} = require('./contexts/failure_policy/hme_proxy_upstream_failure');
-const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
+} = require('./contexts/failure_policy');
+const { markRouteCooldown } = require('./contexts/failure_policy');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
-const { omniProviderForConfigProvider } = require('./omniroute_protocol');
-const swapStore = require('./swap_state_store');
-const { upstreamModelId } = require('./overdrive_route');
+const { omniProviderForConfigProvider } = require('./contexts/upstream_dispatch');
+const swapStore = require('./contexts/upstream_dispatch').swapStore;
+const { upstreamModelId } = require('./contexts/upstream_dispatch');
 
 function captureRateLimitTelemetry({ headers, status, setLastInputTokensRemaining, setLastInputTokensLimit, log = console.error }) {
   const hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];

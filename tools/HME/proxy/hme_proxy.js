@@ -10,8 +10,8 @@
 'use strict';
 
 const http = require('http');
-const { emitStartMarker } = require('./start_marker');
-const supervisor = require('./supervisor');
+const { emitStartMarker } = require('./contexts/lifecycle_bridge');
+const supervisor = require('./contexts/lifecycle_bridge').supervisor;
 
 function probeExistingProxyOnAddrInUse(port, cb) {
   const req = http.get({ hostname: '127.0.0.1', port, path: '/health', timeout: 1000 }, (res) => {
@@ -30,10 +30,10 @@ loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 const { sessionKey } = require('./shared');
 const {
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
-} = require('./upstream');
-const { buildJurisdictionContext } = require('./context');
-const { scanMessages } = require('./messages');
-const { servicePort } = require('./service_registry');
+} = require('./contexts/upstream_dispatch');
+const { buildJurisdictionContext } = require('./contexts/request_mutation');
+const { scanMessages } = require('./contexts/request_mutation');
+const { servicePort } = require('./contexts/upstream_dispatch');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createContextBudget } = require('./hme_proxy_context_budget');
 const { createOpusGate } = require('./hme_proxy_opus_gate');
@@ -73,7 +73,7 @@ const { slotConfig, attachSlotLifecycle } = require('./proxy_slot_lifecycle');
 const SLOT_CFG = slotConfig();
 const PORT = SLOT_CFG ? SLOT_CFG.port : servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
-const { WORKER_PORT } = require('./supervisor/children');
+const { WORKER_PORT } = require('./contexts/lifecycle_bridge');
 
 const contextBudget = createContextBudget();
 const opusGate = createOpusGate();
@@ -82,7 +82,7 @@ let loadedMiddleware = null;
 let handleRequest = null;
 function getHandleRequest() {
   if (handleRequest) return handleRequest;
-  const middleware = require('./middleware');
+  const middleware = require('./contexts/request_mutation').middleware;
   const { createClaudeHandler } = require('./hme_proxy_claude');
   loadedMiddleware = middleware.loadAll();
   if (process.env.HME_PROXY_QUIET_IMPORT !== '1') console.log(`loaded middleware: ${loadedMiddleware.join(', ')}`);

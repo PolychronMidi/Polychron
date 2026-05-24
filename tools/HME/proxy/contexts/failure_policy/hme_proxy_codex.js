@@ -3,9 +3,9 @@
 const http = require('http');
 const {
   servicePort,
-} = require('../../service_registry');
-const { omniProviderForConfigProvider, omniTargetFormat } = require('../../omniroute_protocol');
-const swapStore = require('../../swap_state_store');
+} = require('../upstream_dispatch');
+const { omniProviderForConfigProvider, omniTargetFormat } = require('../upstream_dispatch');
+const swapStore = require('../upstream_dispatch').swapStore;
 function isManualTopActive(chain) { return !!(chain && chain[0] && chain[0]._manual_toprank === true); }
 const { chainSignature } = swapStore;
 

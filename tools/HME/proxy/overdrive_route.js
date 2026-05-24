@@ -11,7 +11,7 @@ const { applyEffortParams } = require('./model_effort');
 const {
   loadModelRouteHealth,
   routeSkipReason,
-} = require('./contexts/failure_policy/model_route_health');
+} = require('./contexts/failure_policy');
 
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
@@ -297,7 +297,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   }
   applyEffortParams(payload, result.swapMeta, result.omniProvider);
   // LAZY: breaks import cycle overdrive_route -> zen_translator -> overdrive_route.
-  const { translateRequestToOpenAI } = require('./zen_translator');
+  const { translateRequestToOpenAI } = require('./contexts/response_transform');
   const oaPayload = translateRequestToOpenAI(payload, result.swapModel);
   clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
   clientReq.headers.authorization = `Bearer ${zenKey}`;

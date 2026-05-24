@@ -23,7 +23,7 @@ import threading
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 
 def _startup_snapshot_nonblocking() -> dict:
     """Public MCP tool: non-blocking startup readiness snapshot.

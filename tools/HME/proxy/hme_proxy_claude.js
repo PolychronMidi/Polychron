@@ -6,19 +6,19 @@ const https = require('https');
 const { sessionKey } = require('./shared');
 const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
-} = require('./upstream');
-const { applyOverdriveRoute } = require('./overdrive_route');
+} = require('./contexts/upstream_dispatch');
+const { applyOverdriveRoute } = require('./contexts/upstream_dispatch');
 const {
   handleLegacySwapResponse,
   handleAnthropicResponseComplete,
-} = require('./hme_proxy_anthropic_response');
-const middleware = require('./middleware');
+} = require('./contexts/response_transform');
+const middleware = require('./contexts/request_mutation').middleware;
 function mutateClaudeRequest(...args) {
   // LAZY: breaks import cycle hme_proxy_claude -> hme_proxy_request_mutation
   //       -> overdrive_route -> hme_proxy_claude.
-  return require('./hme_proxy_request_mutation').mutateClaudeRequest(...args);
+  return require('./contexts/request_mutation').mutateClaudeRequest(...args);
 }
-const _lifecycleBridgeRaw = require('./lifecycle_bridge');
+const _lifecycleBridgeRaw = require('./contexts/lifecycle_bridge').lifecycleBridge;
 // Fail-loud at require time if the bridge regressed back into a cycle and
 // resolved to undefined / missing exports. Either case would cause runtime
 if (!_lifecycleBridgeRaw
@@ -28,11 +28,11 @@ if (!_lifecycleBridgeRaw
     + ' (likely a re-introduced circular dependency); refusing to boot proxy');
 }
 const lifecycleBridge = _lifecycleBridgeRaw;
-const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
+const { createProxyRouteDispatcher } = require('./contexts/lifecycle_bridge');
 const {
   handleMidResponseError,
   handleConnectionError,
-} = require('./contexts/failure_policy/hme_proxy_connection_errors');
+} = require('./contexts/failure_policy');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
@@ -53,7 +53,7 @@ const {
   blockTodoWriteOnlyProbe,
   blockStructuredOutputsProbe,
   blockNoopSystemReminderTurn,
-} = require('./prompt_spam_guard');
+} = require('./contexts/request_mutation');
 
 
 function createClaudeHandler(deps) {
