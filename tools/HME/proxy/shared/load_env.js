@@ -1,6 +1,4 @@
-'use strict';
-// Shared .env loader for Node entrypoints (proxy, future daemons).
-// Parent shell may not have sourced .env; loader reads from disk directly.
+// Shared root .env loader for Node entrypoints.
 
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +10,7 @@ function parseEnvFile(filePath) {
     if (!line || line.startsWith('#')) continue;
     const eq = line.indexOf('=');
     if (eq < 1) continue;
-    const k = line.slice(0, eq).trim();
+    const k = line.slice(0, eq).replace(/^export\s+/, '').trim();
     let v = line.slice(eq + 1).trim();
     const hashAt = v.indexOf(' #');
     if (hashAt > -1) v = v.slice(0, hashAt).trim();
@@ -24,36 +22,13 @@ function parseEnvFile(filePath) {
   return values;
 }
 
-function templateEnvPath(envPath, opts = {}) {
-  if (opts.templatePath) return opts.templatePath;
-  const root = path.dirname(path.resolve(envPath));
-  const configured = process.env.HME_ENV_FAILFAST_TEMPLATE;
-  return path.resolve(root, configured || 'doc/templates/.env.example');
-}
-
-function validateAgainstTemplate(envPath, values, opts = {}) {
-  if (opts.validateTemplate === false) return;
-  const tpl = templateEnvPath(envPath, opts);
-  if (!fs.existsSync(tpl)) {
-    throw new Error(`env template missing at ${tpl}; .env defaults must live in doc/templates/.env.example`);
-  }
-  const declared = parseEnvFile(tpl);
-  const missing = [];
-  for (const key of declared.keys()) {
-    if (!values.has(key)) missing.push(key);
-  }
-  if (missing.length) {
-    throw new Error(`.env missing template key(s): ${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ` ... ${missing.length - 20} more` : ''}`);
-  }
-}
-
 function expandEnvValues(values) {
   const expanded = new Map();
   const resolving = new Set();
   const resolve = (key) => {
     if (expanded.has(key)) return expanded.get(key);
     if (resolving.has(key)) throw new Error(`cyclic .env interpolation involving ${key}`);
-    if (!values.has(key)) return process.env[key];
+    if (!values.has(key)) throw new Error(`.env references undefined key ${key}`);
     resolving.add(key);
     const raw = values.get(key);
     const value = String(raw).replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_match, ref) => {
@@ -73,11 +48,8 @@ function expandEnvValues(values) {
 
 function loadEnv(envPath, opts) {
   const overwrite = !!(opts && opts.overwrite);
-  if (!fs.existsSync(envPath)) {
-    throw new Error(`missing required .env at ${envPath}`);
-  }
+  if (!fs.existsSync(envPath)) throw new Error(`missing required .env at ${envPath}`);
   const values = expandEnvValues(parseEnvFile(envPath));
-  validateAgainstTemplate(envPath, values, opts || {});
   let loaded = 0;
   let skipped = 0;
   for (const [k, v] of values.entries()) {
@@ -105,7 +77,7 @@ function requireEnv(key, validator) {
     value = process.env[key];
   }
   if (value === undefined || value === '') {
-    throw new Error(`missing required environment key ${key}; declare it in .env and doc/templates/.env.example`);
+    throw new Error(`missing required environment key ${key}; declare it in root .env`);
   }
   if (validator && !validator(value)) {
     throw new Error(`invalid environment key ${key}=${JSON.stringify(value)}`);
@@ -138,7 +110,6 @@ function requireEnvBool(key) {
   throw new Error(`invalid boolean environment key ${key}=${JSON.stringify(process.env[key])}`);
 }
 
-// tools/HME/proxy/shared/* -> .env at project root (4 levels up).
 function defaultEnvPath(callerDir) {
   return path.resolve(callerDir, '..', '..', '..', '..', '.env');
 }

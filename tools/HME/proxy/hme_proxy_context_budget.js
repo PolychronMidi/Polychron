@@ -52,7 +52,7 @@ function _ensureProcessEnvLoaded() {
 function _envValue(env, key) {
   const value = env[key];
   if (value === undefined || value === '') {
-    throw new Error(`missing required environment key ${key}; declare it in .env and doc/templates/.env.example`);
+    throw new Error(`missing required environment key ${key}; declare it in root .env`);
   }
   return String(value).trim();
 }

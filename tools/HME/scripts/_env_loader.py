@@ -1,20 +1,13 @@
-"""Python .env loader -- strict, no silent fallbacks.
+"""Strict root .env loader for Python entrypoints.
 
-Mirrors tools/HME/proxy/shared/load_env.js semantics for Python entrypoints:
-  - Parses KEY=VALUE lines (with quoted-value support).
-  - Resolves ${VAR} interpolation against earlier keys + process.environ.
-  - Validates that every key declared in doc/templates/.env.example is
-    present in the .env file (template = source of truth for required keys).
-  - Fails LOUD with a precise message; never invents defaults.
+Semantics mirror tools/HME/proxy/shared/load_env.js:
+  - Parses KEY=VALUE lines with quoted-value support.
+  - Resolves ${VAR} interpolation only from the same .env file.
+  - Fails loud on missing file, cyclic refs, unresolved refs, or missing keys.
 
-Invariant enforced downstream by verify_coherence.env_no_fallback:
-    No `os.environ.get(<KEY>) or <default>` style fallbacks for required
-    env keys inside the verify_coherence package. Load .env at entrypoint
-    instead; missing keys are bugs to surface, not bugs to paper over.
-
-Usage (from any Python entrypoint, BEFORE importing modules that read env):
+Usage:
     from _env_loader import load_env
-    load_env()        # auto-locates .env at project root
+    load_env()
 """
 from __future__ import annotations
 
@@ -31,12 +24,13 @@ def _parse_env_file(path: Path) -> "list[tuple[str, str]]":
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
         eq = line.find("=")
         if eq < 1:
             continue
         k = line[:eq].strip()
         v = line[eq + 1 :].strip()
-        # strip trailing " #comment"
         hash_at = v.find(" #")
         if hash_at >= 0:
             v = v[:hash_at].strip()
@@ -56,17 +50,14 @@ def _expand(values: "dict[str, str]") -> "dict[str, str]":
         if key in resolving:
             raise ValueError(f"cyclic .env interpolation involving {key}")
         if key not in values:
-            v = os.environ.get(key)
-            if v is None:
-                raise ValueError(f".env references undefined key {key}")
-            return v
+            raise ValueError(f".env references undefined key {key}")
         resolving.add(key)
         raw = values[key]
 
         def sub(m: "re.Match[str]") -> str:
             ref = m.group(1)
             r = resolve(ref)
-            if r is None or r == "":
+            if r == "":
                 raise ValueError(f"unresolved .env interpolation: {key} references {ref}")
             return r
 
@@ -80,52 +71,19 @@ def _expand(values: "dict[str, str]") -> "dict[str, str]":
     return expanded
 
 
-def _validate_against_template(env_path: Path, values: "dict[str, str]") -> None:
-    # No .env fallback: HME_ENV_FAILFAST_TEMPLATE must be declared in .env
-    # itself. Read from the just-parsed values dict (the .env file is the
-    # source of truth at this stage; os.environ has not been written yet).
-    if "HME_ENV_FAILFAST_TEMPLATE" not in values:
-        raise KeyError(
-            "missing required .env key HME_ENV_FAILFAST_TEMPLATE; "
-            "declare in .env and doc/templates/.env.example"
-        )
-    tpl_rel = values["HME_ENV_FAILFAST_TEMPLATE"]
-    tpl = (env_path.parent / tpl_rel).resolve()
-    if not tpl.exists():
-        raise FileNotFoundError(
-            f"env template missing at {tpl}; .env defaults must live in doc/templates/.env.example"
-        )
-    declared = {k for k, _ in _parse_env_file(tpl)}
-    missing = sorted(declared - set(values.keys()))
-    if missing:
-        head = ", ".join(missing[:20])
-        tail = f" ... {len(missing) - 20} more" if len(missing) > 20 else ""
-        raise ValueError(f".env missing template key(s): {head}{tail}")
-
-
 def _default_env_path() -> Path:
-    # tools/HME/scripts/_env_loader.py -> ../../../.env
     return Path(__file__).resolve().parents[3] / ".env"
 
 
 def load_env(env_path: "str | os.PathLike | None" = None, *, overwrite: bool = False) -> "dict[str, int]":
-    """Load .env into os.environ. Returns {loaded, skipped}.
-
-    Strict by design:
-      - Missing .env file -> FileNotFoundError
-      - Missing template -> FileNotFoundError
-      - Missing template keys -> ValueError
-      - Cyclic / unresolved interpolation -> ValueError
-    """
+    """Load .env into os.environ. Returns {loaded, skipped}."""
     p = Path(env_path) if env_path is not None else _default_env_path()
     if not p.exists():
         raise FileNotFoundError(f"missing required .env at {p}")
-    raw_pairs = _parse_env_file(p)
     raw_values: dict[str, str] = {}
-    for k, v in raw_pairs:
-        raw_values[k] = v  # last-wins, matching shell semantics
+    for k, v in _parse_env_file(p):
+        raw_values[k] = v
     values = _expand(raw_values)
-    _validate_against_template(p, values)
     loaded = 0
     skipped = 0
     for k, v in values.items():
@@ -141,9 +99,7 @@ def require_env(key: str) -> str:
     """Strict accessor used by callers that want a precise error message."""
     v = os.environ.get(key)
     if v is None or v == "":
-        raise KeyError(
-            f"missing required environment key {key}; declare in .env and doc/templates/.env.example"
-        )
+        raise KeyError(f"missing required environment key {key}; declare it in root .env")
     return v
 
 

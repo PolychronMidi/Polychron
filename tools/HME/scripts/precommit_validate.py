@@ -6,7 +6,6 @@ import json
 import os
 import py_compile
 import re
-import stat
 import subprocess
 import sys
 import tempfile
@@ -16,6 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 from path_policy import blocked_path_reason, load_policy, skip_syntax  # noqa: E402
+from precommit_self_protect import self_protect_failures  # noqa: E402
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"], text=True).strip())
@@ -41,8 +41,6 @@ LOCAL_PATH_NEEDLES = tuple(
 )
 LOCAL_PATH_ALLOW = POLICY.get("local_path_allow_token", "local-path-ok")
 SYNTAX_EXTS = set(POLICY.get("syntax_check_extensions", []))
-ENV_TEMPLATE = ROOT / POLICY.get("env_template", "doc/templates/.env.example")
-ENV_FALLBACK_EXTS = {".js", ".mjs", ".cjs", ".ts", ".py", ".sh", ".bash", ".json"}
 
 failures: list[str] = []
 secrets: list[tuple[int, str, bytes]] = []
@@ -204,87 +202,6 @@ def local_path_hits(path: str, text: str) -> list[str]:
     return hits
 
 
-def env_template_keys() -> set[str]:
-    if not ENV_TEMPLATE.is_file():
-        failures.append("env invariant failed: doc/templates/.env.example is missing")
-        return set()
-    if (ROOT / ".env.example").exists():
-        failures.append("env invariant failed: .env.example must live at doc/templates/.env.example, not repo root")
-    keys: set[str] = set()
-    for line in ENV_TEMPLATE.read_text(encoding="utf-8", errors="replace").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            continue
-        key = stripped.split("=", 1)[0].strip()
-        if key:
-            keys.add(key)
-    return keys
-
-
-_ENV_FALLBACK_PATTERNS = [
-    re.compile(r"process\.env\.([A-Z0-9_]+)\s*(?:\|\||\?\?)"),
-    re.compile(r"process\.env\[['\"]([A-Z0-9_]+)['\"]\]\s*(?:\|\||\?\?)"),
-    re.compile(r"os\.environ\.get\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
-    re.compile(r"os\.getenv\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
-    re.compile(r"\bgetenv\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
-    re.compile(r"\$\{([A-Z0-9_]+)(?::-|-)"),
-]
-_ENV_INDEX_RE = re.compile(r"os\.environ\[\s*['\"]([A-Z0-9_]+)['\"]\s*\]")
-_ENV_EXCEPT_RE = re.compile(r"^\s*except\s+(?:\(?\s*)?(KeyError|LookupError|Exception|BaseException)\b")
-_ENV_LITERAL_FALLBACK_RE = re.compile(
-    r"^\s*(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?\s*=|return)\s*"
-    r"(?:['\"].*['\"]|None|False|True|\d+|\{\}|\[\])\s*(?:#.*)?$"
-)
-
-
-def try_except_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[str]:
-    hits: list[str] = []
-    lines = text.splitlines()
-    for idx, line in enumerate(lines):
-        if line.strip() != "try:":
-            continue
-        env_keys: set[str] = set()
-        except_idx: int | None = None
-        for j in range(idx + 1, min(len(lines), idx + 16)):
-            probe = lines[j]
-            for match in _ENV_INDEX_RE.finditer(probe):
-                key = match.group(1)
-                if key in keys:
-                    env_keys.add(key)
-            if _ENV_EXCEPT_RE.match(probe):
-                except_idx = j
-                break
-        if not env_keys or except_idx is None:
-            continue
-        handler = lines[except_idx + 1:min(len(lines), except_idx + 9)]
-        if not any(_ENV_LITERAL_FALLBACK_RE.match(h) for h in handler):
-            continue
-        for key in sorted(env_keys):
-            hits.append(
-                f"{q(path)}:{idx + 1} uses try/except fallback for .env key {key}; "
-                "missing declared env must fail fast, not synthesize defaults"
-            )
-    return hits
-
-
-def inline_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[str]:
-    if Path(path).suffix.lower() not in ENV_FALLBACK_EXTS:
-        return []
-    hits: list[str] = []
-    for lineno, line in enumerate(text.splitlines(), 1):
-        if "env-fallback-ok" in line:
-            continue
-        for pattern in _ENV_FALLBACK_PATTERNS:
-            for match in pattern.finditer(line):
-                key = match.group(1)
-                if key in keys:
-                    hits.append(
-                        f"{q(path)}:{lineno} uses inline fallback for .env key {key}; "
-                        "defaults belong in doc/templates/.env.example and runtime reads must fail fast"
-                    )
-    return hits
-
-
 def syntax_check(path: str, data: bytes) -> None:
     if skip_syntax(path, POLICY):
         return
@@ -340,57 +257,6 @@ def executable_sanity(path: str, mode: str, data: bytes) -> None:
         failures.append(f"{q(path)}: executable text file lacks a shebang")
 
 
-def self_protect() -> None:
-    canonical = ROOT / POLICY.get("canonical_precommit", "tools/HME/git-hooks/pre-commit")
-    post_commit = ROOT / POLICY.get("canonical_post_commit", "tools/HME/git-hooks/post-commit")
-    validator = ROOT / POLICY.get("precommit_validator", "tools/HME/scripts/precommit_validate.py")
-    if not canonical.is_file():
-        failures.append("pre-commit self-protection failed: canonical hook missing")
-    if not post_commit.is_file():
-        failures.append("post-commit self-protection failed: canonical hook missing")
-    if not validator.is_file():
-        failures.append("pre-commit self-protection failed: validator missing")
-    try:
-        hook_text = HOOK_PATH.read_text(encoding="utf-8", errors="replace")
-    except OSError as exc:
-        failures.append(f"pre-commit self-protection failed: cannot read hook ({exc.__class__.__name__})")
-        return
-    required = [MARKER, "precommit_validate.py"]
-    missing = [token for token in required if token not in hook_text]
-    if missing:
-        failures.append("pre-commit self-protection failed: hook lost guard token(s): " + ", ".join(missing))
-    if canonical.is_file():
-        try:
-            canonical_text = canonical.read_text(encoding="utf-8", errors="replace")
-            if hook_text != canonical_text:
-                failures.append("pre-commit self-protection failed: installed hook differs from canonical tools/HME/git-hooks/pre-commit")
-        except OSError:
-            pass  # silent-ok: optional fallback path.
-    if post_commit.is_file():
-        try:
-            post_text = post_commit.read_text(encoding="utf-8", errors="replace")
-            installed_post = POST_COMMIT_HOOK_PATH.read_text(encoding="utf-8", errors="replace")
-            if installed_post != post_text:
-                failures.append("post-commit self-protection failed: installed hook differs from canonical tools/HME/git-hooks/post-commit")
-            for token in ("post-commit-proxy-reload-needed", "not restarting synchronously"):
-                if token not in post_text:
-                    failures.append(f"post-commit self-protection failed: canonical hook missing token: {token}")
-        except OSError as exc:
-            failures.append(f"post-commit self-protection failed: cannot read installed hook ({exc.__class__.__name__})")
-    try:
-        mode = HOOK_PATH.stat().st_mode
-        if not (mode & stat.S_IXUSR):
-            failures.append("pre-commit self-protection failed: hook is not executable")
-    except OSError:
-        pass  # silent-ok: optional fallback path.
-    try:
-        mode = POST_COMMIT_HOOK_PATH.stat().st_mode
-        if not (mode & stat.S_IXUSR):
-            failures.append("post-commit self-protection failed: hook is not executable")
-    except OSError:
-        pass  # silent-ok: optional fallback path.
-
-
 def full_env_failfast_check() -> None:
     script = ROOT / "tools" / "HME" / "scripts" / "check-env-failfast.py"
     proc = subprocess.run(["python3", str(script)], cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -431,10 +297,9 @@ def full_python_compile_check() -> None:
 
 def main() -> int:
     load_env_secrets()
-    self_protect()
+    failures.extend(self_protect_failures(ROOT, POLICY, HOOK_PATH, POST_COMMIT_HOOK_PATH, MARKER))
     full_env_failfast_check()
     full_python_compile_check()
-    declared_env_keys = env_template_keys()
     for path in staged_paths():
         reason = blocked_path_reason(path, POLICY)
         if reason:
@@ -453,8 +318,6 @@ def main() -> int:
         if is_text(data):
             text = data.decode("utf-8", "replace")
             failures.extend(local_path_hits(path, text))
-            failures.extend(inline_env_fallback_hits(path, text, declared_env_keys))
-            failures.extend(try_except_env_fallback_hits(path, text, declared_env_keys))
         executable_sanity(path, staged_mode(path), data)
         syntax_check(path, data)
     if failures:

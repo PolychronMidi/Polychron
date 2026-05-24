@@ -101,23 +101,19 @@ test('detectors shell policy has expanded timeout budget', () => {
 });
 
 
-test('env loader fails fast on missing templated keys and invalid typed reads', () => {
+test('env loader reads root env only and invalid typed reads fail fast', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-env-contract-'));
-  const prev = process.env.HME_ENV_FAILFAST_TEMPLATE;
+  const prior = { A: process.env.A, PORT: process.env.PORT };
   try {
-    fs.mkdirSync(path.join(dir, 'doc', 'templates'), { recursive: true });
-    fs.writeFileSync(path.join(dir, 'doc', 'templates', '.env.example'), 'A=1\nB=2\nPORT=3\n');
     fs.writeFileSync(path.join(dir, '.env'), 'A=ok\nPORT=abc\n');
-    assert.throws(
-      () => loadEnv(path.join(dir, '.env'), { overwrite: true }),
-      /missing template key\(s\): B/,
-    );
-    fs.writeFileSync(path.join(dir, '.env'), 'A=ok\nB=present\nPORT=abc\n');
     loadEnv(path.join(dir, '.env'), { overwrite: true });
+    assert.equal(process.env.A, 'ok');
     assert.throws(() => requireEnvInt('PORT'), /invalid integer environment key PORT/);
   } finally {
-    if (prev === undefined) delete process.env.HME_ENV_FAILFAST_TEMPLATE;
-    else process.env.HME_ENV_FAILFAST_TEMPLATE = prev;
+    for (const [key, value] of Object.entries(prior)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

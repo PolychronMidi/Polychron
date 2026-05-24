@@ -407,7 +407,10 @@ function createCodexResponseForwarder(deps) {
       if (calls.length) {
         const decision = runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'json' }, { record });
         if (continueAfterTools(target.index, target, parsed, calls, null, decision)) return;
-        return sendToolGraphFallback(target, status, headers, parsed, decision);
+        // malformed_tool_fallback: do NOT fabricate a replacement response.
+        // Forward upstream bytes unchanged so the model's own context survives;
+        if (decision.action !== 'malformed_tool_fallback') return sendToolGraphFallback(target, status, headers, parsed, decision);
+        record({ kind: 'codex-malformed-tool-passthrough', route: target.kind, reason: decision.reason || '', ...traceFields(target) });
       }
       const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [], ...traceFields(target) });
@@ -427,7 +430,8 @@ function createCodexResponseForwarder(deps) {
       if (calls.length) {
         const decision = runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'sse' }, { record });
         if (continueAfterTools(target.index, target, parsed, calls, null, decision)) return;
-        return sendToolGraphFallback(target, status, headers, parsed, decision);
+        if (decision.action !== 'malformed_tool_fallback') return sendToolGraphFallback(target, status, headers, parsed, decision);
+        record({ kind: 'codex-malformed-tool-passthrough', route: target.kind, reason: decision.reason || '', ...traceFields(target) });
       }
       const rewriter = createNativeToolSseRewriter();
       const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();

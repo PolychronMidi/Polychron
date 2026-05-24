@@ -103,7 +103,6 @@ def main() -> int:
         "tools/HME/service/hme_env.py",
         "tools/HME/service/paths.py",
         "doc/templates/AGENTS.md",
-        "doc/templates/.env.example",
     ]
     entry_points = [
         "tools/HME/service/server/onboarding_chain.py",
