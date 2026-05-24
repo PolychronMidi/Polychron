@@ -545,10 +545,7 @@ function createCodexResponseForwarder(deps) {
           return;
         }
         finishResponse(target, 502, err.message);
-        if (!res.headersSent) {
-          res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'codex_proxy_upstream_error', message: err.message, upstream: upstreamUrl, attempts: attempt + 1 }));
-        } else res.end();
+        sendSseError(502, 'codex_proxy_upstream_error', `${err.message} after ${attempt + 1} attempts`);
       });
       upstreamReq.write(bodyBytes);
       upstreamReq.end();
