@@ -17,6 +17,7 @@ const { emitStartMarker } = require('./start_marker');
 const { ensureSession, reapDuplicates } = require('./codex_session_guard');
 const { isSingleQuotaProbe, blockQuotaProbe } = require('./prompt_spam_guard');
 const { createCodexResponseForwarder } = require('./codex_response_forwarder');
+const conversationStore = require('./shared/conversation_store');
 
 const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
