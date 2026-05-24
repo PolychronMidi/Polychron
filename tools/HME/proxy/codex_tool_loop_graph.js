@@ -176,8 +176,6 @@ function restoreLatestCheckpoint(correlationId, opts = {}) {
 }
 
 module.exports = {
-  MAX_TOOL_LOOP_DEPTH,
-  FINALIZE_TOOL_LOOP_DEPTH,
   ToolLoopCheckpointer,
   createToolLoopCheckpointer,
   runCodexToolLoopGraph,
