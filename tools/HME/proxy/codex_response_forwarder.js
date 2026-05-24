@@ -536,7 +536,18 @@ function createCodexResponseForwarder(deps) {
         upstreamRes.on('data', (chunk) => chunks.push(chunk));
         upstreamRes.on('end', () => {
           const full = Buffer.concat(chunks).toString('utf8');
-          if (String(upstreamRes.headers['content-type'] || '').includes('text/event-stream')) sendSseFinal(target, status, headers, full);
+          const isSse = String(upstreamRes.headers['content-type'] || '').includes('text/event-stream');
+          if (isSse) {
+            const eventCount = parseSseEvents(full).length;
+            if (target.body && target.body.stream && eventCount === 0) {
+              const bodyBytes = Buffer.byteLength(full, 'utf8');
+              record({ kind: 'codex-empty-upstream-sse', route: target.kind, upstream: target.url, status, body_bytes: bodyBytes, saw_bytes: upstreamSawBytes, ...traceFields(target) });
+              finishResponse(target, status, `empty upstream SSE (${bodyBytes} bytes)`);
+              sendSseError(status >= 400 ? status : 502, 'codex_proxy_empty_upstream_sse', `upstream closed SSE stream without response events (status ${status}, ${bodyBytes} bytes)`);
+              return;
+            }
+            sendSseFinal(target, status, headers, full);
+          }
           else sendJsonFinal(target, status, headers, full);
         });
       });
