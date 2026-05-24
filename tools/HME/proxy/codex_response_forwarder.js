@@ -281,12 +281,6 @@ function createCodexResponseForwarder(deps) {
       return trunc(call.name || 'tool');
     }
 
-    function toolSummaryOnlyDiagnostic(target, parsed) {
-      const toolOnly = clientSse.toolLoops > 0 && clientSse.text && !finalOutputText(parsed).trim();
-      if (!toolOnly) return '';
-      return 'Render pipeline error: tool calls completed but no final assistant message was emitted.';
-    }
-
     function recordMissingFinal(target, parsed, restored = false) {
       record({
         kind: restored ? 'codex-render-final-restored' : 'codex-render-final-missing',
@@ -304,13 +298,10 @@ function createCodexResponseForwarder(deps) {
         if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
         writeClientText(target, text, status, headers);
         if (clientSse.toolLoops > 0) recordMissingFinal(target, parsed, true);
-      } else {
-        const diagnostic = toolSummaryOnlyDiagnostic(target, parsed);
-        if (diagnostic) {
-          if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
-          writeClientText(target, diagnostic, status, headers);
-          recordMissingFinal(target, parsed, false);
-        }
+      } else if (clientSse.toolLoops > 0 && !finalOutputText(parsed).trim()) {
+        // Upstream returned no final assistant message after tool loops. Do NOT
+        // fabricate a "Render pipeline error..." string into the client stream
+        recordMissingFinal(target, parsed, false);
       }
       return completeClientSse(target, status, errorSummary, parsed);
     }
