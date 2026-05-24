@@ -589,6 +589,12 @@ module.exports = {
     if (!lastUser) return ctx.allow();
     ctx.shared.lastRealUserText = lastUser;
     if (isStartupGraceTurn(ctx)) return ctx.allow();
+    // No-content noise prompts (literal 'undefined', empty, single-token
+    // continue/ok/k/standby) carry no asked-for work -- the gate has nothing
+    const _noiseTxt = String(lastUser).trim().toLowerCase();
+    if (!_noiseTxt || /^(?:undefined|null|continue|ok|k|standby|standing\s*by|\.|\?+|\s+)$/.test(_noiseTxt)) {
+      return ctx.allow();
+    }
     if (firing.some((f) => f.name === 'CLAIM_WITHOUT_EVIDENCE') && hasSameTurnEvidence(lastUserInfo.tsMs)) {
       firing = firing.filter((f) => f.name !== 'CLAIM_WITHOUT_EVIDENCE');
     }
