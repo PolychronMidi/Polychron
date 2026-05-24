@@ -1,14 +1,4 @@
 {
   "$comment": "Bug-pattern concern tokens that are intentionally unwatched by any verifier. Use sparingly -- most fix-commit concerns SHOULD have a regression guard. Each waiver entry: {concern, reason}. Stale waivers (the concern no longer appears in the last 100 fix commits) FAIL so the list shrinks as the codebase moves on.",
-  "waivers": [
-    {"concern": "diagrams", "reason": "mermaid diagram fixes -- covered by repo-mermaid-freshness via 'mermaid' token"},
-    {"concern": "disambiguate", "reason": "verb form; the regression test for disambiguation lives in repo_mermaid_freshness.test.py"},
-    {"concern": "disambiguation", "reason": "same as disambiguate"},
-    {"concern": "failed", "reason": "common subject-line word, not a concern"},
-    {"concern": "four", "reason": "quantity word from 'four missed requires' -- not a concern"},
-    {"concern": "helpers", "reason": "generic noun; specific helpers have specific verifiers"},
-    {"concern": "infra", "reason": "infra is the doc/PROXY_CONTEXTS.md default classification; covered by cross-context-isolation"},
-    {"concern": "shadow", "reason": "covered by onboarding-flow shadow regression test"},
-    {"concern": "subdirs", "reason": "covered by subtree-label-disambiguation regression test"}
-  ]
+  "waivers": []
 }
