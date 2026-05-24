@@ -73,6 +73,28 @@ def _last_message_info(jsonl: Path) -> dict:
     return {}
 
 
+def _parent_acked_agent(sa_dir: Path, agent_id: str, agent_completed_ts: float) -> bool:
+    """Check the parent-session jsonl for evidence that the task-notification
+    for agent_id was delivered (i.e. the parent's transcript mentions agent_id
+    after agent_completed_ts). The session dir layout is
+    projects/<proj>/<session>/subagents, so the parent jsonl lives at
+    projects/<proj>/<session>.jsonl."""
+    parent_jsonl = sa_dir.parent.parent / f"{sa_dir.parent.name}.jsonl"
+    if not parent_jsonl.is_file():
+        return False
+    try:
+        if parent_jsonl.stat().st_mtime < agent_completed_ts:
+            return False
+        with open(parent_jsonl, "rb") as f:
+            f.seek(0, 2)
+            end = f.tell()
+            f.seek(max(0, end - 65536))
+            tail = f.read().decode("utf-8", errors="ignore")
+    except OSError:
+        return False
+    return agent_id[:16] in tail or agent_id in tail
+
+
 _ARCHIVE_AFTER_DAYS = 7
 
 
