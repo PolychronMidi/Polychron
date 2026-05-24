@@ -1,6 +1,7 @@
 'use strict';
 
-const { servicePort, resolver } = require('./upstream');
+const { servicePort } = require('./service_registry');
+const resolver = require('./model_route_resolver');
 
 function targetChain(body, directUrl, loadConfig, env = process.env) {
   return resolver.codexTargetChain({ body, upstreamUrl: directUrl, cfg: loadConfig(), env, servicePort });
