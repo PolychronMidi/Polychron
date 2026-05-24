@@ -73,6 +73,7 @@ PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-45}"
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 ERROR_LOG="$PROJECT_ROOT/log/hme-errors.log"
 _SUPERVISOR_SCRIPT="$PROJECT_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
+_ALREADY_RUNNING=false
 
 _http_code() {
   curl -sS --max-time 1 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || echo 000
@@ -224,7 +225,8 @@ if [ -n "$_remaining_listener_pids" ]; then
   if [ -n "$(_port_listener_pids)" ]; then
     echo "[proxy-restart] WARNING: proxy listener survived cleanup on :${PROXY_PORT} -- checking if healthy..." >&2
     if _proxy_listener_ready; then
-      echo "[proxy-restart] surviving proxy is healthy (pid=$(_port_listener_pids | head -1)); skipping spawn" >&2
+      _ADOPTED_PROXY_PID="$(_port_listener_pids | head -1)"
+      echo "[proxy-restart] adopted existing healthy proxy (pid=${_ADOPTED_PROXY_PID}); listener remains ready" >&2
       _ALREADY_RUNNING=true
     else
       echo "[proxy-restart] ERROR: surviving proxy is unhealthy; giving up" >&2
@@ -257,31 +259,36 @@ if [ -f "$PID_FILE" ]; then
   mv "$_tmp_pid_file" "$PID_FILE"
 fi
 
-# 6. Spawn proxy fresh.
+# 6. Spawn proxy fresh or adopt a ready survivor.
 _PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
-echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
-cd "$PROJECT_ROOT"
-HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
-  setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
-    >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
-_PROXY_PID=$!
-disown 2>/dev/null || true
-echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
-
+if [ "$_ALREADY_RUNNING" = "true" ]; then
+  _ADOPTED_PROXY_PID="${_ADOPTED_PROXY_PID:-$(_port_listener_pids | head -1)}"
+  [ -n "$_ADOPTED_PROXY_PID" ] && echo "${_PROXY_LABEL}=${_ADOPTED_PROXY_PID}" >> "$PID_FILE"
+  echo "[proxy-restart] adopted existing ${_PROXY_LABEL} (pid ${_ADOPTED_PROXY_PID}); listener remains ready" >&2
+else
+  echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
+  cd "$PROJECT_ROOT"
+  HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
+    setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
+      >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
+  _PROXY_PID=$!
+  disown 2>/dev/null || true
+  echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
   echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
+fi
 
-  _waited=0
-  while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
-    _proxy_listener_ready && break
-    sleep 1
-    _waited=$((_waited + 1))
-  done
-  if ! _proxy_listener_ready; then
-    echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
-    echo "[proxy-restart]   tail $PROJECT_ROOT/log/hme-proxy.out for diagnostics" >&2
-    exit 1
-  fi
-  echo "[proxy-restart] proxy listener ready after ${_waited}s" >&2
+_waited=0
+while [ "$_waited" -lt "$PROXY_READY_TIMEOUT" ]; do
+  _proxy_listener_ready && break
+  sleep 1
+  _waited=$((_waited + 1))
+done
+if ! _proxy_listener_ready; then
+  echo "[proxy-restart] ERROR: proxy listener did not become ready within ${PROXY_READY_TIMEOUT}s" >&2
+  echo "[proxy-restart]   tail $PROJECT_ROOT/log/hme-proxy.out for diagnostics" >&2
+  exit 1
+fi
+echo "[proxy-restart] proxy listener ready after ${_waited}s" >&2
 
 # 9. Full bundle health gate is bounded and informational. It should usually
 # turn green after worker warmup, but reload success is listener-readiness.

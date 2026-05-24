@@ -217,10 +217,7 @@ function createBashPolicyContext(input = {}, opts = {}) {
 }
 
 const BASH_POLICIES = [
-  {
-    name: 'lifesaver-escalation',
-    evaluate(ctx) { return lifesaverEscalation(ctx.root); },
-  },
+  { name: 'lifesaver-escalation', evaluate(ctx) { return lifesaverEscalation(ctx.root); } },
   {
     name: 'noop-after-failure',
     evaluate(ctx) {
@@ -282,10 +279,7 @@ const BASH_POLICIES = [
       return null;
     },
   },
-  {
-    name: 'reader-guard',
-    evaluate(ctx) { return readerGuard(ctx.cmd, ctx.root); },
-  },
+  { name: 'reader-guard', evaluate(ctx) { return readerGuard(ctx.cmd, ctx.root); } },
   {
     name: 'verify-landed',
     evaluate(ctx) { return verifyLanded(ctx.cmd, ctx.root) ? allow(setCommandInput(ctx.next, ':'), '', true) : null; },
