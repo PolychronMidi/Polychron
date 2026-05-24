@@ -69,7 +69,9 @@ function logRuntimeMetadataFailure(err) {
 }
 
 const proxyRouteMetrics = createRouteMetrics();
-const PORT = servicePort('proxy');
+const { slotConfig, attachSlotLifecycle } = require('./proxy_slot_lifecycle');
+const SLOT_CFG = slotConfig();
+const PORT = SLOT_CFG ? SLOT_CFG.port : servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
 const { WORKER_PORT } = require('./supervisor/children');
 
