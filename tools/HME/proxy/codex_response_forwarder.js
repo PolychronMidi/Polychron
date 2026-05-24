@@ -514,6 +514,8 @@ function createCodexResponseForwarder(deps) {
       }
       const upstreamReq = client.request(options, (upstreamRes) => {
         const status = upstreamRes.statusCode || 502;
+        let upstreamSawBytes = false;
+        upstreamRes.on('data', () => { upstreamSawBytes = true; });
         if (target.fallbackHttpStatuses && target.fallbackHttpStatuses.has(status)) {
           const chunks = [];
           upstreamRes.on('data', (chunk) => chunks.push(chunk));
