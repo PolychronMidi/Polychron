@@ -118,35 +118,65 @@ function discoverExternalDeps() {
   return [...external];
 }
 
+// Polling-based file watcher: uses fs.statSync every POLL_INTERVAL_MS to
+// detect mtime changes. Avoids the inotify kernel watch limit (ENOSPC) that
+// becomes a hard ceiling on hosts shared with other watch-heavy apps
+const POLL_INTERVAL_MS = 2000;
+
+function _enumerateAllWatchedFiles() {
+  const files = new Set();
+  function walk(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of entries) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (p.startsWith(SHUFFLER_OWN_DIR)) continue;
+        if (/node_modules|\/runtime\//.test(p)) continue;
+        walk(p);
+      } else if (e.isFile() && /\.(js|mjs|cjs|json)$/.test(e.name)) {
+        files.add(p);
+      }
+    }
+  }
+  walk(WATCH_DIR);
+  for (const ext of discoverExternalDeps()) files.add(ext);
+  return [...files];
+}
+
 function start() {
   if (!fs.existsSync(WATCH_DIR)) {
     console.error(`[file-watcher] watch dir missing: ${WATCH_DIR}`);
     process.exit(1);
   }
-  walkRegister(WATCH_DIR);
-  const watchers = [];
-  const proxyWatcher = fs.watch(WATCH_DIR, { recursive: true, persistent: true }, (_event, filename) => {
-    if (!filename) return;
-    const fullPath = path.join(WATCH_DIR, filename);
-    if (!shouldRestart(fullPath)) return;
-    scheduleRestart(fullPath);
-  });
-  proxyWatcher.on('error', (err) => {
-    console.error(`[file-watcher] watcher error: ${err.message}`);
-    process.exit(1);
-  });
-  watchers.push(proxyWatcher);
-  const externals = discoverExternalDeps();
-  for (const extPath of externals) {
-    try {
-      const extWatcher = fs.watch(extPath, { persistent: true }, (_event) => scheduleRestart(extPath));
-      extWatcher.on('error', (err) => console.error(`[file-watcher] external watcher error on ${extPath}: ${err.message}`));
-      watchers.push(extWatcher);
-    } catch (err) {
-      console.error(`[file-watcher] failed to watch external dep ${extPath}: ${err.message}`);
-    }
+  const mtimes = new Map();
+  const watched = _enumerateAllWatchedFiles();
+  for (const p of watched) {
+    try { mtimes.set(p, fs.statSync(p).mtimeMs); } catch (_) { /* file may vanish */ }
   }
-  console.error(`[file-watcher] watching ${WATCH_DIR} (debounce ${DEBOUNCE_MS}ms, alternating slots a/b) + ${externals.length} external dep(s)`);
+  let lastRescan = Date.now();
+  const RESCAN_INTERVAL_MS = 30000;
+  setInterval(() => {
+    if (Date.now() - lastRescan >= RESCAN_INTERVAL_MS) {
+      lastRescan = Date.now();
+      for (const p of _enumerateAllWatchedFiles()) {
+        if (!mtimes.has(p)) {
+          try { mtimes.set(p, fs.statSync(p).mtimeMs); } catch (_) { /* file may vanish */ }
+        }
+      }
+    }
+    for (const [p, prevMtime] of mtimes) {
+      let stat;
+      try { stat = fs.statSync(p); }
+      catch (_) { mtimes.delete(p); continue; }
+      if (stat.mtimeMs !== prevMtime) {
+        mtimes.set(p, stat.mtimeMs);
+        if (shouldRestart(p)) scheduleRestart(p);
+      }
+    }
+  }, POLL_INTERVAL_MS).unref();
+  const externals = discoverExternalDeps();
+  console.error(`[file-watcher] polling ${watched.length} files every ${POLL_INTERVAL_MS}ms (debounce ${DEBOUNCE_MS}ms, alternating slots a/b) + ${externals.length} external dep(s) -- inotify-free`);
   for (const e of externals) console.error(`[file-watcher]   external: ${path.relative(PROJECT_ROOT, e)}`);
   process.on('SIGTERM', () => { for (const w of watchers) w.close(); process.exit(0); });
   process.on('SIGINT',  () => { for (const w of watchers) w.close(); process.exit(0); });
