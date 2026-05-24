@@ -154,7 +154,8 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
     startLifecycle();
     emitStartMarker('hme_proxy', { port: PORT, git: PROXY_GIT_SHA });
-    console.log(`hme-proxy listening on ${hostLabel}`);
+    if (slot) slot.markReady();
+    console.log(`hme-proxy listening on ${hostLabel}${SLOT_CFG ? ` (slot=${SLOT_CFG.slot})` : ''}`);
     console.log(`  Anthropic upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT}`);
     console.log(`  worker upstream: http://127.0.0.1:${WORKER_PORT} (supervised, /mcp/* routed here)`);
     if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
