@@ -8,6 +8,7 @@ const path = require('node:path');
 
 const {
   STOP_HOOK_REWRITERS,
+  STRATEGY_LOG_FILES,
   ackStripRewrite,
   fpGateMarkerRewrite,
   hallucinatedTurnPrefixStripRewrite,
@@ -18,16 +19,33 @@ const {
   stopHookRewritersForSlot,
 } = require('../../proxy/sse_stop_hook_rewriters');
 
+const EXPECTED_STOP_HOOK_REWRITERS = Object.freeze([
+  ['hook-ui-echo-strip', 'pre-tool'],
+  ['fp-gate-marker', 'pre-tool'],
+  ['stop-hook-ceremony-strip', 'pre-tool'],
+  ['hallucinated-turn-prefix-strip', 'pre-tool'],
+  ['bare-ack-strip', 'post-tool-pre-slop'],
+  ['solo-rationale-trim', 'post-slop'],
+]);
+
 test('stop-hook rewriter registry keeps explicit ordering and slots', () => {
-  assert.deepEqual(STOP_HOOK_REWRITERS.map((r) => [r.name, r.slot]), [
-    ['hook-ui-echo-strip', 'pre-tool'],
-    ['fp-gate-marker', 'pre-tool'],
-    ['stop-hook-ceremony-strip', 'pre-tool'],
-    ['hallucinated-turn-prefix-strip', 'pre-tool'],
-    ['bare-ack-strip', 'post-tool-pre-slop'],
-    ['solo-rationale-trim', 'post-slop'],
-  ]);
+  assert.deepEqual(STOP_HOOK_REWRITERS.map((r) => [r.name, r.slot]), EXPECTED_STOP_HOOK_REWRITERS);
   assert.equal(STOP_HOOK_REWRITERS.find((r) => r.name === 'bare-ack-strip').logFile, 'hme-bare-ack-strips.jsonl');
+});
+
+test('stop-hook rewriter strategies expose required metadata', () => {
+  for (const rewriter of STOP_HOOK_REWRITERS) {
+    assert.equal(typeof rewriter.name, 'string');
+    assert.ok(rewriter.name.length > 0);
+    assert.equal(typeof rewriter.slot, 'string');
+    assert.ok(rewriter.slot.length > 0);
+    assert.equal(typeof rewriter.rewrite, 'function', `${rewriter.name} must expose stream rewrite()`);
+    assert.equal(typeof rewriter.rewriteText, 'function', `${rewriter.name} must expose text rewrite()`);
+    assert.ok(Object.prototype.hasOwnProperty.call(rewriter, 'logFile'), `${rewriter.name} must declare logFile metadata`);
+    if (STRATEGY_LOG_FILES[rewriter.name]) {
+      assert.equal(rewriter.logFile, STRATEGY_LOG_FILES[rewriter.name]);
+    }
+  }
 });
 
 test('stopHookRewritersForSlot returns stream functions in registry order', () => {

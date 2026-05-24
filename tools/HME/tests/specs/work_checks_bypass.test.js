@@ -7,6 +7,33 @@ const os = require('node:os');
 const path = require('node:path');
 const { withChainSandbox } = require('../chain_sandbox');
 
+const EXPECTED_WORK_CHECK_ORDER = Object.freeze([
+  'missing-user-prompt',
+  'startup-grace',
+  'noise-prompt',
+  'detector-verdicts',
+  'missing-transcript',
+  'unfinished-task-debt',
+  'next-action-debt',
+  'work-debt-admission',
+  'parent-task-debt',
+  'completion-budget',
+  'round-two-nothing-missed',
+  'bare-completion-marker',
+  'advance-completeness-counter',
+  'broad-completion-debt',
+  'speculation-debt',
+  'auto-completeness',
+]);
+
+test('work-check strategy registry preserves first-deny-wins order', () => withChainSandbox('wc-order-', () => {
+  const { _testables } = require('../../proxy/stop_chain/policies/work_checks');
+  assert.deepEqual(_testables.WORK_CHECKS.map((check) => check.name), EXPECTED_WORK_CHECK_ORDER);
+  for (const check of _testables.WORK_CHECKS) {
+    assert.equal(typeof check.evaluate, 'function', `${check.name} must expose evaluate()`);
+  }
+}));
+
 function buildTranscript(entries) {
   return entries.map((e) => JSON.stringify(e)).join('\n');
 }
