@@ -318,13 +318,18 @@ function createCodexResponseForwarder(deps) {
     function finishResponse(target, status, errorSummary = '', parsed = null) {
       if (finished) return;
       finished = true;
+      const parsedUpstreamId = parsed && (parsed.id || parsed.response_id || parsed.response?.id) || '';
       record({
         kind: 'response', route: target.kind, upstream: target.url, status,
-        ...traceFields(target, { upstream_response_id: parsed && (parsed.id || parsed.response_id || parsed.response?.id) || '' }),
+        ...traceFields(target, { upstream_response_id: parsedUpstreamId }),
         client_sse_started: clientSse.started,
         client_visible_progress_events: clientSse.progressEvents,
         tool_loop_count: clientSse.toolLoops,
         call_ids: clientSse.callIds.slice(-32),
+        // Telemetry: id the proxy actually sent the client via response.completed.
+        // On error path parsed=null but clientSse.responseId IS the real upstream
+        client_sse_response_id: clientSse.responseId || '',
+        chain_id_used: parsedUpstreamId || clientSse.responseId || '',
         duration_ms: Date.now() - started, error_summary: errorSummary,
         ...responseUsage(parsed),
         model: target.body && target.body.model ? target.body.model : visibility.model,

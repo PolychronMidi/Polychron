@@ -139,24 +139,7 @@ function toPermissionRequestOutput(parsed) {
   return {};
 }
 
-function sanitizeCodexStdout(event, stdout) {
-  if (!stdout) return '';
-  const trimmed = String(stdout).trim();
-  if (!trimmed.startsWith('{')) return stdout;
-  let parsed;
-  try { parsed = JSON.parse(trimmed); }
-  catch (err) {
-    const seq = event === 'UserPromptSubmit' ? parseJsonSequence(trimmed) : null;
-    return seq && seq.length ? renderCodexUserPromptSubmit(seq) : stdout;
-  }
-  if (event === 'UserPromptSubmit') return renderCodexUserPromptSubmit([parsed]);
-  if (event === 'PermissionRequest') {
-    const converted = toPermissionRequestOutput(parsed);
-    return Object.keys(converted).length ? JSON.stringify(converted) : '';
-  }
-  if (event === 'PreToolUse' && parsed.decision === 'block' && parsed.reason) {
-    return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
-  }
+function renderSanitizedCodexStdout(event, parsed) {
   const sanitized = sanitizeHookSpecific(event, parsed);
   const emptyHso = sanitized.hookSpecificOutput
     && typeof sanitized.hookSpecificOutput === 'object'
@@ -164,6 +147,49 @@ function sanitizeCodexStdout(event, stdout) {
     && sanitized.hookSpecificOutput.hookEventName;
   if (emptyHso) delete sanitized.hookSpecificOutput;
   return Object.keys(sanitized).length ? JSON.stringify(sanitized) : '';
+}
+
+const DEFAULT_CODEX_STDOUT_STRATEGY = {
+  render(event, parsed) { return renderSanitizedCodexStdout(event, parsed); },
+};
+
+const CODEX_STDOUT_STRATEGIES = {
+  UserPromptSubmit: {
+    parseError(_event, trimmed, fallback) {
+      const seq = parseJsonSequence(trimmed);
+      return seq && seq.length ? renderCodexUserPromptSubmit(seq) : fallback;
+    },
+    render(_event, parsed) { return renderCodexUserPromptSubmit([parsed]); },
+  },
+  PermissionRequest: {
+    render(_event, parsed) {
+      const converted = toPermissionRequestOutput(parsed);
+      return Object.keys(converted).length ? JSON.stringify(converted) : '';
+    },
+  },
+  PreToolUse: {
+    render(event, parsed) {
+      if (parsed.decision === 'block' && parsed.reason) {
+        return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
+      }
+      return renderSanitizedCodexStdout(event, parsed);
+    },
+  },
+};
+
+function codexStdoutStrategy(event) {
+  return CODEX_STDOUT_STRATEGIES[event] || DEFAULT_CODEX_STDOUT_STRATEGY;
+}
+
+function sanitizeCodexStdout(event, stdout) {
+  if (!stdout) return '';
+  const trimmed = String(stdout).trim();
+  if (!trimmed.startsWith('{')) return stdout;
+  const strategy = codexStdoutStrategy(event);
+  let parsed;
+  try { parsed = JSON.parse(trimmed); }
+  catch (err) { return strategy.parseError ? strategy.parseError(event, trimmed, stdout) : stdout; }
+  return strategy.render(event, parsed);
 }
 
 function denyReason(stdout) {
