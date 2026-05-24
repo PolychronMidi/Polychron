@@ -38,46 +38,7 @@ const PROXY_STARTED_AT = new Date().toISOString();
 let _config = null;
 let _recent = [];
 let _lastGuardMs = 0;
-const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, history_replays: 0, last_route: null, last_error: '', last_model: '' };
-
-// Stable project-scoped session key: Codex CLI mints a new UUID per invocation,
-// so the user-visible "session_id" resets every time they type `codex`. Use the
-// project root path hash as the persistent conversation key so research from
-function _stableSessionKey(_codexSessionId) {
-  const crypto = require('crypto');
-  return 'proj-' + crypto.createHash('sha1').update(PROJECT_ROOT).digest('hex').slice(0, 16);
-}
-
-function _captureRequestInputItems(body, sessionId) {
-  if (!body) return 0;
-  if (!Array.isArray(body.input)) return 0;
-  return conversationStore.appendItems(_stableSessionKey(sessionId), body.input);
-}
-
-function _injectStoredHistory(body, sessionId) {
-  if (!body) return 0;
-  const crypto = require('crypto');
-  const itemHash = (it) => { try { return crypto.createHash('sha1').update(JSON.stringify(it)).digest('hex').slice(0, 16); } catch (_) { return ''; } };
-  const prior = conversationStore.loadHistory(_stableSessionKey(sessionId));
-  if (prior.length === 0) return 0;
-  if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
-  const currentHashes = new Set();
-  for (const it of body.input) { const h = itemHash(it); if (h) currentHashes.add(h); }
-  const priorToInject = prior.filter((it) => { const h = itemHash(it); return h && !currentHashes.has(h); });
-  if (priorToInject.length === 0) return 0;
-  // Insert prior items AFTER the leading developer/system-bootstrap items
-  // (which Codex re-sends every turn) and BEFORE the new user/turn delta.
-  let insertAt = 0;
-  while (insertAt < body.input.length && body.input[insertAt] && body.input[insertAt].role === 'developer') insertAt++;
-  body.input = [...body.input.slice(0, insertAt), ...priorToInject, ...body.input.slice(insertAt)];
-  _metrics.history_replays += 1;
-  return priorToInject.length;
-}
-
-function _captureResponseOutputItems(sessionId, outputItems) {
-  if (!Array.isArray(outputItems) || outputItems.length === 0) return 0;
-  return conversationStore.appendItems(_stableSessionKey(sessionId), outputItems);
-}
+const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, last_route: null, last_error: '', last_model: '' };
 
 function loadConfig() {
   if (_config) return _config;
