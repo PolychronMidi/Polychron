@@ -18,6 +18,7 @@ const BACKEND_B_PORT = Number(requireEnv('HME_PROXY_BACKEND_B_PORT'));
 const HEARTBEAT_STALE_MS = Number(requireEnv('HME_PROXY_HEARTBEAT_STALE_MS'));
 const HEALTH_POLL_MS = 250;
 const STICKY_REPLAY_TAIL = 500;
+const STICKY_MAP_CAP = 10_000;
 
 const RUNTIME_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
 const HEALTH_FILES = {
