@@ -241,11 +241,15 @@ function createCodexResponseForwarder(deps) {
 
     function completeClientSse(target, status, errorSummary = '', parsed = null) {
       if (!clientSse.started || res.writableEnded) return false;
+      // CRITICAL: surface the REAL upstream response id (parsed.id) to Codex CLI
+      // so that next turn's previous_response_id chain hits a real stored response
+      const upstreamId = (parsed && (parsed.id || parsed.response_id || (parsed.response && parsed.response.id))) || '';
+      const finalResponseId = upstreamId || clientSse.responseId;
       const message = { id: clientSse.itemId, type: 'message', status: 'completed', role: 'assistant', content: [{ type: 'output_text', text: clientSse.text }] };
       sseEvent({ type: 'response.output_text.done', item_id: clientSse.itemId, output_index: 0, content_index: 0, text: clientSse.text }, 'response.output_text.done');
       sseEvent({ type: 'response.content_part.done', item_id: clientSse.itemId, output_index: 0, content_index: 0, part: { type: 'output_text', text: clientSse.text } }, 'response.content_part.done');
       sseEvent({ type: 'response.output_item.done', output_index: 0, item: message }, 'response.output_item.done');
-      sseEvent({ type: 'response.completed', response: { id: clientSse.responseId, object: 'response', status: 'completed', output: [message] } }, 'response.completed');
+      sseEvent({ type: 'response.completed', response: { id: finalResponseId, object: 'response', status: 'completed', output: [message] } }, 'response.completed');
       res.write('data: [DONE]\n\n');
       res.end();
       finishResponse(target, status, errorSummary, parsed);
