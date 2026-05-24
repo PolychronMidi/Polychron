@@ -124,19 +124,32 @@ function start() {
     process.exit(1);
   }
   walkRegister(WATCH_DIR);
-  const watcher = fs.watch(WATCH_DIR, { recursive: true, persistent: true }, (_event, filename) => {
+  const watchers = [];
+  const proxyWatcher = fs.watch(WATCH_DIR, { recursive: true, persistent: true }, (_event, filename) => {
     if (!filename) return;
     const fullPath = path.join(WATCH_DIR, filename);
     if (!shouldRestart(fullPath)) return;
     scheduleRestart(fullPath);
   });
-  watcher.on('error', (err) => {
+  proxyWatcher.on('error', (err) => {
     console.error(`[file-watcher] watcher error: ${err.message}`);
     process.exit(1);
   });
-  console.error(`[file-watcher] watching ${WATCH_DIR} (debounce ${DEBOUNCE_MS}ms, alternating slots a/b)`);
-  process.on('SIGTERM', () => { watcher.close(); process.exit(0); });
-  process.on('SIGINT', () => { watcher.close(); process.exit(0); });
+  watchers.push(proxyWatcher);
+  const externals = discoverExternalDeps();
+  for (const extPath of externals) {
+    try {
+      const extWatcher = fs.watch(extPath, { persistent: true }, (_event) => scheduleRestart(extPath));
+      extWatcher.on('error', (err) => console.error(`[file-watcher] external watcher error on ${extPath}: ${err.message}`));
+      watchers.push(extWatcher);
+    } catch (err) {
+      console.error(`[file-watcher] failed to watch external dep ${extPath}: ${err.message}`);
+    }
+  }
+  console.error(`[file-watcher] watching ${WATCH_DIR} (debounce ${DEBOUNCE_MS}ms, alternating slots a/b) + ${externals.length} external dep(s)`);
+  for (const e of externals) console.error(`[file-watcher]   external: ${path.relative(PROJECT_ROOT, e)}`);
+  process.on('SIGTERM', () => { for (const w of watchers) w.close(); process.exit(0); });
+  process.on('SIGINT',  () => { for (const w of watchers) w.close(); process.exit(0); });
 }
 
 start();
