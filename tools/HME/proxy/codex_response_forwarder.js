@@ -422,6 +422,7 @@ function createCodexResponseForwarder(deps) {
 
     function sendJsonFinal(target, status, headers, full) {
       const parsed = safeJson(full);
+      if (parsed && parsed.id && !clientSse.started) clientSse.responseId = String(parsed.id);
       const calls = collectToolCalls(parsed);
       if (calls.length) {
         const decision = runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'json' }, { record });
