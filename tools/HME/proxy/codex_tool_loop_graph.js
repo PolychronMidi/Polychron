@@ -96,8 +96,6 @@ function initialState(input = {}) {
     turn_id: source.turn_id || target.hme_turn_id || '',
     route: target.kind || '',
     depth: Number(target.tool_loop_depth || 0),
-    finalizing_tool_loop: Boolean(target.finalizing_tool_loop),
-    finalization_repairs: Number(target.finalization_repairs || 0),
     response_kind: input.response_kind || '',
     stream: Boolean(target.body && target.body.stream),
     hitl_enabled: input.hitl_enabled === true,
