@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Restart ONLY the HME proxy bundle (hme_proxy.js + supervised worker.py +
-# llamacpp_daemon). Leaves llama-server (:8080/:8081), VSCode, and
-# .vscode/settings.json untouched. Use polychron-restart.sh for full reset.
+# llamacpp_daemon). Leaves llama-server (:8080/:8081) untouched. Default
 
 set -u
 set -o pipefail
