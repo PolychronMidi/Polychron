@@ -79,7 +79,6 @@ const forwardResponses = createCodexResponseForwarder({
   planScanner,
   projectRoot: PROJECT_ROOT,
   upstreamUrl: UPSTREAM_URL,
-  onResponseComplete: _captureResponseOutputItems,
 });
 
 function updateMetrics(row) {
