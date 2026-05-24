@@ -521,10 +521,7 @@ function createCodexResponseForwarder(deps) {
             if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
             if (clientSse.started && !res.writableEnded) { try { completeClientSse(target, status, `upstream ${status}`, null); } catch (_e) { try { res.end(); } catch (_) {} } return; }
             finishResponse(target, status, `upstream ${status} after ${attempt + 1} attempts`);
-            if (!res.headersSent) {
-              res.writeHead(status, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'codex_proxy_upstream_exhausted', status, attempts: attempt + 1, message: preview }));
-            } else res.end();
+            sendSseError(status, 'codex_proxy_upstream_exhausted', `upstream ${status} after ${attempt + 1} attempts: ${preview}`.slice(0, 800));
           });
           return;
         }
