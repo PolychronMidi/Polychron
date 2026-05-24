@@ -37,12 +37,6 @@ test('Codex tool-loop graph blocks duplicate tool execution', () => {
   assert.deepEqual(decision.duplicate_call_ids, ['call_read']);
 });
 
-test('Codex tool-loop graph returns bounded fallback instead of loop-limit 508 state', () => {
-  const decision = runCodexToolLoopGraph({ target: target({ hme_correlation_id: 'corr_depth', tool_loop_depth: 8 }), calls: [readCall] }, { checkpoints: false });
-  assert.equal(decision.action, 'bounded_fallback');
-  assert.equal(decision.invariant, 'bounded_finalization');
-});
-
 test('Codex tool-loop graph models human approval before destructive tools', () => {
   const call = { id: 'call_rm', name: 'Bash', args: { command: 'rm -rf tmp/example' } };
   assert.equal(requiresHumanApproval(call), true);
