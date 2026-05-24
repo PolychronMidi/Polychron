@@ -42,10 +42,18 @@ let _recent = [];
 let _lastGuardMs = 0;
 const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, history_replays: 0, last_route: null, last_error: '', last_model: '' };
 
+// Stable project-scoped session key: Codex CLI mints a new UUID per invocation,
+// so the user-visible "session_id" resets every time they type `codex`. Use the
+// project root path hash as the persistent conversation key so research from
+function _stableSessionKey(_codexSessionId) {
+  const crypto = require('crypto');
+  return 'proj-' + crypto.createHash('sha1').update(PROJECT_ROOT).digest('hex').slice(0, 16);
+}
+
 function _captureRequestInputItems(body, sessionId) {
-  if (!sessionId || !body) return 0;
+  if (!body) return 0;
   if (!Array.isArray(body.input)) return 0;
-  return conversationStore.appendItems(sessionId, body.input);
+  return conversationStore.appendItems(_stableSessionKey(sessionId), body.input);
 }
 
 function _injectStoredHistory(body, sessionId) {
