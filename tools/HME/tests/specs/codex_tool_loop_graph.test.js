@@ -30,10 +30,9 @@ test('Codex tool-loop graph routes valid streamed tool calls through visible exe
   assert.equal(events.some((event) => event.kind === 'codex-tool-loop-graph-node' && event.node === 'execute_tools'), true);
 });
 
-test('Codex tool-loop graph blocks duplicate tool execution', () => {
+test('Codex tool-loop graph executes duplicate call_ids (no fabricated fallback)', () => {
   const decision = runCodexToolLoopGraph({ target: target({ hme_correlation_id: 'corr_dup' }), calls: [readCall], executed_call_ids: ['call_read'] }, { checkpoints: false });
-  assert.equal(decision.action, 'duplicate_tool_fallback');
-  assert.equal(decision.invariant, 'no_duplicate_tool_execution');
+  assert.equal(decision.action, 'execute_tools');
   assert.deepEqual(decision.duplicate_call_ids, ['call_read']);
 });
 
