@@ -16,20 +16,11 @@ function uniformToolConfig(cfg) {
   return { enabled: !envOff && raw.enabled !== false };
 }
 
-function replaceToolsWithUniform(body, cfg) {
-  const stats = { replaced: false, dropped: 0, kept: 0, dropped_names: [] };
-  if (!uniformToolConfig(cfg).enabled) return { body, stats };
-  const incoming = Array.isArray(body.tools) ? body.tools : [];
-  const droppedNames = [];
-  for (const tool of incoming) {
-    const name = tool && (tool.name || (tool.function && tool.function.name) || '');
-    if (name && !UNIFORM_NAMES.has(name)) droppedNames.push(name);
-  }
-  stats.dropped = droppedNames.length;
-  stats.dropped_names = droppedNames.slice(0, 32);
-  stats.kept = UNIFORM_NAMES.size;
-  stats.replaced = true;
-  return { body: { ...body, tools: uniformToolList() }, stats };
+// Pure passthrough: never overwrite body.tools. The Codex CLI ships its own
+// tool surface (exec_command) -- the proxy must not hijack it. Retained as a
+// no-op so existing callers compile; uniformToolList() is still exported for
+function replaceToolsWithUniform(body, _cfg) {
+  return { body, stats: { replaced: false, dropped: 0, kept: 0, dropped_names: [] } };
 }
 
 module.exports = { TOOLS, UNIFORM_NAMES, uniformToolList, replaceToolsWithUniform };
