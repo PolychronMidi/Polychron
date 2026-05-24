@@ -273,18 +273,7 @@ ${_file_head}"
   fi
 fi
 
-# Record this edit's module + line range (1-based, inclusive). Range "0 0"
-# means whole-file / not-locatable; read_policy treats that as match-any.
-if [ -n "$_MODULE_BASE" ]; then
-  mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
-  _RANGE="0 0"
-  if [ -n "$FILE" ] && [ -f "${PROJECT_ROOT}/tools/HME/scripts/edit_range.js" ]; then
-    _RANGE=$(printf '%s' "$INPUT" | jq -c '.tool_input' 2>/dev/null \
-             | node "${PROJECT_ROOT}/tools/HME/scripts/edit_range.js" 2>/dev/null || echo "0 0")
-    case "$_RANGE" in ''|*[!0-9\ ]*) _RANGE="0 0" ;; esac
-  fi
-  echo "${_MODULE_BASE}:${_RANGE// /-}" >> "$_TURN_EDIT_STATE"
-fi
+# Verify-landed marking is PostToolUse-only so failed edits never poison turn state.
 
 # Edit attempts break repeated-command spirals even if transcript shape changes.
 [ -x "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \

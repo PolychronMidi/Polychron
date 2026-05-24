@@ -218,23 +218,17 @@ function createBashPolicyContext(input = {}, opts = {}) {
 
 const BASH_POLICIES = [
   { name: 'lifesaver-escalation', evaluate(ctx) { return lifesaverEscalation(ctx.root); } },
-  {
-    name: 'noop-after-failure',
-    evaluate(ctx) {
-      const decision = noopAfterFailureDecision(ctx.cmd, ctx.root);
-      if (decision) return decision;
-      if (!isNoopCommand(ctx.cmd)) clearFailure(ctx.root);
-      return null;
-    },
-  },
-  {
-    name: 'timeout-normalize',
-    evaluate(ctx) {
-      if (ctx.next.timeout && String(ctx.next.timeout) !== '0') delete ctx.next.timeout;
-      ctx.timeoutChanged = !Object.prototype.hasOwnProperty.call(ctx.next, 'timeout') && Object.prototype.hasOwnProperty.call(ctx.input, 'timeout');
-      return null;
-    },
-  },
+  { name: 'noop-after-failure', evaluate(ctx) {
+    const decision = noopAfterFailureDecision(ctx.cmd, ctx.root);
+    if (decision) return decision;
+    if (!isNoopCommand(ctx.cmd)) clearFailure(ctx.root);
+    return null;
+  } },
+  { name: 'timeout-normalize', evaluate(ctx) {
+    if (ctx.next.timeout && String(ctx.next.timeout) !== '0') delete ctx.next.timeout;
+    ctx.timeoutChanged = !Object.prototype.hasOwnProperty.call(ctx.next, 'timeout') && Object.prototype.hasOwnProperty.call(ctx.input, 'timeout');
+    return null;
+  } },
   {
     name: 'remote-pipe-to-shell',
     evaluate(ctx) {
@@ -243,13 +237,10 @@ const BASH_POLICIES = [
         : null;
     },
   },
-  {
-    name: 'lock-deletion',
-    evaluate(ctx) {
-      const ld = lockDeletion(ctx.cmd);
-      return ld ? deny(`BLOCKED: Never delete ${LOCK_NAME} (matched: ${ld})`) : null;
-    },
-  },
+  { name: 'lock-deletion', evaluate(ctx) {
+    const ld = lockDeletion(ctx.cmd);
+    return ld ? deny(`BLOCKED: Never delete ${LOCK_NAME} (matched: ${ld})`) : null;
+  } },
   {
     name: 'mkdir-path-policy',
     evaluate(ctx) {
@@ -291,14 +282,8 @@ const BASH_POLICIES = [
       return enriched ? allow(setCommandInput(ctx.next, enriched), '', true) : null;
     },
   },
-  {
-    name: 'feedback-kb-spam',
-    evaluate(ctx) { return feedbackKbSpam(ctx.cmd); },
-  },
-  {
-    name: 'log-first',
-    evaluate(ctx) { return evaluateLogFirst(ctx.cmd, ctx.root); },
-  },
+  { name: 'feedback-kb-spam', evaluate(ctx) { return feedbackKbSpam(ctx.cmd); } },
+  { name: 'log-first', evaluate(ctx) { return evaluateLogFirst(ctx.cmd, ctx.root); } },
   {
     name: 'pipeline-log-polling',
     evaluate(ctx) {
@@ -315,10 +300,7 @@ const BASH_POLICIES = [
         : null;
     },
   },
-  {
-    name: 'polling-counter',
-    evaluate(ctx) { return pollingDecision(ctx.cmd, ctx.root); },
-  },
+  { name: 'polling-counter', evaluate(ctx) { return pollingDecision(ctx.cmd, ctx.root); } },
   {
     name: 'fail-fast',
     evaluate(ctx) {
