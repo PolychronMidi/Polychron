@@ -206,6 +206,23 @@ if [ "${HME_PROXY_FILE_WATCHER:-1}" != "0" ] && [ -x "$_FILE_WATCHER" ]; then
   fi
 fi
 
+# Slot watchdog: respawns a slot whose heartbeat goes stale + pid is dead.
+# Pairs with the file_watcher (planned drain) and slot_lifecycle (heartbeat writer)
+_SLOT_WATCHDOG="$PROJECT_ROOT/tools/HME/proxy/shuffler/slot_watchdog.js"
+if [ "${HME_PROXY_SLOT_WATCHDOG:-1}" != "0" ] && [ -x "$_SLOT_WATCHDOG" ]; then
+  if pgrep -f "shuffler/slot_watchdog.js" >/dev/null 2>&1; then
+    echo "[launch] slot_watchdog already running" >&2
+  else
+    echo "[launch] starting slot_watchdog (auto-respawn dead backends)..." >&2
+    PROJECT_ROOT="$PROJECT_ROOT" \
+      setsid nohup node "$_SLOT_WATCHDOG" \
+        >> "$PROJECT_ROOT/log/hme-slot-watchdog.out" 2>&1 < /dev/null &
+    _WD_PID=$!
+    disown 2>/dev/null || true
+    _record_pid "slot_watchdog" "$_WD_PID"
+  fi
+fi
+
 # 2. llama-server instances
 
 _llama_healthy() {
