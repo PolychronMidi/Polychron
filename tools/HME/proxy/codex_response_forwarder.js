@@ -497,8 +497,8 @@ function createCodexResponseForwarder(deps) {
       // error bodies. Emit upstream errors as proper SSE response.failed events
       function sendSseError(httpStatus, errCode, errMessage) {
         const wantsStream = Boolean(target.body && target.body.stream);
-        if (!wantsStream || res.headersSent) {
-          if (!res.headersSent) {
+        if (!wantsStream || res.headersSent || res.writableEnded) {
+          if (!res.headersSent && !res.writableEnded) {
             res.writeHead(httpStatus, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: errCode, message: errMessage, attempts: attempt + 1 }));
           } else { try { res.end(); } catch (_) {} }
