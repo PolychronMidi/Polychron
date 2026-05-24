@@ -99,7 +99,13 @@ function record(row) {
 }
 
 const planScanner = createPlanScanner({ loadConfig, record, nowIso, planSync: PLAN_SYNC, projectRoot: PROJECT_ROOT });
-const forwardResponses = createCodexResponseForwarder({ record, planScanner, projectRoot: PROJECT_ROOT, upstreamUrl: UPSTREAM_URL });
+const forwardResponses = createCodexResponseForwarder({
+  record,
+  planScanner,
+  projectRoot: PROJECT_ROOT,
+  upstreamUrl: UPSTREAM_URL,
+  onResponseComplete: _captureResponseOutputItems,
+});
 
 function updateMetrics(row) {
   if (!row || typeof row !== 'object') return;
