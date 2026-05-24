@@ -27,11 +27,28 @@ PROJECT_ROOT="${PROJECT_ROOT}"
 _RESTART_THROTTLE_SEC="${HME_PROXY_RESTART_THROTTLE_SEC:-300}"
 _RESTART_SENTINEL="$PROJECT_ROOT/tools/HME/runtime/proxy-last-restart.ts"
 _FORCE_RESTART=0
+_LEGACY_MODE=0
 for _arg in "$@"; do
   case "$_arg" in
     --force|-f) _FORCE_RESTART=1 ;;
+    --legacy) _LEGACY_MODE=1 ;;
   esac
 done
+
+# Default path: delegate to per-slot active-active restart so users get zero-downtime.
+# Each slot has its own 60s throttle; the outer 5-min throttle on this script is the
+_SLOT_SCRIPT="$PROJECT_ROOT/tools/HME/launcher/polychron-slot-restart.sh"
+if [ "$_LEGACY_MODE" = "0" ] && [ -x "$_SLOT_SCRIPT" ]; then
+  _slot_args=""
+  [ "$_FORCE_RESTART" = "1" ] && _slot_args="--force"
+  echo "[proxy-restart] zero-downtime mode: restarting slot a, then slot b" >&2
+  "$_SLOT_SCRIPT" --slot a $_slot_args || { echo "[proxy-restart] slot a restart failed; aborting before slot b" >&2; exit 1; }
+  sleep 2
+  "$_SLOT_SCRIPT" --slot b $_slot_args || { echo "[proxy-restart] slot b restart failed; slot a is fresh, shuffler will route there" >&2; exit 1; }
+  echo "[proxy-restart] zero-downtime restart complete" >&2
+  exit 0
+fi
+
 if [ "$_FORCE_RESTART" = "0" ] && [ -s "$_RESTART_SENTINEL" ]; then
   _last_ts="$(cat "$_RESTART_SENTINEL" 2>/dev/null || echo 0)"
   _now_ts="$(date +%s)"
