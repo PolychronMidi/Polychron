@@ -292,15 +292,18 @@ function createCodexResponseForwarder(deps) {
     }
 
     function sendParsedOverClientSse(target, status, headers, parsed, errorSummary = '') {
-      if (!clientSse.started) return false;
       const text = finalOutputText(parsed);
+      if (!clientSse.started) {
+        if (!target?.body?.stream || !text.trim()) return false;
+        clientSse.responseId = parsed && (parsed.id || parsed.response_id || parsed.response?.id) || clientSse.responseId;
+        writeClientText(target, text, status, headers);
+        return completeClientSse(target, status, errorSummary, parsed);
+      }
       if (text.trim()) {
         if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
         writeClientText(target, text, status, headers);
         if (clientSse.toolLoops > 0) recordMissingFinal(target, parsed, true);
       } else if (clientSse.toolLoops > 0 && !finalOutputText(parsed).trim()) {
-        // Upstream returned no final assistant message after tool loops. Do NOT
-        // fabricate a "Render pipeline error..." string into the client stream
         recordMissingFinal(target, parsed, false);
       }
       return completeClientSse(target, status, errorSummary, parsed);
