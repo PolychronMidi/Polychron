@@ -83,42 +83,13 @@ function _tick() {
   }
 }
 
-let _lastGitDriftTriggerSlot = null;
-let _lastGitDriftTriggerAt = 0;
-function _gitDriftTick() {
-  const head = _currentHeadSha();
-  if (!head) return;
-  const candidates = [];
-  for (const slot of ['a', 'b']) {
-    const h = _readJSONSafe(HEALTH[slot]);
-    if (!h || !h.git_sha || h.git_sha === 'unknown') continue;
-    if (h.git_sha !== head) candidates.push({ slot, slotSha: h.git_sha });
-  }
-  if (candidates.length === 0) return;
-  if (_lastGitDriftTriggerSlot) {
-    if ((Date.now() - _lastGitDriftTriggerAt) < GIT_DRIFT_INTERSLOT_DELAY_MS) return;
-    const other = candidates.find((c) => c.slot !== _lastGitDriftTriggerSlot);
-    if (other) {
-      console.error(`[slot-watchdog] git drift continues: slot ${other.slot} on ${other.slotSha}, HEAD ${head}; chained restart`);
-      _respawn(other.slot, `stale code (slot ${other.slotSha} vs HEAD ${head})`);
-      _lastGitDriftTriggerSlot = other.slot;
-      _lastGitDriftTriggerAt = Date.now();
-    } else {
-      _lastGitDriftTriggerSlot = null;
-    }
-    return;
-  }
-  const first = candidates[0];
-  console.error(`[slot-watchdog] git drift detected: slot ${first.slot} on ${first.slotSha}, HEAD ${head}; restarting`);
-  _respawn(first.slot, `stale code (slot ${first.slotSha} vs HEAD ${head})`);
-  _lastGitDriftTriggerSlot = first.slot;
-  _lastGitDriftTriggerAt = Date.now();
-}
+// NOTE: git_sha drift detection was removed -- it created a positive feedback
+// loop with auto-commits (every trivial commit -> drift detected -> slot
+// restart -> auto-commit during respawn -> drift again). file_watcher already
 
 function start() {
-  console.error(`[slot-watchdog] polling every ${POLL_MS}ms; stale threshold ${STALE_MS}ms; respawn cooldown ${RESPAWN_COOLDOWN_MS}ms; git-drift check every ${GIT_SHA_POLL_MS}ms`);
+  console.error(`[slot-watchdog] polling every ${POLL_MS}ms; stale threshold ${STALE_MS}ms; respawn cooldown ${RESPAWN_COOLDOWN_MS}ms`);
   setInterval(_tick, POLL_MS);
-  setInterval(_gitDriftTick, GIT_SHA_POLL_MS);
 }
 
 start();
