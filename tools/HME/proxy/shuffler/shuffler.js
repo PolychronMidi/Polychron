@@ -66,7 +66,7 @@ function _pickSlot(sessionId) {
     if (routable.includes(prior)) return prior;
     // Prior slot now unroutable -> rebind to a healthy one and log.
     const next = routable[0];
-    stickyMap.set(sessionId, next);
+    _setSticky(sessionId, next);
     _appendSticky(sessionId, next);
     return next;
   }
