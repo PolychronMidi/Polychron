@@ -488,14 +488,6 @@ function createCodexResponseForwarder(deps) {
         upstreamRes.on('data', (chunk) => chunks.push(chunk));
         upstreamRes.on('end', () => {
           const full = Buffer.concat(chunks).toString('utf8');
-          // TEMP DEBUG: dump every upstream response for diagnosis. Remove once
-          // empty-response root cause is identified.
-          try {
-            const dumpDir = require('path').join(_DUMP_ROOT, 'tmp', 'codex-upstream-dumps');
-            require('fs').mkdirSync(dumpDir, { recursive: true });
-            const fname = `${Date.now()}-${target.kind}-status${status}-len${full.length}.dump`;
-            require('fs').writeFileSync(`${dumpDir}/${fname}`, `URL=${target.url}\nSTATUS=${status}\nCT=${upstreamRes.headers['content-type']||''}\nHEADERS=${JSON.stringify(upstreamRes.headers)}\nBODY_BYTES=${full.length}\n---BODY---\n${full}`);
-          } catch (_e) { /* best-effort */ }
           if (String(upstreamRes.headers['content-type'] || '').includes('text/event-stream')) sendSseFinal(target, status, headers, full);
           else sendJsonFinal(target, status, headers, full);
         });
