@@ -5,6 +5,7 @@ const https = require('https');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, followupBody, missingRequiredToolFields, toolOutputIsError, codexToolOutputs } = require('./codex_tool_loop');
 const { runCodexToolLoopGraph } = require('./codex_tool_loop_graph');
+const { PROJECT_ROOT: _DUMP_ROOT } = require('./shared');
 
 
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
@@ -491,7 +492,7 @@ function createCodexResponseForwarder(deps) {
           // TEMP DEBUG: dump every upstream response for diagnosis. Remove once
           // empty-response root cause is identified.
           try {
-            const dumpDir = '$PROJECT_ROOT/tmp/codex-upstream-dumps';
+            const dumpDir = require('path').join(_DUMP_ROOT, 'tmp', 'codex-upstream-dumps');
             require('fs').mkdirSync(dumpDir, { recursive: true });
             const fname = `${Date.now()}-${target.kind}-status${status}-len${full.length}.dump`;
             require('fs').writeFileSync(`${dumpDir}/${fname}`, `URL=${target.url}\nSTATUS=${status}\nCT=${upstreamRes.headers['content-type']||''}\nHEADERS=${JSON.stringify(upstreamRes.headers)}\nBODY_BYTES=${full.length}\n---BODY---\n${full}`);
