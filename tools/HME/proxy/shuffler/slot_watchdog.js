@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawn, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
@@ -16,20 +16,6 @@ const HEARTBEAT_SEC = Number(requireEnv('HME_PROXY_HEARTBEAT_SEC'));
 const STALE_FACTOR = 3;
 const STALE_MS = Math.max(3000, HEARTBEAT_SEC * 1000 * STALE_FACTOR);
 const POLL_MS = Math.max(1000, HEARTBEAT_SEC * 1000);
-const GIT_SHA_POLL_MS = 15_000;
-const GIT_DRIFT_INTERSLOT_DELAY_MS = 5_000;
-
-let _lastHeadSha = '';
-let _lastHeadShaCheckedAt = 0;
-function _currentHeadSha() {
-  const now = Date.now();
-  if (_lastHeadSha && (now - _lastHeadShaCheckedAt) < GIT_SHA_POLL_MS) return _lastHeadSha;
-  try {
-    _lastHeadSha = execSync('git rev-parse HEAD', { cwd: PROJECT_ROOT, encoding: 'utf8', timeout: 1000 }).trim().slice(0, 12);
-    _lastHeadShaCheckedAt = now;
-  } catch (_) { _lastHeadSha = ''; }
-  return _lastHeadSha;
-}
 const SLOT_SCRIPT = path.join(PROJECT_ROOT, 'tools', 'HME', 'launcher', 'polychron-slot-restart.sh');
 const RUNTIME_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
 const HEALTH = {
