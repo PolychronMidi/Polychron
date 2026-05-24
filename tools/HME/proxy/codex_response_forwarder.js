@@ -339,16 +339,15 @@ function createCodexResponseForwarder(deps) {
     }
 
     function toolGraphFallbackResponse(parsed, decision) {
-      const action = decision && decision.action || 'tool_graph_fallback';
-      const text = action === 'interrupt_before_tool'
-        ? `HME paused before executing a tool that requires human approval. No tool was executed. Checkpoint: ${decision.checkpoint_id || 'unavailable'}.`
-        : `HME blocked an invalid Codex tool-loop transition (${action}) instead of forwarding raw tool calls or returning a 508 loop error.`;
+      // Only fired for interrupt_before_tool (HITL gate, opt-in). All other
+      // decisions (malformed/duplicate) fall through to upstream passthrough.
+      const text = `HME paused before executing a tool that requires human approval. No tool was executed. Checkpoint: ${decision.checkpoint_id || 'unavailable'}.`;
       return {
-        id: parsed && parsed.id ? parsed.id : `hme_tool_graph_${Date.now()}`,
+        id: parsed && parsed.id ? parsed.id : '',
         object: 'response',
         output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
         hme_tool_loop_graph: {
-          action,
+          action: 'interrupt_before_tool',
           reason: decision && decision.reason || '',
           invariant: decision && decision.invariant || '',
           checkpoint_id: decision && decision.checkpoint_id || '',
