@@ -77,8 +77,8 @@ function _injectStoredHistory(body, sessionId) {
 }
 
 function _captureResponseOutputItems(sessionId, outputItems) {
-  if (!sessionId || !Array.isArray(outputItems) || outputItems.length === 0) return 0;
-  return conversationStore.appendItems(sessionId, outputItems);
+  if (!Array.isArray(outputItems) || outputItems.length === 0) return 0;
+  return conversationStore.appendItems(_stableSessionKey(sessionId), outputItems);
 }
 
 function loadConfig() {
