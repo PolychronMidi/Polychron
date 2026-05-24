@@ -20,8 +20,11 @@ function newestJsonl(dir) {
     const rows = fs.readdirSync(dir)
       .filter((f) => f.endsWith('.jsonl'))
       .map((f) => path.join(dir, f))
-      .map((f) => ({ f, m: fs.statSync(f).mtimeMs }))
-      .sort((a, b) => b.m - a.m);
+      .map((f) => {
+        const stat = fs.statSync(f);
+        return { f, c: stat.ctimeMs, m: stat.mtimeMs };
+      })
+      .sort((a, b) => (b.m - a.m) || (b.c - a.c) || b.f.localeCompare(a.f));
     return rows[0] ? rows[0].f : '';
   } catch (err) {
     return '';
