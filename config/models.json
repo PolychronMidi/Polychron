@@ -6,7 +6,7 @@
       "opencode": {
         "note": "Zen (free tier and usage-based)"
       },
-      "opencode_go": {
+      "opencode-go": {
         "note": "Go subscription, $10/month"
       },
       "anthropic": {
@@ -29,7 +29,7 @@
   "providers_to_skip": {
     "description": "Pause provider usage in case of credit shortage.",
     "providers": [
-      "anthropic"
+      "anthropic,opencode-go"
     ]
   },
   "provider_capabilities": {
