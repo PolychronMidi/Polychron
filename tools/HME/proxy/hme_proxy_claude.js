@@ -45,15 +45,10 @@ const {
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const {
-  isSingleQuotaProbe,
-  isTodoWriteOnlyProbe,
-  isStructuredOutputsProbe,
-  shouldBlockNoopSystemReminderTurn,
-  blockQuotaProbe,
-  blockTodoWriteOnlyProbe,
-  blockStructuredOutputsProbe,
-  blockNoopSystemReminderTurn,
-} = require('./contexts/request_mutation');
+  captureNoopReminderLeak,
+  maybeBlockEarlyClaudeRequest,
+  maybeBlockLateClaudeProbeRequest,
+} = require('./hme_proxy_claude_guards');
 
 
 function createClaudeHandler(deps) {
@@ -100,50 +95,9 @@ function createClaudeHandler(deps) {
         try { payload = JSON.parse(bodyBuf.toString('utf8')); } catch (_err) { /* pass through */ }
       }
 
-      if (isSingleQuotaProbe(payload)) {
-        blockQuotaProbe({ res: clientRes, payload });
-        return;
-      }
-      if (shouldBlockNoopSystemReminderTurn({ req: clientReq, payload, headers: clientReq.headers })) {
-        try {
-          const fs = require('fs');
-          const path = require('path');
-          const root = process.env.PROJECT_ROOT;
-          if (!root) throw new Error('PROJECT_ROOT not set');
-          const ts = new Date().toISOString().replace(/[:.]/g, '-');
-          fs.writeFileSync(path.join(root, 'tmp', `noop-block-${ts}.json`), JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
-        } catch (_e) { /* best effort */ }
-        blockNoopSystemReminderTurn({ req: clientReq, res: clientRes, payload });
-        return;
-      }
-      // DDoC instrumentation: capture payloads that PASS guard but whose final
-      // user message reduces to empty after stripping system-reminder blocks.
-      try {
-        const lastUser = [...(payload && payload.messages || [])].reverse().find((m) => m && m.role === 'user');
-        if (lastUser) {
-          const blocks = Array.isArray(lastUser.content) ? lastUser.content : [];
-          const allText = blocks.map((b) => (b && typeof b === 'object' && typeof b.text === 'string') ? b.text : '').join('\n');
-          if (/<system-reminder>/i.test(allText)) {
-            const stripped = allText.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, '').trim();
-            if (stripped === '' || stripped.length < 4) {
-              const fs = require('fs');
-              const path = require('path');
-              const root = process.env.PROJECT_ROOT;
-              if (!root) throw new Error('PROJECT_ROOT not set');
-              const ts = new Date().toISOString().replace(/[:.]/g, '-');
-              fs.writeFileSync(path.join(root, 'tmp', `noop-leak-${ts}.json`), JSON.stringify({ url: clientReq.url, headers: clientReq.headers, payload }, null, 2));
-            }
-          }
-        }
-      } catch (_e) { /* best effort */ }
-      if (isStructuredOutputsProbe(payload, clientReq.headers)) {
-        blockStructuredOutputsProbe({ res: clientRes, payload });
-        return;
-      }
-      if (isTodoWriteOnlyProbe(payload)) {
-        blockTodoWriteOnlyProbe({ res: clientRes, payload });
-        return;
-      }
+      if (maybeBlockEarlyClaudeRequest({ clientReq, clientRes, payload })) return;
+      captureNoopReminderLeak({ clientReq, payload });
+      if (maybeBlockLateClaudeProbeRequest({ clientReq, clientRes, payload })) return;
 
       let outBody = bodyBuf;
       let injected = false;
