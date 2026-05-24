@@ -81,6 +81,43 @@ function walkRegister(dir) {
   }
 }
 
+// Scan proxy/**/*.js for require() escapes (paths that resolve OUTSIDE WATCH_DIR).
+// These external files are loaded into the proxy process and changes to them
+function discoverExternalDeps() {
+  const REQ_RE = /require\(\s*['"]([^'"]+)['"]\s*\)/g;
+  const external = new Set();
+  function scanFile(absFile) {
+    let txt; try { txt = fs.readFileSync(absFile, 'utf8'); } catch (_) { return; }
+    REQ_RE.lastIndex = 0;
+    let m;
+    while ((m = REQ_RE.exec(txt))) {
+      const spec = m[1];
+      if (!spec.startsWith('.')) continue;
+      const resolved = path.resolve(path.dirname(absFile), spec);
+      if (resolved.startsWith(WATCH_DIR + path.sep)) continue;
+      const candidates = [resolved, `${resolved}.js`, `${resolved}.json`, path.join(resolved, 'index.js')];
+      for (const c of candidates) {
+        try { if (fs.statSync(c).isFile()) { external.add(c); break; } } catch (_) { /* not this candidate */ }
+      }
+    }
+  }
+  function walk(dir) {
+    let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of entries) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (p.startsWith(SHUFFLER_OWN_DIR)) continue;
+        if (/node_modules|\/runtime\//.test(p)) continue;
+        walk(p);
+      } else if (/\.(js|mjs|cjs)$/.test(e.name)) {
+        scanFile(p);
+      }
+    }
+  }
+  walk(WATCH_DIR);
+  return [...external];
+}
+
 function start() {
   if (!fs.existsSync(WATCH_DIR)) {
     console.error(`[file-watcher] watch dir missing: ${WATCH_DIR}`);
