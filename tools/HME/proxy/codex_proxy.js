@@ -57,10 +57,10 @@ function _captureRequestInputItems(body, sessionId) {
 }
 
 function _injectStoredHistory(body, sessionId) {
-  if (!sessionId || !body) return 0;
+  if (!body) return 0;
   const crypto = require('crypto');
   const itemHash = (it) => { try { return crypto.createHash('sha1').update(JSON.stringify(it)).digest('hex').slice(0, 16); } catch (_) { return ''; } };
-  const prior = conversationStore.loadHistory(sessionId);
+  const prior = conversationStore.loadHistory(_stableSessionKey(sessionId));
   if (prior.length === 0) return 0;
   if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
   const currentHashes = new Set();
