@@ -107,7 +107,7 @@ function _replayStickyMemory() {
     for (const line of lines) {
       try {
         const rec = JSON.parse(line);
-        if (rec.session_id && rec.slot) stickyMap.set(rec.session_id, rec.slot);
+        if (rec.session_id && rec.slot) _setSticky(rec.session_id, rec.slot);
       } catch (_) { /* skip malformed entry */ }
     }
   } catch (_) { /* sticky log missing/unreadable; in-memory map starts empty */ }
