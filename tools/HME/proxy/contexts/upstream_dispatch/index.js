@@ -20,6 +20,7 @@ module.exports = {
   ...services,
   omnirouteClient,
   swapStore,
+  createClaudeHandler: (...args) => require('../../hme_proxy_claude').createClaudeHandler(...args),
   effectiveMode: overdrive('effectiveMode'),
   roleFromPayload: overdrive('roleFromPayload'),
   roleTier: overdrive('roleTier'),

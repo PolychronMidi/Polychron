@@ -22,7 +22,7 @@ test('proxy modules stay below enforced 350 LOC ceiling', () => {
     'hme_proxy_opus_gate.js',
     'hme_proxy_request_mutation.js',
     'hme_proxy_anthropic_response.js',
-    'hme_proxy_connection_errors.js',
+    'contexts/failure_policy/hme_proxy_connection_errors.js',
   ];
   for (const rel of modules) {
     assert.ok(fs.existsSync(path.join(proxyDir, rel)), `${rel} exists`);
@@ -40,10 +40,10 @@ test('split proxy modules parse cleanly with node -c', () => {
     'hme_proxy_headers.js',
     'hme_proxy_context_budget.js',
     'hme_proxy_anthropic_response.js',
-    'hme_proxy_connection_errors.js',
+    'contexts/failure_policy/hme_proxy_connection_errors.js',
     'hme_proxy_response_trace.js',
     'hme_proxy_response_send.js',
-    'hme_proxy_upstream_failure.js',
+    'contexts/failure_policy/hme_proxy_upstream_failure.js',
   ];
   for (const rel of modules) {
     const full = path.join(proxyDir, rel);

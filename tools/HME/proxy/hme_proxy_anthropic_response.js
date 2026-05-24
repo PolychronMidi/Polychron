@@ -1,217 +1,22 @@
 'use strict';
 
-const { emit, PROJECT_ROOT } = require('./shared');
 const hmeDispatcher = require('./contexts/lifecycle_bridge').hmeDispatcher;
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const {
   handleUpstreamFailureOrSuccess,
 } = require('./contexts/failure_policy');
-const { markRouteCooldown } = require('./contexts/failure_policy');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
-const { omniProviderForConfigProvider } = require('./contexts/upstream_dispatch');
-const swapStore = require('./contexts/upstream_dispatch').swapStore;
-const { upstreamModelId } = require('./contexts/upstream_dispatch');
-
-function captureRateLimitTelemetry({ headers, status, setLastInputTokensRemaining, setLastInputTokensLimit, log = console.error }) {
-  const hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];
-  const hdrTokLimit = headers['anthropic-ratelimit-input-tokens-limit'];
-  const hdrTokReset = headers['anthropic-ratelimit-input-tokens-reset'];
-  if (hdrTokRemaining != null) {
-    const n = parseInt(hdrTokRemaining, 10);
-    if (Number.isFinite(n) && n >= 0) setLastInputTokensRemaining(n);
-  }
-  if (hdrTokLimit != null) {
-    const n = parseInt(hdrTokLimit, 10);
-    if (Number.isFinite(n) && n > 0) setLastInputTokensLimit(n);
-  }
-  if (status >= 400 && status < 500 && (hdrTokLimit || hdrTokRemaining || hdrTokReset || headers['retry-after'])) {
-    log(`rate-limit headers: limit=${hdrTokLimit||'?'} remaining=${hdrTokRemaining||'?'} reset=${hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
-  }
-}
-
-function _num(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : null;
-}
-
-function _extractUsageFromJson(obj) {
-  if (!obj || typeof obj !== 'object') return {};
-  const usage = obj.usage && typeof obj.usage === 'object' ? obj.usage : {};
-  return {
-    input_tokens: _num(usage.input_tokens ?? usage.prompt_tokens),
-    output_tokens: _num(usage.output_tokens ?? usage.completion_tokens),
-  };
-}
-
-function _extractUsageFromBody(headers, body) {
-  const text = Buffer.isBuffer(body) ? body.toString('utf8') : String(body || '');
-  const ctype = String(headers && headers['content-type'] || '').toLowerCase();
-  let input_tokens = null;
-  let output_tokens = null;
-  function take(obj) {
-    const u = _extractUsageFromJson(obj);
-    if (u.input_tokens != null) input_tokens = u.input_tokens;
-    if (u.output_tokens != null) output_tokens = u.output_tokens;
-    if (obj && obj.message && typeof obj.message === 'object') {
-      const mu = _extractUsageFromJson(obj.message);
-      if (mu.input_tokens != null) input_tokens = mu.input_tokens;
-      if (mu.output_tokens != null) output_tokens = mu.output_tokens;
-    }
-  }
-  if (ctype.includes('text/event-stream')) {
-    for (const line of text.split(/\r?\n/)) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (!data || data === '[DONE]') continue;
-      try { take(JSON.parse(data)); } catch (_e) { /* ignore malformed event */ }
-    }
-  } else if (text.trimStart().startsWith('{')) {
-    try { take(JSON.parse(text)); } catch (_e) { /* ignore malformed JSON */ }
-  }
-  return { input_tokens, output_tokens };
-}
-
-function _contextTokenUsageFields({ headers, rateLimitHeaders, status, payload, outBody, outBuf, route, model, thresholdBytes, estimatedTokensFn, getLastInputTokensRemaining, getLastInputTokensLimit }) {
-  const bodyBytes = Buffer.byteLength(outBody || Buffer.alloc(0));
-  const responseBytes = Buffer.byteLength(outBuf || Buffer.alloc(0));
-  const estimate = typeof estimatedTokensFn === 'function' ? estimatedTokensFn(bodyBytes) : null;
-  const providerHeaders = rateLimitHeaders || headers || {};
-  const limitHeader = _num(providerHeaders['anthropic-ratelimit-input-tokens-limit']);
-  const remainingHeader = _num(providerHeaders['anthropic-ratelimit-input-tokens-remaining']);
-  const outboundRemainingHeader = _num((headers || {})['anthropic-ratelimit-input-tokens-remaining']);
-  const limit = limitHeader ?? (typeof getLastInputTokensLimit === 'function' ? getLastInputTokensLimit() : null);
-  const remaining = remainingHeader ?? (typeof getLastInputTokensRemaining === 'function' ? getLastInputTokensRemaining() : null);
-  const usedFromRemaining = limitHeader != null && remainingHeader != null ? Math.max(0, limitHeader - remainingHeader) : null;
-  const usage = _extractUsageFromBody(headers, outBuf);
-  return {
-    event: 'context_token_usage',
-    route,
-    model: model || payload && payload.model || '',
-    status,
-    request_bytes: bodyBytes,
-    response_bytes: responseBytes,
-    estimated_input_tokens: estimate,
-    threshold_bytes: thresholdBytes || 0,
-    header_input_tokens_limit: limitHeader,
-    header_input_tokens_remaining: remainingHeader,
-    header_input_tokens_used: usedFromRemaining,
-    header_input_tokens_source: (limitHeader != null || remainingHeader != null) ? 'upstream' : 'none',
-    context_signal_input_tokens_remaining: remainingHeader == null ? outboundRemainingHeader : null,
-    cached_input_tokens_limit: limit,
-    cached_input_tokens_remaining: remaining,
-    usage_input_tokens: usage.input_tokens,
-    usage_output_tokens: usage.output_tokens,
-    estimated_vs_usage_delta: usage.input_tokens != null && estimate != null ? estimate - usage.input_tokens : null,
-  };
-}
-
-function emitContextTokenUsage(args) {
-  try { emit(_contextTokenUsageFields(args)); }
-  catch (_e) { /* silent-ok: telemetry must not affect response path */ }
-}
-
-function _anthropicErrorSseBuffer(type, message) {
-  const data = { type: 'error', error: { type, message } };
-  return Buffer.from(`event: error\ndata: ${JSON.stringify(data)}\n\n`, 'utf8');
-}
-
-function _omniRouteKeyFromModel(model, fallbackProvider = '') {
-  const m = String(model || '');
-  if (m.includes('/')) return m;
-  return `${fallbackProvider || 'omniroute'}/${m}`;
-}
-
-function _isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders, outBuf }) {
-  if (!isOmniRouteSwap || status < 200 || status >= 300
-      || !(outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
-    return false;
-  }
-  const text = outBuf.toString('utf8');
-  return !text.includes('event: message_start') && /input exceeds the context window/i.test(text);
-}
-
-function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel: _swapModel, anthropicTextSseBuffer: _anthropicTextSseBuffer, log = console.error }) {
-  if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders, outBuf })) {
-    return { outHeaders, outBuf };
-  }
-  const msg = 'Upstream context window exceeded: input exceeds the context window. Compact or start a fresh turn before retrying this transcript.';
-  log(`[hme-proxy] OmniRoute context-window SSE preserved as Anthropic error event (${outBuf.length}B error body)`);
-  const headers = {
-    ...outHeaders,
-    'content-type': 'text/event-stream; charset=utf-8',
-    'x-hme-proxy-error': 'context_window_exceeded',
-    'x-hme-context-window-exceeded': '1',
-  };
-  delete headers['content-length'];
-  return { outHeaders: headers, outBuf: _anthropicErrorSseBuffer('context_window_exceeded', msg) };
-}
-
-function _cloneWithTailMessages(payload, keep = 80) {
-  const retryPayload = JSON.parse(JSON.stringify(payload || {}));
-  if (Array.isArray(retryPayload.messages) && retryPayload.messages.length > keep) {
-    retryPayload.messages = retryPayload.messages.slice(-keep);
-  }
-  retryPayload.stream = false;
-  if (typeof retryPayload.max_tokens !== 'number' || retryPayload.max_tokens > 2048) retryPayload.max_tokens = 2048;
-  delete retryPayload.thinking;
-  return retryPayload;
-}
-
-function _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload }) {
-  const retryBody = Buffer.from(JSON.stringify(payload), 'utf8');
-  const retryOpts = { ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(retryBody.length) } };
-  return new Promise((resolve, reject) => {
-    const req = transport.request(retryOpts, (res) => {
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, fullBody: Buffer.concat(chunks) }));
-      res.on('error', reject);
-    });
-    req.on('error', reject);
-    req.write(retryBody);
-    req.end();
-  });
-}
-
-async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, swapChain, omniProvider, swapModel: _swapModel, transport, upstreamOpts, upstreamHeaders, projectRoot = PROJECT_ROOT, log = console.error }) {
-  if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) return null;
-  const routeKey = _omniRouteKeyFromModel(payload && payload.model, omniProvider);
-  try {
-    markRouteCooldown(routeKey, 'context_window_exceeded', { ttlMs: 300_000, projectRoot });
-    emit({ event: 'model_route_quarantine', route: routeKey, reason: 'context_window_exceeded' });
-  } catch (err) {
-    log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
-  }
-  if (!Array.isArray(swapChain) || swapChain.length <= 1 || !payload) return null;
-  const startIdx = swapStore.peek(projectRoot).idx || 0;
-  for (let ri = 1; ri < swapChain.length; ri++) {
-    const retryIdx = (startIdx + ri) % swapChain.length;
-    const candidate = swapChain[retryIdx];
-    const provider = omniProviderForConfigProvider(candidate.provider || '');
-    const model = upstreamModelId(candidate);
-    const retryPayload = _cloneWithTailMessages(payload, 80);
-    retryPayload.model = `${provider}/${model}`;
-    log(`[hme-proxy] context-window retry ${ri}/${swapChain.length - 1}: ${retryPayload.model} tail_msgs=${Array.isArray(retryPayload.messages) ? retryPayload.messages.length : 0}`);
-    try {
-      const retry = await _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload: retryPayload });
-      if (retry.status >= 200 && retry.status < 300
-          && !_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
-        swapStore.recordSuccess(swapChain, retryIdx, projectRoot);
-        emit({ event: 'context_window_retry', outcome: 'success', route: retryPayload.model, prior_route: routeKey });
-        return retry;
-      }
-      if (_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
-        try { markRouteCooldown(retryPayload.model, 'context_window_exceeded', { ttlMs: 300_000, projectRoot }); } catch (_e) { /* best effort */ }
-      }
-      emit({ event: 'context_window_retry', outcome: 'failed', status: retry.status, route: retryPayload.model, prior_route: routeKey });
-    } catch (err) {
-      log(`[hme-proxy] context-window retry failed: ${err.message}`);
-      emit({ event: 'context_window_retry', outcome: 'error', route: retryPayload.model, message: err.message });
-    }
-  }
-  return null;
-}
+const {
+  captureRateLimitTelemetry,
+  emitContextTokenUsage,
+  _contextTokenUsageFields,
+  _extractUsageFromBody,
+} = require('./hme_proxy_anthropic_usage');
+const {
+  normalizeOmniContextWindowSse,
+  retryOmniContextWindowExceeded,
+} = require('./hme_proxy_omni_context_window');
 
 async function handleAnthropicResponseComplete({
   chunks,
