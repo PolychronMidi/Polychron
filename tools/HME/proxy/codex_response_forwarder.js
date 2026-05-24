@@ -438,6 +438,11 @@ function createCodexResponseForwarder(deps) {
 
     function sendSseFinal(target, status, headers, full) {
       const events = parseSseEvents(full);
+      if (!clientSse.started && target.body && target.body.stream && events.length === 0) {
+        finishResponse(target, status, 'empty upstream SSE (no events)');
+        sendSseError(status >= 400 ? status : 502, 'codex_proxy_empty_upstream_sse', 'upstream closed SSE stream without response events');
+        return;
+      }
       const calls = collectSseToolCalls(full);
       const parsed = sseFinalResponse(events);
       // Last-ditch upstream id extraction: scan raw SSE bytes for resp_* token
