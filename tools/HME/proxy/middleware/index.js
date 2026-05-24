@@ -320,13 +320,16 @@ function listMiddleware() {
 const _processed = new Map(); // id -> insertion timestamp
 const _PROCESSED_CAP = 50_000;
 const _PROCESSED_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-middleware-processed.jsonl');
-let _processedLoaded = false;
+let _processedLoadedMtime = 0;
 
 function _loadProcessed() {
-  if (_processedLoaded) return;
-  _processedLoaded = true;
+  // Cross-slot mtime-aware reload: when slot b writes a new dedup entry while
+  // slot a is sitting on stale in-memory state, slot a picks it up here on the
+  let stat;
+  try { stat = fs.statSync(_PROCESSED_FILE); } catch { return; }
+  if (stat.mtimeMs <= _processedLoadedMtime) return;
+  _processedLoadedMtime = stat.mtimeMs;
   try {
-    if (!fs.existsSync(_PROCESSED_FILE)) return;
     const lines = fs.readFileSync(_PROCESSED_FILE, 'utf8').split('\n');
     // Each line is a JSON {id, ts}. Latest-wins for repeated ids (LRU touch).
     for (const line of lines) {
