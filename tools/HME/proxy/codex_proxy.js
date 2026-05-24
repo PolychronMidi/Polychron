@@ -296,7 +296,6 @@ function handleRequest(req, res) {
 
 http.createServer(handleRequest).listen(PORT, '127.0.0.1', () => {
   emitStartMarker('codex_proxy', { port: PORT, git: PROXY_GIT_SHA });
-  try { const reaped = reapDuplicates(); if (reaped.killed.length) record({ kind: 'codex-session-reaped', killed: reaped.killed.length }); } catch (err) { record({ kind: 'codex-session-guard-error', message: err.message }); }
   record({ kind: 'startup', port: PORT, upstream: UPSTREAM_URL, config: CONFIG_PATH, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT });
   process.stderr.write(`[codex_proxy] listening on 127.0.0.1:${PORT}, upstream=${UPSTREAM_URL}\n`);
 });
