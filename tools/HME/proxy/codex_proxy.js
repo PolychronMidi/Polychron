@@ -40,7 +40,33 @@ const PROXY_STARTED_AT = new Date().toISOString();
 let _config = null;
 let _recent = [];
 let _lastGuardMs = 0;
-const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, last_route: null, last_error: '', last_model: '' };
+const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, history_replays: 0, last_route: null, last_error: '', last_model: '' };
+
+function _injectStoredHistory(body, sessionId) {
+  if (!sessionId || !body) return 0;
+  const prior = conversationStore.loadHistory(sessionId);
+  if (prior.length === 0) return 0;
+  if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
+  body.input = [...prior, ...body.input];
+  _metrics.history_replays += 1;
+  return prior.length;
+}
+
+function _captureRequestInputItems(body, sessionId) {
+  if (!sessionId || !body || !Array.isArray(body.input)) return 0;
+  const newItems = body.input.slice(-_countFreshInputItems(body));
+  return conversationStore.appendItems(sessionId, newItems);
+}
+
+function _countFreshInputItems(body) {
+  if (!body || !Array.isArray(body.input)) return 0;
+  return body.input.length - (body._hme_prepended_count || 0);
+}
+
+function _captureResponseOutputItems(sessionId, outputItems) {
+  if (!sessionId || !Array.isArray(outputItems) || outputItems.length === 0) return 0;
+  return conversationStore.appendItems(sessionId, outputItems);
+}
 
 function loadConfig() {
   if (_config) return _config;
