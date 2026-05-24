@@ -146,7 +146,6 @@ function decisionFromState(state, checkpoint) {
     checkpoint,
     depth: state.depth,
     next_depth: state.depth + 1,
-    finalizing: state.decision === 'execute_tools' && state.depth >= FINALIZE_TOOL_LOOP_DEPTH,
     actionable_calls: state.actionable_calls,
     skipped_calls: state.skipped_calls,
     duplicate_call_ids: state.duplicate_call_ids,
