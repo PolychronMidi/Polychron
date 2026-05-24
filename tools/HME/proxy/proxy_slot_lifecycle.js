@@ -56,6 +56,7 @@ function attachSlotLifecycle(server, cfg) {
       in_flight: inFlight,
       port: cfg.port,
       slot: cfg.slot,
+      git_sha: cfg.gitSha,
     };
     try {
       const tmp = `${cfg.healthFile}.tmp`;
