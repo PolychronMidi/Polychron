@@ -72,3 +72,24 @@ test('legacy subagent_type still routes invisibly through tier defaults', () => 
   assert.equal(out.permissionDecision, 'allow');
   assert.match(out.updatedInput.description, /^crew_e3_0 routed:/);
 });
+
+test('empty registry silent-allows native dispatch (no alarm)', () => {
+  const root = projectWithDashboard({});
+  const r = runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } });
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout).hookSpecificOutput;
+  assert.equal(out.permissionDecision, 'allow');
+  assert.strictEqual(out.additionalContext, undefined);
+  assert.strictEqual(out.updatedInput, undefined);
+});
+
+test('non-empty registry with no matching tier surfaces helpful diagnostic', () => {
+  const root = projectWithDashboard({
+    driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
+  });
+  const r = runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } });
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout).hookSpecificOutput;
+  assert.equal(out.permissionDecision, 'allow');
+  assert.match(out.additionalContext, /1 agent\(s\) registered, none match/);
+});
