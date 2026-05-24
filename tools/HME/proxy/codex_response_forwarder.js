@@ -325,6 +325,10 @@ function createCodexResponseForwarder(deps) {
         ...responseUsage(parsed),
         model: target.body && target.body.model ? target.body.model : visibility.model,
       });
+      if (onResponseComplete && status >= 200 && status < 300 && parsed && Array.isArray(parsed.output) && parsed.output.length > 0) {
+        try { onResponseComplete(source && source.session_id, parsed.output); }
+        catch (err) { record({ kind: 'codex-history-capture-error', message: err.message }); }
+      }
     }
 
     function droppedIncompleteCalls(calls, target) {
