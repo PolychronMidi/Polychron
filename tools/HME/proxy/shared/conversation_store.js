@@ -47,17 +47,22 @@ function appendItems(sessionId, items) {
   if (!sessionId || !Array.isArray(items) || items.length === 0) return 0;
   _ensureDir();
   const f = _sessionFile(sessionId);
-  let written = 0;
+  const seen = _ensureHashCache(sessionId);
+  const fresh = [];
+  for (const it of items) {
+    if (!it || typeof it !== 'object') continue;
+    const h = _itemHash(it);
+    if (!h || seen.has(h)) continue;
+    seen.add(h);
+    fresh.push(it);
+  }
+  if (fresh.length === 0) return 0;
   try {
     const ts = Date.now();
-    const lines = items
-      .filter((it) => it && typeof it === 'object')
-      .map((it) => JSON.stringify({ ts, item: it }))
-      .join('\n') + '\n';
+    const lines = fresh.map((it) => JSON.stringify({ ts, item: it })).join('\n') + '\n';
     fs.appendFileSync(f, lines);
-    written = items.length;
   } catch (_) { /* best-effort; conversation continuity degrades gracefully */ }
-  return written;
+  return fresh.length;
 }
 
 function loadHistory(sessionId, maxAgeMs = STALE_AFTER_MS, cap = MAX_ITEMS_PER_SESSION) {
