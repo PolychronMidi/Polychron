@@ -268,12 +268,22 @@ def main() -> int:
         }}))
         return 0
     if target is None:
+        data = _load()
+        registry_exists = bool(data.get("agents"))
+        if not registry_exists:
+            # Single-user / no-crew-registered case: native dispatch is the
+            # correct degradation, no alert needed.
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+            }}))
+            return 0
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "allow",
             "additionalContext": (
                 f"No available {request_tier} target for {caller or 'unknown'} "
-                f"(no eligible agents registered). Agent call will proceed natively."
+                f"({len(data['agents'])} agent(s) registered, none match). Agent call will proceed natively."
             ),
         }}))
         return 0
