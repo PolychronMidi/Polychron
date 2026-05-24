@@ -25,7 +25,7 @@ done
 echo "[restart] ports clear after ${_waited}s" >&2
 
 echo "[restart] launching..." >&2
-# A restart implies the env was already configured before this run -- the
-export HME_NO_AUTOFIX_VSCODE=1
+# A restart implies the env was already configured before this run; tolerate
+# any bypass detection (operator already saw it on the original launch).
 export HME_ALLOW_PROXY_BYPASS=1
 exec "$_LAUNCHER_DIR/polychron-launch.sh" "$@"
