@@ -154,17 +154,24 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
       bashPolicyRewrite,
       runInBackgroundRewrite,
       longLeadingSleepRewrite,
-      ackStripRewrite,
       slopStripRewrite,
-      hallucinatedTurnPrefixStripRewrite,
-      stopHookCeremonyStripRewrite,
-      fpGateMarkerRewrite,
-      soloRationaleTrimRewrite,
-      hookUiEchoStripRewrite,
+      stopHookRewritersForSlot,
     } = require('./sse_rewriters');
     const { providerReasoningToThinkingRewrite } = require('./reasoning_to_thinking');
     const xform = new SseTransform({
-      rewriters: [dropToolUseRewrite, editFallbackToReadRewrite, readInputNormalizeRewrite, providerReasoningToThinkingRewrite, hookUiEchoStripRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
+      rewriters: [
+        dropToolUseRewrite,
+        editFallbackToReadRewrite,
+        readInputNormalizeRewrite,
+        providerReasoningToThinkingRewrite,
+        ...stopHookRewritersForSlot('pre-tool'),
+        bashPolicyRewrite,
+        longLeadingSleepRewrite,
+        runInBackgroundRewrite,
+        ...stopHookRewritersForSlot('post-tool-pre-slop'),
+        slopStripRewrite,
+        ...stopHookRewritersForSlot('post-slop'),
+      ],
     });
     try {
       const sessionId = payload ? sessionKey(payload) : '';

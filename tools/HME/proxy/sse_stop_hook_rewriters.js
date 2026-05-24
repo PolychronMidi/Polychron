@@ -19,12 +19,12 @@ const {
 } = require('./sse_stop_hook_rewriters/predicates');
 
 const STOP_HOOK_REWRITER_STRATEGIES = Object.freeze([
-  { name: 'hook-ui-echo-strip', slot: 'before-tools', rewrite: hookUiEchoStripRewrite },
-  { name: 'fp-gate-marker', slot: 'before-tools', rewrite: fpGateMarkerRewrite },
-  { name: 'stop-hook-ceremony-strip', slot: 'before-tools', rewrite: stopHookCeremonyStripRewrite },
-  { name: 'hallucinated-turn-prefix-strip', slot: 'before-tools', rewrite: hallucinatedTurnPrefixStripRewrite },
-  { name: 'bare-ack-strip', slot: 'after-tools', rewrite: ackStripRewrite },
-  { name: 'solo-rationale-trim', slot: 'after-tools', rewrite: soloRationaleTrimRewrite },
+  { name: 'hook-ui-echo-strip', slot: 'pre-tool', rewrite: hookUiEchoStripRewrite },
+  { name: 'fp-gate-marker', slot: 'pre-tool', rewrite: fpGateMarkerRewrite },
+  { name: 'stop-hook-ceremony-strip', slot: 'pre-tool', rewrite: stopHookCeremonyStripRewrite },
+  { name: 'hallucinated-turn-prefix-strip', slot: 'pre-tool', rewrite: hallucinatedTurnPrefixStripRewrite },
+  { name: 'bare-ack-strip', slot: 'post-tool-pre-slop', rewrite: ackStripRewrite },
+  { name: 'solo-rationale-trim', slot: 'post-slop', rewrite: soloRationaleTrimRewrite },
 ]);
 
 function stopHookRewritersForSlot(slot) {
