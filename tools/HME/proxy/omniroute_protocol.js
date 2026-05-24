@@ -4,7 +4,7 @@ function omniProviderForConfigProvider(provider, _env = process.env) {
   const p = String(provider || '').trim();
   if (p === 'codex') return 'cx';
   if (p === 'anthropic') return 'claude';
-  if (p === 'opencode_go' || p === 'opencode-go') return 'opencode-go';
+  if (p === 'opencode-go') return 'opencode-go';
   if (p === 'opencode') return 'opencode';
   if (p === 'kilo') return 'kilo-gateway';
   if (p === 'kilo-gateway') return 'kilo-gateway';
