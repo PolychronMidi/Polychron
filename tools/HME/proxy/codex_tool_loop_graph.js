@@ -51,8 +51,6 @@ class ToolLoopCheckpointer {
       turn_id: state.turn_id || '',
       route: state.route || '',
       tool_loop_depth: state.depth || 0,
-      finalizing_tool_loop: Boolean(state.finalizing_tool_loop),
-      finalization_repairs: state.finalization_repairs || 0,
       response_kind: state.response_kind || '',
       calls: asArray(state.calls).map(callSummary),
       actionable_call_ids: asArray(state.actionable_calls).map(callId).filter(Boolean),
