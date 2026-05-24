@@ -111,31 +111,82 @@ fi
 
 # 1. HME proxy
 
-if _port_healthy "${PROXY_URL}/health"; then
-  echo "[launch] proxy already up on :${PROXY_PORT}" >&2
-else
-  echo "[launch] starting HME proxy on :${PROXY_PORT}..." >&2
-  cd "$PROJECT_ROOT"
-  HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
-    setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
-      >> "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
-  _PROXY_PID=$!
-  disown 2>/dev/null || true
-  _record_pid "$PROXY_PID_LABEL" "$_PROXY_PID"
+_BACKEND_A_PORT="${HME_PROXY_BACKEND_A_PORT:?HME_PROXY_BACKEND_A_PORT not set in .env}"
+_BACKEND_B_PORT="${HME_PROXY_BACKEND_B_PORT:?HME_PROXY_BACKEND_B_PORT not set in .env}"
 
+_spawn_proxy_slot() {
+  local _slot="$1" _port="$2"
+  local _url="http://127.0.0.1:${_port}"
+  if _port_healthy "${_url}/health"; then
+    echo "[launch] proxy slot ${_slot} already up on :${_port}" >&2
+    return 0
+  fi
+  echo "[launch] starting proxy slot ${_slot} on :${_port}..." >&2
+  HME_PROXY_SLOT="$_slot" HME_PROXY_SUPERVISE=0 PROJECT_ROOT="$PROJECT_ROOT" \
+    setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
+      >> "$PROJECT_ROOT/log/hme-proxy-${_slot}.out" 2>&1 < /dev/null &
+  local _pid=$!
+  disown 2>/dev/null || true
+  _record_pid "proxy_${_slot}" "$_pid"
+  local _waited=0
+  while [ "$_waited" -lt "$PROXY_STARTUP_TIMEOUT" ]; do
+    _port_healthy "${_url}/health" && break
+    sleep 1
+    _waited=$((_waited + 1))
+  done
+  if _port_healthy "${_url}/health"; then
+    echo "[launch] proxy slot ${_slot} ready after ${_waited}s" >&2
+  else
+    echo "[launch] ERROR: proxy slot ${_slot} did not become healthy within ${PROXY_STARTUP_TIMEOUT}s" >&2
+    return 1
+  fi
+}
+
+cd "$PROJECT_ROOT"
+
+# Spawn both backend slots first; they bind 9100/9101 and write heartbeat files.
+_spawn_proxy_slot a "$_BACKEND_A_PORT" || exit 1
+_spawn_proxy_slot b "$_BACKEND_B_PORT" || exit 1
+
+# Spawn the shuffler on the public HME_PROXY_PORT (clients still connect here).
+if _port_healthy "${PROXY_URL}/health"; then
+  echo "[launch] shuffler already up on :${PROXY_PORT}" >&2
+else
+  echo "[launch] starting shuffler on :${PROXY_PORT}..." >&2
+  PROJECT_ROOT="$PROJECT_ROOT" \
+    setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/shuffler/shuffler.js" \
+      >> "$PROJECT_ROOT/log/hme-shuffler.out" 2>&1 < /dev/null &
+  _SHUFFLER_PID=$!
+  disown 2>/dev/null || true
+  _record_pid "shuffler" "$_SHUFFLER_PID"
   _waited=0
   while [ "$_waited" -lt "$PROXY_STARTUP_TIMEOUT" ]; do
     _port_healthy "${PROXY_URL}/health" && break
     sleep 1
     _waited=$((_waited + 1))
   done
-
   if _port_healthy "${PROXY_URL}/health"; then
-    echo "[launch] proxy ready after ${_waited}s" >&2
+    echo "[launch] shuffler ready after ${_waited}s" >&2
   else
-    echo "[launch] ERROR: proxy did not become healthy within ${PROXY_STARTUP_TIMEOUT}s -- aborting" >&2
+    echo "[launch] ERROR: shuffler did not become healthy within ${PROXY_STARTUP_TIMEOUT}s -- aborting" >&2
     exit 1
   fi
+fi
+
+# Worker.py: shared across both slots (slots run with HME_PROXY_SUPERVISE=0).
+# Spawn directly here so a single worker serves both backends on :9098.
+_WORKER_PORT="${HME_WORKER_PORT:-9098}"
+_WORKER_URL="http://127.0.0.1:${_WORKER_PORT}"
+if _port_healthy "${_WORKER_URL}/health"; then
+  echo "[launch] worker already up on :${_WORKER_PORT}" >&2
+else
+  echo "[launch] starting worker.py on :${_WORKER_PORT}..." >&2
+  PROJECT_ROOT="$PROJECT_ROOT" HME_WORKER_PORT="$_WORKER_PORT" \
+    setsid nohup python3 "$PROJECT_ROOT/tools/HME/service/worker.py" --port "$_WORKER_PORT" \
+      >> "$PROJECT_ROOT/log/hme-worker.out" 2>&1 < /dev/null &
+  _WORKER_PID=$!
+  disown 2>/dev/null || true
+  _record_pid "worker" "$_WORKER_PID"
 fi
 
 # 2. llama-server instances
