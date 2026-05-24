@@ -229,9 +229,10 @@ async function handleResponses(req, res) {
   _captureRequestInputItems(body, source.session_id);
   const _convoHistoryInjected = _injectStoredHistory(body, source.session_id);
   if (_convoHistoryInjected > 0) record({ kind: 'codex-history-replay', session: source.session_id, items_prepended: _convoHistoryInjected });
-  // ChatGPT's codex backend rejects with 400 "Store must be set to false" when
-  // store is true or omitted. Force false so omniroute -> chatgpt path succeeds.
-  if (body && typeof body === 'object') body.store = false;
+  // OmniRoute's codex provider flips body.store=false -> true before forwarding
+  // to ChatGPT, which then rejects 400 "Store must be set to false". When the
+  // field is absent OmniRoute leaves it alone and ChatGPT accepts. Delete.
+  if (body && typeof body === 'object' && Object.prototype.hasOwnProperty.call(body, 'store')) delete body.store;
   const autocommit = runCodexAutocommit();
   const lifesaver = injectCodexLifesaver(body);
   const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(lifesaver.body, {
