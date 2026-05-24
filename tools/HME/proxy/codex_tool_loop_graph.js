@@ -131,7 +131,6 @@ function inspectNode(state) {
 
 function routeNode(state) {
   if (!state.calls.length) return { decision: 'final', reason: 'no tool calls' };
-  if (state.duplicate_call_ids.length) return { decision: 'duplicate_tool_fallback', reason: 'tool call id already executed', invariant: 'no_duplicate_tool_execution' };
   const approval = state.hitl_enabled ? state.actionable_calls.filter(requiresHumanApproval) : [];
   if (approval.length) return { decision: 'interrupt_before_tool', reason: 'human approval required before destructive tool', approval_calls: approval, invariant: 'human_approval_gate' };
   return { decision: 'execute_tools', reason: 'valid tool calls available', invariant: state.stream ? 'visible_progress_required' : 'tool_execution' };
