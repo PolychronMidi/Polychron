@@ -86,12 +86,14 @@ function fakeClientRes() {
   };
 }
 
-test('detectors shell policy has expanded timeout budget', () => {
+test('detectors policy has 15s timeout and shell policies keep stage defaults', () => {
   const tmp_dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-shell-policy-'));
   const prior = process.env.PROJECT_ROOT;
   process.env.PROJECT_ROOT = tmp_dir;
   try {
     assert.equal(shellPolicy('detectors').timeoutMs, 60001);
+    const detectors = require('../../proxy/stop_chain/policies/detectors');
+    assert.strictEqual(typeof detectors.run, 'function');
     assert.equal(shellPolicy('post_hooks').timeoutMs, 30000);
   } finally {
     if (prior === undefined) delete process.env.PROJECT_ROOT;
