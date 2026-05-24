@@ -78,10 +78,20 @@ function _pickSlot(sessionId) {
     if (load < bestLoad) { best = s; bestLoad = load; }
   }
   if (sessionId) {
-    stickyMap.set(sessionId, best);
+    _setSticky(sessionId, best);
     _appendSticky(sessionId, best);
   }
   return best;
+}
+
+function _setSticky(sessionId, slot) {
+  // LRU-touch: delete + re-insert moves key to insertion-order tail.
+  if (stickyMap.has(sessionId)) stickyMap.delete(sessionId);
+  stickyMap.set(sessionId, slot);
+  if (stickyMap.size > STICKY_MAP_CAP) {
+    const oldest = stickyMap.keys().next().value;
+    stickyMap.delete(oldest);
+  }
 }
 
 function _appendSticky(sessionId, slot) {
