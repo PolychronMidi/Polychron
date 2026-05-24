@@ -132,12 +132,7 @@ function inspectNode(state) {
 function routeNode(state) {
   if (!state.calls.length) return { decision: 'final', reason: 'no tool calls' };
   if (state.duplicate_call_ids.length) return { decision: 'duplicate_tool_fallback', reason: 'tool call id already executed', invariant: 'no_duplicate_tool_execution' };
-  if (state.finalizing_tool_loop && state.calls.length) {
-    if (state.finalization_repairs >= 1) return { decision: 'finalization_fallback', reason: 'finalization emitted tools after repair', invariant: 'bounded_finalization' };
-    return { decision: 'finalization_repair', reason: 'finalization emitted tool calls', invariant: 'no_raw_tool_leakage' };
-  }
   if (!state.actionable_calls.length) return { decision: 'malformed_tool_fallback', reason: 'all tool calls are missing required fields', invariant: 'no_raw_tool_leakage' };
-  if (state.depth >= MAX_TOOL_LOOP_DEPTH) return { decision: 'bounded_fallback', reason: 'tool loop depth limit reached', invariant: 'bounded_finalization' };
   const approval = state.hitl_enabled ? state.actionable_calls.filter(requiresHumanApproval) : [];
   if (approval.length) return { decision: 'interrupt_before_tool', reason: 'human approval required before destructive tool', approval_calls: approval, invariant: 'human_approval_gate' };
   return { decision: 'execute_tools', reason: 'valid tool calls available', invariant: state.stream ? 'visible_progress_required' : 'tool_execution' };
