@@ -401,33 +401,10 @@ function createCodexResponseForwarder(deps) {
       return true;
     }
 
-    function _unusedFinalizationStub(target, parsed, calls) {
-      if (!calls.length) return false;
-      const depth = target.tool_loop_depth || 0;
-      const repairs = 0;
-      record({ kind: 'codex-finalization-tool-call-blocked-removed', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })), ...traceFields(target, { call_ids: calls.map((call) => call.id).filter(Boolean) }) });
-      if (repairs >= 1) return false;
-      const nextBody = appendFinalizationToolBlockPrompt(target.body, calls);
-      attemptTarget(target.index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: true, finalization_repairs: repairs + 1 });
-      return true;
-    }
-
-    function sendFinalizationFallback(target, status, headers, parsed, calls) {
-      const fallback = finalizationFallbackResponse(target, parsed, calls);
-      const body = JSON.stringify(fallback);
-      if (sendParsedOverClientSse(target, status, headers, fallback, 'finalization tool calls blocked')) return;
-      res.writeHead(status, { ...headers, 'content-type': 'application/json' });
-      res.end(body);
-      finishResponse(target, status, 'finalization tool calls blocked', fallback);
-    }
-
-
     function sendJsonFinal(target, status, headers, full) {
       const parsed = safeJson(full);
       const calls = collectToolCalls(parsed);
       if (calls.length) {
-        if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
-        if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
         const decision = runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'json' }, { record });
         if (continueAfterTools(target.index, target, parsed, calls, null, decision)) return;
         return sendToolGraphFallback(target, status, headers, parsed, decision);
