@@ -5,7 +5,6 @@ const https = require('https');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, followupBody, missingRequiredToolFields, toolOutputIsError, codexToolOutputs } = require('./codex_tool_loop');
 const { runCodexToolLoopGraph } = require('./codex_tool_loop_graph');
-const { PROJECT_ROOT: _DUMP_ROOT } = require('./shared');
 
 
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
