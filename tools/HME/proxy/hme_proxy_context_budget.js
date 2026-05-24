@@ -123,9 +123,27 @@ function createContextBudget() {
   const compactBytesExplicit = true;
   let lastInputTokensRemaining = null;
   let lastInputTokensLimit = null;
-  let consecutive429s = 0;
+  // Cross-slot rate-limit state: each slot reads the shared file before deciding
+  // whether to back off, and writes after each 429 increment so the sibling slot
+  // (drain reroute or sticky-loss scenarios) honors the same backoff cap.
+  const SLOT_LABEL = process.env.HME_PROXY_SLOT || 'single';
+  let consecutive429s = (crossSlot.readRateLimitState().consecutive_429s || 0);
   let lastPayloadBytes = 0;
   let lastCompactDecisionKey = '';
+
+  function _writeBackoff() {
+    crossSlot.writeRateLimitState({
+      consecutive_429s: consecutive429s,
+      last_429_ts: Date.now(),
+      last_slot: SLOT_LABEL,
+    });
+  }
+
+  function _refreshBackoffFromDisk() {
+    const disk = crossSlot.readRateLimitState();
+    const diskN = Number(disk.consecutive_429s || 0);
+    if (diskN > consecutive429s) consecutive429s = diskN;
+  }
 
   function pressureForFraction(usedFraction) {
     if (usedFraction < compactStartFraction) return 0;
