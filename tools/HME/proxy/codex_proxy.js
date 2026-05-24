@@ -162,14 +162,7 @@ async function handleResponses(req, res) {
     blockQuotaProbe({ res, payload: body, record, source, component: 'hme-codex-proxy' });
     return;
   }
-  // Conversation continuity: OpenAI Responses API is stateful by design (client
-  // chains via previous_response_id, server stores prior turns). When OmniRoute
-  _captureRequestInputItems(body, source.session_id);
-  const _convoHistoryInjected = _injectStoredHistory(body, source.session_id);
-  if (_convoHistoryInjected > 0) record({ kind: 'codex-history-replay', session: source.session_id, items_prepended: _convoHistoryInjected });
-  const autocommit = runCodexAutocommit();
-  const lifesaver = injectCodexLifesaver(body);
-  const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(lifesaver.body, {
+  const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(body, {
     loadConfig,
     record,
     projectRoot: PROJECT_ROOT,
@@ -184,14 +177,11 @@ async function handleResponses(req, res) {
     route_decision,
     targets: targetSummary(targets),
     telemetry: requestTelemetry({ host: 'codex', protocol: 'openai-responses', provider: targets[0].kind, route: targets[0].kind, path: req.url, body: transformed, before, after, cleanup, route_decision }),
-    autocommit,
-    lifesaver_injected: lifesaver.injected,
-    lifesaver_flag: lifesaver.flag || '',
     before,
     after,
     cleanup,
     payload_log: payloadLog,
-    transformed: lifesaver.injected || JSON.stringify(before) !== JSON.stringify(after),
+    transformed: JSON.stringify(before) !== JSON.stringify(after),
   });
   forwardResponses(req, res, targets, source, {
     source,
