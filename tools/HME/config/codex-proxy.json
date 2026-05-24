@@ -5,7 +5,7 @@
     "mode": "upstream",
     "url": "",
     "provider_prefix": "cx",
-    "fallback_direct": true,
+    "fallback_direct": false,
     "fallback_http_statuses": [400, 401, 403, 404, 429, 500, 502, 503, 504]
   },
   "todo_sync": {
