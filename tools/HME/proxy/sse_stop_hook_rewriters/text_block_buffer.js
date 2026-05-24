@@ -1,5 +1,3 @@
-'use strict';
-
 function _holdsFor(ctx, key) {
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
@@ -28,6 +26,16 @@ function replaceBufferedTextEvents(state, stopData, text) {
   return events;
 }
 
+function flushHeldEvents(holds, trailingEvent = null) {
+  const events = [];
+  for (const [index, state] of Array.from(holds.entries())) {
+    holds.delete(index);
+    if (!state.dropping) events.push(...replayBufferedEvents(state));
+  }
+  if (trailingEvent) events.push(trailingEvent);
+  return events;
+}
+
 function _applyDecision(decision, env) {
   if (!decision) return undefined;
   const { state, stopData, holds, index } = env;
@@ -43,15 +51,27 @@ function _applyDecision(decision, env) {
   return undefined;
 }
 
+function _flushBeforeUnexpectedDelta(eventName, data, holds) {
+  const state = holds.get(data.index);
+  if (!state) return data;
+  if (state.dropping) return null;
+  holds.delete(data.index);
+  return { events: [...replayBufferedEvents(state), [eventName, data]] };
+}
+
 function makeTextBlockBufferedRewriter({ key, shouldBuffer, onDelta, onStop }) {
   return function textBlockBufferedRewrite(eventName, data, ctx) {
     const holds = _holdsFor(ctx, key);
+    if (eventName === 'message_stop' && data && holds.size > 0) {
+      return { events: flushHeldEvents(holds, [eventName, data]) };
+    }
     if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
       if (shouldBuffer && !shouldBuffer({ data, ctx })) return data;
       holds.set(data.index, { startData: data, deltas: [], text: '' });
       return null;
     }
-    if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    if (eventName === 'content_block_delta' && data) {
+      if (!data.delta || data.delta.type !== 'text_delta') return _flushBeforeUnexpectedDelta(eventName, data, holds);
       const state = holds.get(data.index);
       if (!state) return data;
       if (state.dropping) return null;
@@ -82,6 +102,7 @@ function makeTextBlockBufferedRewriter({ key, shouldBuffer, onDelta, onStop }) {
 }
 
 module.exports = {
+  flushHeldEvents,
   makeTextBlockBufferedRewriter,
   replayBufferedEvents,
   replaceBufferedTextEvents,
