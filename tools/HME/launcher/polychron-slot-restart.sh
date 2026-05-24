@@ -82,9 +82,10 @@ while :; do
     echo "[slot-restart:$SLOT] backend exited cleanly" >&2
     break
   fi
-  if [ "${_in_flight:-0}" = "0" ]; then
-    echo "[slot-restart:$SLOT] in_flight=0 but pid $_pid still alive; sending SIGTERM" >&2
+  if [ "${_in_flight:-0}" = "0" ] && [ "${_term_sent:-0}" = "0" ]; then
+    echo "[slot-restart:$SLOT] in_flight=0 but pid $_pid still alive; sending SIGTERM (single shot)" >&2
     kill -TERM "$_pid" 2>/dev/null || true
+    _term_sent=1
   fi
   _now="$(date +%s)"
   if [ $(( _now - _t0 )) -ge "$_DRAIN_TIMEOUT_SEC" ]; then
