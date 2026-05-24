@@ -55,19 +55,31 @@ function _injectStoredHistory(body, sessionId) {
   if (!body || !sessionId) return 0;
   const crypto = require('crypto');
   const itemHash = (it) => { try { return crypto.createHash('sha1').update(JSON.stringify(it)).digest('hex').slice(0, 16); } catch (_) { return ''; } };
-  const prior = conversationStore.loadHistory(sessionId);
+  let prior = conversationStore.loadHistory(sessionId);
+  let fallbackInfo = null;
+  // Cross-session continuity fallback: if this session is empty (likely a fresh
+  // codex CLI invocation after a 502/socket-hangup auto-recovery), seed from
+  if (prior.length === 0) {
+    const fallback = conversationStore.loadLatestNonEmptyHistory(sessionId);
+    if (fallback.items.length > 0) {
+      prior = fallback.items;
+      fallbackInfo = { source_session_id: fallback.source_session_id, source_mtime_ms: fallback.source_mtime_ms };
+    }
+  }
   if (prior.length === 0) return 0;
   if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
   const currentHashes = new Set();
   for (const it of body.input) { const h = itemHash(it); if (h) currentHashes.add(h); }
   const priorToInject = prior.filter((it) => { const h = itemHash(it); return h && !currentHashes.has(h); });
   if (priorToInject.length === 0) return 0;
-  // Insert prior items AFTER the leading developer/system-bootstrap items
-  // (which Codex re-sends every turn) and BEFORE the new user/turn delta.
   let insertAt = 0;
   while (insertAt < body.input.length && body.input[insertAt] && body.input[insertAt].role === 'developer') insertAt++;
   body.input = [...body.input.slice(0, insertAt), ...priorToInject, ...body.input.slice(insertAt)];
   _metrics.history_replays += 1;
+  if (fallbackInfo) {
+    try { fs.appendFileSync(EVENT_LOG, JSON.stringify({ ts: nowIso(), kind: 'codex-history-cross-session-fallback', session_id: sessionId, source: fallbackInfo, items_prepended: priorToInject.length }) + '\n'); }
+    catch (_) { /* best-effort telemetry */ }
+  }
   return priorToInject.length;
 }
 
