@@ -30,6 +30,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 _ENV_FILE = _PROJECT_ROOT / ".env"
 if "PROJECT_ROOT" not in os.environ:
