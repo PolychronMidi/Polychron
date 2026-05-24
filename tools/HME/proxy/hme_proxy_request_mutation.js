@@ -84,6 +84,36 @@ function _lastUserPromptText(payload) {
   return '';
 }
 
+// Upstream prompt-corruption detector: user reports they never type "undefined"
+// yet that string keeps appearing as the literal user message body. Source is
+const _LITERAL_UNDEF_RE = /^\s*(?:<system-reminder>\s*undefined\s*<\/system-reminder>\s*)?undefined\s*$/i;
+function _detectAndMarkUndefinedUserPrompt(payload) {
+  if (!payload || !Array.isArray(payload.messages)) return false;
+  const last = payload.messages[payload.messages.length - 1];
+  if (!last || last.role !== 'user') return false;
+  let corrupted = false;
+  if (typeof last.content === 'string' && _LITERAL_UNDEF_RE.test(last.content)) {
+    corrupted = true;
+    last.content = '[HME LIFESAVER: upstream Claude Code corrupted user prompt to literal "undefined"; original user input lost. Do NOT treat this as user intent. Report the corruption and wait for the user to retry.]';
+  } else if (Array.isArray(last.content)) {
+    for (const b of last.content) {
+      if (b && b.type === 'text' && typeof b.text === 'string' && _LITERAL_UNDEF_RE.test(b.text)) {
+        corrupted = true;
+        b.text = '[HME LIFESAVER: upstream Claude Code corrupted user prompt to literal "undefined"; original user input lost. Do NOT treat this as user intent. Report the corruption and wait for the user to retry.]';
+      }
+    }
+  }
+  if (corrupted) {
+    try {
+      const logDir = path.join(PROJECT_ROOT, 'log');
+      fs.mkdirSync(logDir, { recursive: true });
+      fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'),
+        `[${new Date().toISOString()}] [undefined-user-prompt] last user message body was literal "undefined"; injected marker. session=${sessionKey(payload)}\n`);
+    } catch (_) { /* lifesaver log best-effort */ }
+  }
+  return corrupted;
+}
+
 async function mutateClaudeRequest({
   payload,
   outBody,
