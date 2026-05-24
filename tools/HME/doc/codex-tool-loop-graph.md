@@ -10,8 +10,7 @@ The graph state records:
 
 - `correlation_id`, `session_id`, `thread_id`, `turn_id`
 - route and response kind (`json` / `sse`)
-- current `tool_loop_depth`
-- finalization flags
+- current `tool_loop_depth` (observability only — no cap is imposed)
 - collected tool calls
 - actionable tool calls
 - skipped malformed tool calls
@@ -26,14 +25,11 @@ inspect_response
   -> execute_tools
   -> malformed_tool_fallback
   -> duplicate_tool_fallback
-  -> bounded_fallback
-  -> finalization_repair
-  -> finalization_fallback
   -> interrupt_before_tool
   -> final
 ```
 
-The proxy only executes tools after the graph returns `execute_tools`.
+The proxy only executes tools after the graph returns `execute_tools`. There is no depth limit and no "finalization" stage; the tool loop runs as long as the upstream model keeps requesting tools, the same way the Anthropic/Claude route does. Context pressure is handled exclusively by the shared `passthrough_compact` path at the configured high-water fraction.
 
 ## Invariants
 
@@ -41,8 +37,7 @@ The graph encodes invariants directly rather than relying on detector sprawl:
 
 - `visible_progress_required`: streamed server-side tool execution must emit client-visible progress.
 - `no_duplicate_tool_execution`: a call ID already executed in the turn cannot execute again.
-- `no_raw_tool_leakage`: malformed/finalization-stage tool calls are converted into bounded fallback/repair paths, not raw client tool calls.
-- `bounded_finalization`: depth exhaustion returns a bounded final response instead of `508`.
+- `no_raw_tool_leakage`: malformed tool calls are converted into a fallback path, not raw client tool calls.
 - `human_approval_gate`: destructive or write-capable tools can interrupt before execution when HITL is enabled.
 
 ## Checkpoints
