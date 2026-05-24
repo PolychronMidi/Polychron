@@ -374,6 +374,10 @@ function createCodexResponseForwarder(deps) {
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
       if (decision.action !== 'execute_tools') return false;
+      // Sync clientSse.responseId to the real upstream id BEFORE any fake SSE
+      // event opens. Otherwise response.created/output_item/etc emit a synthetic
+      const upstreamId = parsed && (parsed.id || parsed.response_id || (parsed.response && parsed.response.id));
+      if (upstreamId && !clientSse.started) clientSse.responseId = String(upstreamId);
       const actionableCalls = forcedResults ? calls : decision.actionable_calls;
       const skipped = forcedResults ? [] : decision.skipped_calls;
       if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
