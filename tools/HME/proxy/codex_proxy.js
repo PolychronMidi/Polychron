@@ -197,9 +197,9 @@ async function handleResponses(req, res) {
   }
   // Conversation continuity: OpenAI Responses API is stateful by design (client
   // chains via previous_response_id, server stores prior turns). When OmniRoute
+  _captureRequestInputItems(body, source.session_id);
   const _convoHistoryInjected = _injectStoredHistory(body, source.session_id);
   if (_convoHistoryInjected > 0) record({ kind: 'codex-history-replay', session: source.session_id, items_prepended: _convoHistoryInjected });
-  _captureRequestInputItems(body, source.session_id);
   const autocommit = runCodexAutocommit();
   const lifesaver = injectCodexLifesaver(body);
   const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(lifesaver.body, {
