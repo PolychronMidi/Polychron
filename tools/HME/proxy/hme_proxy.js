@@ -141,6 +141,7 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
 } else {
   const server = http.createServer(getHandleRequest());
   supervisor.registerServer(server);
+  const slot = attachSlotLifecycle(server, SLOT_CFG);
   let listenFallbackTried = false;
   let lifecycleStarted = false;
   const startLifecycle = () => {
