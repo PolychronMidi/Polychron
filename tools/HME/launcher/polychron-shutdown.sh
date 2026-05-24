@@ -59,12 +59,12 @@ fi
 # 3. Pattern-based SIGTERM sweep (catches anything not in PID file)
 
 _PATTERNS=()
-for _svc in proxy worker llamacpp_daemon codex_proxy omniroute; do
+for _svc in proxy proxy_a proxy_b worker llamacpp_daemon codex_proxy omniroute; do
   while IFS= read -r _pat; do
     [ -n "$_pat" ] && _PATTERNS+=("$_pat")
   done < <(_hme_service_process_patterns "$_svc" 2>/dev/null || true)  # silent-ok: optional fallback path.
 done
-_PATTERNS+=("llama-server.*8080" "llama-server.*8081")
+_PATTERNS+=("llama-server.*8080" "llama-server.*8081" "shuffler/shuffler.js" "shuffler/file_watcher.js")
 for pat in "${_PATTERNS[@]}"; do
   pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM -> $pat" >&2 || true  # silent-ok: optional fallback path.
 done
