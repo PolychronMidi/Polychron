@@ -5,7 +5,6 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { loadJsonc } = require('./config_loader');
-const { runAutocommit, injectLifesaver } = require('./turn_side_effects');
 const { applyRequestTransform } = require('./codex_payload');
 const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
@@ -17,7 +16,6 @@ const { emitStartMarker } = require('./start_marker');
 const { ensureSession, reapDuplicates } = require('./codex_session_guard');
 const { isSingleQuotaProbe, blockQuotaProbe } = require('./prompt_spam_guard');
 const { createCodexResponseForwarder } = require('./codex_response_forwarder');
-const conversationStore = require('./shared/conversation_store');
 
 const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
