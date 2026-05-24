@@ -1,15 +1,5 @@
 'use strict';
-/**
- * Pure-JS detectors policy -- spawns run_all.py directly via Node child_process,
- * bypassing the bash shell wrapper chain (_safety.sh + emit_detectors_sh.py +
- * detectors.sh + timeout wrapper). Shell wrapper introduced a 60s timeout
- * surface that intermittently failed closed (exit 124) even though run_all.py
- * itself completes in <500ms. Direct spawn eliminates 4 layers of indirection.
- *
- * MUST RUN BEFORE: anti_patterns, work_checks
- * COORDINATES WITH: anti_patterns, work_checks
- * (writes the verdicts file both downstream policies read.)
- */
+// Direct detector runner. Must write verdicts before anti_patterns/work_checks.
 
 const fs = require('fs');
 const path = require('path');
