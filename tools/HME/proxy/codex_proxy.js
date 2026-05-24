@@ -53,12 +53,14 @@ function _captureRequestInputItems(body, sessionId) {
 
 function _injectStoredHistory(body, sessionId) {
   if (!body || !sessionId) return 0;
+  if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
+  // Codex CLI resume already sends its persisted rollout context. Replaying our
+  // full JSONL store on every resume duplicated hundreds of items and pushed the
+  if (body.input.length > 8) return 0;
   const crypto = require('crypto');
   const itemHash = (it) => { try { return crypto.createHash('sha1').update(JSON.stringify(it)).digest('hex').slice(0, 16); } catch (_) { return ''; } };
   let prior = conversationStore.loadHistory(sessionId);
   let fallbackInfo = null;
-  // Cross-session continuity fallback: if this session is empty (likely a fresh
-  // codex CLI invocation after a 502/socket-hangup auto-recovery), seed from
   if (prior.length === 0) {
     const fallback = conversationStore.loadLatestNonEmptyHistory(sessionId);
     if (fallback.items.length > 0) {
@@ -67,7 +69,6 @@ function _injectStoredHistory(body, sessionId) {
     }
   }
   if (prior.length === 0) return 0;
-  if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
   const currentHashes = new Set();
   for (const it of body.input) { const h = itemHash(it); if (h) currentHashes.add(h); }
   const priorToInject = prior.filter((it) => { const h = itemHash(it); return h && !currentHashes.has(h); });
