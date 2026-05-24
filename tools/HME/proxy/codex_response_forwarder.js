@@ -463,8 +463,12 @@ function createCodexResponseForwarder(deps) {
       finishResponse(target, status, '', parsed);
     }
 
+    const MAX_RETRIES = 5;
+    const RETRY_BACKOFF_MS = [500, 1000, 2000, 4000, 8000];
+
     function attemptTarget(index, overrideTarget = null) {
       const target = attachTrace({ ...(overrideTarget || targets[index]), index });
+      const attempt = Number(target.attempt || 0);
       const bodyBytes = Buffer.from(JSON.stringify(target.body));
       const upstream = new URL(target.url);
       const client = upstream.protocol === 'http:' ? http : https;
@@ -474,12 +478,30 @@ function createCodexResponseForwarder(deps) {
         path: `${upstream.pathname}${upstream.search}`,
         headers: upstreamHeaders(req, bodyBytes, target),
       };
+      function scheduleRetry(reason) {
+        if (attempt >= MAX_RETRIES || clientSse.started || res.headersSent) return false;
+        const delay = RETRY_BACKOFF_MS[Math.min(attempt, RETRY_BACKOFF_MS.length - 1)];
+        record({ kind: 'codex-upstream-retry', route: target.kind, upstream: target.url, attempt: attempt + 1, max_retries: MAX_RETRIES, delay_ms: delay, reason, ...traceFields(target) });
+        setTimeout(() => attemptTarget(index, { ...target, attempt: attempt + 1 }), delay);
+        return true;
+      }
       const upstreamReq = client.request(options, (upstreamRes) => {
         const status = upstreamRes.statusCode || 502;
-        if (target.fallbackDirect && target.fallbackHttpStatuses && target.fallbackHttpStatuses.has(status) && targets[index + 1]) {
+        if (target.fallbackHttpStatuses && target.fallbackHttpStatuses.has(status)) {
           const chunks = [];
           upstreamRes.on('data', (chunk) => chunks.push(chunk));
-          upstreamRes.on('end', () => { record({ kind: 'upstream-http-fallback', route: target.kind, upstream: target.url, status, body_preview: Buffer.concat(chunks).toString('utf8').slice(0, 500), ...traceFields(target) }); attemptTarget(index + 1); });
+          upstreamRes.on('end', () => {
+            const preview = Buffer.concat(chunks).toString('utf8').slice(0, 500);
+            record({ kind: 'upstream-http-retryable', route: target.kind, upstream: target.url, status, body_preview: preview, ...traceFields(target) });
+            if (scheduleRetry(`http ${status}`)) return;
+            if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
+            if (clientSse.started && !res.writableEnded) { try { completeClientSse(target, status, `upstream ${status}`, null); } catch (_e) { try { res.end(); } catch (_) {} } return; }
+            finishResponse(target, status, `upstream ${status} after ${attempt + 1} attempts`);
+            if (!res.headersSent) {
+              res.writeHead(status, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'codex_proxy_upstream_exhausted', status, attempts: attempt + 1, message: preview }));
+            } else res.end();
+          });
           return;
         }
         const headers = { ...upstreamRes.headers };
@@ -493,12 +515,9 @@ function createCodexResponseForwarder(deps) {
         });
       });
       upstreamReq.on('error', (err) => {
-        record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message, client_sse_started: clientSse.started, tool_loop_count: clientSse.toolLoops, ...traceFields(target) });
-        // Fallback is possible only when client hasn't seen any bytes yet.
-        // Once clientSse fabricated headers committed, we cannot switch routes
+        record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message, attempt: attempt + 1, client_sse_started: clientSse.started, tool_loop_count: clientSse.toolLoops, ...traceFields(target) });
+        if (scheduleRetry(`socket ${err.message}`)) return;
         if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
-        // If fake SSE envelope was already opened, close it gracefully so
-        // Codex CLI captures the partial assistant text + any tool outputs
         if (clientSse.started && !res.writableEnded) {
           try { completeClientSse(target, 502, err.message, null); }
           catch (_e) { try { res.end(); } catch (_) { /* socket already closed */ } }
@@ -507,7 +526,7 @@ function createCodexResponseForwarder(deps) {
         finishResponse(target, 502, err.message);
         if (!res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'codex_proxy_upstream_error', message: err.message, upstream: upstreamUrl }));
+          res.end(JSON.stringify({ error: 'codex_proxy_upstream_error', message: err.message, upstream: upstreamUrl, attempts: attempt + 1 }));
         } else res.end();
       });
       upstreamReq.write(bodyBytes);
