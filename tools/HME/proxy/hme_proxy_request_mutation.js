@@ -136,6 +136,10 @@ async function mutateClaudeRequest({
     _writeAutocompactLifesaver(PROJECT_ROOT, payload);
     emit({ event: 'autocompact_fired_despite_disable', session: sessionKey(payload), model: payload && payload.model });
   }
+  if (isAnthropic && _detectAndMarkUndefinedUserPrompt(payload)) {
+    emit({ event: 'undefined_user_prompt_corrupted', session: sessionKey(payload) });
+    outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+  }
   if (passthrough && isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     const dropped = shrinkForPassthrough(payload);
     if (dropped > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
