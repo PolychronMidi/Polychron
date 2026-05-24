@@ -201,56 +201,158 @@ function lifesaverEscalation(root) {
   );
 }
 
-function evaluateBashInput(input = {}, opts = {}) {
+function createBashPolicyContext(input = {}, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
   const next = { ...input };
-  let cmd = String(next.command || next.cmd || '');
-  if (!cmd) return allow(next);
-  const escalation = lifesaverEscalation(root);
-  if (escalation) return escalation;
-  const trimmed = cmd.trimStart().split('\n')[0];
-  const noopFailure = noopAfterFailureDecision(cmd, root);
-  if (noopFailure) return noopFailure;
-  if (!isNoopCommand(cmd)) clearFailure(root);
-  if (next.timeout && String(next.timeout) !== '0') delete next.timeout;
-  const timeoutChanged = !Object.prototype.hasOwnProperty.call(next, 'timeout') && Object.prototype.hasOwnProperty.call(input, 'timeout');
-  if (/\b(curl|wget|fetch)\b[^|]*\|\s*(\.\s+|sudo\s+|exec\s+)?(sh|bash|zsh|ksh|dash)\b/.test(cmd)) return deny('BLOCKED: piping a remote download into a shell interpreter is a supply-chain risk. Download, inspect, then execute deliberately.');
-  const ld = lockDeletion(cmd); if (ld) return deny(`BLOCKED: Never delete ${LOCK_NAME} (matched: ${ld})`);
-  if (/\bmkdir\b/.test(cmd)) {
-    if (mkdirHasMisplacedRootOnlyDir(cmd, ['log', 'tmp'])) return deny(rootOnlyDirMessage('mkdir'));
-    if (mkdirHasMisplacedMetrics(cmd)) return deny(metricsMessage('mkdir metrics under', cmd));
+  const cmd = String(next.command || next.cmd || '');
+  return {
+    input,
+    opts,
+    root,
+    next,
+    cmd,
+    trimmed: cmd.trimStart().split('\n')[0],
+    timeoutChanged: false,
+  };
+}
+
+const BASH_POLICIES = [
+  {
+    name: 'lifesaver-escalation',
+    evaluate(ctx) { return lifesaverEscalation(ctx.root); },
+  },
+  {
+    name: 'noop-after-failure',
+    evaluate(ctx) {
+      const decision = noopAfterFailureDecision(ctx.cmd, ctx.root);
+      if (decision) return decision;
+      if (!isNoopCommand(ctx.cmd)) clearFailure(ctx.root);
+      return null;
+    },
+  },
+  {
+    name: 'timeout-normalize',
+    evaluate(ctx) {
+      if (ctx.next.timeout && String(ctx.next.timeout) !== '0') delete ctx.next.timeout;
+      ctx.timeoutChanged = !Object.prototype.hasOwnProperty.call(ctx.next, 'timeout') && Object.prototype.hasOwnProperty.call(ctx.input, 'timeout');
+      return null;
+    },
+  },
+  {
+    name: 'remote-pipe-to-shell',
+    evaluate(ctx) {
+      return /\b(curl|wget|fetch)\b[^|]*\|\s*(\.\s+|sudo\s+|exec\s+)?(sh|bash|zsh|ksh|dash)\b/.test(ctx.cmd)
+        ? deny('BLOCKED: piping a remote download into a shell interpreter is a supply-chain risk. Download, inspect, then execute deliberately.')
+        : null;
+    },
+  },
+  {
+    name: 'lock-deletion',
+    evaluate(ctx) {
+      const ld = lockDeletion(ctx.cmd);
+      return ld ? deny(`BLOCKED: Never delete ${LOCK_NAME} (matched: ${ld})`) : null;
+    },
+  },
+  {
+    name: 'mkdir-path-policy',
+    evaluate(ctx) {
+      if (!/\bmkdir\b/.test(ctx.cmd)) return null;
+      if (mkdirHasMisplacedRootOnlyDir(ctx.cmd, ['log', 'tmp'])) return deny(rootOnlyDirMessage('mkdir'));
+      if (mkdirHasMisplacedMetrics(ctx.cmd)) return deny(metricsMessage('mkdir metrics under', ctx.cmd));
+      return null;
+    },
+  },
+  {
+    name: 'snapshot-gate',
+    evaluate(ctx) {
+      if (!/^npm run snapshot\b/.test(ctx.trimmed)) return null;
+      let verdict = 'unknown';
+      try { verdict = JSON.parse(fs.readFileSync(path.join(ctx.root, 'src/output/metrics/fingerprint-comparison.json'), 'utf8')).verdict || 'unknown'; } catch (_e) { /* silent-ok: missing fingerprint file denies snapshot. */ }
+      return verdict !== 'STABLE' ? deny(`SNAPSHOT GATE: fingerprint verdict is ${verdict}, not STABLE. Diagnose or rerun until STABLE, then snapshot.`) : null;
+    },
+  },
+  {
+    name: 'pipeline-background',
+    evaluate(ctx) {
+      if (!/^(npm run (main|snapshot)|node (?:src\/)?lab\/run)/.test(ctx.trimmed)) return null;
+      if (/\s&\s*$/.test(ctx.cmd)) return deny('BLOCKED: Do NOT use & for pipeline commands; use the host background/session mechanism instead.');
+      if (ctx.opts.supportsRunInBackground === true && ctx.next.run_in_background !== true) {
+        return deny('ANTI-WAIT: pipeline commands must use run_in_background=true in Claude Code; Codex/exec hosts do not expose that option.');
+      }
+      return null;
+    },
+  },
+  {
+    name: 'reader-guard',
+    evaluate(ctx) { return readerGuard(ctx.cmd, ctx.root); },
+  },
+  {
+    name: 'verify-landed',
+    evaluate(ctx) { return verifyLanded(ctx.cmd, ctx.root) ? allow(setCommandInput(ctx.next, ':'), '', true) : null; },
+  },
+  {
+    name: 'raw-command-rewrite',
+    evaluate(ctx) {
+      const enriched = rawCommandRewrite(ctx.cmd, ctx.root);
+      return enriched ? allow(setCommandInput(ctx.next, enriched), '', true) : null;
+    },
+  },
+  {
+    name: 'feedback-kb-spam',
+    evaluate(ctx) { return feedbackKbSpam(ctx.cmd); },
+  },
+  {
+    name: 'log-first',
+    evaluate(ctx) { return evaluateLogFirst(ctx.cmd, ctx.root); },
+  },
+  {
+    name: 'pipeline-log-polling',
+    evaluate(ctx) {
+      return new RegExp(`(tail|cat|head|grep).*(r4[0-9]+_run|run\\.log|pipeline\\.log)|\\b${LOCK_NAME.replace('.', '\\.')}\\b`).test(ctx.cmd)
+        ? deny(`BLOCKED: polling pipeline logs/${LOCK_NAME} is an antipattern. Run i/status, then continue other work.`)
+        : null;
+    },
+  },
+  {
+    name: 'sleep-check',
+    evaluate(ctx) {
+      return /sleep.*(tail|cat|head|grep|\.output)/.test(ctx.cmd)
+        ? allow(ctx.next, 'sleep+check detected. Background tasks notify on completion; avoid polling loops.', ctx.timeoutChanged)
+        : null;
+    },
+  },
+  {
+    name: 'polling-counter',
+    evaluate(ctx) { return pollingDecision(ctx.cmd, ctx.root); },
+  },
+  {
+    name: 'fail-fast',
+    evaluate(ctx) {
+      if (/git commit/.test(ctx.cmd)) return null;
+      const stripped = ctx.cmd.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, ' ');
+      return /catch\s*(\([^)]*\))?\s*\{\s*\}|\.catch\(\s*(function\s*\(\)|\([^)]*\)\s*=>)\s*\{\s*\}\)|(\btsc\b|\bnpm run\b|\bnode scripts\/|\beslint\b\s)[^|;&]*2>\/dev\/null/.test(stripped)
+        ? deny('FAIL FAST VIOLATION -- silent error suppression detected. Errors must bubble or be explicitly logged.')
+        : null;
+    },
+  },
+  {
+    name: 'i-tool-rewrite',
+    evaluate(ctx) {
+      if (!ctx.root || !new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`).test(ctx.cmd)) return null;
+      const cmd = ctx.cmd.replace(new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`, 'g'), (_m, lead, tool) => `${lead}${ctx.root}/tools/HME/i/${tool}`);
+      return allow(setCommandInput(ctx.next, cmd), '', true);
+    },
+  },
+];
+
+function evaluateBashInput(input = {}, opts = {}) {
+  const ctx = createBashPolicyContext(input, opts);
+  if (!ctx.cmd) return allow(ctx.next);
+  for (const policy of BASH_POLICIES) {
+    const result = policy.evaluate(ctx);
+    if (result) return result;
   }
-  if (/^npm run snapshot\b/.test(trimmed)) {
-    let verdict = 'unknown';
-    try { verdict = JSON.parse(fs.readFileSync(path.join(root, 'src/output/metrics/fingerprint-comparison.json'), 'utf8')).verdict || 'unknown'; } catch (_e) { /* silent-ok: missing fingerprint file denies snapshot. */ }
-    if (verdict !== 'STABLE') return deny(`SNAPSHOT GATE: fingerprint verdict is ${verdict}, not STABLE. Diagnose or rerun until STABLE, then snapshot.`);
-  }
-  if (/^(npm run (main|snapshot)|node (?:src\/)?lab\/run)/.test(trimmed)) {
-    if (/\s&\s*$/.test(cmd)) return deny('BLOCKED: Do NOT use & for pipeline commands; use the host background/session mechanism instead.');
-    const supportsRunInBackground = opts.supportsRunInBackground === true;
-    if (supportsRunInBackground && next.run_in_background !== true) {
-      return deny('ANTI-WAIT: pipeline commands must use run_in_background=true in Claude Code; Codex/exec hosts do not expose that option.');
-    }
-  }
-  const reader = readerGuard(cmd, root); if (reader) return reader;
-  const landed = verifyLanded(cmd, root);
-  if (landed) return allow(setCommandInput(next, ':'), '', true);
-  const enriched = rawCommandRewrite(cmd, root);
-  if (enriched) return allow(setCommandInput(next, enriched), '', true);
-  const feedback = feedbackKbSpam(cmd); if (feedback) return feedback;
-  const lf = evaluateLogFirst(cmd, root); if (lf) return lf;
-  if (new RegExp(`(tail|cat|head|grep).*(r4[0-9]+_run|run\\.log|pipeline\\.log)|\\b${LOCK_NAME.replace('.', '\\.')}\\b`).test(cmd)) return deny(`BLOCKED: polling pipeline logs/${LOCK_NAME} is an antipattern. Run i/status, then continue other work.`);
-  if (/sleep.*(tail|cat|head|grep|\.output)/.test(cmd)) return allow(next, 'sleep+check detected. Background tasks notify on completion; avoid polling loops.', timeoutChanged);
-  const polling = pollingDecision(cmd, root); if (polling) return polling;
-  if (!/git commit/.test(cmd)) {
-    const stripped = cmd.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, ' ');
-    if (/catch\s*(\([^)]*\))?\s*\{\s*\}|\.catch\(\s*(function\s*\(\)|\([^)]*\)\s*=>)\s*\{\s*\}\)|(\btsc\b|\bnpm run\b|\bnode scripts\/|\beslint\b\s)[^|;&]*2>\/dev\/null/.test(stripped)) return deny('FAIL FAST VIOLATION -- silent error suppression detected. Errors must bubble or be explicitly logged.');
-  }
-  if (root && new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`).test(cmd)) {
-    cmd = cmd.replace(new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`, 'g'), (_m, lead, tool) => `${lead}${root}/tools/HME/i/${tool}`);
-    return allow(setCommandInput(next, cmd), '', true);
-  }
-  return allow(next, '', timeoutChanged);
+  return allow(ctx.next, '', ctx.timeoutChanged);
 }
 
 function toHookResponse(result, event = 'PreToolUse') {
