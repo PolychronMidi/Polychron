@@ -63,11 +63,10 @@ function appendItems(sessionId, items) {
   return fresh.length;
 }
 
-function loadHistory(sessionId, maxAgeMs = STALE_AFTER_MS, cap = MAX_ITEMS_PER_SESSION) {
+function loadHistory(sessionId) {
   if (!sessionId) return [];
   const f = _sessionFile(sessionId);
   if (!fs.existsSync(f)) return [];
-  const now = Date.now();
   const out = [];
   try {
     const lines = fs.readFileSync(f, 'utf8').split('\n');
@@ -76,11 +75,10 @@ function loadHistory(sessionId, maxAgeMs = STALE_AFTER_MS, cap = MAX_ITEMS_PER_S
       let rec;
       try { rec = JSON.parse(ln); } catch (_) { continue; }
       if (!rec || typeof rec !== 'object' || !rec.item) continue;
-      if (typeof rec.ts === 'number' && (now - rec.ts) > maxAgeMs) continue;
       out.push(rec.item);
     }
   } catch (_) { /* best-effort; treat as empty history */ }
-  return out.length > cap ? out.slice(-cap) : out;
+  return out;
 }
 
 function compactSession(sessionId) {
