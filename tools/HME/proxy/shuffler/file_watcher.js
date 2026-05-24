@@ -178,8 +178,8 @@ function start() {
   const externals = discoverExternalDeps();
   console.error(`[file-watcher] polling ${watched.length} files every ${POLL_INTERVAL_MS}ms (debounce ${DEBOUNCE_MS}ms, alternating slots a/b) + ${externals.length} external dep(s) -- inotify-free`);
   for (const e of externals) console.error(`[file-watcher]   external: ${path.relative(PROJECT_ROOT, e)}`);
-  process.on('SIGTERM', () => { for (const w of watchers) w.close(); process.exit(0); });
-  process.on('SIGINT',  () => { for (const w of watchers) w.close(); process.exit(0); });
+  process.on('SIGTERM', () => process.exit(0));
+  process.on('SIGINT',  () => process.exit(0));
 }
 
 start();
