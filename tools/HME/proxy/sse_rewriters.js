@@ -179,6 +179,8 @@ const {
   stopHookCeremonyStripRewrite,
   fpGateMarkerRewrite,
   soloRationaleTrimRewrite,
+  STOP_HOOK_REWRITER_STRATEGIES,
+  stopHookRewritersForSlot,
   _isBareAck,
   _isHallucinatedTurnPrefix,
   _isCeremonyDodge,
@@ -200,6 +202,8 @@ module.exports = {
   stopHookCeremonyStripRewrite,
   fpGateMarkerRewrite,
   soloRationaleTrimRewrite,
+  STOP_HOOK_REWRITER_STRATEGIES,
+  stopHookRewritersForSlot,
   _isBareAck,                  // exported for tests
   _isHallucinatedTurnPrefix,   // exported for tests
   _isCeremonyDodge,            // exported for tests
