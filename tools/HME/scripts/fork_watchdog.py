@@ -145,8 +145,15 @@ def scan() -> list[dict]:
             }
             sr = info.get("stop_reason")
             if sr in ("end_turn", "stop_sequence", "max_tokens"):
-                # notification_lost only for recently-completed (60s..1h window).
-                entry["state"] = "notification_lost" if 60 < age_s < 3600 else "completed"
+                if 60 < age_s < 3600:
+                    if _parent_acked_agent(sa_dir, entry["agent_id"], info.get("ts", 0)):
+                        # Parent transcript references this agent_id after
+                        # completion -- notification reached the parent
+                        entry["state"] = "completed"
+                    else:
+                        entry["state"] = "notification_lost"
+                else:
+                    entry["state"] = "completed"
             elif age_s > 600 and age_s < 86400:
                 entry["state"] = "long_running"
             else:
