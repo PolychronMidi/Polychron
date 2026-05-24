@@ -20,8 +20,6 @@ const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
 const CONFIG_PATH = process.env.HME_CODEX_PROXY_CONFIG
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'codex-proxy.json');
-const PLAN_SYNC = process.env.HME_CODEX_PLAN_SYNC_SCRIPT
-  || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'codex_plan_sync.py');
 const EVENT_LOG = path.join(RUNTIME_DIR, 'codex-proxy-events.jsonl');
 const DEFAULT_UPSTREAM = 'https://chatgpt.com/backend-api/codex/responses';
 const UPSTREAM_URL = process.env.HME_CODEX_UPSTREAM_URL || DEFAULT_UPSTREAM;
