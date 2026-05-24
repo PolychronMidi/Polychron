@@ -50,14 +50,18 @@ function _captureRequestInputItems(body, sessionId) {
 
 function _injectStoredHistory(body, sessionId) {
   if (!sessionId || !body) return 0;
+  const crypto = require('crypto');
+  const itemHash = (it) => { try { return crypto.createHash('sha1').update(JSON.stringify(it)).digest('hex').slice(0, 16); } catch (_) { return ''; } };
   const prior = conversationStore.loadHistory(sessionId);
-  const freshCount = Array.isArray(body.input) ? body.input.length : (body.input == null ? 0 : 1);
-  const priorWithoutFresh = freshCount > 0 ? prior.slice(0, Math.max(0, prior.length - freshCount)) : prior;
-  if (priorWithoutFresh.length === 0) return 0;
+  if (prior.length === 0) return 0;
   if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
-  body.input = [...priorWithoutFresh, ...body.input];
+  const currentHashes = new Set();
+  for (const it of body.input) { const h = itemHash(it); if (h) currentHashes.add(h); }
+  const priorToInject = prior.filter((it) => { const h = itemHash(it); return h && !currentHashes.has(h); });
+  if (priorToInject.length === 0) return 0;
+  body.input = [...priorToInject, ...body.input];
   _metrics.history_replays += 1;
-  return priorWithoutFresh.length;
+  return priorToInject.length;
 }
 
 function _captureResponseOutputItems(sessionId, outputItems) {
