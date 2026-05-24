@@ -129,13 +129,9 @@ _sv_proxy_health_issue() {
     echo "proxy unreachable at $_SV_URL"
     return 0
   fi
-  local runtime_stale
-  runtime_stale=$(curl -sS --max-time 3 "$_SV_URL" 2>/dev/null \
-    | python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("runtime_stale") else "0")' 2>/dev/null || echo 0)
-  if [ "$runtime_stale" = "1" ]; then
-    echo "proxy runtime stale at $_SV_URL"
-    return 0
-  fi
+  # NOTE: runtime_stale (proxy startup git_sha != current HEAD) is now
+  # informational only -- it changes on every autocommit, so treating it as
+  return 1
 }
 
 _sv_child_health_issue() {
