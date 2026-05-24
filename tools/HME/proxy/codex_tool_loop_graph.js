@@ -6,9 +6,6 @@ const { RUNTIME_DIR } = require('./shared');
 const { missingRequiredToolFields } = require('./codex_tool_loop');
 const { requiresApproval } = require('./hme_tool_registry');
 
-const MAX_TOOL_LOOP_DEPTH = 8;
-const FINALIZE_TOOL_LOOP_DEPTH = MAX_TOOL_LOOP_DEPTH - 1;
-
 function nowIso() { return new Date().toISOString(); }
 function asArray(value) { return Array.isArray(value) ? value : []; }
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
