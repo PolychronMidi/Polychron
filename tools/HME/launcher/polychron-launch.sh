@@ -189,6 +189,23 @@ else
   _record_pid "worker" "$_WORKER_PID"
 fi
 
+# File-watcher: auto-restart slots (alternating) on tools/HME/proxy/** changes.
+# Debounce 5s; per-slot throttle (60s) enforced by polychron-slot-restart.sh.
+_FILE_WATCHER="$PROJECT_ROOT/tools/HME/proxy/shuffler/file_watcher.js"
+if [ "${HME_PROXY_FILE_WATCHER:-1}" != "0" ] && [ -x "$_FILE_WATCHER" ]; then
+  if pgrep -f "shuffler/file_watcher.js" >/dev/null 2>&1; then
+    echo "[launch] file_watcher already running" >&2
+  else
+    echo "[launch] starting proxy file_watcher (auto-restart on code changes)..." >&2
+    PROJECT_ROOT="$PROJECT_ROOT" \
+      setsid nohup node "$_FILE_WATCHER" \
+        >> "$PROJECT_ROOT/log/hme-file-watcher.out" 2>&1 < /dev/null &
+    _FW_PID=$!
+    disown 2>/dev/null || true
+    _record_pid "file_watcher" "$_FW_PID"
+  fi
+fi
+
 # 2. llama-server instances
 
 _llama_healthy() {
