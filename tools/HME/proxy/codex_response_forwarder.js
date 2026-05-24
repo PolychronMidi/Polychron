@@ -370,11 +370,10 @@ function createCodexResponseForwarder(deps) {
     }
 
     function continueAfterTools(index, target, parsed, calls, forcedResults = null, graphDecision = null) {
-      const decision = graphDecision || (forcedResults ? { action: 'execute_tools', actionable_calls: calls, skipped_calls: [], finalizing: false, next_depth: (target.tool_loop_depth || 0) + 1, reason: 'forced tool results' } : runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'model_response' }, { record }));
+      const decision = graphDecision || (forcedResults ? { action: 'execute_tools', actionable_calls: calls, skipped_calls: [], next_depth: (target.tool_loop_depth || 0) + 1, reason: 'forced tool results' } : runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'model_response' }, { record }));
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
       if (decision.action !== 'execute_tools') return false;
-      if (depth >= MAX_TOOL_LOOP_DEPTH) return false;
       const actionableCalls = forcedResults ? calls : decision.actionable_calls;
       const skipped = forcedResults ? [] : decision.skipped_calls;
       if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
