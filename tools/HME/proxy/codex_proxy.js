@@ -42,25 +42,22 @@ let _recent = [];
 let _lastGuardMs = 0;
 const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, history_replays: 0, last_route: null, last_error: '', last_model: '' };
 
+function _captureRequestInputItems(body, sessionId) {
+  if (!sessionId || !body) return 0;
+  if (!Array.isArray(body.input)) return 0;
+  return conversationStore.appendItems(sessionId, body.input);
+}
+
 function _injectStoredHistory(body, sessionId) {
   if (!sessionId || !body) return 0;
   const prior = conversationStore.loadHistory(sessionId);
-  if (prior.length === 0) return 0;
+  const freshCount = Array.isArray(body.input) ? body.input.length : (body.input == null ? 0 : 1);
+  const priorWithoutFresh = freshCount > 0 ? prior.slice(0, Math.max(0, prior.length - freshCount)) : prior;
+  if (priorWithoutFresh.length === 0) return 0;
   if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
-  body.input = [...prior, ...body.input];
+  body.input = [...priorWithoutFresh, ...body.input];
   _metrics.history_replays += 1;
-  return prior.length;
-}
-
-function _captureRequestInputItems(body, sessionId) {
-  if (!sessionId || !body || !Array.isArray(body.input)) return 0;
-  const newItems = body.input.slice(-_countFreshInputItems(body));
-  return conversationStore.appendItems(sessionId, newItems);
-}
-
-function _countFreshInputItems(body) {
-  if (!body || !Array.isArray(body.input)) return 0;
-  return body.input.length - (body._hme_prepended_count || 0);
+  return priorWithoutFresh.length;
 }
 
 function _captureResponseOutputItems(sessionId, outputItems) {
