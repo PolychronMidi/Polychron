@@ -547,16 +547,11 @@ function createCodexResponseForwarder(deps) {
               return;
             }
             sendSseFinal(target, status, headers, full);
-          } else if (status >= 400 && target.body && target.body.stream && !upstreamSawBytes) {
-            // Upstream returned JSON error to a stream:true request. Codex CLI
-            // Rust SSE parser panics on non-SSE body. Emit SSE response.failed
+          } else if (status >= 400 && target.body && target.body.stream) {
             const preview = full.slice(0, 500);
-            record({ kind: 'codex-non-sse-error-to-stream', route: target.kind, upstream: target.url, status, body_preview: preview, ...traceFields(target) });
+            record({ kind: 'codex-non-sse-error-to-stream', route: target.kind, upstream: target.url, status, body_preview: preview, saw_bytes: upstreamSawBytes, ...traceFields(target) });
             finishResponse(target, status, `non-SSE upstream error for stream request (${preview})`);
             sendSseError(status, 'codex_proxy_non_sse_upstream_error', `upstream ${status}: ${preview}`);
-          } else if (status >= 400 && target.body && target.body.stream) {
-            // Upstream error after already sending bytes -- sendJsonFinal handles
-            sendJsonFinal(target, status, headers, full);
           } else sendJsonFinal(target, status, headers, full);
         });
       });
