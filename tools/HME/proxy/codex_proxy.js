@@ -144,19 +144,6 @@ function readRequestBody(req, res) {
   });
 }
 
-function runCodexAutocommit() {
-  return runAutocommit({
-    host: 'codex',
-    projectRoot: PROJECT_ROOT,
-    record,
-    disabled: process.env.HME_CODEX_PROXY_AUTOCOMMIT === '0',
-  });
-}
-
-function injectCodexLifesaver(body) {
-  return injectLifesaver({ body, host: 'codex', projectRoot: PROJECT_ROOT });
-}
-
 async function handleResponses(req, res) {
   const rawBody = await readRequestBody(req, res);
   if (!rawBody) return;
