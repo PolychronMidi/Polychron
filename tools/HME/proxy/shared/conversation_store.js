@@ -105,9 +105,31 @@ function listSessions() {
   catch (_) { return []; }
 }
 
+// Cross-session continuity fallback. Codex CLI mints a fresh session UUID
+// whenever it auto-recovers from a 502/socket-hangup or when the user starts
+function loadLatestNonEmptyHistory(excludeSessionId) {
+  try {
+    const entries = fs.readdirSync(SESSIONS_DIR)
+      .filter((n) => n.endsWith('.jsonl'))
+      .map((n) => ({ id: n.replace(/\.jsonl$/, ''), path: path.join(SESSIONS_DIR, n) }))
+      .filter((e) => e.id !== excludeSessionId);
+    const stamped = entries.map((e) => {
+      try { return { ...e, mtime: fs.statSync(e.path).mtimeMs, size: fs.statSync(e.path).size }; }
+      catch (_) { return null; }
+    }).filter(Boolean).filter((e) => e.size > 0);
+    stamped.sort((a, b) => b.mtime - a.mtime);
+    for (const entry of stamped) {
+      const items = loadHistory(entry.id);
+      if (items.length > 0) return { items, source_session_id: entry.id, source_mtime_ms: entry.mtime };
+    }
+  } catch (_) { /* best-effort */ }
+  return { items: [], source_session_id: '', source_mtime_ms: 0 };
+}
+
 module.exports = {
   appendItems,
   loadHistory,
+  loadLatestNonEmptyHistory,
   compactSession,
   clearSession,
   listSessions,
