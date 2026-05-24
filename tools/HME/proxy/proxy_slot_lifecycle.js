@@ -33,6 +33,8 @@ function slotConfig() {
     healthFile: path.join(runtimeDir, `proxy-${slot}.health`),
     drainFlagFile: path.join(runtimeDir, `proxy-${slot}.drain.flag`),
     runtimeDir,
+    projectRoot,
+    gitSha: _resolveGitSha(projectRoot),
   };
 }
 
