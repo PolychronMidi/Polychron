@@ -123,7 +123,10 @@ function transcriptPathFrom(ctx) {
 function firingRulesFrom(verdicts) {
   return DETECTOR_REGISTRY
     .filter((d) => d.deny && verdicts[d.bash_var] === d.fires_when)
-    .map((d) => ({ name: d.reason_key || d.bash_var, reason: REASONS[d.reason_key] || REASONS[d.bash_var] }));
+    .map((d) => ({
+      name: d.reason_key || d.bash_var,
+      reason: REASONS[d.reason_key] || REASONS[d.bash_var] || `${d.bash_var}: ${d.why || 'detector fired'}`,
+    }));
 }
 
 function createState(ctx) {

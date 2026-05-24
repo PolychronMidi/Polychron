@@ -234,7 +234,7 @@ function _buildAbbreviationRegExp(map) {
 
   // The closing \b fixes partial matches like complete -> completed + "d".
   // Spaces are not consumed by single-word entries, so keys like "in" work.
-  return new RegExp(`\\b(${pattern})\\b([.!?,;:]?)`, 'gi');
+  return new RegExp(`\\b(${pattern})\\b(?!['’])([.!?,;:]?)`, 'gi');
 }
 
 const _ABBREVIATION_RE = _buildAbbreviationRegExp(_ABBREVIATION_MAP);
@@ -246,8 +246,8 @@ function _abbreviateMatch(_match, word, punct = '') {
   return `${_preserveAbbrevCase(word, target)}${punct}`;
 }
 
-function _ingSuffixRepl(match, stem) {
-  return /^[A-Z]+$/.test(match) ? `${stem}IN` : `${stem}in`;
+function _ingSuffixRepl(match, _stem) {
+  return match;
 }
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
@@ -375,7 +375,7 @@ const _SLOP_PATTERNS = [
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
   // happen before small words are removed.
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
 
   // #15 Excessive bold: sentinel invokes density-gated demoter below.

@@ -203,3 +203,7 @@ tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py
 # and would make arbitrary file splits less coherent.
 # rationale: intent=reference-catalog; revisit-when=full-docs-split; decided=2026-05-15
 doc/*_full.md
+
+# sse_slop_rewriter.js: single ordered slop-rule catalog plus stream hold/replay state.
+# rationale: intent=ordered-regex-catalog; revisit-when=rule-modules-split; decided=2026-05-24
+tools/HME/proxy/sse_slop_rewriter.js
