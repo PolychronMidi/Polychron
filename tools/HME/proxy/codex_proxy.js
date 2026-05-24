@@ -7,7 +7,6 @@ const path = require('path');
 const { loadJsonc } = require('./config_loader');
 const { applyRequestTransform } = require('./codex_payload');
 const { targetChain, targetSummary } = require('./codex_omniroute');
-const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 const { requestTelemetry } = require('./request_telemetry');
 const { decisionForTarget } = require('./model_route_resolver');
