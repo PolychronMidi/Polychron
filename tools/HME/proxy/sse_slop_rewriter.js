@@ -1,5 +1,255 @@
 'use strict';
 
+function _escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function _normalizeAbbrevKey(value) {
+  return String(value || '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function _preserveAbbrevCase(source, target) {
+  const src = String(source || '').trim();
+  const out = String(target || '');
+  if (!src || !out || !/^[a-z]/.test(out)) return out;
+
+  // Preserve simple Title Case for one-word replacements: Information -> Info.
+  // Avoid title-casing symbol-ish targets like &, ~, -, b/c, w/o, etc.
+  const isTitleCase = /^[A-Z][a-z]/.test(src);
+  return isTitleCase ? out[0].toUpperCase() + out.slice(1) : out;
+}
+
+const _ABBREVIATION_MAP = Object.freeze({
+  // Common phrases.
+  'in order to': 'to',
+  'as well as': '&',
+  'for the purpose of': 'for',
+  'with respect to': 're:',
+  'in terms of': 'via',
+  'at the present time': 'now',
+  'at this point in time': 'now',
+  'due to the fact that': 'b/c',
+  'in light of the fact that': 'b/c',
+  'by means of': 'via',
+  'on the other hand': 'but',
+  'in the event that': 'if',
+  'provided that': 'if',
+  'prior to': 'b4',
+  'subsequent to': 'after',
+  'a number of': 'many',
+  'right now': 'now',
+
+  // Common words / compact forms.
+  'without': 'w/o',
+  'with': 'w/',
+  'between': 'b/w',
+  'before': 'b4',
+  'because': 'b/c',
+  'amount': 'amt',
+  'and': '&',
+  'into': '2',
+  'to': '-',
+  'in': 'n',
+  'why': 'y',
+  'you': 'u',
+  'your': 'ur',
+  'are': 'r',
+  'please': 'pls',
+  'thanks': 'thx',
+  'thank you': 'thx',
+  'about': 'abt',
+  'through': 'thru',
+  'though': 'tho',
+  'people': 'ppl',
+  'number': 'num',
+  'example': 'ex',
+  'examples': 'exs',
+  'versus': 'vs',
+  'problem': 'prob',
+  'problems': 'probs',
+  'question': 'q',
+  'questions': 'qs',
+  'acknowledged': 'k',
+  'complete': 'done',
+  'completed': 'done',
+  'current': 'cur',
+  'currently': 'now',
+  'different': 'diff',
+  'difference': 'diff',
+  'difficult': 'hard',
+  'important': 'impt',
+  'necessary': 'req',
+
+  // Contractions / common modal phrases.
+  'cannot': "can't",
+  'can not': "can't",
+  'could not': "couldn't",
+  'should not': "shouldn't",
+  'would not': "wouldn't",
+  'will not': "won't",
+  'do not': "don't",
+  'does not': "doesn't",
+  'did not': "didn't",
+  'is not': "isn't",
+  'are not': "aren't",
+  'was not': "wasn't",
+  'were not': "weren't",
+
+  // Long vocabulary concordance.
+  'approximately': '~',
+  'characteristically': 'typ',
+  'chronologically': 'by-time',
+  'collaboratively': 'team',
+  'communication': 'msg',
+  'communications': 'msgs',
+  'consequently': 'so',
+  'demonstration': 'demo',
+  'demonstrations': 'demos',
+  'dissemination': 'spread',
+  'ecclesiastical': 'church',
+  'enthusiastically': 'eagerly',
+  'environmentally': 'eco',
+  'identification': 'id',
+  'implementation': 'setup',
+  'implementations': 'setups',
+  'inappropriately': 'wrongly',
+  'indistinguishable': 'same',
+  'infrastructure': 'infra',
+  'institutionalized': 'formed',
+  'metaphorically': 'fig',
+  'microarchitecture': 'uarch',
+  'misunderstanding': 'error',
+  'misunderstandings': 'errors',
+  'multi-threading': 'mt',
+  'operationalization': 'run',
+  'particularization': 'detail',
+  'professionalism': 'pro-skill',
+  'recommendation': 'rec',
+  'recommendations': 'recs',
+  'representative': 'rep',
+  'representatives': 'reps',
+  'responsibility': 'duty',
+  'responsibilities': 'duties',
+  'revolutionary': 'new',
+  'specification': 'spec',
+  'specifications': 'specs',
+  'synchronization': 'sync',
+  'synchronizations': 'syncs',
+  'transformation': 'change',
+  'transformations': 'changes',
+  'uncharacteristically': 'oddly',
+  'unconditionally': 'always',
+  'understandable': 'clear',
+
+  // Tech & dev.
+  'maintenance': 'maint',
+  'system': 'sys',
+  'systems': 'sys',
+  'diagnose': 'diag',
+  'diagnosing': 'diag',
+  'command': 'cmd',
+  'commands': 'cmds',
+  'information': 'info',
+  'application': 'app',
+  'applications': 'apps',
+  'configuration': 'config',
+  'configurations': 'configs',
+  'repository': 'repo',
+  'repositories': 'repos',
+  'environment': 'env',
+  'environments': 'envs',
+  'developer': 'dev',
+  'developers': 'devs',
+  'development': 'dev',
+  'management': 'mgmt',
+  'organization': 'org',
+  'organizations': 'orgs',
+  'architecture': 'arch',
+  'architectures': 'archs',
+  'performance': 'perf',
+  'parameter': 'param',
+  'parameters': 'params',
+  'temporary': 'tmp',
+  'version': 'v',
+  'versions': 'vs',
+  'function': 'fn',
+  'functions': 'fns',
+  'variable': 'var',
+  'variables': 'vars',
+  'directory': 'dir',
+  'directories': 'dirs',
+  'database': 'db',
+  'databases': 'dbs',
+  'document': 'doc',
+  'documents': 'docs',
+  'documentation': 'docs',
+  'dependency': 'dep',
+  'dependencies': 'deps',
+  'package': 'pkg',
+  'packages': 'pkgs',
+  'installation': 'install',
+  'initialization': 'init',
+  'authentication': 'auth',
+  'authorization': 'authz',
+  'administrator': 'admin',
+  'administrators': 'admins',
+  'interface': 'iface',
+  'interfaces': 'ifaces',
+  'utility': 'util',
+  'utilities': 'utils',
+  'reference': 'ref',
+  'references': 'refs',
+  'production': 'prod',
+  'development environment': 'dev env',
+  'production environment': 'prod env',
+  'pull request': 'PR',
+  'pull requests': 'PRs',
+  'continuous integration': 'CI',
+  'continuous deployment': 'CD',
+  'continuous delivery': 'CD',
+  'user interface': 'UI',
+  'application programming interface': 'API',
+  'software development kit': 'SDK',
+  'central processing unit': 'CPU',
+  'graphics processing unit': 'GPU',
+  'operating system': 'OS',
+  'regular expression': 'regex',
+  'regular expressions': 'regexes',
+  'exception': 'exn',
+  'exceptions': 'exns',
+  'configuration file': 'config file',
+  'configuration files': 'config files',
+  'implementation detail': 'impl detail',
+  'implementation details': 'impl details',
+  'implement': 'impl',
+  'implementing': 'impl',
+});
+
+function _buildAbbreviationRegExp(map) {
+  const pattern = Object.keys(map)
+    .sort((a, b) => b.length - a.length || a.localeCompare(b))
+    .map(_escapeRegExp)
+    .map((value) => value.replace(/\\ /g, '\\s+'))
+    .join('|');
+
+  // The closing \b fixes partial matches like complete -> completed + "d".
+  // Spaces are not consumed by single-word entries, so keys like "in" work.
+  return new RegExp(`\\b(${pattern})\\b([.!?,;:]?)`, 'gi');
+}
+
+const _ABBREVIATION_RE = _buildAbbreviationRegExp(_ABBREVIATION_MAP);
+
+function _abbreviateMatch(_match, word, punct = '') {
+  const key = _normalizeAbbrevKey(word);
+  const target = _ABBREVIATION_MAP[key];
+  if (target === undefined) return `${word}${punct}`;
+  return `${_preserveAbbrevCase(word, target)}${punct}`;
+}
+
+function _ingSuffixRepl(match, stem) {
+  return /^[A-Z]+$/.test(match) ? `${stem}IN` : `${stem}in`;
+}
+
 // Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
   // #1 Narrator setup.
@@ -105,179 +355,109 @@ const _SLOP_PATTERNS = [
   { name: 'parallel_dramatic',
     re: /(\b(?:You|I|We|It|This|That|They)\b)([^.!?\n]{1,50}[.!?])\s+\1[^.!?\n]{1,50}[.!?]\s+\1[^.!?\n]{1,50}[.!?]/g,
     repl: '$1$2' },
+
+  // Caveman abbreviation pass. Generated from _ABBREVIATION_MAP so longer
+  // phrases win, trailing word boundaries prevent partial-word matches, and
+  // single-word entries like "in" do not consume the following space.
+  { name: 'caveman_abbreviations',
+    re: _ABBREVIATION_RE,
+    repl: _abbreviateMatch },
+
+  // Caveman -ing suffix pass. Only words greater than 6 letters are changed.
+  // Prefix must be at least 4 letters, because 4 + "ing" = 7.
+  // Examples: running -> runnin, walking -> walkin, testing -> testin.
+  // Non-examples: thing, string, spring, during.
+  { name: 'caveman_ing_suffix',
+    re: /\b([a-z]{4,})ing\b/gi,
+    repl: _ingSuffixRepl },
+
   // Caveman compression: delete low-signal glue words/first-person filler.
+  // Kept after abbreviations so phrase replacements like "as well as" -> "&"
+  // happen before small words are removed.
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i\s+have|my|me|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|you|your|our|right|okay|hmm|was|has|need|too|also|needs|is|the|but|now|that|then|agreed|implement|implementing|continuing|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
-  {
-    name: 'caveman_abbreviations',
-    // Matches common words, tech terms, and long vocabulary for heavy token/space saving.
-    re: /\b(in\s+order\s+to|as\s+well\s+as|for\s+the\s+purpose\s+of|with\s+respect\s+to|in\s+terms\s+of|at\s+the\s+present\s+time|due\s+to\s+the\s+fact\s+that|by\s+means\s+of|on\s+the\s+other\s+hand|in\s+light\s+of\s+the\s+fact\s+that|without|with|between|before|amount|because|and|into|to\s|acknowledged|why|in\s|ing\s|complete|completed|approximately|characteristically|chronologically|collaboratively|communication|communications|consequently|demonstration|demonstrations|dissemination|ecclesiastical|enthusiastically|environmentally|identification|implementation|implementations|inappropriately|indistinguishable|infrastructure|institutionalized|metaphorically|microarchitecture|misunderstanding|misunderstandings|multi-threading|operationalization|particularization|professionalism|recommendation|recommendations|representative|representatives|responsibility|responsibilities|revolutionary|specifications|specification|synchronization|synchronizations|transformation|transformations|uncharacteristically|unconditionally|understandable|maintenance|system|diagnosing|diagnose|command|information|application|applications|configuration|configurations|repository|repositories|environment|environments|developer|developers|development|management|organization|organizations|architecture|architectures|performance|parameters|parameter|temporary|version|versions)([.!?,;:]?)/gi,
-    repl: (_match, word, punct = '') => {
-      const compactMap = {
-        'in order to': 'to',
-        'as well as': '&',
-        'for the purpose of': 'for',
-        'with respect to': 're:',
-        'in terms of': 'via',
-        'at the present time': 'now',
-        'due to the fact that': 'b/c',
-        'by means of': 'via',
-        'on the other hand': 'but',
-        'in light of the fact that': 'b/c',
-        'without': 'w/o',
-        'with': 'w/',
-        'between': 'b/w',
-        'before': 'b4',
-        'amount': 'amt',
-        'because': 'b/c',
-        'and': '&',
-        'into': '2',
-        'to': '-',
-        'acknowledged': 'k',
-        'why': 'y',
-        'in': 'n',
-        'ing': 'n',
-        'complete': 'done',
-        'completed': 'done',
 
-        // Long Vocabulary Concordance
-        'approximately': '~',
-        'characteristically': 'typ',
-        'chronologically': 'by-time',
-        'collaboratively': 'team',
-        'communication': 'msg',
-        'communications': 'msgs',
-        'consequently': 'so',
-        'demonstration': 'demo',
-        'demonstrations': 'demos',
-        'dissemination': 'spread',
-        'ecclesiastical': 'church',
-        'enthusiastically': 'eagerly',
-        'environmentally': 'eco',
-        'identification': 'id',
-        'implementation': 'setup',
-        'implementations': 'setups',
-        'inappropriately': 'wrongly',
-        'indistinguishable': 'same',
-        'infrastructure': 'infra',
-        'institutionalized': 'formed',
-        'metaphorically': 'fig',
-        'microarchitecture': 'uarch',
-        'misunderstanding': 'error',
-        'misunderstandings': 'errors',
-        'multi-threading': 'mt',
-        'operationalization': 'run',
-        'particularization': 'detail',
-        'professionalism': 'pro-skill',
-        'recommendation': 'rec',
-        'recommendations': 'recs',
-        'representative': 'rep',
-        'representatives': 'reps',
-        'responsibility': 'duty',
-        'responsibilities': 'duties',
-        'revolutionary': 'new',
-        'specifications': 'specs',
-        'specification': 'spec',
-        'synchronization': 'sync',
-        'synchronizations': 'syncs',
-        'transformation': 'change',
-        'transformations': 'changes',
-        'uncharacteristically': 'oddly',
-        'unconditionally': 'always',
-        'understandable': 'clear',
-        'maintenance': 'maint',
-        'system': 'sys',
-        'diagnose': 'diag',
-        'diagnosing': 'diag',
-        'command': 'cmd',
-
-
-
-        // Expanded Tech & Dev Additions
-        'information': 'info',
-        'application': 'app',
-        'applications': 'apps',
-        'configuration': 'config',
-        'configurations': 'configs',
-        'repository': 'repo',
-        'repositories': 'repos',
-        'environment': 'env',
-        'environments': 'envs',
-        'developer': 'dev',
-        'developers': 'devs',
-        'development': 'dev',
-        'management': 'mgmt',
-        'organization': 'org',
-        'organizations': 'orgs',
-        'architecture': 'arch',
-        'architectures': 'archs',
-        'performance': 'perf',
-        'parameters': 'params',
-        'parameter': 'param',
-        'temporary': 'tmp',
-        'version': 'v',
-        'versions': 'vs'
-      };
-
-      const key = word.toLowerCase();
-      if (key in compactMap) {
-        // Preserves capitalization style of the original word if needed
-        const isTitleCase = word[0] === word[0].toUpperCase() && word.length > 1 && word[1] === word[1].toLowerCase();
-        let target = compactMap[key];
-
-        if (isTitleCase && target[0] !== '~' && target[0] !== '&' && target[0] !== '-') {
-          target = target[0].toUpperCase() + target.slice(1);
-        }
-        return `${target}${punct}`;
-      }
-
-      return `${word}${punct}`;
-    }
-  },
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
     re: null,  // handled in _stripExcessiveBold below
-    repl: null
-  }
+    repl: null }
 ];
 
 function _capFix(s) {
   // After deletions, sentences may start with lowercase. Promote the
-  // first alpha after sentence-end punctuation OR start-of-string.
-  return s.replace(/(^|[.!?]\s+)([a-z])/g, (_m, lead, ch) => lead + ch.toUpperCase());
+  // first alpha after sentence-end punctuation, newline, or start-of-string.
+  return _replaceOutsideCode(
+    String(s || ''),
+    /(^|[.!?]\s+|\n\s*)([a-z])/g,
+    (_m, lead, ch) => lead + ch.toUpperCase(),
+  );
+}
+
+function _stripExcessiveBoldSegment(text) {
+  const boldRe = /\*\*([^*\n]{1,80})\*\*/g;
+  const matches = [...text.matchAll(boldRe)];
+  if (matches.length < 6) return { out: text, hit: false };
+
+  const wordCount = (text.match(/\b[\w'-]+\b/g) || []).length;
+  if (wordCount === 0) return { out: text, hit: false };
+
+  const density = matches.length / wordCount;  // bolds per word
+  if (density < 1 / 25) return { out: text, hit: false };
+
+  // Density-positive AND most bolds short = highlighter pattern.
+  const shortBolds = matches.filter((m) => m[1].length <= 30).length;
+  if (shortBolds < matches.length * 0.7) return { out: text, hit: false };
+
+  return { out: text.replace(boldRe, '$1'), hit: true };
 }
 
 // #15 Excessive bold demoter; all-or-nothing when density is egregious.
 function _stripExcessiveBold(text) {
   if (!text || typeof text !== 'string') return { out: text, hit: false };
-  const boldRe = /\*\*([^*\n]{1,80})\*\*/g;
-  const matches = [...text.matchAll(boldRe)];
-  if (matches.length < 6) return { out: text, hit: false };
-  const wordCount = (text.match(/\b[\w'-]+\b/g) || []).length;
-  if (wordCount === 0) return { out: text, hit: false };
-  const density = matches.length / wordCount;  // bolds per word
-  if (density < 1 / 25) return { out: text, hit: false };
-  // Density-positive AND most bolds short = highlighter pattern.
-  const shortBolds = matches.filter((m) => m[1].length <= 30).length;
-  if (shortBolds < matches.length * 0.7) return { out: text, hit: false };
-  return { out: text.replace(boldRe, '$1'), hit: true };
+  if (!/`/.test(text)) return _stripExcessiveBoldSegment(text);
+
+  let hit = false;
+  const segs = _segmentByCode(text).map((seg) => {
+    if (seg.code) return seg;
+    const result = _stripExcessiveBoldSegment(seg.s);
+    if (result.hit) hit = true;
+    return { code: false, s: result.out };
+  });
+
+  return { out: segs.map((seg) => seg.s).join(''), hit };
 }
 
-function _cleanupSlopArtifacts(text) {
-  return String(text || '')
+function _cleanupPlainSlopArtifacts(text, trim = false) {
+  let out = String(text || '')
     .replace(/(?:\s*[,.;:!?]){2,}/g, '.')
     .replace(/^\s*[,.;:!?]+\s*/g, '')
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/([.!?])\s*([,.;:!?])+/g, '$1')
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')
-    .trim();
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n');
+
+  return trim ? out.trim() : out;
+}
+
+function _cleanupSlopArtifacts(text) {
+  const raw = String(text || '');
+  if (!/`/.test(raw)) return _cleanupPlainSlopArtifacts(raw, true);
+
+  const out = _segmentByCode(raw)
+    .map((seg) => seg.code ? seg.s : _cleanupPlainSlopArtifacts(seg.s, false))
+    .map((seg) => typeof seg === 'string' ? seg : seg.s)
+    .join('');
+
+  return out.trim();
 }
 
 // Split text into [{code:bool, s:string}, ...] segments. Code segments are
 // either triple-backtick fenced blocks or inline single-backtick spans.
-// Code-unsafe slop patterns are applied only to {code:false} segments so
+// Code-unsafe slop patterns are applied only to {code:false} segments.
 function _segmentByCode(text) {
   const out = [];
   const re = /```[\s\S]*?```|`[^`\n]+`/g;
@@ -298,29 +478,32 @@ function _replaceOutsideCode(text, re, repl) {
   for (const seg of segs) {
     if (!seg.code) seg.s = seg.s.replace(re, repl);
   }
-  return segs.map((s) => s.s).join('');
+  return segs.map((seg) => seg.s).join('');
 }
 
-const _CODE_UNSAFE_PATTERNS = new Set(['caveman_compression', 'caveman_abbreviations']);
+function _applyPatternOutsideCode(text, pattern) {
+  return _replaceOutsideCode(text, pattern.re, pattern.repl);
+}
 
 function _stripSlop(text) {
   if (typeof text !== 'string' || !text) return { out: text, hits: [] };
   let out = text;
   const hits = [];
+
   for (const p of _SLOP_PATTERNS) {
     if (p.re === null) continue;  // function-style entries (e.g. excessive_bold)
     const before = out;
-    out = _CODE_UNSAFE_PATTERNS.has(p.name)
-      ? _replaceOutsideCode(out, p.re, p.repl)
-      : out.replace(p.re, p.repl);
+    out = _applyPatternOutsideCode(out, p);
     if (out !== before) hits.push(p.name);
   }
+
   // Function-style strips: density-gated, can't be a simple regex.
   const boldResult = _stripExcessiveBold(out);
   if (boldResult.hit) {
     out = boldResult.out;
     hits.push('excessive_bold');
   }
+
   if (hits.length > 0) out = _capFix(out);
   out = _cleanupSlopArtifacts(out);
   return { out, hits };
@@ -331,16 +514,56 @@ function _logSlopHits(hits, textPreview, blockType) {
     const fs = require('fs');
     const path = require('path');
     const { PROJECT_ROOT } = require('./shared');
+    const logDir = path.join(PROJECT_ROOT, 'log');
+    fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(
-      path.join(PROJECT_ROOT, 'log', 'hme-slop-strips.jsonl'),
+      path.join(logDir, 'hme-slop-strips.jsonl'),
       JSON.stringify({
         ts: new Date().toISOString(),
         block_type: blockType || 'unknown',
         hits,
-        text_preview: textPreview.slice(0, 80),
+        text_preview: String(textPreview || '').slice(0, 80),
       }) + '\n',
     );
   } catch (_e) { /* stat is best-effort */ }
+}
+
+function _emitHeldTextEvents(state, index) {
+  const events = [];
+  if (state.startData) events.push(['content_block_start', state.startData]);
+
+  let assembled = '';
+  for (const d of state.deltas || []) {
+    if (!d || !d.delta) continue;
+    if (typeof d.delta.text === 'string') assembled += d.delta.text;
+    if (typeof d.delta.thinking === 'string') assembled += d.delta.thinking;
+  }
+
+  if (!assembled) {
+    state.startData = null;
+    state.deltas = [];
+    state.flushed = true;
+    return { events, hits: [], out: '' };
+  }
+
+  const { out, hits } = _stripSlop(assembled);
+  if (hits.length === 0) {
+    for (const d of state.deltas || []) events.push(['content_block_delta', d]);
+  } else if (out) {
+    const delta = state.blockType === 'thinking'
+      ? { type: 'thinking_delta', thinking: out }
+      : { type: 'text_delta', text: out };
+    events.push(['content_block_delta', {
+      type: 'content_block_delta',
+      index,
+      delta,
+    }]);
+  }
+
+  state.startData = null;
+  state.deltas = [];
+  state.flushed = true;
+  return { events, hits, out: assembled };
 }
 
 // Text/thinking slop rewriter; full slop cleanup is always-on for all assistant
@@ -354,56 +577,35 @@ function slopStripRewrite(eventName, data, ctx) {
     holds.set(data.index, { startData: data, blockType: data.content_block.type, deltas: [] });
     return null;  // hold the start
   }
+
   if (eventName === 'content_block_delta' && data && data.delta && ['text_delta', 'thinking_delta'].includes(data.delta.type)) {
     const state = holds.get(data.index);
     if (!state) return data;  // not a held block (e.g. ack-strip already swallowed it)
     state.deltas.push(data);
     return null;
   }
+
   // Non-text/thinking deltas (e.g. signature_delta on thinking blocks) must
-  // not jump ahead of the held content_block_start. Flush the start first,
+  // not jump ahead of the held content_block_start or held text deltas.
   if (eventName === 'content_block_delta' && data && holds.has(data.index)) {
     const state = holds.get(data.index);
-    const events = [['content_block_start', state.startData], [eventName, data]];
-    state.startData = null;
-    state.deltas = state.deltas || [];
-    state.flushed = true;
+    const { events, hits, out: assembled } = _emitHeldTextEvents(state, data.index);
+    if (hits.length > 0) _logSlopHits(hits, assembled, state.blockType);
+    events.push([eventName, data]);
     return { events };
   }
+
   if (eventName === 'content_block_stop' && data) {
     const state = holds.get(data.index);
     if (!state) return data;
     holds.delete(data.index);
-    let assembled = '';
-    for (const d of state.deltas) {
-      if (!d || !d.delta) continue;
-      if (typeof d.delta.text === 'string') assembled += d.delta.text;
-      if (typeof d.delta.thinking === 'string') assembled += d.delta.thinking;
-    }
-    const { out, hits } = _stripSlop(assembled);
-    const events = [];
-    if (state.startData) events.push(['content_block_start', state.startData]);
-    if (hits.length === 0) {
-      for (const d of state.deltas) events.push(['content_block_delta', d]);
-      events.push(['content_block_stop', data]);
-      return { events };
-    }
-    _logSlopHits(hits, assembled, state.blockType);
-    // Re-emit: the original start, ONE replacement delta with stripped text,
-    // then the stop. Original deltas dropped only when stripping changed text.
-    if (out) {
-      const delta = state.blockType === 'thinking'
-        ? { type: 'thinking_delta', thinking: out }
-        : { type: 'text_delta', text: out };
-      events.push(['content_block_delta', {
-        type: 'content_block_delta',
-        index: data.index,
-        delta,
-      }]);
-    }
+
+    const { events, hits, out: assembled } = _emitHeldTextEvents(state, data.index);
+    if (hits.length > 0) _logSlopHits(hits, assembled, state.blockType);
     events.push(['content_block_stop', data]);
     return { events };
   }
+
   return data;
 }
 
@@ -412,4 +614,6 @@ module.exports = {
   _stripSlop,
   _stripExcessiveBold,
   _cleanupSlopArtifacts,
+  _ABBREVIATION_MAP,
+  _ABBREVIATION_RE,
 };
