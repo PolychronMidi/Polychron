@@ -5,8 +5,10 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { loadJsonc } = require('./config_loader');
+const { runAutocommit, injectLifesaver } = require('./turn_side_effects');
 const { applyRequestTransform } = require('./codex_payload');
 const { targetChain, targetSummary } = require('./codex_omniroute');
+const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 const { requestTelemetry } = require('./request_telemetry');
 const { decisionForTarget } = require('./model_route_resolver');
@@ -15,11 +17,14 @@ const { emitStartMarker } = require('./start_marker');
 const { ensureSession, reapDuplicates } = require('./codex_session_guard');
 const { isSingleQuotaProbe, blockQuotaProbe } = require('./prompt_spam_guard');
 const { createCodexResponseForwarder } = require('./codex_response_forwarder');
+const conversationStore = require('./shared/conversation_store');
 
 const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
 const CONFIG_PATH = process.env.HME_CODEX_PROXY_CONFIG
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'codex-proxy.json');
+const PLAN_SYNC = process.env.HME_CODEX_PLAN_SYNC_SCRIPT
+  || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'codex_plan_sync.py');
 const EVENT_LOG = path.join(RUNTIME_DIR, 'codex-proxy-events.jsonl');
 const DEFAULT_UPSTREAM = 'https://chatgpt.com/backend-api/codex/responses';
 const UPSTREAM_URL = process.env.HME_CODEX_UPSTREAM_URL || DEFAULT_UPSTREAM;
@@ -35,7 +40,46 @@ const PROXY_STARTED_AT = new Date().toISOString();
 let _config = null;
 let _recent = [];
 let _lastGuardMs = 0;
-const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, last_route: null, last_error: '', last_model: '' };
+const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, history_replays: 0, last_route: null, last_error: '', last_model: '' };
+
+// Stable project-scoped session key: Codex CLI mints a new UUID per invocation,
+// so the user-visible "session_id" resets every time they type `codex`. Use the
+// project root path hash as the persistent conversation key so research from
+function _stableSessionKey(_codexSessionId) {
+  const crypto = require('crypto');
+  return 'proj-' + crypto.createHash('sha1').update(PROJECT_ROOT).digest('hex').slice(0, 16);
+}
+
+function _captureRequestInputItems(body, sessionId) {
+  if (!body) return 0;
+  if (!Array.isArray(body.input)) return 0;
+  return conversationStore.appendItems(_stableSessionKey(sessionId), body.input);
+}
+
+function _injectStoredHistory(body, sessionId) {
+  if (!body) return 0;
+  const crypto = require('crypto');
+  const itemHash = (it) => { try { return crypto.createHash('sha1').update(JSON.stringify(it)).digest('hex').slice(0, 16); } catch (_) { return ''; } };
+  const prior = conversationStore.loadHistory(_stableSessionKey(sessionId));
+  if (prior.length === 0) return 0;
+  if (!Array.isArray(body.input)) body.input = body.input == null ? [] : [body.input];
+  const currentHashes = new Set();
+  for (const it of body.input) { const h = itemHash(it); if (h) currentHashes.add(h); }
+  const priorToInject = prior.filter((it) => { const h = itemHash(it); return h && !currentHashes.has(h); });
+  if (priorToInject.length === 0) return 0;
+  // Insert prior items AFTER the leading developer/system-bootstrap items
+  // (which Codex re-sends every turn) and BEFORE the new user/turn delta.
+  let insertAt = 0;
+  while (insertAt < body.input.length && body.input[insertAt] && body.input[insertAt].role === 'developer') insertAt++;
+  body.input = [...body.input.slice(0, insertAt), ...priorToInject, ...body.input.slice(insertAt)];
+  _metrics.history_replays += 1;
+  return priorToInject.length;
+}
+
+function _captureResponseOutputItems(sessionId, outputItems) {
+  if (!Array.isArray(outputItems) || outputItems.length === 0) return 0;
+  return conversationStore.appendItems(_stableSessionKey(sessionId), outputItems);
+}
 
 function loadConfig() {
   if (_config) return _config;
@@ -76,6 +120,7 @@ const forwardResponses = createCodexResponseForwarder({
   planScanner,
   projectRoot: PROJECT_ROOT,
   upstreamUrl: UPSTREAM_URL,
+  onResponseComplete: _captureResponseOutputItems,
 });
 
 function updateMetrics(row) {
@@ -141,6 +186,19 @@ function readRequestBody(req, res) {
   });
 }
 
+function runCodexAutocommit() {
+  return runAutocommit({
+    host: 'codex',
+    projectRoot: PROJECT_ROOT,
+    record,
+    disabled: process.env.HME_CODEX_PROXY_AUTOCOMMIT === '0',
+  });
+}
+
+function injectCodexLifesaver(body) {
+  return injectLifesaver({ body, host: 'codex', projectRoot: PROJECT_ROOT });
+}
+
 async function handleResponses(req, res) {
   const rawBody = await readRequestBody(req, res);
   if (!rawBody) return;
@@ -159,7 +217,14 @@ async function handleResponses(req, res) {
     blockQuotaProbe({ res, payload: body, record, source, component: 'hme-codex-proxy' });
     return;
   }
-  const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(body, {
+  // Conversation continuity: OpenAI Responses API is stateful by design (client
+  // chains via previous_response_id, server stores prior turns). When OmniRoute
+  _captureRequestInputItems(body, source.session_id);
+  const _convoHistoryInjected = _injectStoredHistory(body, source.session_id);
+  if (_convoHistoryInjected > 0) record({ kind: 'codex-history-replay', session: source.session_id, items_prepended: _convoHistoryInjected });
+  const autocommit = runCodexAutocommit();
+  const lifesaver = injectCodexLifesaver(body);
+  const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(lifesaver.body, {
     loadConfig,
     record,
     projectRoot: PROJECT_ROOT,
@@ -174,11 +239,14 @@ async function handleResponses(req, res) {
     route_decision,
     targets: targetSummary(targets),
     telemetry: requestTelemetry({ host: 'codex', protocol: 'openai-responses', provider: targets[0].kind, route: targets[0].kind, path: req.url, body: transformed, before, after, cleanup, route_decision }),
+    autocommit,
+    lifesaver_injected: lifesaver.injected,
+    lifesaver_flag: lifesaver.flag || '',
     before,
     after,
     cleanup,
     payload_log: payloadLog,
-    transformed: JSON.stringify(before) !== JSON.stringify(after),
+    transformed: lifesaver.injected || JSON.stringify(before) !== JSON.stringify(after),
   });
   forwardResponses(req, res, targets, source, {
     source,
