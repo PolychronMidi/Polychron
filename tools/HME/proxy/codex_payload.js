@@ -1,10 +1,10 @@
 'use strict';
 
-const { injectNativeToolSchemas } = require('./codex_native_tools');
 const core = require('./request_transform_core');
 
-function applyRequestTransform(body, deps) {
-  return core.applyCodexRequestTransform(body, deps, injectNativeToolSchemas);
+function applyRequestTransform(body, _deps) {
+  const stats = core.requestStats(body);
+  return { body, before: stats, after: stats, cleanup: {}, payload_log: null };
 }
 
 module.exports = {
