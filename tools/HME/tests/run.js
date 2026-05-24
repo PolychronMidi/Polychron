@@ -30,6 +30,13 @@ const TESTS_DIR = path.join(__dirname, 'specs');
 const files = fs.readdirSync(TESTS_DIR)
   .filter((f) => f.endsWith('.test.js'))
   .sort();
+const _RUN_STARTED_MS = Date.now();
+let _activeSpec = '(bootstrap)';
+const _heartbeat = setInterval(() => {
+  const elapsed = Date.now() - _RUN_STARTED_MS;
+  console.error(`[hme-tests] still running after ${elapsed}ms; last_loaded=${_activeSpec}`);
+}, 30_000);
+_heartbeat.unref();
 
 if (files.length === 0) {
   console.error('[hme-tests] no *.test.js files in specs/');
@@ -56,10 +63,16 @@ for (const k of _STUB_PRONE_KEYS) {
 }
 
 for (const f of files) {
+  _activeSpec = `specs/${f}`;
+  process.env.HME_TEST_LAST_LOADED_SPEC = _activeSpec;
+  const started = Date.now();
+  console.error(`[hme-tests] loading ${_activeSpec}`);
   require(path.join(TESTS_DIR, f));
+  console.error(`[hme-tests] loaded ${_activeSpec} in ${Date.now() - started}ms`);
 }
 
 process.on('exit', () => {
+  clearInterval(_heartbeat);
   const leaks = [];
   for (const k of _STUB_PRONE_KEYS) {
     const before = _stubBaseline[k];

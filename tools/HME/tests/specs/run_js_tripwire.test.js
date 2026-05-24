@@ -16,6 +16,8 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // Mirror of run.js's _STUB_PRONE_KEYS -- duplicated intentionally so a
 // future widen of the watch list also surfaces here.
@@ -46,6 +48,13 @@ function diffAgainstBaseline(baseline) {
   }
   return leaks;
 }
+
+test('runner emits active spec diagnostics for timeout triage', () => {
+  const runJs = fs.readFileSync(path.resolve(__dirname, '..', 'run.js'), 'utf8');
+  assert.match(runJs, /\[hme-tests\] loading/);
+  assert.match(runJs, /HME_TEST_LAST_LOADED_SPEC/);
+  assert.match(runJs, /still running after/);
+});
 
 test('tripwire: clean run produces zero leaks', () => {
   const baseline = snapshotBaseline();

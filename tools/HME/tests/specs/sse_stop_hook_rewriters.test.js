@@ -2,6 +2,9 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   STOP_HOOK_REWRITERS,
@@ -24,6 +27,7 @@ test('stop-hook rewriter registry keeps explicit ordering and slots', () => {
     ['bare-ack-strip', 'post-tool-pre-slop'],
     ['solo-rationale-trim', 'post-slop'],
   ]);
+  assert.equal(STOP_HOOK_REWRITERS.find((r) => r.name === 'bare-ack-strip').logFile, 'hme-bare-ack-strips.jsonl');
 });
 
 test('stopHookRewritersForSlot returns stream functions in registry order', () => {
@@ -41,6 +45,22 @@ test('rewriteStopHookText strips deny-cascade bare acknowledgements', () => {
   const ctx = new Map([['priorUserWasDeny', true]]);
   assert.equal(rewriteStopHookText('K.', ctx), '');
   assert.deepEqual(ctx.get('stop_hook_text_rewrites').map((r) => r.name), ['bare-ack-strip']);
+});
+
+test('rewriteStopHookText writes uniform strategy log records', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-rewriter-log-'));
+  try {
+    const ctx = new Map([['priorUserWasDeny', true], ['projectRoot', root]]);
+    assert.equal(rewriteStopHookText('K.', ctx), '');
+    const log = path.join(root, 'log', 'hme-bare-ack-strips.jsonl');
+    const row = JSON.parse(fs.readFileSync(log, 'utf8').trim());
+    assert.equal(row.strategy, 'bare-ack-strip');
+    assert.equal(row.path, 'text');
+    assert.equal(row.context, 'cascade-after-deny');
+    assert.equal(row.text_preview, 'K.');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('rewriteStopHookText strips FP no marker and preserves substantive work text', () => {

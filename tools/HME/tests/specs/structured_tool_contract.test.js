@@ -7,7 +7,8 @@ const repo = path.resolve(__dirname, '..', '..', '..', '..');
 const structured = fs.readFileSync(path.join(repo, 'tools/HME/scripts/codex_structured_tool.js'), 'utf8');
 const proxy = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy.js'), 'utf8')
   + fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy_claude.js'), 'utf8')
-  + fs.readFileSync(path.join(repo, 'tools/HME/proxy/contexts/failure_policy/hme_proxy_upstream_failure.js'), 'utf8');
+  + fs.readFileSync(path.join(repo, 'tools/HME/proxy/contexts/failure_policy/hme_proxy_upstream_failure.js'), 'utf8')
+  + fs.readFileSync(path.join(repo, 'tools/HME/proxy/contexts/failure_policy/upstream_failure_side_effects.js'), 'utf8');
 
 test('structured Grep accepts whitespace-separated path lists', () => {
   assert.match(structured, /function splitPathList/);

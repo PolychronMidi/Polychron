@@ -17,17 +17,13 @@ const {
   _isStopHookCeremony,
   _trimSoloRationaleParagraph,
 } = require('./sse_stop_hook_rewriters/predicates');
-
-function ctxGet(ctx, key) {
-  if (ctx && typeof ctx.get === 'function') return ctx.get(key);
-  return ctx ? ctx[key] : undefined;
-}
-
-function ctxSet(ctx, key, value) {
-  if (!ctx) return;
-  if (typeof ctx.set === 'function') ctx.set(key, value);
-  else ctx[key] = value;
-}
+const {
+  STRATEGY_LOG_FILES,
+  ctxGet,
+  ctxSet,
+  recordRewrite,
+  recordStrategyEvent,
+} = require('./sse_stop_hook_rewriters/logging');
 
 function changedText(text, next, extra = {}) {
   return { changed: next !== text, text: next, ...extra };
@@ -47,34 +43,34 @@ function fpGateMarkerTextRewrite(text, ctx) {
   if (ctxGet(ctx, 'fp_gate_first_block_done')) return changedText(text, text);
   ctxSet(ctx, 'fp_gate_first_block_done', true);
   if (/\[FP-CHECK:\s*yes\]/i.test(text)) {
-    return changedText(text, '`[fp-gate: yes -- silent ack of false-positive flag]`', { final: true });
+    return changedText(text, '`[fp-gate: yes -- silent ack of false-positive flag]`', { final: true, verdict: 'yes', assembled_len: text.length, preview: text.slice(0, 200) });
   }
   const noMatch = text.match(/^[\s]*\[FP-CHECK:\s*no\]\s*\n?/i);
   if (!noMatch) return changedText(text, text);
-  return changedText(text, text.slice(noMatch[0].length));
+  return changedText(text, text.slice(noMatch[0].length), { verdict: 'no', kept_len: text.length - noMatch[0].length });
 }
 
 function stopHookCeremonyTextRewrite(text, ctx) {
   if (!ctxGet(ctx, 'priorUserWasDeny') || !_isStopHookCeremony(text)) return changedText(text, text);
-  return changedText(text, '.', { final: true });
+  return changedText(text, '.', { final: true, text_preview: text.slice(0, 300), assembled_len: text.length });
 }
 
 function turnPrefixTextRewrite(text) {
   if (_isHallucinatedTurnPrefix(text) || _isCeremonyDodge(text)) {
-    return changedText(text, '', { final: true });
+    return changedText(text, '', { final: true, kind: _isHallucinatedTurnPrefix(text) ? 'turn_prefix' : 'ceremony_dodge', text_preview: text.slice(0, 100) });
   }
   return changedText(text, text);
 }
 
 function bareAckTextRewrite(text, ctx) {
   if (!ctxGet(ctx, 'priorUserWasDeny') || !_isBareAck(text)) return changedText(text, text);
-  return changedText(text, '', { final: true });
+  return changedText(text, '', { final: true, context: 'cascade-after-deny', text_preview: text.slice(0, 40) });
 }
 
 function soloRationaleTextRewrite(text, ctx) {
   if (!ctxGet(ctx, 'priorUserWasDeny')) return changedText(text, text);
   const result = _trimSoloRationaleParagraph(text);
-  return changedText(text, result.text, { trimmed: result.trimmed });
+  return changedText(text, result.text, { trimmed: result.trimmed, original_len: text.length, trimmed_len: result.text.length, removed_len: text.length - result.text.length, removed_preview: text.slice(result.text.length).slice(0, 200) });
 }
 
 const hookUiEchoStripRewriter = Object.freeze({
@@ -82,36 +78,42 @@ const hookUiEchoStripRewriter = Object.freeze({
   slot: 'pre-tool',
   rewrite: hookUiEchoStripRewrite,
   rewriteText: hookUiEchoTextRewrite,
+  logFile: STRATEGY_LOG_FILES['hook-ui-echo-strip'],
 });
 const fpGateMarkerRewriter = Object.freeze({
   name: 'fp-gate-marker',
   slot: 'pre-tool',
   rewrite: fpGateMarkerRewrite,
   rewriteText: fpGateMarkerTextRewrite,
+  logFile: STRATEGY_LOG_FILES['fp-gate-marker'],
 });
 const stopHookCeremonyStripRewriter = Object.freeze({
   name: 'stop-hook-ceremony-strip',
   slot: 'pre-tool',
   rewrite: stopHookCeremonyStripRewrite,
   rewriteText: stopHookCeremonyTextRewrite,
+  logFile: STRATEGY_LOG_FILES['stop-hook-ceremony-strip'],
 });
 const hallucinatedTurnPrefixStripRewriter = Object.freeze({
   name: 'hallucinated-turn-prefix-strip',
   slot: 'pre-tool',
   rewrite: hallucinatedTurnPrefixStripRewrite,
   rewriteText: turnPrefixTextRewrite,
+  logFile: STRATEGY_LOG_FILES['hallucinated-turn-prefix-strip'],
 });
 const bareAckStripRewriter = Object.freeze({
   name: 'bare-ack-strip',
   slot: 'post-tool-pre-slop',
   rewrite: ackStripRewrite,
   rewriteText: bareAckTextRewrite,
+  logFile: STRATEGY_LOG_FILES['bare-ack-strip'],
 });
 const soloRationaleTrimRewriter = Object.freeze({
   name: 'solo-rationale-trim',
   slot: 'post-slop',
   rewrite: soloRationaleTrimRewrite,
   rewriteText: soloRationaleTextRewrite,
+  logFile: STRATEGY_LOG_FILES['solo-rationale-trim'],
 });
 
 const STOP_HOOK_REWRITERS = Object.freeze([
@@ -130,11 +132,6 @@ function stopHookRewritersForSlot(slot) {
     .map((strategy) => strategy.rewrite);
 }
 
-function recordRewrite(name, next, ctx) {
-  const records = ctxGet(ctx, 'stop_hook_text_rewrites') || [];
-  records.push({ name, changed: true, final: Boolean(next.final) });
-  ctxSet(ctx, 'stop_hook_text_rewrites', records);
-}
 
 function rewriteStopHookText(text, ctx, slot = null) {
   let current = String(text || '');
@@ -144,7 +141,9 @@ function rewriteStopHookText(text, ctx, slot = null) {
     const next = rewriter.rewriteText(current, ctx);
     if (!next || !next.changed) continue;
     current = next.text;
+    const { changed, text: _text, final: _final, ...event } = next;
     recordRewrite(rewriter.name, next, ctx);
+    recordStrategyEvent(rewriter.name, { path: 'text', ...event }, ctx);
     if (next.final) break;
   }
   return current;
@@ -156,6 +155,8 @@ module.exports = {
   stopHookRewritersForSlot,
   rewriteStopHookText,
   recordRewrite,
+  recordStrategyEvent,
+  STRATEGY_LOG_FILES,
   hookUiEchoStripRewriter,
   fpGateMarkerRewriter,
   stopHookCeremonyStripRewriter,
