@@ -59,7 +59,11 @@ function _injectStoredHistory(body, sessionId) {
   for (const it of body.input) { const h = itemHash(it); if (h) currentHashes.add(h); }
   const priorToInject = prior.filter((it) => { const h = itemHash(it); return h && !currentHashes.has(h); });
   if (priorToInject.length === 0) return 0;
-  body.input = [...priorToInject, ...body.input];
+  // Insert prior items AFTER the leading developer/system-bootstrap items
+  // (which Codex re-sends every turn) and BEFORE the new user/turn delta.
+  let insertAt = 0;
+  while (insertAt < body.input.length && body.input[insertAt] && body.input[insertAt].role === 'developer') insertAt++;
+  body.input = [...body.input.slice(0, insertAt), ...priorToInject, ...body.input.slice(insertAt)];
   _metrics.history_replays += 1;
   return priorToInject.length;
 }
