@@ -51,8 +51,32 @@ function stripHookNoiseText(text, stats = {}) {
   return kept.join('\n');
 }
 
+function stripStopHookEchoText(text, stats = {}) {
+  const lines = String(text || '').split(/\r?\n/);
+  const kept = [];
+  let inStopEcho = false;
+  const stopEchoLines = [];
+  function flushStopEcho() {
+    if (!stopEchoLines.length) return;
+    recordStrip(stats, 'stop_hook_host_echo', stopEchoLines);
+    stopEchoLines.length = 0;
+    inStopEcho = false;
+  }
+  for (const line of lines) {
+    if (STOP_HOOK_HEADER_RE.test(line) || (inStopEcho && (line.trim() === '' || STOP_HOOK_REASON_RE.test(line) || STOP_HOOK_SECTION_RE.test(line) || STOP_HOOK_RULE_TEXT_RE.test(line)))) {
+      inStopEcho = true;
+      stopEchoLines.push(line);
+      continue;
+    }
+    if (inStopEcho) flushStopEcho();
+    kept.push(line);
+  }
+  if (inStopEcho) flushStopEcho();
+  return kept.join('\n');
+}
+
 function stripHookNoiseInValue(value, stats = {}, protectedUserText = false) {
-  if (typeof value === 'string') return protectedUserText ? value : stripHookNoiseText(value, stats);
+  if (typeof value === 'string') return protectedUserText ? stripStopHookEchoText(value, stats) : stripHookNoiseText(value, stats);
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => stripHookNoiseInValue(item, stats, protectedUserText));
   const childProtected = protectedUserText || value.role === 'user';
