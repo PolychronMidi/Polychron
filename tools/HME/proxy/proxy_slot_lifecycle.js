@@ -5,7 +5,17 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { requireEnv } = require('./shared/load_env');
+
+let _CACHED_GIT_SHA = '';
+function _resolveGitSha(projectRoot) {
+  if (_CACHED_GIT_SHA) return _CACHED_GIT_SHA;
+  try {
+    _CACHED_GIT_SHA = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf8', timeout: 1000 }).trim().slice(0, 12);
+  } catch (_) { _CACHED_GIT_SHA = 'unknown'; }
+  return _CACHED_GIT_SHA;
+}
 
 function slotConfig() {
   const slot = process.env.HME_PROXY_SLOT;
