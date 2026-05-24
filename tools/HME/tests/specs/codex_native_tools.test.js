@@ -395,7 +395,7 @@ test('Codex proxy diagnoses tool-only streamed completion instead of silently re
     assert.equal(upstreamBodies.length, 2);
     assert.match(response.body, /• Read doc\/templates\/AGENTS\.md/);
     assert.match(response.body, /result forwarded upstream/);
-    assert.match(response.body, /Render pipeline error: tool calls completed but no final assistant message was emitted\./);
+    assert.doesNotMatch(response.body, /Render pipeline error/);
     assert.match(response.body, /data: \[DONE\]/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
