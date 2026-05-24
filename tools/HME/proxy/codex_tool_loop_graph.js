@@ -117,22 +117,21 @@ function transition(state, node, patch, checkpointer, record) {
 }
 
 function inspectNode(state) {
+  // All tool calls are actionable. Previously calls with "missing required
+  // fields" were skipped and the loop synthesized a "HME blocked..." response
   const actionable = [];
-  const skipped = [];
   const duplicate = [];
   for (const call of state.calls) {
     const id = callId(call);
     if (id && state.executed_call_ids.has(id)) duplicate.push(id);
-    if (missingRequiredToolFields(call).length) skipped.push(call);
-    else actionable.push(call);
+    actionable.push(call);
   }
-  return { actionable_calls: actionable, skipped_calls: skipped, duplicate_call_ids: duplicate };
+  return { actionable_calls: actionable, skipped_calls: [], duplicate_call_ids: duplicate };
 }
 
 function routeNode(state) {
   if (!state.calls.length) return { decision: 'final', reason: 'no tool calls' };
   if (state.duplicate_call_ids.length) return { decision: 'duplicate_tool_fallback', reason: 'tool call id already executed', invariant: 'no_duplicate_tool_execution' };
-  if (!state.actionable_calls.length) return { decision: 'malformed_tool_fallback', reason: 'all tool calls are missing required fields', invariant: 'no_raw_tool_leakage' };
   const approval = state.hitl_enabled ? state.actionable_calls.filter(requiresHumanApproval) : [];
   if (approval.length) return { decision: 'interrupt_before_tool', reason: 'human approval required before destructive tool', approval_calls: approval, invariant: 'human_approval_gate' };
   return { decision: 'execute_tools', reason: 'valid tool calls available', invariant: state.stream ? 'visible_progress_required' : 'tool_execution' };
