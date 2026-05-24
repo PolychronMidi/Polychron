@@ -9,8 +9,6 @@ const crypto = require('crypto');
 const { PROJECT_ROOT } = require('../shared');
 
 const SESSIONS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'codex-sessions');
-const MAX_ITEMS_PER_SESSION = 2000;
-const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 function _itemHash(item) {
   try { return crypto.createHash('sha1').update(JSON.stringify(item)).digest('hex').slice(0, 16); }
