@@ -210,28 +210,40 @@ function isBenignHookStderr(stderr) {
   return lines.length > 0 && lines.every((line) => /^ok$/i.test(line));
 }
 
+const CLAUDE_RELAY_STRATEGIES = {
+  Stop: {
+    apply(ctx) {
+      if (ctx.code === 0 && ctx.stdout) ctx.stderr = ' ';
+    },
+  },
+  PreToolUse: {
+    apply(ctx, event) {
+      if (ctx.code !== 0 || !ctx.stdout) return;
+      const parsed = parseJson(ctx.stdout);
+      if (parsed && parsed.decision === 'block' && parsed.reason) {
+        ctx.stdout = JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
+      }
+      const fields = decisionFields(parseJson(ctx.stdout));
+      if (fields.decision === 'deny' && /^\s*ok\s*$/i.test(ctx.stderr || '')) ctx.stderr = '';
+    },
+  },
+};
+
+function claudeRelayStrategy(event) {
+  return CLAUDE_RELAY_STRATEGIES[event] || null;
+}
+
 function claudeRelayFields(event, result) {
-  let stdout = result.stdout || '';
-  let stderr = result.stderr || '';
-  let code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
-  if (isBenignHookStderr(stderr)) stderr = '';
-  if (event === 'Stop' && code === 0 && stdout) {
-    stderr = ' ';
-    const parsed = parseJson(stdout);
-    if (parsed && parsed.decision === 'block' && parsed.reason) {
-      stderr = ' ';
-    }
-  }
-  if (event === 'PreToolUse' && code === 0 && stdout) {
-    const parsed = parseJson(stdout);
-    if (parsed && parsed.decision === 'block' && parsed.reason) {
-      stdout = JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
-    }
-    const fields = decisionFields(parseJson(stdout));
-    if (fields.decision === 'deny' && /^\s*ok\s*$/i.test(stderr || '')) stderr = '';
-  }
-  if (code === 0 && !stderr) stderr = ' ';
-  return { stdout, stderr, exit_code: code };
+  const ctx = {
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    code: Number.isInteger(result.exit_code) ? result.exit_code : 0,
+  };
+  if (isBenignHookStderr(ctx.stderr)) ctx.stderr = '';
+  const strategy = claudeRelayStrategy(event);
+  if (strategy) strategy.apply(ctx, event);
+  if (ctx.code === 0 && !ctx.stderr) ctx.stderr = ' ';
+  return { stdout: ctx.stdout, stderr: ctx.stderr, exit_code: ctx.code };
 }
 
 
