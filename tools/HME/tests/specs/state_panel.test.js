@@ -83,6 +83,8 @@ test('i/status mode=agent-loop renders Horizon IV view', () => {
   const r = _runStatus('agent-loop');
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /Agent loop|No activity|No agent-loop telemetry/);
+  assert.doesNotMatch(r.stdout, /HME startup is not ready/,
+    'local status modes must not degrade just because model engines are not ready');
 });
 
 test('i/status mode=band-tuning renders Horizon IX view', () => {
