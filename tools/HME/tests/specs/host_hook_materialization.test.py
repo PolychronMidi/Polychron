@@ -37,6 +37,11 @@ class HostHookMaterializationTests(unittest.TestCase):
                     self.assertNotIn("codex_adapter.js", command, event)
                     self.assertNotIn("claude_adapter.js", command, event)
 
+    def test_host_entry_supports_opencode_host(self):
+        source = (ROOT / "tools/HME/event_kernel/host_hook_entry.js").read_text()
+        self.assertIn("--host", source)
+        self.assertIn("opencode_adapter.js", source)
+
     def test_claude_projection_uses_hooks_tree_as_source_of_truth(self):
         projected = claude_settings.expected_settings(ROOT)
         self.assertIn("hooks", projected)
