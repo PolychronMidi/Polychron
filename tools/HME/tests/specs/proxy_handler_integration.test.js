@@ -22,12 +22,12 @@ function close(server) {
   return new Promise((resolve) => server.close(resolve));
 }
 
-function request(port, body) {
+function request(port, body, reqPath = '/v1/messages') {
   return new Promise((resolve, reject) => {
     const req = http.request({
       host: '127.0.0.1',
       port,
-      path: '/v1/messages',
+      path: reqPath,
       method: 'POST',
       headers: {
         'content-type': 'application/json',
