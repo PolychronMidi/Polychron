@@ -122,7 +122,7 @@ function createClient(root = PROJECT_ROOT) {
       const timeoutMs = opts.timeoutMs || 10_000;
       const pollMs = opts.pollMs || 50;
       const jobId = dropJob(endpoint, body, dirs.QUEUE_DIR);
-      return await waitForResult(jobId, timeoutMs, pollMs, dirs.RESULTS_DIR);
+      return waitForResult(jobId, timeoutMs, pollMs, dirs.RESULTS_DIR);
     },
   };
 }
