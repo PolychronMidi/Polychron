@@ -139,7 +139,8 @@ function _recordFire(hits) {
     fs.mkdirSync(path.dirname(METRICS), { recursive: true });
     const entry = { ts: Math.floor(Date.now() / 1000), hits };
     fs.appendFileSync(METRICS, JSON.stringify(entry) + '\n');
-    const counter = (_recordFire._n = (_recordFire._n || 0) + 1);
+    _recordFire._n = (_recordFire._n || 0) + 1;
+    const counter = _recordFire._n;
     if (counter % 100 !== 0) return;
     const stat = fs.statSync(METRICS);
     if (stat.size < 1024 * 1024) return;
