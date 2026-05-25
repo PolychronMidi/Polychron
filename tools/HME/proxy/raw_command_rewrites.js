@@ -49,7 +49,7 @@ function guarded(rel, cfg, usedPagination = false) {
 }
 
 function structured(action, input) {
-  const tool = 'codex_' + 'structured_tool.js';
+  const tool = 'codex_structured_tool.js';
   return `node tools/HME/scripts/${tool} ${action} --json <<'HME_CODEX_JSON'\n${JSON.stringify(input)}\nHME_CODEX_JSON`;
 }
 
