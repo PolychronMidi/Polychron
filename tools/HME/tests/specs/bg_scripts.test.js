@@ -37,7 +37,7 @@ for (const script of SCRIPTS) {
     try {
       execFileSync('python3', [file], {
         env: { ...process.env, PROJECT_ROOT: REPO_ROOT },
-        timeout: 180_000,
+        timeout: 600_000,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (err) {

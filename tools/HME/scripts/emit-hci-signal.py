@@ -69,7 +69,7 @@ def _get_hci() -> dict:
     try:
         rc = subprocess.run(
             ["python3", script, "--json"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=120,
             env={**os.environ, "PROJECT_ROOT": _PROJECT},
         )
         return json.loads(rc.stdout)
