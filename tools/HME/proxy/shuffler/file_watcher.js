@@ -76,7 +76,7 @@ function _walkRegister(dir) {
     if (e.isDirectory()) {
       if (p.startsWith(SHUFFLER_OWN_DIR)) continue;
       if (/node_modules|\/runtime\//.test(p)) continue;
-      walkRegister(p);
+      _walkRegister(p);
     }
   }
 }
