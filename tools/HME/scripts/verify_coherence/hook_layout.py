@@ -146,10 +146,10 @@ class HookRegistrationVerifier(Verifier):
         missing_events = sorted(required - set(hooks))
         if missing_events:
             issues.append(f"missing hook event(s): {missing_events}")
-        adapter = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "claude_adapter.js")
+        adapter = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "host_hook_entry.js")
         statusline = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "statusline.js")
         if not os.path.isfile(adapter):
-            issues.append("missing event_kernel/claude_adapter.js")
+            issues.append("missing event_kernel/host_hook_entry.js")
         if not os.path.isfile(statusline):
             issues.append("missing event_kernel/statusline.js")
         total = 0
