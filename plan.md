@@ -43,9 +43,21 @@ Goal: make `tools/HME/hooks` the definitive source for Claude/Codex/OpenCode hoo
    - Added `tools/HME/tests/specs/opencode_settings.test.py` for OpenCode provider ingress config.
    - Added proxy integration coverage proving `/v1/chat/completions` OpenAI-compatible requests route through HME to OmniRoute with model prefixing.
 
-6. OMO/focused verification
+6. OpenCode/OAI-compatible model ingress
+   - OpenCode uses `provider.hme` with `@ai-sdk/openai-compatible`.
+   - `provider.hme.options.baseURL` points at the HME proxy `/v1` endpoint, not OmniRoute or an external provider.
+   - OpenCode model traffic shares OpenAI-compatible protocol handling with other OpenAI-like hosts.
+   - OpenCode remains a distinct host identity for config/hooks/capability semantics.
+
+7. Local OpenCode/OMO integration checkouts
+   - Local integration checkouts live under `tools/opencode/` and `tools/oh-my-openagent/`.
+   - They are ignored until explicitly vendored, avoiding accidental 100MB+ source drops while keeping them in integration-owned paths.
+
+8. OMO/focused verification
    - OMO and universal hook focused suite passes.
    - Host materialization tests pass.
+   - OpenCode settings tests pass.
+   - Proxy OpenAI-compatible ingress test passes.
    - Env/settings tests pass.
 
 ## Invariants now enforced
