@@ -18,6 +18,7 @@ from opencode_settings import (  # noqa: E402
     managed_config,
     path_violations,
     runtime_notes,
+    strip_jsonc,
 )
 
 
