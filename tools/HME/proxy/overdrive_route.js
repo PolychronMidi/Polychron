@@ -90,7 +90,10 @@ function providerKey(provider, env = process.env) {
 function providerSkipSet(cfg, env = process.env) {
   const raw = cfg && cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
     ? cfg.providers_to_skip.providers : [];
-  return new Set(raw.map((provider) => providerKey(provider, env)));
+  return new Set(raw.flatMap((entry) => String(entry).split(','))
+    .map((provider) => provider.trim())
+    .filter(Boolean)
+    .map((provider) => providerKey(provider, env)));
 }
 
 function hasOmniCredential(_model, _env = process.env) {
