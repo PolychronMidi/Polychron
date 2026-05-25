@@ -70,10 +70,8 @@ def status(mode: str = "all") -> str:
     _track("status")
     append_session_narrative("status", f"status({mode})")
     startup_snapshot = _startup_snapshot_nonblocking()
-    if not startup_snapshot.get("ready"):
+    if startup_snapshot.get("failed"):
         return _degraded_startup_status(startup_snapshot, mode)
-
-    ctx.ensure_ready_sync()
 
     if mode == "list":
         return _list_modes()
@@ -81,6 +79,11 @@ def status(mode: str = "all") -> str:
     handler = _STATUS_MODES.get(mode)
     if handler:
         return handler()
+
+    if not startup_snapshot.get("ready"):
+        return _degraded_startup_status(startup_snapshot, mode)
+
+    ctx.ensure_ready_sync()
 
     # mode == "all" -- unified overview below
     if mode != "all":
