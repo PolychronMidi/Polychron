@@ -70,6 +70,7 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
         ...process.env,
         PROJECT_ROOT: sandbox,
         HME_METRICS_DIR: path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'),
+        HME_CURL_STREAK_WARN: '3',
         PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
       },
     });
