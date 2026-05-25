@@ -154,16 +154,17 @@ function shrinkForPassthrough(payload, opts = {}) {
   let tailElided = 0;
   serialized = JSON.stringify(payload);
   if (maxTier >= 3 && serialized.length > threshold) {
-    outer: for (const m of msgs) {
-      if (!m || !Array.isArray(m.content)) continue;
+    let underThreshold = false;
+    for (const m of msgs) {
+      if (underThreshold || !m || !Array.isArray(m.content)) continue;
       for (const b of m.content) {
-        if (!b || b.type !== 'tool_result') continue;
+        if (underThreshold || !b || b.type !== 'tool_result') continue;
         const cstr = typeof b.content === 'string' ? b.content : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
         if (cstr.length < toolResultByteFloor) continue;
         b.content = `(content elided by hme-proxy emergency tail-compact: original was ${cstr.length}B)`;
         tailElided += 1;
         serialized = JSON.stringify(payload);
-        if (serialized.length <= threshold) break outer;
+        if (serialized.length <= threshold) underThreshold = true;
       }
     }
   }
