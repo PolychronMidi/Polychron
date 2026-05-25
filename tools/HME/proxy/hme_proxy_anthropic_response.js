@@ -208,7 +208,7 @@ async function handleAnthropicResponseComplete({
   let final = null;
   if (status >= 200 && status < 300 && payload) {
     try {
-      final = await hmeDispatcher.maybeHandleHme(
+      final = await hmeDispatcher().maybeHandleHme(
         fullBody, headers, status, payload,
         { host: upstream.host, port: upstream.port, tls: upstream.tls, path: upstreamPath, method: 'POST', headers: upstreamHeaders },
         (headers['content-type'] || '').toLowerCase().includes('text/event-stream'),
