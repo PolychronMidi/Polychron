@@ -106,7 +106,7 @@ async function call(endpoint, body, opts = {}) {
   const timeoutMs = opts.timeoutMs || 10_000;
   const pollMs    = opts.pollMs    || 50;
   const jobId = dropJob(endpoint, body);
-  return await waitForResult(jobId, timeoutMs, pollMs);
+  return waitForResult(jobId, timeoutMs, pollMs);
 }
 
 function createClient(root = PROJECT_ROOT) {
