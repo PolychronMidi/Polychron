@@ -69,7 +69,7 @@ async function handleUpstreamFailureOrSuccess({
   const details = failureDetails({ status, errInfo, provider, isInteractivePath });
   const { pathLabel, errMsg, stamp, snapshotRel } = details;
   console.error(`UPSTREAM FAILURE detected: ${errMsg}`);
-  const coolingDown = alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
+  const coolingDown = _alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
   const shouldRetry = headers['x-should-retry'] === 'true';
   const isRateLimit = errInfo.type === 'rate_limit_error';
   const isStreamTimeout502 = isOmniRouteSwap
