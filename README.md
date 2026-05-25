@@ -233,7 +233,7 @@ flowchart LR
     tools__HME__hooks["HME/hooks/<br/><i>Claude Code and Codex hooks enter through `event_kernel/*_adapter.js`. The ke...</i>"]
     tools__HME__i["HME/i/"]
     tools__HME__launcher["HME/launcher/<br/><i>Boot/shutdown/restart scripts for the Polychron + HME proxy bundle.</i>"]
-    tools__HME__omo_bridge["HME/omo_bridge/<br/><i>Bridge between HME and oh-my-openagent (OMO): context/pruning/tool/hook adapt...</i>"]
+    tools__HME__omo_bridge["HME/omo_bridge/<br/><i>Bridge between HME and oh-my-openagent/OpenCode-compatible hook surfaces.</i>"]
     tools__HME__patterns["HME/patterns/<br/><i>Declarative trigger+action pattern definitions consumed by match-patterns.</i>"]
     tools__HME__policies["HME/policies/<br/><i>Single registration + configuration surface for every hook-time rule</i>"]
     tools__HME__proxy["HME/proxy/<br/><i>Authoritative MITM proxy between Claude Code and the Anthropic API. It owns c...</i>"]
@@ -256,6 +256,8 @@ flowchart LR
     tools__HME__hooks__lifecycle["HME/hooks/lifecycle/<br/><i>Claude Code lifecycle hooks: SessionStart, UserPromptSubmit, PreCompact, Stop.</i>"]
     tools__HME__hooks__posttooluse["HME/hooks/posttooluse/<br/><i>PostToolUse hooks (per-tool: edit, bash, read, todowrite).</i>"]
     tools__HME__hooks__pretooluse["HME/hooks/pretooluse/<br/><i>PreToolUse hooks (per-tool gates: edit, bash, read, todowrite).</i>"]
+    tools__HME__omo_bridge__adapters["HME/omo_bridge/adapters/<br/><i>Universal hook inbound adapters: host-native payloads enter here and become v...</i>"]
+    tools__HME__omo_bridge__translators["HME/omo_bridge/translators/<br/><i>Universal hook outbound translators: validated universal decisions leave here...</i>"]
     tools__HME__policies__builtin["HME/policies/builtin/<br/><i>Built-in HME policy implementations (read/write/bash gates).</i>"]
     tools__HME__policies__examples["HME/policies/examples/<br/><i>Example HME policy stubs for reference / starter templates.</i>"]
     tools__HME__proxy__contexts["HME/proxy/contexts/<br/><i>Each subdirectory in `contexts/` is the **single façade** for a bounded</i>"]
@@ -301,6 +303,7 @@ flowchart LR
     tools__HME__service__server__tools_analysis["HME/service/server/tools_analysis/<br/><i>Public agent-facing tools live here. Each major tool is a unified dispatcher ...</i>"]
     tools__HME__tests__fixtures__generic_project["HME/tests/fixtures/generic-project/<br/><i>Minimal generic project layout used as a HME fixture.</i>"]
     tools__HME__tests__fixtures__swapped_project["HME/tests/fixtures/swapped-project/<br/><i>Variant project fixture exercising adapter-swap paths.</i>"]
+    tools__HME__tests__fixtures__universal_hooks["HME/tests/fixtures/universal_hooks/<br/><i>Golden fixtures for the universal hook ABI. Keep examples small and determini...</i>"]
     tools__HME__hooks__pretooluse__bash___disabled["HME/hooks/pretooluse/bash/_disabled/<br/><i>Bash-policy hooks currently disabled; kept for reference.</i>"]
     tools__HME__hooks__pretooluse__bash__post["HME/hooks/pretooluse/bash/post/<br/><i>Bash-policy post-evaluation hooks (run after the primary policy decision).</i>"]
     tools__HME__hooks__pretooluse__bash__pre["HME/hooks/pretooluse/bash/pre/<br/><i>Bash-policy pre-evaluation hooks (early-exit checks before main policy).</i>"]
@@ -355,6 +358,8 @@ flowchart LR
     tools__HME__hooks --> tools__HME__hooks__lifecycle
     tools__HME__hooks --> tools__HME__hooks__posttooluse
     tools__HME__hooks --> tools__HME__hooks__pretooluse
+    tools__HME__omo_bridge --> tools__HME__omo_bridge__adapters
+    tools__HME__omo_bridge --> tools__HME__omo_bridge__translators
     tools__HME__policies --> tools__HME__policies__builtin
     tools__HME__policies --> tools__HME__policies__examples
     tools__HME__proxy --> tools__HME__proxy__contexts
@@ -400,6 +405,7 @@ flowchart LR
     tools__HME__service__server --> tools__HME__service__server__tools_analysis
     tools__HME__tests__fixtures --> tools__HME__tests__fixtures__generic_project
     tools__HME__tests__fixtures --> tools__HME__tests__fixtures__swapped_project
+    tools__HME__tests__fixtures --> tools__HME__tests__fixtures__universal_hooks
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash___disabled
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash__post
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash__pre
