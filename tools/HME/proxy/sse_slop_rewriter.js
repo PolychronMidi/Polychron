@@ -38,8 +38,12 @@ const _ABBREVIATION_MAP = Object.freeze({
   'subsequent to': 'after',
   'a number of': 'many',
   'right now': 'now',
+  'end-to-end': 'full',
 
   // Common words / compact forms.
+  'executing': 'doing',
+  'execute': 'do',
+  'sequence': 'seq',
   'without': 'w/o',
   'with': 'w/',
   'between': 'b/w',
