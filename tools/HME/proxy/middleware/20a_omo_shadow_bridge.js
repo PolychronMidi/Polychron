@@ -6,6 +6,10 @@ const { resolveOmo } = require('../../omo_bridge/dependency');
 const { validateOmoContract } = require('../../omo_bridge/contract_validator');
 const { hmeToolsForOmo } = require('../../omo_bridge/hme_tools_to_omo');
 const { createOpenCodeHost } = require('../../omo_bridge/opencode_host');
+const {
+  compareProxyRequestShadow,
+  pluginResultsToUniversalDecision,
+} = require('../../omo_bridge/shadow_comparator');
 
 let _loadedPlugin = null;
 let _loadedKey = '';
@@ -24,6 +28,10 @@ async function _loadPlugin(dep) {
   }
   _loadedPlugin = mod && (mod.default || mod.plugin || mod);
   return _loadedPlugin;
+}
+
+function _shadowEnabled() {
+  return process.env.HME_OMO_SHADOW_COMPARE !== '0';
 }
 
 module.exports = {
@@ -52,11 +60,21 @@ module.exports = {
         allowMutations: false,
         telemetry,
       });
-      await host.invoke('request', { event: 'request', session_id: session, payload }, {
+      const results = await host.invoke('request', { event: 'request', session_id: session, payload }, {
         enabled: true,
         allowMutations: false,
         maxBytes: 8192,
         telemetry,
+      });
+      compareProxyRequestShadow({
+        enabled: _shadowEnabled(),
+        payload,
+        session,
+        telemetry,
+        nativeDecision: ctx && ctx.omoNativeDecision,
+        universalDecision: ctx && ctx.omoUniversalDecision
+          ? ctx.omoUniversalDecision
+          : pluginResultsToUniversalDecision(results),
       });
     } catch (err) {
       if (telemetry) telemetry({ event: 'omo_bridge_error', bridge: 'shadow_middleware', error: err.message });
