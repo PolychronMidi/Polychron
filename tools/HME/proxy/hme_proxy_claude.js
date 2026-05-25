@@ -32,7 +32,7 @@ const { createProxyRouteDispatcher } = require('./contexts/lifecycle_bridge');
 const {
   handleMidResponseError,
   handleConnectionError,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/hme_proxy_connection_errors');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
