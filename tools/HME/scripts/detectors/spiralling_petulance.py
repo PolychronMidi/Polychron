@@ -20,7 +20,7 @@ _NOOP_BASH = re.compile(
 )
 _HOOK_DIRECTIVE = re.compile(r"(<hook_prompt|stop hook feedback|antipattern:|scope-stacked antipattern|auto-completeness)", re.I)
 _NOOP_TEXT = re.compile(r"^\s*(?:\.|ok(?:ay)?|done|fixed|nothing remains|all set)?\s*$", re.I)
-_READ_FAILURE = re.compile(r"(enoent|no such file|verify-landed antipattern|blocked: verify-landed|read failed|not found)", re.I)
+_READ_FAILURE = re.compile(r"(enoent|no such file|read failed|not found)", re.I)
 _GIT_INSPECT = re.compile(r"(codex_structured_tool\.js\s+git|\bgit\s+(?:status|diff|log|show)\b)", re.I | re.S)
 _CLEAN_GIT_TEXT = re.compile(r"(\[SUCCESS\]|\(no stdout\)|nothing to commit|working tree clean|no changes|\bclean\b)", re.I)
 _STATUS_OR_DIFF = re.compile(r"(\bgit\s+(?:status|diff)\b|[\"\'](?:status|diff)[\"\'])", re.I | re.S)
