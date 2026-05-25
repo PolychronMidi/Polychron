@@ -2,7 +2,7 @@
 
 Status: complete.
 
-Goal: make `tools/HME/hooks` the definitive source for Claude/Codex hook routing so home-level host configs are disposable materialized adapters, not policy sources.
+Goal: make `tools/HME/hooks` the definitive source for Claude/Codex/OpenCode hook routing so home-level host configs are disposable materialized adapters, not policy sources.
 
 ## Completed work
 
