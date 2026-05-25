@@ -100,6 +100,13 @@ const _ABBREVIATION_MAP = Object.freeze({
   'were not': "weren't",
 
   // Long vocabulary concordance.
+  'continue': 'go',
+  'continuing': 'doing',
+  'validation': 'check',
+  'validate': 'check',
+  'validating': 'checking',
+  'validates': 'checks',
+  'status': 'stat',
   'approximately': '~',
   'maybe': '~',
   'characteristically': 'typ',
