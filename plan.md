@@ -37,8 +37,11 @@ Goal: make `tools/HME/hooks` the definitive source for Claude/Codex/OpenCode hoo
      - managed hooks route through `event_kernel/host_hook_entry.js`;
      - Claude projection uses `--host claude`;
      - Codex projection uses `--host codex`;
+     - OpenCode host entry uses `opencode_adapter.js`;
      - direct `claude_adapter.js` / `codex_adapter.js` commands do not leak into materialized hook commands;
      - direct `tools/HME/hooks/pretooluse` / `posttooluse` script paths do not leak into home config projection.
+   - Added `tools/HME/tests/specs/opencode_settings.test.py` for OpenCode provider ingress config.
+   - Added proxy integration coverage proving `/v1/chat/completions` OpenAI-compatible requests route through HME to OmniRoute with model prefixing.
 
 6. OMO/focused verification
    - OMO and universal hook focused suite passes.
