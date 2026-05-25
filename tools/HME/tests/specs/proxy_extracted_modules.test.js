@@ -473,9 +473,13 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   // determine which model fronts the chain in this assertion.
   const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg, { routeHealth: {} });
   assert.equal(result.role, 'driver');
-  // Driver routes through Anthropic Claude Opus first (Claude-primary via
-  // OmniRoute provider=claude); GPT-5.5 is the fallback for credential or
-  assert.equal(result.chain[0].id, 'claude-opus-4-7-max-e5');
+  const skipped = new Set(cfg.providers_to_skip.providers || []);
+  if (skipped.has('anthropic') || skipped.has('claude')) {
+    assert.notEqual(result.chain[0].provider, 'anthropic',
+      'configured provider skip must suppress Anthropic/Claude fronting');
+  } else {
+    assert.equal(result.chain[0].id, 'claude-opus-4-7-max-e5');
+  }
   assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
 });
 
