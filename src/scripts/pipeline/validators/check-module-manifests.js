@@ -129,6 +129,7 @@ function main() {
 
   for (const file of files) {
     if (file === REGISTRY_IMPL || file === SELF) continue;
+    if (!INCLUDE_TEST_FIXTURES && path.basename(file).startsWith('_test_manifest_fixture_')) continue;
     const source = fs.readFileSync(file, 'utf8');
     if (!source.includes('moduleLifecycle.declare(')) continue;
     const manifests = _extractManifestsFromSource(source);
