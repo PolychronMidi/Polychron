@@ -101,6 +101,7 @@ const _ABBREVIATION_MAP = Object.freeze({
 
   // Long vocabulary concordance.
   'approximately': '~',
+  'maybe': '~',
   'characteristically': 'typ',
   'chronologically': 'by-time',
   'collaboratively': 'team',
