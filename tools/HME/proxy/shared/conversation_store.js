@@ -92,7 +92,7 @@ function compactSession(sessionId) {
     const lines = live.map((it) => JSON.stringify({ ts, item: it })).join('\n');
     fs.writeFileSync(tmp, lines ? lines + '\n' : '');
     fs.renameSync(tmp, f);
-  } catch (_) { try { fs.unlinkSync(tmp); } catch (__ex) { /* tmp already gone */ } }
+  } catch (_e) { try { fs.unlinkSync(tmp); } catch (__ex) { /* tmp already gone */ } }
 }
 
 function clearSession(sessionId) {
