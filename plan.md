@@ -14,6 +14,7 @@ Goal: make `tools/HME/hooks` the definitive source for Claude/Codex/OpenCode hoo
    - Added `tools/HME/event_kernel/host_hook_entry.js`.
    - Claude commands route through `host_hook_entry.js --host claude --event ...`.
    - Codex commands route through `host_hook_entry.js --host codex --event ...`.
+   - OpenCode commands route through `host_hook_entry.js --host opencode --event ...`.
    - Host entrypoint delegates to host adapters; policy routing remains in `event_kernel/dispatcher.js` and `tools/HME/hooks`.
 
 3. Host config materialization
