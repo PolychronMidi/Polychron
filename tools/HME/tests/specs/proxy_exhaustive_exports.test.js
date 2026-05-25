@@ -18,6 +18,7 @@ const SKIP_ENTRIES = new Set([
   'codex_proxy.js',
   'middleware_cli.js',
   'shuffler/shuffler.js',
+  'shuffler/slot_watchdog.js',
 ]);
 
 // Files whose require() hangs or spawns workers — skip.
