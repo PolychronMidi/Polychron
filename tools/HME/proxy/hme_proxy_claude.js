@@ -247,7 +247,7 @@ function createClaudeHandler(deps) {
           try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
           try {
             await handleAnthropicResponseComplete({
-              chunks,
+              chunks: upstreamResChunks,
               upstreamRes,
               clientRes,
               clientReq,
