@@ -46,28 +46,13 @@ const {
 } = require('./hme_proxy_core');
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
+const { routeOpenAICompatibleThroughHme } = require('./openai_compatible_ingress');
 const {
   captureNoopReminderLeak,
   maybeBlockEarlyClaudeRequest,
   maybeBlockLateClaudeProbeRequest,
 } = require('./hme_proxy_claude_guards');
 
-
-function isOpenAICompatiblePath(url) {
-  return /^\/v1\/(chat\/completions|responses)(?:\?|$)/.test(String(url || ''));
-}
-
-function routeOpenAICompatibleThroughHme(clientReq, payload) {
-  if (!isOpenAICompatiblePath(clientReq.url) || clientReq.headers['x-hme-upstream']) return false;
-  const provider = process.env.HME_OPENCODE_OMNI_PROVIDER || process.env.HME_CODEX_OMNIROUTE_PROVIDER || 'cx';
-  clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${String(servicePort('omniroute'))}`;
-  clientReq.headers['x-hme-host'] = clientReq.headers['x-hme-host'] || 'opencode';
-  if (payload && typeof payload.model === 'string' && payload.model && !payload.model.includes('/')) {
-    payload.model = `${provider}/${payload.model}`;
-    return true;
-  }
-  return false;
-}
 
 function createClaudeHandler(deps) {
   const {
