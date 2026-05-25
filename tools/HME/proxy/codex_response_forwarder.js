@@ -171,7 +171,7 @@ function sseFinalResponse(events) {
 }
 
 function createCodexResponseForwarder(deps) {
-  const { record, planScanner, projectRoot, upstreamUrl, onResponseComplete } = deps;
+  const { record, planScanner, projectRoot, onResponseComplete } = deps;
 
   return function forwardResponses(req, res, targets, source, visibility) {
     const started = Date.now();
