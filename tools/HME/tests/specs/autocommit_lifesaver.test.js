@@ -69,6 +69,7 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
       env: {
         ...process.env,
         PROJECT_ROOT: sandbox,
+        HME_METRICS_DIR: path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'),
         PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
       },
     });
