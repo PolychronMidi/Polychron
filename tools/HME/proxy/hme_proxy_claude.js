@@ -10,8 +10,10 @@ const {
 const { applyOverdriveRoute } = require('./contexts/upstream_dispatch');
 const {
   handleLegacySwapResponse,
+} = require('./legacy_swap_response');
+const {
   handleAnthropicResponseComplete,
-} = require('./contexts/response_transform');
+} = require('./hme_proxy_anthropic_response');
 const middleware = require('./contexts/request_mutation').middleware;
 function mutateClaudeRequest(...args) {
   // LAZY: breaks import cycle hme_proxy_claude -> hme_proxy_request_mutation
