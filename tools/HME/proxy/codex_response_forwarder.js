@@ -463,7 +463,7 @@ function createCodexResponseForwarder(deps) {
       const events = parseSseEvents(full);
       if (!clientSse.started && target.body && target.body.stream && events.length === 0) {
         finishResponse(target, status, 'empty upstream SSE (no events)');
-        sendSseError(status >= 400 ? status : 502, 'codex_proxy_empty_upstream_sse', 'upstream closed SSE stream without response events');
+        sendSseError(target, status >= 400 ? status : 502, 'codex_proxy_empty_upstream_sse', 'upstream closed SSE stream without response events');
         return;
       }
       const calls = collectSseToolCalls(full);
@@ -530,7 +530,7 @@ function createCodexResponseForwarder(deps) {
             if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
             if (clientSse.started && !res.writableEnded) { try { completeClientSse(target, status, `upstream ${status}`, null); } catch (_e) { try { res.end(); } catch (_ignored) { /* socket already closed */ } } return; }
             finishResponse(target, status, `upstream ${status} after ${attempt + 1} attempts`);
-            sendSseError(status, 'codex_proxy_upstream_exhausted', `upstream ${status} after ${attempt + 1} attempts: ${preview}`.slice(0, 800));
+            sendSseError(target, status, 'codex_proxy_upstream_exhausted', `upstream ${status} after ${attempt + 1} attempts: ${preview}`.slice(0, 800));
           });
           return;
         }
@@ -547,7 +547,7 @@ function createCodexResponseForwarder(deps) {
               const upstreamBodyBytes = Buffer.byteLength(full, 'utf8');
               record({ kind: 'codex-empty-upstream-sse', route: target.kind, upstream: target.url, status, body_bytes: upstreamBodyBytes, saw_bytes: upstreamSawBytes, ...traceFields(target) });
               finishResponse(target, status, `empty upstream SSE (${upstreamBodyBytes} bytes)`);
-              sendSseError(status >= 400 ? status : 502, 'codex_proxy_empty_upstream_sse', `upstream closed SSE stream without response events (status ${status}, ${upstreamBodyBytes} bytes)`);
+              sendSseError(target, status >= 400 ? status : 502, 'codex_proxy_empty_upstream_sse', `upstream closed SSE stream without response events (status ${status}, ${upstreamBodyBytes} bytes)`);
               return;
             }
             sendSseFinal(target, status, headers, full);
@@ -555,7 +555,7 @@ function createCodexResponseForwarder(deps) {
             const preview = full.slice(0, 500);
             record({ kind: 'codex-non-sse-error-to-stream', route: target.kind, upstream: target.url, status, body_preview: preview, saw_bytes: upstreamSawBytes, ...traceFields(target) });
             finishResponse(target, status, `non-SSE upstream error for stream request (${preview})`);
-            sendSseError(status, 'codex_proxy_non_sse_upstream_error', `upstream ${status}: ${preview}`);
+            sendSseError(target, status, 'codex_proxy_non_sse_upstream_error', `upstream ${status}: ${preview}`);
           } else sendJsonFinal(target, status, headers, full);
         });
       });
