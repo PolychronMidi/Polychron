@@ -182,7 +182,7 @@ function codexToolOutput(callArg, output, isError = false) {
   const text = String(output || '');
   return {
     type: 'function_call_output',
-    call_id: callId,
+    call_id: callArg,
     output: isError && text ? `[tool-error]\n${text}` : text,
   };
 }
