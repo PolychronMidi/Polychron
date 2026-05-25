@@ -7,10 +7,6 @@ const {
 } = require('./text_block_buffer');
 const { recordStrategyEvent } = require('./logging');
 
-function hookUiEchoStripRewrite(eventName, data, ctx) {
-  return _hookUiEchoStripRewrite(eventName, data, ctx);
-}
-
 const _hookUiEchoStripRewrite = makeTextBlockBufferedRewriter({
   key: 'hook_ui_echo_text_hold',
   onStop({ state, data, ctx }) {
