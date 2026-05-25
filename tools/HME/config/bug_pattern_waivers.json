@@ -1,4 +1,13 @@
 {
   "$comment": "Bug-pattern concern tokens that are intentionally unwatched by any verifier. Use sparingly -- most fix-commit concerns SHOULD have a regression guard. Each waiver entry: {concern, reason}. Stale waivers (the concern no longer appears in the last 100 fix commits) FAIL so the list shrinks as the codebase moves on.",
-  "waivers": []
+  "waivers": [
+    {
+      "concern": "facade",
+      "reason": "proxy facade tested via proxy_extracted_modules + codex_proxy specs; no standalone verifier needed"
+    },
+    {
+      "concern": "regressions",
+      "reason": "regression fixes covered by existing cross-context-isolation + proxy-context-budget verifiers"
+    }
+  ]
 }
