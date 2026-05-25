@@ -55,7 +55,7 @@ moduleLifecycle.declare({
 });
 `);
   try {
-    const r = _runVerifier();
+    const r = _runVerifier({ HME_MANIFEST_INCLUDE_TEST_FIXTURES: '1' });
     assert.notStrictEqual(r.code, 0, 'verifier should fail on undeclared provides');
     assert.match(r.stderr + r.stdout, /declare var definitelyNotInGlobalsDtsXyz/);
   } finally {
