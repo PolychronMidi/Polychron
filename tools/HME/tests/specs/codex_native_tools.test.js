@@ -8,6 +8,7 @@ const { spawn } = require('child_process');
 const { applyRequestTransform } = require('../../proxy/codex_payload');
 const { normalizeStructuredBridgeCalls } = require('../../proxy/codex_tool_text');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('../../proxy/codex_native_tools');
+const { finalOutputText } = require('../../proxy/codex_response_forwarder');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 
