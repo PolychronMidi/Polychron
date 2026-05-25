@@ -44,6 +44,7 @@ test('hme_proxy.js boots, binds the smoke port, answers /health, and exits clean
       ...process.env,
       PROJECT_ROOT,
       HME_PROXY_PORT: String(port),
+      HME_PROXY_SLOT: '',
       HME_PROXY_SUPERVISE: '0',
       HME_PROXY_ENABLED: '1',
       HME_PROXY_QUIET_IMPORT: '1',
