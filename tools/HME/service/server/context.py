@@ -237,14 +237,15 @@ def _fmt_startup_error(err: Exception) -> str:
 def startup_status_snapshot() -> dict[str, object]:
     """Return HME startup state without blocking hook-visible callers."""
     try:
-        failed = bool(_startup_failed)
-        loading = bool(_startup_task and not _startup_task.done())
-        ready = bool(_ctx is not None and not failed and not loading)
+        failed = _startup_error is not None
+        loading = _startup_done is not None and not _startup_done.is_set()
+        engines_ready = (project_engine is not None
+                         and global_engine is not None
+                         and shared_model is not None)
+        ready = engines_ready and not failed and not loading
         err = None
         if _startup_error is not None:
-            err = str(_startup_error)
-        elif failed:
-            err = "startup failed"
+            err = _fmt_startup_error(_startup_error)
         return {"ready": ready, "loading": loading, "failed": failed, "error": err}
     except Exception as exc:
         return {"ready": False, "loading": False, "failed": True, "error": str(exc)}
