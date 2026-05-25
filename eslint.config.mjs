@@ -281,15 +281,15 @@ export default [
     rules: {
       'no-undef': 'error',
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-      'eqeqeq': 'error',
+      'eqeqeq': ['error', { null: 'always' }],
       'prefer-const': 'error',
       'no-var': 'error',
       'no-shadow': 'error',
-      'no-implicit-coercion': ['error', { boolean: true, number: true, string: true, allow: [] }],
+      'no-implicit-coercion': 'error',
       'no-unsafe-optional-chaining': 'error',
       'no-return-await': 'error',
       'no-async-promise-executor': 'error',
-      'no-await-in-loop': 'error',
+      'no-await-in-loop': 'warn', // intentional sequential patterns n infra
       'no-warning-comments': ['error', { terms: ['global'], location: 'start' }],
       'no-useless-escape': 'error',
       'no-trailing-spaces': 'error',
