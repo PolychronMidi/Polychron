@@ -22,7 +22,7 @@ test('normalizes structured command fields without touching prose', () => {
   const stats = { command_rewrites: 0, text_rewrites: 0 };
   const out = normalizeICommandsInValue({ command: ABS, text: `User said ${ABS}` }, stats);
   assert.strictEqual(out.command, 'i/status mode=health');
-  assert.match(out.text, /User said \/home\/jah\/Polychron\/tools\/HME\/i\/status/);
+  assert.match(out.text, ABS_RE);
   assert.deepStrictEqual(stats, { command_rewrites: 1, text_rewrites: 0 });
 });
 
