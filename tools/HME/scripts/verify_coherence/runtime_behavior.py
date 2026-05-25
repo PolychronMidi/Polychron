@@ -261,7 +261,7 @@ class ContextBudgetVerifier(Verifier):
         if used < 70:
             if link_age_s is None or link_age_s > 1800:
                 return warned(score=0.7, summary=f"context {used}%, no chain link in last 30min", details=["run: python3 tools/HME/scripts/chain-snapshot.py --eager"])
-            return passed(score=0.9, summary=f"context {used}%, link age {link_age_s:.0f}s")
+            return passed(score=1.0, summary=f"context {used}%, link age {link_age_s:.0f}s")
         if used < 85:
             if link_age_s is None or link_age_s > 600:
                 return failed(score=0.3, summary=f"context {used}% nearing compaction + no recent link", details=["statusline preemption should have fired at 70%",
