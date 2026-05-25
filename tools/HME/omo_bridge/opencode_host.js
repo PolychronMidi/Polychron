@@ -4,6 +4,7 @@ const { invokeOmoHook } = require('./hook_adapter');
 const { supportsDecision } = require('./host_capabilities');
 const { assertUniversalEvent, SUPPORTED_PHASES } = require('./universal_event');
 const { DECISION_TARGETS, validateUniversalDecision } = require('./universal_decision');
+const { resolveUniversalDecisions } = require('./decision_resolver');
 
 const TRUST_ORDER = Object.freeze({ kernel: 0, project: 1, external: 2, optional: 3 });
 const OBSERVE_DECISIONS = Object.freeze(['allow', 'defer']);
@@ -161,13 +162,7 @@ async function invokePlugin({ plugin, phase, host, event, timeoutMs }) {
 }
 
 function selectPrimaryDecision(results) {
-  const applied = results.filter((item) => item.applied && item.decision);
-  const kernelDeny = applied.find((item) => item.trust === 'kernel' && item.decision.kind === 'deny');
-  if (kernelDeny) return kernelDeny.decision;
-  const deny = applied.find((item) => item.decision.kind === 'deny');
-  if (deny) return deny.decision;
-  const nonAllow = applied.find((item) => item.decision.kind !== 'allow');
-  return nonAllow ? nonAllow.decision : { kind: 'allow' };
+  return resolveUniversalDecisions(results.filter((item) => item.applied && item.decision)).decision;
 }
 
 function collectEffects(results) {
@@ -206,13 +201,15 @@ function createUniversalOpenCodeHost(options = {}) {
     for (const plugin of pluginsForPhase(phase)) {
       results.push(await invokePlugin({ plugin, phase, host, event, timeoutMs: phaseTimeout(phase, { ...invokeOptions, timeoutMs }) }));
     }
+    const resolution = resolveUniversalDecisions(results.filter((item) => item.applied && item.decision));
     return {
       phase,
       host,
       results,
       decisions: results.filter((item) => item.applied && item.decision).map((item) => item.decision),
       effects: collectEffects(results),
-      primaryDecision: selectPrimaryDecision(results),
+      resolution,
+      primaryDecision: resolution.decision,
     };
   }
 
