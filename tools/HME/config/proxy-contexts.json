@@ -68,11 +68,6 @@
   "$allowed_reaches_doc": "Per-pair exemptions for cycle-break or boot-order cases where routing through the façade would create a circular require or hoist requirement that can't be resolved. Each entry { from, to, reason } silences exactly that one reach. Stale waivers (the reach no longer exists) FAIL so the list shrinks as the codebase evolves.",
   "allowed_reaches": [
     {
-      "from": "tools/HME/proxy/contexts/failure_policy/hme_proxy_codex.js",
-      "to": "tools/HME/proxy/swap_state_store.js",
-      "reason": "cycle: contexts/upstream_dispatch -> hme_proxy_claude -> contexts/failure_policy -> hme_proxy_codex; codex must require swap_state_store directly to break the cycle (intra-domain coupling, still in same context graph)"
-    },
-    {
       "from": "tools/HME/proxy/supervisor/children.js",
       "to": "tools/HME/proxy/service_registry.js",
       "reason": "boot-order: supervisor loads before any context façade is wired; service_registry is the lowest infra service-port lookup"
