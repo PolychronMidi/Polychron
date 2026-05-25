@@ -11,7 +11,8 @@ const path = require('node:path');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
 function _runVerifier() {
-  // Invoke verifier in isolation via Python; compare status + summary
+  // Invoke verifier in isolation via Python; compare status + summary.
+  // verify_coherence._base reads PROJECT_ROOT fail-fast; must propagate.
   const r = spawnSync('python3', ['-c', `
 import sys
 sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}')
@@ -19,7 +20,8 @@ from verify_coherence.code_audits import ConjugateChannelVerifier
 res = ConjugateChannelVerifier().execute()
 print(res.status)
 print(res.summary)
-`.trim()], { encoding: 'utf8', timeout: 10000, cwd: PROJECT_ROOT });
+`.trim()], { encoding: 'utf8', timeout: 10000, cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT } });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
