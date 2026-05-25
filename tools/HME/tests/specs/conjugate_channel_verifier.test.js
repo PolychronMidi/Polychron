@@ -49,7 +49,8 @@ from verify_coherence import REGISTRY
 names = [v.name for v in REGISTRY]
 assert 'conjugate-channel' in names, f'conjugate-channel missing from REGISTRY; have {names[:5]}...'
 print('ok')
-`.trim()], { encoding: 'utf8', timeout: 10000, cwd: PROJECT_ROOT });
+`.trim()], { encoding: 'utf8', timeout: 10000, cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT } });
   assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
   assert.match(r.stdout, /ok/);
 });
