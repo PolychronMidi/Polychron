@@ -16,6 +16,19 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 from path_policy import blocked_path_reason, load_policy, skip_syntax  # noqa: E402
 from precommit_self_protect import self_protect_failures  # noqa: E402
+import importlib.util  # noqa: E402
+
+_CHECK_ENV_FAILFAST_PATH = SCRIPT_DIR / "check-env-failfast.py"
+_CHECK_ENV_FAILFAST_SPEC = importlib.util.spec_from_file_location("check_env_failfast", _CHECK_ENV_FAILFAST_PATH)
+if _CHECK_ENV_FAILFAST_SPEC is None or _CHECK_ENV_FAILFAST_SPEC.loader is None:
+    raise RuntimeError(f"cannot load env fail-fast checker: {_CHECK_ENV_FAILFAST_PATH}")
+_check_env_failfast = importlib.util.module_from_spec(_CHECK_ENV_FAILFAST_SPEC)
+_CHECK_ENV_FAILFAST_SPEC.loader.exec_module(_check_env_failfast)
+
+
+def try_except_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[dict]:
+    return _check_env_failfast._try_except_fallback_rows(path, text.splitlines(), keys)
+
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"], text=True).strip())
