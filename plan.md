@@ -115,6 +115,8 @@ Goal: make host limits explicit before plugins or routing rely on decisions.
 
 ## Phase 4: shadow comparator
 
+Status: complete.
+
 Goal: compare native HME decisions against universal ABI decisions without affecting live behavior.
 
 ### Work
