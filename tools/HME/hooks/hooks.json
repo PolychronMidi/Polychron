@@ -1,5 +1,5 @@
 {
-  "description": "HyperMeta Ecstasy hooks -- ALL Claude Code events route through node event_kernel/claude_adapter.js. Proxy-up mode POSTs to /hme/lifecycle; proxy-down mode calls the local event-kernel dispatcher directly. All Event -> hook routing lives in tools/HME/event_kernel/dispatcher.js. Claude Code never invokes individual hook handlers directly.",
+  "description": "HyperMeta Ecstasy hooks -- host settings invoke event_kernel/host_hook_entry.js only; tools/HME/hooks plus event_kernel/dispatcher.js are the single source of hook routing truth.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event SessionStart",
             "timeout": 15
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event SessionStart",
             "timeout": 15
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event SessionStart",
             "timeout": 15
           }
         ]
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event SessionStart",
             "timeout": 15
           }
         ]
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreToolUse",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event PreToolUse",
             "timeout": 15
           }
         ]
@@ -59,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostToolUse",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event PostToolUse",
             "timeout": 15
           }
         ]
@@ -70,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js UserPromptSubmit",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event UserPromptSubmit",
             "timeout": 15
           }
         ]
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreCompact",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event PreCompact",
             "timeout": 15
           }
         ]
@@ -92,7 +92,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostCompact",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event PostCompact",
             "timeout": 15
           }
         ]
@@ -103,7 +103,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js Stop",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host claude --event Stop",
             "timeout": 60
           }
         ]
