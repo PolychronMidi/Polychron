@@ -20,7 +20,8 @@ Goal: make `tools/HME/hooks` the definitive source for Claude/Codex/OpenCode hoo
 3. Host config materialization
    - Claude settings are projected by `tools/HME/scripts/sync-claude-settings.py` from `tools/HME/hooks/hooks.json`.
    - Codex hooks/config are projected by `tools/HME/scripts/sync-codex-settings.py` from `tools/HME/hooks/hooks.json` plus `codex-extensions.json`.
-   - Live `~/.claude/settings.json` and `~/.codex/hooks.json` were synced from HME-managed sources.
+   - OpenCode provider config is projected by `tools/HME/scripts/sync-opencode-settings.py` into `~/.config/opencode/opencode.jsonc`.
+   - Live `~/.claude/settings.json`, `~/.codex/hooks.json`, and OpenCode `provider.hme` were synced from HME-managed sources.
 
 4. Drift checks
    - `sync-claude-settings.py --check` reports zero drift.
