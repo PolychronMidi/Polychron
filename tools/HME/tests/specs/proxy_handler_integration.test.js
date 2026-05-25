@@ -48,8 +48,8 @@ function request(port, body) {
 
 test('Claude handler source keeps lifecycle bridge lazy', () => {
   const source = require('node:fs').readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy_claude.js'), 'utf8');
-  assert.doesNotMatch(source, /require\(['"]\.\/contexts\/lifecycle_bridge['"]\)/,
-    'simple Claude handler load must not import lifecycle facade at top level');
+  assert.doesNotMatch(source, /require\(['"]\.\/lifecycle_bridge['"]\)/,
+    'simple Claude handler load must not import lifecycle implementation at top level');
 });
 
 test('Claude handler forwards to fake Anthropic upstream and returns success without lifecycle import', async () => {
