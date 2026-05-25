@@ -118,7 +118,7 @@ printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "
 _WORKER_BASE="http://127.0.0.1:${_HME_HTTP_PORT}"
 export -f _safe_curl 2>/dev/null || true
 _HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/helpers"
-_HME_TRANSCRIPT_PAYLOAD="{\"entries\":[$ENTRY]}" \
+HME_TRANSCRIPT_PAYLOAD="{\"entries\":[$ENTRY]}" \
 _hme_bg_timeout 10 transcript-post "$PROJECT_ROOT/log/hme-bg-log-tool-call.err" \
   bash -c 'source "$1/_safety.sh" 2>/dev/null; _safe_curl "$2/transcript" "$HME_TRANSCRIPT_PAYLOAD"' _ "$_HELPERS_DIR" "$_WORKER_BASE"
 
