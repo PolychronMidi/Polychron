@@ -29,7 +29,7 @@ function runAllDetectors(transcriptPath) {
       if (finished) return;
       finished = true;
       try { child.kill('SIGTERM'); } catch (_e) { /* best-effort */ }
-      setTimeout(() => { try { child.kill('SIGKILL'); } catch (_e) {} }, 500).unref();
+      setTimeout(() => { try { child.kill('SIGKILL'); } catch (_e) { /* child already gone */ } }, 500).unref();
       resolve({ ok: false, error: `timeout after ${DETECTOR_TIMEOUT_MS}ms`, stdout, stderr });
     }, DETECTOR_TIMEOUT_MS);
 
