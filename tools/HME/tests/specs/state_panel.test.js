@@ -12,6 +12,10 @@ const fs = require('node:fs');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const I_STATUS = path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status');
 
+if (!process.env.PROJECT_ROOT) process.env.PROJECT_ROOT = PROJECT_ROOT;
+const { loadEnv, defaultEnvPath } = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/shared/load_env.js'));
+loadEnv(defaultEnvPath(path.join(PROJECT_ROOT, 'tools/HME/proxy/shared')));
+
 function _run(args = []) {
   const r = spawnSync(I_STATUS, ['state', ...args], {
     encoding: 'utf8',
