@@ -7,7 +7,7 @@ const { mkdirHasMisplacedRootOnlyDir, mkdirHasMisplacedMetrics, rootOnlyDirMessa
 const { rawCommandRewrite } = require('./raw_command_rewrites');
 const { noopAfterFailureDecision, isNoopCommand, clearFailure } = require('./turn_failure_state');
 
-const LOCK_NAME = 'run' + '.lock';
+const LOCK_NAME = 'run.lock';
 const I_TOOLS = '(review|learn|trace|evolve|status|hme|audit|why|policies)';
 const READERS = new Set(['cat', 'less', 'more', 'bat', 'batcat', 'head', 'tail', 'xxd', 'od']);
 const SPECIAL_READERS = new Set(['sed', 'awk', 'diff']);
