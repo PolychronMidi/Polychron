@@ -13,14 +13,14 @@ function _withSandbox(fn) {
     process.env.PROJECT_ROOT = sandbox;
     try {
       delete require.cache[require.resolve('../../telemetry')];
-      delete require.cache[require.resolve('../../proxy/hme_paths')];
+      delete require.cache[require.resolve('../../proxy/infra/hme_paths')];
       const t = require('../../telemetry');
       await fn(sandbox, t);
     } finally {
       if (original === undefined) delete process.env.PROJECT_ROOT;
       else process.env.PROJECT_ROOT = original;
       delete require.cache[require.resolve('../../telemetry')];
-      delete require.cache[require.resolve('../../proxy/hme_paths')];
+      delete require.cache[require.resolve('../../proxy/infra/hme_paths')];
       try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
     }
   };
