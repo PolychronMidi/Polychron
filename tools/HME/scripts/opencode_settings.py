@@ -130,9 +130,12 @@ def compare_config(live: dict[str, Any], port: int, project_root: Path = PROJECT
     expected = managed_config(live, port, project_root)
     live_provider = (live.get("provider") or {}).get(PROVIDER_ID) if isinstance(live.get("provider"), dict) else None
     expected_provider_doc = expected["provider"][PROVIDER_ID]
+    violations: list[str] = []
     if live_provider != expected_provider_doc:
-        return [f"{OPENCODE_CONFIG_PATH}: provider.{PROVIDER_ID} differs from HME materialization"]
-    return []
+        violations.append(f"{OPENCODE_CONFIG_PATH}: provider.{PROVIDER_ID} differs from HME materialization")
+    if plugin_spec(project_root) not in list(live.get("plugin") or []):
+        violations.append(f"{OPENCODE_CONFIG_PATH}: HME OpenCode plugin is missing from plugin list")
+    return violations
 
 
 def path_violations(doc: dict[str, Any], port: int) -> list[str]:
