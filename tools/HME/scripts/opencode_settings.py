@@ -118,6 +118,11 @@ def managed_config(base: dict[str, Any], port: int, project_root: Path = PROJECT
     provider = dict(out.get("provider") or {})
     provider[PROVIDER_ID] = expected_provider(port, project_root)
     out["provider"] = provider
+    plugins = list(out.get("plugin") or [])
+    spec = plugin_spec(project_root)
+    if spec not in plugins:
+        plugins.append(spec)
+    out["plugin"] = plugins
     return out
 
 
