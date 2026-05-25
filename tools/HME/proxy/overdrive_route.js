@@ -248,8 +248,18 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.swapChain = chainInfo.chain || [];
   if (requestedClaudeModel) {
     const primary = findAnthropicModelByApiId(cfg, requestedClaudeModel) || { id: requestedClaudeModel, api_model: requestedClaudeModel, provider: 'anthropic' };
-    const primaryRoute = modelRouteKey(primary, env);
-    result.swapChain = [primary, ...result.swapChain.filter((m) => modelRouteKey(m, env) !== primaryRoute)];
+    const skipSet = providerSkipSet(cfg, env);
+    const primaryOmni = omniProviderForConfigProvider(primary.provider || '', env).replace(/_/g, '-');
+    const primarySkipped = skipSet.has(primaryOmni)
+      || skipSet.has(String(primary.provider || ''))
+      || (primary.provider === 'anthropic' && (skipSet.has('claude') || skipSet.has('anthropic')))
+      || (primary.provider === 'claude' && (skipSet.has('claude') || skipSet.has('anthropic')));
+    if (!primarySkipped) {
+      const primaryRoute = modelRouteKey(primary, env);
+      result.swapChain = [primary, ...result.swapChain.filter((m) => modelRouteKey(m, env) !== primaryRoute)];
+    } else {
+      console.error(`[hme-proxy] MODE=1 skip-primary: requested ${requestedClaudeModel} provider=${primary.provider} is in providers_to_skip; keeping ranked chain`);
+    }
   }
   console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
   if (result.swapChain.length > 0) {
