@@ -42,7 +42,39 @@ function parseCyclePaths(madgeOutput) {
   return paths.sort();
 }
 
+function collectJsFiles(dir) {
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === 'tests' || entry.name === 'test') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...collectJsFiles(full));
+    else if (entry.isFile() && entry.name.endsWith('.js')) files.push(full);
+  }
+  return files;
+}
+
+function bannedBarrelImports() {
+  const banned = /require\(\s*['"](\.\/contexts\/(?:failure_policy|response_transform)|\.\.\/(?:failure_policy|response_transform))['"]\s*\)/g;
+  const hits = [];
+  for (const file of collectJsFiles(PROXY_DIR)) {
+    const rel = path.relative(PROXY_DIR, file);
+    const text = fs.readFileSync(file, 'utf8');
+    let match;
+    while ((match = banned.exec(text))) {
+      hits.push(`${rel}: ${match[1]}`);
+    }
+  }
+  return hits;
+}
+
 function main() {
+  const banned = bannedBarrelImports();
+  if (banned.length > 0) {
+    console.error('FAIL: runtime imports from failure_policy/response_transform barrels are banned:');
+    for (const hit of banned) console.error(`  ${hit}`);
+    process.exit(1);
+  }
+
   const output = runMadge();
   const current = parseCyclePaths(output);
 
