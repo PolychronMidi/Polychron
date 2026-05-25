@@ -161,3 +161,13 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`upstream_stream_timeout_retry`** [activity] -- The proxy retried an upstream stream after a timeout-class failure.
 - **`web_tool_call`** [activity] -- The agent invoked a WebSearch or WebFetch tool.
 - **`web_tool_failure`** [activity] -- Web tool enrichment observed a repeated failure for a target.
+
+## Universal hook
+
+- **`universal_hook_adapter_error`** [activity] -- Universal hook adapter translation failed without blocking live flow.
+- **`universal_hook_chat_params_error`** [activity] -- Universal chat.params routing failed open without corrupting the request.
+- **`universal_hook_observation_error`** [activity] -- Optional universal observation routing failed open.
+- **`universal_hook_observation_routed`** [activity] -- A low-risk universal observation phase routed effect-only telemetry.
+- **`universal_hook_observation_skipped`** [activity] -- Universal observation routing was skipped because it was disabled or unavailable.
+- **`universal_hook_shadow_match`** [activity] -- Native and universal shadow decisions matched on kind and reason code.
+- **`universal_hook_shadow_mismatch`** [activity] -- Native and universal shadow decisions diverged by kind or reason code.

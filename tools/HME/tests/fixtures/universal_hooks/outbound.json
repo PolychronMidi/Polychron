@@ -20,8 +20,14 @@
     "name": "codex-allow-pre-tool",
     "host": "codex",
     "phase": "tool.execute.before",
-    "universalDecision": { "kind": "allow" },
-    "hostOutput": { "stdout": "", "stderr": "", "exitCode": 0 }
+    "universalDecision": {
+      "kind": "allow"
+    },
+    "hostOutput": {
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0
+    }
   },
   {
     "name": "anthropic-modify-chat-params",
@@ -30,10 +36,17 @@
     "universalDecision": {
       "kind": "modify",
       "target": "chat.params",
-      "patch": { "max_tokens": 2048 },
+      "patch": {
+        "max_tokens": 2048
+      },
       "reason": "context budget clamp"
     },
-    "hostOutput": { "requestPatch": { "max_tokens": 2048 }, "appliedTo": "body" }
+    "hostOutput": {
+      "requestPatch": {
+        "max_tokens": 2048
+      },
+      "appliedTo": "body"
+    }
   },
   {
     "name": "anthropic-drop-stream-block",
@@ -44,7 +57,10 @@
       "target": "stream.block",
       "reason": "assistant echoed stop-hook UI"
     },
-    "hostOutput": { "streamAction": "drop", "target": "content_block" }
+    "hostOutput": {
+      "streamAction": "drop",
+      "target": "content_block"
+    }
   },
   {
     "name": "openai-rewrite-stream-text",
@@ -56,7 +72,10 @@
       "text": "",
       "reason": "strip stop-hook ceremony"
     },
-    "hostOutput": { "streamAction": "rewrite", "text": "" }
+    "hostOutput": {
+      "streamAction": "rewrite",
+      "text": ""
+    }
   },
   {
     "name": "opencode-ask-permission-deny",
@@ -65,11 +84,72 @@
     "universalDecision": {
       "kind": "ask_permission",
       "prompt": "Approve Bash git status?",
-      "choices": ["allow", "deny"],
+      "choices": [
+        "allow",
+        "deny"
+      ],
       "default": "deny"
     },
     "hostOutput": {
-      "decision": { "behavior": "ask", "message": "Approve Bash git status?", "choices": ["allow", "deny"], "default": "deny" }
+      "decision": {
+        "behavior": "ask",
+        "message": "Approve Bash git status?",
+        "choices": [
+          "allow",
+          "deny"
+        ],
+        "default": "deny"
+      }
+    }
+  },
+  {
+    "name": "claude-allow-stop",
+    "host": "claude",
+    "phase": "stop.before",
+    "universalDecision": {
+      "kind": "allow"
+    },
+    "hostOutput": {
+      "hookSpecificOutput": {
+        "hookEventName": "Stop",
+        "permissionDecision": "allow"
+      }
+    }
+  },
+  {
+    "name": "openai-deny-tool-call",
+    "host": "openai",
+    "phase": "tool.execute.before",
+    "universalDecision": {
+      "kind": "deny",
+      "reason": "dangerous shell command"
+    },
+    "hostOutput": {
+      "toolResult": {
+        "error": "dangerous shell command",
+        "denied": true
+      }
+    }
+  },
+  {
+    "name": "opencode-modify-tool-input",
+    "host": "opencode",
+    "phase": "tool.execute.before",
+    "universalDecision": {
+      "kind": "modify",
+      "target": "tool.input",
+      "patch": {
+        "command": "npm test -- --runInBand"
+      }
+    },
+    "hostOutput": {
+      "decision": {
+        "behavior": "modify",
+        "patch": {
+          "command": "npm test -- --runInBand"
+        },
+        "target": "tool.input"
+      }
     }
   }
 ]

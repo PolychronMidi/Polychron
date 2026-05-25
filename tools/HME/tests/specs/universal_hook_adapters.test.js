@@ -61,11 +61,15 @@ test('universal hook inbound fixtures cover every initial host family', () => {
   assert.deepEqual(names(inbound), [
     'anthropic-proxy-request',
     'anthropic-stream-text-block',
+    'claude-post-tool',
     'claude-pre-tool',
     'claude-stop',
+    'codex-post-tool',
     'codex-tool-lifecycle',
+    'openai-proxy-request',
     'openai-tool-call',
     'opencode-permission-ask',
+    'opencode-tool-before',
   ]);
 });
 
@@ -75,7 +79,7 @@ test('universal hook inbound expected events are valid and deterministic', () =>
     assert.equal(typeof item.universal.phase, 'string', item.name);
     assert.equal(typeof item.universal.source.adapter, 'string', item.name);
     assert.equal(typeof item.universal.source.rawEventName, 'string', item.name);
-    assert.match(item.universal.timestamp, /^2026-05-25T00:00:0\d\.000Z$/, item.name);
+    assert.match(item.universal.timestamp, /^2026-05-25T00:00:\d{2}\.000Z$/, item.name);
     assert.deepEqual(validateUniversalEvent(item.universal), { valid: true, errors: [] }, item.name);
   }
 });
@@ -127,10 +131,13 @@ test('universal hook outbound fixtures cover initial decision translations', () 
   assert.deepEqual(names(outbound), [
     'anthropic-drop-stream-block',
     'anthropic-modify-chat-params',
+    'claude-allow-stop',
     'claude-deny-pre-tool',
     'codex-allow-pre-tool',
+    'openai-deny-tool-call',
     'openai-rewrite-stream-text',
     'opencode-ask-permission-deny',
+    'opencode-modify-tool-input',
   ]);
   assert.deepEqual([...new Set(outbound.map((item) => item.universalDecision.kind))].sort(), [
     'allow',

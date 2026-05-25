@@ -3,9 +3,9 @@
 const { toUniversalAnthropicEvent } = require('./adapters/anthropic_inbound');
 const { assertUniversalDecision } = require('./universal_decision');
 
-const SHADOW_MATCH_EVENT = 'universal_hook.shadow_match';
-const SHADOW_MISMATCH_EVENT = 'universal_hook.shadow_mismatch';
-const ADAPTER_ERROR_EVENT = 'universal_hook.adapter_error';
+const SHADOW_MATCH_EVENT = 'universal_hook_shadow_match';
+const SHADOW_MISMATCH_EVENT = 'universal_hook_shadow_mismatch';
+const ADAPTER_ERROR_EVENT = 'universal_hook_adapter_error';
 
 function code(value) {
   if (!value || typeof value !== 'string') return '';

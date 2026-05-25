@@ -1322,6 +1322,90 @@
         "error_surface"
       ],
       "summary": "Web tool enrichment observed a repeated failure for a target."
+    },
+    {
+      "name": "universal_hook_adapter_error",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "Universal hook adapter translation failed without blocking live flow."
+    },
+    {
+      "name": "universal_hook_chat_params_error",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "Universal chat.params routing failed open without corrupting the request."
+    },
+    {
+      "name": "universal_hook_observation_error",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "Optional universal observation routing failed open."
+    },
+    {
+      "name": "universal_hook_observation_routed",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "A low-risk universal observation phase routed effect-only telemetry."
+    },
+    {
+      "name": "universal_hook_observation_skipped",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "Universal observation routing was skipped because it was disabled or unavailable."
+    },
+    {
+      "name": "universal_hook_shadow_match",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "Native and universal shadow decisions matched on kind and reason code."
+    },
+    {
+      "name": "universal_hook_shadow_mismatch",
+      "category": "Universal hook",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "universal_hook",
+        "omo_bridge"
+      ],
+      "summary": "Native and universal shadow decisions diverged by kind or reason code."
     }
   ]
 }

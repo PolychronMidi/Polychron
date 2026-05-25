@@ -46,7 +46,7 @@ async function routeChatParams(body = {}, options = {}) {
     if (!patchCheck.valid) return { body, output: { blocked: true, reason: patchCheck.reason, machineCode: 'invalid_chat_params_patch' }, changed: false, event, resolution };
     return { body: applyPatch(body, resolution.decision.patch), output, changed: true, event, resolution };
   } catch (error) {
-    if (typeof options.emit === 'function') options.emit('universal_hook.chat_params_error', { host, error: error.message });
+    if (typeof options.emit === 'function') options.emit('universal_hook_chat_params_error', { host, error: error.message });
     return { body, output: { allowed: true, warning: 'optional_chat_params_plugin_failed' }, changed: false, error: error.message };
   }
 }

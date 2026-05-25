@@ -2,6 +2,8 @@ const { createClientShim } = require('./client_shim');
 const { toOpenCodePluginInput, HOOK_MAP } = require('./lifecycle_map');
 const { invokeOmoHook } = require('./hook_adapter');
 const { supportsDecision } = require('./host_capabilities');
+const { createOpenCodeCompatPlugin } = require('./opencode_compat');
+const { sandboxViolation } = require('./plugin_sandbox');
 const { assertUniversalEvent, SUPPORTED_PHASES } = require('./universal_event');
 const { DECISION_TARGETS, validateUniversalDecision } = require('./universal_decision');
 const { resolveUniversalDecisions } = require('./decision_resolver');
@@ -135,30 +137,37 @@ function result(status, plugin, phase, fields = {}) {
   return { status, plugin: plugin.name, trust: plugin.trust, phase, ...fields };
 }
 
-function validatePluginDecision({ decision, plugin, phase, host }) {
+function withDuration(started, item) {
+  return { ...item, durationMs: Date.now() - started };
+}
+
+function validatePluginDecision({ decision, plugin, phase, host, sandbox }) {
   const validation = validateUniversalDecision(decision);
   if (!validation.valid) return { status: 'invalid_decision', errors: validation.errors };
   if (!canEmitDecision(plugin, decision)) return { status: 'capability_violation', errors: [`${plugin.name} cannot emit ${decision.kind}`] };
   if (!canEmitEffects(plugin, decision)) return { status: 'capability_violation', errors: [`${plugin.name} used an unapproved effect`] };
+  const sandboxError = sandboxViolation(plugin, decision, sandbox);
+  if (sandboxError) return { status: 'sandbox_violation', errors: [sandboxError] };
   if (!supportsDecision(host, phase, decision)) return { status: 'unsupported_decision', errors: [`${host} does not support ${decision.kind} for ${phase}`] };
   return { status: 'applied', errors: [] };
 }
 
-async function invokePlugin({ plugin, phase, host, event, timeoutMs }) {
+async function invokePlugin({ plugin, phase, host, event, timeoutMs, sandbox }) {
+  const started = Date.now();
   const hook = hookForPhase(plugin, phase);
-  if (!hook) return result('skipped', plugin, phase);
+  if (!hook) return withDuration(started, result('skipped', plugin, phase));
   try {
     const output = await withTimeout(() => hook(cloneJson(event), { phase, host, plugin: plugin.name, trust: plugin.trust }), timeoutMs);
     const decision = normalizeOutput(output);
-    const verdict = validatePluginDecision({ decision, plugin, phase, host });
-    if (verdict.status !== 'applied') return result(verdict.status, plugin, phase, { decision, errors: verdict.errors, applied: false });
-    return result('applied', plugin, phase, { decision, effects: decision.effects || [], applied: true });
+    const verdict = validatePluginDecision({ decision, plugin, phase, host, sandbox });
+    if (verdict.status !== 'applied') return withDuration(started, result(verdict.status, plugin, phase, { decision, errors: verdict.errors, applied: false }));
+    return withDuration(started, result('applied', plugin, phase, { decision, effects: decision.effects || [], applied: true }));
   } catch (error) {
     if (error && error.code === 'PLUGIN_TIMEOUT') {
       const decision = timeoutDecision(phase, plugin);
-      return result('timeout', plugin, phase, { decision, applied: decision.kind === 'deny', error: error.message });
+      return withDuration(started, result('timeout', plugin, phase, { decision, applied: decision.kind === 'deny', error: error.message }));
     }
-    return result('error', plugin, phase, { applied: false, error: error && error.message ? error.message : String(error) });
+    return withDuration(started, result('error', plugin, phase, { applied: false, error: error && error.message ? error.message : String(error) }));
   }
 }
 
@@ -177,6 +186,7 @@ function createUniversalOpenCodeHost(options = {}) {
     defaultHost: options.host || 'opencode',
     enabled: options.enabled !== false,
     timeoutMs: options.timeoutMs || {},
+    sandbox: options.sandbox || { allowExternalLive: options.allowExternalLive === true },
     plugins: [],
   };
 
@@ -198,9 +208,10 @@ function createUniversalOpenCodeHost(options = {}) {
     const phase = event.phase;
     const host = invokeOptions.host || (event.source && event.source.host) || state.defaultHost;
     const timeoutMs = { ...state.timeoutMs, ...(invokeOptions.timeoutMs || {}) };
+    const started = Date.now();
     const results = [];
     for (const plugin of pluginsForPhase(phase)) {
-      results.push(await invokePlugin({ plugin, phase, host, event, timeoutMs: phaseTimeout(phase, { ...invokeOptions, timeoutMs }) }));
+      results.push(await invokePlugin({ plugin, phase, host, event, timeoutMs: phaseTimeout(phase, { ...invokeOptions, timeoutMs }), sandbox: state.sandbox }));
     }
     const resolution = resolveUniversalDecisions(results.filter((item) => item.applied && item.decision));
     return {
@@ -211,6 +222,7 @@ function createUniversalOpenCodeHost(options = {}) {
       effects: collectEffects(results),
       resolution,
       primaryDecision: resolution.decision,
+      durationMs: Date.now() - started,
     };
   }
 
@@ -244,6 +256,7 @@ module.exports = {
   APPROVED_EFFECT_KINDS,
   DEFAULT_PHASE_TIMEOUT_MS,
   TRUST_ORDER,
+  createOpenCodeCompatPlugin,
   createOpenCodeHost,
   createUniversalOpenCodeHost,
 };

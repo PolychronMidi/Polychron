@@ -121,7 +121,7 @@ test('Phase 7 observation routing is effect-only and fail-open for optional erro
   assert.equal(observed.liveDecisionChanged, false);
   assert.deepEqual(observed.primaryDecision, { kind: 'allow' });
   assert.deepEqual(observed.effects, [{ kind: 'telemetry', name: 'seen' }]);
-  assert.equal(emitted[0].name, 'universal_hook.observation_routed');
+  assert.equal(emitted[0].name, 'universal_hook_observation_routed');
 
   const errored = await routeObservationEvent(event('tool.execute.after', { host: 'claude', tool: { name: 'Bash', output: 'ok' } }), {
     emit: (name, payload) => emitted.push({ name, payload }),

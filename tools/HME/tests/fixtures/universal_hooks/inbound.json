@@ -7,17 +7,38 @@
       "cwd": "/repo",
       "tool_use_id": "toolu_claude_1",
       "tool_name": "Bash",
-      "tool_input": { "command": "npm test" }
+      "tool_input": {
+        "command": "npm test"
+      }
     },
     "universal": {
       "abi": "hme-opencode-hook/v1",
       "id": "fixture-claude-pre-tool",
       "timestamp": "2026-05-25T00:00:00.000Z",
       "phase": "tool.execute.before",
-      "source": { "host": "claude", "adapter": "claude_inbound", "rawEventName": "PreToolUse" },
-      "session": { "id": "claude-session-1", "cwd": "/repo", "projectRoot": "/repo", "agent": "claude" },
-      "tool": { "id": "toolu_claude_1", "name": "Bash", "input": { "command": "npm test" } },
-      "context": { "lifecycle": { "event": "PreToolUse" } }
+      "source": {
+        "host": "claude",
+        "adapter": "claude_inbound",
+        "rawEventName": "PreToolUse"
+      },
+      "session": {
+        "id": "claude-session-1",
+        "cwd": "/repo",
+        "projectRoot": "/repo",
+        "agent": "claude"
+      },
+      "tool": {
+        "id": "toolu_claude_1",
+        "name": "Bash",
+        "input": {
+          "command": "npm test"
+        }
+      },
+      "context": {
+        "lifecycle": {
+          "event": "PreToolUse"
+        }
+      }
     }
   },
   {
@@ -33,10 +54,24 @@
       "id": "fixture-claude-stop",
       "timestamp": "2026-05-25T00:00:01.000Z",
       "phase": "stop.before",
-      "source": { "host": "claude", "adapter": "claude_inbound", "rawEventName": "Stop" },
-      "session": { "id": "claude-session-1", "agent": "claude" },
-      "turn": { "assistantText": "Done.", "transcriptPath": "/repo/.claude/transcript.jsonl" },
-      "context": { "lifecycle": { "event": "Stop" } }
+      "source": {
+        "host": "claude",
+        "adapter": "claude_inbound",
+        "rawEventName": "Stop"
+      },
+      "session": {
+        "id": "claude-session-1",
+        "agent": "claude"
+      },
+      "turn": {
+        "assistantText": "Done.",
+        "transcriptPath": "/repo/.claude/transcript.jsonl"
+      },
+      "context": {
+        "lifecycle": {
+          "event": "Stop"
+        }
+      }
     }
   },
   {
@@ -46,21 +81,36 @@
       "session_id": "codex-session-1",
       "tool_call_id": "call_codex_1",
       "tool_name": "Bash",
-      "arguments": { "command": "node --test tools/HME/tests/specs/omo_contract.test.js" }
+      "arguments": {
+        "command": "node --test tools/HME/tests/specs/omo_contract.test.js"
+      }
     },
     "universal": {
       "abi": "hme-opencode-hook/v1",
       "id": "fixture-codex-tool-lifecycle",
       "timestamp": "2026-05-25T00:00:02.000Z",
       "phase": "tool.execute.before",
-      "source": { "host": "codex", "adapter": "codex_inbound", "rawEventName": "PreToolUse" },
-      "session": { "id": "codex-session-1", "agent": "codex" },
+      "source": {
+        "host": "codex",
+        "adapter": "codex_inbound",
+        "rawEventName": "PreToolUse"
+      },
+      "session": {
+        "id": "codex-session-1",
+        "agent": "codex"
+      },
       "tool": {
         "id": "call_codex_1",
         "name": "Bash",
-        "input": { "command": "node --test tools/HME/tests/specs/omo_contract.test.js" }
+        "input": {
+          "command": "node --test tools/HME/tests/specs/omo_contract.test.js"
+        }
       },
-      "context": { "lifecycle": { "event": "PreToolUse" } }
+      "context": {
+        "lifecycle": {
+          "event": "PreToolUse"
+        }
+      }
     }
   },
   {
@@ -71,7 +121,12 @@
       "body": {
         "model": "claude-sonnet-4-20250514",
         "max_tokens": 4096,
-        "messages": [{ "role": "user", "content": "summarize" }]
+        "messages": [
+          {
+            "role": "user",
+            "content": "summarize"
+          }
+        ]
       }
     },
     "universal": {
@@ -79,13 +134,33 @@
       "id": "fixture-anthropic-proxy-request",
       "timestamp": "2026-05-25T00:00:03.000Z",
       "phase": "chat.params",
-      "source": { "host": "anthropic", "adapter": "anthropic_inbound", "rawEventName": "proxy.request" },
-      "session": { "id": "anthropic-request-1", "provider": "anthropic", "model": "claude-sonnet-4-20250514" },
-      "chat": {
-        "params": { "model": "claude-sonnet-4-20250514", "max_tokens": 4096 },
-        "messages": [{ "role": "user", "content": "summarize" }]
+      "source": {
+        "host": "anthropic",
+        "adapter": "anthropic_inbound",
+        "rawEventName": "proxy.request"
       },
-      "context": { "capabilities": ["modify.chat.params"] }
+      "session": {
+        "id": "anthropic-request-1",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514"
+      },
+      "chat": {
+        "params": {
+          "model": "claude-sonnet-4-20250514",
+          "max_tokens": 4096
+        },
+        "messages": [
+          {
+            "role": "user",
+            "content": "summarize"
+          }
+        ]
+      },
+      "context": {
+        "capabilities": [
+          "modify.chat.params"
+        ]
+      }
     }
   },
   {
@@ -102,15 +177,26 @@
       "id": "fixture-anthropic-stream-text-block",
       "timestamp": "2026-05-25T00:00:04.000Z",
       "phase": "stream.text_block",
-      "source": { "host": "anthropic", "adapter": "anthropic_inbound", "rawEventName": "sse.content_block_stop" },
-      "session": { "provider": "anthropic" },
+      "source": {
+        "host": "anthropic",
+        "adapter": "anthropic_inbound",
+        "rawEventName": "sse.content_block_stop"
+      },
+      "session": {
+        "provider": "anthropic"
+      },
       "stream": {
         "eventName": "content_block_stop",
         "blockIndex": 0,
         "blockType": "text",
         "text": "Hook said I cannot continue because a stop hook fired."
       },
-      "context": { "capabilities": ["drop.stream.block", "rewrite.stream.text"] }
+      "context": {
+        "capabilities": [
+          "drop.stream.block",
+          "rewrite.stream.text"
+        ]
+      }
     }
   },
   {
@@ -121,7 +207,10 @@
       "tool_call": {
         "id": "call_openai_1",
         "type": "function",
-        "function": { "name": "Bash", "arguments": "{\"command\":\"npm test\"}" }
+        "function": {
+          "name": "Bash",
+          "arguments": "{\"command\":\"npm test\"}"
+        }
       }
     },
     "universal": {
@@ -129,10 +218,27 @@
       "id": "fixture-openai-tool-call",
       "timestamp": "2026-05-25T00:00:05.000Z",
       "phase": "tool.execute.before",
-      "source": { "host": "openai", "adapter": "openai_inbound", "rawEventName": "response.tool_call" },
-      "session": { "id": "resp_openai_1", "provider": "openai" },
-      "tool": { "id": "call_openai_1", "name": "Bash", "input": { "command": "npm test" } },
-      "context": { "lifecycle": { "event": "tool_call" } }
+      "source": {
+        "host": "openai",
+        "adapter": "openai_inbound",
+        "rawEventName": "response.tool_call"
+      },
+      "session": {
+        "id": "resp_openai_1",
+        "provider": "openai"
+      },
+      "tool": {
+        "id": "call_openai_1",
+        "name": "Bash",
+        "input": {
+          "command": "npm test"
+        }
+      },
+      "context": {
+        "lifecycle": {
+          "event": "tool_call"
+        }
+      }
     }
   },
   {
@@ -141,18 +247,209 @@
       "hook": "permission.ask",
       "sessionID": "opencode-session-1",
       "tool": "Bash",
-      "input": { "command": "git status --short" }
+      "input": {
+        "command": "git status --short"
+      }
     },
     "universal": {
       "abi": "hme-opencode-hook/v1",
       "id": "fixture-opencode-permission-ask",
       "timestamp": "2026-05-25T00:00:06.000Z",
       "phase": "permission.ask",
-      "source": { "host": "opencode", "adapter": "opencode_inbound", "rawEventName": "permission.ask" },
-      "session": { "id": "opencode-session-1", "agent": "opencode" },
-      "tool": { "name": "Bash", "input": { "command": "git status --short" } },
-      "permission": { "action": "execute", "target": "Bash", "risk": "low", "reason": "OpenCode permission hook" },
-      "context": { "capabilities": ["permission.ask"] }
+      "source": {
+        "host": "opencode",
+        "adapter": "opencode_inbound",
+        "rawEventName": "permission.ask"
+      },
+      "session": {
+        "id": "opencode-session-1",
+        "agent": "opencode"
+      },
+      "tool": {
+        "name": "Bash",
+        "input": {
+          "command": "git status --short"
+        }
+      },
+      "permission": {
+        "action": "execute",
+        "target": "Bash",
+        "risk": "low",
+        "reason": "OpenCode permission hook"
+      },
+      "context": {
+        "capabilities": [
+          "permission.ask"
+        ]
+      }
+    }
+  },
+  {
+    "name": "claude-post-tool",
+    "native": {
+      "event": "PostToolUse",
+      "session_id": "claude-session-1",
+      "cwd": "/repo",
+      "tool_use_id": "toolu_claude_2",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm test"
+      }
+    },
+    "universal": {
+      "abi": "hme-opencode-hook/v1",
+      "id": "fixture-claude-post-tool",
+      "timestamp": "2026-05-25T00:00:07.000Z",
+      "source": {
+        "host": "claude",
+        "adapter": "claude_inbound",
+        "rawEventName": "PostToolUse"
+      },
+      "phase": "tool.execute.after",
+      "session": {
+        "id": "claude-session-1",
+        "cwd": "/repo",
+        "projectRoot": "/repo",
+        "agent": "claude"
+      },
+      "tool": {
+        "id": "toolu_claude_2",
+        "name": "Bash",
+        "input": {
+          "command": "npm test"
+        }
+      },
+      "context": {
+        "lifecycle": {
+          "event": "PostToolUse"
+        }
+      }
+    }
+  },
+  {
+    "name": "codex-post-tool",
+    "native": {
+      "event": "PostToolUse",
+      "session_id": "codex-session-1",
+      "tool_call_id": "call_codex_2",
+      "tool_name": "Bash",
+      "arguments": {
+        "command": "npm test"
+      }
+    },
+    "universal": {
+      "abi": "hme-opencode-hook/v1",
+      "id": "fixture-codex-post-tool",
+      "timestamp": "2026-05-25T00:00:08.000Z",
+      "source": {
+        "host": "codex",
+        "adapter": "codex_inbound",
+        "rawEventName": "PostToolUse"
+      },
+      "phase": "tool.execute.after",
+      "session": {
+        "id": "codex-session-1",
+        "agent": "codex"
+      },
+      "tool": {
+        "id": "call_codex_2",
+        "name": "Bash",
+        "input": {
+          "command": "npm test"
+        }
+      },
+      "context": {
+        "lifecycle": {
+          "event": "PostToolUse"
+        }
+      }
+    }
+  },
+  {
+    "name": "openai-proxy-request",
+    "native": {
+      "provider": "openai",
+      "request_id": "openai-request-1",
+      "body": {
+        "model": "gpt-4.1",
+        "temperature": 0.2,
+        "messages": [
+          {
+            "role": "user",
+            "content": "hi"
+          }
+        ]
+      }
+    },
+    "universal": {
+      "abi": "hme-opencode-hook/v1",
+      "id": "fixture-openai-proxy-request",
+      "timestamp": "2026-05-25T00:00:09.000Z",
+      "source": {
+        "host": "openai",
+        "adapter": "openai_inbound",
+        "rawEventName": "proxy.request"
+      },
+      "phase": "chat.params",
+      "session": {
+        "id": "openai-request-1",
+        "provider": "openai",
+        "model": "gpt-4.1"
+      },
+      "chat": {
+        "params": {
+          "model": "gpt-4.1",
+          "temperature": 0.2
+        },
+        "messages": [
+          {
+            "role": "user",
+            "content": "hi"
+          }
+        ]
+      },
+      "context": {
+        "capabilities": [
+          "modify.chat.params"
+        ]
+      }
+    }
+  },
+  {
+    "name": "opencode-tool-before",
+    "native": {
+      "hook": "tool.execute.before",
+      "sessionID": "opencode-session-1",
+      "tool": "Edit",
+      "input": {
+        "file_path": "README.md"
+      }
+    },
+    "universal": {
+      "abi": "hme-opencode-hook/v1",
+      "id": "fixture-opencode-tool-before",
+      "timestamp": "2026-05-25T00:00:10.000Z",
+      "source": {
+        "host": "opencode",
+        "adapter": "opencode_inbound",
+        "rawEventName": "tool.execute.before"
+      },
+      "phase": "tool.execute.before",
+      "session": {
+        "id": "opencode-session-1",
+        "agent": "opencode"
+      },
+      "context": {
+        "capabilities": [
+          "tool.execute.before"
+        ]
+      },
+      "tool": {
+        "name": "Edit",
+        "input": {
+          "file_path": "README.md"
+        }
+      }
     }
   }
 ]
