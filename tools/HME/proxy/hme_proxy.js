@@ -9,6 +9,25 @@
 
 'use strict';
 
+function installWarningStormGuard() {
+  const originalEmitWarning = process.emitWarning.bind(process);
+  const seen = new Map();
+  process.emitWarning = function emitWarningDedupe(warning, ...args) {
+    const text = warning && warning.stack ? warning.stack : String(warning && warning.message ? warning.message : warning);
+    const key = text.split('\n').slice(0, 2).join('\n');
+    const rec = seen.get(key) || { count: 0, lastSummary: 0 };
+    rec.count += 1;
+    seen.set(key, rec);
+    if (rec.count <= 3) return originalEmitWarning(warning, ...args);
+    if (rec.count === 4 || rec.count - rec.lastSummary >= 1000) {
+      rec.lastSummary = rec.count;
+      return originalEmitWarning(`suppressed repeated process warning x${rec.count}: ${key}`, ...args);
+    }
+    return false;
+  };
+}
+installWarningStormGuard();
+
 const http = require('http');
 const { emitStartMarker } = require('./contexts/lifecycle_bridge');
 const supervisor = require('./contexts/lifecycle_bridge').supervisor;
