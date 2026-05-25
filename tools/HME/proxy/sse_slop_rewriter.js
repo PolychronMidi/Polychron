@@ -147,6 +147,10 @@ const _ABBREVIATION_MAP = Object.freeze({
   'understandable': 'clear',
 
   // Tech & dev.
+  'request': 'req',
+  'requested': 'reqd',
+  'requests': 'reqs',
+  'requesting': 'reqn',
   'generate': 'make',
   'regenerate': 'remake',
   'generated': 'made',
