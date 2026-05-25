@@ -171,10 +171,12 @@ class HookRegistrationVerifier(Verifier):
                         if "event_kernel/statusline.js" not in cmd:
                             issues.append("StatusLine: must route through event_kernel/statusline.js")
                     else:
-                        if "event_kernel/claude_adapter.js" not in cmd:
-                            issues.append(f"{event}: must route through event_kernel/claude_adapter.js")
-                        if event not in cmd:
-                            issues.append(f"{event}: adapter command missing event argument")
+                        if "event_kernel/host_hook_entry.js" not in cmd:
+                            issues.append(f"{event}: must route through event_kernel/host_hook_entry.js")
+                        if "--host claude" not in cmd:
+                            issues.append(f"{event}: host_hook_entry command missing --host claude")
+                        if f"--event {event}" not in cmd:
+                            issues.append(f"{event}: host_hook_entry command missing --event {event}")
                     if re.search(r"tools/HME/hooks/.+\.sh|/hooks/.+\.sh", cmd):
                         issues.append(f"{event}: direct shell hook command is not portable")
         if total == 0:
