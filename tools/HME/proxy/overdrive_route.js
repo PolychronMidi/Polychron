@@ -45,11 +45,11 @@ function roleFromPayload(payload, env = process.env) {
   return 'driver';
 }
 
-function roleTier(role, modelTier) {
+function roleTier(role, defaultTier) {
   if (['driver', 'blue_lead', 'red_lead', 'team_lead'].includes(role)) return 'E5';
   if (['blue_purple', 'red_purple', 'team_purple'].includes(role)) return 'E4';
   const crew = /^crew_e([1-4])/.exec(role);
-  return crew ? `E${crew[1]}` : modelTier;
+  return crew ? `E${crew[1]}` : defaultTier;
 }
 
 function roleKey(role) {
