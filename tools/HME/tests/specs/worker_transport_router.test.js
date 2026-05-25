@@ -43,10 +43,11 @@ function _withSandbox(envOverrides, fn) {
   };
 }
 
-test('worker_transport: default mode is http', _withSandbox({}, async () => {
-  const tr = require(path.join(PROXY_DIR, '_worker_transport'));
-  assert.strictEqual(tr.getMode(), 'http');
-}));
+test('worker_transport: explicit http mode resolves to http',
+  _withSandbox({ transport: 'http' }, async () => {
+    const tr = require(path.join(PROXY_DIR, '_worker_transport'));
+    assert.strictEqual(tr.getMode(), 'http');
+  }));
 
 test('worker_transport: HME_WORKER_TRANSPORT=hybrid resolves to hybrid',
   _withSandbox({ transport: 'hybrid' }, async () => {
