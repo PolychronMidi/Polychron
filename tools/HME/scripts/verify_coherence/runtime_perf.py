@@ -36,8 +36,8 @@ from ._base import (
 def _recent_service_restart(seconds: int = 300) -> tuple[bool, str]:
     import datetime as _dt
     import urllib.request as _ur
+    port = os.environ['HME_PROXY_PORT']
     try:
-        port = os.environ['HME_PROXY_PORT']
         with _ur.urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as resp:
             data = json.loads(resp.read().decode())
         raw = data.get("started_at")
@@ -52,6 +52,27 @@ def _recent_service_restart(seconds: int = 300) -> tuple[bool, str]:
 
 _LATENCY_EXCLUDED_TOOLS = {"hme_admin", "hme_selftest", "hme_hot_reload"}
 _RESP_RE = re.compile(r"RESP\s+(\w+)\s+\[([0-9.]+)s\]")
+_FIX_COMMIT_WAIVERS_REL = "tools/HME/config/fix_commit_test_waivers.json"
+
+
+def _is_fix_commit_waived(sha: str, msg: str) -> bool:
+    path = os.path.join(_PROJECT, _FIX_COMMIT_WAIVERS_REL)
+    if not os.path.isfile(path):
+        return False
+    try:
+        data = json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    for row in data.get("waivers") or []:
+        if not isinstance(row, dict):
+            continue
+        prefix = str(row.get("sha_prefix") or "")
+        if prefix and sha.startswith(prefix):
+            return True
+        subject = str(row.get("subject_contains") or "").lower()
+        if subject and subject in msg.lower():
+            return True
+    return False
 
 
 def _recent_interactive_latency_ms(limit: int = 20) -> float | None:
