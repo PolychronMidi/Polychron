@@ -14,8 +14,46 @@ PROVIDER_NAME = "HME OpenAI-Compatible Proxy"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
 
 
+def strip_jsonc(text: str) -> str:
+    out: list[str] = []
+    i = 0
+    quoted = False
+    escaped = False
+    while i < len(text):
+        ch = text[i]
+        nxt = text[i + 1] if i + 1 < len(text) else ''
+        if quoted:
+            out.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == '\\':
+                escaped = True
+            elif ch == '"':
+                quoted = False
+            i += 1
+            continue
+        if ch == '"':
+            quoted = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '/' and nxt == '/':
+            while i < len(text) and text[i] not in '\r\n':
+                i += 1
+            continue
+        if ch == '/' and nxt == '*':
+            i += 2
+            while i + 1 < len(text) and not (text[i] == '*' and text[i + 1] == '/'):
+                i += 1
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return ''.join(out)
+
+
 def load_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(strip_jsonc(path.read_text(encoding="utf-8")))
 
 
 def hme_base_url(port: int) -> str:
