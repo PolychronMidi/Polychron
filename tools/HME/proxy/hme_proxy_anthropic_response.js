@@ -1,7 +1,7 @@
 'use strict';
 
 function hmeDispatcher() {
-  return require('./hme_dispatcher');
+  return require('./contexts/lifecycle_bridge').hmeDispatcher;
 }
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
