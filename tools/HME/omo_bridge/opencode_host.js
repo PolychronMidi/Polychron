@@ -55,6 +55,7 @@ function phaseList(plugin = {}) {
 function hookForPhase(plugin = {}, phase) {
   if (plugin.hooks && typeof plugin.hooks[phase] === 'function') return plugin.hooks[phase];
   if (plugin.phase === phase && typeof plugin.handler === 'function') return plugin.handler;
+  if (Array.isArray(plugin.phases) && plugin.phases.includes(phase) && typeof plugin.handler === 'function') return plugin.handler;
   if (typeof plugin[phase] === 'function') return plugin[phase];
   return null;
 }

@@ -1,6 +1,5 @@
 # OMO/OpenCode Universal Hook Foundation Plan
-
-Status: the initial ABI contract, golden fixture backbone, and adapter module phase are complete. `hme-opencode-hook/v1` is defined in `tools/HME/omo_bridge/contract.json`, validated by `contract_validator.js`, with event/decision validators, golden roundtrip fixtures, inbound adapters, outbound translators, and focused OMO tests. Live hook routing is unchanged.
+Status: complete. All phases now have ABI, adapter, capability, shadow, plugin-host, resolver, routing, provider-template, and cleanup-gate coverage. Live provider behavior remains guarded by explicit routing modules and host translators.
 
 This plan covers the remaining migration from OMO bridge to HME-owned OpenCode-compatible universal hook foundation.
 
@@ -29,7 +28,6 @@ Implemented and verified:
 - Existing OMO bridge tests plus new ABI tests pass.
 
 ## Phase 1: golden adapter fixture backbone
-
 Status: complete.
 
 Goal: make provider translation testable before routing any live behavior through the ABI.
@@ -61,7 +59,6 @@ Goal: make provider translation testable before routing any live behavior throug
 - Missing required event fields are rejected by validators.
 
 ## Phase 2: adapter modules
-
 Status: complete.
 
 Goal: formalize inbound/outbound seams without changing behavior.
@@ -92,7 +89,6 @@ tools/HME/omo_bridge/translators/opencode_decision.js
 - No adapter file exceeds 350 LOC.
 
 ## Phase 3: host capability map
-
 Status: complete.
 
 Goal: make host limits explicit before plugins or routing rely on decisions.
@@ -114,7 +110,6 @@ Goal: make host limits explicit before plugins or routing rely on decisions.
 - Unsupported safety-critical denials fail closed where applicable.
 
 ## Phase 4: shadow comparator
-
 Status: complete.
 
 Goal: compare native HME decisions against universal ABI decisions without affecting live behavior.
@@ -137,6 +132,7 @@ Goal: compare native HME decisions against universal ABI decisions without affec
 - Tests cover match, mismatch, adapter error, and shadow disabled.
 
 ## Phase 5: OpenCode-compatible plugin host shell
+Status: complete.
 
 Goal: run project/OpenCode-shaped plugins through HME-controlled capability and decision normalization.
 
@@ -160,6 +156,7 @@ Goal: run project/OpenCode-shaped plugins through HME-controlled capability and 
 - Tests cover allow, deny, modify, invalid decision, timeout, throw, and capability violation.
 
 ## Phase 6: decision resolver
+Status: complete.
 
 Goal: deterministic composition of multiple HME/plugin decisions.
 
@@ -184,6 +181,7 @@ Goal: deterministic composition of multiple HME/plugin decisions.
 - Resolver tests cover all precedence paths.
 
 ## Phase 7: low-risk observation routing
+Status: complete.
 
 Goal: route non-mutating phases through the universal ABI in shadow, then live once parity holds.
 
@@ -205,6 +203,7 @@ Start with:
 - Failure in optional observation plugin logs and continues.
 
 ## Phase 8: `chat.params` routing
+Status: complete.
 
 Goal: use OpenCode-compatible request mutation while preserving HME proxy controls.
 
@@ -224,6 +223,7 @@ Goal: use OpenCode-compatible request mutation while preserving HME proxy contro
 - Optional plugin failure does not corrupt upstream requests.
 
 ## Phase 9: `permission.ask` and `tool.execute.before`
+Status: complete.
 
 Goal: migrate safety-sensitive tool gates only after shadow parity is reliable.
 
@@ -243,6 +243,7 @@ Goal: migrate safety-sensitive tool gates only after shadow parity is reliable.
 - Failure in mandatory policy fails closed.
 
 ## Phase 10: `stop.before` stop-chain migration
+Status: complete.
 
 Goal: make stop-chain enforcement a mandatory universal phase while preserving first-deny-wins behavior.
 
@@ -261,6 +262,7 @@ Goal: make stop-chain enforcement a mandatory universal phase while preserving f
 - Host-specific response text remains stable unless intentionally changed.
 
 ## Phase 11: `stream.text_block` and stream rewrite migration
+Status: complete.
 
 Goal: move stream rewriting to universal text-block decisions after all lower-risk phases are stable.
 
@@ -281,6 +283,7 @@ Goal: move stream rewriting to universal text-block decisions after all lower-ri
 - Latency overhead is measured.
 
 ## Phase 12: provider expansion template
+Status: complete.
 
 Goal: make “anything” support repeatable.
 
@@ -302,6 +305,7 @@ Goal: make “anything” support repeatable.
 - Docs distinguish unsupported, advisory-only, and enforcement-capable hosts.
 
 ## Phase 13: cleanup and deprecation
+Status: complete.
 
 Goal: remove duplicate host-specific policy logic only after universal paths are live and stable.
 
