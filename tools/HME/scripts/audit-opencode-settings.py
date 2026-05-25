@@ -33,7 +33,7 @@ def _service_port() -> int:
 def _load(path: Path) -> dict:
     if not path.exists():
         return {}
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(strip_jsonc(path.read_text(encoding="utf-8")))
     if not isinstance(data, dict):
         raise ValueError(f"{path}: root must be a JSON object")
     return data
