@@ -1,7 +1,18 @@
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { UNIVERSAL_HOOK_ABI, validateUniversalEvent } = require('../../omo_bridge/universal_event');
+const { toUniversalAnthropicEvent } = require('../../omo_bridge/adapters/anthropic_inbound');
+const { toUniversalClaudeEvent } = require('../../omo_bridge/adapters/claude_inbound');
+const { toUniversalCodexEvent } = require('../../omo_bridge/adapters/codex_inbound');
+const { toUniversalOpenAiEvent } = require('../../omo_bridge/adapters/openai_inbound');
+const { toUniversalOpenCodeEvent } = require('../../omo_bridge/adapters/opencode_inbound');
+const { HOST_CAPABILITIES, supportsDecision, unsupportedDecision } = require('../../omo_bridge/host_capabilities');
+const { translateAnthropicDecision } = require('../../omo_bridge/translators/anthropic_decision');
+const { translateClaudeDecision } = require('../../omo_bridge/translators/claude_decision');
+const { translateCodexDecision } = require('../../omo_bridge/translators/codex_decision');
+const { translateOpenAiDecision } = require('../../omo_bridge/translators/openai_decision');
+const { translateOpenCodeDecision } = require('../../omo_bridge/translators/opencode_decision');
+const { UNIVERSAL_HOOK_ABI, SUPPORTED_PHASES, validateUniversalEvent } = require('../../omo_bridge/universal_event');
 const { validateUniversalDecision } = require('../../omo_bridge/universal_decision');
 
 const FIXTURE_DIR = path.join(__dirname, '../fixtures/universal_hooks');
@@ -12,6 +23,22 @@ function readFixture(name) {
 
 const inbound = readFixture('inbound.json');
 const outbound = readFixture('outbound.json');
+
+const INBOUND_ADAPTERS = Object.freeze({
+  anthropic: toUniversalAnthropicEvent,
+  claude: toUniversalClaudeEvent,
+  codex: toUniversalCodexEvent,
+  openai: toUniversalOpenAiEvent,
+  opencode: toUniversalOpenCodeEvent,
+});
+
+const DECISION_TRANSLATORS = Object.freeze({
+  anthropic: translateAnthropicDecision,
+  claude: translateClaudeDecision,
+  codex: translateCodexDecision,
+  openai: translateOpenAiDecision,
+  opencode: translateOpenCodeDecision,
+});
 
 function names(items) {
   return items.map((item) => item.name).sort();
@@ -42,6 +69,16 @@ test('universal hook inbound expected events are valid and deterministic', () =>
     assert.equal(typeof item.universal.source.rawEventName, 'string', item.name);
     assert.match(item.universal.timestamp, /^2026-05-25T00:00:0\d\.000Z$/, item.name);
     assert.deepEqual(validateUniversalEvent(item.universal), { valid: true, errors: [] }, item.name);
+  }
+});
+
+test('universal hook inbound adapter modules match golden fixtures', () => {
+  for (const item of inbound) {
+    const host = item.universal.source.host;
+    const adapter = INBOUND_ADAPTERS[host];
+    assert.equal(typeof adapter, 'function', item.name);
+    const actual = adapter(item.native, { id: item.universal.id, timestamp: item.universal.timestamp });
+    assert.deepEqual(actual, item.universal, item.name);
   }
 });
 
