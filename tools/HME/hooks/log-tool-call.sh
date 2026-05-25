@@ -116,6 +116,7 @@ printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "
 
 # 3. POST to HTTP shim (background, non-blocking)
 _WORKER_BASE="http://127.0.0.1:${_HME_HTTP_PORT}"
+export -f _safe_curl 2>/dev/null
 _hme_bg_timeout 10 transcript-post "$PROJECT_ROOT/log/hme-bg-log-tool-call.err" \
   bash -c "_safe_curl '${_WORKER_BASE}/transcript' '{\"entries\":[$ENTRY]}'"
 
