@@ -51,17 +51,14 @@ _SIGNAL = os.path.join(METRICS_DIR, "hme-composition-signal.json")
 
 def _cached_hci() -> dict:
     forecast = os.path.join(METRICS_DIR, "hme-hci-forecast.json")
-    try:
-        with open(forecast, encoding="utf-8") as f:
-            data = json.load(f)
-        points = data.get("points") or data.get("history") or []
-        latest = points[-1] if points else {}
-        hci = latest.get("hci") or data.get("current_hci") or data.get("hci")
-        if hci is not None:
-            return {"hci": hci, "categories": {}}
-    except Exception:
-        return {"hci": 100, "categories": {}}
-    return {"hci": 100, "categories": {}}
+    with open(forecast, encoding="utf-8") as f:
+        data = json.load(f)
+    points = data.get("points") or data.get("history") or []
+    latest = points[-1] if points else {}
+    hci = latest.get("hci") or data.get("current_hci") or data.get("hci")
+    if hci is None:
+        raise RuntimeError(f"cached HCI forecast has no hci value: {forecast}")
+    return {"hci": hci, "categories": {}}
 
 
 def _get_hci() -> dict:
