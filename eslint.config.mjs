@@ -281,7 +281,7 @@ export default [
     rules: {
       'no-undef': 'error',
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-      'eqeqeq': ['error', { null: 'always' }],
+      'eqeqeq': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
       'no-shadow': 'error',
