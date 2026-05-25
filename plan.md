@@ -26,8 +26,10 @@ Goal: make `tools/HME/hooks` the definitive source for Claude/Codex/OpenCode hoo
 4. Drift checks
    - `sync-claude-settings.py --check` reports zero drift.
    - `sync-codex-settings.py --check` reports zero drift.
+   - `sync-opencode-settings.py --check` reports zero drift.
    - `audit-claude-settings.py --json` reports zero violations.
    - `audit-codex-settings.py --json` reports zero violations.
+   - `audit-opencode-settings.py --json` reports zero violations.
 
 5. Regression tests
    - Added `tools/HME/tests/specs/host_hook_materialization.test.py`.
