@@ -9,7 +9,7 @@ const fs = require('fs');
 
 const EDIT_FALLBACK_DEFAULT_LIMIT = 50;
 const EDIT_FALLBACK_MAX_LIMIT = 500;
-const _DISPLAY_REDACTED_MARK = '<' + 'display-redacted' + '>';
+const _DISPLAY_REDACTED_MARK = '<display-redacted>';
 
 function editToReadFallback(editInput) {
   const ti = editInput && typeof editInput === 'object' ? editInput : {};
