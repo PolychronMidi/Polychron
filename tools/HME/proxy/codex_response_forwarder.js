@@ -516,30 +516,6 @@ function createCodexResponseForwarder(deps) {
         setTimeout(() => attemptTarget(index, { ...target, attempt: attempt + 1 }), delay);
         return true;
       }
-      // For stream:true requests codex CLI's Rust SSE parser panics on JSON
-      // error bodies. Emit upstream errors as proper SSE response.failed events
-      function sendSseError(httpStatus, errCode, errMessage) {
-        const wantsStream = Boolean(target.body && target.body.stream);
-        if (!wantsStream || res.headersSent || res.writableEnded) {
-          if (!res.headersSent && !res.writableEnded) {
-            res.writeHead(httpStatus, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: errCode, message: errMessage, attempts: attempt + 1 }));
-          } else { try { res.end(); } catch (_) {} }
-          return;
-        }
-        const responseId = `hme_upstream_error_${Date.now()}`;
-        res.writeHead(200, {
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          'X-Accel-Buffering': 'no',
-        });
-        const errObj = { code: errCode, message: errMessage };
-        const failedResponse = { id: responseId, object: 'response', status: 'failed', error: errObj, output: [] };
-        res.write(`event: response.created\ndata: ${JSON.stringify({ type: 'response.created', response: { id: responseId, object: 'response', status: 'in_progress', output: [] } })}\n\n`);
-        res.write(`event: response.failed\ndata: ${JSON.stringify({ type: 'response.failed', response: failedResponse })}\n\n`);
-        res.write(`data: [DONE]\n\n`);
-        res.end();
-      }
       const upstreamReq = client.request(options, (upstreamRes) => {
         const status = upstreamRes.statusCode || 502;
         let upstreamSawBytes = false;
