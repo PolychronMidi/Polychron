@@ -5,7 +5,7 @@ const https = require('https');
 
 const { sessionKey } = require('./shared');
 const {
-  resolveUpstream, recordUpstreamFailure, isPassthroughMode, servicePort,
+  resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./contexts/upstream_dispatch');
 const { applyOverdriveRoute } = require('./contexts/upstream_dispatch');
 const { handleLegacySwapResponse } = require('./contexts/response_transform');
