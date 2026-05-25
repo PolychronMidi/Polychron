@@ -9,6 +9,8 @@ const { runCodexToolLoopGraph } = require('./codex_tool_loop_graph');
 
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
 
+const MAX_TOOL_LOOP_DEPTH = Number(process.env.HME_CODEX_PROXY_MAX_TOOL_LOOP_DEPTH || 4);
+
 function upstreamHeaders(req, bodyBytes, target) {
   const headers = { ...req.headers };
   for (const key of ['host', 'content-length', 'connection', 'transfer-encoding', 'trailer', 'upgrade']) delete headers[key];
