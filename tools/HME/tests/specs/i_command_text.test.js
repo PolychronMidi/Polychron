@@ -7,7 +7,9 @@ const { applyRequestTransform } = require('../../proxy/codex_payload');
 const path = require('node:path');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const ABS = path.join(REPO_ROOT, 'tools', 'HME', 'i', 'status') + ' mode=health';
+const ABS_PATH = path.join(REPO_ROOT, 'tools', 'HME', 'i', 'status');
+const ABS = ABS_PATH + ' mode=health';
+const ABS_RE = new RegExp(ABS_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
 test('normalizes i wrapper path variants to canonical command text', () => {
   assert.strictEqual(normalizeICommand(ABS), 'i/status mode=health');
