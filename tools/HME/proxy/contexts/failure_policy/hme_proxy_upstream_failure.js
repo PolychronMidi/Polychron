@@ -90,8 +90,8 @@ async function handleUpstreamFailureOrSuccess({
     if (streamRetry) return streamRetry;
   }
 
-  const isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
-    && upstreamHeaders['authorization'].startsWith('Bearer ');
+  const isBearerAuth = typeof upstreamHeaders.authorization === 'string'
+    && upstreamHeaders.authorization.startsWith('Bearer ');
   if (status === 401 && isBearerAuth && payload && Array.isArray(payload.messages)) {
     const authRetry = await retry401Bearer({ upstreamHeaders, upstreamOpts, outBody, transport, resetArgs });
     if (authRetry) return authRetry;
