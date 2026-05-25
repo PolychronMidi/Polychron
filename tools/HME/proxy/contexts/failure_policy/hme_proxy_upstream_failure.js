@@ -57,7 +57,7 @@ async function handleUpstreamFailureOrSuccess({
     return { status, headers, fullBody };
   }
 
-  const errInfo = detectUpstreamFailure(status, headers, fullBody);
+  const errInfo = _detectUpstreamFailure(status, headers, fullBody);
   const failureKind = classifyFailure(status, errInfo);
   console.error(`[DEBUG-429] status=${status} type=${errInfo?.type} message=${errInfo?.message} kind=${failureKind}`);
   if (!errInfo) {
