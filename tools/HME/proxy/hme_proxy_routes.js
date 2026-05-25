@@ -92,6 +92,10 @@ function createProxyRouteDispatcher({
       json(clientRes, 200, { version: PROXY_VERSION, component: 'hme-proxy' });
       return true;
     }
+    if (url.startsWith('/v1/models')) {
+      const { handleOpenAIModelsRoute } = require('./openai_compatible_ingress');
+      if (handleOpenAIModelsRoute(clientReq, clientRes)) return true;
+    }
     if (url.startsWith('/hme/spawn')) {
       const handler = handleSpawnRoute || require('./routes_admin').handleSpawnRoute;
       handler(clientReq, clientRes);
