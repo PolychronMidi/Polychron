@@ -39,10 +39,10 @@ test('every proxy module export is defined', () => {
         if (entry.name === 'mcp_server') continue;  // separate module with its own package.json
         walk(full);
       } else if (entry.name.endsWith('.js') && !entry.name.endsWith('.test.js')) {
-        if (dir === PROXY_ROOT && SKIP_ENTRIES.has(entry.name)) continue;
+        const rel = path.relative(PROXY_ROOT, full).split(path.sep).join('/');
+        if (SKIP_ENTRIES.has(rel)) continue;
         if (entry.name.startsWith('test_')) continue;
         if (SKIP_HANGERS.has(entry.name)) continue;
-        const rel = path.relative(PROXY_ROOT, full);
         try {
           const mod = require(full);
           if (mod && typeof mod === 'object') {
