@@ -60,7 +60,7 @@ def _cached_hci() -> dict:
         if hci is not None:
             return {"hci": hci, "categories": {}}
     except Exception:
-        return {"hci": 100, "categories": {}}
+        pass # silent-ok
     return {"hci": 100, "categories": {}}
 
 
