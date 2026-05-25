@@ -12,7 +12,7 @@ OPENCODE_CONFIG_PATH = Path(os.environ.get("OPENCODE_CONFIG") or Path.home() / "
 PROVIDER_ID = "hme"
 PROVIDER_NAME = "HME OpenAI-Compatible Proxy"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
-PLUGIN_REL = Path("tools/HME/opencode/plugin/hme_hooks.js")
+PLUGIN_REL = Path("tools/HME/opencode/plugin/hme_hooks.mjs")
 
 
 def plugin_spec(project_root: Path = PROJECT_ROOT) -> str:
