@@ -163,11 +163,6 @@ async function runToolLoop({
   fullBody, headers, payload, transport, upstreamOpts, upstreamHeaders,
   projectRoot, depth = 0,
 }) {
-  if (depth >= MAX_TOOL_LOOP_DEPTH) {
-    console.error(`[omni-tool-loop] depth limit (${MAX_TOOL_LOOP_DEPTH}) reached`);
-    return null;
-  }
-
   const ctype = (headers['content-type'] || '').toLowerCase();
   const isSse = ctype.includes('text/event-stream');
   const bodyStr = fullBody.toString('utf8');
