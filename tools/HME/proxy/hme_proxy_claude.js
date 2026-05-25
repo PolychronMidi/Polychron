@@ -53,7 +53,6 @@ const {
   maybeBlockLateClaudeProbeRequest,
 } = require('./hme_proxy_claude_guards');
 
-
 function createClaudeHandler(deps) {
   const {
     PORT, PROXY_VERSION, PROXY_GIT_SHA, PROXY_STARTED_AT, routeMetrics: _routeMetrics,
@@ -162,7 +161,6 @@ function createClaudeHandler(deps) {
       // Hoisted session key: upstream response/error callbacks run outside
       // the `if (payload && messages && !_passthrough)` block.
       const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
-
 
       const mutation = await mutateClaudeRequest({
         payload,
