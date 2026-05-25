@@ -510,7 +510,7 @@ function createCodexResponseForwarder(deps) {
         headers: upstreamHeaders(req, bodyBytes, target),
       };
       function scheduleRetry(reason) {
-        if (attempt >= MAX_RETRIES || clientSse.started || res.headersSent) return false;
+        if (attempt >= MAX_RETRIES || res.writableEnded) return false;
         const delay = RETRY_BACKOFF_MS[Math.min(attempt, RETRY_BACKOFF_MS.length - 1)];
         record({ kind: 'codex-upstream-retry', route: target.kind, upstream: target.url, attempt: attempt + 1, max_retries: MAX_RETRIES, delay_ms: delay, reason, ...traceFields(target) });
         setTimeout(() => attemptTarget(index, { ...target, attempt: attempt + 1 }), delay);
