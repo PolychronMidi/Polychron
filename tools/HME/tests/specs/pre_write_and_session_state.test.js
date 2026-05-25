@@ -332,13 +332,15 @@ test('session-state client uses filesystem path before HTTP fallback', async () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('synthetic hooks manifest maps lifecycle through Claude adapter', () => {
+test('synthetic hooks manifest maps lifecycle through host_hook_entry', () => {
   const hooksPath = path.resolve(__dirname, '..', '..', 'hooks', 'hooks.json');
   const data = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
   for (const event of ['PreToolUse', 'PostToolUse', 'Stop', 'SessionStart', 'PostCompact']) {
     const entries = data.hooks[event] || [];
     const text = JSON.stringify(entries);
-    assert.match(text, /event_kernel\/claude_adapter\.js/);
+    assert.match(text, /event_kernel\/host_hook_entry\.js/);
+    assert.match(text, /--host claude/);
+    assert.match(text, new RegExp(`--event ${event}`));
   }
 });
 
@@ -348,7 +350,7 @@ test('Claude SessionStart is explicit for startup/resume/clear/compact', () => {
   const entries = data.hooks.SessionStart || [];
   assert.deepStrictEqual(entries.map((entry) => entry.matcher).sort(), ['clear', 'compact', 'resume', 'startup']);
   for (const entry of entries) {
-    assert.match(JSON.stringify(entry.hooks), /event_kernel\/claude_adapter\.js SessionStart/);
+    assert.match(JSON.stringify(entry.hooks), /event_kernel\/host_hook_entry\.js --host claude --event SessionStart/);
   }
 });
 
