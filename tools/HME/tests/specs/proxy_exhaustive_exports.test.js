@@ -9,8 +9,13 @@ const path = require('path');
 
 const PROXY_ROOT = path.resolve(__dirname, '..', '..', 'proxy');
 
-// Entry-point files that start servers — skip.
-const SKIP_ENTRIES = new Set(['hme_proxy.js', 'codex_proxy.js', 'middleware_cli.js']);
+// Entry-point files that start servers — skip. Relative paths from PROXY_ROOT.
+const SKIP_ENTRIES = new Set([
+  'hme_proxy.js',
+  'codex_proxy.js',
+  'middleware_cli.js',
+  'shuffler/shuffler.js',   // calls _start() at module load -> binds 9099
+]);
 
 // Files whose require() hangs or spawns workers — skip.
 const SKIP_HANGERS = new Set([
