@@ -315,6 +315,7 @@ flowchart LR
     tools__HME__tests__fixtures__swapped_project__config["HME/tests/fixtures/swapped-project/config/<br/><i>Swapped-project fixture: config/ subtree.</i>"]
     tools__HME__tests__fixtures__swapped_project__doc["HME/tests/fixtures/swapped-project/doc/<br/><i>Swapped-project fixture: doc/ subtree with canonical composition.md.</i>"]
     tools__HME__tests__fixtures__swapped_project__src["HME/tests/fixtures/swapped-project/src/<br/><i>Swapped-project fixture: src/ subtree.</i>"]
+    tools__HME__proxy__stop_chain__policies__work_checks__checks["HME/proxy/stop_chain/policies/work_checks/checks/"]
     tools__HME__service__server__tools_analysis__evolution__evolution_invariants["HME/service/server/tools_analysis/evolution/evolution_invariants/<br/><i>Evolution-stage invariant probes evaluated each round.</i>"]
     tools__HME__service__server__tools_analysis__evolution__evolution_selftest["HME/service/server/tools_analysis/evolution/evolution_selftest/<br/><i>Evolution-stage self-test harness, executed during boot.</i>"]
     tools --> tools__HME
@@ -413,6 +414,7 @@ flowchart LR
     tools__HME__tests__fixtures__swapped_project --> tools__HME__tests__fixtures__swapped_project__config
     tools__HME__tests__fixtures__swapped_project --> tools__HME__tests__fixtures__swapped_project__doc
     tools__HME__tests__fixtures__swapped_project --> tools__HME__tests__fixtures__swapped_project__src
+    tools__HME__proxy__stop_chain__policies__work_checks --> tools__HME__proxy__stop_chain__policies__work_checks__checks
     tools__HME__service__server__tools_analysis__evolution --> tools__HME__service__server__tools_analysis__evolution__evolution_invariants
     tools__HME__service__server__tools_analysis__evolution --> tools__HME__service__server__tools_analysis__evolution__evolution_selftest
 ```
