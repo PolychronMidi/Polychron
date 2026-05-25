@@ -113,7 +113,7 @@ function handleLifecycleRoute(clientReq, clientRes) {
     try {
       const _lcPath = require('path');
       const _lcFs = require('fs');
-      const _lcDir = _lcPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
+      const _lcDir = _lcPath.join(path.resolve(PROJECT_ROOT), 'tmp', 'blank-debug');
       try { _lcFs.mkdirSync(_lcDir, { recursive: true }); } catch (_e) { /* ignore */ }
       try {
         const _existing = _lcFs.readdirSync(_lcDir).filter((f) => f.startsWith('hme-lc-'));
