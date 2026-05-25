@@ -38,3 +38,17 @@ test('routeOpenAICompatibleThroughHme sets HME upstream and model route', () => 
   assert.equal(req.headers['x-hme-upstream'], 'http://127.0.0.1:20128');
   assert.equal(payload.model, 'openrouter/qwen-free');
 });
+
+test('handleOpenAIModelsRoute serves registry-backed model list', () => {
+  const cfg = { providers_to_skip: { providers: [] }, tiers: { E5: { models: [{ id: 'gpt-5.5-xhigh', provider: 'codex' }] } } };
+  let status = 0;
+  let body = '';
+  const res = {
+    writeHead(code) { status = code; },
+    end(text) { body = text; },
+  };
+  const handled = ingress.handleOpenAIModelsRoute({ url: '/v1/models', headers: {} }, res, cfg, {});
+  assert.equal(handled, true);
+  assert.equal(status, 200);
+  assert.equal(JSON.parse(body).data[0].id, 'gpt-5.5-xhigh');
+});
