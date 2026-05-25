@@ -569,7 +569,7 @@ function createCodexResponseForwarder(deps) {
           return;
         }
         finishResponse(target, 502, err.message);
-        sendSseError(502, 'codex_proxy_upstream_error', `${err.message} after ${attempt + 1} attempts`);
+        sendSseError(target, 502, 'codex_proxy_upstream_error', `${err.message} after ${attempt + 1} attempts`);
       });
       upstreamReq.write(bodyBytes);
       upstreamReq.end();
