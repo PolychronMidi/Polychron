@@ -109,7 +109,7 @@ function shrinkForPassthrough(payload, opts = {}) {
       if (serialized.length <= threshold) break;
     }
   }
-  while (maxTier >= 3 && msgs.length > keepMin) {
+  if (maxTier >= 3) while (msgs.length > keepMin) {
     const first = msgs[0];
     if (!first || !Array.isArray(first.content)) break;
     const onlyOrphanResults = first.role === 'user'
