@@ -178,7 +178,7 @@ function isIncompleteToolCall(call) {
   return missingRequiredToolFields(call).length > 0;
 }
 
-function codexToolOutput(callId, output, isError = false) {
+function codexToolOutput(callArg, output, isError = false) {
   const text = String(output || '');
   return {
     type: 'function_call_output',
