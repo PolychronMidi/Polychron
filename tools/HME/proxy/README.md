@@ -59,14 +59,15 @@ Exit `0` = clean, `1` = violation.
 - `hme_proxy_context_budget.js` -- compaction thresholds and context-window estimates
 - `hme_proxy_opus_gate.js` -- single-flight/min-gap serializer for interactive Opus
 - `hme_proxy_anthropic_response.js` -- Anthropic success path and continuation handoff
-- `hme_proxy_connection_errors.js` -- retry, snapshots, and shaped 502s
+- `contexts/failure_policy/hme_proxy_connection_errors.js` -- retry, snapshots, and shaped 502s
 - `hme_proxy_response_trace.js` -- response dump/blank-response diagnostics
 - `hme_proxy_response_send.js` -- SSE/non-SSE final response rewriting and Stop fallback
 - `hme_proxy_fp_gate.js` -- FP kill scanner
-- `hme_proxy_upstream_failure.js` -- upstream failure classification, snapshots, retry
+- `contexts/failure_policy/hme_proxy_upstream_failure.js` -- upstream failure classification, snapshots, retry
 - `hme_proxy_codex.js` -- OmniRoute/Codex fallback helpers
 - `hme_proxy_core.js` -- shared HME payload helpers and stop-reminder health
 - `middleware/` -- per-tool enrichment modules (`{name,onRequest?,onToolResult?}`)
+- `middleware/20a_omo_shadow_bridge.js` -- read-only OMO/universal-hook parity comparator
 - `supervisor/` -- child process specs, health probes, pre-flight adoption
 - `mcp_server/` -- proxy-native MCP SSE handler
 - `hme_dispatcher.js` -- HME continuation loop

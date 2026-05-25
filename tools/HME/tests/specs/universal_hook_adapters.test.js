@@ -29,7 +29,7 @@ function readFixture(name) {
   return JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, name), 'utf8'));
 }
 
-const inbound = readFixture('inbound.json');
+const inbound = ['inbound.json', 'inbound_extra.json'].flatMap(readFixture);
 const outbound = readFixture('outbound.json');
 
 const INBOUND_ADAPTERS = Object.freeze({
@@ -240,7 +240,7 @@ test('universal hook unsupported safety-critical decisions fail closed', () => {
 });
 
 test('universal hook fixtures stay small enough for golden roundtrip tests', () => {
-  for (const file of ['inbound.json', 'outbound.json']) {
+  for (const file of ['inbound.json', 'inbound_extra.json', 'outbound.json']) {
     const bytes = fs.statSync(path.join(FIXTURE_DIR, file)).size;
     assert.ok(bytes < 8192, `${file} is too large for a deterministic golden fixture`);
   }
