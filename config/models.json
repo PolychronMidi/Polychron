@@ -29,7 +29,8 @@
   "providers_to_skip": {
     "description": "Pause provider usage in case of credit shortage.",
     "providers": [
-      "anthropic,opencode-go"
+      "anthropic",
+      "opencode-go"
     ]
   },
   "provider_capabilities": {
