@@ -111,7 +111,7 @@ test('telemetry: HME_TELEMETRY_DISABLE suppresses listed categories', _withSandb
     if (originalDisable === undefined) delete process.env.HME_TELEMETRY_DISABLE;
     else process.env.HME_TELEMETRY_DISABLE = originalDisable;
     delete require.cache[require.resolve('../../telemetry')];
-    delete require.cache[require.resolve('../../proxy/hme_paths')];
+    delete require.cache[require.resolve('../../proxy/infra/hme_paths')];
   }
 }));
 
