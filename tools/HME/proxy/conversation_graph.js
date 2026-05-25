@@ -80,7 +80,12 @@ function sanitizeMessages(payload, placeholder = SUCCESS_EMPTY) {
   for (const msg of payload.messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
     const before = msg.content.length;
-    msg.content = msg.content.filter((b) => b && !(b.type === 'text' && typeof b.text === 'string' && b.text.trim().length === 0));
+    msg.content = msg.content.filter((b) => {
+      if (!b) return false;
+      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim().length === 0) return false;
+      if (b.type === 'thinking' && !String(b.signature || '').trim()) return false;
+      return true;
+    });
     changed += before - msg.content.length;
     for (const block of msg.content) {
       if (!block || block.type !== 'tool_result') continue;
