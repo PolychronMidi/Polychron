@@ -141,7 +141,7 @@ function rewriteStopHookText(text, ctx, slot = null) {
     const next = rewriter.rewriteText(current, ctx);
     if (!next || !next.changed) continue;
     current = next.text;
-    const { changed, text: _text, final: _final, ...event } = next;
+    const { changed: _changed, text: _text, final: _final, ...event } = next;
     recordRewrite(rewriter.name, next, ctx);
     recordStrategyEvent(rewriter.name, { path: 'text', ...event }, ctx);
     if (next.final) break;
