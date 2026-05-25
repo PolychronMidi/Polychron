@@ -405,6 +405,19 @@ function createCodexResponseForwarder(deps) {
       const skipped = forcedResults ? [] : decision.skipped_calls;
       if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
       if (!forcedResults && !actionableCalls.length) return false;
+      if (!forcedResults && depth >= MAX_TOOL_LOOP_DEPTH) {
+        const callList = actionableCalls.map((call) => `${call.name || 'tool'}:${call.id || call.call_id || ''}`).join(', ');
+        const text = `HME stopped Codex's proxy-executed tool loop after ${depth} iteration(s) to prevent a tool-only turn ending in upstream socket hangup. Last pending call(s): ${callList || 'unknown'}. Summarize findings from completed tool output or issue a focused new request.`;
+        const fallback = {
+          id: parsed && parsed.id ? parsed.id : '',
+          object: 'response',
+          output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
+          hme_tool_loop_graph: { action: 'max_tool_loop_depth', depth, max_depth: MAX_TOOL_LOOP_DEPTH },
+        };
+        record({ kind: 'codex-max-tool-loop-depth', route: target.kind, depth, max_depth: MAX_TOOL_LOOP_DEPTH, calls: actionableCalls.map((call) => ({ call_id: call.id, name: call.name })), ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
+        sendParsedOverClientSse(target, status, headers, fallback, 'max tool-loop depth');
+        return true;
+      }
       let results;
       if (forcedResults) results = forcedResults;
       else {
