@@ -38,6 +38,12 @@ class OpenCodeSettingsTests(unittest.TestCase):
         drift = opencode_settings.compare_config(live, 9099, ROOT)
         self.assertTrue(drift)
 
+    def test_strip_jsonc_preserves_url_strings_and_removes_comments(self):
+        raw = '{"url":"http://127.0.0.1:9099/v1", // comment\n "x": 1, /* block */ "y": 2}'
+        parsed = opencode_settings.json.loads(opencode_settings.strip_jsonc(raw))
+        self.assertEqual(parsed["url"], "http://127.0.0.1:9099/v1")
+        self.assertEqual(parsed["y"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
