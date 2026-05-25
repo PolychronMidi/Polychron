@@ -44,5 +44,5 @@ test('Codex request transform rewrites i wrapper commands before upstream', () =
   });
   assert.strictEqual(JSON.parse(result.body.input[0].arguments).command, 'i/status mode=health');
   assert.strictEqual(result.cleanup.i_commands, 1);
-  assert.doesNotMatch(JSON.stringify(result.body), /\/home\/jah\/Polychron\/tools\/HME\/i\/status/);
+  assert.doesNotMatch(JSON.stringify(result.body), ABS_RE);
 });
