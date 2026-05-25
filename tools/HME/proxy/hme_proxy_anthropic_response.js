@@ -1,6 +1,8 @@
 'use strict';
 
-const hmeDispatcher = require('./contexts/lifecycle_bridge').hmeDispatcher;
+function hmeDispatcher() {
+  return require('./hme_dispatcher');
+}
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const { emit } = require('./shared');
