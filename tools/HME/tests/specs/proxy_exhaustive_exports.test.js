@@ -1,6 +1,4 @@
 // Exhaustive: loads every proxy .js module and asserts no export is undefined.
-// Runs each require in a short child process so entrypoint-like side effects
-// cannot hang the full suite without naming the offender.
 'use strict';
 
 const { test } = require('node:test');
@@ -12,7 +10,6 @@ const { spawnSync } = require('child_process');
 const PROXY_ROOT = path.resolve(__dirname, '..', '..', 'proxy');
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
-// Entry-point files that start servers — skip. Relative paths from PROXY_ROOT.
 const SKIP_ENTRIES = new Set([
   'hme_proxy.js',
   'codex_proxy.js',
@@ -22,7 +19,6 @@ const SKIP_ENTRIES = new Set([
   'stop_chain/cli.js',
 ]);
 
-// Files whose require() hangs or spawns workers — skip.
 const SKIP_HANGERS = new Set([
   'upstream.js',
   'upstream_client.js',
@@ -51,13 +47,21 @@ function moduleFiles() {
   return out;
 }
 
-function checkModule(rel, full) {
+function checkModules(modules) {
   const script = `
-const mod = require(${JSON.stringify(full)});
+const modules = ${JSON.stringify(modules)};
 const failures = [];
-if (mod && typeof mod === 'object') {
-  for (const [key, val] of Object.entries(mod)) {
-    if (val === undefined) failures.push(\`${rel}:\${key} is undefined\`);
+for (const { rel, full } of modules) {
+  process.stderr.write('[proxy-export] requiring ' + rel + '\\n');
+  try {
+    const mod = require(full);
+    if (mod && typeof mod === 'object') {
+      for (const [key, val] of Object.entries(mod)) {
+        if (val === undefined) failures.push(rel + ':' + key + ' is undefined');
+      }
+    }
+  } catch (err) {
+    failures.push(rel + ': ' + (err.code || 'THREW') + ' — ' + err.message);
   }
 }
 process.stdout.write(JSON.stringify(failures));
@@ -66,20 +70,20 @@ process.stdout.write(JSON.stringify(failures));
     cwd: REPO_ROOT,
     env: { ...process.env, PROJECT_ROOT: REPO_ROOT, HME_PROXY_QUIET_IMPORT: '1' },
     encoding: 'utf8',
-    timeout: 1500,
+    timeout: 6000,
   });
-  if (r.error && r.error.code === 'ETIMEDOUT') return [`${rel}: TIMEOUT while requiring module`];
-  if (r.status !== 0) {
-    return [`${rel}: ${r.status === null ? 'SIGNAL' : `exit ${r.status}`} — ${(r.stderr || r.stdout || '').trim().slice(0, 500)}`];
+  if (r.error && r.error.code === 'ETIMEDOUT') {
+    const tail = String(r.stderr || '').trim().split('\n').slice(-5).join('\n');
+    return [`proxy export checker timed out; last modules:\n${tail}`];
   }
-  try { return JSON.parse(r.stdout || '[]'); } catch (err) { return [`${rel}: bad checker output — ${err.message}`]; }
+  if (r.status !== 0) {
+    return [`proxy export checker ${r.status === null ? 'SIGNAL' : `exit ${r.status}`} — ${(r.stderr || r.stdout || '').trim().slice(0, 800)}`];
+  }
+  try { return JSON.parse(r.stdout || '[]'); } catch (err) { return [`proxy export checker bad output — ${err.message}`]; }
 }
 
 test('every proxy module export is defined', () => {
-  const failures = [];
-  for (const { rel, full } of moduleFiles()) {
-    failures.push(...checkModule(rel, full));
-  }
+  const failures = checkModules(moduleFiles());
   assert.equal(failures.length, 0,
     `Modules with undefined exports:\n${failures.join('\n')}`);
 });
