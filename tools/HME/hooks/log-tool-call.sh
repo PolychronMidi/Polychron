@@ -5,7 +5,7 @@
 # newer hme.log ERROR watermark ALL go dark. Fail fast with exit 1
 # instead if the helper can't be sourced.
 set -e
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/helpers/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/helpers/_hooks_bootstrap.sh"
 set +e
 # PostToolUse hook -- logs every tool call from the main Claude Code session
 
