@@ -528,7 +528,7 @@ function createCodexResponseForwarder(deps) {
             record({ kind: 'upstream-http-retryable', route: target.kind, upstream: target.url, status, body_preview: preview, ...traceFields(target) });
             if (scheduleRetry(`http ${status}`)) return;
             if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
-            if (clientSse.started && !res.writableEnded) { try { completeClientSse(target, status, `upstream ${status}`, null); } catch (_e) { try { res.end(); } catch (_) {} } return; }
+            if (clientSse.started && !res.writableEnded) { try { completeClientSse(target, status, `upstream ${status}`, null); } catch (_e) { try { res.end(); } catch (_ignored) { /* socket already closed */ } } return; }
             finishResponse(target, status, `upstream ${status} after ${attempt + 1} attempts`);
             sendSseError(status, 'codex_proxy_upstream_exhausted', `upstream ${status} after ${attempt + 1} attempts: ${preview}`.slice(0, 800));
           });
