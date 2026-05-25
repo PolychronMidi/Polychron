@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/codex_adapter.js PermissionRequest",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/host_hook_entry.js --host codex --event PermissionRequest",
             "timeout": 15
           }
         ]
