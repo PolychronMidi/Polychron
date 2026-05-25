@@ -364,4 +364,4 @@ function createClaudeHandler(deps) {
   return handleRequest;
 }
 
-module.exports = { createClaudeHandler };
+module.exports = { createClaudeHandler, isOpenAICompatiblePath, routeOpenAICompatibleThroughHme };
