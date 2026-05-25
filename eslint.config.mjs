@@ -285,7 +285,7 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
       'no-shadow': 'error',
-      'no-implicit-coercion': 'error',
+      'no-implicit-coercion': ['error', { boolean: true, number: true, string: true, allow: [] }],
       'no-unsafe-optional-chaining': 'error',
       'no-return-await': 'error',
       'no-async-promise-executor': 'error',
