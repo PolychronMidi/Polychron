@@ -530,7 +530,7 @@ function createCodexResponseForwarder(deps) {
             if (target.fallbackDirect && targets[index + 1] && !res.headersSent && !clientSse.started) return attemptTarget(index + 1);
             if (clientSse.started && !res.writableEnded) { try { completeClientSse(target, status, `upstream ${status}`, null); } catch (_e) { try { res.end(); } catch (_ignored) { /* socket already closed */ } } return; }
             finishResponse(target, status, `upstream ${status} after ${attempt + 1} attempts`);
-            sendSseError(target, status, 'codex_proxy_upstream_exhausted', `upstream ${status} after ${attempt + 1} attempts: ${preview}`.slice(0, 800));
+            sendSseError(target, status, 'codex_proxy_upstream_exhausted', `upstream ${status} after ${attempt + 1} attempts: ${preview}`.slice(0, 800), attempt + 1);
           });
           return;
         }
@@ -569,7 +569,7 @@ function createCodexResponseForwarder(deps) {
           return;
         }
         finishResponse(target, 502, err.message);
-        sendSseError(target, 502, 'codex_proxy_upstream_error', `${err.message} after ${attempt + 1} attempts`);
+        sendSseError(target, 502, 'codex_proxy_upstream_error', `${err.message} after ${attempt + 1} attempts`, attempt + 1);
       });
       upstreamReq.write(bodyBytes);
       upstreamReq.end();
