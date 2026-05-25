@@ -90,10 +90,16 @@ function providerKey(provider, env = process.env) {
 function providerSkipSet(cfg, env = process.env) {
   const raw = cfg && cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
     ? cfg.providers_to_skip.providers : [];
-  return new Set(raw.flatMap((entry) => String(entry).split(','))
-    .map((provider) => provider.trim())
-    .filter(Boolean)
-    .map((provider) => providerKey(provider, env)));
+  const out = new Set();
+  for (const provider of raw.flatMap((entry) => String(entry).split(','))
+    .map((entry) => entry.trim()).filter(Boolean)) {
+    out.add(providerKey(provider, env));
+    const omni = omniProviderForConfigProvider(provider, env).replace(/_/g, '-');
+    if (omni) out.add(omni);
+    if (provider === 'anthropic') out.add('claude');
+    if (provider === 'claude') out.add('anthropic');
+  }
+  return out;
 }
 
 function hasOmniCredential(_model, _env = process.env) {
