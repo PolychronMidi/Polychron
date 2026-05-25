@@ -119,6 +119,10 @@ function createClaudeHandler(deps) {
 
       let outBody = bodyBuf;
       let injected = false;
+      if (routeOpenAICompatibleThroughHme(clientReq, payload)) {
+        outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        injected = true;
+      }
 
       let _legacySwapWasStreaming = false;
       let _isLegacySwap = false;
