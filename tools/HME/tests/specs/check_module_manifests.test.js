@@ -79,7 +79,7 @@ moduleLifecycle.declare({
 });
 `);
   try {
-    const r = _runVerifier();
+    const r = _runVerifier({ HME_MANIFEST_INCLUDE_TEST_FIXTURES: '1' });
     assert.notStrictEqual(r.code, 0, 'verifier should fail on unknown subsystem');
     assert.match(r.stderr + r.stdout, /subsystem="totally_made_up_subsystem" not in known/);
   } finally {
