@@ -1,7 +1,7 @@
 'use strict';
 
 const { emit, PROJECT_ROOT } = require('./shared');
-const { markRouteCooldown } = require('./contexts/failure_policy');
+const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
 const {
   omniProviderForConfigProvider,
   swapStore,

@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const { retryBlankOmniRouteResponse } = require('./contexts/failure_policy');
+const { retryBlankOmniRouteResponse } = require('./contexts/failure_policy/hme_proxy_codex');
 
 function _sanitizeHeaders(headers) {
   const out = {};
