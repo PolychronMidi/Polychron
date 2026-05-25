@@ -107,7 +107,7 @@ function globRewrite(tokens, root) {
     return rel ? structured('glob', { path: rel, pattern: '*', max_depth: 1, limit: 300 }) : '';
   }
   if (name === 'find') {
-    let base = tokens[1] && !tokens[1].startsWith('-') ? tokens[1] : '.';
+    const base = tokens[1] && !tokens[1].startsWith('-') ? tokens[1] : '.';
     let maxDepth = 4; let pattern = '*'; let type = '';
     for (let i = 2; i < tokens.length; i += 1) {
       if (tokens[i] === '-maxdepth') maxDepth = Number(tokens[++i] || 4);

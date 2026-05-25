@@ -6,7 +6,7 @@ const {
 } = require('../upstream_dispatch');
 const { omniProviderForConfigProvider, omniTargetFormat } = require('../upstream_dispatch');
 const swapStore = require('../upstream_dispatch').swapStore;
-function isManualTopActive(chain) { return !!(chain && chain[0] && chain[0]._manual_toprank === true); }
+function isManualTopActive(chain) { return Boolean(chain && chain[0] && chain[0]._manual_toprank === true); }
 const { chainSignature } = swapStore;
 
 function upstreamModelId(model) {

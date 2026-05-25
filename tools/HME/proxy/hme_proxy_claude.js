@@ -149,7 +149,7 @@ function createClaudeHandler(deps) {
       // breaker; tripping global on them breaks Claude Code's UI.
       const _isInteractivePath = (upstream.provider === 'anthropic' || _isOmniRouteSwap)
         && (typeof clientReq.headers.authorization === 'string'
-            || typeof clientReq.headers['x-api-key'] === 'string' // eslint-disable-line dot-notation
+            || typeof clientReq.headers['x-api-key'] === 'string'
             || _isOmniRouteSwap);
 
       // Hoisted session key: upstream response/error callbacks run outside

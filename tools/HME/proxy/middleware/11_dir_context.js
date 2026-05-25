@@ -132,7 +132,7 @@ module.exports = {
       event: 'dir_context',
       dir: dirName,
       rules_injected: parts.length,
-      drifted: !!entry.drifted,
+      drifted: Boolean(entry.drifted),
     });
   },
 };

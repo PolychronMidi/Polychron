@@ -47,7 +47,7 @@ function expandEnvValues(values) {
 }
 
 function loadEnv(envPath, opts) {
-  const overwrite = !!(opts && opts.overwrite);
+  const overwrite = Boolean(opts && opts.overwrite);
   if (!fs.existsSync(envPath)) throw new Error(`missing required .env at ${envPath}`);
   const values = expandEnvValues(parseEnvFile(envPath));
   let loaded = 0;

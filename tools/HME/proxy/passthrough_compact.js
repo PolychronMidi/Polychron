@@ -49,7 +49,7 @@ function shrinkForPassthrough(payload, opts = {}) {
   const msgs = payload.messages;
   if (msgs.length <= keepMin) return 0;
   const beforeMessages = msgs.length;
-  let beforeBytes = _serializedBytes(payload);
+  const beforeBytes = _serializedBytes(payload);
   let serialized = JSON.stringify(payload);
   if (maxTier <= 0 || beforeBytes <= threshold) return 0;
   log(`passthrough-compact decision: tier=${maxTier} threshold=${Number.isFinite(threshold) ? `${threshold}B` : 'none'} body=${beforeBytes}B keepMin=${keepMin}`);

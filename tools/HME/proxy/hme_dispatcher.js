@@ -234,7 +234,7 @@ async function maybeHandleHme(initialResponseBuf, initialHeaders, initialStatus,
   let hmeUses = _collectHmeToolUses(parsed.contentBlocks);
   if (hmeUses.length === 0) return null;
 
-  let currentPayload = JSON.parse(JSON.stringify(originalPayload));
+  const currentPayload = JSON.parse(JSON.stringify(originalPayload));
   let loops = 0;
   let lastResponse = null;
 

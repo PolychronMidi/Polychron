@@ -21,7 +21,7 @@ function runSync(cmd, args = [], opts = {}) {
     exit: typeof result.status === 'number' ? result.status : (result.signal ? -1 : 1),
     signal: result.signal || null,
     durationMs: Date.now() - started,
-    timedOut: !!(result.error && result.error.code === 'ETIMEDOUT'),
+    timedOut: Boolean(result.error && result.error.code === 'ETIMEDOUT'),
     error: result.error || null,
   };
 }

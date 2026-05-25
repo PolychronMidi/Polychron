@@ -429,7 +429,7 @@ function _stripExcessiveBold(text) {
 }
 
 function _cleanupPlainSlopArtifacts(text, trim = false) {
-  let out = String(text || '')
+  const out = String(text || '')
     .replace(/(?:\s*[,.;:!?]){2,}/g, '.')
     .replace(/^\s*[,.;:!?]+\s*/g, '')
     .replace(/[ \t]{2,}/g, ' ')

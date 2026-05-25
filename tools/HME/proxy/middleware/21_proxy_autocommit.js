@@ -188,11 +188,11 @@ function _attemptCommit(root, caller) {
       `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet; ` +
     `fi`,
   ].join(' && ');
-  let r = spawnSync('flock', ['-w', '30', lockPath,
+  const r = spawnSync('flock', ['-w', '30', lockPath,
     'bash', '-c', stageAndCommitScript],
     { cwd: root, timeout: 60000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
-  let combined = (r.stderr || '') + (r.stdout || '');
+  const combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
   // When the pre-commit hook rejects, git often funnels its stderr away from
   // spawn's pipe (the hook runs in its own process group). Re-run

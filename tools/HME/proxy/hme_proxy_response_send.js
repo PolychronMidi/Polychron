@@ -63,7 +63,7 @@ function responseHasErrorEvent(outBuf) {
     if (/(^|\n)event:\s*error\b/m.test(outStr)) return true;
     if (!outStr.trimStart().startsWith('{')) return false;
     const parsed = JSON.parse(outStr);
-    return !!(parsed && (parsed.type === 'error' || parsed.error));
+    return Boolean(parsed && (parsed.type === 'error' || parsed.error));
   } catch (_) {
     return false;
   }

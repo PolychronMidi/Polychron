@@ -21,7 +21,7 @@ function currentRepoGitSha() {
 
 function requiredSupervisorFailures(supervisor) {
   return Object.entries(supervisor || {})
-    .filter(([, child]) => child && child.required !== false && (!!child.gaveUp || !child.healthy))
+    .filter(([, child]) => child && child.required !== false && (Boolean(child.gaveUp) || !child.healthy))
     .map(([name]) => name);
 }
 

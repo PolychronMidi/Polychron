@@ -51,7 +51,7 @@ function _refreshHealth() {
 
 function _isRoutable(slot) {
   const h = BACKENDS[slot].health;
-  return !!(h && h.ready && !h.draining);
+  return Boolean(h && h.ready && !h.draining);
 }
 
 function _routableSlots() {

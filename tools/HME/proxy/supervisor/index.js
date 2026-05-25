@@ -275,7 +275,7 @@ function status() {
       healthy: state.healthy,
       restarts: state.restarts,
       lastHealthy: state.lastHealthy,
-      gaveUp: !!state.gaveUp,
+      gaveUp: Boolean(state.gaveUp),
       degradedSince: state.degradedSince || 0,
       maxRestarts: state.spec.maxRestarts,
       required: meta.required !== false,

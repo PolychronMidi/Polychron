@@ -171,7 +171,7 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson(), opt
 const swapStore = require('./swap_state_store');
 const { chainSignature } = swapStore;
 function isManualTopActive(chain) {
-  return !!(chain && chain[0] && chain[0]._manual_toprank === true);
+  return Boolean(chain && chain[0] && chain[0]._manual_toprank === true);
 }
 function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
   return swapStore.currentIndex(chain, projectRoot);
@@ -222,7 +222,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   const prefixedClaudeModel = payload && typeof payload.model === 'string' ? providerPrefixedClaudeModel(payload.model) : '';
   const claudeModel = payload && typeof payload.model === 'string' ? claudeModelForOverdrive(payload.model) : '';
   const requestedClaudeModel = prefixedClaudeModel || claudeModel;
-  console.error(`[hme-proxy] swap-check: odMode=${requested} effective=${mode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${!!clientReq.headers['x-hme-upstream']}`);
+  console.error(`[hme-proxy] swap-check: odMode=${requested} effective=${mode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${Boolean(clientReq.headers['x-hme-upstream'])}`);
   if (requested !== '0' && requested !== '1') console.error(`[hme-proxy] OVERDRIVE_MODE=${requested} retired; use 0 or 1.`);
   if (mode !== '1' || !payload || clientReq.headers['x-hme-upstream']) return result;
   if (!requestedClaudeModel && !claudeModel) return result;

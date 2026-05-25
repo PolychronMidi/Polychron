@@ -214,7 +214,7 @@ async function traceAnthropicResponse({
         headers: outHeaders,
         body_bytes: outBuf.length,
         is_sse: isSse,
-        had_continuation: !!final,
+        had_continuation: Boolean(final),
         text_chars: stats.textChars,
         thinking_chars: stats.thinkingChars,
         text_blocks: stats.textBlocks,

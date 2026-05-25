@@ -86,7 +86,7 @@ function hasSameTurnEvidence(turnStartMs) {
 }
 
 function transcriptPathFrom(ctx) {
-  let transcriptPath = ctx.payload && ctx.payload.transcript_path;
+  const transcriptPath = ctx.payload && ctx.payload.transcript_path;
   if (transcriptPath) return transcriptPath;
   try { return fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-transcript-path.txt'), 'utf8').trim(); }
   catch (_e) { return ''; }
