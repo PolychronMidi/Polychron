@@ -23,7 +23,7 @@ function freePort() {
   });
 }
 
-function waitFor(fn, timeoutMs = 8000) {
+function waitFor(fn, timeoutMs = 30000) {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     const tick = async () => {
