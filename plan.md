@@ -1,6 +1,6 @@
 # OMO/OpenCode Universal Hook Foundation Plan
 
-Status: the initial ABI contract phase is complete. `hme-opencode-hook/v1` is defined in `tools/HME/omo_bridge/contract.json`, validated by `contract_validator.js`, with event/decision validators and focused OMO tests. Live hook routing is unchanged.
+Status: the initial ABI contract, golden fixture backbone, and adapter module phase are complete. `hme-opencode-hook/v1` is defined in `tools/HME/omo_bridge/contract.json`, validated by `contract_validator.js`, with event/decision validators, golden roundtrip fixtures, inbound adapters, outbound translators, and focused OMO tests. Live hook routing is unchanged.
 
 This plan covers the remaining migration from OMO bridge to HME-owned OpenCode-compatible universal hook foundation.
 
@@ -29,6 +29,8 @@ Implemented and verified:
 - Existing OMO bridge tests plus new ABI tests pass.
 
 ## Phase 1: golden adapter fixture backbone
+
+Status: complete.
 
 Goal: make provider translation testable before routing any live behavior through the ABI.
 
@@ -60,6 +62,8 @@ Goal: make provider translation testable before routing any live behavior throug
 
 ## Phase 2: adapter modules
 
+Status: complete.
+
 Goal: formalize inbound/outbound seams without changing behavior.
 
 ### Work
@@ -88,6 +92,8 @@ tools/HME/omo_bridge/translators/opencode_decision.js
 - No adapter file exceeds 350 LOC.
 
 ## Phase 3: host capability map
+
+Status: scaffolded by Phase 2; full capability matrix hardening is next.
 
 Goal: make host limits explicit before plugins or routing rely on decisions.
 

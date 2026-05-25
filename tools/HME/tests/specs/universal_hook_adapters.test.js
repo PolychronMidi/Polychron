@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const test = require('node:test');
 const fs = require('fs');
 const path = require('path');
 const { toUniversalAnthropicEvent } = require('../../omo_bridge/adapters/anthropic_inbound');
@@ -141,6 +142,40 @@ test('universal hook outbound decisions and host outputs are valid fixture contr
     assert.equal(typeof item.phase, 'string', item.name);
     assert.equal(item.hostOutput && typeof item.hostOutput, 'object', item.name);
   }
+});
+
+test('universal hook outbound translator modules match golden fixtures', () => {
+  for (const item of outbound) {
+    const translator = DECISION_TRANSLATORS[item.host];
+    assert.equal(typeof translator, 'function', item.name);
+    const actual = translator(item.universalDecision, { phase: item.phase });
+    assert.deepEqual(actual, item.hostOutput, item.name);
+  }
+});
+
+test('universal hook host capabilities reject unsupported target decisions explicitly', () => {
+  const decision = { kind: 'modify', target: 'chat.params', patch: { max_tokens: 1024 } };
+  assert.equal(supportsDecision('claude', 'chat.params', decision), false);
+  assert.deepEqual(unsupportedDecision('claude', 'chat.params', decision), {
+    unsupported: true,
+    host: 'claude',
+    phase: 'chat.params',
+    decisionKind: 'modify',
+    target: 'chat.params',
+    failClosed: false,
+    reason: 'claude does not support modify for chat.params',
+  });
+  assert.deepEqual(translateClaudeDecision(decision, { phase: 'chat.params' }), unsupportedDecision('claude', 'chat.params', decision));
+});
+
+test('universal hook capability map covers every ABI phase explicitly', () => {
+  for (const [host, phases] of Object.entries(HOST_CAPABILITIES)) {
+    assert.ok(Object.keys(phases).length > 0, host);
+    for (const phase of Object.keys(phases)) assert.ok(SUPPORTED_PHASES.includes(phase), `${host}:${phase}`);
+  }
+  assert.equal(supportsDecision('anthropic', 'chat.params', { kind: 'modify', target: 'chat.params', patch: {} }), true);
+  assert.equal(supportsDecision('openai', 'stream.text_block', { kind: 'rewrite', target: 'stream.text', text: '' }), true);
+  assert.equal(supportsDecision('opencode', 'permission.ask', { kind: 'ask_permission', prompt: 'Approve?' }), true);
 });
 
 test('universal hook fixtures stay small enough for golden roundtrip tests', () => {
