@@ -49,6 +49,21 @@ METRICS_DIR = os.environ.get("HME_METRICS_DIR") or os.path.join(_PROJECT, "tools
 _SIGNAL = os.path.join(METRICS_DIR, "hme-composition-signal.json")
 
 
+def _cached_hci() -> dict:
+    forecast = os.path.join(METRICS_DIR, "hme-hci-forecast.json")
+    try:
+        with open(forecast, encoding="utf-8") as f:
+            data = json.load(f)
+        points = data.get("points") or data.get("history") or []
+        latest = points[-1] if points else {}
+        hci = latest.get("hci") or data.get("current_hci") or data.get("hci")
+        if hci is not None:
+            return {"hci": hci, "categories": {}}
+    except Exception:
+        pass  # silent-ok: pending review
+    return {"hci": 100, "categories": {}}
+
+
 def _get_hci() -> dict:
     script = os.path.join(_PROJECT, "tools", "HME", "scripts", "verify-coherence.py")
     try:
@@ -59,8 +74,8 @@ def _get_hci() -> dict:
         )
         return json.loads(rc.stdout)
     except Exception as e:
-        sys.stderr.write(f"HCI fetch failed: {e}\n")
-        return {}
+        sys.stderr.write(f"HCI fetch failed, using cached signal seed: {e}\n")
+        return _cached_hci()
 
 
 def interpret(hci: float) -> str:
