@@ -20,6 +20,9 @@ const _hookUiEchoStripRewrite = makeTextBlockBufferedRewriter({
     return { action: 'replace', text: stripped, stopData: data };
   },
 });
+function hookUiEchoStripRewrite(eventName, data, ctx) {
+  return _hookUiEchoStripRewrite(eventName, data, ctx);
+}
 
 const _ackStripRewrite = makeTextBlockBufferedRewriter({
   key: 'text_hold',
