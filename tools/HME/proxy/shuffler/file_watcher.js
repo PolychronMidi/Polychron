@@ -68,7 +68,7 @@ function runRestart(triggerPath) {
   });
 }
 
-function walkRegister(dir) {
+function _walkRegister(dir) {
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
   for (const e of entries) {
