@@ -3,6 +3,7 @@
 const hmeDispatcher = require('./contexts/lifecycle_bridge').hmeDispatcher;
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
+const { emit } = require('./shared');
 const {
   handleUpstreamFailureOrSuccess,
 } = require('./contexts/failure_policy');
