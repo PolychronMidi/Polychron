@@ -52,3 +52,12 @@ npm run hme:circular  # auto-updates baseline on resolution
 `tools/HME/tests/fixtures/circular-baseline.txt` tracks the two known-benign
 cycles (both use lazy requires to break import-time chains). Any new cycle
 detected at import time will fail CI.
+
+### Known-resolved cycle: failure_policy ↔ response_transform
+
+`contexts/failure_policy/hme_proxy_connection_errors.js` once imported
+`writeAnthropicStopSse` from `../response_transform` (the barrel). That barrel
+imports `../../hme_proxy_anthropic_response`, which imports back from
+`../contexts/failure_policy`, closing the loop. Fix: import directly from the
+source leaf `../../legacy_swap_response` instead of the barrel. **Never
+re-import from `../response_transform` from inside `failure_policy/`.**
