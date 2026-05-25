@@ -53,5 +53,7 @@ log/
 /tools/HME/KB/*.lance/
 /tools/HME/service/before-editing-cache.json
 
-# Local smolagents reference checkout; not repo source.
+# Local integration checkouts; not repo source until explicitly vendored.
 /tools/smolagents/
+/tools/opencode/
+/tools/oh-my-openagent/
