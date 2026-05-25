@@ -51,7 +51,7 @@ function compactDedupFile(maxAgeMs = 7 * 24 * 60 * 60 * 1000, cap = 100_000) {
     const lines = [...live.entries()].map(([id, ts]) => JSON.stringify({ id, ts })).join('\n');
     fs.writeFileSync(tmp, lines ? lines + '\n' : '');
     fs.renameSync(tmp, DEDUP_FILE);
-  } catch (_) { try { fs.unlinkSync(tmp); } catch (_) { /* tmp already gone */ } }
+  } catch (_) { try { fs.unlinkSync(tmp); } catch (__ex) { /* tmp already gone */ } }
 }
 
 function readRateLimitState() {
