@@ -102,6 +102,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   // Long vocabulary concordance.
   'continue': 'go',
   'continuing': 'doing',
+  'continued': 'did',
+  'continues': 'does',
   'validation': 'check',
   'validate': 'check',
   'validating': 'checking',
