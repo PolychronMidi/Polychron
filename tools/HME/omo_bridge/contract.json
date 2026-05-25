@@ -1,5 +1,38 @@
 {
-  "contract_version": "hme-omo/v1",
+  "contract_version": "hme-opencode-hook/v1",
+  "dependency_contract_version": "hme-omo/v1",
+  "universal_hook_abi": {
+    "version": "hme-opencode-hook/v1",
+    "core_phases": [
+      "chat.params",
+      "permission.ask",
+      "tool.execute.before",
+      "tool.execute.after"
+    ],
+    "hme_extension_phases": [
+      "stop.before",
+      "stream.text_block"
+    ],
+    "observational_phases": [
+      "session.start",
+      "session.end",
+      "message.input",
+      "message.output",
+      "stream.delta",
+      "policy.evaluate",
+      "telemetry.event"
+    ],
+    "decision_kinds": [
+      "allow",
+      "deny",
+      "modify",
+      "rewrite",
+      "drop",
+      "inject",
+      "ask_permission",
+      "defer"
+    ]
+  },
   "required_entrypoints": [
     "package.json",
     "dist/index.js",
