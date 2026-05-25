@@ -293,7 +293,7 @@ function normalizeText(text, stats) {
     if (line.includes('codex_structured_tool.js') && line.includes('<<')) {
       const marker = heredocMarker(line);
       const block = [line];
-      while (marker && i + 1 < lines.length) {
+      while (marker !== null && i + 1 < lines.length) {
         const next = lines[++i];
         block.push(next);
         if (next.trim() === marker) break;
