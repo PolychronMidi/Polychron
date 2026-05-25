@@ -116,7 +116,7 @@ def _codex_collapse_session_start(groups: list[Any]) -> list[Any]:
 
 def _codex_swap_adapter(command: str) -> str:
     old, new = CODEX_ADAPTER_SUBSTITUTION
-    return command.replace(old, new)
+    return command.replace(old, new).replace('--host claude', '--host codex')
 
 
 def _codex_project_event(event: str, groups: Any) -> Any:
