@@ -7,14 +7,21 @@ const { toUniversalClaudeEvent } = require('../../omo_bridge/adapters/claude_inb
 const { toUniversalCodexEvent } = require('../../omo_bridge/adapters/codex_inbound');
 const { toUniversalOpenAiEvent } = require('../../omo_bridge/adapters/openai_inbound');
 const { toUniversalOpenCodeEvent } = require('../../omo_bridge/adapters/opencode_inbound');
-const { HOST_CAPABILITIES, supportsDecision, unsupportedDecision } = require('../../omo_bridge/host_capabilities');
+const {
+  CAPABILITY_MODES,
+  HOSTS,
+  HOST_CAPABILITIES,
+  phaseCapabilities,
+  supportsDecision,
+  unsupportedDecision,
+} = require('../../omo_bridge/host_capabilities');
 const { translateAnthropicDecision } = require('../../omo_bridge/translators/anthropic_decision');
 const { translateClaudeDecision } = require('../../omo_bridge/translators/claude_decision');
 const { translateCodexDecision } = require('../../omo_bridge/translators/codex_decision');
 const { translateOpenAiDecision } = require('../../omo_bridge/translators/openai_decision');
 const { translateOpenCodeDecision } = require('../../omo_bridge/translators/opencode_decision');
 const { UNIVERSAL_HOOK_ABI, SUPPORTED_PHASES, validateUniversalEvent } = require('../../omo_bridge/universal_event');
-const { validateUniversalDecision } = require('../../omo_bridge/universal_decision');
+const { DECISION_KINDS, DECISION_TARGETS, validateUniversalDecision } = require('../../omo_bridge/universal_decision');
 
 const FIXTURE_DIR = path.join(__dirname, '../fixtures/universal_hooks');
 
@@ -168,14 +175,61 @@ test('universal hook host capabilities reject unsupported target decisions expli
   assert.deepEqual(translateClaudeDecision(decision, { phase: 'chat.params' }), unsupportedDecision('claude', 'chat.params', decision));
 });
 
-test('universal hook capability map covers every ABI phase explicitly', () => {
-  for (const [host, phases] of Object.entries(HOST_CAPABILITIES)) {
-    assert.ok(Object.keys(phases).length > 0, host);
-    for (const phase of Object.keys(phases)) assert.ok(SUPPORTED_PHASES.includes(phase), `${host}:${phase}`);
+test('universal hook capability map enumerates every host and ABI phase', () => {
+  assert.deepEqual(Object.keys(HOST_CAPABILITIES).sort(), [...HOSTS].sort());
+  for (const host of HOSTS) {
+    assert.deepEqual(Object.keys(HOST_CAPABILITIES[host]).sort(), [...SUPPORTED_PHASES].sort(), host);
+    for (const phase of SUPPORTED_PHASES) {
+      const capabilities = phaseCapabilities(host, phase);
+      assert.ok(CAPABILITY_MODES.includes(capabilities.mode), `${host}:${phase}`);
+      assert.equal(capabilities, HOST_CAPABILITIES[host][phase], `${host}:${phase}`);
+      for (const [kind, support] of Object.entries(capabilities.decisions)) {
+        assert.ok(DECISION_KINDS.includes(kind), `${host}:${phase}:${kind}`);
+        if (Array.isArray(support)) {
+          for (const target of support) assert.ok((DECISION_TARGETS[kind] || []).includes(target), `${host}:${phase}:${kind}:${target}`);
+        } else {
+          assert.equal(support, true, `${host}:${phase}:${kind}`);
+        }
+      }
+    }
   }
+});
+
+test('universal hook capabilities separate unsupported advisory and enforcement phases', () => {
+  assert.equal(phaseCapabilities('claude', 'chat.params').mode, 'unsupported');
+  assert.equal(phaseCapabilities('openai', 'tool.execute.after').mode, 'advisory');
+  assert.equal(phaseCapabilities('anthropic', 'chat.params').mode, 'enforcement');
+  assert.equal(supportsDecision('openai', 'tool.execute.after', { kind: 'allow' }), true);
+  assert.equal(supportsDecision('openai', 'tool.execute.after', { kind: 'deny', reason: 'late failure' }), false);
   assert.equal(supportsDecision('anthropic', 'chat.params', { kind: 'modify', target: 'chat.params', patch: {} }), true);
-  assert.equal(supportsDecision('openai', 'stream.text_block', { kind: 'rewrite', target: 'stream.text', text: '' }), true);
+});
+
+test('universal hook proxy capabilities support request mutation and stream text rewriting', () => {
+  for (const host of ['anthropic', 'openai']) {
+    assert.equal(supportsDecision(host, 'chat.params', { kind: 'modify', target: 'chat.params', patch: {} }), true, host);
+    assert.equal(supportsDecision(host, 'stream.text_block', { kind: 'drop', target: 'stream.block' }), true, host);
+    assert.equal(supportsDecision(host, 'stream.text_block', { kind: 'rewrite', target: 'stream.text', text: '' }), true, host);
+  }
+  for (const host of ['claude', 'codex']) {
+    assert.equal(supportsDecision(host, 'chat.params', { kind: 'modify', target: 'chat.params', patch: {} }), false, host);
+    assert.equal(supportsDecision(host, 'stream.text_block', { kind: 'rewrite', target: 'stream.text', text: '' }), false, host);
+  }
+});
+
+test('universal hook opencode capabilities cover direct OpenCode-compatible phases', () => {
+  for (const phase of ['chat.params', 'permission.ask', 'tool.execute.before', 'tool.execute.after']) {
+    assert.notEqual(phaseCapabilities('opencode', phase).mode, 'unsupported', phase);
+  }
   assert.equal(supportsDecision('opencode', 'permission.ask', { kind: 'ask_permission', prompt: 'Approve?' }), true);
+  assert.equal(supportsDecision('opencode', 'tool.execute.before', { kind: 'modify', target: 'tool.input', patch: {} }), true);
+  assert.equal(supportsDecision('opencode', 'stream.text_block', { kind: 'rewrite', target: 'stream.text', text: '' }), false);
+});
+
+test('universal hook unsupported safety-critical decisions fail closed', () => {
+  assert.equal(unsupportedDecision('opencode', 'stop.before', { kind: 'deny', reason: 'must stop' }).failClosed, true);
+  assert.equal(unsupportedDecision('claude', 'tool.execute.before', { kind: 'modify', target: 'tool.input', patch: {} }).failClosed, true);
+  assert.equal(unsupportedDecision('claude', 'chat.params', { kind: 'modify', target: 'chat.params', patch: {} }).failClosed, false);
+  assert.equal(unsupportedDecision('unknown', 'permission.ask', { kind: 'allow' }).failClosed, false);
 });
 
 test('universal hook fixtures stay small enough for golden roundtrip tests', () => {

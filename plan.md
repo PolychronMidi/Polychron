@@ -93,7 +93,7 @@ tools/HME/omo_bridge/translators/opencode_decision.js
 
 ## Phase 3: host capability map
 
-Status: scaffolded by Phase 2; full capability matrix hardening is next.
+Status: complete.
 
 Goal: make host limits explicit before plugins or routing rely on decisions.
 
