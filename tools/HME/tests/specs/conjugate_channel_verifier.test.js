@@ -10,6 +10,12 @@ const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
+// Ensure fail-fast env keys (HME_METRICS_DIR, PROJECT_ROOT, etc.) are loaded
+// even when this spec is invoked standalone via `node --test`. Without this
+if (!process.env.PROJECT_ROOT) process.env.PROJECT_ROOT = PROJECT_ROOT;
+const { loadEnv, defaultEnvPath } = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/shared/load_env.js'));
+loadEnv(defaultEnvPath(path.join(PROJECT_ROOT, 'tools/HME/proxy/shared')));
+
 function _runVerifier() {
   // Invoke verifier in isolation via Python; compare status + summary.
   // verify_coherence._base reads PROJECT_ROOT fail-fast; must propagate.
