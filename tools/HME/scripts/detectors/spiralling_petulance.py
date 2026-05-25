@@ -217,6 +217,8 @@ def _command_family(cmd: str) -> str:
         return "node-syntax-check"
     if len(tokens) >= 2 and tokens[0] == "python3" and tokens[1] == "-m":
         return "python-module"
+    if len(tokens) >= 1 and tokens[0] in ("python3", "python", "node", "find", "grep", "curl", "cat", "head", "tail", "wc", "ls", "jq", "rg", "git", "npm", "npx", "pnpm", "yarn", "cargo", "rustc", "diff", "sort", "xargs"):
+        return "diagnostic-script"
     return ""
 
 
