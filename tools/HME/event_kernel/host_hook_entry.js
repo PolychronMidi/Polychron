@@ -15,9 +15,11 @@ const root = path.resolve(__dirname, '..');
 
 const adapter = host === 'codex'
   ? path.join(root, 'event_kernel', 'codex_adapter.js')
-  : host === 'claude'
-    ? path.join(root, 'event_kernel', 'claude_adapter.js')
-    : '';
+  : host === 'opencode'
+    ? path.join(root, 'event_kernel', 'opencode_adapter.js')
+    : host === 'claude'
+      ? path.join(root, 'event_kernel', 'claude_adapter.js')
+      : '';
 
 if (!adapter) {
   console.error(`host_hook_entry: unsupported host ${JSON.stringify(host)}`);
