@@ -3,8 +3,8 @@
 const { PROJECT_ROOT } = require('../../shared');
 const omniroute = require('../upstream_dispatch').omnirouteClient;
 const {
-  detectUpstreamFailure,
-  alertCooldownActive,
+  detectUpstreamFailure: _detectUpstreamFailure,
+  alertCooldownActive: _alertCooldownActive,
 } = require('./failure_classification');
 const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
 const { classifyFailure } = require('./omni_failure_policy');
