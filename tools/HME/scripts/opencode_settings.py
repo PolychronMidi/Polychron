@@ -145,6 +145,8 @@ def path_violations(doc: dict[str, Any], port: int) -> list[str]:
     base_url = ((provider.get("options") or {}).get("baseURL"))
     if base_url != hme_base_url(port):
         return [f"provider.{PROVIDER_ID}.options.baseURL must point at HME proxy ({hme_base_url(port)})"]
+    if not Path(plugin_spec(PROJECT_ROOT).replace('file://', '')).is_file():
+        return ["HME OpenCode plugin source is missing"]
     return []
 
 
