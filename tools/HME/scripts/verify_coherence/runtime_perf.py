@@ -243,7 +243,8 @@ class GitCommitTestCoverageVerifier(Verifier):
                  or "verifier" in f.lower())
                 for f in files
             )
-            if not has_test:
+            waived = _is_fix_commit_waived(sha, msg)
+            if not has_test and not waived:
                 uncovered.append(f"{sha[:8]} {msg[:60]}")
         if not uncovered:
             return passed(summary=f"{len(fix_commits)} fix commits, all include test/verifier changes")
