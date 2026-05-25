@@ -20,9 +20,9 @@ function mutateClaudeRequest(...args) {
   //       -> overdrive_route -> hme_proxy_claude.
   return require('./contexts/request_mutation').mutateClaudeRequest(...args);
 }
-const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
+const { createProxyRouteDispatcher } = require('./contexts/lifecycle_bridge');
 function lifecycleBridge() {
-  const bridge = require('./lifecycle_bridge');
+  const bridge = require('./contexts/lifecycle_bridge').lifecycleBridge;
   if (!bridge
       || typeof bridge.lifecycleInactive !== 'function'
       || typeof bridge.runInlineFallback !== 'function') {
