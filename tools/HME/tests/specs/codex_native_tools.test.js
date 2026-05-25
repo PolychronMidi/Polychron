@@ -410,5 +410,6 @@ test('Codex proxy diagnoses tool-only streamed completion instead of silently re
 test('uniform Codex tools keep the canonical HME tool set', () => {
   const { uniformToolList } = require('../../proxy/codex_uniform_tools');
   const names = uniformToolList().map((tool) => tool.name).sort();
-  assert.deepEqual(names, ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+  assert.deepEqual(names, ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write'],
+    `actual uniformToolList names=${JSON.stringify(names)}`);
 });
