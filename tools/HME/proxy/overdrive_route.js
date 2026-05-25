@@ -11,7 +11,7 @@ const { applyEffortParams } = require('./model_effort');
 const {
   loadModelRouteHealth,
   routeSkipReason,
-} = require('./contexts/failure_policy/model_route_health');
+} = require('./contexts/failure_policy');
 
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
