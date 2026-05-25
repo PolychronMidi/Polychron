@@ -85,7 +85,7 @@ function createClaudeHandler(deps) {
     routeMetrics: _routeMetrics,
     stopGateHealth: _stopGateHealth,
     loadedMiddleware,
-    handleLifecycleRoute: (req, res) => lifecycleBridge.handleLifecycleRoute(req, res),
+    handleLifecycleRoute: (req, res) => lifecycleBridge().handleLifecycleRoute(req, res),
   });
 
   function handleRequest(clientReq, clientRes) {
