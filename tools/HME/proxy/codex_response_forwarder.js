@@ -334,6 +334,29 @@ function createCodexResponseForwarder(deps) {
       }
     }
 
+    function sendSseError(target, httpStatus, errCode, errMessage, attempts = 0) {
+      const wantsStream = Boolean(target.body && target.body.stream);
+      if (!wantsStream || res.headersSent || res.writableEnded) {
+        if (!res.headersSent && !res.writableEnded) {
+          res.writeHead(httpStatus, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: errCode, message: errMessage, attempts }));
+        } else { try { res.end(); } catch (_e) { /* socket already closed */ } }
+        return;
+      }
+      const responseId = `hme_upstream_error_${Date.now()}`;
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+      });
+      const errObj = { code: errCode, message: errMessage };
+      const failedResponse = { id: responseId, object: 'response', status: 'failed', error: errObj, output: [] };
+      res.write(`event: response.created\ndata: ${JSON.stringify({ type: 'response.created', response: { id: responseId, object: 'response', status: 'in_progress', output: [] } })}\n\n`);
+      res.write(`event: response.failed\ndata: ${JSON.stringify({ type: 'response.failed', response: failedResponse })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+
     function droppedIncompleteCalls(calls, target) {
       const depth = target.tool_loop_depth || 0;
       const dropped = calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) }));
