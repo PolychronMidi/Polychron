@@ -38,7 +38,7 @@ def _recent_service_restart(seconds: int = 300) -> tuple[bool, str]:
     import urllib.request as _ur
     port = os.environ['HME_PROXY_PORT']
     try:
-        with _ur.urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as resp:
+        with _ur.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as resp:
             data = json.loads(resp.read().decode())
         raw = data.get("started_at")
         if not raw:
