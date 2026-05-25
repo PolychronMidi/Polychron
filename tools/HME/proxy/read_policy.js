@@ -58,11 +58,13 @@ function editedRangesThisTurn(file, root = PROJECT_ROOT) {
     const out = [];
     const entries = fs.readFileSync(path.join(root, 'tmp/hme-turn-edits.txt'), 'utf8').split(/\r?\n/);
     for (const line of entries) {
-      if (line === base) { out.push([0, 0]); continue; }
+      if (line === base || line === `${base}:`) continue; // bare or empty range → skip
       if (!line.startsWith(`${base}:`)) continue;
       const m = line.slice(base.length + 1).match(/^(\d+)-(\d+)$/);
-      if (!m) { out.push([0, 0]); continue; }
-      out.push([Number(m[1]), Number(m[2])]);
+      if (!m) continue; // malformed range → skip
+      const s = Number(m[1]), e = Number(m[2]);
+      if (s === 0 && e === 0) { out.push([0, 0]); continue; } // explicit whole-file sentinel
+      if (s > 0 && s <= e) out.push([s, e]);
     }
     return out;
   } catch (_e) { return []; /* silent-ok: no turn edit state yet. */ }
