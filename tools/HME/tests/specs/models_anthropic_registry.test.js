@@ -17,7 +17,7 @@ function loadModels() {
 test('Anthropic effort variants are registered in requested tiers', () => {
   const cfg = loadModels();
   const expected = [
-    ['E5', 'claude-opus-4-7-max-e5', 'opus', 'max', 9],
+    ['E5', 'claude-opus-4-7-max-e5', 'opus', 'max', 10],
     ['E4', 'claude-opus-4-7-xhigh-e4', 'opus', 'xhigh', 9],
     ['E4', 'claude-opus-4-7-high-e4', 'opus', 'high', 7],
     ['E3', 'claude-opus-4-7-medium-e3', 'opus', 'medium', 9],

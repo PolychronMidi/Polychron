@@ -10,7 +10,7 @@ const read = (rel) => fs.readFileSync(path.join(REPO, rel), 'utf8');
 
 test('launcher starts OmniRoute under active mode 1 and never stale mode 6', () => {
   const launch = read('tools/HME/launcher/polychron-launch.sh');
-  assert.match(launch, /_OD_START="\$\{OVERDRIVE_MODE:-0\}"/);
+  assert.match(launch, /_OD_START="\$\{OVERDRIVE_MODE\}"/);
   assert.match(launch, /if \[ "\$_OD_START" = "1" \]; then/);
   assert.doesNotMatch(launch, /_OD_START" = "6"|OVERDRIVE_MODE=6|MODE=6/);
   assert.match(launch, /codex-proxy-supervisor\.sh/);
@@ -27,7 +27,7 @@ test('service registry enables OmniRoute only for canonical mode 1', () => {
 test('shutdown owns the same bridge services as launcher', () => {
   const shutdown = read('tools/HME/launcher/polychron-shutdown.sh');
   assert.match(shutdown, /codex-proxy-supervisor\.sh/);
-  assert.match(shutdown, /for _svc in proxy worker llamacpp_daemon codex_proxy omniroute/);
+  assert.match(shutdown, /for _svc in proxy proxy_a proxy_b worker llamacpp_daemon codex_proxy omniroute/);
 });
 
 test('codex proxy supervisor restarts on shared routing dependency edits', () => {

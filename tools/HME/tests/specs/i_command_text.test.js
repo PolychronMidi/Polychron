@@ -4,8 +4,10 @@ const assert = require('node:assert');
 const { normalizeICommand, normalizeICommandsInValue } = require('../../proxy/i_command_text');
 const { normalizeICommands } = require('../../proxy/messages');
 const { applyRequestTransform } = require('../../proxy/codex_payload');
+const path = require('node:path');
 
-const ABS = '/home/jah/Polychron/tools/HME/i/status mode=health';
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+const ABS = path.join(REPO_ROOT, 'tools', 'HME', 'i', 'status') + ' mode=health';
 
 test('normalizes i wrapper path variants to canonical command text', () => {
   assert.strictEqual(normalizeICommand(ABS), 'i/status mode=health');
@@ -38,7 +40,7 @@ test('Codex request transform rewrites i wrapper commands before upstream', () =
     record: () => {},
     projectRoot: process.cwd(),
   });
-  assert.strictEqual(JSON.parse(result.body.input[0].arguments).cmd, 'i/status mode=health');
+  assert.strictEqual(JSON.parse(result.body.input[0].arguments).command, 'i/status mode=health');
   assert.strictEqual(result.cleanup.i_commands, 1);
   assert.doesNotMatch(JSON.stringify(result.body), /\/home\/jah\/Polychron\/tools\/HME\/i\/status/);
 });
