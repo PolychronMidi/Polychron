@@ -232,15 +232,15 @@ function createClaudeHandler(deps) {
         // tool_uses. If none present, forward buffer + apply SSE transforms
         // (Bash run_in_background rewrite). If HME_* present, run the
         // continuation loop until a final HME-free response, then forward it.
-        const chunks = [];
+        const responseChunks = [];
 
         const scanFpGateChunk = createFpGateScanner({
           payload,
-          chunks,
+          chunks: responseChunks,
           destroyUpstream: () => upstreamReq.destroy(),
         });
         upstreamRes.on('data', (c) => {
-          chunks.push(c);
+          responseChunks.push(c);
           scanFpGateChunk(c);
         });
         upstreamRes.on('end', async () => {
