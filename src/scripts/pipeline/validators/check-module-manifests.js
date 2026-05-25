@@ -32,6 +32,7 @@ const ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
 const SRC_DIR = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(ROOT, 'src/types/globals.d.ts');
+const INCLUDE_TEST_FIXTURES = process.env.HME_MANIFEST_INCLUDE_TEST_FIXTURES === '1';
 
 const KNOWN_SUBSYSTEMS = new Set([
   'utils', 'conductor', 'rhythm', 'time',
