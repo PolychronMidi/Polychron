@@ -293,10 +293,14 @@ function normalizeText(text, stats) {
     if (line.includes('codex_structured_tool.js') && line.includes('<<')) {
       const marker = heredocMarker(line);
       const block = [line];
-      while (marker !== null && i + 1 < lines.length) {
-        const next = lines[++i];
-        block.push(next);
-        if (next.trim() === marker) break;
+      if (marker === null) {
+        /* no valid marker - skip heredoc gathering */
+      } else {
+        while (i + 1 < lines.length) {
+          const next = lines[++i];
+          block.push(next);
+          if (next.trim() === marker) break;
+        }
       }
       const bridge = bridgeCommand(block.join('\n'));
       out.push(bridge ? displayCall(bridge) : actionToolFromLine(line));
