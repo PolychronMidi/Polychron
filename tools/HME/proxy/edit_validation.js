@@ -63,15 +63,15 @@ function isInvalidEditInput(input, options = {}) {
   return false;
 }
 
-const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update']);
-const WRITE_FAMILY_TOOL_NAMES = new Set(['Write', ...EDIT_FAMILY_TOOL_NAMES]);
+const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update', 'edit', 'apply_patch']);
+const WRITE_FAMILY_TOOL_NAMES = new Set(['Write', 'write', ...EDIT_FAMILY_TOOL_NAMES]);
 
 function isEditFamilyTool(name) {
   return EDIT_FAMILY_TOOL_NAMES.has(name);
 }
 
 function isWriteTool(name) {
-  return name === 'Write';
+  return name === 'Write' || name === 'write';
 }
 
 function isWriteFamilyTool(name) {
