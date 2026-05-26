@@ -181,8 +181,9 @@ class TodoCodexPlanSyncVerifier(Verifier):
                 if not groups:
                     failures.append(f"codex hook projection missing {event}")
                     continue
-                if "codex_adapter.js" not in json.dumps(groups):
-                    failures.append(f"codex hook projection {event} does not route through codex_adapter.js")
+                blob = json.dumps(groups)
+                if "host_hook_entry.js" not in blob or "--host codex" not in blob:
+                    failures.append(f"codex hook projection {event} does not route through host_hook_entry.js --host codex")
         except Exception as e:
             failures.append(f"codex hook projection invalid: {e}")
         try:
