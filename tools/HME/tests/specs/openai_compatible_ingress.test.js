@@ -31,7 +31,7 @@ test('modelCatalog excludes skipped Claude Anthropic providers', () => {
 
 test('routeOpenAICompatibleThroughHme sets HME upstream and model route', () => {
   const cfg = { providers_to_skip: { providers: [] }, tiers: { E5: { models: [{ id: 'qwen-free', provider: 'openrouter' }] } } };
-  const req = { url: '/v1/chat/completions', headers: {} };
+  const req = { url: '/v1/chat/completions', headers: { authorization: 'Bearer hme-local', 'x-api-key': 'hme-local' } };
   const payload = { model: 'qwen-free' };
   const changed = ingress.routeOpenAICompatibleThroughHme(req, payload, { servicePort: () => 20128, cfg, env: {} });
   assert.equal(changed, true);
