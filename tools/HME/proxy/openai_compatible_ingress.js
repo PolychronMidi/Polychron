@@ -34,7 +34,21 @@ function modelCatalog(cfg = loadModelsJson(), env = process.env) {
       if ((provider === 'anthropic' || provider === 'claude') && (skipped.has('anthropic') || skipped.has('claude'))) continue;
       const id = String(m.id || m.api_model || '');
       if (!id) continue;
-      data.push({ id, object: 'model', owned_by: 'hme', tier, provider, omni_provider: omniProvider });
+      data.push({
+        id,
+        object: 'model',
+        owned_by: 'hme',
+        name: m.name || id,
+        provider,
+        omni_provider: omniProvider,
+        tier,
+        tier_score: m.tier_score || 0,
+        context_length: m.context_length || null,
+        max_input_tokens: m.max_input_tokens || null,
+        max_output_tokens: m.max_output_tokens || null,
+        supports_tools: m.supports_tools !== false,
+        supports_reasoning: /gpt|claude|deepseek|qwen|kimi|mimo/i.test(`${id} ${m.name || ''}`),
+      });
     }
   }
   return data;
