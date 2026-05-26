@@ -73,6 +73,25 @@ test('OpenCode plugin applies HME updatedInput rewrites to tool args', async () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('OpenCode plugin normalizes OpenCode tool names before HME relay', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-tool-normalize-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  const capture = path.join(root, 'capture.json');
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const fs = require("fs");',
+    `fs.writeFileSync(${JSON.stringify(capture)}, fs.readFileSync(0, "utf8"));`,
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+
+  const mod = await import(`${pluginUrl}?tool-normalize-${Date.now()}`);
+  const hooks = await mod.default({ project: { directory: root } });
+  await hooks['tool.execute.before']({ tool: 'apply_patch', sessionID: 's1' }, { args: { file_path: '/x.js', old_string: 'a', new_string: 'b' } });
+  const payload = JSON.parse(fs.readFileSync(capture, 'utf8'));
+  assert.equal(payload.tool_name, 'Edit');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('OpenCode plugin applies TextComplete rewrite and drop decisions', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-textcomplete-'));
   fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
