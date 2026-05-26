@@ -20,3 +20,9 @@ Live OpenCode routing is wired in shadow mode through `shadow_runtime.js` and
 Shadow observations are fail-open. Missing OMO builds, load failures, invalid
 events, plugin errors, and timeouts are emitted as `omo_shadow_observed`
 telemetry and never change HME/OpenCode hook decisions.
+
+For the installed npm package in this workspace, use `HME_OMO_SOURCE=package`
+and `HME_OMO_PACKAGE=oh-my-openagent`; the built entrypoint is
+`node_modules/oh-my-openagent/dist/index.js`. Cold `tool.execute.before`
+initialization can take multiple seconds, so use a larger shadow budget such as
+`HME_OMO_TIMEOUT_MS=10000` for real-entrypoint smoke tests.

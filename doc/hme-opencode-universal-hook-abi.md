@@ -80,6 +80,13 @@ the OMO source using `HME_OMO_SOURCE=path` plus `HME_OMO_PATH`, or
 `HME_OMO_SOURCE=package` plus `HME_OMO_PACKAGE`. Optional controls are
 `HME_OMO_REQUIRED_VERSION` and `HME_OMO_TIMEOUT_MS`.
 
+In this workspace the installed package path is the current real-entrypoint
+smoke target: `HME_OMO_SOURCE=package` and
+`HME_OMO_PACKAGE=oh-my-openagent`. The development checkout at
+`tools/oh-my-openagent` may not have `dist/index.js` until it is built. Use a
+larger timeout, for example `HME_OMO_TIMEOUT_MS=10000`, when measuring cold
+`tool.execute.before` startup.
+
 HME remains authoritative. Shadow decisions, mutations, denials, plugin load
 errors, invalid events, and timeouts are telemetry only and cannot change live
 allow/deny, stop-chain, stream rewriting, permissions, provider routing,

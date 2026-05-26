@@ -143,7 +143,11 @@ async function observeOmoShadow(eventName, stdinJson, options = {}) {
       emitOmo('omo_shadow_observed', { status: runtime.reason || 'disabled', event_name: eventName, phase: event.phase, error: runtime.error || '' }, options.telemetry);
       return { status: runtime.reason || 'disabled', error: runtime.error };
     }
-    const result = await withTimeout(() => runtime.host.invokePhase(event, { host: 'opencode' }), timeoutMs(options));
+    const configuredTimeoutMs = timeoutMs(options);
+    const result = await withTimeout(
+      () => runtime.host.invokePhase(event, { host: 'opencode', defaultTimeoutMs: configuredTimeoutMs }),
+      configuredTimeoutMs
+    );
     emitOmo('omo_shadow_observed', {
       status: 'ok',
       event_name: eventName,

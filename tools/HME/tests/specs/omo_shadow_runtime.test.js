@@ -113,3 +113,21 @@ test('OMO shadow runtime plugin errors are non-fatal', async () => {
   assert.equal(result.status, 'error');
   assert.match(result.error, /invalid plugin output/);
 });
+
+test('OMO shadow runtime passes configured timeout to universal host', async () => {
+  let receivedOptions = null;
+  const result = await withEnv({ HME_OMO_ENABLED: '1', HME_OMO_MODE: 'shadow' }, () => runtime.observeOmoShadow('PreToolUse', payload(), {
+    timeoutMs: 1234,
+    runtime: {
+      enabled: true,
+      host: {
+        invokePhase: (_event, options) => {
+          receivedOptions = options;
+          return { primaryDecision: { kind: 'allow' }, results: [], durationMs: 1 };
+        },
+      },
+    },
+  }));
+  assert.equal(result.status, 'ok');
+  assert.equal(receivedOptions.defaultTimeoutMs, 1234);
+});
