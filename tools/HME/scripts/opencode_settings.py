@@ -15,6 +15,7 @@ DEFAULT_MODEL = "hme/gpt-5.5-xhigh"
 DEFAULT_SMALL_MODEL = "hme/gpt-5.5-high"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
 PLUGIN_REL = Path("tools/HME/opencode/plugin/hme_hooks.mjs")
+ENABLE_PLUGIN = os.environ.get("HME_OPENCODE_ENABLE_PLUGIN") == "1"
 
 
 def plugin_spec(project_root: Path = PROJECT_ROOT) -> str:
