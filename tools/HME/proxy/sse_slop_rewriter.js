@@ -126,6 +126,9 @@ const _ABBREVIATION_MAP = Object.freeze({
   'enthusiastically': 'eagerly',
   'environmentally': 'eco',
   'identification': 'id',
+  'instead': 'instd',
+  'performed': 'did',
+  'perform': 'do',
   'implemented': 'did',
   'implement': 'do',
   'implementation': 'setup',
@@ -250,8 +253,6 @@ const _ABBREVIATION_MAP = Object.freeze({
   'configuration files': 'config files',
   'implementation detail': 'impl detail',
   'implementation details': 'impl details',
-  'implement': 'impl',
-  'implementing': 'impl',
 });
 
 function _buildAbbreviationRegExp(map) {
@@ -275,8 +276,8 @@ function _abbreviateMatch(_match, word, punct = '') {
   return `${_preserveAbbrevCase(word, target)}${punct}`;
 }
 
-function _ingSuffixRepl(match, _stem) {
-  return match;
+function _ingSuffixRepl(_match, stem) {
+  return `${stem}in`;
 }
 
 // Anti-slop strip; entries define regex, replacement, and stat label.

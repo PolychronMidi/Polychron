@@ -22,6 +22,12 @@ test('slop caveman contractions are ordered before bare pronouns', () => {
   assert.doesNotMatch(result.out, /['’](re|ll|m)\b/);
 });
 
+test('slop caveman ing suffix shortens long gerunds outside code', () => {
+  const result = _stripSlop('Running walking testing during thing string spring.');
+  assert.ok(result.hits.includes('caveman_ing_suffix'));
+  assert.equal(result.out, 'Runnin walkin testin during thing string spring.');
+});
+
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
@@ -48,7 +54,7 @@ test('slop rewriter applies caveman compression to thinking blocks without deny 
   assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'thinking_delta', thinking: 'I am now checking the path.' } }, ctx), null);
   const out = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 1 }, ctx);
   assert.equal(out.events[1][1].delta.type, 'thinking_delta');
-  assert.equal(out.events[1][1].delta.thinking, 'Checking path.');
+  assert.equal(out.events[1][1].delta.thinking, 'Checkin path.');
 });
 
 test('caveman patterns do not mutate content inside backtick spans', () => {
