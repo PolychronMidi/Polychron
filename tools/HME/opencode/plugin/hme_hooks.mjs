@@ -24,7 +24,7 @@ function runHme(ctx, event, payload) {
   catch (_err) { return {}; }
 }
 
-function applyDecision(decision, output) {
+export function applyDecision(decision, output) {
   const doc = decision.decision || decision.hookSpecificOutput || decision;
   const behavior = doc.behavior || doc.permissionDecision || doc.decision;
   if (behavior === 'deny') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Denied by HME');
