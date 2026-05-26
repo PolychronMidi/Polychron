@@ -76,6 +76,35 @@ function assistantToolUsesSinceLastUserPrompt(transcriptPath) {
   return count;
 }
 
+function assistantToolNamesSinceLastUserPrompt(transcriptPath) {
+  if (!transcriptPath) return [];
+  let lines;
+  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
+  catch (_e) { return []; }
+  let lastUserIdx = -1;
+  const entries = [];
+  for (const line of lines) {
+    if (!line) continue;
+    let entry;
+    try { entry = JSON.parse(line); } catch (_e) { continue; }
+    entries.push(entry);
+    const role = entry.type || entry.role;
+    if (role === 'user') {
+      const text = _entryText(entry);
+      if (text && !/^\[SYSTEM NOTIFICATION/.test(text) && !/^Stop hook feedback:/.test(text)) lastUserIdx = entries.length - 1;
+    }
+  }
+  if (lastUserIdx < 0) return [];
+  const names = [];
+  for (let i = lastUserIdx + 1; i < entries.length; i++) {
+    const entry = entries[i];
+    const role = entry.type || entry.role;
+    if (role !== 'assistant') continue;
+    for (const block of _assistantToolUses(entry)) names.push(String(block.name || ''));
+  }
+  return names;
+}
+
 function entryTimestampMs(entry) {
   const raw = entry && (entry.timestamp || entry.created_at || entry.time || entry.ts);
   if (typeof raw === 'number') return raw > 10_000_000_000 ? raw : raw * 1000;
@@ -147,6 +176,7 @@ function _assistantToolUses(entry) {
 module.exports = {
   lastAssistantText,
   assistantToolUsesSinceLastUserPrompt,
+  assistantToolNamesSinceLastUserPrompt,
   lastRealUserPrompt,
   _entryText,
   _assistantToolUses,
