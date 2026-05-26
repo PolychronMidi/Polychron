@@ -4,11 +4,11 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Patch HME OMO bridge to avoid 10s live tool latency
 
 ## Next
 
-(empty)
+- [ ] [E3] Verify OpenCode relay stays ok and fast
 
 ## Done
 

@@ -1,14 +1,14 @@
 # plugin/
 
-OpenCode plugin entrypoints that relay host lifecycle events into the HME hook kernel.
+OpenCode CLI plugin entrypoints that relay host lifecycle events into the HME hook kernel.
 
-`hme_hooks.mjs` exports `HmeHooks(ctx)`, which registers OpenCode plugin hooks:
+`hme_hooks.mjs` default-exports the plugin factory, which registers OpenCode plugin hooks:
 
 - `tool.execute.before` -> `PreToolUse`
 - `tool.execute.after` -> `PostToolUse`
 - `permission.ask` -> `PermissionRequest`
-- `session.created` -> `SessionStart`
-- `session.compacted` -> `PostCompact`
+- `event` -> best-effort session lifecycle relay for session start/compact events
 
-The plugin is registered from `~/.config/opencode/opencode.jsonc`. OpenCode must
-be restarted after plugin/config edits.
+The plugin is registered from `~/.config/opencode/opencode.jsonc`. Restart the
+OpenCode CLI session after plugin/config edits. Desktop OpenCode is not part of
+this supported path.

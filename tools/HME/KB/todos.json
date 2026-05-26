@@ -2,12 +2,54 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3664,
-      "updated_ts": 1779120063.024968,
+      "max_id": 9577,
+      "updated_ts": 1779821464.2517645,
       "codex_plan_synced_ts": 1779120063.0248382,
       "codex_plan_source": "${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
       "codex_plan_ts": "2026-05-18T16:00:53.521Z"
     }
+  },
+  {
+    "id": 3665,
+    "text": "Identify blocking OMO tool.execute.before sub-hook",
+    "activeForm": "Identify blocking OMO tool.execute.before sub-hook",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1779817333.0299845,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 3666,
+    "text": "Patch HME OMO bridge to avoid 10s live tool latency",
+    "activeForm": "Patch HME OMO bridge to avoid 10s live tool latency",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1779817333.0300086,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 3667,
+    "text": "Verify OpenCode relay stays ok and fast",
+    "activeForm": "Verify OpenCode relay stays ok and fast",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1779817333.0300248,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
   },
   {
     "id": 3048,

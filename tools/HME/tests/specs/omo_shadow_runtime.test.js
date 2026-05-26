@@ -102,6 +102,7 @@ test('OMO shadow observations do not mutate dispatcher results', async () => {
       HME_OMO_MODE: 'shadow',
       HME_OMO_SOURCE: 'path',
       HME_OMO_PATH: path.relative(repoRoot, sandbox),
+      HME_OMO_REQUIRED_VERSION: '',
     }, async () => {
       const { dispatchEvent } = require('../../event_kernel/dispatcher');
       return dispatchEvent('PreToolUse', payload({ tool_name: 'NoSuchTool' }));
@@ -130,6 +131,7 @@ test('OMO live dispatcher deny blocks before HME hook chain', async () => {
       HME_OMO_MODE: 'live',
       HME_OMO_SOURCE: 'path',
       HME_OMO_PATH: path.relative(repoRoot, sandbox),
+      HME_OMO_REQUIRED_VERSION: '',
       HME_OMO_TOOL_BEFORE_WARM_ONLY: '0',
     }, async () => {
       const { dispatchEvent } = require('../../event_kernel/dispatcher');
@@ -163,6 +165,7 @@ test('OMO live dispatcher SessionStart preloads OMO runtime', async () => {
       HME_OMO_MODE: 'live',
       HME_OMO_SOURCE: 'path',
       HME_OMO_PATH: path.relative(repoRoot, sandbox),
+      HME_OMO_REQUIRED_VERSION: '',
     }, async () => {
       const { dispatchEvent } = require('../../event_kernel/dispatcher');
       await dispatchEvent('SessionStart', JSON.stringify({ session_id: 'live-preload', marker }));

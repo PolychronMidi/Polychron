@@ -41,6 +41,7 @@ async function main() {
     rootEnvKeys: ['PROJECT_ROOT', 'OPENCODE_PROJECT_ROOT'],
     hostProjectEnv: 'OPENCODE_PROJECT_ROOT',
     maintenanceStderr: '',
+    directOnly: true,
     buildBody: ({ root, rawBody, cwd }) => buildHostPayload({ host: 'opencode', event, root, rawBody, cwd, teamRole: process.env.HME_TEAM_ROLE }),
     onProxyResult: ({ root, ts, event: ev }) => append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [opencode-adapter] ${ev} proxied`),
     finalRelay,

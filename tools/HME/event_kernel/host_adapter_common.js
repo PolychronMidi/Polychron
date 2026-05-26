@@ -101,6 +101,16 @@ async function runHostAdapter(opts) {
   lifecycle.checkpoint('adapter:received', { rawBody }, 'input');
   lifecycle.checkpoint('adapter:normalized', { body });
   const watch = watchdog.begin(root, event, body, { host: opts.host });
+  if (opts.directOnly === true) {
+    const ts = new Date().toISOString();
+    append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [${opts.host}-adapter] ${event} direct-only dispatch`);
+    lifecycle.recordTransport('direct-only');
+    const result = await lifecycle.dispatch();
+    lifecycle.checkpoint('kernel:result', { stdout: result.stdout || '', stderr: result.stderr || '', exit_code: result.exit_code });
+    watchdog.end(watch, result);
+    opts.finalRelay(event, result, body);
+    return;
+  }
   let result = await postLifecycle(port, event, body, opts.host === 'codex' ? 'codex' : '');
   if (!result) {
     await new Promise((r) => setTimeout(r, 500));
