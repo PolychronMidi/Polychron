@@ -117,6 +117,8 @@ def expected_provider(port: int, project_root: Path = PROJECT_ROOT) -> dict[str,
 def managed_config(base: dict[str, Any], port: int, project_root: Path = PROJECT_ROOT) -> dict[str, Any]:
     out = dict(base)
     out["$schema"] = out.get("$schema") or "https://opencode.ai/config.json"
+    out.setdefault("model", DEFAULT_MODEL)
+    out.setdefault("small_model", DEFAULT_SMALL_MODEL)
     provider = dict(out.get("provider") or {})
     provider[PROVIDER_ID] = expected_provider(port, project_root)
     out["provider"] = provider
