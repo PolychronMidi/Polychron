@@ -125,7 +125,8 @@ def managed_config(base: dict[str, Any], port: int, project_root: Path = PROJECT
     provider = dict(out.get("provider") or {})
     provider[PROVIDER_ID] = expected_provider(port, project_root)
     out["provider"] = provider
-    plugins = list(out.get("plugin") or [])
+    legacy_plugin = (project_root / Path("tools/HME/opencode/plugin/hme_hooks.js")).resolve().as_uri()
+    plugins = [p for p in list(out.get("plugin") or []) if p != legacy_plugin]
     spec = plugin_spec(project_root)
     if spec not in plugins:
         plugins.append(spec)
