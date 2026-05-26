@@ -77,7 +77,7 @@ test('SseTransform applies caveman compression to provider reasoning converted t
   const out = parseSse(await runSse(raw, [providerReasoningToThinkingRewrite, slopStripRewrite]));
   assert.equal(out[0][1].content_block.type, 'thinking');
   assert.equal(out[1][1].delta.type, 'thinking_delta');
-  assert.equal(out[1][1].delta.thinking, 'Checking path.');
+  assert.equal(out[1][1].delta.thinking, 'Checkin path.');
 });
 
 test('SseTransform applies full slop stripping to normal assistant text without deny context', async () => {

@@ -41,6 +41,26 @@ test('slop caveman tion suffix shortens long tion words outside code', () => {
   assert.equal(result.out, 'Statn cautn relatn action option config app.');
 });
 
+test('slop caveman sion suffix shortens long sion words outside code', () => {
+  const result = _stripSlop('Decision revision expansion vision fission version.');
+  assert.ok(result.hits.includes('caveman_sion_suffix'));
+  assert.ok(result.hits.includes('caveman_abbreviations'), 'specific abbreviation map should still run first');
+  assert.equal(result.out, 'Decisn revisn expansn vision fissn v.');
+});
+
+test('slop caveman ment suffix shortens long ment words outside code', () => {
+  const result = _stripSlop('Agreement shipment fragment cement moment development environment.');
+  assert.ok(result.hits.includes('caveman_ment_suffix'));
+  assert.ok(result.hits.includes('caveman_abbreviations'), 'specific abbreviation map should still run first');
+  assert.equal(result.out, 'Agreemt shipmt fragmt cement moment dev env.');
+});
+
+test('slop caveman ly suffix shortens long ly words outside code', () => {
+  const result = _stripSlop('Locally globally normally ally.');
+  assert.ok(result.hits.includes('caveman_ly_suffix'));
+  assert.equal(result.out, 'Localy globaly normaly ally.');
+});
+
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));

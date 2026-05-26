@@ -276,16 +276,8 @@ function _abbreviateMatch(_match, word, punct = '') {
   return `${_preserveAbbrevCase(word, target)}${punct}`;
 }
 
-function _ingSuffixRepl(_match, stem) {
-  return `${stem}in`;
-}
-
-function _edSuffixRepl(_match, stem) {
-  return `${stem}d`;
-}
-
-function _tionSuffixRepl(_match, stem) {
-  return `${stem}tn`;
+function _suffixRepl(replacementSuffix) {
+  return (_match, stem) => `${stem}${replacementSuffix}`;
 }
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
@@ -407,7 +399,7 @@ const _SLOP_PATTERNS = [
   // Non-examples: thing, string, spring, during.
   { name: 'caveman_ing_suffix',
     re: /\b([a-z]{4,})ing\b/gi,
-    repl: _ingSuffixRepl },
+    repl: _suffixRepl('in') },
 
   // Caveman compression: delete low-signal glue words/first-person filler.
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
@@ -423,7 +415,7 @@ const _SLOP_PATTERNS = [
   // Non-examples: fixed, red, bed.
   { name: 'caveman_ed_suffix',
     re: /\b([a-z]{4,})ed\b/gi,
-    repl: _edSuffixRepl },
+    repl: _suffixRepl('d') },
 
   // Caveman -tion suffix pass. Only words greater than 6 letters are changed.
   // Prefix must be at least 3 letters, because 3 + "tion" = 7.
@@ -433,7 +425,28 @@ const _SLOP_PATTERNS = [
   // Non-examples: action, option.
   { name: 'caveman_tion_suffix',
     re: /\b([a-z]{3,})tion\b/gi,
-    repl: _tionSuffixRepl },
+    repl: _suffixRepl('tn') },
+
+  // Caveman -sion suffix pass. Only words greater than 6 letters are changed.
+  // Examples: decision -> decisn, revision -> revisn, expansion -> expansn.
+  // Non-examples: vision.
+  { name: 'caveman_sion_suffix',
+    re: /\b([a-z]{3,})sion\b/gi,
+    repl: _suffixRepl('sn') },
+
+  // Caveman -ment suffix pass. Only words greater than 6 letters are changed.
+  // Examples: agreement -> agreemt, shipment -> shipmt, fragment -> fragmt.
+  // Non-examples: cement, moment.
+  { name: 'caveman_ment_suffix',
+    re: /\b([a-z]{3,})ment\b/gi,
+    repl: _suffixRepl('mt') },
+
+  // Caveman -ly suffix pass. Only words greater than 6 letters are changed.
+  // Examples: locally -> localy, globally -> globaly, normally -> normaly.
+  // Non-examples: ally.
+  { name: 'caveman_ly_suffix',
+    re: /\b([a-z]{5,})ly\b/gi,
+    repl: _suffixRepl('y') },
 
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
