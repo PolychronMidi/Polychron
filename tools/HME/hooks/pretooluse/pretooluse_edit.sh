@@ -230,9 +230,9 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
       # /enrich KB hits (~70ms) + head of target file. 500ms timeout
       # for CPU-saturated worker; brief is compact (<2 KB).
       # time. Healthy /enrich is ~70ms so the new ceiling is 7x headroom.
-      _kb_hits=$(curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
+      _kb_hits=$({ curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
-        "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" 2>/dev/null \
+        "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" \
         | python3 -c "
 import json, sys
 try:
@@ -242,7 +242,7 @@ try:
     title = str(e.get('title',''))[:120]
     if title: print(f'  [{cat}] {title}')
 except Exception: pass
-" 2>/dev/null)
+"; } 2>/dev/null || true)
       _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)
       if [ -n "$_kb_hits" ] || [ -n "$_file_head" ]; then
         _brief="module: ${_auto_module}"

@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const hmePaths = require('../proxy/infra/hme_paths');
+const { appendJsonl } = require('../proxy/infra/bounded_log');
 
 const STORE_VERSION = 1;
 const LOG_NAME = 'hook-lifecycle-checkpoints.jsonl';
@@ -51,8 +52,7 @@ function threadId({ host = '', event = '', payload = {} }) {
 
 function appendRow(root, row) {
   const file = storePath(root);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(row)}\n`);
+  appendJsonl(file, row);
 }
 
 function readRows(root) {

@@ -2,14 +2,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { pathToFileURL } = require('url');
-const { PROJECT_ROOT } = require('../proxy/shared');
+const { PROJECT_ROOT, RUNTIME_DIR } = require('../proxy/shared');
 const { resolveOmo } = require('./dependency');
 const { createClientShim } = require('./client_shim');
 const { createOpenCodeCompatPlugin } = require('./opencode_compat');
 const { createUniversalOpenCodeHost } = require('./opencode_host');
 const { emitOmo } = require('./telemetry');
 const { UNIVERSAL_HOOK_ABI, validateUniversalEvent } = require('./universal_event');
+const { appendJsonl } = require('../proxy/infra/bounded_log');
 
 const EVENT_PHASE = Object.freeze({
   PreToolUse: 'tool.execute.before',
@@ -20,6 +22,9 @@ const EVENT_PHASE = Object.freeze({
 });
 
 let cachedRuntime = null;
+
+const DEFAULT_LOG = path.join(RUNTIME_DIR, 'omo-shadow-decisions.jsonl');
+const DEFAULT_LOG_MAX_BYTES = 1024 * 1024;
 
 function envFlag(name) {
   const value = process.env[name];
@@ -32,10 +37,99 @@ function timeoutMs(options = {}) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 250;
 }
 
+function phaseTimeoutEnvName(phase) {
+  const suffix = String(phase || '')
+    .replace(/\./g, '_')
+    .replace(/[^A-Za-z0-9_]/g, '')
+    .toUpperCase();
+  return suffix ? `HME_OMO_TIMEOUT_${suffix}_MS` : '';
+}
+
+function timeoutMsForPhase(phase, options = {}) {
+  const phaseTimeouts = options.phaseTimeoutMs || {};
+  if (Number.isFinite(phaseTimeouts[phase]) && phaseTimeouts[phase] > 0) return phaseTimeouts[phase];
+  const envName = phaseTimeoutEnvName(phase);
+  const raw = envName ? process.env[envName] : undefined;
+  const parsed = Number(raw);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  return timeoutMs(options);
+}
+
 function isShadowEnabled(options = {}) {
   const enabled = options.enabled ?? envFlag('HME_OMO_ENABLED');
   const mode = String(options.mode ?? process.env.HME_OMO_MODE ?? 'shadow');
   return enabled === true && mode === 'shadow';
+}
+
+function isLiveEnabled(options = {}) {
+  const enabled = options.enabled ?? envFlag('HME_OMO_ENABLED');
+  const mode = String(options.mode ?? process.env.HME_OMO_MODE ?? 'shadow');
+  return enabled === true && mode === 'live';
+}
+
+function isOmoEnabled(options = {}) {
+  return isShadowEnabled(options) || isLiveEnabled(options);
+}
+
+function isPreloadEnabled(options = {}) {
+  const value = options.preload ?? process.env.HME_OMO_PRELOAD;
+  return value === undefined ? true : value === true || value === '1' || value === 'true';
+}
+
+function isToolBeforeWarmOnly(options = {}) {
+  const value = options.toolBeforeWarmOnly ?? process.env.HME_OMO_TOOL_BEFORE_WARM_ONLY;
+  return value === true || value === '1' || value === 'true';
+}
+
+function allowedPhases(options = {}) {
+  const raw = options.phases ?? process.env.HME_OMO_PHASES;
+  if (!raw) return null;
+  return new Set(String(raw).split(',').map((item) => item.trim()).filter(Boolean));
+}
+
+function phaseAllowed(phase, options = {}) {
+  const phases = allowedPhases(options);
+  return !phases || phases.has(phase);
+}
+
+function hashValue(value) {
+  if (!value) return '';
+  return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, 16);
+}
+
+function compactPluginResults(results) {
+  return Array.isArray(results) ? results.map((item) => item.status).filter(Boolean).join(',') : '';
+}
+
+function writeShadowLog(row, options = {}) {
+  if (options.log === false) return;
+  const logPath = options.logPath || DEFAULT_LOG;
+  const maxBytes = Number.isFinite(options.logMaxBytes) && options.logMaxBytes > 0
+    ? options.logMaxBytes
+    : DEFAULT_LOG_MAX_BYTES;
+  try {
+    fs.mkdirSync(path.dirname(logPath), { recursive: true });
+    appendJsonl(logPath, row, { maxBytes });
+  } catch (_err) {
+    // Shadow logging must never affect hook decisions.
+  }
+}
+
+function recordShadowObservation(fields, options = {}) {
+  const row = {
+    ts: new Date().toISOString(),
+    event: fields.event_name || '',
+    phase: fields.phase || '',
+    status: fields.status || '',
+    decision: fields.decision || '',
+    plugin_results: fields.plugin_results || '',
+    duration_ms: Number.isFinite(fields.duration_ms) ? fields.duration_ms : 0,
+    reason_hash: fields.reason_hash || '',
+    error_hash: fields.error_hash || '',
+  };
+  writeShadowLog(row, options);
+  emitOmo('omo_shadow_observed', { ...fields, reason_hash: row.reason_hash, error_hash: row.error_hash }, options.telemetry);
+  return row;
 }
 
 function parsePayload(stdinJson) {
@@ -107,10 +201,10 @@ async function loadConfiguredHooks(options = {}) {
 }
 
 async function createShadowRuntime(options = {}) {
-  if (!isShadowEnabled(options)) return { enabled: false, reason: 'disabled' };
+  if (!isOmoEnabled(options)) return { enabled: false, reason: 'disabled' };
   const loaded = await loadConfiguredHooks(options);
   if (loaded.status !== 'ok') return { enabled: false, reason: loaded.status, error: loaded.error, dependency: loaded.dependency };
-  const plugin = createOpenCodeCompatPlugin(loaded.hooks, { name: 'omo-shadow', trust: 'external' });
+  const plugin = createOpenCodeCompatPlugin(loaded.hooks, { name: isLiveEnabled(options) ? 'omo-live' : 'omo-shadow', trust: 'external' });
   const host = createUniversalOpenCodeHost({ host: 'opencode', plugins: [plugin], allowExternalLive: true });
   return { enabled: true, host, dependency: loaded.dependency };
 }
@@ -129,39 +223,111 @@ function withTimeout(work, ms) {
 
 async function observeOmoShadow(eventName, stdinJson, options = {}) {
   if (!isShadowEnabled(options)) return { status: 'disabled' };
+  return invokeOmo(eventName, stdinJson, options);
+}
+
+async function invokeOmo(eventName, stdinJson, options = {}) {
+  if (!isOmoEnabled(options)) return { status: 'disabled' };
   const event = buildUniversalEvent(eventName, stdinJson, options);
   if (!event) return { status: 'unsupported_event' };
+  if (eventName === 'SessionStart' && isPreloadEnabled(options) && !cachedRuntime && !options.runtime) {
+    cachedRuntime = await createShadowRuntime(options);
+    recordShadowObservation({ status: cachedRuntime.enabled ? 'preloaded' : cachedRuntime.reason || 'disabled', event_name: eventName, phase: event.phase, error_hash: hashValue(cachedRuntime.error || '') }, options);
+  }
+  if (!phaseAllowed(event.phase, options)) {
+    recordShadowObservation({ status: 'phase_disabled', event_name: eventName, phase: event.phase }, options);
+    return { status: 'phase_disabled' };
+  }
+  if (
+    event.phase === 'tool.execute.before'
+    && isToolBeforeWarmOnly(options)
+    && !cachedRuntime
+    && !options.runtime
+  ) {
+    recordShadowObservation({ status: 'observe_skipped_cold', event_name: eventName, phase: event.phase }, options);
+    return { status: 'observe_skipped_cold' };
+  }
   const validation = validateUniversalEvent(event);
   if (!validation.valid) {
-    emitOmo('omo_shadow_observed', { status: 'invalid_event', event_name: eventName, phase: event.phase, errors: validation.errors.join(';') }, options.telemetry);
+    recordShadowObservation({ status: 'invalid_event', event_name: eventName, phase: event.phase, error_hash: hashValue(validation.errors.join(';')) }, options);
     return { status: 'invalid_event', errors: validation.errors };
   }
   try {
     const runtime = options.runtime || cachedRuntime || await createShadowRuntime(options);
     if (!options.runtime) cachedRuntime = runtime;
     if (!runtime.enabled) {
-      emitOmo('omo_shadow_observed', { status: runtime.reason || 'disabled', event_name: eventName, phase: event.phase, error: runtime.error || '' }, options.telemetry);
+      recordShadowObservation({ status: runtime.reason || 'disabled', event_name: eventName, phase: event.phase, error_hash: hashValue(runtime.error || '') }, options);
       return { status: runtime.reason || 'disabled', error: runtime.error };
     }
-    const configuredTimeoutMs = timeoutMs(options);
+    const configuredTimeoutMs = timeoutMsForPhase(event.phase, options);
     const result = await withTimeout(
       () => runtime.host.invokePhase(event, { host: 'opencode', defaultTimeoutMs: configuredTimeoutMs }),
       configuredTimeoutMs
     );
-    emitOmo('omo_shadow_observed', {
+    const decision = result.primaryDecision || { kind: 'allow' };
+    recordShadowObservation({
       status: 'ok',
       event_name: eventName,
       phase: event.phase,
-      decision: result.primaryDecision && result.primaryDecision.kind || 'allow',
-      plugin_results: Array.isArray(result.results) ? result.results.map((item) => item.status).join(',') : '',
+      decision: decision.kind || 'allow',
+      plugin_results: compactPluginResults(result.results),
       duration_ms: result.durationMs || 0,
-    }, options.telemetry);
+      reason_hash: hashValue(decision.reason || decision.machineCode || ''),
+    }, options);
     return { status: 'ok', result };
   } catch (err) {
     const status = err && err.code === 'OMO_SHADOW_TIMEOUT' ? 'timeout' : 'error';
-    emitOmo('omo_shadow_observed', { status, event_name: eventName, phase: event.phase, error: err && err.message ? err.message : String(err) }, options.telemetry);
+    recordShadowObservation({ status, event_name: eventName, phase: event.phase, error_hash: hashValue(err && err.message ? err.message : String(err)) }, options);
     return { status, error: err && err.message ? err.message : String(err) };
   }
+}
+
+function denyResult(eventName, reason) {
+  const text = String(reason || 'OMO denied request');
+  if (eventName === 'Stop') return { stdout: JSON.stringify({ decision: 'block', reason: text }), stderr: ' ', exit_code: 0 };
+  return {
+    stdout: JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: eventName === 'PermissionRequest' ? 'PreToolUse' : eventName,
+        permissionDecision: 'deny',
+        permissionDecisionReason: text,
+      },
+    }),
+    stderr: ' ',
+    exit_code: 0,
+  };
+}
+
+function modifyToolInput(stdinJson, patch) {
+  const payload = parsePayload(stdinJson);
+  const updatedInput = patch && typeof patch === 'object' ? patch : {};
+  return {
+    stdinJson: JSON.stringify({ ...payload, tool_input: updatedInput }),
+    result: {
+      stdout: JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'allow',
+          updatedInput,
+          additionalContext: 'OMO modified tool input; HME validated the modified request.',
+        },
+      }),
+      stderr: ' ',
+      exit_code: 0,
+    },
+  };
+}
+
+async function applyOmoLive(eventName, stdinJson, options = {}) {
+  if (!isLiveEnabled(options)) return { status: 'disabled', stdinJson };
+  const observed = await invokeOmo(eventName, stdinJson, options);
+  if (observed.status !== 'ok') return { ...observed, stdinJson };
+  const decision = observed.result && observed.result.primaryDecision || { kind: 'allow' };
+  if (decision.kind === 'deny') return { ...observed, applied: true, stdinJson, result: denyResult(eventName, decision.reason || decision.machineCode) };
+  if (eventName === 'PreToolUse' && decision.kind === 'modify' && decision.target === 'tool.input') {
+    return { ...observed, applied: true, ...modifyToolInput(stdinJson, decision.patch) };
+  }
+  return { ...observed, applied: false, stdinJson };
 }
 
 function resetShadowRuntimeForTests() {
@@ -169,8 +335,13 @@ function resetShadowRuntimeForTests() {
 }
 
 module.exports = {
+  applyOmoLive,
   buildUniversalEvent,
   createShadowRuntime,
+  invokeOmo,
   observeOmoShadow,
+  phaseTimeoutEnvName,
+  recordShadowObservation,
   resetShadowRuntimeForTests,
+  timeoutMsForPhase,
 };

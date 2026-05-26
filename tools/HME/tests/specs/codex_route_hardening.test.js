@@ -80,11 +80,20 @@ test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async (
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('Edit auto-brief enrichment curl timeout fails open', async () => {
+  const root = _withSandbox('codex-edit-curl-timeout-');
+  const file = path.join(root, 'src', 'fixture.js');
+  fs.writeFileSync(file, 'const x = 1;\n');
+  const fakeCurl = path.join(root, 'bin', 'curl');
+  fs.writeFileSync(fakeCurl, '#!/usr/bin/env bash\nexit 28\n');
+  fs.chmodSync(fakeCurl, 0o755);
+  const edit = await dispatch(root, 'Edit', { file_path: file, old_string: 'const x = 1;\n', new_string: 'const x = 2;\n' });
+  assert.equal(edit.exit_code, 0, edit.stderr || edit.stdout);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('codex-route and hook-decision status views are compact and API-only', () => {
   const root = _withSandbox('codex-status-');
-  fs.mkdirSync(runtimeDir(root), { recursive: true });
-  fs.writeFileSync(path.join(runtimeDir(root), 'codex-proxy-events.jsonl'), `${JSON.stringify({ kind: 'request', route: 'omniroute', upstream: 'http://127.0.0.1:20128/v1/responses', after: { model: 'gpt-5.5', tool_names: ['exec_command', 'Read', 'Edit', 'update_plan'] } })}\n${JSON.stringify({ kind: 'response', route: 'omniroute', status: 200, model: 'cx/gpt-5.5' })}\n`);
-  fs.writeFileSync(path.join(runtimeDir(root), 'hook-decisions.jsonl'), `${JSON.stringify({ ts: 't', host: 'codex', event: 'PreToolUse', tool: 'Bash', decision: 'deny', reason_hash: 'abc', surfaced_channels: ['permissionDecisionReason'], duplicate_systemMessage_stripped: true })}\n`);
   const script = `
 import importlib.util, os, sys, types
 os.environ['HME_CODEX_ROUTE_SMOKE_ACTIVE'] = '0'
@@ -96,6 +105,11 @@ spec = importlib.util.spec_from_file_location('m', '${path.join(repoRoot, 'tools
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 mod._health = lambda *a, **k: ({'status':'ok'}, '')
+mod._iter_events = lambda path, limit=200: [
+ {'kind':'request','route':'omniroute','upstream':'http://127.0.0.1:20128/v1/responses','after':{'model':'gpt-5.5','tool_names':['exec_command','Read','Edit','update_plan']}},
+ {'kind':'response','route':'omniroute','status':200,'model':'cx/gpt-5.5'},
+ {'ts':'t','host':'codex','event':'PreToolUse','tool':'Bash','decision':'deny','reason_hash':'abc','surfaced_channels':['permissionDecisionReason'],'duplicate_systemMessage_stripped':True},
+]
 mod._omniroute_logs = lambda limit=40: ([
  {'provider':'codex','path':'/v1/responses','requestedModel':'codex/gpt-5.5','sourceFormat':'openai-responses','targetFormat':'openai-responses','status':200},
  {'provider':'codex','path':'/v1/messages','requestedModel':'codex/gpt-5.5-low','sourceFormat':'claude','targetFormat':'openai-responses','status':200},

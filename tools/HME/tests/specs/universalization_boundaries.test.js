@@ -333,6 +333,29 @@ test('hook lifecycle time-travel ledger records redacted checkpoints and forks',
   }
 });
 
+test('hook lifecycle time-travel ledger rotates when over cap', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-hook-time-travel-rotate-'));
+  const originalMax = process.env.HME_RUNTIME_LOG_MAX_BYTES;
+  try {
+    process.env.PROJECT_ROOT = root;
+    process.env.HME_RUNTIME_DIR = path.join(root, 'tools', 'HME', 'runtime');
+    process.env.HME_RUNTIME_LOG_MAX_BYTES = '8';
+    fs.mkdirSync(process.env.HME_RUNTIME_DIR, { recursive: true });
+    const ttPath = require.resolve('../../event_kernel/lifecycle_time_travel');
+    delete require.cache[ttPath];
+    const tt = require('../../event_kernel/lifecycle_time_travel');
+    const file = tt.storePath(root);
+    fs.writeFileSync(file, 'x'.repeat(32));
+    tt.checkpoint({ root, host: 'claude', event: 'UserPromptSubmit', payload: { session_id: 's1' }, phase: 'received' });
+    assert.equal(fs.existsSync(`${file}.1`), true);
+    assert.equal(tt.readRows(root).length, 1);
+  } finally {
+    if (originalMax === undefined) delete process.env.HME_RUNTIME_LOG_MAX_BYTES;
+    else process.env.HME_RUNTIME_LOG_MAX_BYTES = originalMax;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 
 test('turn side effects expose shared lifesaver/autocommit interfaces without forcing host protocol', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-turn-effects-'));

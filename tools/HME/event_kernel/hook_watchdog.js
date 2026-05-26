@@ -3,6 +3,7 @@ const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
+const { appendJsonl } = require('../proxy/infra/bounded_log');
 
 const BUDGETS = {
   SessionStart: { client_timeout_ms: 15_000, target_ms: 3_000, warn_ms: 5_000, fail_ms: 10_000 },
@@ -99,8 +100,7 @@ function prune(state) {
 
 function append(root, row) {
   const p = paths(root);
-  fs.mkdirSync(p.dir, { recursive: true });
-  fs.appendFileSync(p.log, `${JSON.stringify(row)}\n`);
+  appendJsonl(p.log, row);
 }
 
 function appendError(root, text) {

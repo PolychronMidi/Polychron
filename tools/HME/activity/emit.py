@@ -30,6 +30,31 @@ if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 from hme_paths import HME_METRICS_DIR
 
+DEFAULT_MAX_BYTES = 5 * 1024 * 1024
+
+
+def _max_bytes() -> int:
+    raw = os.environ.get("HME_RUNTIME_LOG_MAX_BYTES", "")
+    try:
+        parsed = int(raw)
+        return parsed if parsed > 0 else DEFAULT_MAX_BYTES
+    except ValueError:
+        return DEFAULT_MAX_BYTES
+
+
+def _rotate_if_needed(path: str) -> None:
+    try:
+        if os.path.getsize(path) <= _max_bytes():
+            return
+        rotated = path + ".1"
+        try:
+            os.unlink(rotated)
+        except FileNotFoundError:
+            pass
+        os.replace(path, rotated)
+    except OSError:
+        pass
+
 
 def _coerce(v: str):
     if v in ("true", "True"):
@@ -94,6 +119,7 @@ def main(argv: list[str]) -> int:
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     line = json.dumps(fields, separators=(",", ":"), sort_keys=True) + "\n"
+    _rotate_if_needed(out_path)
     with open(out_path, "a", encoding="utf-8") as f:
         f.write(line)
     return 0

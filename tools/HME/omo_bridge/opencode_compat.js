@@ -18,6 +18,14 @@ function permissionDecision(output = {}) {
   return { kind: 'allow' };
 }
 
+function returnedDecision(output) {
+  if (!output || typeof output !== 'object') return null;
+  if (output.decision && typeof output.decision === 'object') return output.decision;
+  if (typeof output.kind === 'string') return output;
+  if (output.status === 'deny' || output.status === 'ask') return permissionDecision(output);
+  return null;
+}
+
 function chatParamsAdapter(event) {
   const before = event.chat && event.chat.params ? cloneJson(event.chat.params) : {};
   const output = { ...before, maxOutputTokens: before.max_tokens ?? before.maxOutputTokens };
@@ -72,7 +80,9 @@ function createOpenCodeCompatPlugin(hooks = {}, options = {}) {
       const hook = hooks[event.phase];
       if (typeof hook !== 'function') return { kind: 'allow' };
       const call = adapterFor(event);
-      await hook(call.input, call.output);
+      const returned = await hook(call.input, call.output);
+      const directDecision = returnedDecision(returned);
+      if (directDecision) return directDecision;
       return call.decision();
     },
   };

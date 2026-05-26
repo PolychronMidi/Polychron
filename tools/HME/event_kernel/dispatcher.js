@@ -38,7 +38,7 @@ const { recordFailure } = require('../proxy/turn_failure_state');
 const { spawnFileInput } = require('./fs_ipc');
 const { recordHookCheckpoint } = require('./hook_decision_log');
 const nativeHooks = require('./native_hooks');
-const { observeOmoShadow } = require('../omo_bridge/shadow_runtime');
+const { applyOmoLive, observeOmoShadow } = require('../omo_bridge/shadow_runtime');
 
 async function _recordLifecycleState(eventName, stdinJson) {
   const env = normalize(stdinJson);
@@ -328,39 +328,52 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty, 30_000, 'UserPromptSubmit');
     case 'Stop': {
-      await observeOmoShadow('Stop', empty);
+      const omo = await applyOmoLive('Stop', empty);
+      if (omo.status === 'disabled') await observeOmoShadow('Stop', empty);
       // stop_chain evaluator: first-deny-wins, shell stages wrapped via shell_policy
       const stopChain = require('../proxy/stop_chain');
       const result = await stopChain.runStopChain(empty);
       // dominance rewriter removed -- was eating deny messages; re-add via enhance only
-      return result;
+      if (result && /"decision"\s*:\s*"block"/.test(result.stdout || '')) return result;
+      return omo.applied && omo.result ? omo.result : result;
     }
     case 'PreCompact':
       return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty, 30_000, 'PreCompact');
     case 'PostCompact':
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
     case 'PreToolUse': {
-      await observeOmoShadow('PreToolUse', empty);
+      const omo = await applyOmoLive('PreToolUse', empty);
+      if (omo.status === 'disabled') await observeOmoShadow('PreToolUse', empty);
+      if (omo.applied && omo.result && /"permissionDecision"\s*:\s*"deny"/.test(omo.result.stdout || '')) return omo.result;
+      const activeInput = omo.stdinJson || empty;
       const tool = _toolName(empty);
       if (isWriteFamilyTool(tool)) {
-        const decision = await preWriteCheck(empty);
+        const decision = await preWriteCheck(activeInput);
         const stdout = toHookResponse(decision);
         if (stdout || decision.permissionDecision !== 'allow') return { stdout, stderr: ' ', exit_code: 0 };
       }
-      const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
+      const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, activeInput);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
-      if (NATIVE_PRETOOL[tool]) return NATIVE_PRETOOL[tool](empty);
+      if (NATIVE_PRETOOL[tool]) {
+        const native = await NATIVE_PRETOOL[tool](activeInput);
+        if (native && native.stdout) return native;
+        return omo.applied && omo.result ? omo.result : native;
+      }
       const scripts = PRETOOL_SCRIPTS[tool] || [];
       // HME primer runs before first HME_* tool each session -- always chain it
       // for any HME_-prefixed tool, the primer self-guards against re-fire.
       if (tool.startsWith('HME_') || tool.startsWith('mcp__HME__')) {
         scripts.unshift(path.join(PRETOOLUSE, 'pretooluse_hme_primer.sh'));
       }
-      if (scripts.length === 0) return { stdout: '', stderr: ' ', exit_code: 0 };
-      return runChain(scripts, empty, 30_000, 'PreToolUse');
+      if (scripts.length === 0) return omo.applied && omo.result ? omo.result : { stdout: '', stderr: ' ', exit_code: 0 };
+      const chained = await runChain(scripts, activeInput, 30_000, 'PreToolUse');
+      if (chained && chained.stdout) return chained;
+      return omo.applied && omo.result ? omo.result : chained;
     }
     case 'PermissionRequest': {
-      await observeOmoShadow('PermissionRequest', empty);
+      const omo = await applyOmoLive('PermissionRequest', empty);
+      if (omo.status === 'disabled') await observeOmoShadow('PermissionRequest', empty);
+      if (omo.applied && omo.result) return omo.result;
       const tool = _toolName(empty);
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       return unifiedRes && unifiedRes.stdout ? unifiedRes : { stdout: '', stderr: ' ', exit_code: 0 };

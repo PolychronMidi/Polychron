@@ -53,9 +53,9 @@ Provider adapters translate these decisions into Claude, Codex, Anthropic, OpenA
 
 ## Current scope
 
-This phase adds the ABI contract, validators, and OpenCode shadow-mode routing.
-Shadow routing observes HME dispatcher events but does not apply OMO decisions to
-the live OpenCode response.
+This phase adds the ABI contract, validators, OpenCode shadow-mode routing, and
+env-gated live application for the small set of decisions HME can safely express
+as HME-owned hook responses.
 
 Implemented surfaces:
 
@@ -78,7 +78,12 @@ Shadowed dispatcher events:
 Enable shadow mode with `HME_OMO_ENABLED=1` and `HME_OMO_MODE=shadow`. Configure
 the OMO source using `HME_OMO_SOURCE=path` plus `HME_OMO_PATH`, or
 `HME_OMO_SOURCE=package` plus `HME_OMO_PACKAGE`. Optional controls are
-`HME_OMO_REQUIRED_VERSION` and `HME_OMO_TIMEOUT_MS`.
+`HME_OMO_REQUIRED_VERSION`, `HME_OMO_TIMEOUT_MS`, `HME_OMO_PHASES`, and
+`HME_OMO_PRELOAD`. Per-phase timeout variables use the phase name uppercased
+with dots replaced by underscores, for example
+`HME_OMO_TIMEOUT_TOOL_EXECUTE_BEFORE_MS`. `HME_OMO_TOOL_BEFORE_WARM_ONLY=1`
+skips cold `tool.execute.before` shadow observation until SessionStart preload
+has initialized OMO.
 
 In this workspace the installed package path is the current real-entrypoint
 smoke target: `HME_OMO_SOURCE=package` and
@@ -91,3 +96,31 @@ HME remains authoritative. Shadow decisions, mutations, denials, plugin load
 errors, invalid events, and timeouts are telemetry only and cannot change live
 allow/deny, stop-chain, stream rewriting, permissions, provider routing,
 secret/path policy, or capability filtering.
+
+Enable live mode with `HME_OMO_ENABLED=1` and `HME_OMO_MODE=live`. Live mode uses
+the same source and timeout controls but only applies supported decisions after
+normalization and capability validation:
+
+- `PreToolUse` / `tool.execute.before`: `deny`, or `modify` with target `tool.input`.
+- `PermissionRequest` / `permission.ask`: `deny`.
+- `Stop` / `stop.before`: `deny`, and only when the HME stop-chain did not already block.
+
+OMO live failures are fail-open: missing builds, dependency/version failures,
+invalid events, plugin errors, timeouts, and unsupported decisions fall through
+to HME's native hook chain. Modified tool input is fed through downstream HME
+write/policy/native-hook validation before the modification is returned to the
+host. OMO does not bypass HME stop-chain, provider routing, stream rewriting,
+permission policy, secret/path policy, or capability filtering.
+
+Operational shadow telemetry is compact by design. HME writes phase, status,
+decision kind, plugin result statuses, duration, and hashes to
+`omo-shadow-decisions.jsonl` in the HME runtime directory. It does not write raw
+messages, prompts, tool arguments, command strings, patches, or reasons. Use
+`node tools/HME/scripts/omo-shadow-status.js` for recent status, decision, and
+latency summaries. Add `--fail-on-unhealthy` with thresholds such as
+`--max-timeout-rate` and `--max-p95-ms` to use the same data as a rollout gate.
+
+Future expansion of live application must remain separately enabled,
+phase-scoped, and tested against safety boundaries. External OMO output may not
+override HME denials or mutate safety-critical surfaces unless HME explicitly
+converts that observation into an HME-owned decision after policy validation.

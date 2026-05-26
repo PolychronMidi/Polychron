@@ -28,6 +28,7 @@
 const fs = require('fs');
 const path = require('path');
 const hmePaths = require('../proxy/infra/hme_paths');
+const { appendLine } = require('../proxy/infra/bounded_log');
 
 const PROJECT_ROOT = hmePaths.PROJECT_ROOT;
 
@@ -54,7 +55,7 @@ function _append(channel, line) {
   if (!file) return;
   try {
     _ensureDir(file);
-    fs.appendFileSync(file, line + '\n');
+    appendLine(file, line);
   } catch (err) {
     // silent-ok: optional fallback path.
     process.stderr.write(`[telemetry] ${channel} write failed (suppressing further attempts): ${err.message}\n`);

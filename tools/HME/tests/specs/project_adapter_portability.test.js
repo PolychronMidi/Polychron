@@ -60,6 +60,34 @@ test('activity emitter resolves template metrics env to HME runtime', () => {
   }
 });
 
+test('activity emitter rotates HME activity log when over cap', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-emit-rotate-'));
+  try {
+    const log = path.join(tmp, 'tools/HME/runtime/metrics/hme-activity.jsonl');
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    fs.writeFileSync(log, 'x'.repeat(32));
+    const proc = childProcess.spawnSync(
+      'python3',
+      [path.join(repo, 'tools/HME/activity/emit.py'), '--event=rotate_test'],
+      {
+        cwd: tmp,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PROJECT_ROOT: tmp,
+          HME_RUNTIME_LOG_MAX_BYTES: '8',
+        },
+      },
+    );
+    assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+    assert.equal(fs.existsSync(`${log}.1`), true);
+    const parsed = JSON.parse(fs.readFileSync(log, 'utf8').trim());
+    assert.equal(parsed.event, 'rotate_test');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('generic project fixture passes project health and portability audit', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-generic-project-'));
   copyDir(path.join(repo, 'tools/HME/tests/fixtures/generic-project'), tmp);

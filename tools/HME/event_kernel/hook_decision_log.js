@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { parseJson, decisionFields, reasonHash } = require('./decision_normalizer');
 const hmePaths = require('../proxy/infra/hme_paths');
+const { appendLine } = require('../proxy/infra/bounded_log');
 
 function runtimeDir(root) {
   const rootText = String(root || '');
@@ -15,8 +16,7 @@ function runtimeDir(root) {
 }
 
 function append(file, line) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, line.endsWith('\n') ? line : `${line}\n`);
+  appendLine(file, line);
 }
 
 function hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload = {}) {

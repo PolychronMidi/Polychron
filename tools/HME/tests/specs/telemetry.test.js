@@ -123,3 +123,19 @@ test('telemetry: ts auto-stamped if not provided in fields', _withSandbox(async 
   assert.ok(typeof parsed.ts === 'number');
   assert.ok(parsed.ts > 1700000000000, 'ts should be an epoch ms timestamp');
 }));
+
+test('telemetry: JSONL channels rotate when over cap', _withSandbox(async (_sb, t) => {
+  const originalMax = process.env.HME_RUNTIME_LOG_MAX_BYTES;
+  process.env.HME_RUNTIME_LOG_MAX_BYTES = '8';
+  try {
+    fs.mkdirSync(path.dirname(t.PATHS.info), { recursive: true });
+    fs.writeFileSync(t.PATHS.info, 'x'.repeat(32));
+    t.info('rotated_info', { ok: true });
+    assert.equal(fs.existsSync(`${t.PATHS.info}.1`), true);
+    const parsed = JSON.parse(fs.readFileSync(t.PATHS.info, 'utf8').trim());
+    assert.equal(parsed.event, 'rotated_info');
+  } finally {
+    if (originalMax === undefined) delete process.env.HME_RUNTIME_LOG_MAX_BYTES;
+    else process.env.HME_RUNTIME_LOG_MAX_BYTES = originalMax;
+  }
+}));
