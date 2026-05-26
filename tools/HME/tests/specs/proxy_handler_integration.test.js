@@ -216,6 +216,9 @@ test('OpenAI-compatible OpenCode ingress routes through HME OmniRoute boundary',
     assert.equal(routed.model, 'cx/gpt-5.5-xhigh');
     assert.equal(routed.messages[0].role, 'system');
     assert.match(routed.messages[0].content, /^You are an interactive agent for software engineering tasks/);
+    assert.match(routed.messages[0].content, /<doc_templates_agents_md>\n# Rules/);
+    assert.match(routed.messages[0].content, /Never delete unused code\/config before checking if it should be implemented/);
+    assert.equal(routed.messages.filter((message) => message.role === 'system').length, 1);
     assert.equal(routed.messages.some((message) => message.role === 'system' && /OpenCode default/.test(String(message.content || ''))), false);
 
     upstreamBody = null;
@@ -227,6 +230,7 @@ test('OpenAI-compatible OpenCode ingress routes through HME OmniRoute boundary',
     const routedResponses = JSON.parse(upstreamBody);
     assert.equal(routedResponses.model, 'cx/gpt-5.5-xhigh');
     assert.match(routedResponses.instructions, /^You are an interactive agent for software engineering tasks/);
+    assert.match(routedResponses.instructions, /<doc_templates_agents_md>\n# Rules/);
   } finally {
     if (prevEnv.omniPort === undefined) delete process.env.HME_OMNIROUTE_PORT; else process.env.HME_OMNIROUTE_PORT = prevEnv.omniPort;
     if (prevEnv.quiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevEnv.quiet;

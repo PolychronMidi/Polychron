@@ -66,26 +66,44 @@ function targetModelFor(requestedModel, cfg = loadModelsJson(), env = process.en
   return `${provider}/${raw}`;
 }
 
-let canonicalPromptCache = { mtimeMs: 0, content: null };
+let templateCache = new Map();
 
-function loadCanonicalPrompt(root = PROJECT_ROOT) {
-  const file = path.join(root, 'doc', 'templates', 'canonical-system-prompt.md');
+function loadTemplate(root = PROJECT_ROOT, name) {
+  const file = path.join(root, 'doc', 'templates', name);
+  const cached = templateCache.get(file);
   try {
     const stat = fs.statSync(file);
-    if (canonicalPromptCache.mtimeMs === stat.mtimeMs) return canonicalPromptCache.content;
+    if (cached && cached.mtimeMs === stat.mtimeMs) return cached.content;
     const content = fs.readFileSync(file, 'utf8');
-    canonicalPromptCache = { mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
-    return canonicalPromptCache.content;
+    const entry = { mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
+    templateCache.set(file, entry);
+    return entry.content;
   } catch (_err) {
-    canonicalPromptCache = { mtimeMs: 0, content: null };
+    templateCache.set(file, { mtimeMs: 0, content: null });
     return null;
   }
+}
+
+function loadCanonicalPrompt(root = PROJECT_ROOT) {
+  return loadTemplate(root, 'canonical-system-prompt.md');
+}
+
+function loadAgentsPrompt(root = PROJECT_ROOT) {
+  return loadTemplate(root, 'AGENTS.md');
+}
+
+function composedOpenAISystemPrompt(env = process.env) {
+  const canonical = loadCanonicalPrompt(env.PROJECT_ROOT || PROJECT_ROOT);
+  if (canonical === null) return null;
+  const agents = loadAgentsPrompt(env.PROJECT_ROOT || PROJECT_ROOT);
+  if (agents === null) return canonical;
+  return `${canonical}\n\n<doc_templates_agents_md>\n${agents}\n</doc_templates_agents_md>`;
 }
 
 function replaceOpenAISystemPrompt(payload, env = process.env) {
   if (!payload || typeof payload !== 'object') return false;
   if (!requireEnvBool('HME_REPLACE_SYSTEM_PROMPT')) return false;
-  const canonical = loadCanonicalPrompt(env.PROJECT_ROOT || PROJECT_ROOT);
+  const canonical = composedOpenAISystemPrompt(env);
   if (canonical === null) return false;
   let changed = false;
   if (!Array.isArray(payload.messages) && payload.instructions !== canonical) {
@@ -139,6 +157,8 @@ module.exports = {
   isOpenAICompatiblePath,
   modelCatalog,
   targetModelFor,
+  loadAgentsPrompt,
+  composedOpenAISystemPrompt,
   replaceOpenAISystemPrompt,
   applyOpenAIPassthroughCompaction,
   handleOpenAIModelsRoute,
