@@ -122,6 +122,9 @@ from .markdown_invariant import (  # noqa: F401
 from .forbidden_api_keys import (  # noqa: F401
     ForbiddenApiKeysVerifier,
 )
+from .opencode_host import (  # noqa: F401
+    OpenCodeHostVerifier,
+)
 from .env_no_fallback import (  # noqa: F401
     EnvNoFallbackVerifier,
 )
