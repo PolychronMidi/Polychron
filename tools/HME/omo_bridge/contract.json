@@ -5,6 +5,7 @@
     "version": "hme-opencode-hook/v1",
     "core_phases": [
       "chat.params",
+      "chat.headers",
       "permission.ask",
       "tool.execute.before",
       "tool.execute.after"
@@ -14,6 +15,8 @@
       "stream.text_block"
     ],
     "observational_phases": [
+      "experimental.chat.messages.transform",
+      "experimental.chat.system.transform",
       "session.start",
       "session.end",
       "message.input",

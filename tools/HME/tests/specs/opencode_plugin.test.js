@@ -13,13 +13,19 @@ test('OpenCode plugin exports HME hook map for supported lifecycle events', asyn
   assert.equal(typeof mod.default, 'function');
   const hooks = await mod.default({ project: { directory: path.resolve(__dirname, '../../../..') } });
   assert.deepEqual(Object.keys(hooks).sort(), [
+    'chat.headers',
     'chat.message',
+    'chat.params',
     'command.execute.before',
     'event',
+    'experimental.chat.messages.transform',
+    'experimental.chat.system.transform',
     'experimental.compaction.autocontinue',
     'experimental.session.compacting',
+    'experimental.text.complete',
     'permission.ask',
     'session.stop',
+    'shell.env',
     'tool.execute.after',
     'tool.execute.before',
   ]);
@@ -69,9 +75,15 @@ test('OpenCode plugin maps available hooks to HME lifecycle events', async () =>
   await hooks.event({ event: { type: 'session.compacted' } });
   await hooks.event({ event: { type: 'session.idle' } });
   await hooks['chat.message']({ sessionID: 's1' }, { message: {}, parts: [] });
+  await hooks['chat.params']({ sessionID: 's1' }, { options: { temperature: 0.5 } });
+  await hooks['chat.headers']({ sessionID: 's1' }, { headers: { 'x-test': '1' } });
   await hooks['command.execute.before']({ command: 'test', sessionID: 's1', arguments: '' }, { parts: [] });
+  await hooks['experimental.chat.messages.transform']({ sessionID: 's1' }, { messages: [] });
+  await hooks['experimental.chat.system.transform']({ sessionID: 's1' }, { system: [] });
   await hooks['experimental.session.compacting']({ sessionID: 's1' }, { context: [] });
   await hooks['experimental.compaction.autocontinue']({ sessionID: 's1' }, { enabled: true });
+  await hooks['shell.env']({ sessionID: 's1', cwd: root }, { env: {} });
+  await hooks['experimental.text.complete']({ sessionID: 's1', messageID: 'm1', partID: 'p1' }, { text: 'done' });
   await hooks['session.stop']({ sessionID: 's1' }, {});
 
   const events = fs.readFileSync(calls, 'utf8').trim().split('\n').map((line) => JSON.parse(line).event);
@@ -81,9 +93,15 @@ test('OpenCode plugin maps available hooks to HME lifecycle events', async () =>
     'PostCompact',
     'Stop',
     'UserPromptSubmit',
+    'ChatParams',
+    'ChatHeaders',
     'UserPromptSubmit',
+    'ChatMessagesTransform',
+    'ChatSystemTransform',
     'PreCompact',
     'PostCompact',
+    'ShellEnv',
+    'TextComplete',
     'Stop',
   ]);
   fs.rmSync(root, { recursive: true, force: true });

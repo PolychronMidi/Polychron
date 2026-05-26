@@ -15,6 +15,12 @@ const { UNIVERSAL_HOOK_ABI, validateUniversalEvent } = require('./universal_even
 const { appendJsonl } = require('../proxy/infra/bounded_log');
 
 const EVENT_PHASE = Object.freeze({
+  ChatParams: 'chat.params',
+  ChatHeaders: 'chat.headers',
+  ChatMessagesTransform: 'experimental.chat.messages.transform',
+  ChatSystemTransform: 'experimental.chat.system.transform',
+  ShellEnv: 'telemetry.event',
+  TextComplete: 'stream.text_block',
   PreToolUse: 'tool.execute.before',
   PostToolUse: 'tool.execute.after',
   PermissionRequest: 'permission.ask',
@@ -177,7 +183,11 @@ function buildUniversalEvent(eventName, stdinJson, options = {}) {
       reason: payload.reason || 'HME OpenCode permission shadow observation',
     };
   }
-  if (phase === 'chat.params') event.chat = { params: payload.params || {}, messages: payload.messages || [] };
+  if (phase === 'chat.params') event.chat = { params: payload.params || payload.options || {}, messages: payload.messages || [] };
+  if (phase === 'chat.headers') event.chat = { headers: payload.headers || {}, messages: payload.messages || [] };
+  if (phase === 'experimental.chat.messages.transform') event.chat = { messages: payload.messages || [] };
+  if (phase === 'experimental.chat.system.transform') event.chat = { system: payload.system || [] };
+  if (phase === 'stream.text_block') event.stream = { text: String(payload.text || '') };
   return event;
 }
 

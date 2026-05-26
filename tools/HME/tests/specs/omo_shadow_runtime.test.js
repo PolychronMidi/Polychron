@@ -328,6 +328,35 @@ test('OMO shadow runtime preloads on SessionStart before phase allowlist skip', 
   }
 });
 
+test('OMO shadow runtime supports OpenCode request and stream observation events', async () => {
+  const phases = [];
+  const injectedRuntime = {
+    enabled: true,
+    host: {
+      invokePhase: async (event) => {
+        phases.push(event.phase);
+        return { primaryDecision: { kind: 'allow' }, results: [{ status: 'ok' }], durationMs: 1 };
+      },
+    },
+  };
+  await withEnv({ HME_OMO_ENABLED: '1', HME_OMO_MODE: 'shadow' }, async () => {
+    await runtime.observeOmoShadow('ChatParams', JSON.stringify({ session_id: 's1', options: { temperature: 0.2 } }), { runtime: injectedRuntime, log: false });
+    await runtime.observeOmoShadow('ChatHeaders', JSON.stringify({ session_id: 's1', headers: { 'x-test': '1' } }), { runtime: injectedRuntime, log: false });
+    await runtime.observeOmoShadow('ChatMessagesTransform', JSON.stringify({ session_id: 's1', messages: [] }), { runtime: injectedRuntime, log: false });
+    await runtime.observeOmoShadow('ChatSystemTransform', JSON.stringify({ session_id: 's1', system: [] }), { runtime: injectedRuntime, log: false });
+    await runtime.observeOmoShadow('ShellEnv', JSON.stringify({ session_id: 's1', cwd: '/tmp' }), { runtime: injectedRuntime, log: false });
+    await runtime.observeOmoShadow('TextComplete', JSON.stringify({ session_id: 's1', text: 'done' }), { runtime: injectedRuntime, log: false });
+  });
+  assert.deepEqual(phases, [
+    'chat.params',
+    'chat.headers',
+    'experimental.chat.messages.transform',
+    'experimental.chat.system.transform',
+    'telemetry.event',
+    'stream.text_block',
+  ]);
+});
+
 test('OMO live mode is opt-in and returns deny hook output', async () => {
   const result = await withEnv({ HME_OMO_ENABLED: '1', HME_OMO_MODE: 'live' }, () => runtime.applyOmoLive('PreToolUse', payload(), {
     runtime: {

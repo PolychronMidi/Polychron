@@ -103,6 +103,14 @@ const POSTTOOL_SCRIPTS = {
 
 const NATIVE_PRETOOL = nativeHooks.preToolHandlers;
 const NATIVE_POSTTOOL = nativeHooks.postToolHandlers;
+const OPENCODE_OBSERVATION_EVENTS = new Set([
+  'ChatHeaders',
+  'ChatMessagesTransform',
+  'ChatParams',
+  'ChatSystemTransform',
+  'ShellEnv',
+  'TextComplete',
+]);
 
 /**
  * Invoke a single bash hook with the given stdin payload. Returns a Promise
@@ -321,6 +329,11 @@ async function dispatchEvent(eventName, stdinJson) {
   const empty = stdinJson || '{}';
   if (shouldSkipForNestedHooks(eventName, empty)) return { stdout: '', stderr: ' ', exit_code: 0 };
   await _recordLifecycleState(eventName, empty);
+  if (OPENCODE_OBSERVATION_EVENTS.has(eventName)) {
+    const omo = await applyOmoLive(eventName, empty);
+    if (omo.status === 'disabled') await observeOmoShadow(eventName, empty);
+    return omo.applied && omo.result ? omo.result : { stdout: '', stderr: ' ', exit_code: 0 };
+  }
   switch (eventName) {
     case 'SessionStart':
       await applyOmoLive('SessionStart', empty);

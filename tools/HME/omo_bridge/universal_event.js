@@ -1,9 +1,11 @@
 const UNIVERSAL_HOOK_ABI = 'hme-opencode-hook/v1';
 
 const PHASE_GROUPS = Object.freeze({
-  core: Object.freeze(['chat.params', 'permission.ask', 'tool.execute.before', 'tool.execute.after']),
+  core: Object.freeze(['chat.params', 'chat.headers', 'permission.ask', 'tool.execute.before', 'tool.execute.after']),
   hmeExtension: Object.freeze(['stop.before', 'stream.text_block']),
   observational: Object.freeze([
+    'experimental.chat.messages.transform',
+    'experimental.chat.system.transform',
     'session.start',
     'session.end',
     'message.input',

@@ -67,8 +67,11 @@ test('default OMO contract defines OpenCode-compatible universal hook ABI', () =
   const result = validateUniversalHookContract(contract);
   assert.equal(result.status, 'ok');
   assert.equal(contract.contract_version, UNIVERSAL_HOOK_ABI);
-  ['chat.params', 'permission.ask', 'tool.execute.before', 'tool.execute.after'].forEach((phase) => {
+  ['chat.params', 'chat.headers', 'permission.ask', 'tool.execute.before', 'tool.execute.after'].forEach((phase) => {
     assert.ok(contract.universal_hook_abi.core_phases.includes(phase));
+  });
+  ['experimental.chat.messages.transform', 'experimental.chat.system.transform'].forEach((phase) => {
+    assert.ok(contract.universal_hook_abi.observational_phases.includes(phase));
   });
   ['stop.before', 'stream.text_block'].forEach((phase) => {
     assert.ok(contract.universal_hook_abi.hme_extension_phases.includes(phase));
