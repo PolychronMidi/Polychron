@@ -11,6 +11,54 @@ const INSTALLED_PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url
 const HOOK_TOAST_COOLDOWN_MS = 2000;
 const lastHookToastAt = new Map();
 let canonicalPromptCache = { path: '', mtimeMs: 0, content: null };
+const OPENCODE_ERROR_ROUTING_STATE = globalThis.__HME_OPENCODE_ERROR_ROUTING_STATE || (globalThis.__HME_OPENCODE_ERROR_ROUTING_STATE = {
+  roots: new Set(),
+  installed: false,
+  originalStderrWrite: null,
+});
+
+function errorLineLooksActionable(text) {
+  return /\b(error|exception|typeerror|validation|schema|invalid|zod|panic|failed|failure)\b/i.test(String(text || ''));
+}
+
+function appendHmeError(root, tag, message, meta = {}) {
+  try {
+    const file = path.join(root, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const clean = String(message || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
+    const metaText = Object.keys(meta).length ? ` ${JSON.stringify(meta).slice(0, 1000)}` : '';
+    fs.appendFileSync(file, `[${tag}] ERROR ${clean}${metaText}\n`);
+  } catch (_err) {
+    // Error routing must never create a secondary OpenCode failure.
+  }
+}
+
+function installOpenCodeErrorRouting(root) {
+  OPENCODE_ERROR_ROUTING_STATE.roots.add(root);
+  if (OPENCODE_ERROR_ROUTING_STATE.installed) return;
+  OPENCODE_ERROR_ROUTING_STATE.installed = true;
+
+  process.on('uncaughtException', (err) => {
+    for (const r of OPENCODE_ERROR_ROUTING_STATE.roots) appendHmeError(r, 'opencode-uncaught', err && err.stack ? err.stack : String(err));
+  });
+  process.on('unhandledRejection', (err) => {
+    for (const r of OPENCODE_ERROR_ROUTING_STATE.roots) appendHmeError(r, 'opencode-unhandled-rejection', err && err.stack ? err.stack : String(err));
+  });
+
+  OPENCODE_ERROR_ROUTING_STATE.originalStderrWrite = process.stderr.write.bind(process.stderr);
+  process.stderr.write = function hmeOpenCodeStderrMirror(chunk, encoding, cb) {
+    const result = OPENCODE_ERROR_ROUTING_STATE.originalStderrWrite(chunk, encoding, cb);
+    try {
+      const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+      if (errorLineLooksActionable(text)) {
+        for (const r of OPENCODE_ERROR_ROUTING_STATE.roots) appendHmeError(r, 'opencode-stderr', text);
+      }
+    } catch (_err) {
+      // Mirror best-effort only.
+    }
+    return result;
+  };
+}
 
 function hasHmeEntrypoint(root) {
   return fs.existsSync(entrypoint(root));
@@ -46,6 +94,12 @@ function appendRelayLog(root, row) {
   } catch (_err) {
     // Plugin relay logging must never affect OpenCode hook behavior.
   }
+}
+
+function expectedHmeBlock(message) {
+  const err = new Error(message);
+  err.hmeExpectedBlock = true;
+  return err;
 }
 
 function visibleHookToastsEnabled(root) {
@@ -198,8 +252,8 @@ function applyDecision(decision, output) {
       ? decision.hookSpecificOutput
       : decision;
   const behavior = doc.behavior || doc.permissionDecision || doc.decision;
-  if (behavior === 'deny') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Denied by HME');
-  if (behavior === 'block') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Blocked by HME');
+  if (behavior === 'deny') throw expectedHmeBlock(doc.message || doc.permissionDecisionReason || doc.reason || 'Denied by HME');
+  if (behavior === 'block') throw expectedHmeBlock(doc.message || doc.permissionDecisionReason || doc.reason || 'Blocked by HME');
   const patch = doc.updatedInput || doc.patch?.args || doc.patch;
   if (behavior === 'modify' && isPlainObject(patch) && isPlainObject(output?.args)) Object.assign(output.args, patch);
   if (isPlainObject(doc.updatedInput) && isPlainObject(output?.args)) Object.assign(output.args, doc.updatedInput);
@@ -207,9 +261,28 @@ function applyDecision(decision, output) {
   if ((doc.kind === 'drop' || doc.decision === 'drop') && output && Object.prototype.hasOwnProperty.call(output, 'text')) output.text = '';
 }
 
+function wrapHookErrors(ctx, hooks) {
+  const root = projectRoot(ctx);
+  const wrapped = {};
+  for (const [name, fn] of Object.entries(hooks)) {
+    wrapped[name] = async (...args) => {
+      try {
+        return await fn(...args);
+      } catch (err) {
+        if (!err?.hmeExpectedBlock) {
+          appendHmeError(root, 'opencode-plugin', err && err.stack ? err.stack : String(err), { hook: name });
+        }
+        throw err;
+      }
+    };
+  }
+  return wrapped;
+}
+
 async function HmeHooks(ctx) {
+  installOpenCodeErrorRouting(projectRoot(ctx));
   appendRelayLog(projectRoot(ctx), { event: 'plugin.init', status: 'ok', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
-  return {
+  return wrapHookErrors(ctx, {
   event: async (input) => {
     await markHookEntered(ctx, 'event.callback');
     const type = eventType(input);
@@ -280,7 +353,7 @@ async function HmeHooks(ctx) {
     const decision = runHme(ctx, 'Stop', { ...input, session_id: sessionId(input) });
     applyDecision(decision, output);
   },
-  };
+  });
 }
 
 export default async function HmeOpenCodePlugin(ctx) {

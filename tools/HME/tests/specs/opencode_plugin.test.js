@@ -258,6 +258,40 @@ test('OpenCode plugin blocks session.stop on HME Stop block decision', async () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('OpenCode plugin mirrors unexpected hook exceptions to hme-errors for Lifesaver', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-error-route-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  const old = process.env.HME_OPENCODE_HOOK_TOASTS;
+  process.env.HME_OPENCODE_HOOK_TOASTS = 'definitely-not-bool';
+
+  try {
+    const mod = await import(`${pluginUrl}?error-route-${Date.now()}`);
+    const hooks = await mod.default({ project: { directory: root } });
+    await assert.rejects(() => hooks['tool.execute.before']({ tool: 'Bash', sessionID: 's1' }, { args: {} }), /invalid boolean environment key/);
+    const errLog = fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8');
+    assert.match(errLog, /\[opencode-plugin\] ERROR/);
+    assert.match(errLog, /tool\.execute\.before/);
+  } finally {
+    if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = old;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode plugin mirrors OpenCode stderr errors to hme-errors for Lifesaver', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-stderr-route-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+
+  const mod = await import(`${pluginUrl}?stderr-route-${Date.now()}`);
+  await mod.default({ project: { directory: root } });
+  process.stderr.write('Type validation error: message schema invalid while submitting\n');
+  const errLog = fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8');
+  assert.match(errLog, /\[opencode-stderr\] ERROR Type validation error/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('OpenCode plugin falls back to installed HME root outside HME projects', async () => {
   const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-outside-'));
   const relayLog = path.resolve(__dirname, '../../runtime/opencode-plugin-relay.jsonl');
