@@ -14,7 +14,6 @@ const {
   parentTaskDebtCheck,
   scanNextActionDebt,
   scanWorkDebtAdmission,
-  toolChurnDebtCheck,
   unfinishedTaskDebtCheck,
   workDebtAdmissionCheck,
 } = require('./work_checks/checks/task_debt');
@@ -41,7 +40,6 @@ const WORK_CHECKS = Object.freeze([
   detectorVerdictCheck,
   missingTranscriptCheck,
   unfinishedTaskDebtCheck,
-  toolChurnDebtCheck,
   nextActionDebtCheck,
   workDebtAdmissionCheck,
   parentTaskDebtCheck,

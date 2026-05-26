@@ -5,7 +5,6 @@ const path = require('path');
 const crypto = require('crypto');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('../../../shared');
 const sessionState = require('../../../session_state');
-const { assistantToolUsesSinceLastUserPrompt } = require('./transcript');
 const { REASONS } = require('./reasons');
 const { lastAssistantText: readLastAssistantText, lastRealUserPrompt } = require('./transcript');
 
@@ -118,8 +117,6 @@ function buildWorkCheckContext(ctx) {
     lastUserInfo,
     lastUser: lastUserInfo.text,
     firing: firingRulesFrom(readVerdicts()),
-    toolUseCount: assistantToolUsesSinceLastUserPrompt(transcriptPath),
-    hasSameTurnEvidence: hasSameTurnEvidence(lastUserInfo.tsMs),
     _lastAssistantText: null,
     lastAssistant() { return this.lastAssistantText; },
     deny(reasonKey, reason) {

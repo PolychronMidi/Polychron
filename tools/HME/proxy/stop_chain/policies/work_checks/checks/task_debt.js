@@ -71,22 +71,11 @@ const parentTaskDebtCheck = {
   },
 };
 
-const toolChurnDebtCheck = {
-  name: 'tool-churn-debt',
-  evaluate(state) {
-    if (state.toolUseCount < 2) return null;
-    if (state.hasSameTurnEvidence) return null;
-    return state.deny('WORK_DEBT_ADMISSION', `${REASONS.WORK_DEBT_ADMISSION}\n\nOpen task evidence:\n  1. Tool-only turn produced no write or verification evidence.`);
-  },
-};
-
-
 module.exports = {
   nextActionDebtCheck,
   parentTaskDebtCheck,
   scanNextActionDebt,
   scanWorkDebtAdmission,
-  toolChurnDebtCheck,
   unfinishedTaskDebtCheck,
   workDebtAdmissionCheck,
 };
