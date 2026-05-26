@@ -74,6 +74,8 @@ function routeOpenAICompatibleThroughHme(clientReq, payload, { servicePort, env 
   const port = typeof servicePort === 'function' ? servicePort('omniroute') : (env.HME_OMNIROUTE_PORT || 20128);
   clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${String(port)}`;
   clientReq.headers['x-hme-host'] = clientReq.headers['x-hme-host'] || 'opencode';
+  delete clientReq.headers.authorization;
+  delete clientReq.headers['x-api-key'];
   if (payload && typeof payload.model === 'string' && payload.model) {
     const routed = targetModelFor(payload.model, cfg, env);
     if (routed !== payload.model) {
