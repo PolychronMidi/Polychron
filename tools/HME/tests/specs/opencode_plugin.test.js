@@ -55,6 +55,75 @@ test('OpenCode plugin handles object-shaped tool payloads without corrupting arg
   assert.deepEqual(output.args, { command: 'pwd' });
 });
 
+test('OpenCode plugin applies HME updatedInput rewrites to tool args', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-updated-input-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const event = process.argv[process.argv.indexOf("--event") + 1];',
+    'if (event === "PreToolUse") process.stdout.write(JSON.stringify({ hookSpecificOutput: { permissionDecision: "allow", updatedInput: { command: "pwd" } } }));',
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+
+  const mod = await import(`${pluginUrl}?updated-input-${Date.now()}`);
+  const hooks = await mod.default({ project: { directory: root } });
+  const output = { args: { command: 'date' } };
+  await hooks['tool.execute.before']({ tool: 'Bash', sessionID: 's1' }, output);
+  assert.deepEqual(output.args, { command: 'pwd' });
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('OpenCode plugin applies TextComplete rewrite and drop decisions', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-textcomplete-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const fs = require("node:fs");',
+    'const event = process.argv[process.argv.indexOf("--event") + 1];',
+    'const input = JSON.parse(fs.readFileSync(0, "utf8") || "{}");',
+    'if (event === "TextComplete" && input.text === "drop") process.stdout.write(JSON.stringify({ decision: "drop" }));',
+    'else if (event === "TextComplete") process.stdout.write(JSON.stringify({ decision: "modify", text: "rewritten" }));',
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+
+  const mod = await import(`${pluginUrl}?textcomplete-${Date.now()}`);
+  const hooks = await mod.default({ project: { directory: root } });
+  const rewrite = { text: 'original' };
+  await hooks['experimental.text.complete']({ sessionID: 's1' }, rewrite);
+  assert.equal(rewrite.text, 'rewritten');
+  const drop = { text: 'drop' };
+  await hooks['experimental.text.complete']({ sessionID: 's1' }, drop);
+  assert.equal(drop.text, '');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('OpenCode plugin expands prompt shortcuts before relaying UserPromptSubmit', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-shortcut-'));
+  const calls = path.join(root, 'calls.jsonl');
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const fs = require("node:fs");',
+    'const path = require("node:path");',
+    'const event = process.argv[process.argv.indexOf("--event") + 1];',
+    'const input = JSON.parse(fs.readFileSync(0, "utf8") || "{}");',
+    'fs.appendFileSync(path.join(process.env.PROJECT_ROOT, "calls.jsonl"), JSON.stringify({ event, input }) + "\\n");',
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+
+  const mod = await import(`${pluginUrl}?shortcut-${Date.now()}`);
+  const hooks = await mod.default({ project: { directory: root } });
+  const output = { message: {}, parts: [{ type: 'text', text: 'n' }] };
+  await hooks['chat.message']({ sessionID: 's1' }, output);
+
+  assert.equal(output.parts[0].text, 'next suggestions?');
+  assert.equal(output.message._hme_shortcut_expanded, true);
+  const row = JSON.parse(fs.readFileSync(calls, 'utf8').trim());
+  assert.equal(row.event, 'UserPromptSubmit');
+  assert.equal(row.input.parts[0].text, 'next suggestions?');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('OpenCode plugin maps available hooks to HME lifecycle events', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-parity-'));
   const calls = path.join(root, 'calls.jsonl');
@@ -158,7 +227,7 @@ test('OpenCode plugin uses node binary instead of embedded execPath', async () =
   const old = process.env.HME_NODE_BIN;
   process.env.HME_NODE_BIN = nodeShim;
   try {
-    const mod = await import(pluginUrl);
+    const mod = await import(`${pluginUrl}?visible-toast-${Date.now()}`);
     const hooks = await mod.default({ project: { directory: root } });
     await hooks['tool.execute.before']({ tool: 'Bash', args: {}, sessionID: 'nodebin-test' }, { args: {} });
     assert.equal(fs.existsSync(marker), true);
@@ -178,13 +247,86 @@ test('OpenCode plugin hook toasts are opt-in', async () => {
   delete process.env.HME_OPENCODE_HOOK_TOASTS;
 
   try {
-    const mod = await import(pluginUrl);
+    const mod = await import(`${pluginUrl}?visible-toast-${Date.now()}`);
     const hooks = await mod.default({
       project: { directory: root },
       client: { tui: { showToast: (input) => calls.push(input) } },
     });
     await hooks['chat.params']({ sessionID: 's1' }, { options: {} });
     assert.deepEqual(calls, []);
+  } finally {
+    if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = old;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode plugin hook toasts can be enabled from project .env', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-toasts-envfile-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  fs.writeFileSync(path.join(root, '.env'), 'HME_OPENCODE_HOOK_TOASTS=1\n');
+  const calls = [];
+  const old = process.env.HME_OPENCODE_HOOK_TOASTS;
+  delete process.env.HME_OPENCODE_HOOK_TOASTS;
+
+  try {
+    const mod = await import(`${pluginUrl}?visible-toast-${Date.now()}`);
+    const hooks = await mod.default({
+      project: { directory: root },
+      client: { tui: { showToast: (input) => calls.push(input) } },
+    });
+    await hooks['chat.params']({ sessionID: 's1' }, { options: {} });
+    assert.equal(calls[0]?.body?.message, 'chat.params.callback');
+  } finally {
+    if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = old;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode plugin does not toast generic event callbacks', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-toasts-event-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  fs.writeFileSync(path.join(root, '.env'), 'HME_OPENCODE_HOOK_TOASTS=1\n');
+  const calls = [];
+  const old = process.env.HME_OPENCODE_HOOK_TOASTS;
+  delete process.env.HME_OPENCODE_HOOK_TOASTS;
+
+  try {
+    const mod = await import(`${pluginUrl}?event-toast-${Date.now()}`);
+    const hooks = await mod.default({
+      project: { directory: root },
+      client: { tui: { showToast: (input) => calls.push(input) } },
+    });
+    await hooks.event({ event: { type: 'tui.toast.show' } });
+    assert.deepEqual(calls, []);
+  } finally {
+    if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = old;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode plugin rate-limits duplicate hook toasts', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-toasts-rate-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  fs.writeFileSync(path.join(root, '.env'), 'HME_OPENCODE_HOOK_TOASTS=1\n');
+  const calls = [];
+  const old = process.env.HME_OPENCODE_HOOK_TOASTS;
+  delete process.env.HME_OPENCODE_HOOK_TOASTS;
+
+  try {
+    const mod = await import(`${pluginUrl}?rate-toast-${Date.now()}`);
+    const hooks = await mod.default({
+      project: { directory: root },
+      client: { tui: { showToast: (input) => calls.push(input) } },
+    });
+    await hooks['chat.params']({ sessionID: 's1' }, { options: {} });
+    await hooks['chat.params']({ sessionID: 's1' }, { options: {} });
+    assert.equal(calls.length, 1);
   } finally {
     if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
     else process.env.HME_OPENCODE_HOOK_TOASTS = old;
@@ -201,7 +343,7 @@ test('OpenCode plugin can show visible hook toasts for diagnostics', async () =>
   process.env.HME_OPENCODE_HOOK_TOASTS = '1';
 
   try {
-    const mod = await import(pluginUrl);
+    const mod = await import(`${pluginUrl}?visible-toast-${Date.now()}`);
     const hooks = await mod.default({
       project: { directory: root },
       client: { tui: { showToast: (input) => calls.push(input) } },

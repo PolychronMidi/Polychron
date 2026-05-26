@@ -39,6 +39,7 @@ const { spawnFileInput } = require('./fs_ipc');
 const { recordHookCheckpoint } = require('./hook_decision_log');
 const nativeHooks = require('./native_hooks');
 const { applyOmoLive, observeOmoShadow } = require('../omo_bridge/shadow_runtime');
+const { UNIVERSAL_HOOK_ABI } = require('../omo_bridge/universal_event');
 
 async function _recordLifecycleState(eventName, stdinJson) {
   const env = normalize(stdinJson);
@@ -308,6 +309,39 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
   }
 }
 
+function _opencodeTextCompleteDecision(stdinJson) {
+  let payload;
+  try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { payload = {}; }
+  const text = String(payload.text || '');
+  if (!text) return null;
+  try {
+    const { _stripSlop } = require('../proxy/sse_slop_rewriter');
+    const slop = _stripSlop(text);
+    if (slop && Array.isArray(slop.hits) && slop.hits.length > 0 && slop.out !== text) {
+      return { stdout: JSON.stringify({ decision: slop.out ? 'modify' : 'drop', text: slop.out || '', reason: `HME slop rewrite: ${slop.hits.join(',')}` }), stderr: ' ', exit_code: 0 };
+    }
+  } catch (_e) { /* silent-ok: optional slop policy must not break hooks */ }
+  try {
+    const { evaluateStreamTextBlock } = require('../omo_bridge/stream_text_block_policy');
+    const event = {
+      abi: UNIVERSAL_HOOK_ABI,
+      id: `hme-opencode-text-${payload.session_id || payload.sessionID || 'unknown'}`,
+      timestamp: new Date().toISOString(),
+      source: { host: 'opencode', adapter: 'dispatcher', rawEventName: 'TextComplete' },
+      phase: 'stream.text_block',
+      session: { id: payload.session_id || payload.sessionID || 'unknown', agent: 'opencode', provider: 'opencode' },
+      stream: { text },
+      payload,
+    };
+    const result = evaluateStreamTextBlock(event, { ctx: {}, slot: null });
+    const decision = result && result.decision;
+    if (!decision || decision.kind === 'allow') return null;
+    if (decision.kind === 'drop') return { stdout: JSON.stringify({ decision: 'drop', reason: decision.reason || 'HME stream text block removed' }), stderr: ' ', exit_code: 0 };
+    if (decision.kind === 'rewrite') return { stdout: JSON.stringify({ decision: 'modify', text: decision.text || '', reason: decision.reason || 'HME stream text block rewritten' }), stderr: ' ', exit_code: 0 };
+  } catch (_e) { /* silent-ok: optional stream-text policy must not break hooks */ }
+  return null;
+}
+
 /**
  * Parse tool_name from a pretooluse/posttooluse payload. Claude Code passes
  * `{tool_name: "Edit", tool_input: {...}}` for pretooluse and a similar shape
@@ -330,6 +364,10 @@ async function dispatchEvent(eventName, stdinJson) {
   if (shouldSkipForNestedHooks(eventName, empty)) return { stdout: '', stderr: ' ', exit_code: 0 };
   await _recordLifecycleState(eventName, empty);
   if (OPENCODE_OBSERVATION_EVENTS.has(eventName)) {
+    if (eventName === 'TextComplete') {
+      const streamDecision = _opencodeTextCompleteDecision(empty);
+      if (streamDecision) return streamDecision;
+    }
     const omo = await applyOmoLive(eventName, empty);
     if (omo.status === 'disabled') await observeOmoShadow(eventName, empty);
     return omo.applied && omo.result ? omo.result : { stdout: '', stderr: ' ', exit_code: 0 };

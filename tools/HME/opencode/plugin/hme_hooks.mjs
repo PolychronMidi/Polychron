@@ -1,9 +1,15 @@
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 
+const require = createRequire(import.meta.url);
+const shortcutsRewriter = require('../../proxy/middleware/00a_shortcuts_rewriter.js');
+const { loadEnv, requireEnvBool } = require('../../proxy/shared/load_env.js');
 const MAX_RELAY_LOG_BYTES = 1024 * 1024;
 const INSTALLED_PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..', '..');
+const HOOK_TOAST_COOLDOWN_MS = 2000;
+const lastHookToastAt = new Map();
 
 function hasHmeEntrypoint(root) {
   return fs.existsSync(entrypoint(root));
@@ -41,13 +47,23 @@ function appendRelayLog(root, row) {
   }
 }
 
-function visibleHookToastsEnabled() {
-  return /^(1|true|yes|on)$/i.test(String(process.env.HME_OPENCODE_HOOK_TOASTS || ''));
+function visibleHookToastsEnabled(root) {
+  if (process.env.HME_OPENCODE_HOOK_TOASTS === undefined || process.env.HME_OPENCODE_HOOK_TOASTS === '') {
+    const envPath = path.join(root, '.env');
+    if (!fs.existsSync(envPath)) return false;
+    loadEnv(envPath);
+  }
+  return requireEnvBool('HME_OPENCODE_HOOK_TOASTS');
 }
 
 async function markHookEntered(ctx, event) {
-  appendRelayLog(projectRoot(ctx), { event, status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
-  if (!visibleHookToastsEnabled()) return;
+  const root = projectRoot(ctx);
+  appendRelayLog(root, { event, status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+  if (!visibleHookToastsEnabled(root)) return;
+  if (event === 'event.callback') return;
+  const now = Date.now();
+  if (now - (lastHookToastAt.get(event) || 0) < HOOK_TOAST_COOLDOWN_MS) return;
+  lastHookToastAt.set(event, now);
   try {
     await ctx?.client?.tui?.showToast?.({
       body: {
@@ -122,7 +138,21 @@ function relayEvent(ctx, event, payload) {
 }
 
 function relayMutableEvent(ctx, event, input, output) {
-  runHme(ctx, event, { ...input, ...output, session_id: sessionId(input) });
+  return runHme(ctx, event, { ...input, ...output, session_id: sessionId(input) });
+}
+
+function rewritePromptShortcuts(ctx, output) {
+  if (!Array.isArray(output?.parts)) return;
+  const payload = { messages: [{ role: 'user', content: output.parts }] };
+  let dirty = false;
+  shortcutsRewriter.onRequest({
+    payload,
+    ctx: {
+      markDirty: () => { dirty = true; },
+      emit: (row) => appendRelayLog(projectRoot(ctx), { event: row.event || 'shortcut_expanded', status: 'ok', ...row }),
+    },
+  });
+  if (dirty && output.message && typeof output.message === 'object') output.message._hme_shortcut_expanded = true;
 }
 
 function applyDecision(decision, output) {
@@ -134,8 +164,11 @@ function applyDecision(decision, output) {
   const behavior = doc.behavior || doc.permissionDecision || doc.decision;
   if (behavior === 'deny') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Denied by HME');
   if (behavior === 'block') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Blocked by HME');
-  const patch = doc.patch?.args || doc.patch;
+  const patch = doc.updatedInput || doc.patch?.args || doc.patch;
   if (behavior === 'modify' && isPlainObject(patch) && isPlainObject(output?.args)) Object.assign(output.args, patch);
+  if (isPlainObject(doc.updatedInput) && isPlainObject(output?.args)) Object.assign(output.args, doc.updatedInput);
+  if (doc.text !== undefined && output && Object.prototype.hasOwnProperty.call(output, 'text')) output.text = String(doc.text || '');
+  if ((doc.kind === 'drop' || doc.decision === 'drop') && output && Object.prototype.hasOwnProperty.call(output, 'text')) output.text = '';
 }
 
 async function HmeHooks(ctx) {
@@ -152,6 +185,7 @@ async function HmeHooks(ctx) {
   },
   'chat.message': async (input, output) => {
     await markHookEntered(ctx, 'chat.message.callback');
+    rewritePromptShortcuts(ctx, output);
     relayEvent(ctx, 'UserPromptSubmit', { ...input, message: output?.message || {}, parts: output?.parts || [], session_id: sessionId(input) });
   },
   'command.execute.before': async (input, output) => {
@@ -160,19 +194,19 @@ async function HmeHooks(ctx) {
   },
   'chat.params': async (input, output) => {
     await markHookEntered(ctx, 'chat.params.callback');
-    relayMutableEvent(ctx, 'ChatParams', input, output);
+    applyDecision(relayMutableEvent(ctx, 'ChatParams', input, output), output);
   },
   'chat.headers': async (input, output) => {
     await markHookEntered(ctx, 'chat.headers.callback');
-    relayMutableEvent(ctx, 'ChatHeaders', input, output);
+    applyDecision(relayMutableEvent(ctx, 'ChatHeaders', input, output), output);
   },
   'experimental.chat.messages.transform': async (input, output) => {
     await markHookEntered(ctx, 'experimental.chat.messages.transform.callback');
-    relayMutableEvent(ctx, 'ChatMessagesTransform', input, output);
+    applyDecision(relayMutableEvent(ctx, 'ChatMessagesTransform', input, output), output);
   },
   'experimental.chat.system.transform': async (input, output) => {
     await markHookEntered(ctx, 'experimental.chat.system.transform.callback');
-    relayMutableEvent(ctx, 'ChatSystemTransform', input, output);
+    applyDecision(relayMutableEvent(ctx, 'ChatSystemTransform', input, output), output);
   },
   'experimental.session.compacting': async (input, output) => {
     await markHookEntered(ctx, 'experimental.session.compacting.callback');
@@ -198,11 +232,11 @@ async function HmeHooks(ctx) {
   },
   'shell.env': async (input, output) => {
     await markHookEntered(ctx, 'shell.env.callback');
-    relayMutableEvent(ctx, 'ShellEnv', input, output);
+    applyDecision(relayMutableEvent(ctx, 'ShellEnv', input, output), output);
   },
   'experimental.text.complete': async (input, output) => {
     await markHookEntered(ctx, 'experimental.text.complete.callback');
-    relayMutableEvent(ctx, 'TextComplete', input, output);
+    applyDecision(relayMutableEvent(ctx, 'TextComplete', input, output), output);
   },
   'session.stop': async (input, output) => {
     await markHookEntered(ctx, 'session.stop.callback');

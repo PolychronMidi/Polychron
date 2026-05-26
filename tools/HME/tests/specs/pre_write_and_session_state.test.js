@@ -156,6 +156,18 @@ test('session state records structured verification evidence', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('OpenCode TextComplete dispatch applies stream text-block rewrites', async () => {
+  const root = _withSandbox('hme-opencode-text-dispatch-');
+  const res = await dispatch(root, 'TextComplete', {
+    session_id: 's-text-dispatch',
+    text: 'Acknowledged. I will now fix the thing and test.',
+  });
+  const parsed = JSON.parse(res.stdout || '{}');
+  assert.equal(parsed.decision, 'modify');
+  assert.equal(parsed.text, 'K. Fix thing & test.');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 
 test('synthetic PreToolUse Edit rewrites stub content via ellipsis-stub policy', async () => {
   const root = _withSandbox('hme-hook-edit-');
@@ -367,4 +379,3 @@ test('Claude SessionStart is explicit for startup/resume/clear/compact', () => {
     assert.match(JSON.stringify(entry.hooks), /event_kernel\/host_hook_entry\.js --host claude --event SessionStart/);
   }
 });
-
