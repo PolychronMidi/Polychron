@@ -33,6 +33,8 @@
     ".claude",
     "runtime",
     "smolagents",
+    "opencode",
+    "oh-my-openagent",
     "omniroute"
   ]
 }
