@@ -294,6 +294,28 @@ test('lifesaver proxy injection keeps overdue unresolved stale-runtime lines act
   }
 });
 
+test('lifesaver proxy injection surfaces OpenCode stderr validation errors', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-stderr-lifesaver-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'log'), { recursive: true });
+    fs.mkdirSync(path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = path.join(dir, 'log/hme-errors.log');
+    fs.writeFileSync(errLog, '');
+    const mod = _freshLifesaverInject();
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    let dirtied = false;
+    const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
+    mod.onRequest({ payload, ctx }); // seed watermark
+    fs.appendFileSync(errLog, '[opencode-stderr] ERROR Type validation error: message schema invalid while submitting\n');
+    mod.onRequest({ payload, ctx });
+    assert.equal(dirtied, true);
+    assert.match(payload.messages[0].content, /LIFESAVER -- unresolved errors/);
+    assert.match(payload.messages[0].content, /\[opencode-stderr\] ERROR Type validation error/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('context token usage fields separate upstream headers from synthetic context signal', () => {
   const row = _contextTokenUsageFields({
     headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '2500' },
