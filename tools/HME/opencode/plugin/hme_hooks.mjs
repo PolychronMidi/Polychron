@@ -126,7 +126,7 @@ function loadTemplatePrompt(root, name) {
   try {
     const stat = fs.statSync(file);
     if (cached && cached.mtimeMs === stat.mtimeMs) return cached.content;
-    const content = fs.readFileSync(file, 'utf8');
+    const content = fs.readFileSync(file, 'utf8').trimEnd();
     const entry = { mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
     templatePromptCache.set(file, entry);
     return entry.content;

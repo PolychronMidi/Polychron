@@ -151,10 +151,10 @@ test('OpenCode plugin replaces system prompt from canonical template when enable
     const hooks = await mod.default({ project: { directory: root } });
     const output = { system: ['opencode default prompt'] };
     await hooks['experimental.chat.system.transform']({ sessionID: 's1' }, output);
-    assert.deepEqual(output.system, ['canonical opencode prompt\n\n<doc_templates_agents_md>\n# Rules\n\n- keep signal high\n\n</doc_templates_agents_md>']);
+    assert.deepEqual(output.system, ['canonical opencode prompt\n\n<doc_templates_agents_md>\n# Rules\n\n- keep signal high\n</doc_templates_agents_md>']);
     const row = JSON.parse(fs.readFileSync(calls, 'utf8').trim());
     assert.equal(row.event, 'ChatSystemTransform');
-    assert.deepEqual(row.input.system, ['canonical opencode prompt\n\n<doc_templates_agents_md>\n# Rules\n\n- keep signal high\n\n</doc_templates_agents_md>']);
+    assert.deepEqual(row.input.system, ['canonical opencode prompt\n\n<doc_templates_agents_md>\n# Rules\n\n- keep signal high\n</doc_templates_agents_md>']);
   } finally {
     if (oldReplace === undefined) delete process.env.HME_REPLACE_SYSTEM_PROMPT;
     else process.env.HME_REPLACE_SYSTEM_PROMPT = oldReplace;
