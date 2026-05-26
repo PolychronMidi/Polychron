@@ -280,6 +280,10 @@ function _ingSuffixRepl(_match, stem) {
   return `${stem}in`;
 }
 
+function _edSuffixRepl(_match, stem) {
+  return `${stem}d`;
+}
+
 // Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
   // #1 Narrator setup.
@@ -407,6 +411,15 @@ const _SLOP_PATTERNS = [
   { name: 'caveman_compression',
     re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
+
+  // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
+  // Prefix must be at least 4 letters, because 4 + "ed" = 6.
+  // Runs after compression so explicit deletes like "agreed" win first.
+  // Examples: tested -> testd, walked -> walkd, checked -> checkd.
+  // Non-examples: fixed, red, bed.
+  { name: 'caveman_ed_suffix',
+    re: /\b([a-z]{4,})ed\b/gi,
+    repl: _edSuffixRepl },
 
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',

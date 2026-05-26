@@ -28,6 +28,12 @@ test('slop caveman ing suffix shortens long gerunds outside code', () => {
   assert.equal(result.out, 'Runnin walkin testin during thing string spring.');
 });
 
+test('slop caveman ed suffix shortens long past-tense words outside code', () => {
+  const result = _stripSlop('Tested walked checked fixed red bed.');
+  assert.ok(result.hits.includes('caveman_ed_suffix'));
+  assert.equal(result.out, 'Testd walkd checkd fixed red bed.');
+});
+
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
