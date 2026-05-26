@@ -1,10 +1,6 @@
 'use strict';
-// Stop-chain autocommit must never run git/precommit synchronously. Request-side
-// proxy_autocommit owns commits and sticky fail-flag maintenance; Stop only
-// preserves policy slot/telemetry so lifesaver can surface any existing flag.
-module.exports = {
-  name: 'autocommit',
-  async run(ctx) {
-    return ctx.allow();
-  },
-};
+// Stop remains the only autocommit trigger for host adapters that do not pass
+// through request middleware (notably OpenCode). The shell helper owns failure
+// bookkeeping and always exits non-blocking for the rest of the Stop chain.
+const { shellPolicy } = require('../shell_policy');
+module.exports = shellPolicy('autocommit');

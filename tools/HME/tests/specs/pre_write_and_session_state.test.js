@@ -263,6 +263,20 @@ test('synthetic Stop chain policy returns valid Claude Stop schema', async () =>
   }
 });
 
+test('synthetic Stop chain runs autocommit side effect', async () => {
+  const root = _withSandbox('hme-hook-stop-autocommit-');
+  try {
+    const res = await dispatch(root, 'Stop', { session_id: 's5-autocommit' });
+    assert.strictEqual(res.exit_code, 0);
+    const lastSuccess = path.join(root, 'tools', 'HME', 'runtime', 'autocommit.last-success');
+    const counter = path.join(root, 'tools', 'HME', 'runtime', 'autocommit.counter');
+    assert.ok(fs.existsSync(lastSuccess), 'Stop autocommit should update last-success');
+    assert.strictEqual(fs.readFileSync(counter, 'utf8').trim(), '0');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('synthetic SessionStart returns lifecycle shape', async () => {
   const root = _withSandbox('hme-hook-session-');
   const started = Date.now();
@@ -353,5 +367,4 @@ test('Claude SessionStart is explicit for startup/resume/clear/compact', () => {
     assert.match(JSON.stringify(entry.hooks), /event_kernel\/host_hook_entry\.js --host claude --event SessionStart/);
   }
 });
-
 

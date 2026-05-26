@@ -57,3 +57,6 @@ log/
 /tools/smolagents/
 /tools/opencode/
 /tools/oh-my-openagent/
+
+# Local vendor backups created before refreshing ignored tool checkouts.
+/.vendor-backups/

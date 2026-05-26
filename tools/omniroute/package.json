@@ -11,6 +11,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "omniroute": "^3.7.9"
+    "omniroute": "^3.8.3"
+  },
+  "overrides": {
+    "dompurify": "^3.4.6",
+    "js-cookie": "^3.0.7",
+    "postcss": "^8.5.15",
+    "qs": "^6.15.2"
   }
 }
