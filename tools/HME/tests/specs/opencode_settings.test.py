@@ -19,6 +19,11 @@ class OpenCodeSettingsTests(unittest.TestCase):
         self.assertEqual(provider["options"]["baseURL"], "http://127.0.0.1:9099/v1")
         self.assertEqual(provider["options"]["apiKey"], "hme-local")
         self.assertTrue(provider["models"])
+        model = provider["models"]["gpt-5.5-xhigh"]
+        self.assertIn("limit", model)
+        self.assertIn("context", model["limit"])
+        self.assertIn("output", model["limit"])
+        self.assertNotIn("context", model)
 
     def test_provider_catalog_excludes_skipped_claude_anthropic_models(self):
         provider = opencode_settings.expected_provider(9099, ROOT)
