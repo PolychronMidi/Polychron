@@ -38,6 +38,7 @@ const { recordFailure } = require('../proxy/turn_failure_state');
 const { spawnFileInput } = require('./fs_ipc');
 const { recordHookCheckpoint } = require('./hook_decision_log');
 const nativeHooks = require('./native_hooks');
+const { observeOmoShadow } = require('../omo_bridge/shadow_runtime');
 
 async function _recordLifecycleState(eventName, stdinJson) {
   const env = normalize(stdinJson);
@@ -322,10 +323,12 @@ async function dispatchEvent(eventName, stdinJson) {
   await _recordLifecycleState(eventName, empty);
   switch (eventName) {
     case 'SessionStart':
+      await observeOmoShadow('SessionStart', empty);
       return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty, 30_000, 'SessionStart');
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty, 30_000, 'UserPromptSubmit');
     case 'Stop': {
+      await observeOmoShadow('Stop', empty);
       // stop_chain evaluator: first-deny-wins, shell stages wrapped via shell_policy
       const stopChain = require('../proxy/stop_chain');
       const result = await stopChain.runStopChain(empty);
@@ -337,6 +340,7 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'PostCompact':
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
     case 'PreToolUse': {
+      await observeOmoShadow('PreToolUse', empty);
       const tool = _toolName(empty);
       if (isWriteFamilyTool(tool)) {
         const decision = await preWriteCheck(empty);
@@ -356,12 +360,14 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain(scripts, empty, 30_000, 'PreToolUse');
     }
     case 'PermissionRequest': {
+      await observeOmoShadow('PermissionRequest', empty);
       const tool = _toolName(empty);
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       return unifiedRes && unifiedRes.stdout ? unifiedRes : { stdout: '', stderr: ' ', exit_code: 0 };
     }
     case 'PostToolUse': {
       await _recordPostToolEvidence(empty);
+      await observeOmoShadow('PostToolUse', empty);
       const tool = _toolName(empty);
       const unifiedRes = await _runUnifiedPolicies('PostToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;

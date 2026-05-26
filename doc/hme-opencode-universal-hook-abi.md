@@ -53,7 +53,9 @@ Provider adapters translate these decisions into Claude, Codex, Anthropic, OpenA
 
 ## Current scope
 
-This phase adds the ABI contract and validators only. It does not route live hooks through the ABI.
+This phase adds the ABI contract, validators, and OpenCode shadow-mode routing.
+Shadow routing observes HME dispatcher events but does not apply OMO decisions to
+the live OpenCode response.
 
 Implemented surfaces:
 
@@ -61,4 +63,24 @@ Implemented surfaces:
 - `tools/HME/omo_bridge/contract_validator.js`
 - `tools/HME/omo_bridge/universal_event.js`
 - `tools/HME/omo_bridge/universal_decision.js`
+- `tools/HME/omo_bridge/shadow_runtime.js`
+- `tools/HME/event_kernel/dispatcher.js`
 - `tools/HME/tests/specs/omo_contract.test.js`
+
+Shadowed dispatcher events:
+
+- `SessionStart` -> `session.start`
+- `Stop` -> `stop.before`
+- `PreToolUse` -> `tool.execute.before`
+- `PermissionRequest` -> `permission.ask`
+- `PostToolUse` -> `tool.execute.after`
+
+Enable shadow mode with `HME_OMO_ENABLED=1` and `HME_OMO_MODE=shadow`. Configure
+the OMO source using `HME_OMO_SOURCE=path` plus `HME_OMO_PATH`, or
+`HME_OMO_SOURCE=package` plus `HME_OMO_PACKAGE`. Optional controls are
+`HME_OMO_REQUIRED_VERSION` and `HME_OMO_TIMEOUT_MS`.
+
+HME remains authoritative. Shadow decisions, mutations, denials, plugin load
+errors, invalid events, and timeouts are telemetry only and cannot change live
+allow/deny, stop-chain, stream rewriting, permissions, provider routing,
+secret/path policy, or capability filtering.
