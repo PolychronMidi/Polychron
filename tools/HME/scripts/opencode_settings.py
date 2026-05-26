@@ -98,10 +98,13 @@ def expected_provider(port: int, project_root: Path = PROJECT_ROOT) -> dict[str,
     models = {}
     for row in _model_rows(project_root):
         entry = {"name": row["name"]}
+        limit = {}
         if row.get("context_length"):
-            entry["context"] = row["context_length"]
-        if row.get("max_output_tokens"):
-            entry["limit"] = {"output": row["max_output_tokens"]}
+            limit["context"] = row["context_length"]
+        if limit and row.get("max_output_tokens"):
+            limit["output"] = row["max_output_tokens"]
+        if limit:
+            entry["limit"] = limit
         models[row["id"]] = entry
     return {
         "npm": "@ai-sdk/openai-compatible",
