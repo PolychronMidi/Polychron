@@ -79,6 +79,8 @@ SKIP_DIRS = {
     "lab",
     "models",
     "smolagents",
+    "opencode",
+    "oh-my-openagent",
     "omniroute",
     "plugin-cache",
     ".claude",
