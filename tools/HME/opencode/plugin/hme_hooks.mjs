@@ -41,6 +41,27 @@ function appendRelayLog(root, row) {
   }
 }
 
+function visibleHookToastsEnabled() {
+  return /^(1|true|yes|on)$/i.test(String(process.env.HME_OPENCODE_HOOK_TOASTS || ''));
+}
+
+async function markHookEntered(ctx, event) {
+  appendRelayLog(projectRoot(ctx), { event, status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+  if (!visibleHookToastsEnabled()) return;
+  try {
+    await ctx?.client?.tui?.showToast?.({
+      body: {
+        title: 'HME hook',
+        message: event,
+        variant: 'info',
+        duration: 1500,
+      },
+    });
+  } catch (_err) {
+    // UI visibility is diagnostic only; hook behavior must remain governed by HME.
+  }
+}
+
 function runHme(ctx, event, payload) {
   const root = projectRoot(ctx);
   const started = Date.now();
@@ -121,7 +142,7 @@ async function HmeHooks(ctx) {
   appendRelayLog(projectRoot(ctx), { event: 'plugin.init', status: 'ok', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
   return {
   event: async (input) => {
-    appendRelayLog(projectRoot(ctx), { event: 'event.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'event.callback');
     const type = eventType(input);
     const payload = eventPayload(input);
     if (/session\.(created|start|started)/i.test(type)) relayEvent(ctx, 'SessionStart', payload);
@@ -130,61 +151,61 @@ async function HmeHooks(ctx) {
     if (/session\.(idle|stopped|stop|ended|finished)/i.test(type)) relayEvent(ctx, 'Stop', payload);
   },
   'chat.message': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'chat.message.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'chat.message.callback');
     relayEvent(ctx, 'UserPromptSubmit', { ...input, message: output?.message || {}, parts: output?.parts || [], session_id: sessionId(input) });
   },
   'command.execute.before': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'command.execute.before.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'command.execute.before.callback');
     relayEvent(ctx, 'UserPromptSubmit', { ...input, command: input?.command || '', arguments: input?.arguments || '', parts: output?.parts || [], session_id: sessionId(input) });
   },
   'chat.params': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'chat.params.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'chat.params.callback');
     relayMutableEvent(ctx, 'ChatParams', input, output);
   },
   'chat.headers': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'chat.headers.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'chat.headers.callback');
     relayMutableEvent(ctx, 'ChatHeaders', input, output);
   },
   'experimental.chat.messages.transform': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'experimental.chat.messages.transform.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'experimental.chat.messages.transform.callback');
     relayMutableEvent(ctx, 'ChatMessagesTransform', input, output);
   },
   'experimental.chat.system.transform': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'experimental.chat.system.transform.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'experimental.chat.system.transform.callback');
     relayMutableEvent(ctx, 'ChatSystemTransform', input, output);
   },
   'experimental.session.compacting': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'experimental.session.compacting.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'experimental.session.compacting.callback');
     relayEvent(ctx, 'PreCompact', { ...input, context: output?.context || [], prompt: output?.prompt || '', session_id: sessionId(input) });
   },
   'experimental.compaction.autocontinue': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'experimental.compaction.autocontinue.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'experimental.compaction.autocontinue.callback');
     relayEvent(ctx, 'PostCompact', { ...input, enabled: output?.enabled, session_id: sessionId(input) });
   },
   'tool.execute.before': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'tool.execute.before.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'tool.execute.before.callback');
     const decision = runHme(ctx, 'PreToolUse', { tool_name: toolName(input), tool_input: toolArgs(input, output), session_id: sessionId(input) });
     applyDecision(decision, output);
   },
   'tool.execute.after': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'tool.execute.after.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'tool.execute.after.callback');
     runHme(ctx, 'PostToolUse', { tool_name: toolName(input), tool_input: toolArgs(input, {}), tool_response: output || {}, session_id: sessionId(input) });
   },
   'permission.ask': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'permission.ask.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'permission.ask.callback');
     const decision = runHme(ctx, 'PermissionRequest', { tool_name: toolName(input), tool_input: toolArgs(input, output), session_id: sessionId(input) });
     applyDecision(decision, output);
   },
   'shell.env': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'shell.env.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'shell.env.callback');
     relayMutableEvent(ctx, 'ShellEnv', input, output);
   },
   'experimental.text.complete': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'experimental.text.complete.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'experimental.text.complete.callback');
     relayMutableEvent(ctx, 'TextComplete', input, output);
   },
   'session.stop': async (input, output) => {
-    appendRelayLog(projectRoot(ctx), { event: 'session.stop.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    await markHookEntered(ctx, 'session.stop.callback');
     const decision = runHme(ctx, 'Stop', { ...input, session_id: sessionId(input) });
     applyDecision(decision, output);
   },

@@ -168,3 +168,56 @@ test('OpenCode plugin uses node binary instead of embedded execPath', async () =
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('OpenCode plugin hook toasts are opt-in', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-toasts-off-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  const calls = [];
+  const old = process.env.HME_OPENCODE_HOOK_TOASTS;
+  delete process.env.HME_OPENCODE_HOOK_TOASTS;
+
+  try {
+    const mod = await import(pluginUrl);
+    const hooks = await mod.default({
+      project: { directory: root },
+      client: { tui: { showToast: (input) => calls.push(input) } },
+    });
+    await hooks['chat.params']({ sessionID: 's1' }, { options: {} });
+    assert.deepEqual(calls, []);
+  } finally {
+    if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = old;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode plugin can show visible hook toasts for diagnostics', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-toasts-on-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  const calls = [];
+  const old = process.env.HME_OPENCODE_HOOK_TOASTS;
+  process.env.HME_OPENCODE_HOOK_TOASTS = '1';
+
+  try {
+    const mod = await import(pluginUrl);
+    const hooks = await mod.default({
+      project: { directory: root },
+      client: { tui: { showToast: (input) => calls.push(input) } },
+    });
+    await hooks['chat.params']({ sessionID: 's1' }, { options: {} });
+    assert.deepEqual(calls, [{
+      body: {
+        title: 'HME hook',
+        message: 'chat.params.callback',
+        variant: 'info',
+        duration: 1500,
+      },
+    }]);
+  } finally {
+    if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = old;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
