@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const MAX_RELAY_LOG_BYTES = 1024 * 1024;
-const INSTALLED_PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
+const INSTALLED_PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..', '..');
 
 function hasHmeEntrypoint(root) {
   return fs.existsSync(entrypoint(root));
@@ -88,10 +88,27 @@ function sessionId(input) {
   return String(input?.sessionID || input?.session_id || input?.session?.id || '');
 }
 
+function eventType(input) {
+  return String(input?.event?.type || input?.type || input?.event || input?.name || '');
+}
+
+function eventPayload(input) {
+  return isPlainObject(input?.event) ? input.event : input || {};
+}
+
+function relayEvent(ctx, event, payload) {
+  runHme(ctx, event, payload || {});
+}
+
 function applyDecision(decision, output) {
-  const doc = decision.decision || decision.hookSpecificOutput || decision;
+  const doc = isPlainObject(decision.decision)
+    ? decision.decision
+    : isPlainObject(decision.hookSpecificOutput)
+      ? decision.hookSpecificOutput
+      : decision;
   const behavior = doc.behavior || doc.permissionDecision || doc.decision;
   if (behavior === 'deny') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Denied by HME');
+  if (behavior === 'block') throw new Error(doc.message || doc.permissionDecisionReason || doc.reason || 'Blocked by HME');
   const patch = doc.patch?.args || doc.patch;
   if (behavior === 'modify' && isPlainObject(patch) && isPlainObject(output?.args)) Object.assign(output.args, patch);
 }
@@ -101,9 +118,28 @@ async function HmeHooks(ctx) {
   return {
   event: async (input) => {
     appendRelayLog(projectRoot(ctx), { event: 'event.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
-    const type = String(input?.type || input?.event || input?.name || '');
-    if (/session\.(created|start|started)/i.test(type)) runHme(ctx, 'SessionStart', input || {});
-    if (/session\.(compacted|compact)/i.test(type)) runHme(ctx, 'PostCompact', input || {});
+    const type = eventType(input);
+    const payload = eventPayload(input);
+    if (/session\.(created|start|started)/i.test(type)) relayEvent(ctx, 'SessionStart', payload);
+    if (/session\.(compacting|compact\.start|compact\.before)/i.test(type)) relayEvent(ctx, 'PreCompact', payload);
+    if (/session\.(compacted|compact\.end|compact\.after)/i.test(type)) relayEvent(ctx, 'PostCompact', payload);
+    if (/session\.(idle|stopped|stop|ended|finished)/i.test(type)) relayEvent(ctx, 'Stop', payload);
+  },
+  'chat.message': async (input, output) => {
+    appendRelayLog(projectRoot(ctx), { event: 'chat.message.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    relayEvent(ctx, 'UserPromptSubmit', { ...input, message: output?.message || {}, parts: output?.parts || [], session_id: sessionId(input) });
+  },
+  'command.execute.before': async (input, output) => {
+    appendRelayLog(projectRoot(ctx), { event: 'command.execute.before.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    relayEvent(ctx, 'UserPromptSubmit', { ...input, command: input?.command || '', arguments: input?.arguments || '', parts: output?.parts || [], session_id: sessionId(input) });
+  },
+  'experimental.session.compacting': async (input, output) => {
+    appendRelayLog(projectRoot(ctx), { event: 'experimental.session.compacting.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    relayEvent(ctx, 'PreCompact', { ...input, context: output?.context || [], prompt: output?.prompt || '', session_id: sessionId(input) });
+  },
+  'experimental.compaction.autocontinue': async (input, output) => {
+    appendRelayLog(projectRoot(ctx), { event: 'experimental.compaction.autocontinue.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    relayEvent(ctx, 'PostCompact', { ...input, enabled: output?.enabled, session_id: sessionId(input) });
   },
   'tool.execute.before': async (input, output) => {
     appendRelayLog(projectRoot(ctx), { event: 'tool.execute.before.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
@@ -117,6 +153,11 @@ async function HmeHooks(ctx) {
   'permission.ask': async (input, output) => {
     appendRelayLog(projectRoot(ctx), { event: 'permission.ask.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
     const decision = runHme(ctx, 'PermissionRequest', { tool_name: toolName(input), tool_input: toolArgs(input, output), session_id: sessionId(input) });
+    applyDecision(decision, output);
+  },
+  'session.stop': async (input, output) => {
+    appendRelayLog(projectRoot(ctx), { event: 'session.stop.callback', status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+    const decision = runHme(ctx, 'Stop', { ...input, session_id: sessionId(input) });
     applyDecision(decision, output);
   },
   };

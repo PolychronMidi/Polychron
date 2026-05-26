@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/oh-my-openagent/dist/oh-my-opencode.schema.json",
+  "$schema": "../node_modules/oh-my-openagent/dist/oh-my-opencode.schema.json",
   "disabled_hooks": [
     "write-existing-file-guard",
     "claude-code-hooks",

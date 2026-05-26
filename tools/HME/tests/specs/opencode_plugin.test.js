@@ -13,8 +13,13 @@ test('OpenCode plugin exports HME hook map for supported lifecycle events', asyn
   assert.equal(typeof mod.default, 'function');
   const hooks = await mod.default({ project: { directory: path.resolve(__dirname, '../../../..') } });
   assert.deepEqual(Object.keys(hooks).sort(), [
+    'chat.message',
+    'command.execute.before',
     'event',
+    'experimental.compaction.autocontinue',
+    'experimental.session.compacting',
     'permission.ask',
+    'session.stop',
     'tool.execute.after',
     'tool.execute.before',
   ]);
@@ -44,17 +49,82 @@ test('OpenCode plugin handles object-shaped tool payloads without corrupting arg
   assert.deepEqual(output.args, { command: 'pwd' });
 });
 
+test('OpenCode plugin maps available hooks to HME lifecycle events', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-parity-'));
+  const calls = path.join(root, 'calls.jsonl');
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const fs = require("node:fs");',
+    'const path = require("node:path");',
+    'const event = process.argv[process.argv.indexOf("--event") + 1];',
+    'fs.appendFileSync(path.join(process.env.PROJECT_ROOT, "calls.jsonl"), JSON.stringify({ event }) + "\\n");',
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+
+  const mod = await import(pluginUrl);
+  const hooks = await mod.default({ project: { directory: root } });
+  await hooks.event({ event: { type: 'session.created' } });
+  await hooks.event({ event: { type: 'session.compacting' } });
+  await hooks.event({ event: { type: 'session.compacted' } });
+  await hooks.event({ event: { type: 'session.idle' } });
+  await hooks['chat.message']({ sessionID: 's1' }, { message: {}, parts: [] });
+  await hooks['command.execute.before']({ command: 'test', sessionID: 's1', arguments: '' }, { parts: [] });
+  await hooks['experimental.session.compacting']({ sessionID: 's1' }, { context: [] });
+  await hooks['experimental.compaction.autocontinue']({ sessionID: 's1' }, { enabled: true });
+  await hooks['session.stop']({ sessionID: 's1' }, {});
+
+  const events = fs.readFileSync(calls, 'utf8').trim().split('\n').map((line) => JSON.parse(line).event);
+  assert.deepEqual(events, [
+    'SessionStart',
+    'PreCompact',
+    'PostCompact',
+    'Stop',
+    'UserPromptSubmit',
+    'UserPromptSubmit',
+    'PreCompact',
+    'PostCompact',
+    'Stop',
+  ]);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('OpenCode plugin blocks session.stop on HME Stop block decision', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-stop-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const event = process.argv[process.argv.indexOf("--event") + 1];',
+    'if (event === "Stop") process.stdout.write(JSON.stringify({ decision: "block", reason: "not yet" }));',
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+
+  const mod = await import(pluginUrl);
+  const hooks = await mod.default({ project: { directory: root } });
+  await assert.rejects(() => hooks['session.stop']({ sessionID: 's1' }, {}), /not yet/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('OpenCode plugin falls back to installed HME root outside HME projects', async () => {
   const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-outside-'));
   const relayLog = path.resolve(__dirname, '../../runtime/opencode-plugin-relay.jsonl');
+  const nestedRelayLog = path.resolve(__dirname, '../../../tools/HME/runtime/opencode-plugin-relay.jsonl');
   fs.rmSync(relayLog, { force: true });
+  fs.rmSync(nestedRelayLog, { force: true });
 
   const mod = await import(pluginUrl);
-  const hooks = await mod.default({ project: { directory: outsideRoot } });
-  await hooks['tool.execute.after']({ tool: 'NoSuchTool', session: { id: 'fallback-test' } }, {});
+  const oldCwd = process.cwd();
+  process.chdir(outsideRoot);
+  try {
+    const hooks = await mod.default({ project: { directory: outsideRoot } });
+    await hooks['tool.execute.after']({ tool: 'NoSuchTool', session: { id: 'fallback-test' } }, {});
+  } finally {
+    process.chdir(oldCwd);
+  }
 
   const rows = fs.readFileSync(relayLog, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
   assert.equal(rows.some((row) => row.event === 'PostToolUse' && row.status === 'ok'), true);
+  assert.equal(fs.existsSync(nestedRelayLog), false);
   fs.rmSync(outsideRoot, { recursive: true, force: true });
 });
 

@@ -103,7 +103,7 @@ if [ -f "$LATEST_LINK" ]; then
 fi
 if [ "$_NEEDS_FALLBACK" -eq 1 ] && [ -f "$CHAIN_SCRIPT" ]; then
   echo "[PreCompact] preemption missed -- taking fallback snapshot NOW" >&2
-  PROJECT_ROOT="$PROJECT" python3 "$CHAIN_SCRIPT" --imminent > /dev/null 2>&1
+  timeout 5s env PROJECT_ROOT="$PROJECT" python3 "$CHAIN_SCRIPT" --imminent > /dev/null 2>&1 || true
 fi
 
 echo "[PreCompact] Context compaction starting -- chain link ready for postcompact hydration" >&2
