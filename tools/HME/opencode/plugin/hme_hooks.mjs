@@ -10,6 +10,7 @@ const MAX_RELAY_LOG_BYTES = 1024 * 1024;
 const INSTALLED_PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..', '..');
 const HOOK_TOAST_COOLDOWN_MS = 2000;
 const lastHookToastAt = new Map();
+let canonicalPromptCache = { path: '', mtimeMs: 0, content: null };
 
 function hasHmeEntrypoint(root) {
   return fs.existsSync(entrypoint(root));
@@ -54,6 +55,41 @@ function visibleHookToastsEnabled(root) {
     loadEnv(envPath);
   }
   return requireEnvBool('HME_OPENCODE_HOOK_TOASTS');
+}
+
+function systemReplacementEnabled(root) {
+  if (process.env.HME_REPLACE_SYSTEM_PROMPT === undefined || process.env.HME_REPLACE_SYSTEM_PROMPT === '') {
+    const envPath = path.join(root, '.env');
+    if (!fs.existsSync(envPath)) return false;
+    loadEnv(envPath);
+  }
+  return requireEnvBool('HME_REPLACE_SYSTEM_PROMPT');
+}
+
+function loadCanonicalPrompt(root) {
+  const file = path.join(root, 'doc', 'templates', 'canonical-system-prompt.md');
+  try {
+    const stat = fs.statSync(file);
+    if (canonicalPromptCache.path === file && canonicalPromptCache.mtimeMs === stat.mtimeMs) return canonicalPromptCache.content;
+    const content = fs.readFileSync(file, 'utf8');
+    canonicalPromptCache = { path: file, mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
+    return canonicalPromptCache.content;
+  } catch (_err) {
+    canonicalPromptCache = { path: file, mtimeMs: 0, content: null };
+    return null;
+  }
+}
+
+function replaceSystemPrompt(ctx, output) {
+  if (!Array.isArray(output?.system)) return false;
+  const root = projectRoot(ctx);
+  if (!systemReplacementEnabled(root)) return false;
+  const canonical = loadCanonicalPrompt(root);
+  if (canonical === null) return false;
+  output.system.length = 0;
+  output.system.push(canonical);
+  appendRelayLog(root, { event: 'system_prompt_replaced', status: 'ok', exit_code: 0, duration_ms: 0, stdout_bytes: Buffer.byteLength(canonical), stderr_bytes: 0 });
+  return true;
 }
 
 async function markHookEntered(ctx, event) {
@@ -206,6 +242,7 @@ async function HmeHooks(ctx) {
   },
   'experimental.chat.system.transform': async (input, output) => {
     await markHookEntered(ctx, 'experimental.chat.system.transform.callback');
+    replaceSystemPrompt(ctx, output);
     applyDecision(relayMutableEvent(ctx, 'ChatSystemTransform', input, output), output);
   },
   'experimental.session.compacting': async (input, output) => {

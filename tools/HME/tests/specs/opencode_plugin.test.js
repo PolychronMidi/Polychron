@@ -124,6 +124,72 @@ test('OpenCode plugin expands prompt shortcuts before relaying UserPromptSubmit'
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('OpenCode plugin replaces system prompt from canonical template when enabled', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-system-'));
+  const calls = path.join(root, 'calls.jsonl');
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'doc/templates'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.env'), 'HME_REPLACE_SYSTEM_PROMPT=1\nHME_OPENCODE_HOOK_TOASTS=0\n');
+  fs.writeFileSync(path.join(root, 'doc/templates/canonical-system-prompt.md'), 'canonical opencode prompt\n');
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
+    'const fs = require("node:fs");',
+    'const path = require("node:path");',
+    'const event = process.argv[process.argv.indexOf("--event") + 1];',
+    'const input = JSON.parse(fs.readFileSync(0, "utf8") || "{}");',
+    'fs.appendFileSync(path.join(process.env.PROJECT_ROOT, "calls.jsonl"), JSON.stringify({ event, input }) + "\\n");',
+    'process.exit(0);',
+    '',
+  ].join('\n'));
+  const oldReplace = process.env.HME_REPLACE_SYSTEM_PROMPT;
+  const oldToasts = process.env.HME_OPENCODE_HOOK_TOASTS;
+  delete process.env.HME_REPLACE_SYSTEM_PROMPT;
+  delete process.env.HME_OPENCODE_HOOK_TOASTS;
+
+  try {
+    const mod = await import(`${pluginUrl}?system-replace-${Date.now()}`);
+    const hooks = await mod.default({ project: { directory: root } });
+    const output = { system: ['opencode default prompt'] };
+    await hooks['experimental.chat.system.transform']({ sessionID: 's1' }, output);
+    assert.deepEqual(output.system, ['canonical opencode prompt\n']);
+    const row = JSON.parse(fs.readFileSync(calls, 'utf8').trim());
+    assert.equal(row.event, 'ChatSystemTransform');
+    assert.deepEqual(row.input.system, ['canonical opencode prompt\n']);
+  } finally {
+    if (oldReplace === undefined) delete process.env.HME_REPLACE_SYSTEM_PROMPT;
+    else process.env.HME_REPLACE_SYSTEM_PROMPT = oldReplace;
+    if (oldToasts === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = oldToasts;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode plugin leaves system prompt unchanged when replacement disabled', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-system-off-'));
+  fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'doc/templates'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.env'), 'HME_REPLACE_SYSTEM_PROMPT=0\nHME_OPENCODE_HOOK_TOASTS=0\n');
+  fs.writeFileSync(path.join(root, 'doc/templates/canonical-system-prompt.md'), 'canonical opencode prompt\n');
+  fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
+  const oldReplace = process.env.HME_REPLACE_SYSTEM_PROMPT;
+  const oldToasts = process.env.HME_OPENCODE_HOOK_TOASTS;
+  delete process.env.HME_REPLACE_SYSTEM_PROMPT;
+  delete process.env.HME_OPENCODE_HOOK_TOASTS;
+
+  try {
+    const mod = await import(`${pluginUrl}?system-off-${Date.now()}`);
+    const hooks = await mod.default({ project: { directory: root } });
+    const output = { system: ['opencode default prompt'] };
+    await hooks['experimental.chat.system.transform']({ sessionID: 's1' }, output);
+    assert.deepEqual(output.system, ['opencode default prompt']);
+  } finally {
+    if (oldReplace === undefined) delete process.env.HME_REPLACE_SYSTEM_PROMPT;
+    else process.env.HME_REPLACE_SYSTEM_PROMPT = oldReplace;
+    if (oldToasts === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
+    else process.env.HME_OPENCODE_HOOK_TOASTS = oldToasts;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('OpenCode plugin maps available hooks to HME lifecycle events', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-parity-'));
   const calls = path.join(root, 'calls.jsonl');
