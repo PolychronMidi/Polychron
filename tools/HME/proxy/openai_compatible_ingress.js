@@ -1,6 +1,10 @@
 'use strict';
 
 const { loadModelsJson } = require('./shared');
+const fs = require('fs');
+const path = require('path');
+const { PROJECT_ROOT } = require('./shared');
+const { requireEnvBool } = require('./shared/load_env');
 
 function isOpenAICompatiblePath(url) {
   return /^\/v1\/(chat\/completions|responses)(?:\?|$)/.test(String(url || ''));
@@ -62,6 +66,42 @@ function targetModelFor(requestedModel, cfg = loadModelsJson(), env = process.en
   return `${provider}/${raw}`;
 }
 
+let canonicalPromptCache = { mtimeMs: 0, content: null };
+
+function loadCanonicalPrompt(root = PROJECT_ROOT) {
+  const file = path.join(root, 'doc', 'templates', 'canonical-system-prompt.md');
+  try {
+    const stat = fs.statSync(file);
+    if (canonicalPromptCache.mtimeMs === stat.mtimeMs) return canonicalPromptCache.content;
+    const content = fs.readFileSync(file, 'utf8');
+    canonicalPromptCache = { mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
+    return canonicalPromptCache.content;
+  } catch (_err) {
+    canonicalPromptCache = { mtimeMs: 0, content: null };
+    return null;
+  }
+}
+
+function replaceOpenAISystemPrompt(payload, env = process.env) {
+  if (!payload || typeof payload !== 'object') return false;
+  if (!requireEnvBool('HME_REPLACE_SYSTEM_PROMPT')) return false;
+  const canonical = loadCanonicalPrompt(env.PROJECT_ROOT || PROJECT_ROOT);
+  if (canonical === null) return false;
+  let changed = false;
+  if (!Array.isArray(payload.messages) && payload.instructions !== canonical) {
+    payload.instructions = canonical;
+    changed = true;
+  }
+  if (Array.isArray(payload.messages)) {
+    const before = payload.messages.length;
+    payload.messages = payload.messages.filter((message) => !message || message.role !== 'system');
+    if (payload.messages.length !== before) changed = true;
+    payload.messages.unshift({ role: 'system', content: canonical });
+    changed = true;
+  }
+  return changed;
+}
+
 function handleOpenAIModelsRoute(clientReq, clientRes, cfg = loadModelsJson(), env = process.env) {
   if (!/^\/v1\/models(?:\?|$)/.test(String(clientReq.url || ''))) return false;
   clientRes.writeHead(200, { 'Content-Type': 'application/json' });
@@ -71,6 +111,7 @@ function handleOpenAIModelsRoute(clientReq, clientRes, cfg = loadModelsJson(), e
 
 function routeOpenAICompatibleThroughHme(clientReq, payload, { servicePort, env = process.env, cfg = loadModelsJson() } = {}) {
   if (!isOpenAICompatiblePath(clientReq.url) || clientReq.headers['x-hme-upstream']) return false;
+  let changed = replaceOpenAISystemPrompt(payload, env);
   const port = typeof servicePort === 'function' ? servicePort('omniroute') : (env.HME_OMNIROUTE_PORT || 20128);
   clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${String(port)}`;
   clientReq.headers['x-hme-host'] = clientReq.headers['x-hme-host'] || 'opencode';
@@ -80,16 +121,17 @@ function routeOpenAICompatibleThroughHme(clientReq, payload, { servicePort, env 
     const routed = targetModelFor(payload.model, cfg, env);
     if (routed !== payload.model) {
       payload.model = routed;
-      return true;
+      changed = true;
     }
   }
-  return false;
+  return changed;
 }
 
 module.exports = {
   isOpenAICompatiblePath,
   modelCatalog,
   targetModelFor,
+  replaceOpenAISystemPrompt,
   handleOpenAIModelsRoute,
   routeOpenAICompatibleThroughHme,
 };

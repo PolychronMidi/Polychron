@@ -100,6 +100,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'were not': "weren't",
 
   // Long vocabulary concordance.
+  'replacement': 'repl',
+  'replace': 'repl',
   'continue': 'go',
   'continuing': 'doing',
   'continued': 'did',
@@ -124,6 +126,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'enthusiastically': 'eagerly',
   'environmentally': 'eco',
   'identification': 'id',
+  'implemented': 'did',
+  'implement': 'do',
   'implementation': 'setup',
   'implementations': 'setups',
   'inappropriately': 'wrongly',

@@ -158,6 +158,7 @@ test('OpenAI-compatible OpenCode ingress routes through HME OmniRoute boundary',
     quiet: process.env.HME_PROXY_QUIET_IMPORT,
     overdrive: process.env.OVERDRIVE_MODE,
     provider: process.env.HME_OPENCODE_OMNI_PROVIDER,
+    replaceSystem: process.env.HME_REPLACE_SYSTEM_PROMPT,
   };
   let upstreamBody = null;
   let upstreamPath = null;
@@ -178,6 +179,7 @@ test('OpenAI-compatible OpenCode ingress routes through HME OmniRoute boundary',
     process.env.HME_PROXY_QUIET_IMPORT = '1';
     process.env.OVERDRIVE_MODE = '0';
     process.env.HME_OPENCODE_OMNI_PROVIDER = 'cx';
+    process.env.HME_REPLACE_SYSTEM_PROMPT = '1';
     clearProxyCache();
     const { createClaudeHandler } = require('../../proxy/hme_proxy_claude');
     proxy.on('request', createClaudeHandler({
@@ -206,16 +208,31 @@ test('OpenAI-compatible OpenCode ingress routes through HME OmniRoute boundary',
       skipStopFallback: true,
     }));
     const proxyPort = await listen(proxy);
-    const payload = JSON.stringify({ model: 'gpt-5.5-xhigh', messages: [{ role: 'user', content: 'hi' }] });
+    const payload = JSON.stringify({ model: 'gpt-5.5-xhigh', messages: [{ role: 'system', content: 'You are OpenCode default.' }, { role: 'user', content: 'hi' }] });
     const res = await request(proxyPort, payload, '/v1/chat/completions');
     assert.equal(res.statusCode, 200);
     assert.equal(upstreamPath, '/v1/chat/completions');
-    assert.equal(JSON.parse(upstreamBody).model, 'cx/gpt-5.5-xhigh');
+    const routed = JSON.parse(upstreamBody);
+    assert.equal(routed.model, 'cx/gpt-5.5-xhigh');
+    assert.equal(routed.messages[0].role, 'system');
+    assert.match(routed.messages[0].content, /^You are an interactive agent for software engineering tasks/);
+    assert.equal(routed.messages.some((message) => message.role === 'system' && /OpenCode default/.test(String(message.content || ''))), false);
+
+    upstreamBody = null;
+    upstreamPath = null;
+    const responsesPayload = JSON.stringify({ model: 'gpt-5.5-xhigh', input: 'hi' });
+    const responsesRes = await request(proxyPort, responsesPayload, '/v1/responses');
+    assert.equal(responsesRes.statusCode, 200);
+    assert.equal(upstreamPath, '/v1/responses');
+    const routedResponses = JSON.parse(upstreamBody);
+    assert.equal(routedResponses.model, 'cx/gpt-5.5-xhigh');
+    assert.match(routedResponses.instructions, /^You are an interactive agent for software engineering tasks/);
   } finally {
     if (prevEnv.omniPort === undefined) delete process.env.HME_OMNIROUTE_PORT; else process.env.HME_OMNIROUTE_PORT = prevEnv.omniPort;
     if (prevEnv.quiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevEnv.quiet;
     if (prevEnv.overdrive === undefined) delete process.env.OVERDRIVE_MODE; else process.env.OVERDRIVE_MODE = prevEnv.overdrive;
     if (prevEnv.provider === undefined) delete process.env.HME_OPENCODE_OMNI_PROVIDER; else process.env.HME_OPENCODE_OMNI_PROVIDER = prevEnv.provider;
+    if (prevEnv.replaceSystem === undefined) delete process.env.HME_REPLACE_SYSTEM_PROMPT; else process.env.HME_REPLACE_SYSTEM_PROMPT = prevEnv.replaceSystem;
     clearProxyCache();
     await close(proxy).catch(() => {});
     await close(upstream).catch(() => {});
