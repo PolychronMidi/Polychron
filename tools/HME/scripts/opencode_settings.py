@@ -142,7 +142,7 @@ def compare_config(live: dict[str, Any], port: int, project_root: Path = PROJECT
     violations: list[str] = []
     if live_provider != expected_provider_doc:
         violations.append(f"{OPENCODE_CONFIG_PATH}: provider.{PROVIDER_ID} differs from HME materialization")
-    if plugin_spec(project_root) not in list(live.get("plugin") or []):
+    if ENABLE_PLUGIN and plugin_spec(project_root) not in list(live.get("plugin") or []):
         violations.append(f"{OPENCODE_CONFIG_PATH}: HME OpenCode plugin is missing from plugin list")
     return violations
 
