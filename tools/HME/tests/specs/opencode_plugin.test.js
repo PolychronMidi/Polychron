@@ -131,6 +131,7 @@ test('OpenCode plugin replaces system prompt from canonical template when enable
   fs.mkdirSync(path.join(root, 'doc/templates'), { recursive: true });
   fs.writeFileSync(path.join(root, '.env'), 'HME_REPLACE_SYSTEM_PROMPT=1\nHME_OPENCODE_HOOK_TOASTS=0\n');
   fs.writeFileSync(path.join(root, 'doc/templates/canonical-system-prompt.md'), 'canonical opencode prompt\n');
+  fs.writeFileSync(path.join(root, 'doc/templates/AGENTS.md'), '# Rules\n\n- keep signal high\n');
   fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), [
     'const fs = require("node:fs");',
     'const path = require("node:path");',
@@ -150,10 +151,10 @@ test('OpenCode plugin replaces system prompt from canonical template when enable
     const hooks = await mod.default({ project: { directory: root } });
     const output = { system: ['opencode default prompt'] };
     await hooks['experimental.chat.system.transform']({ sessionID: 's1' }, output);
-    assert.deepEqual(output.system, ['canonical opencode prompt\n']);
+    assert.deepEqual(output.system, ['canonical opencode prompt\n\n<doc_templates_agents_md>\n# Rules\n\n- keep signal high\n\n</doc_templates_agents_md>']);
     const row = JSON.parse(fs.readFileSync(calls, 'utf8').trim());
     assert.equal(row.event, 'ChatSystemTransform');
-    assert.deepEqual(row.input.system, ['canonical opencode prompt\n']);
+    assert.deepEqual(row.input.system, ['canonical opencode prompt\n\n<doc_templates_agents_md>\n# Rules\n\n- keep signal high\n\n</doc_templates_agents_md>']);
   } finally {
     if (oldReplace === undefined) delete process.env.HME_REPLACE_SYSTEM_PROMPT;
     else process.env.HME_REPLACE_SYSTEM_PROMPT = oldReplace;
