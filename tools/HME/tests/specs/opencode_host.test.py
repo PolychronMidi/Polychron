@@ -6,6 +6,11 @@ import sys
 import unittest
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT / "tools" / "HME" / "scripts"))
+from _env_loader import load_env  # noqa: E402
+load_env()
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
 from helpers import assert_class_shape, smoke_run  # noqa: E402
 
