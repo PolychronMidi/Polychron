@@ -23,6 +23,7 @@ Package layout (was single 2842-line verify-coherence.py):
   runtime_perf.py       hook latency, tool-response latency, git coverage
   runtime_safety.py     lifesaver integrity, trajectory trend
   graph.py              feedback graph, reloadable module sync
+  opencode_host.py      OpenCode provider/plugin materialization
   __main__.py           run_engine + format_text + main + shim entrypoint
 
 Verifier registration: REGISTRY below (preserves the original ordering).
