@@ -36,6 +36,8 @@ test('routeOpenAICompatibleThroughHme sets HME upstream and model route', () => 
   const changed = ingress.routeOpenAICompatibleThroughHme(req, payload, { servicePort: () => 20128, cfg, env: {} });
   assert.equal(changed, true);
   assert.equal(req.headers['x-hme-upstream'], 'http://127.0.0.1:20128');
+  assert.equal(req.headers.authorization, undefined);
+  assert.equal(req.headers['x-api-key'], undefined);
   assert.equal(payload.model, 'openrouter/qwen-free');
 });
 
