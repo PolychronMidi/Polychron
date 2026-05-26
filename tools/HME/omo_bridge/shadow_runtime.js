@@ -185,10 +185,10 @@ async function loadConfiguredHooks(options = {}) {
   if (options.hooks) return { status: 'ok', hooks: options.hooks, dependency: { source: 'injected' } };
   const dependency = resolveOmo({
     enabled: true,
-    source: options.source ?? process.env.HME_OMO_SOURCE ?? 'path',
-    path: options.path ?? process.env.HME_OMO_PATH ?? 'tools/oh-my-openagent',
+    source: options.source ?? process.env.HME_OMO_SOURCE,
+    path: options.path ?? process.env.HME_OMO_PATH,
     packageName: options.packageName ?? process.env.HME_OMO_PACKAGE,
-    requiredVersion: options.requiredVersion ?? process.env.HME_OMO_REQUIRED_VERSION ?? '',
+    requiredVersion: options.requiredVersion ?? process.env.HME_OMO_REQUIRED_VERSION,
     required: false,
     telemetry: options.telemetry,
   });
