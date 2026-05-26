@@ -10,7 +10,7 @@ const MAX_RELAY_LOG_BYTES = 1024 * 1024;
 const INSTALLED_PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..', '..');
 const HOOK_TOAST_COOLDOWN_MS = 2000;
 const lastHookToastAt = new Map();
-let canonicalPromptCache = { path: '', mtimeMs: 0, content: null };
+const templatePromptCache = new Map();
 const OPENCODE_ERROR_ROUTING_STATE = globalThis.__HME_OPENCODE_ERROR_ROUTING_STATE || (globalThis.__HME_OPENCODE_ERROR_ROUTING_STATE = {
   roots: new Set(),
   installed: false,
@@ -120,25 +120,35 @@ function systemReplacementEnabled(root) {
   return requireEnvBool('HME_REPLACE_SYSTEM_PROMPT');
 }
 
-function loadCanonicalPrompt(root) {
-  const file = path.join(root, 'doc', 'templates', 'canonical-system-prompt.md');
+function loadTemplatePrompt(root, name) {
+  const file = path.join(root, 'doc', 'templates', name);
+  const cached = templatePromptCache.get(file);
   try {
     const stat = fs.statSync(file);
-    if (canonicalPromptCache.path === file && canonicalPromptCache.mtimeMs === stat.mtimeMs) return canonicalPromptCache.content;
+    if (cached && cached.mtimeMs === stat.mtimeMs) return cached.content;
     const content = fs.readFileSync(file, 'utf8');
-    canonicalPromptCache = { path: file, mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
-    return canonicalPromptCache.content;
+    const entry = { mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
+    templatePromptCache.set(file, entry);
+    return entry.content;
   } catch (_err) {
-    canonicalPromptCache = { path: file, mtimeMs: 0, content: null };
+    templatePromptCache.set(file, { mtimeMs: 0, content: null });
     return null;
   }
+}
+
+function composedSystemPrompt(root) {
+  const canonical = loadTemplatePrompt(root, 'canonical-system-prompt.md');
+  if (canonical === null) return null;
+  const agents = loadTemplatePrompt(root, 'AGENTS.md');
+  if (agents === null) return canonical;
+  return `${canonical}\n\n<doc_templates_agents_md>\n${agents}\n</doc_templates_agents_md>`;
 }
 
 function replaceSystemPrompt(ctx, output) {
   if (!Array.isArray(output?.system)) return false;
   const root = projectRoot(ctx);
   if (!systemReplacementEnabled(root)) return false;
-  const canonical = loadCanonicalPrompt(root);
+  const canonical = composedSystemPrompt(root);
   if (canonical === null) return false;
   output.system.length = 0;
   output.system.push(canonical);
