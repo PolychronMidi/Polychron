@@ -3,7 +3,6 @@
 const { parentTaskDebt } = require('../../parent_task_guard');
 const { REASONS } = require('../context');
 const { unfinishedTaskDebt } = require('../task_debt');
-const { assistantToolNamesSinceLastUserPrompt } = require('../transcript');
 
 function scanNextActionDebt(text) {
   if (!text) return [];
@@ -72,22 +71,22 @@ const parentTaskDebtCheck = {
   },
 };
 
-const todoChurnDebtCheck = {
-  name: 'todo-churn-debt',
+const toolChurnDebtCheck = {
+  name: 'tool-churn-debt',
   evaluate(state) {
-    const names = assistantToolNamesSinceLastUserPrompt(state.transcriptPath);
-    if (names.length < 2) return null;
-    if (!names.every((name) => name === 'TodoWrite')) return null;
-    return state.deny('WORK_DEBT_ADMISSION', `${REASONS.WORK_DEBT_ADMISSION}\n\nOpen task evidence:\n  1. TodoWrite-only turn: task-list updates are not work evidence.`);
+    if (state.toolUseCount < 2) return null;
+    if (state.hasSameTurnEvidence) return null;
+    return state.deny('WORK_DEBT_ADMISSION', `${REASONS.WORK_DEBT_ADMISSION}\n\nOpen task evidence:\n  1. Tool-only turn produced no write or verification evidence.`);
   },
 };
+
 
 module.exports = {
   nextActionDebtCheck,
   parentTaskDebtCheck,
   scanNextActionDebt,
   scanWorkDebtAdmission,
-  todoChurnDebtCheck,
+  toolChurnDebtCheck,
   unfinishedTaskDebtCheck,
   workDebtAdmissionCheck,
 };

@@ -380,6 +380,20 @@ test('work_checks: latest TodoWrite all-completed list does not block',
     assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
   }));
 
+test('work_checks: repeated tool calls without work evidence block stopping',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the route gap' } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [{ content: 'Fix route gap', status: 'in_progress' }] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [{ content: 'Fix route gap', status: 'completed' }] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /Tool-only turn produced no write or verification evidence/);
+  }));
+
 test('work_checks: live Claude task store blocks unfinished session tasks',
   _withSandbox(async (sandbox) => {
     const sessionId = '11111111-2222-3333-4444-555555555555';
