@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('../proxy/shared');
+const { loadEnv } = require('../proxy/shared/load_env');
 const { resolveOmo } = require('./dependency');
 const { createClientShim } = require('./client_shim');
 const { createOpenCodeCompatPlugin } = require('./opencode_compat');
@@ -25,6 +26,12 @@ let cachedRuntime = null;
 
 const DEFAULT_LOG = path.join(RUNTIME_DIR, 'omo-shadow-decisions.jsonl');
 const DEFAULT_LOG_MAX_BYTES = 1024 * 1024;
+
+try {
+  loadEnv(path.join(PROJECT_ROOT, '.env'));
+} catch (_err) {
+  // Optional OMO controls fall back to process env/defaults if .env is absent.
+}
 
 function envFlag(name) {
   const value = process.env[name];
@@ -78,6 +85,7 @@ function isPreloadEnabled(options = {}) {
 
 function isToolBeforeWarmOnly(options = {}) {
   const value = options.toolBeforeWarmOnly ?? process.env.HME_OMO_TOOL_BEFORE_WARM_ONLY;
+  if (value === undefined && isLiveEnabled(options)) return true;
   return value === true || value === '1' || value === 'true';
 }
 

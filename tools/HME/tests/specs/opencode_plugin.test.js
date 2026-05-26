@@ -10,7 +10,7 @@ test('OpenCode plugin exports HME hook map for supported lifecycle events', asyn
   const mod = await import(pluginUrl);
   const hooks = await mod.HmeHooks({ project: { directory: path.resolve(__dirname, '../../../..') } });
   assert.deepEqual(Object.keys(hooks).sort(), [
-    'permission.asked',
+    'permission.ask',
     'session.compacted',
     'session.created',
     'tool.execute.after',

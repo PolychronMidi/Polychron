@@ -323,6 +323,7 @@ async function dispatchEvent(eventName, stdinJson) {
   await _recordLifecycleState(eventName, empty);
   switch (eventName) {
     case 'SessionStart':
+      await applyOmoLive('SessionStart', empty);
       await observeOmoShadow('SessionStart', empty);
       return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty, 30_000, 'SessionStart');
     case 'UserPromptSubmit':

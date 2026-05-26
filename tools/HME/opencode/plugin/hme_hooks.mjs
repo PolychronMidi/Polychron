@@ -39,7 +39,7 @@ export const HmeHooks = async (ctx) => ({
   'tool.execute.after': async (input, output) => {
     runHme(ctx, 'PostToolUse', { tool_name: input.tool, tool_input: input.args || {}, tool_response: output || {}, session_id: input.sessionID || input.session_id || '' });
   },
-  'permission.asked': async (input, output) => {
+  'permission.ask': async (input, output) => {
     const decision = runHme(ctx, 'PermissionRequest', { tool_name: input.tool || input.actionName || '', tool_input: input.action || {}, session_id: input.sessionID || input.session_id || '' });
     applyDecision(decision, output);
   },

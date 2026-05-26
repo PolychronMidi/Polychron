@@ -9,8 +9,22 @@ const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 const runtime = require('../../omo_bridge/shadow_runtime');
 
 function withEnv(values, fn) {
+  const omoKeys = [
+    'HME_OMO_ENABLED',
+    'HME_OMO_MODE',
+    'HME_OMO_SOURCE',
+    'HME_OMO_PATH',
+    'HME_OMO_PACKAGE',
+    'HME_OMO_REQUIRED_VERSION',
+    'HME_OMO_TIMEOUT_MS',
+    'HME_OMO_TIMEOUT_TOOL_EXECUTE_BEFORE_MS',
+    'HME_OMO_PHASES',
+    'HME_OMO_PRELOAD',
+    'HME_OMO_TOOL_BEFORE_WARM_ONLY',
+  ];
   const old = {};
-  for (const key of Object.keys(values)) old[key] = process.env[key];
+  for (const key of omoKeys) old[key] = process.env[key];
+  for (const key of omoKeys) delete process.env[key];
   for (const [key, value] of Object.entries(values)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -116,6 +130,7 @@ test('OMO live dispatcher deny blocks before HME hook chain', async () => {
       HME_OMO_MODE: 'live',
       HME_OMO_SOURCE: 'path',
       HME_OMO_PATH: path.relative(repoRoot, sandbox),
+      HME_OMO_TOOL_BEFORE_WARM_ONLY: '0',
     }, async () => {
       const { dispatchEvent } = require('../../event_kernel/dispatcher');
       return dispatchEvent('PreToolUse', payload({ tool_name: 'NoSuchTool' }));
@@ -123,6 +138,36 @@ test('OMO live dispatcher deny blocks before HME hook chain', async () => {
     const out = JSON.parse(result.stdout).hookSpecificOutput;
     assert.equal(out.permissionDecision, 'deny');
     assert.equal(out.permissionDecisionReason, 'blocked live');
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test('OMO live dispatcher SessionStart preloads OMO runtime', async () => {
+  const tmpRoot = path.join(repoRoot, 'tmp');
+  fs.mkdirSync(tmpRoot, { recursive: true });
+  const sandbox = fs.mkdtempSync(path.join(tmpRoot, 'hme-omo-live-preload-'));
+  const marker = path.join(sandbox, 'preloaded.txt');
+  try {
+    fs.mkdirSync(path.join(sandbox, 'dist'), { recursive: true });
+    fs.writeFileSync(path.join(sandbox, 'package.json'), JSON.stringify({ name: 'fake-omo', version: '4.2.3', type: 'module', main: 'dist/index.js' }));
+    fs.writeFileSync(path.join(sandbox, 'dist', 'index.js'), [
+      'import fs from "node:fs";',
+      'export default {',
+      '  "session.start": async (input) => { fs.writeFileSync(input.payload.marker, "preloaded") }',
+      '}',
+      '',
+    ].join('\n'));
+    await withEnv({
+      HME_OMO_ENABLED: '1',
+      HME_OMO_MODE: 'live',
+      HME_OMO_SOURCE: 'path',
+      HME_OMO_PATH: path.relative(repoRoot, sandbox),
+    }, async () => {
+      const { dispatchEvent } = require('../../event_kernel/dispatcher');
+      await dispatchEvent('SessionStart', JSON.stringify({ session_id: 'live-preload', marker }));
+    });
+    assert.equal(fs.readFileSync(marker, 'utf8'), 'preloaded');
   } finally {
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
