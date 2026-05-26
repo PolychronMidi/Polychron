@@ -284,6 +284,10 @@ function _edSuffixRepl(_match, stem) {
   return `${stem}d`;
 }
 
+function _tionSuffixRepl(_match, stem) {
+  return `${stem}tn`;
+}
+
 // Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
   // #1 Narrator setup.
@@ -420,6 +424,16 @@ const _SLOP_PATTERNS = [
   { name: 'caveman_ed_suffix',
     re: /\b([a-z]{4,})ed\b/gi,
     repl: _edSuffixRepl },
+
+  // Caveman -tion suffix pass. Only words greater than 6 letters are changed.
+  // Prefix must be at least 3 letters, because 3 + "tion" = 7.
+  // Runs after explicit abbreviations so map entries like "configuration" ->
+  // "config" and "application" -> "app" win before generic suffix cleanup.
+  // Examples: station -> statn, caution -> cautn, relation -> relatn.
+  // Non-examples: action, option.
+  { name: 'caveman_tion_suffix',
+    re: /\b([a-z]{3,})tion\b/gi,
+    repl: _tionSuffixRepl },
 
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',

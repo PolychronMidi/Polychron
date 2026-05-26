@@ -34,6 +34,13 @@ test('slop caveman ed suffix shortens long past-tense words outside code', () =>
   assert.equal(result.out, 'Testd walkd checkd fixed red bed.');
 });
 
+test('slop caveman tion suffix shortens long tion words outside code', () => {
+  const result = _stripSlop('Station caution relation action option configuration application.');
+  assert.ok(result.hits.includes('caveman_tion_suffix'));
+  assert.ok(result.hits.includes('caveman_abbreviations'), 'specific abbreviation map should still run first');
+  assert.equal(result.out, 'Statn cautn relatn action option config app.');
+});
+
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
