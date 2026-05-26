@@ -63,7 +63,7 @@ function isInvalidEditInput(input, options = {}) {
   return false;
 }
 
-const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update', 'edit', 'apply_patch']);
+const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update', 'edit']);
 const WRITE_FAMILY_TOOL_NAMES = new Set(['Write', 'write', ...EDIT_FAMILY_TOOL_NAMES]);
 
 function isEditFamilyTool(name) {

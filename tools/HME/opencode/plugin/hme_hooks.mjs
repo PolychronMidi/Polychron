@@ -213,6 +213,14 @@ function toolName(input) {
   return String(input?.tool_name || input?.toolName || input?.actionName || '');
 }
 
+function hmeToolName(input) {
+  const name = toolName(input);
+  if (name === 'apply_patch') return 'Edit';
+  if (name === 'write') return 'Write';
+  if (name === 'edit') return 'Edit';
+  return name;
+}
+
 function toolArgs(input, output) {
   if (isPlainObject(output?.args)) return output.args;
   if (isPlainObject(input?.args)) return input.args;
@@ -338,12 +346,12 @@ async function HmeHooks(ctx) {
   },
   'tool.execute.before': async (input, output) => {
     await markHookEntered(ctx, 'tool.execute.before.callback');
-    const decision = runHme(ctx, 'PreToolUse', { tool_name: toolName(input), tool_input: toolArgs(input, output), session_id: sessionId(input) });
+    const decision = runHme(ctx, 'PreToolUse', { tool_name: hmeToolName(input), tool_input: toolArgs(input, output), session_id: sessionId(input) });
     applyDecision(decision, output);
   },
   'tool.execute.after': async (input, output) => {
     await markHookEntered(ctx, 'tool.execute.after.callback');
-    runHme(ctx, 'PostToolUse', { tool_name: toolName(input), tool_input: toolArgs(input, {}), tool_response: output || {}, session_id: sessionId(input) });
+    runHme(ctx, 'PostToolUse', { tool_name: hmeToolName(input), tool_input: toolArgs(input, {}), tool_response: output || {}, session_id: sessionId(input) });
   },
   'permission.ask': async (input, output) => {
     await markHookEntered(ctx, 'permission.ask.callback');
