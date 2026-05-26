@@ -93,6 +93,13 @@ test('shortcuts_rewriter expands uppercase shortcut before upstream', async () =
   assert.equal(payload.messages[0].content, 'next suggestions?');
 });
 
+test('shortcuts_rewriter expands r restart-continuation shortcut', async () => {
+  const payload = { messages: [{ role: 'user', content: 'r' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, 'restarted. continue');
+});
+
 test('shortcuts_rewriter expands c at end of system-reminder string', async () => {
   const reminder = '<system-reminder>noise</system-reminder>';
   const payload = { messages: [{ role: 'user', content: `${reminder}\nc` }] };

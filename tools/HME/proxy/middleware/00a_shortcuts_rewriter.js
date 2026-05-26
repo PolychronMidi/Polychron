@@ -6,7 +6,8 @@ const SHORTCUTS = {
   'n': 'next suggestions?',
   'm': "what's missing?",
   'd': 'do all',
-  'c': 'continue'
+  'c': 'continue',
+  'r': 'restarted. continue'
 };
 
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
