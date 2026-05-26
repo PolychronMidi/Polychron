@@ -33,6 +33,14 @@ class OpenCodeSettingsTests(unittest.TestCase):
         self.assertIn("other", out["provider"])
         self.assertIn("hme", out["provider"])
 
+    def test_managed_config_adds_default_models_without_overwriting_user_choice(self):
+        out = opencode_settings.managed_config({}, 9099, ROOT)
+        self.assertEqual(out["model"], opencode_settings.DEFAULT_MODEL)
+        self.assertEqual(out["small_model"], opencode_settings.DEFAULT_SMALL_MODEL)
+        custom = opencode_settings.managed_config({"model": "hme/custom", "small_model": "hme/small"}, 9099, ROOT)
+        self.assertEqual(custom["model"], "hme/custom")
+        self.assertEqual(custom["small_model"], "hme/small")
+
     def test_compare_config_detects_drift(self):
         live = {"provider": {"hme": {"options": {"baseURL": "https://example.invalid"}}}}
         drift = opencode_settings.compare_config(live, 9099, ROOT)
