@@ -168,6 +168,18 @@ test('OpenCode TextComplete dispatch applies stream text-block rewrites', async 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('OpenCode TextComplete dispatch applies caveman suffix rewrites', async () => {
+  const root = _withSandbox('hme-opencode-text-suffix-dispatch-');
+  const res = await dispatch(root, 'TextComplete', {
+    session_id: 's-text-suffix-dispatch',
+    text: 'Testing relation agreement behavior.',
+  });
+  const parsed = JSON.parse(res.stdout || '{}');
+  assert.equal(parsed.decision, 'modify');
+  assert.equal(parsed.text, 'Testin relatn agreemt behavr.');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 
 test('synthetic PreToolUse Edit rewrites stub content via ellipsis-stub policy', async () => {
   const root = _withSandbox('hme-hook-edit-');

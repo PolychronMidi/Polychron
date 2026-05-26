@@ -102,7 +102,7 @@ function createClaudeHandler(deps) {
 
       let outBody = bodyBuf;
       let injected = false;
-      if (routeOpenAICompatibleThroughHme(clientReq, payload)) {
+      if (routeOpenAICompatibleThroughHme(clientReq, payload, { shrinkForPassthrough: _shrinkForPassthrough })) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
         injected = true;
       }

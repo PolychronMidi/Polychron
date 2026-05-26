@@ -45,7 +45,7 @@ test('slop caveman sion suffix shortens long sion words outside code', () => {
   const result = _stripSlop('Decision revision expansion vision fission version.');
   assert.ok(result.hits.includes('caveman_sion_suffix'));
   assert.ok(result.hits.includes('caveman_abbreviations'), 'specific abbreviation map should still run first');
-  assert.equal(result.out, 'Decisn revisn expansn vision fissn v.');
+  assert.equal(result.out, 'Decisn revisn expansn vision fission v.');
 });
 
 test('slop caveman ment suffix shortens long ment words outside code', () => {
@@ -65,6 +65,24 @@ test('slop caveman ior suffix shortens long ior words outside code', () => {
   const result = _stripSlop('Behavior superior interior prior.');
   assert.ok(result.hits.includes('caveman_ior_suffix'));
   assert.equal(result.out, 'Behavr superr interr prior.');
+});
+
+test('slop caveman suffixes let specific abbreviations and deletes win first', () => {
+  const result = _stripSlop('Configuration application development environment agreed.');
+  assert.ok(result.hits.includes('caveman_abbreviations'));
+  assert.ok(result.hits.includes('caveman_compression'));
+  assert.equal(result.out, 'Config app dev env.');
+  assert.doesNotMatch(result.out, /configuratn|applicatn|developmt|environmt|agre/);
+});
+
+test('slop caveman suffixes avoid code-ish URL path flag and dotted tokens', () => {
+  const input = 'Open https://x.test/configuration and /project/application --configuration package.json before testing relation.';
+  const result = _stripSlop(input);
+  assert.match(result.out, /https:\/\/x\.test\/configuration/);
+  assert.match(result.out, /\/project\/application/);
+  assert.match(result.out, /--configuration/);
+  assert.match(result.out, /package\.json/);
+  assert.match(result.out, /testin relatn/);
 });
 
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
@@ -100,6 +118,18 @@ test('caveman patterns do not mutate content inside backtick spans', () => {
   const result = _stripSlop('Run `git config --get user.name and verify` to confirm.');
   assert.ok(result.hits.includes('caveman_abbreviations'), 'still fires on prose');
   assert.match(result.out, /`git config --get user\.name and verify`/, 'backtick span content preserved verbatim');
+});
+
+test('caveman cleanup preserves boundaries after highlighted code words', () => {
+  const result = _stripSlop('Use `stripSlop` testing and `parseResult` relation.');
+  assert.equal(result.out, 'Use `stripSlop` testin & `parseResult` relatn.');
+  assert.doesNotMatch(result.out, /`stripSlop`testin|`parseResult`relatn/);
+});
+
+test('caveman cleanup preserves boundaries around protected file and flag tokens', () => {
+  const result = _stripSlop('Check package.json testing and --dry-run relation.');
+  assert.equal(result.out, 'Check package.json testin & --dry-run relatn.');
+  assert.doesNotMatch(result.out, /package\.jsontestin|--dry-runrelatn/);
 });
 
 test('caveman patterns do not mutate content inside triple-backtick fences', () => {

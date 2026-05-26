@@ -276,8 +276,24 @@ function _abbreviateMatch(_match, word, punct = '') {
   return `${_preserveAbbrevCase(word, target)}${punct}`;
 }
 
-function _suffixRepl(replacementSuffix) {
-  return (_match, stem) => `${stem}${replacementSuffix}`;
+const _SUFFIX_EXCEPTIONS = new Set([
+  'fission',
+  'mission',
+  'passion',
+]);
+
+function _suffixRule(name, suffix, minStem, replacementSuffix, { minOutput = 5 } = {}) {
+  return {
+    name,
+    re: new RegExp(`(?<![A-Za-z0-9_/@.-])([a-z]{${minStem},})${_escapeRegExp(suffix)}\\b`, 'gi'),
+    repl: (match, stem) => {
+      const word = String(match || '');
+      const out = `${stem}${replacementSuffix}`;
+      if (_SUFFIX_EXCEPTIONS.has(word.toLowerCase())) return word;
+      if (out.length < minOutput) return word;
+      return out;
+    },
+  };
 }
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
@@ -397,9 +413,7 @@ const _SLOP_PATTERNS = [
   // Prefix must be at least 4 letters, because 4 + "ing" = 7.
   // Examples: running -> runnin, walking -> walkin, testing -> testin.
   // Non-examples: thing, string, spring, during.
-  { name: 'caveman_ing_suffix',
-    re: /\b([a-z]{4,})ing\b/gi,
-    repl: _suffixRepl('in') },
+  _suffixRule('caveman_ing_suffix', 'ing', 4, 'in'),
 
   // Caveman compression: delete low-signal glue words/first-person filler.
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
@@ -413,9 +427,7 @@ const _SLOP_PATTERNS = [
   // Runs after compression so explicit deletes like "agreed" win first.
   // Examples: tested -> testd, walked -> walkd, checked -> checkd.
   // Non-examples: fixed, red, bed.
-  { name: 'caveman_ed_suffix',
-    re: /\b([a-z]{4,})ed\b/gi,
-    repl: _suffixRepl('d') },
+  _suffixRule('caveman_ed_suffix', 'ed', 4, 'd'),
 
   // Caveman -tion suffix pass. Only words greater than 6 letters are changed.
   // Prefix must be at least 3 letters, because 3 + "tion" = 7.
@@ -423,37 +435,27 @@ const _SLOP_PATTERNS = [
   // "config" and "application" -> "app" win before generic suffix cleanup.
   // Examples: station -> statn, caution -> cautn, relation -> relatn.
   // Non-examples: action, option.
-  { name: 'caveman_tion_suffix',
-    re: /\b([a-z]{3,})tion\b/gi,
-    repl: _suffixRepl('tn') },
+  _suffixRule('caveman_tion_suffix', 'tion', 3, 'tn'),
 
   // Caveman -sion suffix pass. Only words greater than 6 letters are changed.
   // Examples: decision -> decisn, revision -> revisn, expansion -> expansn.
-  // Non-examples: vision.
-  { name: 'caveman_sion_suffix',
-    re: /\b([a-z]{3,})sion\b/gi,
-    repl: _suffixRepl('sn') },
+  // Non-examples: vision; exception-list words like fission/mission/passion.
+  _suffixRule('caveman_sion_suffix', 'sion', 3, 'sn'),
 
   // Caveman -ment suffix pass. Only words greater than 6 letters are changed.
   // Examples: agreement -> agreemt, shipment -> shipmt, fragment -> fragmt.
   // Non-examples: cement, moment.
-  { name: 'caveman_ment_suffix',
-    re: /\b([a-z]{3,})ment\b/gi,
-    repl: _suffixRepl('mt') },
+  _suffixRule('caveman_ment_suffix', 'ment', 3, 'mt'),
 
   // Caveman -ly suffix pass. Only words greater than 6 letters are changed.
   // Examples: locally -> localy, globally -> globaly, normally -> normaly.
   // Non-examples: ally.
-  { name: 'caveman_ly_suffix',
-    re: /\b([a-z]{5,})ly\b/gi,
-    repl: _suffixRepl('y') },
+  _suffixRule('caveman_ly_suffix', 'ly', 5, 'y'),
 
   // Caveman -ior suffix pass. Only words greater than 5 letters are changed.
   // Examples: behavior -> behavr, superior -> superr, interior -> interr.
   // Non-examples: prior.
-  { name: 'caveman_ior_suffix',
-    re: /\b([a-z]{3,})ior\b/gi,
-    repl: _suffixRepl('r') },
+  _suffixRule('caveman_ior_suffix', 'ior', 3, 'r'),
 
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
@@ -520,24 +522,48 @@ function _cleanupPlainSlopArtifacts(text, trim = false) {
   return trim ? out.trim() : out;
 }
 
+function _needsBoundaryBetween(left, right) {
+  if (!left || !right) return false;
+  const l = String(left).slice(-1);
+  const r = String(right)[0];
+  if (/\s/.test(l) || /\s/.test(r)) return false;
+  if (/^[,.;:!?)]$/.test(r)) return false;
+  if (/^[(\[]$/.test(l)) return false;
+  return /[`\w)\]]/.test(l) && /[`\w]/.test(r);
+}
+
+function _joinProtectedSegments(segs) {
+  let out = '';
+  for (const seg of segs) {
+    const s = typeof seg === 'string' ? seg : seg.s;
+    if (_needsBoundaryBetween(out, s)) out += ' ';
+    out += s;
+  }
+  return out;
+}
+
 function _cleanupSlopArtifacts(text) {
   const raw = String(text || '');
-  if (!/`/.test(raw)) return _cleanupPlainSlopArtifacts(raw, true);
+  if (!_hasProtectedSegments(raw)) return _cleanupPlainSlopArtifacts(raw, true);
 
   const out = _segmentByCode(raw)
     .map((seg) => seg.code ? seg.s : _cleanupPlainSlopArtifacts(seg.s, false))
-    .map((seg) => typeof seg === 'string' ? seg : seg.s)
-    .join('');
+  const joined = _joinProtectedSegments(out);
 
-  return out.trim();
+  return joined.trim();
 }
 
-// Split text into [{code:bool, s:string}, ...] segments. Code segments are
-// either triple-backtick fenced blocks or inline single-backtick spans.
-// Code-unsafe slop patterns are applied only to {code:false} segments.
+function _hasProtectedSegments(text) {
+  return /`|https?:\/\/|(?<!\S)(?:\/|--[A-Za-z0-9]|[A-Za-z0-9_-]+\.[A-Za-z0-9_.-]+)(?!\S)/.test(String(text || ''));
+}
+
+// Split text into [{code:bool, s:string}, ...] segments. Protected segments are
+// triple-backtick fenced blocks, inline single-backtick spans, URLs, absolute
+// paths, CLI flags, or dotted code-ish tokens like package.json. Code-unsafe
+// slop patterns are applied only to {code:false} segments.
 function _segmentByCode(text) {
   const out = [];
-  const re = /```[\s\S]*?```|`[^`\n]+`/g;
+  const re = /```[\s\S]*?```|`[^`\n]+`|https?:\/\/[^\s`]+|(?<!\S)(?:\/[^\s`]+|--[A-Za-z0-9][^\s`]*|[A-Za-z0-9_-]+\.[A-Za-z0-9_.-]+)(?!\S)/g;
   let last = 0;
   let m;
   while ((m = re.exec(text)) !== null) {
@@ -550,7 +576,7 @@ function _segmentByCode(text) {
 }
 
 function _replaceOutsideCode(text, re, repl) {
-  if (!/`/.test(text)) return text.replace(re, repl);
+  if (!_hasProtectedSegments(text)) return text.replace(re, repl);
   const segs = _segmentByCode(text);
   for (const seg of segs) {
     if (!seg.code) seg.s = seg.s.replace(re, repl);

@@ -239,6 +239,82 @@ test('OpenAI-compatible OpenCode ingress routes through HME OmniRoute boundary',
   }
 });
 
+test('OpenAI-compatible OpenCode ingress applies passthrough compaction before OmniRoute', async () => {
+  clearProxyCache();
+  const prevEnv = {
+    omniPort: process.env.HME_OMNIROUTE_PORT,
+    quiet: process.env.HME_PROXY_QUIET_IMPORT,
+    overdrive: process.env.OVERDRIVE_MODE,
+    provider: process.env.HME_OPENCODE_OMNI_PROVIDER,
+    replaceSystem: process.env.HME_REPLACE_SYSTEM_PROMPT,
+  };
+  let upstreamBody = null;
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      upstreamBody = Buffer.concat(chunks).toString('utf8');
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ id: 'chatcmpl_fake', choices: [{ message: { role: 'assistant', content: 'ok' } }] }));
+    });
+  });
+  const proxy = http.createServer();
+  try {
+    const upstreamPort = await listen(upstream);
+    process.env.HME_OMNIROUTE_PORT = String(upstreamPort);
+    process.env.HME_PROXY_QUIET_IMPORT = '1';
+    process.env.OVERDRIVE_MODE = '0';
+    process.env.HME_OPENCODE_OMNI_PROVIDER = 'cx';
+    process.env.HME_REPLACE_SYSTEM_PROMPT = '0';
+    clearProxyCache();
+    const { createClaudeHandler } = require('../../proxy/hme_proxy_claude');
+    proxy.on('request', createClaudeHandler({
+      PORT: 9099,
+      PROXY_VERSION: 'test',
+      PROXY_GIT_SHA: 'test',
+      PROXY_STARTED_AT: 'test',
+      routeMetrics: {},
+      recordProxyRoute() {},
+      effectiveCompactThreshold() { return 250000; },
+      shrinkForPassthrough(payload) {
+        payload.messages.push({ role: 'user', content: '[compact-marker]' });
+        return 1;
+      },
+      shrinkForContext() { return 0; },
+      injectContextHeader() {},
+      async acquireOpusSlot() { return () => {}; },
+      anthropicTextSseBuffer() { return Buffer.from(''); },
+      getConsecutive429s() { return 0; },
+      setConsecutive429s() {},
+      incConsecutive429s() { return 0; },
+      getLastInputTokensRemaining() { return null; },
+      setLastInputTokensRemaining() {},
+      getLastInputTokensLimit() { return null; },
+      setLastInputTokensLimit() {},
+      setLastPayloadBytes() {},
+      lifecycleInactive() { return false; },
+      runInlineFallback() {},
+      skipStopFallback: true,
+    }));
+    const proxyPort = await listen(proxy);
+    const payload = JSON.stringify({ model: 'gpt-5.5-xhigh', messages: [{ role: 'user', content: 'hi' }] });
+    const res = await request(proxyPort, payload, '/v1/chat/completions');
+    assert.equal(res.statusCode, 200);
+    const routed = JSON.parse(upstreamBody);
+    assert.equal(routed.model, 'cx/gpt-5.5-xhigh');
+    assert.equal(routed.messages.at(-1).content, '[compact-marker]');
+  } finally {
+    if (prevEnv.omniPort === undefined) delete process.env.HME_OMNIROUTE_PORT; else process.env.HME_OMNIROUTE_PORT = prevEnv.omniPort;
+    if (prevEnv.quiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevEnv.quiet;
+    if (prevEnv.overdrive === undefined) delete process.env.OVERDRIVE_MODE; else process.env.OVERDRIVE_MODE = prevEnv.overdrive;
+    if (prevEnv.provider === undefined) delete process.env.HME_OPENCODE_OMNI_PROVIDER; else process.env.HME_OPENCODE_OMNI_PROVIDER = prevEnv.provider;
+    if (prevEnv.replaceSystem === undefined) delete process.env.HME_REPLACE_SYSTEM_PROMPT; else process.env.HME_REPLACE_SYSTEM_PROMPT = prevEnv.replaceSystem;
+    clearProxyCache();
+    await close(proxy).catch(() => {});
+    await close(upstream).catch(() => {});
+  }
+});
+
 test('Claude handler answers system-reminder-only turns locally without upstream call', async () => {
   clearProxyCache();
   const prevEnv = {

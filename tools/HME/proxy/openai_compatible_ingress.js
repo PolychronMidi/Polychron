@@ -102,6 +102,13 @@ function replaceOpenAISystemPrompt(payload, env = process.env) {
   return changed;
 }
 
+function applyOpenAIPassthroughCompaction(payload, shrinkForPassthrough) {
+  if (!payload || !Array.isArray(payload.messages)) return false;
+  if (typeof shrinkForPassthrough !== 'function') return false;
+  const changed = shrinkForPassthrough(payload);
+  return Number(changed || 0) > 0;
+}
+
 function handleOpenAIModelsRoute(clientReq, clientRes, cfg = loadModelsJson(), env = process.env) {
   if (!/^\/v1\/models(?:\?|$)/.test(String(clientReq.url || ''))) return false;
   clientRes.writeHead(200, { 'Content-Type': 'application/json' });
@@ -109,7 +116,7 @@ function handleOpenAIModelsRoute(clientReq, clientRes, cfg = loadModelsJson(), e
   return true;
 }
 
-function routeOpenAICompatibleThroughHme(clientReq, payload, { servicePort, env = process.env, cfg = loadModelsJson() } = {}) {
+function routeOpenAICompatibleThroughHme(clientReq, payload, { servicePort, env = process.env, cfg = loadModelsJson(), shrinkForPassthrough } = {}) {
   if (!isOpenAICompatiblePath(clientReq.url) || clientReq.headers['x-hme-upstream']) return false;
   let changed = replaceOpenAISystemPrompt(payload, env);
   const port = typeof servicePort === 'function' ? servicePort('omniroute') : (env.HME_OMNIROUTE_PORT || 20128);
@@ -124,6 +131,7 @@ function routeOpenAICompatibleThroughHme(clientReq, payload, { servicePort, env 
       changed = true;
     }
   }
+  if (applyOpenAIPassthroughCompaction(payload, shrinkForPassthrough)) changed = true;
   return changed;
 }
 
@@ -132,6 +140,7 @@ module.exports = {
   modelCatalog,
   targetModelFor,
   replaceOpenAISystemPrompt,
+  applyOpenAIPassthroughCompaction,
   handleOpenAIModelsRoute,
   routeOpenAICompatibleThroughHme,
 };
