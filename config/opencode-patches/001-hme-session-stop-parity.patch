@@ -1,0 +1,77 @@
+diff --git a/packages/opencode/src/session/prompt.ts b/packages/opencode/src/session/prompt.ts
+index 22fe4d8..dcc9d1d 100644
+--- a/packages/opencode/src/session/prompt.ts
++++ b/packages/opencode/src/session/prompt.ts
+@@ -139,6 +139,17 @@ export const layer = Layer.effect(
+ 
+     const cancel = Effect.fn("SessionPrompt.cancel")(function* (sessionID: SessionID) {
+       yield* elog.info("cancel", { sessionID })
++      const session = yield* sessions.get(sessionID).pipe(Effect.option)
++      const output = yield* plugin.trigger(
++        "session.stop",
++        { sessionID, session: Option.isSome(session) ? session.value : undefined },
++        {} as { reason?: string },
++      )
++      if (output.reason) {
++        const error = new NamedError.Unknown({ message: output.reason })
++        yield* bus.publish(Session.Event.Error, { sessionID, error: error.toObject() })
++        throw error
++      }
+       yield* state.cancel(sessionID)
+     })
+ 
+diff --git a/packages/opencode/test/session/prompt.test.ts b/packages/opencode/test/session/prompt.test.ts
+index 4c46474..a4dc83c 100644
+--- a/packages/opencode/test/session/prompt.test.ts
++++ b/packages/opencode/test/session/prompt.test.ts
+@@ -916,6 +916,38 @@ it.instance(
+   3_000,
+ )
+ 
++it.instance(
++  "cancel waits for session.stop plugin and blocks interruption",
++  () =>
++    Effect.gen(function* () {
++      const { dir, llm } = yield* useServerConfig((url) => ({ ...providerCfg(url), plugin: ["./stop-plugin.js"] }))
++      yield* Effect.promise(() =>
++        Bun.write(
++          path.join(dir, "stop-plugin.js"),
++          `export default async function() {
++  return { "session.stop": async (_input, output) => { output.reason = "stop blocked" } }
++}
++`,
++        ),
++      )
++      const prompt = yield* SessionPrompt.Service
++      const sessions = yield* Session.Service
++      const status = yield* SessionStatus.Service
++      const chat = yield* sessions.create({ title: "Pinned" })
++      yield* llm.hang
++      yield* user(chat.id, "hello")
++
++      const fiber = yield* prompt.loop({ sessionID: chat.id }).pipe(Effect.forkChild)
++      yield* llm.wait(1)
++      const exit = yield* prompt.cancel(chat.id).pipe(Effect.exit)
++      expect(Exit.isFailure(exit)).toBe(true)
++      if (Exit.isFailure(exit)) expect(Cause.pretty(exit.cause)).toContain("stop blocked")
++      expect((yield* status.get(chat.id)).type).toBe("busy")
++      yield* Fiber.interrupt(fiber)
++    }),
++  3_000,
++)
++
+ raceNoLLMServer.instance(
+   "finalizes assistant when cancelled before processor creation completes",
+   () =>
+diff --git a/packages/plugin/src/index.ts b/packages/plugin/src/index.ts
+index 6156477..cf18e6a 100644
+--- a/packages/plugin/src/index.ts
++++ b/packages/plugin/src/index.ts
+@@ -262,6 +262,7 @@ export interface Hooks {
+     input: { command: string; sessionID: string; arguments: string },
+     output: { parts: Part[] },
+   ) => Promise<void>
++  "session.stop"?: (input: { sessionID: string; session?: unknown }, output: { reason?: string }) => Promise<void>
+   "tool.execute.before"?: (
+     input: { tool: string; sessionID: string; callID: string },
+     output: { args: any },
