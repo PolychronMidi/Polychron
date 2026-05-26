@@ -61,6 +61,12 @@ test('slop caveman ly suffix shortens long ly words outside code', () => {
   assert.equal(result.out, 'Localy globaly normaly ally.');
 });
 
+test('slop caveman ior suffix shortens long ior words outside code', () => {
+  const result = _stripSlop('Behavior superior interior prior.');
+  assert.ok(result.hits.includes('caveman_ior_suffix'));
+  assert.equal(result.out, 'Behavr superr interr prior.');
+});
+
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));

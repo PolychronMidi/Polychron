@@ -448,6 +448,13 @@ const _SLOP_PATTERNS = [
     re: /\b([a-z]{5,})ly\b/gi,
     repl: _suffixRepl('y') },
 
+  // Caveman -ior suffix pass. Only words greater than 5 letters are changed.
+  // Examples: behavior -> behavr, superior -> superr, interior -> interr.
+  // Non-examples: prior.
+  { name: 'caveman_ior_suffix',
+    re: /\b([a-z]{3,})ior\b/gi,
+    repl: _suffixRepl('r') },
+
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
     re: null,  // handled in _stripExcessiveBold below
