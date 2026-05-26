@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from claude_settings import HOOKS_JSON, PROJECT_ROOT
+from claude_settings import PROJECT_ROOT
 
 OPENCODE_CONFIG_PATH = Path(os.environ.get("OPENCODE_CONFIG") or Path.home() / ".config" / "opencode" / "opencode.jsonc")
 PROVIDER_ID = "hme"
