@@ -56,6 +56,7 @@ function repeatedTodoDecision(todos) {
   const allDone = Array.isArray(todos) && todos.length > 0
     && todos.every((todo) => ['completed', 'cancelled'].includes(String(todo?.status || '')));
   const repeated = prev.digest === digest && (now - Number(prev.ts_ms || 0)) < REPEAT_WINDOW_MS;
+  const repeatedAfterAllDone = repeated && allDone && prev.all_done === true;
   state.last_todowrite = {
     digest,
     ts_ms: now,
@@ -63,8 +64,8 @@ function repeatedTodoDecision(todos) {
     all_done: allDone,
   };
   writeState(state);
-  if (!repeated && !allDone) return null;
-  const reason = allDone
+  if (!repeatedAfterAllDone && !repeated) return null;
+  const reason = repeatedAfterAllDone
     ? 'TODO COMPLETE: all TodoWrite items are completed/cancelled. Stop calling TodoWrite now; answer the user.'
     : 'TODO LOOP BLOCKED: repeated TodoWrite state with no task-list change. Stop calling TodoWrite now; answer the user or do non-Todo work. This is loop visibility, not a request to retry.';
   logRepeat({ decision: 'block', digest, count: state.last_todowrite.count, all_done: allDone, reason });
