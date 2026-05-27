@@ -19,12 +19,11 @@ function positiveNumber(value) {
 }
 
 function inputBudget(model) {
-  const input = positiveNumber(model.max_input_tokens);
-  if (input) return input;
   const ctx = positiveNumber(model.context_length);
+  if (ctx) return ctx;
+  const input = positiveNumber(model.max_input_tokens);
   const output = positiveNumber(model.max_output_tokens);
-  if (ctx && output && ctx > output) return ctx - output;
-  return ctx;
+  return input + output;
 }
 function loadModelCtxRegistry() {
   const modelsPath = path.join(PROJECT_ROOT, 'config', 'models.json');
