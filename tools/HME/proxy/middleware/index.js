@@ -197,7 +197,6 @@ const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
   'todo_status_filter',
   'empty_result_marker',
   'subagent_clean_gate',
-  'post_write_side_effects',
   'edit_failure_context',
 ]);
 
