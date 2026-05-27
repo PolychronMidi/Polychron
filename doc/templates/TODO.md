@@ -1,11 +1,11 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10199
-  updated_ts: 1779918221.5585961
+  max_id: 10201
+  updated_ts: 1779919151.5600991
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
-  opencode_todo_synced_ts: 1779918198.04
+  opencode_todo_synced_ts: 1779919136.867
   entries:
     10115:
       source: opencode
