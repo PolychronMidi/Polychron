@@ -234,3 +234,20 @@ test('proxy supervisor restart reloads live proxy child semantics', () => {
   assert.match(restart, /listener remains ready/);
   assert.doesNotMatch(restart, /still responding after listener cleanup -- aborting/);
 });
+
+test('proxy supervisor clears reload markers from slot health git sha', () => {
+  const script = fs.readFileSync(path.join(root, 'tools/HME/hooks/direct/proxy-supervisor.sh'), 'utf8');
+  assert.match(script, /_SV_SLOT_HEALTH_A/);
+  assert.match(script, /_SV_SLOT_HEALTH_B/);
+  assert.match(script, /_sv_live_git_sha/);
+  assert.match(script, /reload marker satisfied wanted=.*cleared/);
+  assert.match(script, /rm -f "\$_SV_RELOAD_MARKER"/);
+});
+
+test('universal pulse supervisor uses the same heartbeat path as pulse config', () => {
+  const script = fs.readFileSync(path.join(root, 'tools/HME/hooks/direct/universal-pulse-supervisor.sh'), 'utf8');
+  assert.match(script, /_UP_HEARTBEAT="\$_SV_ROOT\/tmp\/hme-universal-pulse\.heartbeat"/);
+  assert.match(script, /_write_heartbeat supervisor-starting/);
+  assert.doesNotMatch(script, /runtime\/hme-universal-pulse\.heartbeat/);
+});
+

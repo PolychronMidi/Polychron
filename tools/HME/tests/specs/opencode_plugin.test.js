@@ -420,8 +420,10 @@ test('OpenCode plugin does not toast or relay-log generic event callbacks', asyn
       project: { directory: root },
       client: { tui: { showToast: (input) => calls.push(input) } },
     });
+    const relayLog = path.join(root, 'tools/HME/runtime/opencode-plugin-relay.jsonl');
     await hooks.event({ event: { type: 'tui.toast.show' } });
     assert.deepEqual(calls, []);
+    assert.equal(fs.existsSync(relayLog), false);
   } finally {
     if (old === undefined) delete process.env.HME_OPENCODE_HOOK_TOASTS;
     else process.env.HME_OPENCODE_HOOK_TOASTS = old;

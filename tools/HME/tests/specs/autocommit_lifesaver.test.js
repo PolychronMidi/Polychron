@@ -81,3 +81,11 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
+
+test('proxy autocommit failure logging dedupes identical sticky failures', () => {
+  const middleware = fs.readFileSync(path.join(repoRoot, 'tools/HME/proxy/middleware/21_proxy_autocommit.js'), 'utf8');
+  assert.match(middleware, /const body = `\[\$\{caller\}\] \$\{reason\}`/);
+  assert.match(middleware, /prior\.includes\(body\)/);
+  assert.match(middleware, /return;/);
+});
+
