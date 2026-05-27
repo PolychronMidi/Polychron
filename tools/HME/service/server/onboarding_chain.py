@@ -229,7 +229,7 @@ def status_line() -> str:
     s = state()
     if s == "graduated":
         return ""
-    last_file = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-onboarding-status-line.last")
+    last_file = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding-status-line.last")
     key = f"{s}|{_substrate_brief_key()}"
     try:
         with open(last_file, encoding="utf-8") as f:
