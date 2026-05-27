@@ -136,6 +136,11 @@ def staged_paths() -> list[str]:
     return [p.decode("utf-8", "surrogateescape") for p in raw.split(b"\0") if p]
 
 
+def tracked_paths() -> list[str]:
+    raw = git_bytes("ls-files", "-z")
+    return [p.decode("utf-8", "surrogateescape") for p in raw.split(b"\0") if p]
+
+
 def staged_mode(path: str) -> str:
     out = git_bytes("ls-files", "-s", "--", path, check=False).decode("utf-8", "replace")
     if not out.strip():
