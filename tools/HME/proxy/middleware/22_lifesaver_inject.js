@@ -113,6 +113,35 @@ function _appendToLastUser(payload, note) {
   return true;
 }
 
+function _nonStrictInjectAllowed(projectRoot) {
+  if (isStrictMode()) return true;
+  const lastPath = path.join(projectRoot, LAST_INJECT);
+  let last = 0;
+  try { last = Number(fs.readFileSync(lastPath, 'utf8').trim()) || 0; } catch (_e) { last = 0; }
+  return Date.now() - last >= NON_STRICT_LIFESAVER_INTERVAL_MS;
+}
+
+function _recordNonStrictInject(projectRoot) {
+  if (isStrictMode()) return;
+  const lastPath = path.join(projectRoot, LAST_INJECT);
+  try {
+    fs.mkdirSync(path.dirname(lastPath), { recursive: true });
+    fs.writeFileSync(lastPath, String(Date.now()));
+  } catch (_e) { /* rate-limit state is best-effort */ }
+}
+
+function _appendRateLimited(payload, ctx, source, banner, meta = {}) {
+  if (!_nonStrictInjectAllowed(ctx.PROJECT_ROOT)) {
+    ctx.emit({ event: 'lifesaver_inject_suppressed', source, interval_ms: NON_STRICT_LIFESAVER_INTERVAL_MS });
+    return false;
+  }
+  if (!_appendToLastUser(payload, `\n\n[lifesaver inject from proxy]\n${banner}\n`)) return false;
+  _recordNonStrictInject(ctx.PROJECT_ROOT);
+  assertRealLifesaverInjection(ctx.PROJECT_ROOT, source, banner, meta);
+  ctx.markDirty();
+  return true;
+}
+
 
 module.exports = {
   name: 'lifesaver_inject',
