@@ -10,6 +10,7 @@ const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./m
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { requestTelemetry } = require('./request_telemetry');
 const { shrinkForPassthrough: compactAnthropicPayload } = require('./passthrough_compact');
+const { semanticTokenEstimate, serializedBytes } = require('./context_token_estimate');
 
 let _outputRegistry = { mtimeMs: 0, map: new Map() };
 function _positiveNumber(value) {
