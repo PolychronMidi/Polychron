@@ -20,22 +20,19 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
         budget = max_tokens
     else:
         # Auto-detect from status line context file
-        try:
-            import json as _json
-            with open(os.environ["HME_CLAUDE_CONTEXT_FILE"]) as _ctxf:
-                _ctx_data = _json.load(_ctxf)
-            remaining = _ctx_data.get("remaining_pct") or 50
-            if remaining > 75:
-                budget = 16000
-            elif remaining > 50:
-                budget = 8000
-            elif remaining > 25:
-                budget = 3000
-            else:
-                budget = 800
-        except Exception as _err:
-            logger.debug(f"unnamed-except search_context.py:36: {type(_err).__name__}: {_err}")
-            budget = 8000  # safe default when context file unavailable
+        import json as _json
+        context_file = os.environ["HME_CLAUDE_CONTEXT_FILE"]
+        with open(context_file) as _ctxf:
+            _ctx_data = _json.load(_ctxf)
+        remaining = _ctx_data.get("remaining_pct") or 50
+        if remaining > 75:
+            budget = 16000
+        elif remaining > 50:
+            budget = 8000
+        elif remaining > 25:
+            budget = 3000
+        else:
+            budget = 800
     lang = language if language else None
     # When path filtering, search much wider to compensate for post-filter loss
     search_budget = budget * 8 if path else budget
