@@ -5,9 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { readAutocommitFailure, touchLifesaverHeartbeat, assertRealLifesaverInjection } = require('../lifesaver_alerts');
+const { isStrictMode } = require('../strict_mode');
 
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'tools/HME/runtime/errors-lastread.proxy';
+const LAST_INJECT = 'tools/HME/runtime/lifesaver-inject-last-ms.proxy';
+const NON_STRICT_LIFESAVER_INTERVAL_MS = 180000;
 
 // Mirrors lifesaver.sh classification: drop CANARY self-tests,
 // observation-severity, and self-origin tags.
