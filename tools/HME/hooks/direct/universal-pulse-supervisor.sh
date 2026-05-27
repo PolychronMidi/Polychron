@@ -127,6 +127,7 @@ _up_loop() {
       continue
     fi
     if [ "$age" -gt "$_UP_STALE_THRESHOLD" ]; then
+      _write_heartbeat heartbeat-respawn 0 1
       _up_log "heartbeat stale (${age}s > ${_UP_STALE_THRESHOLD}s) -- child pid=$cp appears hung; killing + respawn"
       _up_kill_child
       _up_spawn_child
