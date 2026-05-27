@@ -511,6 +511,7 @@ async function runPipeline(payload, scan, session) {
   }
   for (const mod of _modules) {
     if (typeof mod.onRequest !== 'function') continue;
+    if (!_middlewareAllowed(mod, 'onRequest')) continue;
     try {
       await mod.onRequest({ payload, scan, session, ctx });
     } catch (err) {
