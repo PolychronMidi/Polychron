@@ -377,6 +377,20 @@ async function HmeHooks(ctx) {
     await markHookEntered(ctx, 'session.stop.callback');
     const decision = runHme(ctx, 'Stop', { ...input, session_id: sessionId(input) });
     applyDecision(decision, output);
+    try {
+      const root = projectRoot(ctx);
+      const syncScript = path.join(root, 'tools', 'HME', 'scripts', 'opencode_todo_sync.py');
+      if (fs.existsSync(syncScript)) {
+        spawnSync('python3', [syncScript, 'sync'], {
+          cwd: root,
+          env: { ...process.env, PROJECT_ROOT: root },
+          encoding: 'utf8',
+          timeout: 5000,
+        });
+      }
+    } catch (_err) {
+      // Best-effort; sync also runs via universal_pulse so a transient failure here is n
+    }
   },
   });
 }

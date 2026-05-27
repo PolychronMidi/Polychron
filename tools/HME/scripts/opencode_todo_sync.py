@@ -106,11 +106,12 @@ def _adapt_opencode_todos(data: dict) -> list[dict]:
 
 
 def sync_latest_opencode_todos(db_path: Path | None = None,
-                                since_ms: int | None = None) -> dict[str, Any]:
+                                since_ms: int | None = None,
+                                todo_md_path: str | None = None) -> dict[str, Any]:
     db = db_path or _opencode_db_path()
     if not db.is_file():
         return {"ok": False, "message": "opencode.db not present", "sessions": 0, "items": 0, "added": 0}
-    raw, meta, _todos = load_store()
+    raw, meta, _todos = load_store(todo_md_path)
     if since_ms is None:
         since_ms = int(float(meta.get("opencode_todo_synced_ts", 0.0)) * 1000)
     rows = latest_todowrite_per_session(db, since_ms=since_ms)
@@ -172,7 +173,7 @@ def sync_latest_opencode_todos(db_path: Path | None = None,
             changed = True
         return changed, added_count + updated_count
 
-    mutate_store(_ingest)
+    mutate_store(_ingest, todo_md_path)
     return {
         "ok": True,
         "sessions": len(rows),
