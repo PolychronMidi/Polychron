@@ -50,7 +50,7 @@ class ShellUndefinedVarsVerifier(Verifier):
     weight = 2.0  # any violation is silent-disable class, rank high
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit_shell_undefined_vars.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit_shell_undefined_audit.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])

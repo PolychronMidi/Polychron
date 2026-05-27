@@ -54,7 +54,7 @@ class CorePrinciplesAuditVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-core-principles.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-core-principles.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
@@ -320,7 +320,7 @@ class MarkdownLinkIntegrityVerifier(Verifier):
     weight = 1.5
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-markdown-links.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-markdown-links.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
@@ -359,7 +359,7 @@ class CommentBloatVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-comment-bloat.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-comment-bloat.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])

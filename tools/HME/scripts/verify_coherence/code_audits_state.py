@@ -73,7 +73,7 @@ class StateFileOwnershipVerifier(Verifier):
                 issues.append(out_doc.strip() or err_doc.strip() or "state registry docs stale")
         else:
             issues.append("missing render-state-registry-docs.py")
-        script = os.path.join(_PROJECT, "scripts", "audit-state-file-ownership.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-state-file-ownership.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script, *issues])
         rc, out, err = _run_subprocess([script])
@@ -102,7 +102,7 @@ class ClaudeSettingsJsonVerifier(Verifier):
     weight = 3.0   # load-bearing: invalid settings.json silently breaks everything
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-claude-settings.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-claude-settings.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
