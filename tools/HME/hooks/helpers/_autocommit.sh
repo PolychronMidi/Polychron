@@ -100,6 +100,28 @@ _ac_success() {
   date +%s > "$_AC_STATE_DIR/heartbeat-autocommit.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
 }
 
+_ac_commit_diagnostics() {
+  local _err_file="$1"
+  local _exit_code="$2"
+  local _precommit=""
+  if [ -x "$_AC_ROOT/tools/HME/scripts/precommit_validate.py" ]; then
+    _precommit=$(PROJECT_ROOT="$_AC_ROOT" python3 "$_AC_ROOT/tools/HME/scripts/precommit_validate.py" 2>&1 || true)
+  fi
+  {
+    printf 'exit=%s' "$_exit_code"
+    printf ' | git=%s' "$(head -c 1200 "$_err_file" 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g')"
+    printf ' | status=%s' "$(git -C "$_AC_ROOT" status --porcelain=v1 2>/dev/null | head -n 30 | tr '\n' ';')"
+    printf ' | branch=%s' "$(git -C "$_AC_ROOT" status --branch --short 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g')"
+    printf ' | head=%s' "$(git -C "$_AC_ROOT" rev-parse --short HEAD 2>/dev/null)"
+    printf ' | index_tree=%s' "$(git -C "$_AC_ROOT" write-tree 2>/dev/null || echo write-tree-failed)"
+    printf ' | cached_stat=%s' "$(git -C "$_AC_ROOT" diff --cached --stat -- 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g')"
+    if [ -n "$_precommit" ]; then
+      printf ' | precommit=%s' "$(printf '%s' "$_precommit" | head -c 1500 | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g')"
+    fi
+    printf '\n'
+  } | tee "$_AC_STATE_DIR/autocommit.err" 2>/dev/null | head -c 4000
+}
+
 # Core autocommit. Returns 0/1; callers MUST `|| true` (we own bookkeeping).
 # Argument: caller name (used in every failure record for diagnosis).
 
