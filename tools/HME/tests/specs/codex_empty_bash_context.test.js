@@ -73,3 +73,12 @@ test('Codex follow-up body never sends unsupported is_error parameter upstream',
   assert.equal(JSON.stringify(followup).includes('is_error'), false);
   assert.equal(toolOutputIsError(results[0]), true);
 });
+
+test('Codex OmniRoute follow-up replays context instead of unsupported previous_response_id', () => {
+  const previousBody = { model: 'gpt-5.5', input: [{ role: 'user', content: 'read file' }], previous_response_id: 'stale' };
+  const responseBody = { id: 'resp_tool', output: [{ type: 'function_call', call_id: 'call_read', name: 'Read', arguments: '{}' }] };
+  const results = [{ type: 'function_call_output', call_id: 'call_read', output: 'file text' }];
+  const followup = followupBody(previousBody, responseBody, results, [], { omitPreviousResponseId: true });
+  assert.equal(Object.prototype.hasOwnProperty.call(followup, 'previous_response_id'), false);
+  assert.deepEqual(followup.input, [previousBody.input[0], responseBody.output[0], results[0]]);
+});
