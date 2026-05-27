@@ -267,8 +267,11 @@ def _classify_stderr(stderr: str) -> list[str]:
 
 def run_smoke(host: str, timeout: int = 180, no_proxy_check: bool = False) -> dict[str, Any]:
     SMOKE_DIR.mkdir(parents=True, exist_ok=True)
-    artifact = SMOKE_DIR / f"{host}-{int(time.time())}.txt"
+    stamp = int(time.time())
+    artifact = SMOKE_DIR / f"{host}-{stamp}.txt"
+    read_fixture = SMOKE_DIR / f"{host}-{stamp}-read.txt"
     artifact.unlink(missing_ok=True)
+    read_fixture.write_text(f"hme smoke read fixture for {host}\n", encoding="utf-8")
 
     preflight_issues = preflight(host, no_proxy_check=no_proxy_check)
     if preflight_issues:
