@@ -501,6 +501,7 @@ async function runPipeline(payload, scan, session) {
   for (const { toolUse, toolResult } of events) {
     for (const mod of _modules) {
       if (typeof mod.onToolResult !== 'function') continue;
+      if (!_middlewareAllowed(mod, 'onToolResult')) continue;
       try {
         await mod.onToolResult({ toolUse, toolResult, session, ctx });
       } catch (err) {
