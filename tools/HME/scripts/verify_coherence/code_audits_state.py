@@ -140,7 +140,7 @@ class HumanDeferredAuditVerifier(Verifier):
     weight = 0.5
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-human-deferred.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-human-deferred.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script])
@@ -409,7 +409,7 @@ class InterControllerCoherenceVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-intercontroller-coherence.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-intercontroller-coherence.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])
@@ -448,7 +448,7 @@ class ShellHookAuditVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-shell-hooks.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-shell-hooks.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script, "--json"])

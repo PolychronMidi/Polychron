@@ -45,7 +45,7 @@ class SilentFailureClassVerifier(Verifier):
     weight = 0.5  # advisory -- annotate over time, don't block merges yet
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-silent-failure-class.py")
+        script = os.path.join(_SCRIPTS_DIR, "audit-silent-failure-class.py")
         if not os.path.isfile(script):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script])
