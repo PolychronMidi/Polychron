@@ -198,7 +198,7 @@ function _attemptCommit(root, caller) {
       `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet $no_verify; ` +
     `fi`,
   ].join(' && ');
-  const r = spawnSync('flock', ['-w', '30', lockPath,
+  const r = spawnSync('flock', ['-w', '10', lockPath,
     'bash', '-c', stageAndCommitScript],
     { cwd: root, timeout: 60000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
