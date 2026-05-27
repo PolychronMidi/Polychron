@@ -2,14 +2,11 @@
 
 <!-- todo-state:
   max_id: 10208
-  updated_ts: 1779922878.9212813
+  updated_ts: 1779922901.5698931
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
-  opencode_todo_synced_ts: 1779922832.805
+  opencode_todo_synced_ts: 1779922878.564
   entries:
-    10190:
-      source: native
-      ts: 1779914688.601
     10115:
       source: opencode
       ts: 1779839880.82
@@ -67,6 +64,9 @@
     10125:
       source: opencode
       ts: 1779892413.781
+    10190:
+      source: native
+      ts: 1779914688.601
     10193:
       source: opencode
       ts: 1779906487.536
