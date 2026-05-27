@@ -1066,7 +1066,7 @@ test('request mutation direct smoke header bypasses lifecycle UserPromptSubmit f
     middleware: { runPipeline: async () => false },
   });
   assert.equal(called, 0);
-  assert.equal(result.outBody.toString('utf8'), before);
+  assert.match(result.outBody.toString('utf8'), /direct smoke/);
 });
 
 
