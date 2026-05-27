@@ -1,9 +1,10 @@
 'use strict';
 
+const fs = require('fs');
+
 const {
   PROJECT_ROOT,
   allow,
-  fs,
   httpGetOk,
   httpPostJson,
   path,

@@ -27,6 +27,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { PROJECT_ROOT } = require('../proxy/shared');
 const { appendHookExec } = require('../hooks/hook_report');
 const { shouldSkipForNestedHooks } = require('../hooks/cwd_guard');
@@ -40,6 +41,66 @@ const { recordHookCheckpoint } = require('./hook_decision_log');
 const nativeHooks = require('./native_hooks');
 const { applyOmoLive, observeOmoShadow } = require('../omo_bridge/shadow_runtime');
 const { UNIVERSAL_HOOK_ABI } = require('../omo_bridge/universal_event');
+
+const RETRY_STATE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-retry-guard.json');
+const RETRY_LOG = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-retry-guard.jsonl');
+const INSPECTION_TOOLS = new Set(['Read', 'Grep', 'Glob']);
+
+function _stable(value) {
+  if (Array.isArray(value)) return value.map(_stable);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, _stable(value[key])]));
+}
+
+function _attemptDigest(tool, input) {
+  return crypto.createHash('sha256').update(JSON.stringify({ tool, input: _stable(input || {}) })).digest('hex').slice(0, 16);
+}
+
+function _readRetryState() {
+  try { return JSON.parse(fs.readFileSync(RETRY_STATE, 'utf8')); } catch (_e) { return {}; }
+}
+
+function _writeRetryState(state) {
+  fs.mkdirSync(path.dirname(RETRY_STATE), { recursive: true });
+  fs.writeFileSync(RETRY_STATE, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function _logRetry(row) {
+  fs.mkdirSync(path.dirname(RETRY_LOG), { recursive: true });
+  fs.appendFileSync(RETRY_LOG, `${JSON.stringify({ ts: new Date().toISOString(), ...row })}\n`);
+}
+
+function _retryBlock(tool, input) {
+  const state = _readRetryState();
+  if (INSPECTION_TOOLS.has(tool)) {
+    if (state.last_failed_attempt) {
+      state.last_failed_attempt.recovery_tool = tool;
+      state.last_failed_attempt.recovered_at = new Date().toISOString();
+      _writeRetryState(state);
+    }
+    return null;
+  }
+  const digest = _attemptDigest(tool, input);
+  const last = state.last_failed_attempt || {};
+  if (last.digest !== digest || last.recovered_at) return null;
+  const reason = `BLOCKED: repeated failed ${tool} attempt without an intervening Read/Grep/Glob or changed input.`;
+  _logRetry({ decision: 'block', tool, digest, reason });
+  return { stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }), stderr: ' ', exit_code: 0 };
+}
+
+function _recordToolFailure(tool, input, response) {
+  const state = _readRetryState();
+  const digest = _attemptDigest(tool, input);
+  state.last_failed_attempt = {
+    tool,
+    digest,
+    input,
+    reason: response && (response.stderr || response.error || response.message || JSON.stringify(response).slice(0, 300)),
+    ts: new Date().toISOString(),
+  };
+  _writeRetryState(state);
+  _logRetry({ decision: 'record_failure', tool, digest, reason: state.last_failed_attempt.reason });
+}
 
 async function _recordLifecycleState(eventName, stdinJson) {
   const env = normalize(stdinJson);
@@ -399,6 +460,9 @@ async function dispatchEvent(eventName, stdinJson) {
       if (omo.applied && omo.result && /"permissionDecision"\s*:\s*"deny"/.test(omo.result.stdout || '')) return omo.result;
       const activeInput = omo.stdinJson || empty;
       const tool = _toolName(empty);
+      const env = normalize(activeInput);
+      const retry = _retryBlock(tool, env.tool_input || {});
+      if (retry) return retry;
       if (isWriteFamilyTool(tool)) {
         const decision = await preWriteCheck(activeInput);
         const stdout = toHookResponse(decision);
@@ -434,6 +498,10 @@ async function dispatchEvent(eventName, stdinJson) {
       await _recordPostToolEvidence(empty);
       await observeOmoShadow('PostToolUse', empty);
       const tool = _toolName(empty);
+      const env = normalize(empty);
+      const response = env.tool_response || {};
+      const exitCode = Number.isInteger(response.exit_code) ? response.exit_code : null;
+      if (response && (response.is_error === true || response.error === true || (exitCode !== null && exitCode !== 0))) _recordToolFailure(tool, env.tool_input || {}, response);
       const unifiedRes = await _runUnifiedPolicies('PostToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       if (NATIVE_POSTTOOL[tool]) {
