@@ -44,6 +44,10 @@ function logRepeat(row) {
   fs.appendFileSync(file, `${JSON.stringify({ ts: new Date().toISOString(), ...row })}\n`);
 }
 
+function deny(reason) {
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
+}
+
 function repeatedTodoDecision(todos) {
   const digest = digestTodos(todos);
   const now = Date.now();
@@ -53,9 +57,9 @@ function repeatedTodoDecision(todos) {
   state.last_todowrite = { digest, ts_ms: now, count: repeated ? Number(prev.count || 1) + 1 : 1 };
   writeState(state);
   if (!repeated) return null;
-  const reason = 'BLOCKED: repeated TodoWrite state with no task-list change. Do work or change the todo state before calling TodoWrite again.';
+  const reason = 'TODO LOOP BLOCKED: repeated TodoWrite state with no task-list change. Stop calling TodoWrite now; answer the user or do non-Todo work. This is loop visibility, not a request to retry.';
   logRepeat({ decision: 'block', digest, count: state.last_todowrite.count, reason });
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } };
+  return deny(reason);
 }
 
 async function pretoolTodoWrite(stdinJson) {

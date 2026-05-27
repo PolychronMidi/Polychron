@@ -10,7 +10,7 @@
  * Rewriters run left-to-right -- order matters.
  */
 
-const DROP_TOOL_USE_NAMES = new Set(['TodoWrite']);
+const DROP_TOOL_USE_NAMES = new Set();
 
 function dropToolUseRewrite(eventName, data, ctx) {
   let drops = ctx.get('drop_tool_use_indices');
@@ -18,6 +18,7 @@ function dropToolUseRewrite(eventName, data, ctx) {
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
     if (DROP_TOOL_USE_NAMES.has(data.content_block.name)) {
       drops.add(data.index);
+      ctx.set('dropped_tool_use_in_message', true);
       return null;
     }
     return data;
@@ -26,8 +27,9 @@ function dropToolUseRewrite(eventName, data, ctx) {
     if (eventName === 'content_block_stop') drops.delete(data.index);
     return null;
   }
-  if (eventName === 'message_delta' && data && data.delta && data.delta.stop_reason === 'tool_use' && drops.size === 0) {
+  if (eventName === 'message_delta' && data && data.delta && data.delta.stop_reason === 'tool_use' && drops.size === 0 && ctx.get('dropped_tool_use_in_message')) {
     data = { ...data, delta: { ...data.delta, stop_reason: 'end_turn' } };
+    ctx.set('dropped_tool_use_in_message', false);
   }
   return data;
 }

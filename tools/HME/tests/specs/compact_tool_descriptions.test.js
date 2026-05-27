@@ -8,6 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const middleware = require('../../proxy/middleware/04_compact_tool_descriptions');
+const { dropToolUseRewrite } = require('../../proxy/sse_rewriters');
 
 function run(payload) {
   let dirty = false;
@@ -69,6 +70,29 @@ test('compact_tool_descriptions inserts canonical TodoWrite when missing', () =>
   assert.match(todo.description, /^Maintain a session task list/);
   assert.deepEqual(Object.keys(todo.input_schema.properties), ['todos']);
   assert.deepEqual(todo.input_schema.required, ['todos']);
+});
+
+test('legacy direct-surface middleware preserves TodoWrite', () => {
+  const mw = require('../../proxy/middleware/04b_disable_todowrite_on_direct_tool_surface');
+  const payload = { tools: [{ name: 'Read' }, { name: 'TodoWrite' }, { name: 'Bash' }] };
+  let dirty = false;
+  mw.onRequest({ payload, ctx: { markDirty: () => { dirty = true; } } });
+  assert.equal(dirty, false);
+  assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TodoWrite', 'Bash']);
+});
+
+test('SSE rewriter preserves TodoWrite tool_use blocks', () => {
+  const state = new Map();
+  const ctx = { get: (key) => state.get(key), set: (key, value) => state.set(key, value) };
+  const start = { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'todo-1', name: 'TodoWrite', input: {} } };
+  const delta = { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"todos":[]}' } };
+  const stop = { type: 'content_block_stop', index: 0 };
+  const msg = { type: 'message_delta', delta: { stop_reason: 'tool_use' } };
+  assert.equal(dropToolUseRewrite('content_block_start', start, ctx), start);
+  assert.equal(dropToolUseRewrite('content_block_delta', delta, ctx), delta);
+  assert.equal(dropToolUseRewrite('content_block_stop', stop, ctx), stop);
+  assert.equal(dropToolUseRewrite('message_delta', msg, ctx), msg);
+  assert.equal(msg.delta.stop_reason, 'tool_use');
 });
 
 test('filter_tools reads current .env drop list and strips task-tool surface', () => {
