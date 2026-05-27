@@ -203,3 +203,38 @@ test('successful PreToolUse Bash no-op emits no hook budget output', () => {
   assert.doesNotMatch(res.stderr, /hook \(completed\)|systemMessage/);
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test('CLI smoke UserPromptSubmit bypasses lifecycle watchdog without muting normal prompts', () => {
+  const root = sandbox('hme-cli-smoke-userprompt-');
+  const payload = JSON.stringify({ session_id: 'smoke-session', user_prompt: 'smoke prompt' });
+  const smoke = spawnSync('bash', ['tools/HME/hooks/lifecycle/userpromptsubmit.sh'], {
+    cwd: REPO,
+    input: payload,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PROJECT_ROOT: root,
+      HME_CLI_SMOKE: '1',
+      PATH: path.join(root, 'bin') + path.delimiter + ORIGINAL_PATH,
+    },
+  });
+  assert.strictEqual(smoke.status, 0, smoke.stderr);
+  assert.doesNotMatch(smoke.stderr, /SessionStart failure|hook-watchdog/);
+  assert.ok(!fs.existsSync(path.join(root, 'log/hme-errors.log'))
+    || !fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8').includes('hook-watchdog'));
+
+  const normal = spawnSync('bash', ['tools/HME/hooks/lifecycle/userpromptsubmit.sh'], {
+    cwd: REPO,
+    input: payload,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PROJECT_ROOT: root,
+      PATH: path.join(root, 'bin') + path.delimiter + ORIGINAL_PATH,
+    },
+  });
+  assert.strictEqual(normal.status, 0, normal.stderr);
+  assert.match(normal.stderr, /SessionStart failure/);
+  assert.match(fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8'), /hook-watchdog/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
