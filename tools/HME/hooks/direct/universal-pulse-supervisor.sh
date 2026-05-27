@@ -6,6 +6,7 @@
 # stale; respects maintenance flag.
 
 set +e
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/helpers/_hooks_bootstrap.sh"
 
 _SV_ROOT=""
 if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
@@ -108,6 +109,7 @@ _up_loop() {
   echo "$$" > "$_UP_PID_FILE"
   _up_log "supervisor started pid=$$"
 
+  _write_heartbeat supervisor-starting 0 0
   _up_spawn_child
 
   while true; do
@@ -119,6 +121,7 @@ _up_loop() {
     age=$(_up_heartbeat_age)
 
     if ! _up_alive "$cp" "universal_pulse.py"; then
+      _write_heartbeat child-respawn 0 1
       _up_log "child dead -- respawning"
       _up_spawn_child
       continue
