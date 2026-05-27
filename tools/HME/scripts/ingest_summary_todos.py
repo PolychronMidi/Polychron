@@ -59,14 +59,9 @@ if banner_m:
                     if item and len(item) > 10:
                         all_items.append(("summary", item))
 
-# 2. thinking block bulleted commitments
-for btype, text in assistant_texts:
-    if btype != "thinking": continue
-    for m in _BULLET.finditer(text):
-        c = m.group(1).strip().rstrip(".,;")
-        if len(c) < 10: continue
-        if c.lower().startswith(("i ", "we ", "the ", "this ", "that ", "it ", "if ", "but ", "and ", "or ")):
-            all_items.append(("thinking", c))
+# Thinking-block bullets are stream-of-consciousness reasoning, not
+# commitments. Earlier behavior captured fragments like "If size=0: OK"
+# as todos. SUMMARY "what's next" remains the only auto-ingest surface.
 
 if not all_items:
     sys.exit(0)
