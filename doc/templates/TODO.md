@@ -1,8 +1,8 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10139
-  updated_ts: 1779905435.5004625
+  max_id: 10145
+  updated_ts: 1779905479.1331637
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
   opencode_todo_synced_ts: 1779892413.781
@@ -143,7 +143,6 @@
 - [ ] [E3] Inspect opencode and oh-my-openagent related files  #10111
 - [ ] [E3] Implement general failed-tool retry guard at tool-call layer with tests  #10115
 - [ ] [E3] Survey repository structure, commands, and current status without reading secrets  #10116
-- [ ] [E3] Test todo item one  #10126
 
 ## Next
 
@@ -155,7 +154,6 @@
 - [ ] [E3] Identify highest-impact defects or coherence issues to fix now  #10117
 - [ ] [E3] Implement targeted project-wide fixes  #10118
 - [ ] [E3] Run relevant verification and report evidence  #10119
-- [ ] [E3] Test todo item two  #10127
 
 ## Done
 
@@ -187,6 +185,8 @@
 - [x] [E3] Test todo system by creating and completing a todo  #10123
 - [x] [E3] Test TODO system by creating a todo and marking it done  #10124
 - [x] [E3] Test TODO system by creating a todo  #10125
+- [x] [E3] Test todo item one  #10126
+- [x] [E3] Test todo item two  #10127
 
 ## Later
 
