@@ -197,8 +197,8 @@ function createContextBudget() {
   }
 
   function effectiveCompactThreshold(payload = null) {
-    const bytes = payload ? Buffer.byteLength(JSON.stringify(payload), 'utf8') : lastPayloadBytes;
-    const usedTokens = Math.ceil(bytes / contextBytesPerTokenEst);
+    const bytes = payload ? serializedBytes(payload) : lastPayloadBytes;
+    const usedTokens = payload ? semanticTokenEstimate(payload, process.env) : Math.ceil(bytes / contextBytesPerTokenEst);
     const modelInfo = payloadModelInfo(payload);
     // Compaction must be driven by the MODEL CONTEXT WINDOW, never by the
     // Anthropic rate-limit headers (anthropic-ratelimit-input-tokens-*). The
