@@ -79,6 +79,8 @@ function _recordSuccess(root) {
     } catch (_) { /* best-effort */ }
     const flag = path.join(root, FAIL_FLAG_REL);
     if (fs.existsSync(flag)) fs.unlinkSync(flag);
+    const err = path.join(root, STATE_DIR, 'autocommit.err');
+    if (fs.existsSync(err)) fs.unlinkSync(err);
   } catch (_) { /* best-effort */ }
 }
 
