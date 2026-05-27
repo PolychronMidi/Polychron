@@ -185,8 +185,6 @@ const _ABBREVIATION_MAP = Object.freeze({
   'maintenance': 'maint',
   'system': 'sys',
   'systems': 'sys',
-  'diagnose': 'diag',
-  'diagnosing': 'diag',
   'command': 'cmd',
   'commands': 'cmds',
   'information': 'info',
