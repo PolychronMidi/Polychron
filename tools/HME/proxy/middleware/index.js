@@ -187,16 +187,20 @@ const _MAX_RETRIES = 3;
 const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
   'edit_context',
   'cascade_prediction',
-  'read_limit',
   'read_context',
   'grep_glob_neighborhood',
   'dir_context',
-  'background_dominance',
   'bash_enrichment',
   'web_enrichment',
-  'todo_status_filter',
-  'subagent_clean_gate',
   'edit_failure_context',
+]);
+const NON_STRICT_TOOL_RESULT_ALLOWED = new Set([
+  'read_limit',
+  'background_dominance',
+  'todo_status_filter',
+  'empty_result_marker',
+  'subagent_clean_gate',
+  'post_write_side_effects',
 ]);
 
 function _middlewareAllowed(mod, hookName) {
