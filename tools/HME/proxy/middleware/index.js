@@ -194,15 +194,6 @@ const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
   'web_enrichment',
   'edit_failure_context',
 ]);
-const NON_STRICT_TOOL_RESULT_ALLOWED = new Set([
-  'read_limit',
-  'background_dominance',
-  'todo_status_filter',
-  'empty_result_marker',
-  'subagent_clean_gate',
-  'post_write_side_effects',
-]);
-
 function _middlewareAllowed(mod, hookName) {
   if (isStrictMode()) return true;
   if (hookName === 'onToolResult' && NON_STRICT_TOOL_RESULT_TEXT_MUTATORS.has(mod.name)) return false;
