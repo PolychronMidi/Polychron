@@ -64,7 +64,7 @@ flowchart LR
     root --> config
     doc["doc/"]
     root --> doc
-    scripts["scripts/<br/><i>Root audit-wrapper entrypoints expected by HCI verifiers.</i>"]
+    scripts["scripts/"]
     root --> scripts
     src["src/<br/><i>Polychron composition engine source: composers, conductor, cross-layer, fx, w...</i>"]
     root --> src
