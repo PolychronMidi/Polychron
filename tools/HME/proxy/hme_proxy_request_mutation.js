@@ -196,11 +196,9 @@ async function mutateClaudeRequest({
     emit({ event: 'undefined_user_prompt_corrupted', session: sessionKey(payload) });
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
-  if (passthrough && isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
+  if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     const dropped = shrinkForPassthrough(payload);
     if (dropped > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-  }
-  if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     if (applyExplicitOtpmCap(payload)) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
 
