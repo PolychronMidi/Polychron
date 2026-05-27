@@ -184,7 +184,7 @@ let _pipelineDirty = false;
 const _retryCount = new Map(); // tool_use.id -> attempts
 const _MAX_RETRIES = 3;
 
-const QUIET_TOOL_RESULT_MUTATORS = new Set([
+const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
   'edit_context',
   'cascade_prediction',
   'read_limit',
@@ -201,23 +201,9 @@ const QUIET_TOOL_RESULT_MUTATORS = new Set([
   'edit_failure_context',
 ]);
 
-const QUIET_REQUEST_MUTATORS = new Set([
-  'shortcuts_rewriter',
-  'replace_system',
-  'thinking_rewrite',
-  'compact_tool_descriptions',
-  'memory_redirect',
-  'file_unchanged_swap',
-  'dominance_prefetch',
-  'stop_hook_fp_gate',
-  'trample_gate',
-  'edit_failure_context',
-]);
-
 function _middlewareAllowed(mod, hookName) {
   if (isStrictMode()) return true;
-  if (hookName === 'onToolResult' && QUIET_TOOL_RESULT_MUTATORS.has(mod.name)) return false;
-  if (hookName === 'onRequest' && QUIET_REQUEST_MUTATORS.has(mod.name)) return false;
+  if (hookName === 'onToolResult' && NON_STRICT_TOOL_RESULT_TEXT_MUTATORS.has(mod.name)) return false;
   return true;
 }
 
