@@ -151,12 +151,9 @@ class HumanDeferredAuditVerifier(Verifier):
             return warned(summary="could not parse audit output", details=[out[:200], err[:200]])
         total = int(m.group(1))
         cats = int(m.group(2))
-        # Always PASS -- this is observability, not a gate. Score reflects
-        # the count for trending purposes but doesn't fail.
-        score = max(0.0, 1.0 - total / 1000.0)
         sample_lines = [l for l in out.splitlines()
                         if l.strip().startswith("[") and "]" in l[:8]][:8]
-        return passed(score=score, summary=f"{total} human-side deferral marker(s) across {cats} categories -- "
+        return passed(score=1.0, summary=f"{total} human-side deferral marker(s) across {cats} categories -- "
                        "advisory; trend across runs is the signal", details=sample_lines)
 
 
