@@ -48,9 +48,17 @@ def _opencode_db_path() -> Path:
     return Path(base) / "opencode" / "opencode.db"
 
 
-def latest_todowrite_per_session(db_path: Path, since_ms: int = 0) -> list[tuple[str, int, dict]]:
+_DEFAULT_MAX_SESSION_AGE_SEC = 24 * 3600
+
+
+def latest_todowrite_per_session(db_path: Path, since_ms: int = 0,
+                                  max_age_sec: int = _DEFAULT_MAX_SESSION_AGE_SEC) -> list[tuple[str, int, dict]]:
     """Return [(session_id, time_created_ms, data_dict)] for each session's
-    most recent `todowrite` tool call whose time_created > since_ms.
+    most recent `todowrite` tool call whose time_created > since_ms AND
+    whose age is within max_age_sec (defaults to 24 hours).
+
+    The age filter prevents stale test-session todos from being resurrected
+    every time the sync runs against a long-lived opencode database.
     """
     if not db_path.is_file():
         return []
@@ -58,6 +66,8 @@ def latest_todowrite_per_session(db_path: Path, since_ms: int = 0) -> list[tuple
         conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     except sqlite3.Error:
         return []
+    age_floor_ms = int((time.time() - max_age_sec) * 1000) if max_age_sec > 0 else 0
+    effective_floor = max(int(since_ms), age_floor_ms)
     rows: list[tuple[str, int, dict]] = []
     try:
         cur = conn.execute(
@@ -72,7 +82,7 @@ def latest_todowrite_per_session(db_path: Path, since_ms: int = 0) -> list[tuple
             ) WHERE rn = 1
             ORDER BY time_created
             """,
-            (int(since_ms),),
+            (effective_floor,),
         )
         for session_id, time_created, data_str in cur:
             try:

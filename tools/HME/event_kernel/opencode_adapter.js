@@ -9,7 +9,7 @@ const decisionLog = require('./hook_decision_log');
 const timeTravel = require('./lifecycle_time_travel');
 
 function sanitizeStdout(_event, stdout) {
-  return decisions.sanitizeCodexStdout(_event, stdout);
+  return decisions.sanitizeOpencodeStdout(_event, stdout);
 }
 
 function recordHookDecision(root, event, rawStdout, sanitizedStdout, payload = {}) {

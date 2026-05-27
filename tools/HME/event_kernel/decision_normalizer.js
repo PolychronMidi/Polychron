@@ -285,6 +285,21 @@ function normalizeClaudeHookJsonStdout(rawStdout) {
   }
 }
 
+function sanitizeOpencodeStdout(event, stdout) {
+  if (!stdout) return '';
+  const trimmed = String(stdout).trim();
+  if (!trimmed.startsWith('{')) return stdout;
+  let parsed;
+  try { parsed = JSON.parse(trimmed); }
+  catch (_err) { return stdout; }
+  if (event === 'PreToolUse' && parsed && typeof parsed === 'object') {
+    if (parsed.decision === 'block' && parsed.reason) {
+      return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
+    }
+  }
+  return stdout;
+}
+
 module.exports = {
   extractFirstJsonDocument,
   normalizeClaudeHookJsonStdout,
@@ -295,6 +310,7 @@ module.exports = {
   reasonHash,
   toPermissionRequestOutput,
   sanitizeCodexStdout,
+  sanitizeOpencodeStdout,
   denyReason,
   isBenignHookStderr,
   claudeRelayFields,

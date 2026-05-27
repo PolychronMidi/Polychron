@@ -75,6 +75,7 @@ class OpenCodeTodoSyncTests(unittest.TestCase):
             if mod.startswith("server.tools_analysis") or mod in ("opencode_todo_sync", "paths"):
                 del sys.modules[mod]
         self.db_path = self.tmp / "opencode.db"
+        self.now_ms = int(time.time() * 1000)
 
     def tearDown(self) -> None:
         for k, v in self._prev_env.items():
@@ -97,7 +98,7 @@ class OpenCodeTodoSyncTests(unittest.TestCase):
     def test_first_sync_imports_all_items(self) -> None:
         _make_opencode_db(self.db_path, [{
             "session_id": "ses_alpha",
-            "time_created": 1000,
+            "time_created": self.now_ms - 1000,
             "todos": [
                 {"content": "alpha-task-1", "status": "pending"},
                 {"content": "alpha-task-2", "status": "in_progress"},
@@ -116,7 +117,7 @@ class OpenCodeTodoSyncTests(unittest.TestCase):
     def test_idempotent_second_run(self) -> None:
         _make_opencode_db(self.db_path, [{
             "session_id": "ses_beta",
-            "time_created": 2000,
+            "time_created": self.now_ms - 2000,
             "todos": [{"content": "beta-task", "status": "pending"}],
         }])
         first = self._sync()
@@ -127,9 +128,9 @@ class OpenCodeTodoSyncTests(unittest.TestCase):
 
     def test_latest_call_per_session_wins(self) -> None:
         _make_opencode_db(self.db_path, [
-            {"session_id": "ses_gamma", "time_created": 3000,
+            {"session_id": "ses_gamma", "time_created": self.now_ms - 4000,
              "todos": [{"content": "gamma-task", "status": "pending"}]},
-            {"session_id": "ses_gamma", "time_created": 4000,
+            {"session_id": "ses_gamma", "time_created": self.now_ms - 3000,
              "todos": [{"content": "gamma-task", "status": "completed"}]},
         ])
         result = self._sync()
@@ -139,7 +140,7 @@ class OpenCodeTodoSyncTests(unittest.TestCase):
 
     def test_status_update_on_existing_opencode_entry(self) -> None:
         _make_opencode_db(self.db_path, [{
-            "session_id": "ses_delta", "time_created": 5000,
+            "session_id": "ses_delta", "time_created": self.now_ms - 5000,
             "todos": [{"content": "delta-task", "status": "pending"}],
         }])
         self._sync()
@@ -147,7 +148,7 @@ class OpenCodeTodoSyncTests(unittest.TestCase):
         conn.execute(
             "INSERT INTO part(id, message_id, session_id, time_created, time_updated, data) "
             "VALUES (?, ?, ?, ?, ?, ?)",
-            ("prt_after", "msg_after", "ses_delta", 6000, 6000, json.dumps({
+            ("prt_after", "msg_after", "ses_delta", self.now_ms - 1000, self.now_ms - 1000, json.dumps({
                 "type": "tool", "tool": "todowrite", "callID": "call_after",
                 "state": {"status": "completed",
                           "input": {"todos": [{"content": "delta-task", "status": "completed"}]},
