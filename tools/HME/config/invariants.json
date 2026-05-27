@@ -1,0 +1,38 @@
+{
+  "_comment": "Invariant battery index. Domain shards live in tools/HME/config/invariants/*.json and are merged by the invariant loader.",
+  "_types": {
+    "files_executable": "All files matching glob (minus exclude) must be executable",
+    "files_referenced": "All files matching glob must appear in reference_file. match_mode='stem' strips extension before matching",
+    "file_exists": "File at path must exist",
+    "json_valid": "File at path must be valid JSON",
+    "glob_count_gte": "Count of files matching glob (minus exclude) must be >= min_count",
+    "pattern_in_file": "Regex pattern must match somewhere in file at path",
+    "patterns_all_in_file": "All patterns (array) must match somewhere in file at path",
+    "pattern_count_gte": "Count of regex matches in file must be >= min_count",
+    "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)",
+    "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry",
+    "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other",
+    "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)",
+    "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
+    "shell_output_empty": "Run a command; fail on disallowed exit code, stderr, or stdout. Optional: allow_exit_codes, capture_stderr, finding_label, success_detail.",
+    "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken.",
+    "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome -- i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
+    "activity_events_balanced": "Paired activity events (start_event + end_event) must fire with matching counts in the recent window. Catches observability regressions where a refactor drops one of a paired emission silently.",
+    "activity_field_sanity": "A named field on recent activity events must match an expected regex. Catches garbage-value bugs (e.g. file_written emitting module='<UUID>' from infrastructure files instead of real module basenames).",
+    "same_commit_determinism": "Consecutive pipeline runs from the SAME commit must produce metric values within tolerance. Non-determinism means either random inputs (clock-dependent verifier) or cached state leaking between runs -- both invalidate the metric.",
+    "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed.",
+    "eslint_concordance_complete": "Single source of truth for JS<->Python rule pairing. Validates that (a) every file in src/scripts/eslint-rules/*.js (minus index.js) appears in _js_rules with a known status, (b) every entry with status='ported' names a python_invariant id that exists in the invariants list, and (c) no _js_rules entry names a rule file that no longer exists. Replaces the hand-maintained parity table in src/scripts/eslint-rules/README.md; adding a rule on either side without updating _js_rules fails the battery.",
+    "metric_threshold": "A metric field in a JSON history must remain within min/max thresholds once enough qualifying rounds exist."
+  },
+  "_include": [
+    "invariants/core.json",
+    "invariants/docs.json",
+    "invariants/hooks.json",
+    "invariants/proxy.json",
+    "invariants/python.json",
+    "invariants/composition.json",
+    "invariants/metrics.json",
+    "invariants/runtime.json",
+    "invariants/eslint.json"
+  ]
+}

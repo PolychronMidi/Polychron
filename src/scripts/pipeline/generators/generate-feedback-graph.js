@@ -1,0 +1,264 @@
+const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
+// generate-feedback-graph: auto-generates metrics/feedback_graph.json by
+// scanning closedLoopController.create() + feedbackRegistry.registerLoop()
+// calls, merging with curated annotations. New loops scaffolded with TODOs.
+// Modes: default = generate/merge; --check = exit 1 if stale. In npm run main.
+
+'use strict';
+
+const fs   = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..', '..', '..', '..');
+const METRICS_DIR = _hmeRequireEnv('METRICS_DIR');
+const SRC  = path.join(ROOT, 'src');
+const METRICS  = path.join(METRICS_DIR);
+const GRAPH_PATH = path.join(METRICS, 'feedback_graph.json');
+
+const CHECK_MODE = process.argv.includes('--check');
+
+const DEFAULT_FIREWALLS = {
+  CONDUCTOR_BLINDNESS: {
+    purpose: 'Cross-layer code cannot register or read conductor state directly.',
+    enforcement: ['no-conductor-registration-from-crosslayer', 'no-direct-conductor-state-from-crosslayer']
+  },
+  SIGNAL_DELAY: {
+    purpose: 'Signal reads must flow through declared delayed channels.',
+    enforcement: ['no-direct-signal-read']
+  },
+  REGISTRY_DAMPENING: {
+    purpose: 'Every feedback loop is registered before topology validation.',
+    enforcement: ['no-unregistered-feedback-loop']
+  }
+};
+
+function mergeFirewalls(existing = {}) {
+  return { ...DEFAULT_FIREWALLS, ...existing };
+}
+
+const CONTRACT_EXEMPT_PORTS = new Set([
+  'emergentMelodicPort',
+  'emergentRhythmPort',
+  'rhythmicContagionPort'
+]);
+
+function applyDerivedAnnotations(loop) {
+  if (loop && CONTRACT_EXEMPT_PORTS.has(loop.module)) {
+    return { ...loop, contractExempt: true };
+  }
+  return loop;
+}
+
+// -Filesystem helpers -
+
+function findJsFiles(dir) {
+  const results = [];
+  if (!fs.existsSync(dir)) return results;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (full === path.join(SRC, 'scripts') || full === path.join(SRC, 'tests')) continue;
+      results.push(...findJsFiles(full));
+    } else if (entry.name.endsWith('.js')) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+function isInsideJSDoc(src, matchIndex) {
+  const before = src.slice(0, matchIndex);
+  const lastDocOpen = before.lastIndexOf('/**');
+  const lastDocClose = before.lastIndexOf('*/');
+  return lastDocOpen > lastDocClose;
+}
+
+// -Source scanning -
+
+/**
+ * Scan all .js files under src/ for feedback loop registrations.
+ * Returns Map<name, { name, file, type, sourceDomain?, targetDomain? }>
+ */
+function scanSourceLoops() {
+  const loops = new Map();
+  const allJsFiles = findJsFiles(SRC);
+
+  for (const filePath of allJsFiles) {
+    const src = fs.readFileSync(filePath, 'utf8');
+    const relPath = path.relative(SRC, filePath).replace(/\\/g, '/');
+
+    const regLoopRe = /feedbackRegistry\.registerLoop\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'/g;
+    for (const match of src.matchAll(regLoopRe)) {
+      loops.set(match[1], {
+        name: match[1],
+        file: relPath,
+        type: 'registerLoop',
+        sourceDomain: match[2],
+        targetDomain: match[3]
+      });
+    }
+
+    const clcRe = /closedLoopController\.create\(\s*\{([^}]*)\}/gs;
+    for (const match of src.matchAll(clcRe)) {
+      if (isInsideJSDoc(src, match.index)) continue;
+
+      const body = match[1];
+      const nameMatch = body.match(/name:\s*'([^']+)'/);
+      if (!nameMatch) continue;
+
+      const sdMatch = body.match(/sourceDomain:\s*'([^']+)'/);
+      const tdMatch = body.match(/targetDomain:\s*'([^']+)'/);
+
+      loops.set(nameMatch[1], {
+        name: nameMatch[1],
+        file: relPath,
+        type: 'closedLoopController',
+        sourceDomain: sdMatch ? sdMatch[1] : null,
+        targetDomain: tdMatch ? tdMatch[1] : null
+      });
+    }
+  }
+
+  return loops;
+}
+
+// -Load existing JSON -
+
+function loadExistingGraph() {
+  if (!fs.existsSync(GRAPH_PATH)) {
+    return {
+      firewalls: {},
+      feedbackLoops: []
+    };
+  }
+  try {
+    return JSON.parse(fs.readFileSync(GRAPH_PATH, 'utf8'));
+  } catch (err) {
+    console.error('generate-feedback-graph: WARNING - failed to parse existing JSON:', err.message);
+    return { firewalls: {}, feedbackLoops: [] };
+  }
+}
+
+// -Merge logic -
+
+/**
+ * Merge source-scanned loops with existing JSON annotations.
+ * - Existing entries: preserve all manual annotations, update sourceDomain/targetDomain
+ *   from source if the existing values look like raw domain identifiers.
+ * - New entries: scaffold with TODO placeholders.
+ * - Conceptual entries: preserve verbatim (no source registration expected).
+ */
+function isAutoScaffold(loop) {
+  return loop &&
+    loop.sourceDomain === 'TODO' &&
+    loop.targetDomain === 'TODO' &&
+    typeof loop.mechanism === 'string' &&
+    loop.mechanism.startsWith('TODO:');
+}
+
+function mergeLoops(existingLoops, sourceLoops) {
+  const merged = [];
+  const handledSourceNames = new Set();
+
+  // Preserve existing order: walk existing loops, updating as needed
+  for (const loop of existingLoops) {
+    if (loop.conceptual) {
+      // Conceptual loops have no source registration - preserve verbatim
+      if (loop.module && sourceLoops.has(loop.module)) {
+        handledSourceNames.add(loop.module);
+      }
+      merged.push(applyDerivedAnnotations(loop));
+      continue;
+    }
+    if (sourceLoops.has(loop.module)) {
+      // Existing entry with matching source registration - preserve annotations
+      merged.push(applyDerivedAnnotations(loop));
+      handledSourceNames.add(loop.module);
+    } else {
+      if (isAutoScaffold(loop)) {
+        console.log('generate-feedback-graph: WARNING - stale scaffold "' + loop.module + '" dropped (no source registration)');
+        continue;
+      }
+      // Orphaned curated entries must be explicit conceptual entries.
+      console.log('generate-feedback-graph: WARNING - loop "' + loop.module + '" in JSON has no source registration (keeping)');
+      merged.push(applyDerivedAnnotations(loop));
+    }
+  }
+
+  // Append new source loops not yet in JSON
+  for (const [name, srcLoop] of sourceLoops) {
+    if (handledSourceNames.has(name)) continue; // already handled above
+    // New loop - scaffold entry
+    const kebab = name.replace(/\./g, '-').replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    merged.push(applyDerivedAnnotations({
+      id: kebab,
+      module: name,
+      sourceDomain: srcLoop.sourceDomain || 'TODO',
+      targetDomain: srcLoop.targetDomain || 'TODO',
+      latency: 'beat-delayed',
+      firewallsCrossed: ['REGISTRY_DAMPENING'],
+      mechanism: 'TODO: describe feedback mechanism'
+    }));
+    console.log('generate-feedback-graph: NEW loop scaffolded:', name);
+  }
+
+  return merged;
+}
+
+// -Build output -
+
+function buildGraph(existingGraph, sourceLoops) {
+  const mergedLoops = mergeLoops(existingGraph.feedbackLoops || [], sourceLoops);
+
+  const result = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: existingGraph.title || 'Polychron Feedback Topology',
+    description: existingGraph.description ||
+      'A machine-readable map of the closed loops, firewalls, and emergence boundaries governing the polychron composition engine.',
+    firewalls: mergeFirewalls(existingGraph.firewalls),
+    feedbackLoops: mergedLoops
+  };
+  // Preserve firewallPorts section if present (manually curated)
+  if (existingGraph.firewallPorts) {
+    result.firewallPorts = existingGraph.firewallPorts;
+  }
+  return result;
+}
+
+// -Main -
+
+const sourceLoops = scanSourceLoops();
+const existingGraph = loadExistingGraph();
+const newGraph = buildGraph(existingGraph, sourceLoops);
+const newJson = JSON.stringify(newGraph, null, 2) + '\n';
+
+if (CHECK_MODE) {
+  // Compare against existing (normalize line endings for cross-platform safety)
+  const existingJson = fs.existsSync(GRAPH_PATH)
+    ? fs.readFileSync(GRAPH_PATH, 'utf8').replace(/\r\n/g, '\n')
+    : '';
+  const normalizedNew = newJson.replace(/\r\n/g, '\n');
+
+  if (normalizedNew === existingJson) {
+    console.log(
+      'generate-feedback-graph: OK (up to date, ' +
+      newGraph.feedbackLoops.length + ' loops, ' +
+      sourceLoops.size + ' from source)'
+    );
+  } else {
+    console.error(
+      'generate-feedback-graph: STALE - metrics/feedback_graph.json is out of date. ' +
+      'Run: node src/scripts/pipeline/generators/generate-feedback-graph.js'
+    );
+    process.exit(1);
+  }
+} else {
+  fs.writeFileSync(GRAPH_PATH, newJson);
+  console.log(
+    'generate-feedback-graph: wrote metrics/feedback_graph.json (' +
+    newGraph.feedbackLoops.length + ' loops, ' +
+    sourceLoops.size + ' from source, ' +
+    newGraph.feedbackLoops.filter(l => l.conceptual).length + ' conceptual)'
+  );
+}

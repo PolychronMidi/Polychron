@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""One-line table view of tmp/blank-debug/ proxy dumps.
+
+Reads each hme-resp-*.json (response dump) and hme-lc-*.json (lifecycle
+dump) and emits one row per file with the most useful summary fields.
+Last N (default 30) shown newest-first. Use --all to dump everything.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+from glob import glob
+
+
+def _human_bytes(n):
+    if n < 1024:
+        return f"{n}B"
+    if n < 1024 * 1024:
+        return f"{n // 1024}K"
+    return f"{n / (1024 * 1024):.1f}M"
+
+
+def _summarize_resp(d):
+    r = d.get("response") or {}
+    req = d.get("request") or {}
+    pl = req.get("payload_summary") or {}
+    user_prev = (pl.get("last_user_text_preview") or "")[:60].replace("\n", " ")
+    return {
+        "verdict": d.get("verdict") or "?",
+        "path": d.get("path_label") or "?",
+        "status": r.get("status"),
+        "model": pl.get("model") or "?",
+        "text": r.get("text_chars"),
+        "thnk": r.get("thinking_chars"),
+        "tu": r.get("tool_use_blocks"),
+        "stop": r.get("stop_reason") or "?",
+        "bytes": _human_bytes(r.get("body_bytes") or 0),
+        "user": user_prev,
+    }
+
+
+def _summarize_lc(d):
+    res = d.get("result") or {}
+    stdout = (res.get("stdout") or "")[:80].replace("\n", " ")
+    parsed = d.get("stdin_parsed") or {}
+    prompt = (parsed.get("prompt") or "")[:60].replace("\n", " ")
+    return {
+        "event": d.get("event") or "?",
+        "stdin_b": d.get("stdin_bytes") or 0,
+        "stdout": stdout,
+        "prompt": prompt,
+    }
+
+
+def main():
+    project = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+    if not project:
+        cur = os.path.dirname(os.path.abspath(__file__))
+        while cur != "/":
+            if os.path.isfile(os.path.join(cur, ".env")) and os.path.isdir(os.path.join(cur, ".git")):
+                project = cur; break
+            cur = os.path.dirname(cur)
+    if not project:
+        print("blank-debug-ls: cannot resolve repo root", file=sys.stderr)
+        return 1
+    dump_dir = os.path.join(project, "tmp", "blank-debug")
+    if not os.path.isdir(dump_dir):
+        print(f"no dump dir at {dump_dir}", file=sys.stderr)
+        return 1
+    limit = 30
+    show_all = "--all" in sys.argv
+    if "--limit" in sys.argv:
+        i = sys.argv.index("--limit")
+        try: limit = int(sys.argv[i + 1])
+        except (ValueError, IndexError): pass
+    only_blank = "--blank" in sys.argv
+    only_lc = "--lc" in sys.argv
+    only_resp = "--resp" in sys.argv
+    pattern = "hme-*.json"
+    files = sorted(glob(os.path.join(dump_dir, pattern)),
+                   key=os.path.getmtime, reverse=True)
+    if not show_all:
+        files = files[:limit]
+    print(f"{'TS':22} {'KIND':6} {'VERDICT':7} {'PATH':12} {'STAT':4} {'TEXT':>5} {'THNK':>5} {'TU':>2} {'STOP':9} {'BYTES':>5} INFO")
+    for f in files:
+        name = os.path.basename(f)
+        try:
+            with open(f) as fp: d = json.load(fp)
+        except Exception:
+            continue
+        ts = (d.get("ts") or "")[:22]
+        if name.startswith("hme-resp-"):
+            if only_lc: continue
+            s = _summarize_resp(d)
+            if only_blank and s["verdict"] != "BLANK": continue
+            print(f"{ts:22} resp   {s['verdict']:7} {s['path']:12} {str(s['status'] or '?'):4} {str(s['text']):>5} {str(s['thnk']):>5} {str(s['tu']):>2} {s['stop'][:9]:9} {s['bytes']:>5} {s['user']}")
+        elif name.startswith("hme-lc-"):
+            if only_resp: continue
+            s = _summarize_lc(d)
+            print(f"{ts:22} lc     {s['event'][:7]:7} {'-':12} {'-':4} {'-':>5} {'-':>5} {'-':>2} {'-':9} {_human_bytes(s['stdin_b']):>5} prompt={s['prompt']!r} stdout={s['stdout']!r}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

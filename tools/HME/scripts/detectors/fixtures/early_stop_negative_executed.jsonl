@@ -1,0 +1,2 @@
+{"role":"user","content":[{"type":"text","text":"do all"}]}
+{"role":"assistant","content":[{"type":"text","text":"Here's what's left."},{"type":"tool_use","name":"Bash","id":"a","input":{"command":"echo continued"}}]}

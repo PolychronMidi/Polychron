@@ -1,0 +1,293 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+const bridge = path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js');
+
+function sandbox(prefix = 'hme-edit-failure-') {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(root, '.git'), { recursive: true });
+  fs.symlinkSync(path.join(repoRoot, 'tools'), path.join(root, 'tools'));
+  return root;
+}
+
+function runEdit(root, args) {
+  return spawnSync('node', [bridge, 'edit', ...args], {
+    cwd: root,
+    env: { ...process.env, PROJECT_ROOT: root, HME_SESSION_ID: 'edit-failure-test' },
+    encoding: 'utf8',
+  });
+}
+
+test('no-op Bash after failed tool is blocked until real command clears failure state', () => {
+  const root = sandbox('hme-noop-failure-');
+  const { evaluateBashInput } = require('../../proxy/bash_command_policy');
+  const { recordFailure, readFailure } = require('../../proxy/turn_failure_state');
+  try {
+    recordFailure(root, { tool: 'Edit', reason: 'old_string not found' });
+    const denied = evaluateBashInput({ command: ':' }, { projectRoot: root });
+    assert.equal(denied.decision, 'deny');
+    assert.match(denied.reason, /no-op command after failed Edit/);
+    const real = evaluateBashInput({ command: 'git status --short' }, { projectRoot: root });
+    assert.equal(real.decision, 'allow');
+    assert.equal(readFailure(root), null);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('failed structured edit returns current context and does not mark verify-landed edits', () => {
+  const root = sandbox();
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, ['function demo() {', '  return 1;', '}', ''].join('\n'));
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=return 2;', 'new=return 3;']);
+    assert.notEqual(res.status, 0);
+    assert.match(res.stdout, /old_string not found/);
+    assert.match(res.stdout, /\[READ current context src\/target\.js:/);
+    assert.match(res.stdout, /return 1/);
+    assert.equal(fs.existsSync(path.join(root, 'tmp', 'hme-turn-edits.txt')), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('malformed structured edit path fails loud instead of empty success', () => {
+  const root = sandbox('hme-edit-malformed-path-');
+  try {
+    const res = runEdit(root, ["file=<<'HME_CODEX_JSON',", 'old=x', 'new=y']);
+    const combined = `${res.stdout}${res.stderr}`;
+    assert.notEqual(res.status, 0);
+    assert.match(combined, /invalid file_path/);
+    assert.notEqual(combined.trim(), '');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('display-redacted structured edit old_string fails with current context', () => {
+  const root = sandbox('hme-edit-redacted-old-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'const value = 1;\n');
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=<display-redacted: original was sent; do not reuse>', 'new=const value = 2;']);
+    assert.notEqual(res.status, 0);
+    assert.match(res.stdout, /old_string is display-redacted/);
+    assert.match(res.stdout, /\[READ current context src\/target\.js:/);
+    assert.match(res.stdout, /const value = 1/);
+    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 1;\n');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('structured edit safely normalizes trailing whitespace mismatch', () => {
+  const root = sandbox('hme-edit-trailing-ws-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'const value = 1;   \n');
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
+    assert.equal(res.status, 0, res.stderr || res.stdout);
+    assert.match(res.stdout, /trailing-whitespace-normalized/);
+    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('successful structured edit marks verify-landed only after posttool success', () => {
+  const root = sandbox();
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'const value = 1;\n');
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
+    assert.equal(res.status, 0, res.stderr || res.stdout);
+    assert.match(res.stdout, /\[SUCCESS\] edit applied/);
+    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
+    assert.match(fs.readFileSync(path.join(root, 'tmp', 'hme-turn-edits.txt'), 'utf8'), /^target\n/m);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('structured edit treats already-applied replacement as safe success', () => {
+  const root = sandbox();
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'const value = 2;\n');
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
+    assert.equal(res.status, 0, res.stderr || res.stdout);
+    assert.match(res.stdout, /edit already applied/);
+    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('edit failure middleware removes stale verify-landed marker and appends current context', () => {
+  const root = sandbox('hme-edit-failure-mw-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'alpha\nbeta current\ngamma\n');
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tmp', 'hme-turn-edits.txt'), 'target\n');
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const toolResult = { content: 'Error: old_string not found', is_error: true };
+  const events = [];
+  const warnings = [];
+  const ctx = {
+    PROJECT_ROOT: root,
+    appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    markDirty() {},
+    warn(message) { warnings.push(message); },
+    emit(row) { events.push(row); },
+  };
+  try {
+    mw.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: file, old_string: 'missing', new_string: 'beta current' } },
+      toolResult,
+      ctx,
+    });
+    assert.match(toolResult.content, /\[READ current context src\/target\.js:/);
+    assert.match(toolResult.content, /beta current/);
+    assert.equal(fs.existsSync(path.join(root, 'tmp', 'hme-turn-edits.txt')), false);
+    assert.equal(events[0].event, 'edit_failure_context_appended');
+    assert.deepEqual(warnings, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+
+test('edit failure middleware appends current context and records read-equivalent for native read-before-edit gate', () => {
+  const root = sandbox('hme-edit-read-gate-mw-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
+  const prevRoot = process.env.PROJECT_ROOT;
+  const prevCacheDir = process.env.HME_SESSION_READ_CACHE_DIR;
+  process.env.PROJECT_ROOT = root;
+  process.env.HME_SESSION_READ_CACHE_DIR = path.join(root, 'tmp', 'session-read-cache');
+  delete require.cache[require.resolve('../../proxy/session_state')];
+  delete require.cache[require.resolve('../../proxy/session_read_cache')];
+  delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const sessionState = require('../../proxy/session_state');
+  const sessionReadCache = require('../../proxy/session_read_cache');
+  const toolResult = { content: 'Error: read before write required', is_error: true };
+  const events = [];
+  const ctx = {
+    PROJECT_ROOT: root,
+    appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    replaceResult(result, text) { result.content = text; },
+    markDirty() {},
+    warn(message) { throw new Error(message); },
+    emit(row) { events.push(row); },
+  };
+  try {
+    mw.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: file, old_string: 'missing prior read', new_string: 'replacement' } },
+      toolResult,
+      session: 'read-gate-test',
+      ctx,
+    });
+    assert.doesNotMatch(toolResult.content, /read before write required/);
+    assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
+    assert.equal(events[0].event, 'edit_failure_context_appended');
+    assert.equal(events[0].read_equivalent, true);
+    assert.equal(events[0].replaced_native_error, true);
+    const state = sessionState.readState('read-gate-test');
+    const read = state.files_read.at(-1);
+    assert.equal(read.file, file);
+    assert.equal(read.source, 'edit_failure_auto_context');
+    assert.equal(read.reason, '');
+    assert.equal(sessionReadCache.hasRead('read-gate-test', file), true);
+  } finally {
+    if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
+    if (prevCacheDir === undefined) delete process.env.HME_SESSION_READ_CACHE_DIR; else process.env.HME_SESSION_READ_CACHE_DIR = prevCacheDir;
+    delete require.cache[require.resolve('../../proxy/session_state')];
+    delete require.cache[require.resolve('../../proxy/session_read_cache')];
+    delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('edit failure middleware treats stale native edit guidance as read-equivalent refresh', () => {
+  const root = sandbox('hme-edit-modified-since-read-mw-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
+  const prevRoot = process.env.PROJECT_ROOT;
+  process.env.PROJECT_ROOT = root;
+  delete require.cache[require.resolve('../../proxy/session_state')];
+  delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const sessionState = require('../../proxy/session_state');
+  const staleA = ['File has been modified', 'since read'].join(' ');
+  const staleB = ['Read it again before', 'attempting to write it.'].join(' ');
+  const staleC = ['File content has changed', 'since it was last read.'].join(' ');
+  const cases = [
+    `Error: ${staleA}, either by the user or by a linter. ${staleB}`,
+    `Error: ${staleC} This commonly happens when a linter or formatter run via Bash rewrites the file. Call Read on this file to refresh, then retry the edit.`,
+  ];
+  try {
+    for (const [idx, message] of cases.entries()) {
+      const toolResult = { content: message, is_error: true };
+      const events = [];
+      const ctx = {
+        PROJECT_ROOT: root,
+        appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+        replaceResult(result, text) { result.content = text; },
+        markDirty() {},
+        warn(err) { throw new Error(err); },
+        emit(row) { events.push(row); },
+      };
+      mw.onToolResult({
+        toolUse: { name: 'Edit', input: { file_path: file, old_string: 'stale text', new_string: 'replacement' } },
+        toolResult,
+        session: `modified-since-read-test-${idx}`,
+        ctx,
+      });
+      assert.doesNotMatch(toolResult.content, /File (has been modified since read|content has changed since it was last read)|Call Read on this file|retry the edit/);
+      assert.equal(toolResult.content, 'first line\ncurrent context line\nlast line\n');
+      assert.equal(events[0].event, 'edit_failure_context_appended');
+      assert.equal(events[0].read_equivalent, true);
+      assert.equal(events[0].replaced_native_error, true);
+      const read = sessionState.readState(`modified-since-read-test-${idx}`).files_read.at(-1);
+      assert.equal(read.file, file);
+      assert.equal(read.source, 'edit_failure_auto_context');
+      assert.equal(read.reason, '');
+    }
+  } finally {
+    if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
+    delete require.cache[require.resolve('../../proxy/session_state')];
+    delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+
+test('request cleanup replaces stale native edit guidance before model sees it', () => {
+  const root = sandbox('hme-edit-stale-request-cleanup-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'fresh file body\n');
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const payload = { messages: [
+    { role: 'assistant', content: [{ type: 'tool_use', id: 'u1', name: 'Update', input: { file_path: file } }] },
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'u1', is_error: true, content: 'Error: ' + ['File content has changed', 'since it was last read.'].join(' ') + ' Call Read on this file to refresh, then retry the edit.' }] },
+  ] };
+  let dirty = false;
+  const events = [];
+  try {
+    mw.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty() { dirty = true; }, emit(row) { events.push(row); } } });
+    const block = payload.messages[1].content[0];
+    assert.equal(block.is_error, false);
+    assert.equal(block.content, 'fresh file body\n');
+    assert.equal(dirty, true);
+    assert.equal(events[0].event, 'edit_failure_raw_result_replaced');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

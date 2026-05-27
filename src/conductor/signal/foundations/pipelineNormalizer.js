@@ -1,0 +1,112 @@
+// pipelineNormalizer: adaptive soft-envelope normalization. Within
+// [softMin,softMax] passes through; outside, exponentially compresses toward
+// hardMin/hardMax (softMin/Max +/- range) -- C1-continuous at boundaries.
+// Replaces static FLOOR/CEILING constants; profile-independent.
+
+moduleLifecycle.declare({
+  name: 'pipelineNormalizer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['pipelineNormalizer'],
+  conductorScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('pipelineNormalizer');
+
+  // Soft-envelope boundaries per pipeline, calibrated from observed products.
+  const BOUNDS = {
+    density: { softMin: 0.50, softMax: 1.50, range: 0.22 },  // R27 E4: Widened softMax from 1.40 and range from 0.20 to allow more density dynamic range
+    tension: { softMin: 0.65, softMax: 1.60, range: 0.25 },  // Hypermeta evolution: Widen tension compression envelope to restore dynamic range (avg 0.8684, max 0.9999 indicates over-compression)
+    flicker: { softMin: 0.70, softMax: 1.30, range: 0.15 }
+  };
+
+  const TRACKING_ALPHA = 0.04;
+  const WARMUP_BEATS   = 6;
+  const WARMUP_ALPHA   = 0.25;
+
+  const pipelineNormalizerState = {
+    density: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 },
+    tension: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 },
+    flicker: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 }
+  };
+
+  /**
+   * Exponential soft envelope. C1-continuous at boundaries.
+   * Identity within [softMin, softMax]; exponential compression outside.
+   * @param {number} value
+   * @param {number} softMin
+   * @param {number} softMax
+   * @param {number} range
+   * @returns {number}
+   */
+  function pipelineNormalizerSoftEnvelope(value, softMin, softMax, range) {
+    if (value >= softMin && value <= softMax) return value;
+    if (value < softMin) {
+      const d = softMin - value;
+      return softMin - range * (1 - m.exp(-d / range));
+    }
+    const d = value - softMax;
+    return softMax + range * (1 - m.exp(-d / range));
+  }
+
+  /**
+   * Normalize a pipeline product through the soft envelope.
+   * @param {'density'|'tension'|'flicker'} pipeline
+   * @param {number} rawProduct - from pipelineNormalizerCollectDampened
+   * @returns {number}
+   */
+  function normalize(pipeline, rawProduct) {
+    V.requireFinite(rawProduct, 'rawProduct');
+    const bounds = BOUNDS[pipeline];
+    if (!bounds) throw new Error(`pipelineNormalizer: unknown pipeline "${pipeline}"`);
+
+    const s = pipelineNormalizerState[pipeline];
+    const bc = beatCount;
+    if (bc !== s.lastBeat) {
+      s.lastBeat = bc;
+      s.beats++;
+      const alpha = s.beats <= WARMUP_BEATS ? WARMUP_ALPHA : TRACKING_ALPHA;
+      s.emaRaw += alpha * (rawProduct - s.emaRaw);
+      if (rawProduct < bounds.softMin) s.compressedLow++;
+      else if (rawProduct > bounds.softMax) s.compressedHigh++;
+    }
+
+    return pipelineNormalizerSoftEnvelope(rawProduct, bounds.softMin, bounds.softMax, bounds.range);
+  }
+
+  function reset() {
+    for (const key of Object.keys(pipelineNormalizerState)) {
+      pipelineNormalizerState[key].emaRaw = 1.0;
+      pipelineNormalizerState[key].beats = 0;
+      pipelineNormalizerState[key].lastBeat = -1;
+      pipelineNormalizerState[key].compressedLow = 0;
+      pipelineNormalizerState[key].compressedHigh = 0;
+    }
+  }
+
+  /** @returns {Record<string, object>} */
+  function getSnapshot() {
+    const result = {};
+    for (const [pipeline, s] of Object.entries(pipelineNormalizerState)) {
+      const b = BOUNDS[pipeline];
+      // Pre-first-beat: rates are undefined-by-nature; report 0 explicitly
+      const lowRate = s.beats > 0 ? s.compressedLow / s.beats : 0;
+      const highRate = s.beats > 0 ? s.compressedHigh / s.beats : 0;
+      result[pipeline] = {
+        emaRawProduct: Number(s.emaRaw.toFixed(4)),
+        beats: s.beats,
+        softMin: b.softMin,
+        softMax: b.softMax,
+        hardMin: Number((b.softMin - b.range).toFixed(2)),
+        hardMax: Number((b.softMax + b.range).toFixed(2)),
+        compressedLowRate: Number(lowRate.toFixed(3)),
+        compressedHighRate: Number(highRate.toFixed(3))
+      };
+    }
+    return result;
+  }
+
+  // (conductorScopes manifest field replaces this registerModule call.)
+
+  return { normalize, reset, getSnapshot };
+  },
+});

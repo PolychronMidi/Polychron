@@ -1,0 +1,641 @@
+'use strict';
+// Regression: register_todo_from_lifesaver must collapse memory-variant
+// errors via _normalize_error_for_dedup so a runaway monitor loop firing
+// "GPU has 17342 MB free" / "16826 MB free" / "12828 MB free" doesn't
+// create N distinct entries. Before this fix, 35 zombie entries from a
+// single recurring failure piled up in tools/HME/KB/todos.json, which
+// the user reported as "absolutely riddled with spam."
+//
+// Tests via Python subprocess since the todo store is implemented in
+// Python (server.tools_analysis.todo). Spawns a sandboxed PROJECT_ROOT
+// to avoid touching the production store.
+const { test } = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+function _runPython(sandbox, body, extraEnv = {}) {
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  const env = {
+    ...process.env,
+    PROJECT_ROOT: sandbox,
+    PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
+    ...extraEnv,
+  };
+  const result = spawnSync('python3', ['-c', body], { env, encoding: 'utf8' });
+  return result;
+}
+
+function _withSandboxedTodoStore(fn) {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-todo-test-'));
+  fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'KB'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'src', 'output', 'metrics'), { recursive: true });
+  // hme_env requires a .env file in PROJECT_ROOT and a doc/templates/AGENTS.md file
+  // to resolve project root. The synthesis import chain validates many
+  // model-alias keys at import time, so a minimal stub doesn't suffice.
+  //
+  // SANITIZED clone: copy the production .env (so every required key is
+  // present), rewrite PROJECT_ROOT to the sandbox, and redact known
+  // secret-class keys to "REDACTED-FOR-TEST" so a /tmp leak from the
+  // sandbox dir doesn't expose API tokens. Keys that hme_env validates
+  // (model aliases, ports, paths) stay intact since they're not secret.
+  // If hme_env adds new secret-class keys, add them to SECRET_KEY_PATTERNS.
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  const prodEnv = fs.readFileSync(path.join(repoRoot, '.env'), 'utf8');
+  const SECRET_KEY_PATTERNS = [
+    /_TOKEN$/, /_KEY$/, /_SECRET$/, /_PASSWORD$/, /_PASSWD$/,
+    /_API_KEY$/, /_AUTH$/, /_CREDENTIALS?$/,
+    /^TELEGRAM_/, /^ANTHROPIC_/, /^OPENAI_/, /^GITHUB_/,
+  ];
+  const isSecretKey = (k) => SECRET_KEY_PATTERNS.some((re) => re.test(k));
+  const sandboxEnv = prodEnv.split('\n').map((line) => {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (!m) return line;
+    const [, key] = m;
+    if (key === 'PROJECT_ROOT') return `PROJECT_ROOT=${sandbox}`;
+    if (isSecretKey(key)) return `${key}=REDACTED-FOR-TEST`;
+    return line;
+  }).join('\n');
+  fs.writeFileSync(path.join(sandbox, '.env'), sandboxEnv, { mode: 0o600 });
+  fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
+  // Seed an empty store with the legacy meta-header sentinel shape.
+  fs.writeFileSync(
+    path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'),
+    JSON.stringify([{ id: 0, _meta: { max_id: 0, updated_ts: 0 } }]),
+  );
+  try {
+    return fn(sandbox);
+  } finally {
+    try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+  }
+}
+
+test('lifesaver-todo dedup: memory-variant errors collapse to one entry', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import register_todo_from_lifesaver, _load_todos
+import json
+# Three near-duplicate errors that differ only in memory numbers.
+register_todo_from_lifesaver("llamacpp_offload_invariant", "GPU1 has 17342 MB free, coder needs ~22049 MB", "CRITICAL")
+register_todo_from_lifesaver("llamacpp_offload_invariant", "GPU1 has 16826 MB free, coder needs ~22049 MB", "CRITICAL")
+register_todo_from_lifesaver("llamacpp_offload_invariant", "GPU1 has 12828 MB free, coder needs ~22049 MB", "CRITICAL")
+meta, todos = _load_todos()
+ls_open = [t for t in todos if t.get("source") == "lifesaver" and not t.get("done")]
+print(json.dumps({
+  "open_count": len(ls_open),
+  "recurrence": ls_open[0].get("recurrence_count") if ls_open else 0,
+}))
+`);
+    if (result.status !== 0) {
+      throw new Error(`python failed: ${result.stderr}`);
+    }
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.open_count, 1, 'three memory-variant errors must collapse to ONE entry');
+    assert.strictEqual(parsed.recurrence, 3, 'recurrence_count must reflect all three firings');
+  });
+});
+
+test('lifesaver-todo dedup: structurally-different errors stay distinct', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import register_todo_from_lifesaver, _load_todos
+import json
+# Different ERROR CLASSES -- must NOT collapse.
+register_todo_from_lifesaver("llamacpp_offload_invariant", "GPU1 has 17342 MB free, coder needs ~22049 MB", "CRITICAL")
+register_todo_from_lifesaver("llamacpp_offload_invariant", "model crash: segfault in attention layer", "CRITICAL")
+register_todo_from_lifesaver("rag_proxy", "shim connection refused", "WARNING")
+meta, todos = _load_todos()
+ls_open = [t for t in todos if t.get("source") == "lifesaver" and not t.get("done")]
+print(json.dumps({"open_count": len(ls_open)}))
+`);
+    if (result.status !== 0) {
+      throw new Error(`python failed: ${result.stderr}`);
+    }
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.open_count, 3, 'structurally-different errors must remain distinct entries');
+  });
+});
+
+test('hme_todo add: identical-text duplicate becomes recurrence increment', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+hme_todo(action="add", text="rebuild the index")
+hme_todo(action="add", text="rebuild the index")  # duplicate
+hme_todo(action="add", text="rebuild the index")  # another duplicate
+meta, todos = _load_todos()
+matches = [t for t in todos if t.get("text") == "rebuild the index"]
+print(json.dumps({
+  "match_count": len(matches),
+  "recurrence": matches[0].get("recurrence_count") if matches else 0,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.match_count, 1, 'three identical adds must collapse to ONE entry');
+    assert.strictEqual(parsed.recurrence, 3, 'recurrence_count must reflect all three adds');
+  });
+});
+
+test('hme_todo add: dedup respects parent_id (sub-todos with same text under different parents stay distinct)', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+hme_todo(action="add", text="parent A")
+hme_todo(action="add", text="parent B")
+meta, todos = _load_todos()
+parent_a = next(t for t in todos if t.get("text") == "parent A")
+parent_b = next(t for t in todos if t.get("text") == "parent B")
+hme_todo(action="add", text="rebuild", parent_id=parent_a["id"])
+hme_todo(action="add", text="rebuild", parent_id=parent_b["id"])
+hme_todo(action="add", text="rebuild", parent_id=parent_a["id"])  # dup of A's sub
+meta, todos = _load_todos()
+parent_a = next(t for t in todos if t.get("text") == "parent A")
+parent_b = next(t for t in todos if t.get("text") == "parent B")
+print(json.dumps({
+  "a_subs": len(parent_a.get("subs", [])),
+  "b_subs": len(parent_b.get("subs", [])),
+  "a_recurrence": parent_a["subs"][0].get("recurrence_count", 1) if parent_a.get("subs") else 0,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.a_subs, 1, 'A has one sub even after duplicate add');
+    assert.strictEqual(parsed.b_subs, 1, 'B has its own sub (not deduped against A)');
+    assert.strictEqual(parsed.a_recurrence, 2, 'A sub recurrence reflects the second add');
+  });
+});
+
+test('native TodoWrite merge syncs todos.json and TODO.md without dropping HME-only items', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, merge_native_todowrite, _load_todos, _save_todos
+import json, os
+os.makedirs(os.path.join("${sandbox}", "doc", "templates"), exist_ok=True)
+hme_todo(action="add", text="persistent HME item", tier="E4")
+merge_native_todowrite([{"content": "native item", "activeForm": "doing native item", "status": "pending"}])
+meta, todos = _load_todos()
+native = next(t for t in todos if t.get("text") == "native item")
+native["tier"] = "E5"
+_save_todos(meta, todos)
+merged = merge_native_todowrite([{"content": "native item", "activeForm": "done native item", "status": "completed"}])
+meta, todos = _load_todos()
+native = next(t for t in todos if t.get("text") == "native item")
+hme = next(t for t in todos if t.get("text") == "persistent HME item")
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
+print(json.dumps({
+  "native_completed": native.get("status") == "completed" and native.get("done") is True,
+  "native_tier_preserved": native.get("tier") == "E5",
+  "hme_only_preserved": hme.get("tier") == "E4" and any(i.get("content") == "persistent HME item" for i in merged),
+  "todo_has_done_native": "- [x] [E5] native item" in todo_md,
+  "todo_has_hme_next": "- [ ] [E4] persistent HME item" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.native_completed, true, 'native completion flows into todos.json');
+    assert.strictEqual(parsed.native_tier_preserved, true, 'existing native tier survives later native updates');
+    assert.strictEqual(parsed.hme_only_preserved, true, 'HME-only item survives native merge and returned payload');
+    assert.strictEqual(parsed.todo_has_done_native, true, 'TODO.md renders completed native item in Done');
+    assert.strictEqual(parsed.todo_has_hme_next, true, 'TODO.md renders HME-only item in Next');
+  });
+});
+
+test('unified TODO bidirectional contract: native and TODO.md converge through store', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import merge_native_todowrite, _load_todos
+from server.tools_analysis.todo_md_sync import open_task_pairs, ingest_open_items
+import json, os
+merge_native_todowrite([{"content": "native contract item", "activeForm": "doing native contract item", "status": "pending"}])
+todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
+todo_md = open(todo_path).read()
+todo_md = todo_md.replace("## Done", "- [ ] [E4] markdown contract item\\n\\n## Done")
+open(todo_path, "w").write(todo_md)
+ingested = ingest_open_items(open_task_pairs(open(todo_path).read()))
+merge_native_todowrite([{"content": "native contract item", "activeForm": "done native contract item", "status": "completed"}])
+meta, todos = _load_todos()
+todo_md = open(todo_path).read()
+native = next(t for t in todos if t.get("text") == "native contract item")
+markdown = next(t for t in todos if t.get("text") == "markdown contract item")
+print(json.dumps({
+  "ingested": ingested,
+  "native_done": native.get("done") is True,
+  "markdown_source": markdown.get("source"),
+  "todo_has_native_done": "- [x] [E3] native contract item" in todo_md,
+  "todo_has_markdown": "markdown contract item" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr || result.stdout}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.ingested, 1, 'TODO.md open item flows into todos.json');
+    assert.strictEqual(parsed.native_done, true, 'native completion flows back into store');
+    assert.strictEqual(parsed.markdown_source, 'todo_md');
+    assert.strictEqual(parsed.todo_has_native_done, true, 'completed native item renders in TODO.md');
+    assert.strictEqual(parsed.todo_has_markdown, true, 'TODO.md-origin item remains rendered');
+  });
+});
+
+test('TODO state guard auto-reconciles TODO.md and detects store rollback', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+from server.tools_analysis.todo_state_guard import check_todo_md_sync
+import json, os, time
+hme_todo(action="add", text="guard item one")
+hme_todo(action="add", text="guard item two")
+todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
+open(todo_path, "w").write("# TODO\\n\\n## Now\\n\\n(empty)\\n")
+repair = check_todo_md_sync(write=True)
+store_path = os.path.join("${sandbox}", "tools", "HME", "KB", "todos.json")
+raw = json.load(open(store_path))
+raw[0]["_meta"]["max_id"] = 1
+raw[0]["_meta"]["updated_ts"] = 1
+raw[:] = raw[:2]
+open(store_path, "w").write(json.dumps(raw))
+_load_todos()
+log_path = os.path.join("${sandbox}", "log", "hme-errors.log")
+log = open(log_path).read() if os.path.exists(log_path) else ""
+print(json.dumps({
+  "repair_changed": repair.get("changed"),
+  "todo_restored": "guard item one" in open(todo_path).read(),
+  "rollback_logged": "TODO STATE WENT BACKWARD" in log,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr || result.stdout}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.repair_changed, true, 'guard repairs TODO.md from store render');
+    assert.strictEqual(parsed.todo_restored, true, 'TODO.md repair restored canonical task');
+    assert.strictEqual(parsed.rollback_logged, true, 'store rollback surfaces in hme-errors');
+  });
+});
+
+test('Codex update_plan syncs into todos.json and TODO.md', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-codex-home-'));
+    const sessionDir = path.join(codexHome, 'sessions', '2026', '05', '15');
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const sessionFile = path.join(sessionDir, 'rollout-test.jsonl');
+    const updateArgs = JSON.stringify({
+      explanation: `workspace ${sandbox}`,
+      plan: [
+        { step: 'Bridge Codex plans', status: 'in_progress' },
+        { step: 'Verify TODO sync', status: 'pending' },
+      ],
+    });
+    fs.writeFileSync(sessionFile, `${JSON.stringify({
+      timestamp: '2026-05-15T15:00:00.000Z',
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'update_plan',
+        arguments: updateArgs,
+        call_id: 'call_test',
+      },
+    })}\n`);
+    try {
+      const env = {
+        ...process.env,
+        PROJECT_ROOT: sandbox,
+        CODEX_HOME: codexHome,
+        PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
+      };
+      const result = spawnSync(
+        'python3',
+        [path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_plan_sync.py'), 'sync', '--json'],
+        { env, encoding: 'utf8' },
+      );
+      if (result.status !== 0) throw new Error(`codex sync failed: ${result.stderr || result.stdout}`);
+      const store = JSON.parse(fs.readFileSync(path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'), 'utf8'));
+      const todos = store.slice(1);
+      const todoMd = fs.readFileSync(path.join(sandbox, 'doc', 'templates', 'TODO.md'), 'utf8');
+      assert.deepStrictEqual(todos.map((t) => t.source), ['codex_plan', 'codex_plan']);
+      assert.strictEqual(todos[0].status, 'in_progress');
+      assert.strictEqual(todos[1].status, 'pending');
+      assert.match(todoMd, /## Now[\s\S]*Bridge Codex plans/);
+      assert.match(todoMd, /## Next[\s\S]*Verify TODO sync/);
+      assert.doesNotMatch(todoMd, /Native TodoWrite syncs this file/);
+    } finally {
+      try { fs.rmSync(codexHome, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+    }
+  });
+});
+
+test('universal pulse keeps Codex update_plan synced automatically', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-codex-home-'));
+    const sessionDir = path.join(codexHome, 'sessions', '2026', '05', '15');
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const sessionFile = path.join(sessionDir, 'rollout-pulse-test.jsonl');
+    const updateArgs = JSON.stringify({
+      explanation: `workspace ${sandbox}`,
+      plan: [{ step: 'Pulse syncs Codex plan', status: 'in_progress' }],
+    });
+    fs.writeFileSync(sessionFile, `${JSON.stringify({
+      timestamp: '2026-05-15T15:30:00.000Z',
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'update_plan',
+        arguments: updateArgs,
+        call_id: 'call_pulse_test',
+      },
+    })}\n`);
+    try {
+      const pythonPath = [
+        path.join(repoRoot, 'tools', 'HME', 'service'),
+        path.join(repoRoot, 'tools', 'HME', 'activity'),
+        path.join(repoRoot, 'tools', 'HME', 'scripts'),
+      ].join(path.delimiter);
+      const result = _runPython(sandbox, `
+from universal_pulse import _StreakTracker
+from universal_pulse_tick import _tick
+import json, os
+tracker = _StreakTracker(1, 600)
+ok, bad = _tick({"codex_plan_sync": {"enabled": True, "min_interval_sec": 0}}, tracker)
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
+print(json.dumps({
+  "ok": ok,
+  "bad": bad,
+  "synced": "Pulse syncs Codex plan" in todo_md,
+}))
+`, { CODEX_HOME: codexHome, PYTHONPATH: pythonPath });
+      if (result.status !== 0) throw new Error(`pulse sync failed: ${result.stderr || result.stdout}`);
+      const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+      assert.strictEqual(parsed.bad, 0, 'pulse sync must not report a bad target');
+      assert.strictEqual(parsed.synced, true, 'pulse must sync Codex plans into TODO.md');
+    } finally {
+      try { fs.rmSync(codexHome, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+    }
+  });
+});
+
+test('archive: clear auto-archives complete set to KB devlog and resets to fresh slate', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const fs2 = require('fs');
+    const p2 = require('path');
+    fs2.mkdirSync(p2.join(sandbox, 'doc', 'templates'), { recursive: true });
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'),
+      `# TODO\n\n## Now\n\n(empty)\n\n## Next\n\n(empty)\n\n## Done\n\n- [x] [E2] Item A\n- [x] [E4] Item B\n\n## Later\n\n(empty)\n`
+    );
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _detect_complete_set
+import json, os
+detection = _detect_complete_set()
+out = hme_todo(action="clear", text="test set name")
+spec_exists = os.path.exists(os.path.join("${sandbox}", "doc", "templates", "SPEC.md"))
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
+devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
+devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
+index_path = os.path.join("${sandbox}", "tools", "HME", "config", "todo-archive-index.json")
+index = json.load(open(index_path)) if os.path.exists(index_path) else {"archives": []}
+print(json.dumps({
+  "detected_complete": detection["complete"],
+  "archive_message_present": "[ARCHIVE] Set archived" in out,
+  "devlog_count": len(devlog_files),
+  "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
+  "index_count": len(index.get("archives", [])),
+  "index_path_recorded": bool(devlog_files and index.get("archives") and index["archives"][0].get("archive_path", "").endswith(devlog_files[0])),
+  "spec_absent": not spec_exists,
+  "todo_reset_to_fresh": todo_md.startswith("# TODO") and "## Next" in todo_md and "(empty)" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.detected_complete, true, 'all-complete detection must fire');
+    assert.strictEqual(parsed.archive_message_present, true, 'clear must surface archive message');
+    assert.strictEqual(parsed.devlog_count, 1, 'one devlog file must be produced');
+    assert.strictEqual(parsed.devlog_filename_pattern, true, 'devlog filename must include slug');
+    assert.strictEqual(parsed.index_count, 1, 'archive index records the devlog');
+    assert.strictEqual(parsed.index_path_recorded, true, 'archive index points at the devlog');
+    assert.strictEqual(parsed.spec_absent, true, 'SPEC.md is not recreated');
+    assert.strictEqual(parsed.todo_reset_to_fresh, true, 'fresh TODO has empty notepad sections');
+  });
+});
+
+test('onboarding: state transitions do not mirror into persistent TODO storage', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.onboarding_chain import set_state
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+set_state("boot")
+set_state("selftest_ok")
+set_state("targeted")
+_meta, todos = _load_todos()
+view = hme_todo(action="list")
+print(json.dumps({
+  "onboarding_entries": [
+    t.get("text") for t in todos
+    if t.get("source") == "onboarding" or "HME onboarding walkthrough" in t.get("text", "")
+  ],
+  "view_task_only": "HME onboarding walkthrough" not in view and "[onboarding]" not in view,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.deepStrictEqual(parsed.onboarding_entries, [], 'onboarding must not create persistent TODO entries');
+    assert.strictEqual(parsed.view_task_only, true, 'native TODO view remains task-only');
+  });
+});
+
+test('todo lifecycle smoke: add, close, archive, and reset in sandbox', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json, os
+for tier, text in [("E2", "smoke item one"), ("E3", "smoke item two"), ("E4", "smoke item three")]:
+    hme_todo(action="add", text=text, tier=tier)
+_meta, todos = _load_todos()
+ids = [t["id"] for t in todos]
+for tid in ids:
+    hme_todo(action="close_with_todo_update", todo_id=tid)
+out = hme_todo(action="clear", text="todo lifecycle smoke")
+_meta, todos = _load_todos()
+todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
+todo_md = open(todo_path).read()
+devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
+devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
+index_path = os.path.join("${sandbox}", "tools", "HME", "config", "todo-archive-index.json")
+index = json.load(open(index_path)) if os.path.exists(index_path) else {"archives": []}
+print(json.dumps({
+  "archive_message": "[ARCHIVE] Set archived" in out,
+  "store_empty": todos == [],
+  "todo_blank": "## Next" in todo_md and "smoke item" not in todo_md,
+  "devlog_count": len(devlog_files),
+  "index_count": len(index.get("archives", [])),
+  "spec_absent": not os.path.exists(os.path.join("${sandbox}", "doc", "templates", "SPEC.md")),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.archive_message, true, 'complete set archives on clear');
+    assert.strictEqual(parsed.store_empty, true, 'completed todos are removed after archive clear');
+    assert.strictEqual(parsed.todo_blank, true, 'TODO.md resets to the blank notepad');
+    assert.strictEqual(parsed.devlog_count, 1, 'one devlog archive is created');
+    assert.strictEqual(parsed.index_count, 1, 'archive index records the archive');
+    assert.strictEqual(parsed.spec_absent, true, 'SPEC.md is not recreated');
+  });
+});
+
+test('auto-prune: every hme_todo invocation prunes done todos past horizon (all sources)', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+import os
+os.environ["HME_DONE_TODO_PRUNE_SEC"] = "1"  # 1-second horizon for test
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json, time
+hme_todo(action="add", text="will-be-done")
+hme_todo(action="add", text="will-stay-open")
+meta, todos = _load_todos()
+done_id = next(t["id"] for t in todos if "done" in t["text"])
+hme_todo(action="done", todo_id=done_id)
+time.sleep(2)  # past prune horizon
+# Triggering ANY action runs auto-prune
+hme_todo(action="list")
+meta, todos = _load_todos()
+texts = sorted(t["text"] for t in todos)
+print(json.dumps({"remaining": texts}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.deepStrictEqual(parsed.remaining, ['will-stay-open'], 'done entry past horizon must be auto-pruned');
+  });
+});
+
+test('auto-prune: list emits system-reminder when done-pending count crosses threshold', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    // Threshold: 15 done items in the store (high enough to avoid
+    // false-firing on legitimate work-in-progress; only fires once
+    // the store has genuinely accumulated stale completions).
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+for i in range(16):
+    hme_todo(action="add", text=f"item-{i}")
+_, todos = _load_todos()
+for t in todos:
+    hme_todo(action="done", todo_id=t["id"])
+output = hme_todo(action="list")
+print(json.dumps({
+  "has_reminder": "<system-reminder>" in output and "pending cleanup" in output,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.has_reminder, true, 'system-reminder must surface when threshold crossed');
+  });
+});
+
+test('auto-prune: list does NOT emit reminder when done count below threshold', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+for i in range(3):
+    hme_todo(action="add", text=f"item-{i}")
+_, todos = _load_todos()
+for t in todos:
+    hme_todo(action="done", todo_id=t["id"])
+output = hme_todo(action="list")
+print(json.dumps({
+  "has_reminder": "<system-reminder>" in output and "pending cleanup" in output,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.has_reminder, false, 'small done count must NOT trigger reminder');
+  });
+});
+
+test('archive: clear refuses to archive when set is not complete', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const fs2 = require('fs');
+    const p2 = require('path');
+    fs2.mkdirSync(p2.join(sandbox, 'doc', 'templates'), { recursive: true });
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'),
+      `# TODO\n\n## Now\n\n- [ ] [E4] Still open\n\n## Next\n\n(empty)\n\n## Done\n\n- [x] [E2] Done item\n`
+    );
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo
+import os
+out = hme_todo(action="clear")
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
+import json
+print(json.dumps({
+  "no_archive_message": "[ARCHIVE] Set archived" not in out,
+  "blocker_message_shown": "Set not yet complete" in out,
+  "todo_keeps_open_item": "Still open" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.no_archive_message, true, 'must NOT archive when set incomplete');
+    assert.strictEqual(parsed.blocker_message_shown, true, 'must surface blocker reason');
+    assert.strictEqual(parsed.todo_keeps_open_item, true, 'TODO.md must keep the open item');
+  });
+});
+
+test('lifesaver-todo store-protection: TTL sweep auto-resolves stale entries', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+import os
+os.environ["HME_LIFESAVER_TODO_TTL_SEC"] = "1"  # 1-second TTL for test
+from server.tools_analysis.todo import register_todo_from_lifesaver, _load_todos, _enforce_lifesaver_caps, _todo_lock, _save_todos
+import json, time
+register_todo_from_lifesaver("monitor_a", "transient failure A", "CRITICAL")
+time.sleep(2)  # entry now older than TTL
+# Trigger sweep via a fresh registration.
+register_todo_from_lifesaver("monitor_b", "fresh failure B", "CRITICAL")
+meta, todos = _load_todos()
+ls = [t for t in todos if t.get("source") == "lifesaver"]
+ls_open = [t for t in ls if not t.get("done")]
+ttl_resolved = [t for t in ls if t.get("resolved_reason") == "stale-ttl"]
+print(json.dumps({
+  "total": len(ls),
+  "open": len(ls_open),
+  "ttl_resolved": len(ttl_resolved),
+}))
+`);
+    if (result.status !== 0) {
+      throw new Error(`python failed: ${result.stderr}`);
+    }
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.ttl_resolved, 1, 'stale entry must be auto-resolved by TTL sweep');
+    assert.strictEqual(parsed.open, 1, 'only the fresh entry stays open');
+  });
+});
+
+test('direct hidden-tool imports initialize context and TODO state cleanly', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'config'), { recursive: true });
+    fs.writeFileSync(
+      path.join(sandbox, 'tools', 'HME', 'config', 'todo-archive-index.json'),
+      JSON.stringify({ archives: [] }),
+    );
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo
+from server.tools_analysis.evolution.evolution_admin import hme_admin
+import json
+todo = hme_todo(action="list")
+hme_admin(action="todo_repair")
+validation = hme_admin(action="todo_validate")
+print(json.dumps({
+  "todo_ok": "No todos" in todo,
+  "validate_ok": "TODO validation PASS" in validation,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    assert.doesNotMatch(result.stderr, /PROJECT_ROOT not set|SKIPPED -- no path/);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.todo_ok, true, 'direct hme_todo import returns the empty store');
+    assert.strictEqual(parsed.validate_ok, true, 'direct hme_admin import validates the TODO store');
+  });
+});
