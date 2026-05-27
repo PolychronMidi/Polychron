@@ -158,7 +158,7 @@ function replaceSystemPrompt(ctx, output) {
 
 async function markHookEntered(ctx, event) {
   const root = projectRoot(ctx);
-  appendRelayLog(root, { event, status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
+  if (event !== 'event.callback') appendRelayLog(root, { event, status: 'entered', exit_code: 0, duration_ms: 0, stdout_bytes: 0, stderr_bytes: 0 });
   if (!visibleHookToastsEnabled(root)) return;
   if (event === 'event.callback') return;
   const now = Date.now();

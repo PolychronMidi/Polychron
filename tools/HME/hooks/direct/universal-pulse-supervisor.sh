@@ -23,12 +23,12 @@ fi
 
 _UP_PID_FILE="$_SV_ROOT/tools/HME/runtime/universal-pulse-supervisor.pid"
 _UP_CHILD_PID_FILE="$_SV_ROOT/tools/HME/runtime/hme-universal-pulse.pid"
-_UP_HEARTBEAT="$_SV_ROOT/tools/HME/runtime/hme-universal-pulse.heartbeat"
+_UP_HEARTBEAT="$_SV_ROOT/tmp/hme-universal-pulse.heartbeat"
 _UP_PYTHON_SCRIPT="$_SV_ROOT/tools/HME/activity/universal_pulse.py"
 _UP_LIFECYCLE_LOG="$_SV_ROOT/log/hme-universal-pulse.log"
 _UP_POLL_INTERVAL=15
 _UP_STALE_THRESHOLD=90   # heartbeat stale > 90s -> respawn
-_UP_MAINT_FLAG="$_SV_ROOT/tools/HME/runtime/hme-proxy-maintenance.flag"
+_UP_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 
 _up_log() {
   mkdir -p "$(dirname "$_UP_LIFECYCLE_LOG")" 2>/dev/null
