@@ -67,7 +67,7 @@ class OpenCodeHostVerifier(Verifier):
         plugin = root / "tools" / "HME" / "opencode" / "plugin" / "hme_hooks.mjs"
         try:
             proc = subprocess.run(
-                ["node", "--input-type=module", "-e", f"import('{plugin.as_uri()}').then(m=>{{if(!m.HmeHooks||!m.applyDecision) process.exit(2)}})"],
+                ["node", "--input-type=module", "-e", f"import('{plugin.as_uri()}').then(m=>{{if(typeof m.default!=='function') process.exit(2)}})"],
                 cwd=root, capture_output=True, text=True, timeout=15,
             )
             if proc.returncode != 0:

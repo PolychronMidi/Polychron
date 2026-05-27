@@ -50,6 +50,10 @@ function payload(extra = {}) {
   });
 }
 
+function _withSandbox(fn) {
+  return fn();
+}
+
 function shadowLogPath(name) {
   const dir = path.join(repoRoot, 'tmp', 'hme-omo-shadow-logs');
   fs.mkdirSync(dir, { recursive: true });
