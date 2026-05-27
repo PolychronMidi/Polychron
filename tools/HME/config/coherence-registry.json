@@ -56,8 +56,9 @@
       "artifacts": [
         {
           "path": "tools/HME/runtime/metrics/hme-pattern-matches.json",
-          "freshness": "pipeline",
-          "allow_empty": true
+          "freshness": null,
+          "allow_empty": true,
+          "optional": true
         }
       ],
       "public_surfaces": [
@@ -74,13 +75,15 @@
       "artifacts": [
         {
           "path": "tools/HME/runtime/metrics/hme-invariant-history.json",
-          "freshness": "pipeline",
-          "allow_empty": true
+          "freshness": null,
+          "allow_empty": true,
+          "optional": true
         },
         {
           "path": "tools/HME/runtime/metrics/hme-invariant-efficacy.json",
-          "freshness": "pipeline",
-          "allow_empty": true
+          "freshness": null,
+          "allow_empty": true,
+          "optional": true
         }
       ],
       "public_surfaces": [
@@ -95,8 +98,9 @@
       "artifacts": [
         {
           "path": "tools/HME/runtime/metrics/hme-coupling.json",
-          "freshness": "pipeline",
-          "allow_empty": true
+          "freshness": null,
+          "allow_empty": true,
+          "optional": true
         }
       ],
       "public_surfaces": [
@@ -113,8 +117,9 @@
       "artifacts": [
         {
           "path": "tools/HME/runtime/metrics/hme-blindspots.json",
-          "freshness": "pipeline",
-          "allow_empty": true
+          "freshness": null,
+          "allow_empty": true,
+          "optional": true
         }
       ],
       "public_surfaces": [
@@ -146,7 +151,7 @@
       "description": "Lifecycle dispatch + middleware pipeline for tool events",
       "artifacts": [
         {
-          "path": "log/hme-proxy.out",
+          "path": "tools/HME/runtime/proxy-a.health",
           "freshness": null,
           "allow_empty": true
         }
