@@ -26,7 +26,7 @@ USAGE
 
 ROOT="$(git rev-parse --show-toplevel)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-TMP_PARENT="${TMPDIR:-/tmp}/polychron-vendor-update"
+TMP_PARENT="${TMPDIR:-$ROOT/tmp}/polychron-vendor-update"
 
 mkdir -p "$TMP_PARENT"
 

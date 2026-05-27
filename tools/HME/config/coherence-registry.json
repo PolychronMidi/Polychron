@@ -156,7 +156,7 @@
           "allow_empty": true
         }
       ],
-      "_freshness_note": "Proxy log appends only on lifecycle events (tool_use, tool_result, errors). 5+ min of agent idleness legitimately keeps it quiet; the previous 'session' ceiling flagged idleness as ill-health. Liveness is better verified by universal_pulse's /health probe of port 9099, not log-mtime.",
+      "_freshness_note": "Proxy health is represented by active-active slot heartbeat state, not by log mtime. The former proxy log artifact was quiet during idle spans and falsely reported missing/stale state.",
       "public_surfaces": [
         "hook dispatch via event_kernel/claude_adapter.js",
         "middleware: grep_glob_neighborhood, read_context, edit_context, lifesaver_inject"
