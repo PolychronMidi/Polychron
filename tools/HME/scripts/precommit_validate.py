@@ -167,6 +167,20 @@ def staged_blob(path: str) -> bytes | None:
     return proc.stdout
 
 
+def tracked_blob(path: str) -> bytes | None:
+    proc = subprocess.run(
+        ["git", "-C", str(ROOT), "show", f"HEAD:{path}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode == 0:
+        return proc.stdout
+    try:
+        return (ROOT / path).read_bytes()
+    except OSError:
+        return None
+
+
 def is_text(data: bytes) -> bool:
     if b"\0" in data[:8192]:
         return False
