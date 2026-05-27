@@ -226,7 +226,7 @@ fi
 # Debounce 5s; per-slot throttle (60s) enforced by polychron-slot-restart.sh.
 _FILE_WATCHER="$PROJECT_ROOT/tools/HME/proxy/shuffler/file_watcher.js"
 if [ "${HME_PROXY_FILE_WATCHER:-1}" != "0" ] && [ -x "$_FILE_WATCHER" ]; then
-  if pgrep -f "shuffler/file_watcher.js" >/dev/null 2>&1; then
+  if _node_script_running "$_FILE_WATCHER"; then
     echo "[launch] file_watcher already running" >&2
   else
     echo "[launch] starting proxy file_watcher (auto-restart on code changes)..." >&2
