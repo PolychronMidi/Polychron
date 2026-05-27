@@ -426,6 +426,8 @@ def noop_predicate(cmd: str, transcript_path: str) -> str | bool:
       2. legacy inert no-op chains (`:`, `true`, empty printf/echo) even when
          variants differ.
     """
+    if os.environ.get("HME_STRICT_MODE") != "1":
+        return False
     if not cmd:
         return False
     try:
