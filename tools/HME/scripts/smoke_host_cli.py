@@ -159,20 +159,19 @@ def preflight(host: str, no_proxy_check: bool = False) -> list[str]:
     return issues
 
 
-def smoke_prompt(artifact_path: Path) -> str:
-    readme = PROJECT_ROOT / "README.md"
+def smoke_prompt(read_path: Path, artifact_path: Path) -> str:
     return "\n".join([
         "You are running an automated HME CLI smoke test. Complete exactly these steps and then stop.",
         "Use the todo tool to track progress; keep the list small and update statuses normally.",
-        "Use exact paths only. Do not glob, search, list directories, or discover README files.",
+        "Use exact paths only. Do not glob, search, list directories, or discover files.",
         "1. Create two todos: 'smoke read' and 'smoke write edit'.",
-        f"2. Read exactly {readme} and remember its first line.",
+        f"2. Read exactly {read_path} and remember the one-line content.",
         "3. Mark 'smoke read' completed.",
         f"4. Write exactly this one line to {artifact_path}: smoke test passed",
         f"5. Edit {artifact_path}, replacing 'passed' with 'verified'.",
         "6. Mark 'smoke write edit' completed.",
-        "7. Reply with one concise sentence containing the README first line and the artifact path.",
-        "Do not loop. Do not repeat completed todo updates.",
+        "7. Reply with one concise sentence containing the read content and the artifact path.",
+        "Do not read the same file twice. Do not loop. Do not repeat completed todo updates.",
     ])
 
 
