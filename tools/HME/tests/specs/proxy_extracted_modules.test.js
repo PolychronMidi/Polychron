@@ -1045,6 +1045,32 @@ test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', as
 });
 
 
+test('request mutation transport-compacts giant interactive Anthropic payloads below provider failure size', async () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_INTERACTIVE_MAX_BYTES = '120000';
+    process.env.HME_PROXY_INTERACTIVE_KEEP_MIN = '8';
+    process.env.HME_PROXY_INTERACTIVE_STALE_TOOL_KEEP_TURNS = '4';
+    process.env.HME_PROXY_INTERACTIVE_TOOL_RESULT_FLOOR = '1024';
+    const payload = { model: 'gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 40; i += 1) {
+      payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id: `tu_${i}`, name: 'Read', input: {} }] });
+      payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: `tu_${i}`, content: 'x'.repeat(8000) }] });
+    }
+    const beforeBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    assert.ok(beforeBytes > 120000);
+    const changed = compactLargeInteractiveAnthropicPayload(payload);
+    const afterBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    assert.ok(changed > 0);
+    assert.ok(afterBytes <= 120000, `${afterBytes} should be <= transport threshold`);
+    assert.ok(payload.messages.length >= 8, 'keepMin should preserve a live tail');
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
 test('request mutation direct smoke header bypasses lifecycle UserPromptSubmit fallback', async () => {
   let called = 0;
   const payload = { model: 'claude-sonnet-4-20250514', messages: [{ role: 'user', content: 'direct smoke' }] };
