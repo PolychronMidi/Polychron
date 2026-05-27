@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 # Load root .env so importing verify_coherence does not explode on required
