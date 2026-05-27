@@ -1,8 +1,8 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10188
-  updated_ts: 1779908084.740127
+  max_id: 10190
+  updated_ts: 1779914688.6008108
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
   opencode_todo_synced_ts: 1779819395.42706
@@ -10,9 +10,9 @@
     10185:
       source: native
       ts: 1779907960.355
-    10186:
+    10190:
       source: native
-      ts: 1779907960.355
+      ts: 1779914688.601
     10115:
       source: opencode
       ts: 1779839880.82
@@ -76,7 +76,7 @@
 - [ ] [E3] Identify highest-impact defects or coherence issues to fix now  #10117
 - [ ] [E3] Implement targeted project-wide fixes  #10118
 - [ ] [E3] Run relevant verification and report evidence  #10119
-- [ ] [E3] smoke write-edit  #10186
+- [ ] [E3] smoke write edit  #10190
 
 ## Done
 
