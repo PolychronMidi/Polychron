@@ -125,6 +125,13 @@ _spawn_proxy_slot() {
     echo "[launch] proxy slot ${_slot} already up on :${_port}" >&2
     return 0
   fi
+  local _status
+  _status="$(_http_status "${_url}/health")"
+  if [ "$_status" != "000" ]; then
+    echo "[launch] proxy slot ${_slot} responds ${_status}; restarting instead of duplicate-spawning on :${_port}" >&2
+    PROJECT_ROOT="$PROJECT_ROOT" bash "$PROJECT_ROOT/tools/HME/launcher/polychron-slot-restart.sh" --slot "$_slot" --force || return 1
+    return 0
+  fi
   echo "[launch] starting proxy slot ${_slot} on :${_port}..." >&2
   HME_PROXY_SLOT="$_slot" HME_PROXY_SUPERVISE=0 PROJECT_ROOT="$PROJECT_ROOT" \
     setsid nohup node "$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js" \
