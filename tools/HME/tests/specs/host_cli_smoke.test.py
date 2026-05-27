@@ -8,6 +8,14 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
+# Load root .env so importing verify_coherence does not explode on required
+# HME_* keys when this unit test is run directly.
+for line in (REPO_ROOT / ".env").read_text(encoding="utf-8").splitlines():
+    line = line.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    k, v = line.split("=", 1)
+    os.environ.setdefault(k.strip(), v.split("#", 1)[0].strip())
 sys.path.insert(0, str(REPO_ROOT / "tools" / "HME" / "scripts"))
 os.environ.setdefault("PROJECT_ROOT", str(REPO_ROOT))
 os.environ.setdefault("HME_METRICS_DIR", str(REPO_ROOT / "tools/HME/runtime/metrics"))
