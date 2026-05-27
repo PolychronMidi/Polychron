@@ -105,21 +105,21 @@ function _respawn(slot, reason) {
 }
 
 function _tick() {
+  const now = Date.now();
   for (const slot of ['a', 'b']) {
-    if (_shouldRespawn(slot)) {
-      const h = _readJSONSafe(HEALTH[slot]);
-      const reason = h ? `heartbeat ${Math.round((Date.now() - Number(h.ts || 0)) / 1000)}s stale, pid ${h.pid} dead` : `health file missing > ${Math.round(STALE_MS / 1000)}s`;
-      _respawn(slot, reason);
+    const decision = _respawnDecision(slot);
+    if (!decision.yes) continue;
+    if (decision.kind === 'drift') {
+      if ((now - lastDriftRespawnTs) < DRIFT_RESPAWN_GAP_MS) continue;
+      lastDriftRespawnTs = now;
     }
+    _respawn(slot, decision.reason);
+    if (decision.kind === 'drift') break;
   }
 }
 
-// NOTE: git_sha drift detection was removed -- it created a positive feedback
-// loop with auto-commits (every trivial commit -> drift detected -> slot
-// restart -> auto-commit during respawn -> drift again). file_watcher already
-
 function start() {
-  console.error(`[slot-watchdog] polling every ${POLL_MS}ms; stale threshold ${STALE_MS}ms; respawn cooldown ${RESPAWN_COOLDOWN_MS}ms`);
+  console.error(`[slot-watchdog] polling every ${POLL_MS}ms; stale threshold ${STALE_MS}ms; respawn cooldown ${RESPAWN_COOLDOWN_MS}ms; drift gap ${DRIFT_RESPAWN_GAP_MS}ms`);
   setInterval(_tick, POLL_MS);
 }
 
