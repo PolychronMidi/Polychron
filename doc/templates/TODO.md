@@ -4,20 +4,20 @@
 
 ## Now
 
-- [ ] [E3] Patch HME OMO bridge to avoid 10s live tool latency
+(empty)
 
 ## Next
 
-- [ ] [E3] Verify OpenCode relay stays ok and fast
+(empty)
 
 ## Done
 
-- [x] [E3] Identify blocking OMO tool.execute.before sub-hook
 - [x] [E3] strict-mode todo smoke alpha
 - [x] [E3] strict-mode todo smoke beta
 - [x] [E3] strict-mode todo smoke gamma
 - [x] [E3] strict-mode todo smoke delta
 - [x] [E3] strict-mode todo smoke epsilon
+- [x] [E3] Test todo system by creating and completing a todo
 
 ## Later
 
