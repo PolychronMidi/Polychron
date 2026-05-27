@@ -156,7 +156,7 @@ _up_start() {
 
 _up_stop() {
   local svp cp
-  svp=$(cat "$_UP_PID_FILE" 2>/dev/null)
+  svp=$(cat "$_UP_PID_FILE" 2>/dev/null || true)
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
   _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -TERM "$svp" 2>/dev/null  # silent-ok: optional fallback path.
   _up_alive "$cp" "universal_pulse.py" && kill -TERM "$cp"  2>/dev/null  # silent-ok: optional fallback path.
@@ -169,7 +169,7 @@ _up_stop() {
 
 _up_status() {
   local svp cp age
-  svp=$(cat "$_UP_PID_FILE" 2>/dev/null)
+  svp=$(cat "$_UP_PID_FILE" 2>/dev/null || true)
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
   age=$(_up_heartbeat_age)
   echo "supervisor pid=$svp alive=$(_up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && echo yes || echo no)"
