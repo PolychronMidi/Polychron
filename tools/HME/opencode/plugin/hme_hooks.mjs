@@ -216,7 +216,7 @@ function toolName(input) {
 function hmeToolName(input) {
   const name = toolName(input);
   if (name === 'write') return 'Write';
-  if (name === 'edit') return 'Edit';
+  if (name === 'edit' || name === 'apply_patch') return 'Edit';
   return name;
 }
 
