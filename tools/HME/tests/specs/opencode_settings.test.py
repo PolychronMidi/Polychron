@@ -13,9 +13,9 @@ import opencode_settings  # noqa: E402
 
 
 class OpenCodeSettingsTests(unittest.TestCase):
-    def test_expected_provider_points_at_hme_openai_compatible_ingress(self):
+    def test_expected_provider_uses_openai_responses_ingress(self):
         provider = opencode_settings.expected_provider(9099, ROOT)
-        self.assertEqual(provider["npm"], "@ai-sdk/openai-compatible")
+        self.assertEqual(provider["npm"], "@ai-sdk/openai")
         self.assertEqual(provider["options"]["baseURL"], "http://127.0.0.1:9099/v1")
         self.assertEqual(provider["options"]["apiKey"], "hme-local")
         self.assertTrue(provider["models"])
