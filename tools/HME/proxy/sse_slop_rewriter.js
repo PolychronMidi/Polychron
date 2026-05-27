@@ -164,6 +164,9 @@ const _ABBREVIATION_MAP = Object.freeze({
 
   // Tech & dev.
   'autocommit': 'autocmt',
+  'clear': 'clr',
+  'clearing': 'clrn',
+  'recent': 'rcnt',
   'insert': 'ins',
   'insertion': 'insn',
   'insertions': 'insns',
