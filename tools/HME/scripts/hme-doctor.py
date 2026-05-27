@@ -147,6 +147,7 @@ def hooks_doctor():
             'used_percentage': 25,
             'remaining_percentage': 75,
             'context_window_size': 200000,
+            'total_input_tokens': 50000,
         },
         'model': {'id': 'doctor', 'display_name': 'Doctor'},
     })

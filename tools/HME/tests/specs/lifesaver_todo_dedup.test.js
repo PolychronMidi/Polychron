@@ -189,8 +189,8 @@ print(json.dumps({
   "native_completed": native.get("status") == "completed" and native.get("done") is True,
   "native_tier_preserved": native.get("tier") == "E5",
   "hme_only_preserved": hme.get("tier") == "E4" and any(i.get("content") == "persistent HME item" for i in merged),
-  "todo_has_done_native": bool(__import__("re").search(r"^- \\[x\\] \\[E5\\] #\\d+ \\[[\\w_]+\\][^\\n]*native item", todo_md, __import__("re").MULTILINE)),
-  "todo_has_hme_next": bool(__import__("re").search(r"^- \\[ \\] \\[E4\\] #\\d+ \\[[\\w_]+\\][^\\n]*persistent HME item", todo_md, __import__("re").MULTILINE)),
+  "todo_has_done_native": bool(__import__("re").search(r"^- \\[x\\] \\[E5\\] native item\\s+#\\d+", todo_md, __import__("re").MULTILINE)),
+  "todo_has_hme_next": bool(__import__("re").search(r"^- \\[ \\] \\[E4\\] persistent HME item\\s+#\\d+", todo_md, __import__("re").MULTILINE)),
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
@@ -224,7 +224,7 @@ print(json.dumps({
   "ingested": ingested,
   "native_done": native.get("done") is True,
   "markdown_source": markdown.get("source"),
-  "todo_has_native_done": bool(__import__("re").search(r"^- \\[x\\] \\[E3\\] #\\d+ \\[[\\w_]+\\][^\\n]*native contract item", todo_md, __import__("re").MULTILINE)),
+  "todo_has_native_done": bool(__import__("re").search(r"^- \\[x\\] \\[E3\\] native contract item\\s+#\\d+", todo_md, __import__("re").MULTILINE)),
   "todo_has_markdown": "markdown contract item" in todo_md,
 }))
 `);
@@ -301,9 +301,8 @@ test('Codex update_plan syncs into todos.json and TODO.md', () => {
       );
       if (result.status !== 0) throw new Error(`codex sync failed: ${result.stderr || result.stdout}`);
       const todoMd = fs.readFileSync(path.join(sandbox, 'doc', 'templates', 'TODO.md'), 'utf8');
-      const taskLines = todoMd.split('\n').filter((l) => /^\s*-\s+\[/.test(l));
-      const codexLines = taskLines.filter((l) => /\[codex_plan\]/.test(l));
-      assert.strictEqual(codexLines.length, 2, `expected 2 codex_plan entries, got ${codexLines.length}: ${codexLines.join(' | ')}`);
+      const codexSourceCount = (todoMd.match(/source:\s*codex_plan/g) || []).length;
+      assert.strictEqual(codexSourceCount, 2, `expected 2 codex_plan entries in ledger, got ${codexSourceCount}`);
       assert.match(todoMd, /## Now[\s\S]*Bridge Codex plans/);
       assert.match(todoMd, /## Next[\s\S]*Verify TODO sync/);
       assert.doesNotMatch(todoMd, /Native TodoWrite syncs this file/);

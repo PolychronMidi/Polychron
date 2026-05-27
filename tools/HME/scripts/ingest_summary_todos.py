@@ -66,31 +66,42 @@ if banner_m:
 if not all_items:
     sys.exit(0)
 
-# Write to todos.json
-todos_path = os.path.join(PROJECT, "tools", "HME", "KB", "todos.json")
-todos = []
-try:
-    with open(todos_path) as f:
-        todos = json.load(f)
-    if not isinstance(todos, list): todos = []
-except Exception:  # silent-ok: todos.json absent or malformed; start from empty list
-    pass
+sys.path.insert(0, os.path.join(PROJECT, "tools", "HME", "service"))
+from server.tools_analysis.todo_store import mutate_store, flat_entries, normalize_tier  # noqa: E402
+import time
 
-max_id = max((t.get("id", 0) for t in todos if isinstance(t, dict)), default=0)
-now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-added = []
-for source, item in all_items:
-    if any(t.get("text") == item for t in todos if isinstance(t, dict)): continue
-    max_id += 1; added.append(item)
-    todos.append({"id": max_id, "text": item, "status": "pending",
-                   "critical": source == "summary", "source": f"auto_{source}", "created": now})
+added: list[str] = []
 
-tmp = todos_path + ".tmp"
+def _ingest(meta: dict, todos: list, _raw: list):
+    existing_texts = {t.get("text", "") for t in flat_entries(todos)}
+    changed = False
+    for source, item in all_items:
+        if item in existing_texts:
+            continue
+        meta["max_id"] = int(meta.get("max_id", 0)) + 1
+        todos.append({
+            "id": meta["max_id"],
+            "text": item,
+            "activeForm": item,
+            "status": "pending",
+            "done": False,
+            "critical": source == "summary",
+            "source": "hme_todo",
+            "on_done": "",
+            "ts": time.time(),
+            "parent_id": 0,
+            "tier": normalize_tier(None),
+            "subs": [],
+        })
+        existing_texts.add(item)
+        added.append(item)
+        changed = True
+    return changed, len(added)
+
 try:
-    with open(tmp, "w") as f: json.dump(todos, f, indent=2)
-    os.replace(tmp, todos_path)
-except Exception:  # silent-ok: todo ingest is opportunistic; failed writes must not break hooks
-    pass
+    mutate_store(_ingest)
+except Exception:
+    pass  # silent-ok: ingest is opportunistic; failed writes must not break the Stop hook chain
 
 # Write system-reminder for next-turn injection
 if added:

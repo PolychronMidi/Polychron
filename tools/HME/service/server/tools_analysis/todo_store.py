@@ -49,12 +49,8 @@ SECTION_STATUS = {
 _TASK_RE = re.compile(
     r"^(?P<indent> *)-\s+\[(?P<mark>[ xX])\]\s+"
     r"\[(?P<tier>E[1-5]|easy|medium|hard)\]\s+"
-    r"(?:#(?P<id>\d+)\s+)?"
-    r"(?:\[(?P<source>[A-Za-z_][\w]*)\]\s+)?"
-    r"(?P<crit>!crit\s+)?"
     r"(?P<text>.+?)"
-    r"(?:\s+→\s+(?P<on_done>[^<]+?))?"
-    r"(?:\s+<!--\s*(?P<meta>[^>]*?)\s*-->)?"
+    r"(?:\s{2,}#(?P<id>\d+))?"
     r"\s*$",
     re.IGNORECASE,
 )
@@ -102,69 +98,70 @@ def normalize_tier(tier: str | None) -> str:
     return LEGACY_TIER_MAP.get(t.lower(), "E3")
 
 
-def _parse_inline_meta(blob: str) -> dict:
-    out: dict = {}
-    if not blob:
-        return out
-    for pair in re.split(r"\s+", blob.strip()):
-        if ":" not in pair:
-            continue
-        k, _, v = pair.partition(":")
-        k = k.strip()
-        v = v.strip()
-        if not k:
-            continue
-        if k in ("ts", "resolved_ts", "codex_plan_ts"):
-            try:
-                out[k] = float(v)
-            except ValueError:
-                continue
-        elif k in ("rec", "recurrence_count"):
-            try:
-                out["recurrence_count"] = int(v)
-            except ValueError:
-                continue
-        else:
-            out[k] = v
-    return out
+_ENTRY_META_FIELDS = ("source", "critical", "on_done", "ts", "activeForm",
+                      "recurrence_count", "resolved_ts", "resolved_reason",
+                      "codex_session", "codex_plan_ts")
 
 
-def _render_inline_meta(entry: dict) -> str:
-    pairs: list[str] = []
-    ts = entry.get("ts")
-    if isinstance(ts, (int, float)) and ts > 0:
-        pairs.append(f"ts:{int(ts)}")
-    rec = entry.get("recurrence_count")
-    if isinstance(rec, int) and rec > 1:
-        pairs.append(f"rec:{rec}")
-    for key in ("resolved_ts", "codex_plan_ts"):
-        v = entry.get(key)
-        if isinstance(v, (int, float)) and v > 0:
-            pairs.append(f"{key}:{int(v)}")
-    for key in ("resolved_reason", "codex_session"):
-        v = entry.get(key)
-        if isinstance(v, str) and v:
-            pairs.append(f"{key}:{v}")
-    return " ".join(pairs)
+def _parse_ledger(md: str) -> tuple[dict, dict[int, dict]]:
+    """Return (meta, entry_meta_by_id) from the ledger HTML comment.
 
-
-def _parse_ledger(md: str) -> dict:
+    The ledger has a top-level YAML-ish key/value section, and an
+    `entries:` map keyed by integer ID holding per-entry metadata that
+    used to clutter the visible markdown.
+    """
     meta: dict = {}
+    entry_meta: dict[int, dict] = {}
     start = md.find(_LEDGER_BEGIN)
     if start < 0:
-        return meta
+        return meta, entry_meta
     end = md.find(_LEDGER_END, start)
     if end < 0:
-        return meta
-    body = md[start + len(_LEDGER_BEGIN):end].strip()
-    for line in body.splitlines():
-        line = line.strip()
-        if not line or ":" not in line:
+        return meta, entry_meta
+    body = md[start + len(_LEDGER_BEGIN):end]
+    in_entries = False
+    current_entry_id: int | None = None
+    for raw_line in body.splitlines():
+        if not raw_line.strip():
             continue
-        k, _, v = line.partition(":")
+        stripped = raw_line.strip()
+        if stripped == "entries:":
+            in_entries = True
+            continue
+        if in_entries:
+            indent = len(raw_line) - len(raw_line.lstrip(" "))
+            if indent == 4 and stripped.endswith(":") and stripped[:-1].isdigit():
+                current_entry_id = int(stripped[:-1])
+                entry_meta[current_entry_id] = {}
+                continue
+            if indent >= 6 and current_entry_id is not None and ":" in stripped:
+                k, _, v = stripped.partition(":")
+                k = k.strip()
+                v = v.strip()
+                if k in ("ts", "resolved_ts"):
+                    try:
+                        entry_meta[current_entry_id][k] = float(v)
+                    except ValueError:
+                        continue
+                elif k in ("critical",):
+                    entry_meta[current_entry_id][k] = v.lower() in ("true", "1", "yes")
+                elif k in ("recurrence_count",):
+                    try:
+                        entry_meta[current_entry_id][k] = int(v)
+                    except ValueError:
+                        continue
+                else:
+                    entry_meta[current_entry_id][k] = v
+                continue
+            if indent <= 2:
+                in_entries = False
+                current_entry_id = None
+        if ":" not in stripped:
+            continue
+        k, _, v = stripped.partition(":")
         k = k.strip()
         v = v.strip()
-        if not k:
+        if not k or k == "entries":
             continue
         if k in ("max_id",):
             try:
@@ -178,10 +175,10 @@ def _parse_ledger(md: str) -> dict:
                 continue
         else:
             meta[k] = v
-    return meta
+    return meta, entry_meta
 
 
-def _render_ledger(meta: dict) -> str:
+def _render_ledger(meta: dict, todos: list[dict]) -> str:
     lines = ["<!-- todo-state:"]
     if "max_id" in meta:
         lines.append(f"  max_id: {int(meta.get('max_id', 0))}")
@@ -193,6 +190,29 @@ def _render_ledger(meta: dict) -> str:
         lines.append(f"  codex_plan_source: {meta['codex_plan_source']}")
     if "codex_plan_ts" in meta:
         lines.append(f"  codex_plan_ts: {meta['codex_plan_ts']}")
+    entry_lines: list[str] = []
+    for entry in flat_entries(todos):
+        entry_id = int(entry.get("id", 0) or 0)
+        if entry_id <= 0:
+            continue
+        body: list[str] = []
+        for field in _ENTRY_META_FIELDS:
+            value = entry.get(field)
+            if value in (None, "", 0, 0.0, False):
+                continue
+            if field == "activeForm" and value == entry.get("text"):
+                continue
+            if isinstance(value, float):
+                rendered = f"{value:.3f}".rstrip("0").rstrip(".") if "." in f"{value}" else str(value)
+            else:
+                rendered = str(value)
+            body.append(f"      {field}: {rendered}")
+        if body:
+            entry_lines.append(f"    {entry_id}:")
+            entry_lines.extend(body)
+    if entry_lines:
+        lines.append("  entries:")
+        lines.extend(entry_lines)
     lines.append("-->")
     return "\n".join(lines)
 
@@ -216,7 +236,7 @@ def _read_sections(md: str) -> list[tuple[str, list[str]]]:
 
 
 def _parse_md(md: str) -> tuple[dict, list[dict]]:
-    meta = _parse_ledger(md)
+    meta, entry_meta = _parse_ledger(md)
     sections = _read_sections(md)
     top_level: list[dict] = []
     last_parent: dict | None = None
@@ -237,28 +257,26 @@ def _parse_md(md: str) -> tuple[dict, list[dict]]:
             except (TypeError, ValueError):
                 entry_id = 0
             if entry_id in seen_ids:
-                entry_id = 0  # duplicate; will get reassigned by save
-            source_raw = m.group("source") or "todo_md"
+                entry_id = 0
+            text = (m.group("text") or "").strip()
+            status = "completed" if mark == "x" else section_status
+            done = status == "completed"
+            ledger_entry = entry_meta.get(entry_id, {}) if entry_id else {}
+            source_raw = ledger_entry.get("source", "todo_md")
             try:
                 source = validate_source(source_raw)
             except ValueError:
                 source = "todo_md"
-            critical = bool(m.group("crit"))
-            text = (m.group("text") or "").strip()
-            on_done = (m.group("on_done") or "").strip()
-            inline_meta = _parse_inline_meta(m.group("meta") or "")
-            status = "completed" if mark == "x" else section_status
-            done = status == "completed"
             entry: dict = {
                 "id": entry_id,
                 "text": text,
-                "activeForm": inline_meta.get("activeForm", text),
+                "activeForm": ledger_entry.get("activeForm", text),
                 "status": status,
                 "done": done,
-                "critical": critical,
+                "critical": bool(ledger_entry.get("critical", False)),
                 "source": source,
-                "on_done": on_done,
-                "ts": inline_meta.get("ts", time.time()),
+                "on_done": ledger_entry.get("on_done", ""),
+                "ts": ledger_entry.get("ts", time.time()),
                 "parent_id": 0,
                 "tier": tier,
                 "subs": [],
@@ -266,8 +284,8 @@ def _parse_md(md: str) -> tuple[dict, list[dict]]:
             }
             for key in ("recurrence_count", "resolved_ts", "resolved_reason",
                         "codex_session", "codex_plan_ts"):
-                if key in inline_meta:
-                    entry[key] = inline_meta[key]
+                if key in ledger_entry:
+                    entry[key] = ledger_entry[key]
             if entry_id:
                 seen_ids.add(entry_id)
             if indent >= 2 and last_parent is not None:
@@ -294,17 +312,10 @@ def _entry_section(entry: dict) -> str:
 def _format_task_line(entry: dict, indent: str = "") -> str:
     mark = "x" if (entry.get("done") or entry.get("status") == "completed") else " "
     tier = normalize_tier(entry.get("tier"))
-    entry_id = int(entry.get("id", 0) or 0)
-    id_part = f"#{entry_id} " if entry_id > 0 else ""
-    source = str(entry.get("source") or "hme_todo")
-    src_part = f"[{source}] "
-    crit_part = "!crit " if entry.get("critical") else ""
     text = (str(entry.get("text") or "").strip()) or "untitled"
-    on_done = str(entry.get("on_done") or "").strip()
-    on_done_part = f" → {on_done}" if on_done else ""
-    inline = _render_inline_meta(entry)
-    meta_part = f" <!-- {inline} -->" if inline else ""
-    return f"{indent}- [{mark}] [{tier}] {id_part}{src_part}{crit_part}{text}{on_done_part}{meta_part}"
+    entry_id = int(entry.get("id", 0) or 0)
+    id_tail = f"  #{entry_id}" if entry_id > 0 else ""
+    return f"{indent}- [{mark}] [{tier}] {text}{id_tail}"
 
 
 def _render_md(meta: dict, todos: list[dict], previous_md: str | None = None) -> str:
@@ -333,7 +344,7 @@ def _render_md(meta: dict, todos: list[dict], previous_md: str | None = None) ->
     parts: list[str] = [
         "# TODO",
         "",
-        _render_ledger(meta),
+        _render_ledger(meta, todos),
         "",
         "> Single source of truth. TodoWrite, codex update_plan, lifesaver, and humans all edit this file.",
         "",
