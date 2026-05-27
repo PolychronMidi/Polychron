@@ -9,7 +9,7 @@ source "$HOOKS_DIR/../helpers/_onboarding.sh"
 PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
 printf '%s INFO compact: POST-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null  # silent-ok: optional fallback path.
-TAB="$PROJECT/tmp/hme-tab.txt"  # local-path-ok
+TAB="$PROJECT/tmp/hme-tab.txt"  #
 PARTS=()
 
 if [[ -f "$TAB" && -s "$TAB" ]]; then

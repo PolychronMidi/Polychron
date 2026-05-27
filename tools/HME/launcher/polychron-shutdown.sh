@@ -85,11 +85,11 @@ done
 [ -f "$PID_FILE" ] && rm -f "$PID_FILE" && echo "[shutdown] removed $PID_FILE" >&2
 
 # Clear emergency-valve persisted-trip flag so a fresh polychron-restart.sh
-_VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"  # local-path-ok
+_VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"  #
 [ -f "$_VALVE_FLAG" ] && rm -f "$_VALVE_FLAG" && echo "[shutdown] removed $_VALVE_FLAG (valve state reset)" >&2
 # Clear the auto-recovery state file too -- same semantic: deliberate
 # restart starts fresh, watchdog respawns inherit.
-_VALVE_STATE="$PROJECT_ROOT/tmp/hme-proxy-valve-state.json"  # local-path-ok
+_VALVE_STATE="$PROJECT_ROOT/tmp/hme-proxy-valve-state.json"  #
 [ -f "$_VALVE_STATE" ] && rm -f "$_VALVE_STATE" && echo "[shutdown] removed $_VALVE_STATE (auto-recovery state reset)" >&2
 
 echo "[shutdown] stack stopped" >&2

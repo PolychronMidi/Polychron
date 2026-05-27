@@ -99,9 +99,9 @@ ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp \) \
   -not -path "./tools/HME/runtime/metrics*" \
   -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null)
 if [ -z "$ORPHAN_DIRS" ]; then
-  _ok "no misplaced log/tmp/metrics directories"  # local-path-ok
+  _ok "no misplaced log/tmp/metrics directories"  #
 else
-  _fail "misplaced log/tmp/metrics dirs found:\n$ORPHAN_DIRS"  # local-path-ok
+  _fail "misplaced log/tmp/metrics dirs found:\n$ORPHAN_DIRS"  #
 fi
 
 # HME_RAG_DB_PATH points at tools/HME/KB

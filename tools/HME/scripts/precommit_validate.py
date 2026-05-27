@@ -52,7 +52,7 @@ def _expand_local_marker(name: str) -> str:
 LOCAL_PATH_NEEDLES = tuple(
     _expand_local_marker(x) for x in POLICY.get("local_path_markers", [])
 )
-LOCAL_PATH_ALLOW = POLICY.get("local_path_allow_token", "local-path-ok")
+LOCAL_PATH_ALLOW = POLICY.get("local_path_allow_token", "")
 SYNTAX_EXTS = set(POLICY.get("syntax_check_extensions", []))
 
 failures: list[str] = []

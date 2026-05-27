@@ -38,6 +38,6 @@ test('root-dir contract rejects nested tmp but allows HME metrics files', () => 
   fs.writeFileSync(path.join(root, 'tools/HME/runtime/metrics/hme-ok.json'), '{}\n');
   assert.equal(run(root).status, 0);
   fs.mkdirSync(path.join(root, 'tools/HME/runtime/tmp'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tools/HME/runtime/tmp/nope.txt'), 'x');  // local-path-ok
+  fs.writeFileSync(path.join(root, 'tools/HME/runtime/tmp/nope.txt'), 'x');  //
   assert.notEqual(run(root).status, 0);
 }));

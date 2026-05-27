@@ -6,7 +6,7 @@ cat > /dev/null  # consume stdin
 PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
 printf '%s INFO compact: PRE-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null  # silent-ok: optional fallback path.
-TAB="$PROJECT/tmp/hme-tab.txt"  # local-path-ok
+TAB="$PROJECT/tmp/hme-tab.txt"  #
 PARTS=()
 
 if [[ -f "$TAB" && -s "$TAB" ]]; then
@@ -48,7 +48,7 @@ if [[ -n "$FOUND" ]]; then
 fi
 
 ## L17: Conversation entanglement -- inject system self-model into compaction context
-ENTANGLE="$PROJECT/tmp/hme-entanglement.json"  # local-path-ok
+ENTANGLE="$PROJECT/tmp/hme-entanglement.json"  #
 if [[ -f "$ENTANGLE" ]]; then
   # Build compact summary from entanglement checkpoint
   ENT_AGE=$(( $(date +%s) - $(stat -c %Y "$ENTANGLE" 2>/dev/null || echo 0) ))  # silent-ok: optional fallback path.

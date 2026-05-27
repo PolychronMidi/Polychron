@@ -127,7 +127,7 @@ test('mkdir-log-tmp: deny mkdir of nested log/', async () => {
 });
 
 test('mkdir-log-tmp: allow mkdir of project-root tmp/', async () => {
-  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/tmp/scratch' } }));  // local-path-ok
+  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/tmp/scratch' } }));  //
   assert.strictEqual(r.decision, 'allow');
 });
 

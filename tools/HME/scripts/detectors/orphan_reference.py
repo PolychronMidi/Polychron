@@ -36,7 +36,7 @@ def _last_user_idx(events: list[dict]) -> int:
 
 def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
     skip_prefixes = (
-        "/tmp/", "/var/tmp/",  # local-path-ok
+        "/tmp/", "/var/tmp/",  #
         os.path.join(project_root, "tmp") + os.sep,
         os.path.join(project_root, "tools", "HME", "runtime") + os.sep,
         os.path.join(project_root, "src", "output", "metrics") + os.sep,
@@ -79,7 +79,7 @@ def _refs_remaining(project_root: str, deleted_path: str) -> list[str]:
         capture_output=True, text=True, timeout=10,
     )
     hits = [ln for ln in (proc.stdout or "").splitlines() if ln.strip()]
-    skip = ('/polychron-references/', '/tmp/',  # local-path-ok '/tools/HME/runtime/', '/src/output/metrics/',
+    skip = ('/polychron-references/', '/tmp/',  # '/tools/HME/runtime/', '/src/output/metrics/',
             '/.git/', '/__pycache__/', '/node_modules/')
     return [h for h in hits if not any(s in h for s in skip)]
 

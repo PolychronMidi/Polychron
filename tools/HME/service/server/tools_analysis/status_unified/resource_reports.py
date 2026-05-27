@@ -91,7 +91,7 @@ def _vram_report() -> str:
             parts.append(f"  [bolt] min_free dipped below 3 GB -- watch for pressure during next compute spike")
 
     # Monitor daemon liveness
-    pid_file = "/tmp/hme-vram-monitor.pid"  # local-path-ok
+    pid_file = "/tmp/hme-vram-monitor.pid"  #
     parts.append("")
     try:
         with open(pid_file) as _f:

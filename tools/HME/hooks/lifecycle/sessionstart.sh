@@ -36,9 +36,9 @@ PREV_PENDING=$(_nexus_pending)
 
 # Reset session state for fresh session.
 mkdir -p "${PROJECT}/tmp"
-> "${PROJECT}/tmp/hme-tab.txt"  # local-path-ok
-> "${PROJECT}/tmp/hme-nexus.state"  # local-path-ok
-> "${PROJECT}/tmp/hme-primer-needed.flag"  # local-path-ok
+> "${PROJECT}/tmp/hme-tab.txt"  #
+> "${PROJECT}/tmp/hme-nexus.state"  #
+> "${PROJECT}/tmp/hme-primer-needed.flag"  #
 
 # Clear spiralling_petulance cross-session leak: prior-session bash attempts
 # must not block the first commands of a freshly-resumed session. Preserve
@@ -243,7 +243,7 @@ echo -e "Onboarding: $ONB_STEP$MSG" >&2
 # Surface carried-over todos from cached prior BG run; refresh in background.
 # The inline heredoc with PYTHONPATH-loaded server imports was a ~500ms-1s
 # hot-path tax on every SessionStart -- same BG+cache pattern as _TRAJ_CACHE
-_CARRY_CACHE="$PROJECT/tmp/hme-carried-over.cache"  # local-path-ok
+_CARRY_CACHE="$PROJECT/tmp/hme-carried-over.cache"  #
 [ -s "$_CARRY_CACHE" ] && cat "$_CARRY_CACHE" >&2
 export _CARRY_CACHE
 _hme_bg_shell_timeout 20 list-carried-over "$PROJECT/log/hme-bg-list-carried-over.err" '
@@ -291,7 +291,7 @@ fi
 mkdir -p "$PROJECT/log" 2>/dev/null
 HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
-  SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"  # local-path-ok
+  SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"  #
   SNAP_LOG="$PROJECT/log/hme-bg-snapshot-holograph.err"
   : > "$SNAP_LOG"
   export PROJECT SESSION_HOLO HOLO_SCRIPT SNAP_LOG
@@ -345,7 +345,7 @@ if [ -n "$PREV_PENDING" ]; then
 fi
 
 # Substrate pre-turn briefing -- cached output now; refresh in background.
-_SUBSTRATE_CACHE="$PROJECT/tmp/hme-substrate-brief.cache"  # local-path-ok
+_SUBSTRATE_CACHE="$PROJECT/tmp/hme-substrate-brief.cache"  #
 [ -s "$_SUBSTRATE_CACHE" ] && { echo "" >&2; cat "$_SUBSTRATE_CACHE" >&2; }
 _hme_bg_timeout 15 substrate-brief "$PROJECT/log/hme-bg-substrate-brief.err" \
   bash -c "PROJECT_ROOT=\"$PROJECT\" METRICS_DIR=\"$METRICS_DIR\" python3 \"$PROJECT/tools/HME/scripts/substrate_brief.py\" > \"$_SUBSTRATE_CACHE.tmp\" 2>>\"$PROJECT/log/hme-bg-substrate-brief.err\" && mv \"$_SUBSTRATE_CACHE.tmp\" \"$_SUBSTRATE_CACHE\" || rm -f \"$_SUBSTRATE_CACHE.tmp\""
@@ -357,7 +357,7 @@ _hme_bg_timeout 15 substrate-brief "$PROJECT/log/hme-bg-substrate-brief.err" \
 # from the cache; freshness is one session behind, which is fine for a
 # promotion-review hint.
 _SOFT_AUDIT="$PROJECT_ROOT/tools/HME/scripts/detectors/audit_stale_soft_warns.py"
-_SOFT_CACHE="$PROJECT/tmp/hme-stale-soft-warns.cache"  # local-path-ok
+_SOFT_CACHE="$PROJECT/tmp/hme-stale-soft-warns.cache"  #
 if [ -s "$_SOFT_CACHE" ]; then
   case "$(cat "$_SOFT_CACHE")" in
     *"need review"*) cat "$_SOFT_CACHE" >&2 ;;
@@ -374,7 +374,7 @@ fi
 
 # Fork-watchdog: same cache+bg pattern.
 _FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
-_FW_CACHE="$PROJECT/tmp/hme-fork-watchdog.cache"  # local-path-ok
+_FW_CACHE="$PROJECT/tmp/hme-fork-watchdog.cache"  #
 if [ -s "$_FW_CACHE" ]; then
   case "$(cat "$_FW_CACHE")" in
     *"notification not delivered"*|*"may be stuck"*) cat "$_FW_CACHE" >&2 ;;
@@ -394,7 +394,7 @@ fi
 # TODO.md changes mid-session.
 _LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
 _TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
-_LE_CACHE="$PROJECT/tmp/hme-learning-surface.cache"  # local-path-ok
+_LE_CACHE="$PROJECT/tmp/hme-learning-surface.cache"  #
 [ -s "$_LE_CACHE" ] && cat "$_LE_CACHE" >&2
 if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
   _TODO_TITLE=$(grep -E "^[[:space:]]*-[[:space:]]+\\[[[:space:]]\\][[:space:]]+\\[(E[1-5]|easy|medium|hard)\\]" "$_TODO_FILE" | head -1 \

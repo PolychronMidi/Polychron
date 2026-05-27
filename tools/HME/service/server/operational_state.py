@@ -13,7 +13,7 @@ Tracks system health metrics that survive across MCP server restarts:
   - session identity documents (L30)
   - thermodynamic efficiency metrics (L34)
 
-Written atomically to $PROJECT_ROOT/tmp/hme-ops.json on every state change.  # local-path-ok
+Written atomically to $PROJECT_ROOT/tmp/hme-ops.json on every state change.  #
 Read on startup; per-day counters reset on new calendar day while preserving
 rolling EMAs so long-term trends survive day boundaries.
 

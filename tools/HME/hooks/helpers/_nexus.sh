@@ -3,7 +3,7 @@
 # Every hook sources this. State lives in tmp/hme-nexus.state.
 # Format: TYPE:TIMESTAMP:PAYLOAD (one per line, grep-friendly).
 
-_NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"  # local-path-ok
+_NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"  #
 
 _nexus_ensure() {
   mkdir -p "$(dirname "$_NEXUS_FILE")"
@@ -138,7 +138,7 @@ _nexus_pending() {
   fi
   # Onboarding: if state is 'verified', the agent has a clean pipeline but
   # hasn't called learn() yet -- graduation requires it.
-  local _onb_f="$PROJECT_ROOT/tmp/hme-onboarding.state"  # local-path-ok
+  local _onb_f="$PROJECT_ROOT/tmp/hme-onboarding.state"  #
   if [ -f "$_onb_f" ]; then
     local _onb_s; _onb_s="$(cat "$_onb_f" 2>/dev/null | tr -d '[:space:]')"
     if [ "$_onb_s" = "verified" ]; then

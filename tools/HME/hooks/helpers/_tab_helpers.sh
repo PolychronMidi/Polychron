@@ -4,7 +4,7 @@
 
 _tab_path() {
   local project="$PROJECT_ROOT"
-  echo "$project/tmp/hme-tab.txt"  # local-path-ok
+  echo "$project/tmp/hme-tab.txt"  #
 }
 
 _ensure_tab() {

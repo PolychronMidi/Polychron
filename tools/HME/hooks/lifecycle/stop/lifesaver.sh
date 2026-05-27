@@ -19,7 +19,7 @@ if [ -f "$ERROR_LOG" ]; then
   WATERMARK_LINE=$(cat "$WATERMARK" 2>/dev/null | tr -d ' \t\n' || echo 0)
   WATERMARK_LINE=${WATERMARK_LINE:-0}
   # Inline-mid-turn watermark: PostToolUse hooks already surfaced any new
-  INLINE_WATERMARK_FILE="$PROJECT/tmp/hme-errors.inline-watermark"  # local-path-ok
+  INLINE_WATERMARK_FILE="$PROJECT/tmp/hme-errors.inline-watermark"  #
   INLINE_WATERMARK=$(cat "$INLINE_WATERMARK_FILE" 2>/dev/null | tr -d ' \t\n' || echo 0)
   INLINE_WATERMARK=${INLINE_WATERMARK:-0}
   if [ "$INLINE_WATERMARK" -gt "$TURN_START_LINE" ]; then
@@ -56,7 +56,7 @@ if [ -f "$ERROR_LOG" ]; then
       while IFS= read -r line; do
         # Strip "CANARY-" prefix to match pending-tracker bare-id format.
         cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
-        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.  # local-path-ok
+        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.  #
       done <<< "$_CANARY_LINES"
     fi
     # Strip canaries before agent/self classification.
@@ -103,7 +103,7 @@ if [ -f "$ERROR_LOG" ]; then
     if [ -n "$_UNFIXED_CANARY" ]; then
       while IFS= read -r line; do
         cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
-        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.  # local-path-ok
+        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.  #
       done <<< "$_UNFIXED_CANARY"
     fi
     _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" | grep -vE "$_STATUS_LINE_RE" || true)

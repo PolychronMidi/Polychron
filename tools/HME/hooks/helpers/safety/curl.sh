@@ -6,17 +6,17 @@
 # Curl failure threshold is fixed unless overridden explicitly.
 : "${HME_CURL_STREAK_WARN:?HME_CURL_STREAK_WARN required}"
 _HME_CURL_STREAK_WARN="$HME_CURL_STREAK_WARN"
-# Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"  # local-path-ok
+# Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"  #
 _hme_curl_streak_path() {
   if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
-    echo "$PROJECT_ROOT/tmp/hme-curl-fail.streak"  # local-path-ok
+    echo "$PROJECT_ROOT/tmp/hme-curl-fail.streak"  #
   else
     echo "$PROJECT_ROOT/tools/HME/runtime/hme-curl-fail.streak"
   fi
 }
 # During a planned proxy/worker restart (proxy-maintenance.sh start), the
 _hme_maintenance_active() {
-  local flag="${PROJECT_ROOT}/tmp/hme-proxy-maintenance.flag"  # local-path-ok
+  local flag="${PROJECT_ROOT}/tmp/hme-proxy-maintenance.flag"  #
   [ -z "${PROJECT_ROOT}" ] && return 1
   [ ! -f "$flag" ] && return 1
   local ts ttl start_epoch now

@@ -236,12 +236,12 @@ if [ -n "$_remaining_listener_pids" ]; then
 fi
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
-_VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"  # local-path-ok
+_VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"  #
 if [ -f "$_VALVE_FLAG" ]; then
   rm -f "$_VALVE_FLAG" \
     && echo "[proxy-restart] removed $_VALVE_FLAG (valve state reset)" >&2
 fi
-_VALVE_STATE="$PROJECT_ROOT/tmp/hme-proxy-valve-state.json"  # local-path-ok
+_VALVE_STATE="$PROJECT_ROOT/tmp/hme-proxy-valve-state.json"  #
 if [ -f "$_VALVE_STATE" ]; then
   rm -f "$_VALVE_STATE" \
     && echo "[proxy-restart] removed $_VALVE_STATE (auto-recovery state reset)" >&2

@@ -5,8 +5,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
 cat > /dev/null  # consume stdin
 
 PROJECT="$PROJECT_ROOT"
-FLAG="$PROJECT/tmp/hme-primer-needed.flag"  # local-path-ok
-SENT="$PROJECT/tmp/hme-primer-emitted.ts"  # local-path-ok
+FLAG="$PROJECT/tmp/hme-primer-needed.flag"  #
+SENT="$PROJECT/tmp/hme-primer-emitted.ts"  #
 WINDOW="${HME_PRIMER_REPEAT_WINDOW_SEC:-43200}"
 
 [ -f "$FLAG" ] || exit 0
@@ -31,8 +31,8 @@ case "$AGENT_FINGERPRINT" in
   *haiku*|claude-haiku*)   AGENT_TIER="terse" ;;
   *)                       AGENT_TIER="medium" ;;
 esac
-printf '%s\n' "$AGENT_FINGERPRINT" > "$PROJECT/tmp/hme-agent-fingerprint.txt" 2>/dev/null || true  # local-path-ok
-printf '%s\n' "$AGENT_TIER" > "$PROJECT/tmp/hme-agent-tier.txt" 2>/dev/null || true  # local-path-ok
+printf '%s\n' "$AGENT_FINGERPRINT" > "$PROJECT/tmp/hme-agent-fingerprint.txt" 2>/dev/null || true  #
+printf '%s\n' "$AGENT_TIER" > "$PROJECT/tmp/hme-agent-tier.txt" 2>/dev/null || true  #
 
 CUR_STEP=$(_onb_step_label 2>/dev/null || echo "unknown")
 CTX="=== HME PRIMER (compact) ===

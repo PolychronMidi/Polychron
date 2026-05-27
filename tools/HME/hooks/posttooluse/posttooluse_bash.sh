@@ -119,7 +119,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
         fi
         # Auto-suggest a KB entry: write a draft to tmp/ that the agent
         if [ -x "$PROJECT/tools/HME/scripts/draft-learn.py" ]; then
-          DRAFT_PATH="$PROJECT/tmp/hme-learn-draft.json"  # local-path-ok
+          DRAFT_PATH="$PROJECT/tmp/hme-learn-draft.json"  #
           PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/scripts/draft-learn.py" \
             --verdict="$VERDICT" --session="$SESSION_ID" --out="$DRAFT_PATH" \
             >/dev/null 2>&1 && \

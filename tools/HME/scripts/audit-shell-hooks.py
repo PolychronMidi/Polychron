@@ -50,7 +50,7 @@ _REPO_ROOT_TARGETS = (
     "/src/",
     "/scripts/",
     "/output/",
-    "/tmp/",  # local-path-ok
+    "/tmp/",  #
     "/log/",
     "/tools/HME/service/",
     "/tools/HME/proxy/",

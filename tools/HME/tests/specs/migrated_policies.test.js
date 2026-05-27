@@ -79,7 +79,7 @@ test('log-tmp: allow project-root log/', async () => {
 });
 
 test('log-tmp: allow project-root tmp/', async () => {
-  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/tmp/x' } }));  // local-path-ok
+  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/tmp/x' } }));  //
   assert.strictEqual(r.decision, 'allow');
 });
 

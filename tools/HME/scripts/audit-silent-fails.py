@@ -37,7 +37,7 @@ LEGITIMATE_PATTERNS = [
     re.compile(r"date\b[^|]*?2>/dev/null"),
     # `|| echo 0` after numeric reads is usually fallback for missing file
     re.compile(r"cat\s+\"?\$\{?[A-Z_]+\}?\"?\s*2>/dev/null\s*\|\|\s*echo\s+0"),
-    re.compile(r"mktemp\b[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?/tmp/ local-path-ok"),
+    re.compile(r"mktemp\b[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?/tmp/"),
     # Fallback is a literal "unknown" used only in audit/log output.
     re.compile(r"git\s+rev-parse[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?unknown"),
     # contexts where whoami may not resolve a real user.

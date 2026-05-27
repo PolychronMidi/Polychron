@@ -4,7 +4,7 @@ if [ "${HME_VERIFY_LANDED_OK:-0}" = "1" ]; then
   return 0 2>/dev/null || exit 0  # silent-ok: optional fallback path.
 fi
 
-_VLB_TURN_EDITS="${PROJECT_ROOT}/tmp/hme-turn-edits.txt"  # local-path-ok
+_VLB_TURN_EDITS="${PROJECT_ROOT}/tmp/hme-turn-edits.txt"  #
 [ -s "$_VLB_TURN_EDITS" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 [ -n "${CMD:-}" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
@@ -58,7 +58,7 @@ PYEOF
 
 if [ -n "$_VLB_HIT" ]; then
   _VLB_MSG="verify-landed antipattern -- Bash reads $_VLB_HIT which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-grepping is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
-  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.  # local-path-ok
+  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.  #
 import os, time
 path = os.environ.get("_VLB_FILE", "")
 hit = os.environ.get("_VLB_HIT", "")

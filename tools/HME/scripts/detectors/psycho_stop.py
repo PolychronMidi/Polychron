@@ -31,8 +31,8 @@ from _transcript import (  # noqa: E402
 BG_KEYWORDS = (
     "train", "pip install", "pip3 install", "nohup", "accelerate", "axolotl",
     "unsloth", "merge_", "convert_hf_to_gguf", "finetune", "stress-test",
-    # Generic long-running python (`python3 /tmp/foo.py` local-path-ok, heredoc).
-    "python3 /tmp/",  # local-path-ok "python3 <<", "python <<",
+    # Generic long-running python (`python3 /tmp/foo.py`, heredoc).
+    "python3 /tmp/",  # "python3 <<", "python <<",
     # Daemon restarts via nohup/disown when paired with a wakeup -> defer.
     "disown", "/reindex", "reindex",
     # HF / large model downloads

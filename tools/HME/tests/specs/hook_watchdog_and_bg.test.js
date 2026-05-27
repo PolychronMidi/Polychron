@@ -138,7 +138,7 @@ test('spawnFileInput timeout kills the hook process group', async () => {
   fresh(root);
   const { spawnFileInput } = require('../../event_kernel/fs_ipc');
   const script = path.join(root, 'tmp/hangs.sh');
-  fs.writeFileSync(script, '#!/usr/bin/env bash\nsleep 30 &\necho $! > "$PROJECT_ROOT/tmp/sleep.pid"\nwait\n');  // local-path-ok
+  fs.writeFileSync(script, '#!/usr/bin/env bash\nsleep 30 &\necho $! > "$PROJECT_ROOT/tmp/sleep.pid"\nwait\n');  //
   fs.chmodSync(script, 0o755);
   const res = await spawnFileInput('bash', [script], { input: '{}', timeoutMs: 1000 });
   assert.strictEqual(res.exit_code, -1);

@@ -10,7 +10,7 @@ logger = logging.getLogger("HME")
 def get_context(query: str, max_tokens: int = 0, language: str = "", path: str = "") -> str:
     """Token-budgeted context assembly with auto context-window awareness.
     query is a natural-language description of what you need (NOT a file path -- use file_lines for reading files, or pass file paths via the path parameter to scope results).
-    max_tokens=0 means AUTO: reads /tmp/claude-context.json local-path-ok (from status line) to determine budget.
+    max_tokens=0 means AUTO: reads /tmp/claude-context.json (from status line) to determine budget.
     >75% remaining = greedy (16000), 50-75% = moderate (8000), 25-50% = conservative (3000), <25% = minimal (800).
     max_tokens>0 means MANUAL override."""
     ctx.ensure_ready_sync()
@@ -22,7 +22,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
         # Auto-detect from status line context file
         try:
             import json as _json
-            with open("/tmp/claude-context.json") as _ctxf:  # local-path-ok
+            with open("/tmp/claude-context.json") as _ctxf:  #
                 _ctx_data = _json.load(_ctxf)
             remaining = _ctx_data.get("remaining_pct") or 50
             if remaining > 75:
@@ -81,7 +81,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
     ctx_info = ""
     try:
         import json as _json
-        with open("/tmp/claude-context.json") as _ctxf:  # local-path-ok
+        with open("/tmp/claude-context.json") as _ctxf:  #
             _ctx_data = _json.load(_ctxf)
         ctx_info = f" | context: {_ctx_data.get('remaining_pct', '?')}% remaining"
     except Exception as _err1:
