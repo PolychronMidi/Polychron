@@ -47,6 +47,28 @@ function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, paylo
   append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(summary));
 }
 
+
+function denyStormOverride(root, host, event, rawStdout, sanitizedStdout, payload = {}) {
+  const summary = hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload);
+  if (!summary || summary.decision !== 'deny' || !summary.reason_hash || !root) return '';
+  const dir = runtimeDir(root);
+  const stateFile = path.join(dir, 'hook-deny-storm.json');
+  let state = {};
+  try { state = JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch (_e) { state = {}; }
+  const key = [host, event, summary.tool, summary.session_id, summary.reason_hash].join('|');
+  const now = Date.now();
+  const prev = state[key] || {};
+  const close = now - Number(prev.ts_ms || 0) < 120_000;
+  const count = close ? Number(prev.count || 1) + 1 : 1;
+  state[key] = { ts_ms: now, count };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(stateFile, `${JSON.stringify(state, null, 2)}\n`);
+  if (count < 2) return '';
+  const reason = `BLOCKED: repeated ${summary.tool || 'tool'} denial (${summary.reason_hash}) without recovery. Stop retrying the same denied action; inspect/read/re-plan or change the input.`;
+  append(path.join(dir, 'hook-deny-storm.jsonl'), JSON.stringify({ ts: new Date().toISOString(), ...summary, storm_count: count, storm_key: key, override_reason: reason }));
+  return JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: reason } });
+}
+
 function recordHookCheckpoint(root, stage, fields = {}) {
   if (!root || !stage) return;
   const row = {
@@ -81,4 +103,4 @@ function recordPolicyRewrite(root, payload = {}, rewrites = []) {
   append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(row));
 }
 
-module.exports = { hookDecisionSummary, recordHookDecision, recordHookCheckpoint, recordPolicyRewrite };
+module.exports = { hookDecisionSummary, recordHookDecision, denyStormOverride, recordHookCheckpoint, recordPolicyRewrite };
