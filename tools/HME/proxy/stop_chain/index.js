@@ -30,6 +30,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
+const { isStrictMode } = require('../strict_mode');
 
 // Unified policy registry -- used as a configuration overlay so any stop-
 let _unifiedConfig = null;
