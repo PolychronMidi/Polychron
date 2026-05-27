@@ -38,6 +38,7 @@ test('no circular dependency nullifies imported bindings', () => {
     ['shrinkForPassthrough', shrinkForPassthrough, 'function'],
     ['createContextBudget', createContextBudget, 'function'],
     ['mutateClaudeRequest', mutateClaudeRequest, 'function'],
+    ['compactLargeInteractiveAnthropicPayload', compactLargeInteractiveAnthropicPayload, 'function'],
     ['handleLegacySwapResponse', handleLegacySwapResponse, 'function'],
     ['writeAnthropicStopSse', writeAnthropicStopSse, 'function'],
     ['effectiveMode', effectiveMode, 'function'],
