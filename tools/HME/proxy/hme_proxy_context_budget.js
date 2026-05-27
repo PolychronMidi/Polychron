@@ -7,6 +7,7 @@ const { pruneWithOmoSync } = require('../omo_bridge/pruning_adapter');
 const { PROJECT_ROOT } = require('./shared');
 const { loadEnv } = require('./shared/load_env');
 const crossSlot = require('./shared/cross_slot_state');
+const { semanticTokenEstimate, serializedBytes } = require('./context_token_estimate');
 
 // Lazy-loaded model context budget registry.
 // Reloads when the source file mtime changes (no daemon restart needed after sync).
