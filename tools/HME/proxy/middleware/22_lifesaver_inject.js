@@ -155,12 +155,7 @@ module.exports = {
     touchLifesaverHeartbeat(ctx.PROJECT_ROOT);
 
     const acFailure = readAutocommitFailure(ctx.PROJECT_ROOT);
-    if (acFailure && _appendToLastUser(
-      payload,
-      `\n\n[lifesaver inject from proxy]\n${acFailure.banner}\n`,
-    )) {
-      assertRealLifesaverInjection(ctx.PROJECT_ROOT, 'autocommit', acFailure.banner, { flag: acFailure.flagPath });
-      ctx.markDirty();
+    if (acFailure && _appendRateLimited(payload, ctx, 'autocommit', acFailure.banner, { flag: acFailure.flagPath })) {
       ctx.emit({ event: 'lifesaver_injected', source: 'autocommit', flag: acFailure.flagPath });
     }
 
