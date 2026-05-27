@@ -1,15 +1,12 @@
 #!/bin/bash
-# tmpfs overflow buffers for llama.cpp GGUF fast-reload at
-# /mnt/llamacpp-buffer-gpu{0,1}. mmap from RAM (~instant) vs SSD (~minutes/18GB).
-# Usage: sudo bash $0 {setup|warm|teardown|status}
-# Topology: GPU0=arbiter (phi-4-Q4_K_M ~9GB + LoRA ~85MB),
-#           GPU1=coder (qwen3-coder-30b-Q4_K_M ~18GB). BUFFER_SIZE default 20GB.
+# tmpfs overflow buffers for llama.cpp GGUF fast-reload at the mount points
+# named by $HME_LLAMACPP_BUFFER_GPU0 / $HME_LLAMACPP_BUFFER_GPU1 in .env.
 
 set -euo pipefail
 
 BUFFER_SIZE="${LLAMACPP_BUFFER_SIZE:-20G}"
-GPU0_MOUNT="/mnt/llamacpp-buffer-gpu0" #
-GPU1_MOUNT="/mnt/llamacpp-buffer-gpu1" #
+GPU0_MOUNT="${HME_LLAMACPP_BUFFER_GPU0:?HME_LLAMACPP_BUFFER_GPU0 not set in .env}"
+GPU1_MOUNT="${HME_LLAMACPP_BUFFER_GPU1:?HME_LLAMACPP_BUFFER_GPU1 not set in .env}"
 MODELS_DIR="${HME_MODELS_DIR:-$HOME/models}"
 
 # Instance topology: which GGUF(s) each buffer mirrors.

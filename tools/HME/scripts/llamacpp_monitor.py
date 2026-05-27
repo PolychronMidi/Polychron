@@ -168,7 +168,7 @@ def _tmpfs_buffer_status() -> list[dict]:
     """Check llama.cpp tmpfs overflow buffers (setup_llamacpp_buffers.sh)."""
     buffers = []
     for name in ("gpu0", "gpu1"):
-        path = f"/mnt/llamacpp-buffer-{name}"
+        path = os.environ[f"HME_LLAMACPP_BUFFER_{name.upper()}"]
         if os.path.ismount(path):
             try:
                 st = os.statvfs(path)

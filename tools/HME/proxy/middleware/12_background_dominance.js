@@ -5,7 +5,7 @@
  * When Claude Code's Bash tool auto-backgrounds a long-running command
  * (default 120s timeout), the tool_result is a synthetic stub of the form
  *   "Command running in background with ID: <taskId>. Output is being
- *    written to: /tmp/claude-<uid>/-*\/<session>/tasks/<taskId>.output"
+ *    written to: <host-tmpdir>/claude-<uid>/-*\/<session>/tasks/<taskId>.output"
  * and the real output lands in that file later. Downstream consumers
  * (both the *model* on subsequent turns AND local posttooluse hooks)
  * see only the stub -- which is useless: no markers, no verdicts, no

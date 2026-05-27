@@ -149,7 +149,7 @@ def _ensure_vram_monitor():
     _monitor_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vram_monitor.py")
     if not os.path.exists(_monitor_path):
         return
-    _pid_file = "/tmp/hme-vram-monitor.pid"  #
+    _pid_file = os.environ["HME_VRAM_MONITOR_PID_FILE"]
     try:
         with open(_pid_file) as _f:
             _pid = int(_f.read().strip())

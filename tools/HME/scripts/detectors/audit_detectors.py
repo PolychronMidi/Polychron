@@ -139,12 +139,13 @@ def _run_corpus_probe(detector: str, user_msg: str, assistant_text: str,
     """Build a synthetic transcript for one corpus probe and run the
     detector against it. Returns the verdict ('ok', 'fire-name', etc.).
 
-    Probes are routed through $PROJECT_ROOT/tmp/ rather than /tmp/
-    because fabrication_check.py applies a path-containment guard
-    (only scans transcripts under ~/.claude/projects/ or PROJECT_ROOT/tmp/)  #
-    to prevent attacker-influenced paths from leaking secret excerpts
-    into detector-stats.jsonl. /tmp/ wouldn't pass; the guard would
-    silent-no-op every probe and report misleading 'ok' verdicts.
+    Probes are routed through $PROJECT_ROOT scratch space rather than the
+    system tempdir because fabrication_check.py applies a path-containment
+    guard (only scans transcripts under ~/.claude/projects/ or the project
+    scratch directory) to prevent attacker-influenced paths from leaking
+    secret excerpts into detector-stats.jsonl. The system tempdir would
+    not pass the guard; it would silent-no-op every probe and report
+    misleading 'ok' verdicts.
 
     env_overrides lets a probe inject env vars (e.g. ADVISOR_DOCTRINE_TIER)
     that gate the detector. They're applied before main() and restored in
