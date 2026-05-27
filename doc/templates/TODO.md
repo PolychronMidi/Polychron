@@ -1,11 +1,11 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10197
-  updated_ts: 1779917891.9027836
+  max_id: 10199
+  updated_ts: 1779918221.5585961
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
-  opencode_todo_synced_ts: 1779916607.886
+  opencode_todo_synced_ts: 1779918198.04
   entries:
     10115:
       source: opencode
@@ -16,6 +16,9 @@
     10185:
       source: native
       ts: 1779907960.355
+    10195:
+      source: opencode
+      ts: 1779907326.639
     10117:
       source: opencode
       ts: 1779859522.856
@@ -28,6 +31,12 @@
     10190:
       source: native
       ts: 1779914688.601
+    10196:
+      source: opencode
+      ts: 1779907326.639
+    10197:
+      source: opencode
+      ts: 1779908083.966
     9584:
       source: hme_todo
       ts: 1779884154
@@ -67,15 +76,6 @@
     10194:
       source: opencode
       ts: 1779906487.536
-    10195:
-      source: opencode
-      ts: 1779907326.639
-    10196:
-      source: opencode
-      ts: 1779907326.639
-    10197:
-      source: opencode
-      ts: 1779908083.966
 -->
 
 > Single source of truth. TodoWrite, codex update_plan, lifesaver, and humans all edit this file.
