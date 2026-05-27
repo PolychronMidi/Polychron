@@ -209,7 +209,6 @@ const QUIET_REQUEST_MUTATORS = new Set([
   'memory_redirect',
   'file_unchanged_swap',
   'dominance_prefetch',
-  'omo_shadow_bridge',
   'stop_hook_fp_gate',
   'trample_gate',
   'edit_failure_context',
