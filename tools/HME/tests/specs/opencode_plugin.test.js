@@ -405,7 +405,7 @@ test('OpenCode plugin hook toasts can be enabled from project .env', async () =>
   }
 });
 
-test('OpenCode plugin does not toast generic event callbacks', async () => {
+test('OpenCode plugin does not toast or relay-log generic event callbacks', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-toasts-event-'));
   fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
   fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
