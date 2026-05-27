@@ -148,6 +148,9 @@ from .cross_context_isolation import (  # noqa: F401
 from .bug_pattern_coverage import (  # noqa: F401
     BugPatternCoverageVerifier,
 )
+from .host_cli_smoke import (  # noqa: F401
+    HostCliSmokeVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
