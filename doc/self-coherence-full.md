@@ -114,7 +114,7 @@ materialize live `~/.claude/settings.json`; [`tools/HME/scripts/audit-claude-set
 fails if live settings drift from that manifest.
 
 Codex hook and provider registration is manifest-driven as well. Edit
-[`tools/HME/hooks/codex_hooks.json`](../tools/HME/hooks/codex_hooks.json), then run [`tools/HME/scripts/sync-codex-settings.py`](../tools/HME/scripts/sync-codex-settings.py)
+[`tools/HME/hooks/codex_hooks.json`](../tools/HME/hooks/codex-extensions.json), then run [`tools/HME/scripts/sync-codex-settings.py`](../tools/HME/scripts/sync-codex-settings.py)
 to materialize `~/.codex/hooks.json`, enable `features.hooks`, and route the
 Responses provider through the `codex_proxy` service-registry port.
 [`tools/HME/scripts/audit-codex-settings.py`](../tools/HME/scripts/audit-codex-settings.py) checks for drift. Codex requires review for
@@ -320,17 +320,19 @@ readers, writers, retention, generated/committed status, schema, and repair
 command. Update that JSON before adding a shared state writer.
 
 <!-- BEGIN GENERATED STATE REGISTRY -->
-- Registered state paths: 31 (24 single-owner, 7 multi-writer).
-- Generated state: 31; committed state: 3.
-- Repair commands and reader/writer ownership live in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json).
+- Registered state paths: 34 (25 single-owner, 9 multi-writer).
+- Generated state: 34; committed state: 3.
+- Repair commands and reader/writer ownership live in `tools/HME/config/state-files.json`.
 - Multi-writer paths:
-  - [`doc/templates/TODO.md`](templates/TODO.md) -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
-  - `log/hme-errors.log` -- 28 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+25 more)
-  - `tmp/hme-errors.lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
-  - `tmp/hme-errors.turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
+  - `doc/templates/TODO.md` -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
+  - `log/hme-errors.log` -- 30 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+27 more)
   - `tmp/hme-nexus.state` -- 5 writer(s): tools/HME/proxy/middleware/index.js, tools/HME/hooks/posttooluse/posttooluse_hme_review.sh, tools/HME/hooks/lifecycle/stop/nexus_audit.sh (+2 more)
   - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
-  - [`tools/HME/KB/todos.json`](../tools/HME/KB/todos.json) -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
+  - `tools/HME/KB/todos.json` -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
+  - `tools/HME/runtime/errors-lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
+  - `tools/HME/runtime/errors-turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
+  - `tools/HME/runtime/metrics/*` -- 3 writer(s): tools/HME/proxy/infra/hme_paths.js, tools/HME/scripts/hme_paths.py, HME components using HME_METRICS_DIR
+  - `tools/HME/runtime/state/*` -- 3 writer(s): tools/HME/proxy/infra/hme_paths.js, tools/HME/scripts/hme_paths.py, HME components using HME_STATE_DIR
 <!-- END GENERATED STATE REGISTRY -->
 
 The standard coordination patterns are append-only line writes, atomic rename
