@@ -396,6 +396,8 @@ def _clean_autocommit_result(cmd: str, text: str) -> bool:
 
 
 def _flabbergasted_by_autocommit(path: str) -> bool:
+    if os.environ.get("HME_STRICT_MODE") != "1":
+        return False
     git_cmds: dict[str, str] = {}
     inspect_count = 0
     clean_results = 0

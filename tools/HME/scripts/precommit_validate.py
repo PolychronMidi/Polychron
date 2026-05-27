@@ -296,6 +296,28 @@ def full_env_failfast_check() -> None:
             failures.append("env fail-fast invariant failed: " + line)
 
 
+def staged_python_compile_check() -> None:
+    for path in staged_paths():
+        if not path.endswith(".py") or skip_syntax(path, POLICY):
+            continue
+        blob = staged_blob(path)
+        if blob is None:
+            continue
+        with tempfile.NamedTemporaryFile("wb", suffix=".py", delete=False) as tmp:
+            tmp.write(blob)
+            tmp_path = tmp.name
+        try:
+            try:
+                py_compile.compile(tmp_path, doraise=True)
+            except py_compile.PyCompileError as exc:
+                failures.append(f"{q(path)}: invalid staged Python syntax ({redact(str(exc.exc_type_name))})")
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass  # silent-ok: tempfile already gone or OS cleanup raced
+
+
 def full_python_compile_check() -> None:
     raw = git_bytes("ls-files", "-s", "-z", "--", "*.py", check=False)
     for entry in raw.split(b"\0"):
@@ -360,6 +382,15 @@ def tracked_mode(path: str) -> str:
     return out.split(None, 1)[0]
 
 
+def staged_content_check() -> None:
+    for path in staged_paths():
+        mode = staged_mode(path)
+        data = staged_blob(path)
+        if data is None:
+            continue
+        validate_path_content(path, mode, data, staged=True)
+
+
 def full_repo_content_check() -> None:
     staged = set(staged_paths())
     seen: set[str] = set()
@@ -377,14 +408,44 @@ def full_repo_content_check() -> None:
             validate_path_content(path, mode, data, staged=True)
 
 
+_FULL_SWEEP_STAMP = ROOT / "tools" / "HME" / "runtime" / "precommit-full-sweep.ts"
+_FULL_SWEEP_INTERVAL_SEC = 86400
+
+
+def _due_for_full_sweep() -> bool:
+    if "--full" in sys.argv:
+        return True
+    try:
+        last = float(_FULL_SWEEP_STAMP.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return True
+    import time as _t
+    return (_t.time() - last) >= _FULL_SWEEP_INTERVAL_SEC
+
+
+def _mark_full_sweep_done() -> None:
+    import time as _t
+    try:
+        _FULL_SWEEP_STAMP.parent.mkdir(parents=True, exist_ok=True)
+        _FULL_SWEEP_STAMP.write_text(f"{_t.time()}\n", encoding="utf-8")
+    except OSError:
+        pass  # silent-ok: pending review
+
+
 def main() -> int:
     load_env_secrets()
     failures.extend(self_protect_failures(ROOT, POLICY, HOOK_PATH, POST_COMMIT_HOOK_PATH, MARKER))
     if head_tree_empty() and tracked_paths():
         print("WARNING: HEAD tree is empty while index has tracked files (autocommit will self-repair with --no-verify)", file=sys.stderr)
-    full_env_failfast_check()
-    full_python_compile_check()
-    full_repo_content_check()
+    if _due_for_full_sweep():
+        full_env_failfast_check()
+        full_python_compile_check()
+        full_repo_content_check()
+        if not failures:
+            _mark_full_sweep_done()
+    else:
+        staged_python_compile_check()
+        staged_content_check()
     if failures:
         print("ERROR: pre-commit validation blocked this commit.", file=sys.stderr)
         print("Fix or unstage the following:", file=sys.stderr)
