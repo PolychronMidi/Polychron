@@ -1,21 +1,21 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10203
-  updated_ts: 1779919391.5609145
+  max_id: 10208
+  updated_ts: 1779922878.9212813
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
-  opencode_todo_synced_ts: 1779919387.771
+  opencode_todo_synced_ts: 1779922832.805
   entries:
+    10190:
+      source: native
+      ts: 1779914688.601
     10115:
       source: opencode
       ts: 1779839880.82
     10116:
       source: opencode
       ts: 1779859522.856
-    10185:
-      source: native
-      ts: 1779907960.355
     10195:
       source: opencode
       ts: 1779907326.639
@@ -28,9 +28,6 @@
     10119:
       source: opencode
       ts: 1779859522.856
-    10190:
-      source: native
-      ts: 1779914688.601
     10196:
       source: opencode
       ts: 1779907326.639
@@ -84,7 +81,6 @@
 
 - [ ] [E3] Implement general failed-tool retry guard at tool-call layer with tests  #10115
 - [ ] [E3] Survey repository structure, commands, and current status without reading secrets  #10116
-- [ ] [E3] smoke read  #10185
 - [ ] [E3] Create first test todo  #10195
 
 ## Next
@@ -92,7 +88,6 @@
 - [ ] [E3] Identify highest-impact defects or coherence issues to fix now  #10117
 - [ ] [E3] Implement targeted project-wide fixes  #10118
 - [ ] [E3] Run relevant verification and report evidence  #10119
-- [ ] [E3] smoke write edit  #10190
 - [ ] [E3] Create second test todo  #10196
 - [ ] [E3] smoke write-edit  #10197
 
@@ -109,6 +104,7 @@
 - [x] [E3] Test todo system by creating and completing a todo  #10123
 - [x] [E3] Test TODO system by creating a todo and marking it done  #10124
 - [x] [E3] Test TODO system by creating a todo  #10125
+- [x] [E3] smoke write edit  #10190
 - [x] [E3] Test todo item one  #10193
 - [x] [E3] Test todo item two  #10194
 
