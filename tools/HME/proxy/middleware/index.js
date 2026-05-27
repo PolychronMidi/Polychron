@@ -482,6 +482,7 @@ async function runOnToolResult(toolUse, toolResult, opts = {}) {
   for (const mod of _modules) {
     if (typeof mod.onToolResult !== 'function') continue;
     if (filter && !filter.has(mod.name)) continue;
+    if (!_middlewareAllowed(mod, 'onToolResult')) continue;
     try {
       await mod.onToolResult({ toolUse, toolResult, session, ctx });
     } catch (err) {
