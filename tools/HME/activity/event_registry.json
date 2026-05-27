@@ -1082,6 +1082,18 @@
       "summary": "Lifesaver middleware injected an actionable error or autocommit failure into the request."
     },
     {
+      "name": "lifesaver_inject_suppressed",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "error_surface"
+      ],
+      "summary": "Lifesaver middleware throttled a non-strict-mode injection within the dampening interval."
+    },
+    {
       "name": "lifesaver_watermark_failed",
       "category": "Tool / proxy lifecycle",
       "streams": [

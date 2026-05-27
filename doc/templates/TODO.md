@@ -8,7 +8,13 @@
 
 ## Next
 
-(empty)
+- [ ] [E3] If size=0: OK; if mtime < summary_mtime: skip; if no "exit=0" after last start: warn/fail
+- [ ] [E3] But sys-reminder showed auto-brief w/ OLD file head still showing `"waivers": []` - this hook's cached preview, not actual file
+- [ ] [E3] If same cmd appears twice w/o edit n b/w, blocks
+- [ ] [E3] This cause `_current_turn_noop_tools` - inflate `failed_reads` n block legitimate cmds
+- [ ] [E3] Or maybe `contexts/upstream_dispatch/contexts/upstream_dispatch/` - nested
+- [ ] [E3] If baseline doesn't exist, write it & exit 0
+- [ ] [E3] If baseline exists, compare
 
 ## Done
 

@@ -143,6 +143,7 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`inference_call`** [activity] -- A local-inference subprocess was invoked.
 - **`jurisdiction_inject`** [activity] -- The proxy injected a hypermeta jurisdiction warning into agent context.
 - **`lifesaver_injected`** [activity] -- Lifesaver middleware injected an actionable error or autocommit failure into the request.
+- **`lifesaver_inject_suppressed`** [activity] -- Lifesaver middleware throttled a non-strict-mode injection within the dampening interval.
 - **`lifesaver_watermark_failed`** [activity] -- Lifesaver middleware could not advance its error-log watermark.
 - **`mcp_fail_escalated`** [activity] -- MCP fail-scan escalated FAIL lines into the lifesaver error log.
 - **`mcp_tool_call`** [activity] -- The agent invoked an MCP tool.
