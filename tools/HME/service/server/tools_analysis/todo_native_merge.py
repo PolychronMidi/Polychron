@@ -116,6 +116,7 @@ def merge_native_todowrite(incoming: list) -> list:
                 "content": prefix + t["text"],
                 "activeForm": t.get("activeForm") or (prefix + t["text"]),
                 "status": t.get("status", "pending"),
+                "priority": "high" if is_critical else (t.get("priority") or "medium"),
             })
             for s in t.get("subs", []):
                 sub_prefix = "  + "
@@ -123,6 +124,7 @@ def merge_native_todowrite(incoming: list) -> list:
                     "content": sub_prefix + s["text"],
                     "activeForm": s.get("activeForm") or (sub_prefix + s["text"]),
                     "status": s.get("status", "pending"),
+                    "priority": s.get("priority") or "medium",
                 })
         if critical_overflow > 0:
             try:
@@ -138,5 +140,6 @@ def merge_native_todowrite(incoming: list) -> list:
                 "content": summary_text,
                 "activeForm": summary_text,
                 "status": "pending",
+                "priority": "high",
             })
         return flat
