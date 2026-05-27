@@ -431,7 +431,7 @@ function createCodexResponseForwarder(deps) {
         try { onResponseComplete(source && source.session_id, results); }
         catch (err) { record({ kind: 'codex-history-capture-error', message: err.message, stage: 'intermediate-tool-result' }); }
       }
-      const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
+      const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || [], { omitPreviousResponseId: target.kind === 'omniroute' });
       attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
       return true;
     }
