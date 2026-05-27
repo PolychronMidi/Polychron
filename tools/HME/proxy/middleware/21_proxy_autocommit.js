@@ -225,9 +225,8 @@ function _attemptCommit(root, caller) {
   // precommit_validate.py directly so the actual blocker (file:line + reason)
   // lands in autocommit.fail + hme-errors.log instead of 'unknown'.
   const precommitDetail = _capturePrecommitFailures(root);
-  const head = (combined || '').trim().slice(0, 300) || 'no git stderr';
-  const tail = precommitDetail ? ` | precommit: ${precommitDetail}` : '';
-  _recordFailure(root, caller, `git commit failed twice: ${head}${tail}`);
+  const detail = _autocommitDiagnostics(root, r, precommitDetail);
+  _recordFailure(root, caller, `git commit failed twice: ${detail}`);
 }
 
 module.exports = {
