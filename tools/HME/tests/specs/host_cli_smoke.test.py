@@ -35,6 +35,30 @@ class HostCliSmokeVerifierTests(unittest.TestCase):
             if prior is not None:
                 os.environ["HME_RUN_CLI_SMOKE"] = prior
 
+    def test_live_harness_closes_stdin_and_sets_smoke_env(self):
+        import subprocess
+        import smoke_host_cli
+
+        captured: dict[str, object] = {}
+
+        def fake_run(argv, **kwargs):
+            captured["argv"] = argv
+            captured.update(kwargs)
+            return subprocess.CompletedProcess(argv, 0, stdout="ok", stderr="")
+
+        with tempfile.TemporaryDirectory() as td, \
+             mock.patch.object(smoke_host_cli, "PROJECT_ROOT", Path(td)), \
+             mock.patch.object(smoke_host_cli, "SMOKE_DIR", Path(td) / "smoke"), \
+             mock.patch.object(smoke_host_cli, "ERROR_LOG", Path(td) / "errors.log"), \
+             mock.patch.object(smoke_host_cli, "preflight", return_value=[]), \
+             mock.patch.object(smoke_host_cli, "_which_host", return_value="claude"), \
+             mock.patch.object(smoke_host_cli.subprocess, "run", side_effect=fake_run):
+            result = smoke_host_cli.run_smoke("claude", timeout=1, no_proxy_check=True)
+
+        self.assertEqual(captured["input"], "")
+        self.assertEqual(captured["env"]["HME_CLI_SMOKE"], "1")
+        self.assertIn("Write/Edit artifact missing", " ".join(result["failures"]))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
