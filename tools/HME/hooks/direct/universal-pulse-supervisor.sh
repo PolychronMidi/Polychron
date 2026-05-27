@@ -69,8 +69,21 @@ _up_spawn_child() {
   _up_log "spawned universal_pulse.py pid=$cp"
 }
 
+_write_heartbeat() {
+  local state="${1:-supervisor}" ok="${2:-0}" bad="${3:-0}"
+  mkdir -p "$(dirname "$_UP_HEARTBEAT")" 2>/dev/null
+  python3 - "$state" "$ok" "$bad" "$_UP_HEARTBEAT" <<'PY' 2>/dev/null || true
+import json, os, pathlib, sys, time
+state, ok, bad, out = sys.argv[1:]
+p = pathlib.Path(out)
+tmp = p.with_suffix(p.suffix + '.sv.tmp')
+tmp.write_text(json.dumps({'ts': int(time.time()), 'state': state, 'ok': int(ok), 'bad': int(bad)}))
+os.replace(tmp, p)
+PY
+}
+
 _up_heartbeat_age() {
-  [ -f "$_UP_HEARTBEAT" ] || { echo 999999; return; }
+  [ -f "$_UP_HEARTBEAT" ] || { echo 0; return; }
   local mt now
   mt=$(stat -c %Y "$_UP_HEARTBEAT" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   now=$(date +%s)
