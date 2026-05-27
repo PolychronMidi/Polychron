@@ -1,12 +1,54 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10125
-  updated_ts: 1779904106.6022542
+  max_id: 10139
+  updated_ts: 1779905435.5004625
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
   opencode_todo_synced_ts: 1779892413.781
   entries:
+    10126:
+      source: native
+      ts: 1779905414.643
+    10127:
+      source: native
+      ts: 1779905414.643
+    10101:
+      source: opencode
+      ts: 1779507931.47
+    10111:
+      source: opencode
+      ts: 1779815256.226
+    10115:
+      source: opencode
+      ts: 1779839880.82
+    10116:
+      source: opencode
+      ts: 1779859522.856
+    10102:
+      source: opencode
+      ts: 1779507931.47
+    10103:
+      source: opencode
+      ts: 1779507931.47
+    10112:
+      source: opencode
+      ts: 1779815256.226
+    10113:
+      source: opencode
+      ts: 1779815256.226
+    10114:
+      source: opencode
+      ts: 1779815256.226
+    10117:
+      source: opencode
+      ts: 1779859522.856
+    10118:
+      source: opencode
+      ts: 1779859522.856
+    10119:
+      source: opencode
+      ts: 1779859522.856
     9584:
       source: hme_todo
       ts: 1779884154
@@ -52,15 +94,6 @@
     10100:
       source: opencode
       ts: 1779507931.47
-    10101:
-      source: opencode
-      ts: 1779507931.47
-    10102:
-      source: opencode
-      ts: 1779507931.47
-    10103:
-      source: opencode
-      ts: 1779507931.47
     10104:
       source: opencode
       ts: 1779551966.636
@@ -82,33 +115,6 @@
     10110:
       source: opencode
       ts: 1779814216.029
-    10111:
-      source: opencode
-      ts: 1779815256.226
-    10112:
-      source: opencode
-      ts: 1779815256.226
-    10113:
-      source: opencode
-      ts: 1779815256.226
-    10114:
-      source: opencode
-      ts: 1779815256.226
-    10115:
-      source: opencode
-      ts: 1779839880.82
-    10116:
-      source: opencode
-      ts: 1779859522.856
-    10117:
-      source: opencode
-      ts: 1779859522.856
-    10118:
-      source: opencode
-      ts: 1779859522.856
-    10119:
-      source: opencode
-      ts: 1779859522.856
     10120:
       source: opencode
       ts: 1779887165.794
@@ -137,6 +143,7 @@
 - [ ] [E3] Inspect opencode and oh-my-openagent related files  #10111
 - [ ] [E3] Implement general failed-tool retry guard at tool-call layer with tests  #10115
 - [ ] [E3] Survey repository structure, commands, and current status without reading secrets  #10116
+- [ ] [E3] Test todo item one  #10126
 
 ## Next
 
@@ -148,6 +155,7 @@
 - [ ] [E3] Identify highest-impact defects or coherence issues to fix now  #10117
 - [ ] [E3] Implement targeted project-wide fixes  #10118
 - [ ] [E3] Run relevant verification and report evidence  #10119
+- [ ] [E3] Test todo item two  #10127
 
 ## Done
 
