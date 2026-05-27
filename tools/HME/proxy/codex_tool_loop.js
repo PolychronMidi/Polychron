@@ -218,10 +218,25 @@ function toolOutputIsError(output) {
   return /^\[tool-error\]\n/.test(String(output.output || ''));
 }
 
-function followupBody(previousBody, responseBody, toolOutputs, events = []) {
+function _asInputItems(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null || value === '') return [];
+  return [value];
+}
+
+function followupBody(previousBody, responseBody, toolOutputs, events = [], opts = {}) {
   const id = responseId(responseBody, events);
-  const body = { ...previousBody, input: codexToolOutputs(toolOutputs) };
-  if (id) body.previous_response_id = id;
+  const outputs = codexToolOutputs(toolOutputs);
+  const body = { ...previousBody };
+  if (opts.omitPreviousResponseId) {
+    delete body.previous_response_id;
+    const priorInput = _asInputItems(previousBody && previousBody.input);
+    const assistantOutput = _asInputItems(responseBody && responseBody.output);
+    body.input = [...priorInput, ...assistantOutput, ...outputs];
+  } else {
+    body.input = outputs;
+    if (id) body.previous_response_id = id;
+  }
   return body;
 }
 
