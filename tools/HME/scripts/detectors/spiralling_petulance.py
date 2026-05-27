@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import event_content, is_assistant, is_user, iter_tool_results, iter_tool_uses, load_turn_events  # noqa: E402
+from _transcript import _parse_all, event_content, is_assistant, is_user, iter_tool_results, iter_tool_uses, load_turn_events  # noqa: E402
 
 DECLARED_VERDICTS = {"ok", "spiralling_petulance", "flabbergasted_by_autocommit"}
 
@@ -20,7 +20,7 @@ _NOOP_BASH = re.compile(
 )
 _HOOK_DIRECTIVE = re.compile(r"(<hook_prompt|stop hook feedback|antipattern:|scope-stacked antipattern|auto-completeness)", re.I)
 _NOOP_TEXT = re.compile(r"^\s*(?:\.|ok(?:ay)?|done|fixed|nothing remains|all set)?\s*$", re.I)
-_READ_FAILURE = re.compile(r"(enoent|no such file|read failed|not found)", re.I)
+_READ_FAILURE = re.compile(r"(enoent|no such file|read failed|not found|blocked|verify-landed)", re.I)
 _GIT_INSPECT = re.compile(r"(codex_structured_tool\.js\s+git|\bgit\s+(?:status|diff|log|show)\b)", re.I | re.S)
 _CLEAN_GIT_TEXT = re.compile(r"(\[SUCCESS\]|\(no stdout\)|nothing to commit|working tree clean|no changes|\bclean\b)", re.I)
 _STATUS_OR_DIFF = re.compile(r"(\bgit\s+(?:status|diff)\b|[\"\'](?:status|diff)[\"\'])", re.I | re.S)
@@ -137,20 +137,7 @@ def _text(event: dict) -> str:
 
 
 def _events(path: str) -> list[dict]:
-    try:
-        lines = Path(path).read_text(encoding="utf-8", errors="ignore").splitlines()
-    except OSError:
-        return []
-    out: list[dict] = []
-    import json
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            out.append(json.loads(line))
-        except Exception:
-            continue
-    return out
+    return _parse_all(path)
 
 
 def _hook_noop_pairs(path: str) -> int:
@@ -396,8 +383,6 @@ def _clean_autocommit_result(cmd: str, text: str) -> bool:
 
 
 def _flabbergasted_by_autocommit(path: str) -> bool:
-    if os.environ.get("HME_STRICT_MODE") != "1":
-        return False
     git_cmds: dict[str, str] = {}
     inspect_count = 0
     clean_results = 0
@@ -467,7 +452,8 @@ def main() -> int:
         return 0
     path = sys.argv[1]
     noop_bash, failed_reads = _current_turn_noop_tools(path)
-    if _flabbergasted_by_autocommit(path):
+    strict = os.environ.get("HME_STRICT_MODE") == "1"
+    if strict and _flabbergasted_by_autocommit(path):
         print("flabbergasted_by_autocommit")
     elif _repeated_command_seen(path) or _hook_noop_pairs(path) >= 2 or noop_bash >= 2 or failed_reads >= 2:
         print("spiralling_petulance")

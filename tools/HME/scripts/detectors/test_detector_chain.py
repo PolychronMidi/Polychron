@@ -832,7 +832,8 @@ _CASES = [
          *_tool_use_result_pair("git_status_2", "node tools/HME/scripts/codex_structured_tool.js git --json <<'JSON'\n{\"args\":[\"status\",\"--short\"]}\nJSON", "[SUCCESS]"),
          *_tool_use_result_pair("git_log_1", "git log -3 --oneline -- tools/HME/foo.py", "abc123 autocommit"),
      ],
-     "flabbergasted_by_autocommit"),
+     "flabbergasted_by_autocommit",
+     {"HME_STRICT_MODE": "1"}),
 
     ("spiralling_petulance", "two-clean-git-inspections-pass",
      [
