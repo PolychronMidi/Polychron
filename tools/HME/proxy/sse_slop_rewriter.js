@@ -180,6 +180,10 @@ const _ABBREVIATION_MAP = Object.freeze({
   'enormous': 'big',
   'diagnosis': 'diag',
   'diagnose': 'diag',
+  'diagnostic': 'diag',
+  'diagnostics': 'diags',
+  'next': 'nxt',
+  'active': 'actv',
   'diagnosing': 'diagn',
   'diagnosed': 'diagd',
   'request': 'req',
@@ -294,6 +298,9 @@ function _abbreviateMatch(_match, word, punct = '') {
 }
 
 const _SUFFIX_EXCEPTIONS = new Set([
+  'spring',
+  'thing',
+  'bring',
   'fission',
   'mission',
   'passion',
@@ -426,11 +433,9 @@ const _SLOP_PATTERNS = [
     re: _ABBREVIATION_RE,
     repl: _abbreviateMatch },
 
-  // Caveman -ing suffix pass. Only words greater than 6 letters are changed.
-  // Prefix must be at least 4 letters, because 4 + "ing" = 7.
-  // Examples: running -> runnin, walking -> walkin, testing -> testin.
-  // Non-examples: thing, string, spring, during.
-  _suffixRule('caveman_ing_suffix', 'ing', 4, 'in'),
+  // Caveman -ing suffix pass. Only words greater than 5 letters are changed.
+  // Prefix must be at least 3 letters, because 3 + "ing" = 6.
+  _suffixRule('caveman_ing_suffix', 'ing', 3, 'n'),
 
   // Caveman compression: delete low-signal glue words/first-person filler.
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
