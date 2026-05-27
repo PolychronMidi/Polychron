@@ -1,18 +1,18 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10184
-  updated_ts: 1779907327.1397192
+  max_id: 10186
+  updated_ts: 1779907960.3548374
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
   opencode_todo_synced_ts: 1779819395.42706
   entries:
-    10179:
+    10185:
       source: native
-      ts: 1779907059.703
-    10180:
+      ts: 1779907960.355
+    10186:
       source: native
-      ts: 1779907059.703
+      ts: 1779907960.355
     10115:
       source: opencode
       ts: 1779839880.82
@@ -69,14 +69,14 @@
 
 - [ ] [E3] Implement general failed-tool retry guard at tool-call layer with tests  #10115
 - [ ] [E3] Survey repository structure, commands, and current status without reading secrets  #10116
-- [ ] [E3] Create first test todo  #10179
+- [ ] [E3] smoke read  #10185
 
 ## Next
 
 - [ ] [E3] Identify highest-impact defects or coherence issues to fix now  #10117
 - [ ] [E3] Implement targeted project-wide fixes  #10118
 - [ ] [E3] Run relevant verification and report evidence  #10119
-- [ ] [E3] Create second test todo  #10180
+- [ ] [E3] smoke write-edit  #10186
 
 ## Done
 
