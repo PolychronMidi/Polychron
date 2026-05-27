@@ -284,7 +284,7 @@ def run_smoke(host: str, timeout: int = 180, no_proxy_check: bool = False) -> di
             "artifact_path": str(artifact),
         }
 
-    prompt = smoke_prompt(artifact)
+    prompt = smoke_prompt(read_fixture, artifact)
     argv = cli_argv(host, prompt)
     schema_err_before = _count_log_lines(ERROR_LOG, ("SchemaError", "Todos failed"))
     start_ms = int(time.time() * 1000)
