@@ -45,7 +45,7 @@ function _recordFailure(root, caller, reason) {
   } catch (_) { /* best-effort */ }
   // Channel C: stderr -- ends up in hme-proxy.out.
   try {
-    process.stderr.write(`[autocommit:proxy FAIL ${ts}] [${caller}] ${reason}\n`);
+    process.stderr.write(`[autocommit:proxy FAIL ${ts}] ${body}\n`);
   } catch (_) { /* best-effort */ }
   // Channel D: activity bridge. Detached spawn so the request handler
   // isn't blocked by the Python startup cost.
