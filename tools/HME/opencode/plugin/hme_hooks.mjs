@@ -27,7 +27,14 @@ function appendHmeError(root, tag, message, meta = {}) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const clean = String(message || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
     const metaText = Object.keys(meta).length ? ` ${JSON.stringify(meta).slice(0, 1000)}` : '';
-    fs.appendFileSync(file, `[${tag}] ERROR ${clean}${metaText}\n`);
+    const line = `[${tag}] ERROR ${clean}${metaText}`;
+    try {
+      const prior = fs.readFileSync(file, 'utf8');
+      if (prior.split(/\r?\n/).includes(line)) return;
+    } catch (_readErr) {
+      // Missing/unreadable logs are fine; append below creates the sink.
+    }
+    fs.appendFileSync(file, `${line}\n`);
   } catch (_err) {
     // Error routing must never create a secondary OpenCode failure.
   }
