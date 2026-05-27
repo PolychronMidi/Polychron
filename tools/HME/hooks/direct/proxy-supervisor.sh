@@ -55,6 +55,8 @@ _SV_ERROR_LOG="$_SV_ROOT/log/hme-errors.log"
 _SV_PROXY_SCRIPT="$_SV_ROOT/tools/HME/proxy/hme_proxy.js"
 _SV_RELOAD_MARKER="$_SV_ROOT/tools/HME/runtime/post-commit-proxy-reload-needed"
 _SV_RUNTIME_FILE="$_SV_ROOT/tools/HME/runtime/proxy-runtime.json"
+_SV_SLOT_HEALTH_A="$_SV_ROOT/tools/HME/runtime/proxy-a.health"
+_SV_SLOT_HEALTH_B="$_SV_ROOT/tools/HME/runtime/proxy-b.health"
 _SV_POLL_INTERVAL=10
 _SV_MISS_THRESHOLD=3
 _SV_RELOAD_DEBOUNCE_SECS=300
@@ -160,11 +162,25 @@ _sv_proxy_healthy() {
   [ -z "$(_sv_proxy_health_issue)" ]
 }
 
+_sv_live_git_sha() {
+  local sha
+  sha=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_SLOT_HEALTH_A" 2>/dev/null || true)
+  [ -n "$sha" ] && { printf '%s' "$sha"; return; }
+  sha=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_SLOT_HEALTH_B" 2>/dev/null || true)
+  [ -n "$sha" ] && { printf '%s' "$sha"; return; }
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true
+}
+
 _sv_reload_marker_pending() {
   [ -f "$_SV_RELOAD_MARKER" ] || return 1
   local wanted live marker_age now marker_mtime
   wanted=$(cat "$_SV_RELOAD_MARKER" 2>/dev/null | head -1)
-  live=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true)
+  live=$(_sv_live_git_sha)
+  if [ -n "$wanted" ] && [ -n "$live" ] && { [ "$wanted" = "$live" ] || [ "${wanted:0:9}" = "${live:0:9}" ]; }; then
+    rm -f "$_SV_RELOAD_MARKER" 2>/dev/null
+    _sv_log "reload marker satisfied wanted=[$wanted] live=[$live]; cleared"
+    return 1
+  fi
   marker_mtime=$(stat -c %Y "$_SV_RELOAD_MARKER" 2>/dev/null || echo 0)
   now=$(date +%s 2>/dev/null || echo 0)
   marker_age=$((now - marker_mtime))
