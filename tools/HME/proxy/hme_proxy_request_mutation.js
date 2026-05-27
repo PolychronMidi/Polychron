@@ -232,7 +232,8 @@ async function mutateClaudeRequest({
 
     if (isAnthropic) {
       const scan = scanMessages(payload);
-      if (lifecycleInactive('UserPromptSubmit')) {
+      const directSmoke = clientReq && clientReq.headers && clientReq.headers['x-hme-smoke-direct'] === '1';
+      if (!directSmoke && lifecycleInactive('UserPromptSubmit')) {
         const promptText = _lastUserPromptText(payload);
         if (promptText) runInlineFallback('UserPromptSubmit', JSON.stringify({ user_prompt: promptText, session_id: session }));
       }
