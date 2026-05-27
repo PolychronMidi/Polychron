@@ -453,8 +453,10 @@ async function dispatchEvent(eventName, stdinJson) {
       return omo.applied && omo.result ? omo.result : result;
     }
     case 'PreCompact':
+      if (!isStrictMode()) return { stdout: '', stderr: ' ', exit_code: 0 };
       return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty, 30_000, 'PreCompact');
     case 'PostCompact':
+      if (!isStrictMode()) return { stdout: '', stderr: ' ', exit_code: 0 };
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
     case 'PreToolUse': {
       const omo = await applyOmoLive('PreToolUse', empty);
