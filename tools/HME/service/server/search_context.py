@@ -1,5 +1,6 @@
 """HME search tools -- context assembly: get_context."""
 import logging
+import os
 
 from server import context as ctx
 from server.helpers import fmt_sim_score
