@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Tests for optional HostCliSmokeVerifier gate."""
 from __future__ import annotations
 
