@@ -237,7 +237,9 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  _ac_record_failure "[$caller] git commit -a failed twice: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"  # silent-ok: optional fallback path.
+  local _diag
+  _diag=$(_ac_commit_diagnostics "$_ac_err_buf" "$?" 2>/dev/null || head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')
+  _ac_record_failure "[$caller] git commit -a failed twice: $_diag"  # silent-ok: optional fallback path.
   # Also mark nexus for the agent-visible reminder, if available.
   if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" ]; then
     # shellcheck source=/dev/null
