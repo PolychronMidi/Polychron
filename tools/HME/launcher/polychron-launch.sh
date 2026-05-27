@@ -63,6 +63,10 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
+_http_status() {
+  curl -sS -o /dev/null -w '%{http_code}' --max-time 1 "$1" 2>/dev/null || printf '000'
+}
+
 # 0. OmniRoute (OVERDRIVE_MODE=1 translator)
 _OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: optional fallback path.
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
