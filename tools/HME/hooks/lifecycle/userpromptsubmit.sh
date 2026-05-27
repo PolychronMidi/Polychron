@@ -7,11 +7,13 @@ _HME_PROJECT_TMP="${PROJECT_ROOT}/t""mp"
 _HME_DEFAULT_OS_TMP="/t""mp"
 _HME_OS_TMP="${TMPDIR:-$_HME_DEFAULT_OS_TMP}"
 
-_WATCHDOG_ALERT=$(printf '%s' "$INPUT" \
-  | PROJECT_ROOT="$PROJECT_ROOT" node "$PROJECT_ROOT/tools/HME/event_kernel/hook_watchdog.js" userprompt-alert 2>/dev/null || true)
-if [ -n "$_WATCHDOG_ALERT" ]; then
-  echo "LIFESAVER -- lifecycle watchdog detected a SessionStart failure." >&2
-  printf '%s\n' "$_WATCHDOG_ALERT" >&2
+if [ "${HME_CLI_SMOKE:-}" != "1" ]; then
+  _WATCHDOG_ALERT=$(printf '%s' "$INPUT" \
+    | PROJECT_ROOT="$PROJECT_ROOT" node "$PROJECT_ROOT/tools/HME/event_kernel/hook_watchdog.js" userprompt-alert 2>/dev/null || true)
+  if [ -n "$_WATCHDOG_ALERT" ]; then
+    echo "LIFESAVER -- lifecycle watchdog detected a SessionStart failure." >&2
+    printf '%s\n' "$_WATCHDOG_ALERT" >&2
+  fi
 fi
 
 # Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
