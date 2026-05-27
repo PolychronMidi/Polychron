@@ -189,11 +189,13 @@ function _attemptCommit(root, caller) {
       "':(exclude)*.bin' ':(exclude)*.so' ':(exclude)*.dll' ':(exclude)*.dylib' " +
       "| xargs -0 -r git add --",
     `index_tree=$(git write-tree 2>/dev/null || true); ` +
-      `if [ "$index_tree" = 4b825dc642cb6eb9a060e54bf8d69288fbee4904 ]; then ` +
+      `if [ -z "$index_tree" ] || [ "$index_tree" = 4b825dc642cb6eb9a060e54bf8d69288fbee4904 ]; then ` +
       `echo "autocommit refused empty index tree (would nuke HEAD)" >&2; exit 99; fi`,
+    `head_tree=$(git rev-parse HEAD^{tree} 2>/dev/null || true); ` +
+      `no_verify=; [ "$head_tree" = 4b825dc642cb6eb9a060e54bf8d69288fbee4904 ] && no_verify=--no-verify`,
     `if ! git diff --cached --quiet; then ` +
-      `git commit -m ${JSON.stringify(tstamp)} --quiet || ` +
-      `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet; ` +
+      `git commit -m ${JSON.stringify(tstamp)} --quiet $no_verify || ` +
+      `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet $no_verify; ` +
     `fi`,
   ].join(' && ');
   const r = spawnSync('flock', ['-w', '30', lockPath,
