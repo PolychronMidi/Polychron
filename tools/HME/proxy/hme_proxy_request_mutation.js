@@ -75,7 +75,7 @@ function compactLargeInteractiveAnthropicPayload(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const threshold = _anthropicTransportMaxBytes(payload);
   if (!threshold) return 0;
-  const bytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+  const bytes = serializedBytes(payload);
   if (bytes <= threshold) return 0;
   return compactAnthropicPayload(payload, {
     route: 'interactive',
