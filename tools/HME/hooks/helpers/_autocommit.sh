@@ -149,11 +149,20 @@ _ac_do_commit() {
   local _empty_tree _index_tree
   _empty_tree="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
   _index_tree=$(git -C "$_AC_ROOT" write-tree 2>/dev/null || echo "")
-  if [ "$_index_tree" = "$_empty_tree" ]; then
+  if [ -z "$_index_tree" ] || [ "$_index_tree" = "$_empty_tree" ]; then
     _ac_record_failure "[$caller] autocommit refused empty index tree (would nuke HEAD)"
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
     return 1
+  fi
+
+  # Detect empty-tree HEAD: use --no-verify so the recovery commit can bypass
+  # the precommit check that would otherwise deadlock (HEAD empty → precommit
+  local _commit_flags=""
+  local _head_tree
+  _head_tree=$(git -C "$_AC_ROOT" rev-parse "HEAD^{tree}" 2>/dev/null || echo "")
+  if [ "$_head_tree" = "$_empty_tree" ]; then
+    _commit_flags="--no-verify"
   fi
 
   # Refuse to commit if any staged file has unresolved git conflict markers.
@@ -167,7 +176,8 @@ _ac_do_commit() {
   # git commit with single retry for transient lock contention.
   local commit_msg
   commit_msg="$(date +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo autocommit)"  # silent-ok: optional fallback path.
-  if git -C "$_AC_ROOT" commit -a -m "$commit_msg" --quiet >"$_ac_err_buf" 2>&1; then
+  # shellcheck disable=SC2086
+  if git -C "$_AC_ROOT" commit -a -m "$commit_msg" --quiet $_commit_flags >"$_ac_err_buf" 2>&1; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
