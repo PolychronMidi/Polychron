@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""CLI smoke test framework for HME's three hosts (claude, codex, opencode).
+"""Self-contained CLI smoke tests for HME hosts: claude, codex, opencode.
 
-Drives each host's non-interactive CLI with a prompt that exercises the
-TodoWrite + Read + Write + Edit tool surface, then measures:
+This is a real end-to-end smoke harness, not a convenience wrapper. It:
+  - discovers each host CLI, including known opencode install locations
+  - preflights HME proxy health for hosts configured to use the HME provider
+  - uses bypass/auto-approve flags so no manual permission prompt can hang it
+  - writes to a unique runtime artifact path and validates Write+Edit worked
+  - captures host-specific loop signals (opencode todowrite count/schema errors)
+  - emits actionable failure reasons and tails of stdout/stderr
 
-  - did the host complete without hitting a timeout
-  - did any todowrite call produce a schema error (loop signal)
-  - how many tool calls were issued (excessive count = looping)
-  - did the smoke artifact end up with the expected content (Edit success)
-
-Usage:
-    python3 tools/HME/scripts/smoke_host_cli.py --host claude
-    python3 tools/HME/scripts/smoke_host_cli.py --host codex
-    python3 tools/HME/scripts/smoke_host_cli.py --host opencode
-    python3 tools/HME/scripts/smoke_host_cli.py --all
+Examples:
+  python3 tools/HME/scripts/smoke_host_cli.py --host opencode --timeout 180
+  python3 tools/HME/scripts/smoke_host_cli.py --all --json
 """
 from __future__ import annotations
 
@@ -24,38 +22,156 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
+from typing import Any
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 SMOKE_DIR = PROJECT_ROOT / "tools" / "HME" / "runtime" / "smoke"
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
-RELAY_LOG = PROJECT_ROOT / "tools" / "HME" / "runtime" / "opencode-plugin-relay.jsonl"
+OPENCODE_DB = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+OPENCODE_CONFIG = Path.home() / ".config" / "opencode" / "opencode.jsonc"
+
+HOSTS = ("claude", "codex", "opencode")
+
+
+def _strip_jsonc(text: str) -> str:
+    out: list[str] = []
+    in_string = False
+    escape = False
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        nxt = text[i + 1] if i + 1 < len(text) else ""
+        if in_string:
+            out.append(ch)
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if ch == '"':
+            in_string = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == "/" and nxt == "/":
+            while i < len(text) and text[i] not in "\r\n":
+                i += 1
+            continue
+        if ch == "/" and nxt == "*":
+            i += 2
+            while i + 1 < len(text) and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _which_host(host: str) -> str | None:
+    found = shutil.which(host)
+    if found:
+        return found
+    if host == "opencode":
+        candidates = [
+            Path.home() / ".npm" / "_npx" / "e2094862b59aac7b" / "node_modules" / "opencode-linux-x64" / "bin" / "opencode",
+            PROJECT_ROOT / "tools" / "opencode" / "packages" / "opencode" / "bin" / "opencode",
+        ]
+        for c in candidates:
+            if c.is_file() and os.access(c, os.X_OK):
+                return str(c)
+    return None
+
+
+def _service_port(name: str = "proxy") -> int:
+    js = "const {servicePort}=require('./tools/HME/proxy/service_registry'); process.stdout.write(String(servicePort(process.argv[1])));"
+    try:
+        out = subprocess.check_output(["node", "-e", js, name], cwd=PROJECT_ROOT, text=True, timeout=5)
+        return int(out.strip())
+    except Exception:
+        return 9099
+
+
+def _http_ok(url: str, timeout: float = 1.5) -> bool:
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            return 200 <= int(resp.status) < 500
+    except Exception:
+        return False
+
+
+def _opencode_uses_hme_provider() -> bool:
+    if not OPENCODE_CONFIG.is_file():
+        return False
+    try:
+        doc = json.loads(_strip_jsonc(OPENCODE_CONFIG.read_text(encoding="utf-8")))
+    except Exception:
+        return False
+    model = str(doc.get("model") or "")
+    return model.startswith("hme/") or "127.0.0.1:9099" in json.dumps(doc)
+
+
+def preflight(host: str, no_proxy_check: bool = False) -> list[str]:
+    issues: list[str] = []
+    if not _which_host(host):
+        issues.append(f"{host} CLI not found on PATH or known install locations")
+    if not no_proxy_check:
+        needs_hme_proxy = host in ("codex", "opencode")
+        if host == "opencode":
+            needs_hme_proxy = _opencode_uses_hme_provider()
+        if needs_hme_proxy:
+            port = _service_port("proxy")
+            if not _http_ok(f"http://127.0.0.1:{port}/health"):
+                issues.append(f"HME proxy health check failed on port {port}; start proxy before CLI smoke")
+    return issues
 
 
 def smoke_prompt(artifact_path: Path) -> str:
     rel = artifact_path.relative_to(PROJECT_ROOT)
-    return (
-        f"Smoke test the tool surface in this exact order, then summarize. "
-        f"Use the TodoWrite tool to record progress. "
-        f"(1) Create two todos: 'smoke read' and 'smoke write-edit'. "
-        f"(2) Use the Read tool to read README.md and quote its first line. "
-        f"(3) Mark 'smoke read' completed. "
-        f"(4) Use the Write tool to create {rel} with the single line "
-        f"'smoke test passed'. "
-        f"(5) Use the Edit tool to replace 'passed' with 'verified' in "
-        f"that same file. "
-        f"(6) Mark 'smoke write-edit' completed. "
-        f"Do not exceed two todowrite calls per todo state transition."
-    )
+    return "\n".join([
+        "You are running an automated HME CLI smoke test. Complete exactly these steps and then stop.",
+        "Use the todo tool to track progress; keep the list small and update statuses normally.",
+        "1. Create two todos: 'smoke read' and 'smoke write edit'.",
+        "2. Read README.md and remember its first line.",
+        "3. Mark 'smoke read' completed.",
+        f"4. Write the file {rel} with exactly this one line: smoke test passed",
+        f"5. Edit {rel}, replacing 'passed' with 'verified'.",
+        "6. Mark 'smoke write edit' completed.",
+        "7. Reply with one concise sentence containing the README first line and the artifact path.",
+        "Do not loop. Do not repeat completed todo updates.",
+    ])
 
 
 def cli_argv(host: str, prompt: str) -> list[str]:
+    exe = _which_host(host) or host
     if host == "claude":
-        return ["claude", "-p", prompt, "--allow-dangerously-skip-permissions"]
+        return [
+            exe, "-p", prompt,
+            "--permission-mode", "bypassPermissions",
+            "--allowedTools", "Read,Write,Edit,TodoWrite",
+            "--output-format", "text",
+        ]
     if host == "codex":
-        return ["codex", "exec", prompt]
+        return [
+            exe, "exec",
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--dangerously-bypass-hook-trust",
+            "--sandbox", "danger-full-access",
+            "--cd", str(PROJECT_ROOT),
+            prompt,
+        ]
     if host == "opencode":
-        return ["opencode", "run", prompt]
+        return [
+            exe, "run",
+            "--dangerously-skip-permissions",
+            "--format", "json",
+            prompt,
+        ]
     raise ValueError(f"unknown host {host!r}")
 
 
@@ -70,12 +186,11 @@ def _count_log_lines(path: Path, needles: tuple[str, ...]) -> int:
 
 
 def _opencode_todowrite_count(session_started_ms: int) -> int:
-    db = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
-    if not db.is_file():
+    if not OPENCODE_DB.is_file():
         return 0
     try:
         import sqlite3
-        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        conn = sqlite3.connect(f"file:{OPENCODE_DB}?mode=ro", uri=True)
         cur = conn.execute(
             "SELECT COUNT(*) FROM part WHERE time_created > ? "
             "AND json_extract(data, '$.type') = 'tool' "
@@ -89,17 +204,57 @@ def _opencode_todowrite_count(session_started_ms: int) -> int:
         return 0
 
 
-def run_smoke(host: str, timeout: int = 120) -> dict:
+def _opencode_tool_counts(session_started_ms: int) -> dict[str, int]:
+    if not OPENCODE_DB.is_file():
+        return {}
+    try:
+        import sqlite3
+        conn = sqlite3.connect(f"file:{OPENCODE_DB}?mode=ro", uri=True)
+        cur = conn.execute(
+            "SELECT json_extract(data, '$.tool') AS tool, COUNT(*) FROM part "
+            "WHERE time_created > ? AND json_extract(data, '$.type') = 'tool' "
+            "GROUP BY tool ORDER BY COUNT(*) DESC",
+            (session_started_ms,),
+        )
+        out = {str(k): int(v) for k, v in cur.fetchall() if k}
+        conn.close()
+        return out
+    except Exception:
+        return {}
+
+
+def _classify_stderr(stderr: str) -> list[str]:
+    hints: list[str] = []
+    s = stderr or ""
+    if "SchemaError" in s or "Todos failed" in s:
+        hints.append("todowrite schema rejection")
+    if "permission" in s.lower() and ("denied" in s.lower() or "approval" in s.lower()):
+        hints.append("permission prompt/denial")
+    if "ECONNREFUSED" in s or "connection refused" in s.lower():
+        hints.append("provider/proxy connection refused")
+    if "rate limit" in s.lower():
+        hints.append("provider rate limit")
+    return hints
+
+
+def run_smoke(host: str, timeout: int = 180, no_proxy_check: bool = False) -> dict[str, Any]:
     SMOKE_DIR.mkdir(parents=True, exist_ok=True)
     artifact = SMOKE_DIR / f"{host}-{int(time.time())}.txt"
-    if artifact.exists():
-        artifact.unlink()
+    artifact.unlink(missing_ok=True)
+
+    preflight_issues = preflight(host, no_proxy_check=no_proxy_check)
+    if preflight_issues:
+        return {
+            "host": host,
+            "ok": False,
+            "skipped": True,
+            "preflight_failed": True,
+            "failures": preflight_issues,
+            "artifact_path": str(artifact),
+        }
+
     prompt = smoke_prompt(artifact)
     argv = cli_argv(host, prompt)
-    if not shutil.which(argv[0]):
-        return {"host": host, "ok": False, "skipped": True,
-                "reason": f"{argv[0]} not on PATH"}
-
     schema_err_before = _count_log_lines(ERROR_LOG, ("SchemaError", "Todos failed"))
     start_ms = int(time.time() * 1000)
     start = time.perf_counter()
@@ -120,22 +275,26 @@ def run_smoke(host: str, timeout: int = 120) -> dict:
     artifact_text = artifact.read_text(encoding="utf-8") if artifact.is_file() else ""
     artifact_has_verified = "verified" in artifact_text
     artifact_has_passed = "passed" in artifact_text and "verified" not in artifact_text
-
-    todowrite_calls = _opencode_todowrite_count(start_ms) if host == "opencode" else None
+    opencode_tools = _opencode_tool_counts(start_ms) if host == "opencode" else {}
+    todowrite_calls = opencode_tools.get("todowrite") if host == "opencode" else None
 
     failures: list[str] = []
     if timed_out:
         failures.append(f"timed out after {timeout}s")
     if proc.returncode not in (0, None) and not timed_out:
         failures.append(f"exit code {proc.returncode}")
-    if (schema_err_after - schema_err_before) > 0:
-        failures.append(f"{schema_err_after - schema_err_before} new todowrite schema error(s)")
+    new_schema_errors = schema_err_after - schema_err_before
+    if new_schema_errors > 0:
+        failures.append(f"{new_schema_errors} new todowrite schema error(s)")
     if not artifact.is_file():
-        failures.append("Write/Edit artifact missing -- tool did not run")
+        failures.append("Write/Edit artifact missing: host did not complete tool sequence")
     elif artifact_has_passed:
         failures.append("Edit tool did not replace 'passed' with 'verified'")
+    elif not artifact_has_verified:
+        failures.append("artifact exists but does not contain expected 'verified' content")
     if todowrite_calls is not None and todowrite_calls > 8:
         failures.append(f"todowrite called {todowrite_calls} times (loop signal)")
+    failures.extend(_classify_stderr(str(proc.stderr or "")))
 
     return {
         "host": host,
@@ -143,38 +302,44 @@ def run_smoke(host: str, timeout: int = 120) -> dict:
         "elapsed_sec": round(elapsed, 1),
         "exit_code": proc.returncode,
         "timed_out": timed_out,
+        "argv": argv[:3] + (["..."] if len(argv) > 3 else []),
         "todowrite_calls": todowrite_calls,
-        "schema_errors_new": schema_err_after - schema_err_before,
+        "opencode_tool_counts": opencode_tools,
+        "schema_errors_new": new_schema_errors,
         "artifact_path": str(artifact),
         "artifact_present": artifact.is_file(),
         "artifact_verified": artifact_has_verified,
-        "stdout_tail": (proc.stdout or "")[-400:],
-        "stderr_tail": (proc.stderr or "")[-400:],
+        "stdout_tail": str(proc.stdout or "")[-1200:],
+        "stderr_tail": str(proc.stderr or "")[-1200:],
         "failures": failures,
     }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--host", choices=["claude", "codex", "opencode"])
+    ap.add_argument("--host", choices=HOSTS)
     ap.add_argument("--all", action="store_true")
-    ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--timeout", type=int, default=180)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--no-proxy-check", action="store_true")
     args = ap.parse_args()
 
-    hosts = ["claude", "codex", "opencode"] if args.all else [args.host]
+    hosts = list(HOSTS) if args.all else [args.host]
     if not hosts or hosts == [None]:
         ap.error("specify --host or --all")
-    results = [run_smoke(h, timeout=args.timeout) for h in hosts]
+    results = [run_smoke(h, timeout=args.timeout, no_proxy_check=args.no_proxy_check) for h in hosts]
 
     if args.json:
         print(json.dumps(results, indent=2))
-        return 0 if all(r.get("ok") or r.get("skipped") for r in results) else 1
+        return 0 if all(r.get("ok") for r in results) else 1
 
     overall_ok = True
     for r in results:
         if r.get("skipped"):
-            print(f"[SKIP] {r['host']}: {r['reason']}")
+            overall_ok = False
+            print(f"[FAIL] {r['host']:9s} preflight failed")
+            for f in r.get("failures", []):
+                print(f"       - {f}")
             continue
         tag = "PASS" if r["ok"] else "FAIL"
         if not r["ok"]:
@@ -186,10 +351,16 @@ def main() -> int:
             extras.append(f"schema_errs={r['schema_errors_new']}")
         if r.get("artifact_verified"):
             extras.append("artifact_verified=yes")
-        print(f"[{tag}] {r['host']:9s} elapsed={r['elapsed_sec']:>5.1f}s "
-              f"exit={r['exit_code']:>3} {' '.join(extras)}")
+        if r.get("opencode_tool_counts"):
+            extras.append(f"tools={r['opencode_tool_counts']}")
+        print(f"[{tag}] {r['host']:9s} elapsed={r['elapsed_sec']:>5.1f}s exit={r['exit_code']:>3} {' '.join(extras)}")
         for f in r.get("failures", []):
             print(f"       - {f}")
+        if not r["ok"]:
+            if r.get("stderr_tail"):
+                print("       stderr_tail:", r["stderr_tail"].replace("\n", "\\n")[-500:])
+            if r.get("stdout_tail"):
+                print("       stdout_tail:", r["stdout_tail"].replace("\n", "\\n")[-500:])
     return 0 if overall_ok else 1
 
 
