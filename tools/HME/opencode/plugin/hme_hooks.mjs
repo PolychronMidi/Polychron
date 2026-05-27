@@ -224,6 +224,7 @@ function hmeToolName(input) {
   const name = toolName(input);
   if (name === 'write') return 'Write';
   if (name === 'edit' || name === 'apply_patch') return 'Edit';
+  if (name === 'todowrite') return 'TodoWrite';
   return name;
 }
 
