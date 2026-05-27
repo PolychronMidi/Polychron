@@ -233,9 +233,6 @@ function createContextBudget() {
           + positiveNumber(usage.cache_read_input_tokens)
           + positiveNumber(usage.cache_creation_input_tokens)
         || positiveNumber(ctx.total_input_tokens);
-      // Claude Code's context_window_size is presentation telemetry, not the
-      // compaction budget. Prefer the registry max_input_tokens when known so
-      // injected rate-limit headers match the same denominator statusline uses.
       const rawSize = positiveNumber(ctx.context_window_size);
       const modelId = String((data && data.model && (data.model.id || data.model.api_model)) || '');
       const registrySize = modelId ? resolveModelCtx(modelId) : 0;
