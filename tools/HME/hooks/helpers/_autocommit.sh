@@ -95,7 +95,7 @@ _ac_success() {
   if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" ]; then
     python3 "$_AC_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py"       --project-root "$_AC_ROOT" --mode autocommit-success --reason shell-autocommit-success --quiet       >/dev/null 2>&1 || true
   fi
-  rm -f "$_AC_FAIL_FLAG" 2>/dev/null || true
+  rm -f "$_AC_FAIL_FLAG" "$_AC_STATE_DIR/autocommit.err" 2>/dev/null || true
   # Heartbeat for watchdog freshness check.
   date +%s > "$_AC_STATE_DIR/heartbeat-autocommit.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
 }
