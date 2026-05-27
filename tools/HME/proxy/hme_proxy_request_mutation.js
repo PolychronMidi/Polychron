@@ -47,9 +47,7 @@ function _modelOutputInfo(modelId) {
   return { maxOutput: 32768, maxInput: 0, context: 0 };
 }
 function _estimatedInputTokens(payload) {
-  const bytes = Buffer.byteLength(JSON.stringify(payload || {}), 'utf8');
-  const perTok = _positiveNumber(process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST) || 4;
-  return Math.ceil(bytes / perTok);
+  return semanticTokenEstimate(payload, process.env);
 }
 function _dynamicOutputCap(payload) {
   const info = _modelOutputInfo(payload && payload.model);
