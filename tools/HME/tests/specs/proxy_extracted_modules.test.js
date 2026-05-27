@@ -1044,6 +1044,32 @@ test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', as
 });
 
 
+test('request mutation direct smoke header bypasses lifecycle UserPromptSubmit fallback', async () => {
+  let called = 0;
+  const payload = { model: 'claude-sonnet-4-20250514', messages: [{ role: 'user', content: 'direct smoke' }] };
+  const before = JSON.stringify(payload);
+  const result = await mutateClaudeRequest({
+    payload,
+    outBody: Buffer.from(before, 'utf8'),
+    injected: false,
+    upstream: { provider: 'anthropic' },
+    clientReq: { url: '/v1/messages', headers: { 'x-hme-smoke-direct': '1' } },
+    isAnthropic: true,
+    isInteractivePath: true,
+    shrinkForPassthrough: () => 0,
+    stripHmePrefixOutgoing: () => false,
+    injectHmeTools: async () => 0,
+    sanitizePayload: () => {},
+    injectStopReminderSystem: () => false,
+    lifecycleInactive: (event) => event === 'UserPromptSubmit',
+    runInlineFallback: () => { called += 1; },
+    middleware: { runPipeline: async () => false },
+  });
+  assert.equal(called, 0);
+  assert.equal(result.outBody.toString('utf8'), before);
+});
+
+
 test('OmniRoute preflight does not let Claude statusline force target payload compaction', () => {
   const oldEnv = { ...process.env };
   const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
