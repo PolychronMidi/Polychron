@@ -243,7 +243,7 @@ fi
 # Pairs with the file_watcher (planned drain) and slot_lifecycle (heartbeat writer)
 _SLOT_WATCHDOG="$PROJECT_ROOT/tools/HME/proxy/shuffler/slot_watchdog.js"
 if [ "${HME_PROXY_SLOT_WATCHDOG:-1}" != "0" ] && [ -x "$_SLOT_WATCHDOG" ]; then
-  if pgrep -f "shuffler/slot_watchdog.js" >/dev/null 2>&1; then
+  if _node_script_running "$_SLOT_WATCHDOG"; then
     echo "[launch] slot_watchdog already running" >&2
   else
     echo "[launch] starting slot_watchdog (auto-respawn dead backends)..." >&2
