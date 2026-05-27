@@ -237,11 +237,8 @@ module.exports = {
 
     // Append to LAST USER MESSAGE (not payload.system) -- mutating
     // system invalidates the prompt-cache prefix every turn.
-    if (_appendToLastUser(payload, `\n\n[lifesaver inject from proxy]\n${banner}\n`)) {
-      assertRealLifesaverInjection(ctx.PROJECT_ROOT, 'error_log', banner, { count: unread.length });
-      ctx.markDirty();
+    if (_appendRateLimited(payload, ctx, 'error_log', banner, { count: unread.length })) {
+      ctx.emit({ event: 'lifesaver_injected', source: 'error_log', count: unread.length });
     }
-
-    ctx.emit({ event: 'lifesaver_injected', source: 'error_log', count: unread.length });
   },
 };
