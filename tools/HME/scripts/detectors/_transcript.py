@@ -34,6 +34,7 @@ _PARSE_CACHE: dict[str, list[dict]] = {}
 # concurrent-writer scenarios via prefix-fingerprint verification.
 _DISK_CACHE_DIR_ENV = "HME_TRANSCRIPT_CACHE_DIR"
 _DISK_CACHE_SAMPLE_BYTES = 512
+_DISK_CACHE_MAX_BYTES = int(os.environ.get("HME_TRANSCRIPT_CACHE_MAX_BYTES") or 10 * 1024 * 1024)
 
 
 def _disk_cache_dir() -> Path:
@@ -136,6 +137,12 @@ def _read_with_disk_cache(transcript_path: str) -> list[dict]:
         return []
     if st.st_size == 0:
         return []
+    if st.st_size > _DISK_CACHE_MAX_BYTES:
+        try:
+            with open(transcript_path, "rb") as fd:
+                return _parse_jsonl_bytes(fd.read(st.st_size))
+        except OSError:
+            return []
     cache_path = _disk_cache_path(transcript_path)
     cached = _load_disk_cache(cache_path)
     try:

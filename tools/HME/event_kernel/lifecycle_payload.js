@@ -104,6 +104,17 @@ function _findCodexRollout(sessionsRoot, sessionId) {
   return '';
 }
 
+function _translateCodexRollout(root, sessionId, rolloutPath) {
+  const dumper = path.join(root, 'tools', 'HME', 'scripts', 'codex_dump_transcript.py');
+  if (!fs.existsSync(dumper)) return '';
+  const outPath = path.join(root, 'tools', 'HME', 'runtime', 'codex-transcripts', `${sessionId}.jsonl`);
+  const { spawnSync } = require('child_process');
+  const proc = spawnSync('python3', [dumper, rolloutPath, outPath], { timeout: 10000, encoding: 'utf8' });
+  if (proc.status !== 0) return '';
+  const resolved = (proc.stdout || '').trim();
+  return (resolved && fs.existsSync(resolved)) ? resolved : '';
+}
+
 function addCodexTranscript(payload, root, event) {
   if (event !== 'Stop') return payload;
   if (payload && payload.transcript_path && fs.existsSync(payload.transcript_path)) {
@@ -111,9 +122,12 @@ function addCodexTranscript(payload, root, event) {
     catch (err) { /* best-effort marker only */ }
     return payload;
   }
+  const sessionId = payload && payload.session_id;
   const sessionsRoot = _codexSessionsRoot();
-  const transcript = _findCodexRollout(sessionsRoot, payload && payload.session_id);
-  if (!transcript || !fs.existsSync(transcript)) return payload;
+  const rollout = _findCodexRollout(sessionsRoot, sessionId);
+  if (!rollout || !fs.existsSync(rollout)) return payload;
+  const translated = _translateCodexRollout(root, sessionId, rollout);
+  const transcript = translated || rollout;
   payload.transcript_path = transcript;
   try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${transcript}\n`); }
   catch (err) { /* best-effort marker only */ }

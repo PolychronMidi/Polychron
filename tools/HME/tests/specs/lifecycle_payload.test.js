@@ -148,6 +148,35 @@ test('addCodexTranscript respects payload-provided transcript_path', () => {
   assert.equal(result.transcript_path, explicit);
 });
 
+test('addCodexTranscript runs translator when dumper is present', () => {
+  const { addCodexTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root, codexHome } = codexSandbox();
+  fs.mkdirSync(path.join(root, 'tools', 'HME', 'scripts'), { recursive: true });
+  const dumper = path.join(root, 'tools', 'HME', 'scripts', 'codex_dump_transcript.py');
+  fs.writeFileSync(dumper, [
+    '#!/usr/bin/env python3',
+    'import os, sys',
+    'src, out = sys.argv[1], sys.argv[2]',
+    'os.makedirs(os.path.dirname(out), exist_ok=True)',
+    'with open(out, "w") as f:',
+    '    f.write(\'{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"translated"}]}}\\n\')',
+    'print(out)',
+  ].join('\n'));
+  const sid = '019eaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+  const rollout = path.join(codexHome, 'sessions', '2026', '05', '27', `rollout-2026-05-27T15-00-00-${sid}.jsonl`);
+  writeJsonl(rollout, [{ timestamp: 't', type: 'session_meta', payload: {} }]);
+  const prior = process.env.CODEX_HOME;
+  try {
+    process.env.CODEX_HOME = codexHome;
+    const result = addCodexTranscript({ session_id: sid }, root, 'Stop');
+    const expected = path.join(root, 'tools', 'HME', 'runtime', 'codex-transcripts', `${sid}.jsonl`);
+    assert.equal(result.transcript_path, expected, 'translator output path must be used when dumper succeeds');
+    assert.ok(fs.existsSync(expected));
+  } finally {
+    if (prior === undefined) delete process.env.CODEX_HOME; else process.env.CODEX_HOME = prior;
+  }
+});
+
 function opencodeSandbox() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lifecycle-payload-opencode-'));
   fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });

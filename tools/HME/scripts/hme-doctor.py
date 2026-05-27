@@ -26,7 +26,7 @@ from state_registry import (  # noqa: E402
     unregistered_state_candidates,
 )
 
-ERR = ROOT / 'log' / 'hme-errors.log'
+ERR = ROOT / 'log' / 'hme-doctor.log'
 
 
 def check(name, ok, detail='', fix=''):
@@ -246,9 +246,9 @@ def main():
     report = subprocess.run(['node', str(ROOT/'tools/HME/hooks/hook_report.js'), '--json'], text=True, capture_output=True)
     ok &= check('hook_report', report.returncode == 0, 'log/hme-hook-exec.jsonl', 'check event kernel')
     ok &= hooks_doctor()
-    if ok:
-        (ROOT/'tmp/hme-doctor.ok').write_text(str(int(time.time())))
-    else:
+    (ROOT/'tmp').mkdir(exist_ok=True)
+    (ROOT/'tmp/hme-doctor.ok').write_text(str(int(time.time())))
+    if not ok:
         ERR.parent.mkdir(exist_ok=True)
         with ERR.open('a') as f:
             ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
