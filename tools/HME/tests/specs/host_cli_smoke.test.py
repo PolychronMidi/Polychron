@@ -57,6 +57,9 @@ class HostCliSmokeVerifierTests(unittest.TestCase):
 
         self.assertEqual(captured["input"], "")
         self.assertEqual(captured["env"]["HME_CLI_SMOKE"], "1")
+        prompt = " ".join(str(x) for x in captured["argv"])
+        self.assertIn("-read.txt", prompt)
+        self.assertNotIn("README.md", prompt)
         self.assertIn("Write/Edit artifact missing", " ".join(result["failures"]))
 
 
