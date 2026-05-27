@@ -94,3 +94,56 @@ test('normalizeLifecyclePayload leaves _hme_subagent unset without HME_SUBAGENT'
     if (prior !== undefined) process.env.HME_SUBAGENT = prior;
   }
 });
+
+function codexSandbox() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lifecycle-payload-codex-'));
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-home-'));
+  fs.mkdirSync(path.join(codexHome, 'sessions', '2026', '05', '27'), { recursive: true });
+  return { root, codexHome };
+}
+
+test('addCodexTranscript resolves rollout by session_id under CODEX_HOME', () => {
+  const { addCodexTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root, codexHome } = codexSandbox();
+  const sid = '019e5ac8-7e92-7020-b62c-8f6af3aced1f';
+  const rollout = path.join(codexHome, 'sessions', '2026', '05', '27', `rollout-2026-05-27T15-00-00-${sid}.jsonl`);
+  writeJsonl(rollout, [{ timestamp: 't', type: 'session_meta', payload: {} }]);
+  const prior = process.env.CODEX_HOME;
+  try {
+    process.env.CODEX_HOME = codexHome;
+    const result = addCodexTranscript({ session_id: sid }, root, 'Stop');
+    assert.equal(result.transcript_path, rollout);
+  } finally {
+    if (prior === undefined) delete process.env.CODEX_HOME; else process.env.CODEX_HOME = prior;
+  }
+});
+
+test('addCodexTranscript leaves payload alone for non-Stop events', () => {
+  const { addCodexTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root } = codexSandbox();
+  const result = addCodexTranscript({ session_id: 'abc' }, root, 'PreToolUse');
+  assert.equal(result.transcript_path, undefined);
+});
+
+test('addCodexTranscript returns no path when session_id is missing', () => {
+  const { addCodexTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root, codexHome } = codexSandbox();
+  const prior = process.env.CODEX_HOME;
+  try {
+    process.env.CODEX_HOME = codexHome;
+    const result = addCodexTranscript({}, root, 'Stop');
+    assert.equal(result.transcript_path, undefined);
+  } finally {
+    if (prior === undefined) delete process.env.CODEX_HOME; else process.env.CODEX_HOME = prior;
+  }
+});
+
+test('addCodexTranscript respects payload-provided transcript_path', () => {
+  const { addCodexTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root, codexHome } = codexSandbox();
+  const explicit = path.join(codexHome, 'sessions', '2026', '05', '27', 'explicit.jsonl');
+  writeJsonl(explicit, [{ timestamp: 't', type: 'session_meta', payload: {} }]);
+  const result = addCodexTranscript({ session_id: 'irrelevant', transcript_path: explicit }, root, 'Stop');
+  assert.equal(result.transcript_path, explicit);
+});
