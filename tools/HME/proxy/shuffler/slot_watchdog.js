@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
