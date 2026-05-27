@@ -57,10 +57,10 @@ function _dynamicOutputCap(payload) {
   const context = info.context || ((info.maxInput || 0) + modelCap);
   const headroomCap = context > 0 ? Math.max(2048, context - inputTokens - 8192) : modelCap;
   let policyCap = 16384;
-  if (inputTokens > 240000) policyCap = 4096;
-  else if (inputTokens > 180000) policyCap = 6144;
-  else if (inputTokens > 120000) policyCap = 8192;
-  else if (inputTokens > 60000) policyCap = 12288;
+  if (inputTokens >= 240000) policyCap = 4096;
+  else if (inputTokens >= 180000) policyCap = 6144;
+  else if (inputTokens >= 120000) policyCap = 8192;
+  else if (inputTokens >= 60000) policyCap = 12288;
   else policyCap = 32768;
   const envCeil = _positiveNumber(process.env.HME_PROXY_MAX_OUTPUT_TOKENS);
   const envCap = envCeil ? envCeil + 2048 : Infinity;
