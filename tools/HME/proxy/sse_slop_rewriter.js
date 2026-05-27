@@ -163,6 +163,14 @@ const _ABBREVIATION_MAP = Object.freeze({
   'understandable': 'clear',
 
   // Tech & dev.
+  'message': 'msg',
+  'messages': 'msgs',
+  'previous': 'last',
+  'enormous': 'big',
+  'diagnosis': 'diag',
+  'diagnose': 'diag',
+  'diagnosing': 'diagn',
+  'diagnosed': 'diagd',
   'request': 'req',
   'requested': 'reqd',
   'requests': 'reqs',

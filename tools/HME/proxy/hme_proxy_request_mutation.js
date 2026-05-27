@@ -67,14 +67,8 @@ function _dynamicOutputCap(payload) {
   return Math.max(1024, Math.min(requested, modelCap, headroomCap, policyCap, envCap));
 }
 
-function _anthropicTransportMaxBytes(payload) {
-  const configured = _positiveNumber(process.env.HME_PROXY_INTERACTIVE_MAX_BYTES);
-  if (configured) return configured;
-  const est = _estimatedInputTokens(payload);
-  if (est >= 240000) return 700000;
-  if (est >= 180000) return 850000;
-  if (est >= 120000) return 1000000;
-  return 0;
+function _anthropicTransportMaxBytes(_payload) {
+  return _positiveNumber(process.env.HME_PROXY_INTERACTIVE_MAX_BYTES);
 }
 
 function compactLargeInteractiveAnthropicPayload(payload) {
