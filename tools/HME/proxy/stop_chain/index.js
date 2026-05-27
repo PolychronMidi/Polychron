@@ -66,6 +66,11 @@ const POLICY_NAMES = [
   'post_hooks',
 ];
 
+function _policyNamesForMode() {
+  if (isStrictMode()) return POLICY_NAMES;
+  return POLICY_NAMES.filter((name) => name !== 'work_checks');
+}
+
 const MANDATORY_POLICIES = new Set([
   'detectors',
   'anti_patterns',
