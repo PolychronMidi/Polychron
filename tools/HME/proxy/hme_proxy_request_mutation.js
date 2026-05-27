@@ -261,9 +261,12 @@ async function mutateClaudeRequest({
 
     if (isAnthropic) {
       const scan = scanMessages(payload);
-      const directSmoke = clientReq && clientReq.headers && clientReq.headers['x-hme-smoke-direct'] === '1';
+      const promptText = _lastUserPromptText(payload);
+      const directSmoke = Boolean(
+        (clientReq && clientReq.headers && clientReq.headers['x-hme-smoke-direct'] === '1')
+        || /^You are running an automated HME CLI smoke test\./.test(promptText)
+      );
       if (!directSmoke && lifecycleInactive('UserPromptSubmit')) {
-        const promptText = _lastUserPromptText(payload);
         if (promptText) runInlineFallback('UserPromptSubmit', JSON.stringify({ user_prompt: promptText, session_id: session }));
       }
       try {
