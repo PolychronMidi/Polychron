@@ -52,7 +52,6 @@ def _expand_local_marker(name: str) -> str:
 LOCAL_PATH_NEEDLES = tuple(
     _expand_local_marker(x) for x in POLICY.get("local_path_markers", [])
 )
-LOCAL_PATH_ALLOW = POLICY.get("local_path_allow_token", "")
 SYNTAX_EXTS = set(POLICY.get("syntax_check_extensions", []))
 
 failures: list[str] = []
@@ -201,8 +200,6 @@ def _is_embedded_project_tmp(line: str, pos: int) -> bool:
 def local_path_hits(path: str, text: str) -> list[str]:
     hits = []
     for lineno, line in enumerate(text.splitlines(), 1):
-        if LOCAL_PATH_ALLOW in line:
-            continue
         for needle in LOCAL_PATH_NEEDLES:
             if not needle:
                 continue
