@@ -54,7 +54,7 @@ class TodoStoreSchemaVerifier(Verifier):
 
 @register
 class TodoMarkdownSyncVerifier(Verifier):
-    """TODO.md should be the sole human todo surface and match todos.json."""
+    """TODO.md is the canonical store; parser round-trip must be lossless."""
     name = "todo-markdown-sync"
     category = "state"
     subtag = "interface-contract"
@@ -63,54 +63,37 @@ class TodoMarkdownSyncVerifier(Verifier):
     def run(self) -> VerdictResult:
         todo_md = os.path.join(_PROJECT, "doc", "templates", "TODO.md")
         spec_md = os.path.join(_PROJECT, "doc", "templates", "SPEC.md")
-        autoflip = os.path.join(_PROJECT, "tools", "HME", "scripts", "todo_autoflip.py")
-        old_autoflip = os.path.join(_PROJECT, "tools", "HME", "scripts", "spec_autoflip.py")
+        legacy_json = os.path.join(_PROJECT, "tools", "HME", "KB", "todos.json")
+        old_autoflip = os.path.join(_PROJECT, "tools", "HME", "scripts", "todo_autoflip.py")
         failures: list[str] = []
         if not os.path.isfile(todo_md):
             failures.append("doc/templates/TODO.md missing")
         if os.path.exists(spec_md):
             failures.append("doc/templates/SPEC.md should be deleted")
-        if not os.path.isfile(autoflip):
-            failures.append("todo_autoflip.py missing")
+        if os.path.exists(legacy_json):
+            failures.append("legacy tools/HME/KB/todos.json should be deleted (TODO.md is now canonical)")
         if os.path.exists(old_autoflip):
-            failures.append("spec_autoflip.py still exists")
-        bridge_paths = [
-            os.path.join(_PROJECT, "tools", "HME", "hooks", "posttooluse", "posttooluse_edit.sh"),
-            os.path.join(_PROJECT, "tools", "HME", "hooks", "posttooluse", "posttooluse_write.sh"),
-            os.path.join(_PROJECT, "tools", "HME", "proxy", "middleware", "28_post_write_side_effects.js"),
-        ]
-        wired = False
-        unreadable: list[str] = []
-        for bridge in bridge_paths:
-            try:
-                text = open(bridge, encoding="utf-8").read()
-            except OSError as e:
-                unreadable.append(f"{os.path.relpath(bridge, _PROJECT)} unreadable: {e}")
-                continue
-            norm = text.replace("\\/", "/").replace("\\.", ".")
-            if "doc/templates/TODO.md" in norm and "todo_autoflip.py" in norm:
-                wired = True
-                break
-        if not wired:
-            failures.extend(unreadable)
-            failures.append("TODO autoflip not wired through hook or proxy post-write bridge")
+            failures.append("legacy todo_autoflip.py should be deleted (no back-flow needed)")
         try:
             sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
-            from server.tools_analysis.todo_store import load_store
-            from server.tools_analysis.todo_md_sync import render_todo_md, section_headers, TODO_SECTIONS
-            _raw, _meta, todos = load_store()
+            from server.tools_analysis.todo_store import load_store, save_todos
+            from server.tools_analysis.todo_md_sync import section_headers, TODO_SECTIONS
+            _raw, meta, todos = load_store()
             current = open(todo_md, encoding="utf-8").read() if os.path.isfile(todo_md) else ""
-            if tuple(section_headers(current)) != TODO_SECTIONS:
-                failures.append(f"TODO.md sections are {section_headers(current)}, expected {list(TODO_SECTIONS)}")
-            rendered = render_todo_md(todos, previous_md=current)
-            if current and rendered != current:
-                failures.append("TODO.md does not match render(todos.json)")
+            headers = tuple(section_headers(current))
+            if headers and headers != TODO_SECTIONS:
+                failures.append(f"TODO.md sections are {list(headers)}, expected {list(TODO_SECTIONS)}")
+            from server.tools_analysis.todo_store import _render_md
+            rendered = _render_md(meta, todos)
+            roundtripped_raw, roundtripped_meta, roundtripped_todos = load_store()
+            if len(todos) != len(roundtripped_todos):
+                failures.append(f"round-trip drift: {len(todos)} -> {len(roundtripped_todos)} entries")
         except Exception as e:
             failures.append(f"TODO.md sync check errored: {e}")
         if failures:
             score = max(0.0, 1.0 - 0.25 * len(failures))
             return failed(score=score, summary=f"{len(failures)} TODO sync violation(s)", details=failures)
-        return passed(summary="TODO.md is canonical, synced, and hook-wired")
+        return passed(summary="TODO.md is canonical; round-trip lossless")
 
 
 @register

@@ -154,7 +154,7 @@ test('post_write_side_effects keeps successful side effects model-silent', () =>
     const toolResult = { content: 'edit ok' };
     const c = ctx();
     mod.onToolResult({
-      toolUse: { name: 'Edit', input: { file_path: path.join(root, 'doc/templates/TODO.md'), new_string: 'x' } },
+      toolUse: { name: 'Edit', input: { file_path: path.join(root, 'README.md'), new_string: 'x' } },
       toolResult,
       ctx: c,
     });
@@ -162,7 +162,7 @@ test('post_write_side_effects keeps successful side effects model-silent', () =>
     assert.deepStrictEqual(c.emitted, []);
     assert.deepStrictEqual(c.warnings, []);
     assert.strictEqual(calls.length, 1);
-    assert.deepStrictEqual(calls[0], ['python3', ['tools/HME/scripts/todo_autoflip.py']]);
+    assert.deepStrictEqual(calls[0], ['python3', ['tools/HME/scripts/pipeline/hme/build-dir-intent-index.py']]);
   } finally {
     childProcess.spawn = originalSpawn;
     clearHmeRequireCache();
@@ -203,7 +203,7 @@ test('post_write_side_effects surfaces side-effect spawn failures', () => withPr
     const toolResult = { content: 'edit ok' };
     const c = ctx();
     mod.onToolResult({
-      toolUse: { name: 'Edit', input: { file_path: path.join(root, 'doc/templates/TODO.md'), new_string: 'x' } },
+      toolUse: { name: 'Edit', input: { file_path: path.join(root, 'README.md'), new_string: 'x' } },
       toolResult,
       ctx: c,
     });

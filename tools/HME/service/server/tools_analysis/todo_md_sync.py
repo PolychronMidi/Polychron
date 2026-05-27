@@ -1,19 +1,36 @@
-"""TODO.md sync for the HME todo store."""
+"""Legacy compatibility shim — TODO.md is now the store, not a derived view.
+
+The render/sync functions in this module are kept as thin wrappers so
+existing imports keep working. New code should call `todo_store` directly.
+
+The parsing utilities (TASK_RE, _read_section, task_items, normalize_for_match)
+are still active and used by `todo_markdown_ingest` and `todo_close`.
+"""
 from __future__ import annotations
 
 import os
 import re
 import sys
-import time
+from pathlib import Path
 
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from paths import todo_file as _todo_md_file  # noqa: E402
-from .todo_store import flat_entries, load_store, mutate_store, normalize_tier  # noqa: E402
+from .todo_store import (  # noqa: E402
+    _render_md,
+    flat_entries,
+    load_store,
+    mutate_store,
+    normalize_tier,
+    save_todos,
+)
 
 TASK_RE = re.compile(
-    r"^(?P<indent>\s*)-\s+\[(?P<mark>[ xX])\]\s+\[(?P<tier>E[1-5]|easy|medium|hard)\]\s+(?P<text>.+?)\s*$",
+    r"^(?P<indent>\s*)-\s+\[(?P<mark>[ xX])\]\s+\[(?P<tier>E[1-5]|easy|medium|hard)\]\s+"
+    r"(?:#\d+\s+)?(?:\[[A-Za-z_]\w*\]\s+)?(?:!crit\s+)?"
+    r"(?P<text>.+?)"
+    r"(?:\s+→\s+[^<]+)?(?:\s+<!--[^>]*-->)?\s*$",
     re.IGNORECASE,
 )
 QUEUE_RE = re.compile(
@@ -76,119 +93,14 @@ def section_headers(md_text: str) -> list[str]:
     return [line.strip()[3:].strip() for line in md_text.splitlines() if line.startswith("## ")]
 
 
-def _keep_manual_later(previous_md: str | None) -> list[str]:
-    if not previous_md:
-        return []
-    return [ln for ln in _read_section(previous_md, "later") if ln.strip() and ln.strip() != "(empty)"]
-
-
-def _entry_line(entry: dict, *, mark: str, indent: str = "") -> str:
-    text = (entry.get("text") or "").strip()
-    tier = normalize_tier(entry.get("tier"))
-    return f"{indent}- [{mark}] [{tier}] {text}"
-
-
-def _status(entry: dict) -> str:
-    if entry.get("done") or entry.get("status") == "completed":
-        return "completed"
-    return entry.get("status") or "pending"
-
-
-def _split_todo_lines(todos: list, done_limit: int) -> tuple[list[str], list[str], list[str]]:
-    now: list[str] = []
-    next_up: list[str] = []
-    done: list[str] = []
-    for entry in sorted([t for t in todos if isinstance(t, dict)], key=lambda t: int(t.get("id", 0))):
-        status = _status(entry)
-        if status == "completed":
-            done.append(_entry_line(entry, mark="x"))
-        elif status == "in_progress":
-            now.append(_entry_line(entry, mark=" "))
-        else:
-            next_up.append(_entry_line(entry, mark=" "))
-        for sub in sorted(entry.get("subs", []), key=lambda s: int(s.get("id", 0))):
-            sub_status = _status(sub)
-            if sub_status == "completed":
-                done.append(_entry_line(sub, mark="x", indent="  "))
-            elif sub_status == "in_progress":
-                now.append(_entry_line(sub, mark=" ", indent="  "))
-            else:
-                next_up.append(_entry_line(sub, mark=" ", indent="  "))
-    return now, next_up, done[:done_limit]
-
-
-def _section(title: str, lines: list[str]) -> list[str]:
-    body = lines if lines else ["(empty)"]
-    return [f"## {title}", "", *body, ""]
-
-
-def render_todo_md(todos: list, previous_md: str | None = None, done_limit: int = 10) -> str:
-    now, next_up, done = _split_todo_lines(todos, done_limit)
-    later = _keep_manual_later(previous_md)
-    parts = [
-        "# TODO",
-        "",
-        "> Pocket notepad. TodoWrite and Codex plan sync write this file. Use `[E1]`-`[E5]` on task lines.",
-        "",
-        *_section("Now", now),
-        *_section("Next", next_up),
-        *_section("Done", done),
-        *_section("Later", later),
-    ]
-    return "\n".join(parts).rstrip() + "\n"
-
-
-def sync_todo_md(todos: list, *, done_limit: int = 10) -> None:
-    path = _todo_md_file()
-    previous = ""
-    try:
-        with open(path, encoding="utf-8") as f:
-            previous = f.read()
-    except FileNotFoundError:
-        pass
-    rendered = render_todo_md(todos, previous_md=previous, done_limit=done_limit)
-    if rendered == previous:
-        return
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = f"{path}.tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        f.write(rendered)
-    os.replace(tmp, path)
-
-
-def repair_todo_md_from_store(*, done_limit: int = 10, write: bool = True) -> dict:
-    _raw, _meta, todos = load_store()
-    path = _todo_md_file()
-    previous = ""
-    try:
-        with open(path, encoding="utf-8") as f:
-            previous = f.read()
-    except FileNotFoundError:
-        pass
-    rendered = render_todo_md(todos, previous_md=previous, done_limit=done_limit)
-    changed = rendered != previous
-    if changed and write:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        tmp = f"{path}.tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(rendered)
-        os.replace(tmp, path)
-    return {
-        "changed": changed,
-        "path": path,
-        "sections": section_headers(rendered),
-        "todo_count": len(todos),
-    }
-
-
-def write_blank_todo_md() -> None:
-    path = _todo_md_file()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    rendered = render_todo_md([])
-    tmp = f"{path}.tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        f.write(rendered)
-    os.replace(tmp, path)
+def matches_todo_text(left: str, right: str) -> bool:
+    a = normalize_for_match(left)
+    b = normalize_for_match(right)
+    if not a or not b:
+        return False
+    if a == b or a.startswith(b) or b.startswith(a):
+        return True
+    return common_prefix_len(a, b) >= 30
 
 
 def task_items(md_text: str, *, sections: tuple[str, ...] | None = None) -> list[dict]:
@@ -237,42 +149,66 @@ def completion_state(md_text: str) -> dict:
     }
 
 
+def render_todo_md(todos: list, previous_md: str | None = None, done_limit: int = 10) -> str:
+    """Render via the canonical todo_store renderer (legacy signature kept).
+
+    The done_limit and previous_md args are accepted but ignored — the
+    store is the markdown file, so rendering is idempotent over the full
+    set rather than a windowed view.
+    """
+    meta = {"max_id": max((int(t.get("id", 0) or 0) for t in todos if isinstance(t, dict)), default=0)}
+    return _render_md(meta, todos)
+
+
+def sync_todo_md(todos: list, *, done_limit: int = 10) -> None:
+    """No-op: TODO.md IS the store. Mutations already touched the file.
+
+    Kept as a public symbol so legacy callers don't break.
+    """
+
+
+def repair_todo_md_from_store(*, done_limit: int = 10, write: bool = True) -> dict:
+    raw, meta, todos = load_store()
+    if write:
+        save_todos(meta, todos)
+    return {
+        "changed": False,
+        "path": _todo_md_file(),
+        "sections": list(TODO_SECTIONS),
+        "todo_count": len(todos),
+    }
+
+
+def write_blank_todo_md() -> None:
+    save_todos({"max_id": 0}, [])
+
+
 def mark_matching_done(entry: dict) -> tuple[str, str]:
-    path = _todo_md_file()
-    if not os.path.exists(path):
-        return "", ""
-    with open(path, encoding="utf-8") as f:
-        md = f.read()
+    """Mark the first store entry whose text matches `entry['text']` as done.
+
+    Returns (text_of_matched_entry, "") for back-compat with the previous
+    (text, line) shape — the rendered line no longer round-trips meaningfully.
+    """
     target = normalize_for_match(entry.get("text", ""))
     if not target:
         return "", ""
-    lines = md.splitlines()
-    candidates: list[tuple[int, int, re.Match]] = []
-    for idx, line in enumerate(lines):
-        m = TASK_RE.match(line)
-        if not m or m.group("mark").lower() == "x":
-            continue
-        candidate = normalize_for_match(m.group("text"))
-        score = common_prefix_len(candidate, target)
-        if score >= 30 or candidate == target or candidate.startswith(target) or target.startswith(candidate):
-            candidates.append((score, idx, m))
-    if not candidates:
-        return "", ""
-    _score, idx, m = sorted(candidates, key=lambda item: -item[0])[0]
-    lines[idx] = f"{m.group('indent')}- [x] [{normalize_tier(m.group('tier'))}] {m.group('text')}"
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + ("\n" if md.endswith("\n") else ""))
-    return m.group("text").strip(), lines[idx]
+    matched: list[str] = []
 
+    def _mark(_meta: dict, todos: list[dict], _raw: list[dict]) -> tuple[bool, bool]:
+        for e in flat_entries(todos):
+            if e.get("done") or e.get("status") == "completed":
+                continue
+            if matches_todo_text(target, e.get("text", "")):
+                e["status"] = "completed"
+                e["done"] = True
+                matched.append(e.get("text", ""))
+                return True, True
+        return False, False
 
-def matches_todo_text(left: str, right: str) -> bool:
-    a = normalize_for_match(left)
-    b = normalize_for_match(right)
-    if not a or not b:
-        return False
-    if a == b or a.startswith(b) or b.startswith(a):
-        return True
-    return common_prefix_len(a, b) >= 30
+    mutate_store(_mark)
+    if matched:
+        return matched[0], ""
+    return "", ""
 
 
 def mark_store_done_by_texts(items: list[str], *, store_path: str | None = None) -> int:
@@ -294,8 +230,10 @@ def mark_store_done_by_texts(items: list[str], *, store_path: str | None = None)
 
 
 def ingest_open_items(items: list[tuple[str, str]], *, store_path: str | None = None) -> int:
+    """Promote a list of (tier, text) pairs into pending todos under source=todo_md."""
     if not items:
         return 0
+    import time
 
     def _ingest(meta: dict, todos: list[dict], _raw: list[dict]) -> tuple[bool, int]:
         open_existing = [

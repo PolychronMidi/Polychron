@@ -61,11 +61,8 @@ function _withSandboxedTodoStore(fn) {
   fs.writeFileSync(path.join(sandbox, '.env'), sandboxEnv, { mode: 0o600 });
   fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
-  // Seed an empty store with the legacy meta-header sentinel shape.
-  fs.writeFileSync(
-    path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'),
-    JSON.stringify([{ id: 0, _meta: { max_id: 0, updated_ts: 0 } }]),
-  );
+  // TODO.md is the canonical store; load_store handles a missing file by
+  // returning the default empty store, so no seed needed.
   try {
     return fn(sandbox);
   } finally {
@@ -192,8 +189,8 @@ print(json.dumps({
   "native_completed": native.get("status") == "completed" and native.get("done") is True,
   "native_tier_preserved": native.get("tier") == "E5",
   "hme_only_preserved": hme.get("tier") == "E4" and any(i.get("content") == "persistent HME item" for i in merged),
-  "todo_has_done_native": "- [x] [E5] native item" in todo_md,
-  "todo_has_hme_next": "- [ ] [E4] persistent HME item" in todo_md,
+  "todo_has_done_native": bool(__import__("re").search(r"^- \\[x\\] \\[E5\\] #\\d+ \\[[\\w_]+\\][^\\n]*native item", todo_md, __import__("re").MULTILINE)),
+  "todo_has_hme_next": bool(__import__("re").search(r"^- \\[ \\] \\[E4\\] #\\d+ \\[[\\w_]+\\][^\\n]*persistent HME item", todo_md, __import__("re").MULTILINE)),
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
@@ -227,13 +224,15 @@ print(json.dumps({
   "ingested": ingested,
   "native_done": native.get("done") is True,
   "markdown_source": markdown.get("source"),
-  "todo_has_native_done": "- [x] [E3] native contract item" in todo_md,
+  "todo_has_native_done": bool(__import__("re").search(r"^- \\[x\\] \\[E3\\] #\\d+ \\[[\\w_]+\\][^\\n]*native contract item", todo_md, __import__("re").MULTILINE)),
   "todo_has_markdown": "markdown contract item" in todo_md,
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr || result.stdout}`);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-    assert.strictEqual(parsed.ingested, 1, 'TODO.md open item flows into todos.json');
+    // ingest_open_items is now a no-op for items already in TODO.md (which IS
+    // the store); a manual edit is already a write. So `ingested` is 0.
+    assert.strictEqual(parsed.ingested, 0, 'manual TODO.md edit is already in the store; no re-ingest needed');
     assert.strictEqual(parsed.native_done, true, 'native completion flows back into store');
     assert.strictEqual(parsed.markdown_source, 'todo_md');
     assert.strictEqual(parsed.todo_has_native_done, true, 'completed native item renders in TODO.md');
@@ -241,36 +240,25 @@ print(json.dumps({
   });
 });
 
-test('TODO state guard auto-reconciles TODO.md and detects store rollback', () => {
+test('TODO state guard detects max_id rollback in the canonical store', () => {
   _withSandboxedTodoStore((sandbox) => {
     const result = _runPython(sandbox, `
 from server.tools_analysis.todo import hme_todo, _load_todos
-from server.tools_analysis.todo_state_guard import check_todo_md_sync
-import json, os, time
+import json, os
 hme_todo(action="add", text="guard item one")
 hme_todo(action="add", text="guard item two")
 todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
-open(todo_path, "w").write("# TODO\\n\\n## Now\\n\\n(empty)\\n")
-repair = check_todo_md_sync(write=True)
-store_path = os.path.join("${sandbox}", "tools", "HME", "KB", "todos.json")
-raw = json.load(open(store_path))
-raw[0]["_meta"]["max_id"] = 1
-raw[0]["_meta"]["updated_ts"] = 1
-raw[:] = raw[:2]
-open(store_path, "w").write(json.dumps(raw))
+# Manually corrupt TODO.md so max_id rolls back; the guard must detect this.
+open(todo_path, "w").write("# TODO\\n\\n<!-- todo-state:\\n  max_id: 1\\n-->\\n\\n## Now\\n\\n(empty)\\n\\n## Next\\n\\n(empty)\\n\\n## Done\\n\\n(empty)\\n\\n## Later\\n\\n(empty)\\n")
 _load_todos()
 log_path = os.path.join("${sandbox}", "log", "hme-errors.log")
 log = open(log_path).read() if os.path.exists(log_path) else ""
 print(json.dumps({
-  "repair_changed": repair.get("changed"),
-  "todo_restored": "guard item one" in open(todo_path).read(),
   "rollback_logged": "TODO STATE WENT BACKWARD" in log,
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr || result.stdout}`);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-    assert.strictEqual(parsed.repair_changed, true, 'guard repairs TODO.md from store render');
-    assert.strictEqual(parsed.todo_restored, true, 'TODO.md repair restored canonical task');
     assert.strictEqual(parsed.rollback_logged, true, 'store rollback surfaces in hme-errors');
   });
 });
@@ -312,12 +300,10 @@ test('Codex update_plan syncs into todos.json and TODO.md', () => {
         { env, encoding: 'utf8' },
       );
       if (result.status !== 0) throw new Error(`codex sync failed: ${result.stderr || result.stdout}`);
-      const store = JSON.parse(fs.readFileSync(path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'), 'utf8'));
-      const todos = store.slice(1);
       const todoMd = fs.readFileSync(path.join(sandbox, 'doc', 'templates', 'TODO.md'), 'utf8');
-      assert.deepStrictEqual(todos.map((t) => t.source), ['codex_plan', 'codex_plan']);
-      assert.strictEqual(todos[0].status, 'in_progress');
-      assert.strictEqual(todos[1].status, 'pending');
+      const taskLines = todoMd.split('\n').filter((l) => /^\s*-\s+\[/.test(l));
+      const codexLines = taskLines.filter((l) => /\[codex_plan\]/.test(l));
+      assert.strictEqual(codexLines.length, 2, `expected 2 codex_plan entries, got ${codexLines.length}: ${codexLines.join(' | ')}`);
       assert.match(todoMd, /## Now[\s\S]*Bridge Codex plans/);
       assert.match(todoMd, /## Next[\s\S]*Verify TODO sync/);
       assert.doesNotMatch(todoMd, /Native TodoWrite syncs this file/);

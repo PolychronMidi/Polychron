@@ -442,11 +442,10 @@
     },
     {
       "path": "doc/templates/TODO.md",
-      "coordination": "rendered from tools/HME/KB/todos.json; direct human edits are ingested by todo_autoflip.py; Codex update_plan syncs through codex_plan_sync.py",
+      "coordination": "canonical single source of truth for HME todos; TodoWrite, codex update_plan, lifesaver, and humans all read+write through todo_store.py; mutate_store holds STORE_LOCK + fcntl.flock",
       "writers": [
-        "tools/HME/service/server/tools_analysis/todo_md_sync.py",
+        "tools/HME/service/server/tools_analysis/todo_store.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py",
-        "tools/HME/scripts/todo_autoflip.py",
         "tools/HME/scripts/todo_repair.py",
         "tools/HME/scripts/codex_plan_sync.py"
       ],
@@ -460,31 +459,9 @@
         "sessionstart.sh"
       ],
       "retention": "current active list only; completed sets archive to tools/HME/KB/devlog",
-      "generated": true,
+      "generated": false,
       "committed": true,
-      "schema": "markdown sections: Now, Next, Done, Later; task lines: - [ ] [E1-E5] text",
-      "repair": "python3 tools/HME/scripts/todo_repair.py"
-    },
-    {
-      "path": "tools/HME/KB/todos.json",
-      "coordination": "canonical machine todo store; TODO.md is the rendered human surface; native TodoWrite and Codex update_plan converge here; all JSON writes go through todo_store.py",
-      "writers": [
-        "tools/HME/service/server/tools_analysis/todo_store.py",
-        "tools/HME/scripts/codex_plan_sync.py"
-      ],
-      "owner": "HME todo store",
-      "readers": [
-        "native TodoWrite replacement",
-        "Codex update_plan sync",
-        "tools/HME/service/server/tools_analysis/todo_store.py",
-        "tools/HME/service/server/tools_analysis/todo_md_sync.py",
-        "tools/HME/scripts/todo_repair.py",
-        "tools/HME/service/server/tools_analysis/todo_archive.py"
-      ],
-      "retention": "open items retained; completed items auto-pruned or archived with TODO.md",
-      "generated": true,
-      "committed": true,
-      "schema": "JSON array with id=0 _meta header followed by todo entries",
+      "schema": "markdown sections (Now, Next, Done, Later); task lines: - [mark] [tier] #id [source] !crit text → on_done <!-- meta -->",
       "repair": "python3 tools/HME/scripts/todo_repair.py"
     },
     {
