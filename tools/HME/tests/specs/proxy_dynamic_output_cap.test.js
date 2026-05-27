@@ -2,6 +2,8 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const OLD_ENV_CAP = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
+delete process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
 const { applyExplicitOtpmCap } = require('../../proxy/hme_proxy_request_mutation');
 
 function payloadOf({ model = 'cx/gpt-5.5-xhigh', maxTokens = 128000, approxTokens = 1000 }) {
