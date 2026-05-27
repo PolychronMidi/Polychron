@@ -28,6 +28,28 @@ const state = {
   b: { missingSince: 0, respawnInFlight: false, lastRespawnTs: 0 },
 };
 const RESPAWN_COOLDOWN_MS = 30_000;
+const DRIFT_RESPAWN_GAP_MS = Math.max(35_000, RESPAWN_COOLDOWN_MS);
+let lastDriftRespawnTs = 0;
+let cachedHead = { ts: 0, sha: '' };
+
+function _currentRepoGitSha() {
+  const now = Date.now();
+  if (cachedHead.sha && (now - cachedHead.ts) < 2000) return cachedHead.sha;
+  try {
+    cachedHead = {
+      ts: now,
+      sha: execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf8',
+        timeout: 1000,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim(),
+    };
+  } catch (_) {
+    cachedHead = { ts: now, sha: '' };
+  }
+  return cachedHead.sha;
+}
 
 function _readJSONSafe(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return null; }
