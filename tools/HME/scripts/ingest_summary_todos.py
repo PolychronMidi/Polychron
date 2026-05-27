@@ -78,7 +78,7 @@ try:
     with open(todos_path) as f:
         todos = json.load(f)
     if not isinstance(todos, list): todos = []
-except Exception:  # silent-ok
+except Exception:  # silent-ok: todos.json absent or malformed; start from empty list
     pass
 
 max_id = max((t.get("id", 0) for t in todos if isinstance(t, dict)), default=0)
@@ -94,7 +94,7 @@ tmp = todos_path + ".tmp"
 try:
     with open(tmp, "w") as f: json.dump(todos, f, indent=2)
     os.replace(tmp, todos_path)
-except Exception:  # silent-ok
+except Exception:  # silent-ok: todo ingest is opportunistic; failed writes must not break hooks
     pass
 
 # Write system-reminder for next-turn injection
@@ -107,5 +107,5 @@ if added:
         lines.append(f"  {i}. {item[:120]}")
     try:
         with open(rp, "w") as f: f.write("\n".join(lines) + "\n")
-    except Exception:  # silent-ok
+    except Exception:  # silent-ok: reminder injection is opportunistic; todo store remains source of truth
         pass
