@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 9583,
-      "updated_ts": 1779884120.7068894,
+      "max_id": 9586,
+      "updated_ts": 1779884154.2109478,
       "codex_plan_synced_ts": 1779120063.0248382,
       "codex_plan_source": "${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
       "codex_plan_ts": "2026-05-18T16:00:53.521Z"
@@ -47,6 +47,48 @@
     "source": "native",
     "on_done": "",
     "ts": 1779817333.0300248,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 9584,
+    "text": "strict-mode todo smoke alpha",
+    "activeForm": "strict-mode todo smoke alpha",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "hme_todo",
+    "on_done": "",
+    "ts": 1779884154.2058444,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 9585,
+    "text": "strict-mode todo smoke beta",
+    "activeForm": "strict-mode todo smoke beta",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "hme_todo",
+    "on_done": "",
+    "ts": 1779884154.2070754,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 9586,
+    "text": "strict-mode todo smoke gamma",
+    "activeForm": "strict-mode todo smoke gamma",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "hme_todo",
+    "on_done": "",
+    "ts": 1779884154.2080534,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"

@@ -13,6 +13,9 @@
 ## Done
 
 - [x] [E3] Identify blocking OMO tool.execute.before sub-hook
+- [x] [E3] strict-mode todo smoke alpha
+- [x] [E3] strict-mode todo smoke beta
+- [x] [E3] strict-mode todo smoke gamma
 
 ## Later
 
