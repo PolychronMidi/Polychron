@@ -306,7 +306,7 @@ def full_python_compile_check() -> None:
         mode = meta.split(" ", 1)[0]
         if mode not in {"100644", "100755"} or skip_syntax(path, POLICY):
             continue
-        blob = staged_blob(path)
+        blob = tracked_blob(path)
         if blob is None:
             continue
         with tempfile.NamedTemporaryFile("wb", suffix=".py", delete=False) as tmp:
@@ -322,6 +322,59 @@ def full_python_compile_check() -> None:
                 os.unlink(tmp_path)
             except OSError:
                 pass  # silent-ok: tempfile already gone or OS cleanup raced
+
+
+def head_tree_empty() -> bool:
+    try:
+        tree = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD^{tree}"], text=True).strip()
+    except subprocess.CalledProcessError:
+        return False
+    return tree == "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+
+def validate_path_content(path: str, mode: str, data: bytes, *, staged: bool) -> None:
+    reason = blocked_path_reason(path, POLICY)
+    if reason:
+        failures.append(f"{q(path)}: blocked path ({reason})")
+        return
+    if mode == "120000":
+        return
+    if len(data) > MAX_BYTES:
+        scope = "staged file" if staged else "tracked file"
+        failures.append(f"{q(path)}: {scope} is {len(data)} bytes, exceeds {MAX_BYTES} byte pre-commit limit")
+        return
+    failures.extend(secret_hits(path, data))
+    if has_conflict_markers(data):
+        failures.append(f"{q(path)}: contains unresolved merge-conflict markers")
+    if is_text(data):
+        text = data.decode("utf-8", "replace")
+        failures.extend(local_path_hits(path, text))
+    executable_sanity(path, mode, data)
+    syntax_check(path, data)
+
+
+def tracked_mode(path: str) -> str:
+    out = git_bytes("ls-files", "-s", "--", path, check=False).decode("utf-8", "replace")
+    if not out.strip():
+        return ""
+    return out.split(None, 1)[0]
+
+
+def full_repo_content_check() -> None:
+    staged = set(staged_paths())
+    seen: set[str] = set()
+    for path in tracked_paths():
+        seen.add(path)
+        mode = staged_mode(path) if path in staged else tracked_mode(path)
+        data = staged_blob(path) if path in staged else tracked_blob(path)
+        if data is None:
+            continue
+        validate_path_content(path, mode, data, staged=path in staged)
+    for path in staged - seen:
+        mode = staged_mode(path)
+        data = staged_blob(path)
+        if data is not None:
+            validate_path_content(path, mode, data, staged=True)
 
 
 def main() -> int:
