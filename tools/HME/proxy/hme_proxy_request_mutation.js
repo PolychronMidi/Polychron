@@ -9,6 +9,7 @@ const { shouldInject, consumeStatusContext, buildJurisdictionContext, injectInto
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { requestTelemetry } = require('./request_telemetry');
+const { shrinkForPassthrough: compactAnthropicPayload } = require('./passthrough_compact');
 
 let _outputRegistry = { mtimeMs: 0, map: new Map() };
 function _positiveNumber(value) {
