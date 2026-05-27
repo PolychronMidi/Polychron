@@ -42,6 +42,14 @@ TODO_SOURCES: dict[str, dict] = {
         "surface": "codex-update-plan",
         "prefix": "",
     },
+    "opencode": {
+        "label": "OpenCode todowrite",
+        "preserve_in_native_merge": True,
+        "can_be_critical": False,
+        "can_be_archived": True,
+        "surface": "opencode-todowrite",
+        "prefix": "",
+    },
 }
 
 VALID_TODO_SOURCES = tuple(TODO_SOURCES)

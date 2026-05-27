@@ -87,6 +87,7 @@ from .onboarding import (  # noqa: F401
 from .todo_tools import (  # noqa: F401
     TodoStoreSchemaVerifier, TodoMarkdownSyncVerifier, TodoArchiveContractVerifier,
     TodoOnboardingDecoupledVerifier, TodoCodexPlanSyncVerifier,
+    TodoOpencodeSyncVerifier,
 )
 from .tool_surface import (  # noqa: F401
     ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier,

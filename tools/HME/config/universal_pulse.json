@@ -7,6 +7,10 @@
     "enabled": true,
     "min_interval_sec": 30
   },
+  "opencode_todo_sync": {
+    "enabled": true,
+    "min_interval_sec": 30
+  },
   "http_probe_services": ["proxy", "worker", "llamacpp_daemon", "omniroute"],
   "process_probes": [
     {

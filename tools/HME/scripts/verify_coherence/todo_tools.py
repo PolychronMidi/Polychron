@@ -222,6 +222,59 @@ class TodoCodexPlanSyncVerifier(Verifier):
 
 
 @register
+class TodoOpencodeSyncVerifier(Verifier):
+    """OpenCode todowrite must bridge into the canonical TODO store."""
+    name = "todo-opencode-sync"
+    category = "state"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        failures: list[str] = []
+        script = os.path.join(_SCRIPTS_DIR, "opencode_todo_sync.py")
+        if not os.path.isfile(script):
+            failures.append("tools/HME/scripts/opencode_todo_sync.py missing")
+        else:
+            proc = subprocess.run(
+                ["python3", "-m", "py_compile", script],
+                capture_output=True, text=True, timeout=20,
+                env={**os.environ, "PROJECT_ROOT": _PROJECT},
+            )
+            if proc.returncode != 0:
+                failures.append(f"opencode_todo_sync.py does not compile: {proc.stderr.strip()}")
+        try:
+            sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
+            from server.tools_analysis.todo_sources import TODO_SOURCES
+            if "opencode" not in TODO_SOURCES:
+                failures.append("todo_sources.py missing opencode source")
+            elif not TODO_SOURCES["opencode"].get("preserve_in_native_merge"):
+                failures.append("opencode source is not preserved across native TodoWrite merges")
+        except Exception as e:
+            failures.append(f"todo source registry check errored: {e}")
+        pulse_tick = os.path.join(_PROJECT, "tools", "HME", "activity", "universal_pulse_tick.py")
+        pulse_cfg = os.path.join(_PROJECT, "tools", "HME", "config", "universal_pulse.json")
+        try:
+            tick_text = open(pulse_tick, encoding="utf-8").read()
+            if "sync_latest_opencode_todos" not in tick_text:
+                failures.append("universal_pulse_tick.py does not sync OpenCode todos")
+        except OSError as e:
+            failures.append(f"universal_pulse_tick.py unreadable: {e}")
+        try:
+            with open(pulse_cfg, encoding="utf-8") as f:
+                cfg = json.load(f)
+            if not cfg.get("opencode_todo_sync", {}).get("enabled", False):
+                failures.append("universal_pulse.json does not enable opencode_todo_sync")
+        except Exception as e:
+            failures.append(f"universal_pulse.json opencode sync config unreadable: {e}")
+        opencode_plugin = os.path.join(_PROJECT, "tools", "HME", "opencode", "plugin", "hme_hooks.mjs")
+        if not os.path.isfile(opencode_plugin):
+            failures.append("tools/HME/opencode/plugin/hme_hooks.mjs missing (no hook bridge for OpenCode)")
+        if failures:
+            return failed(summary=f"{len(failures)} OpenCode TODO sync issue(s)", details=failures)
+        return passed(summary="OpenCode todowrite sync has source registry, pulse automatic path, and hook bridge")
+
+
+@register
 class TodoOnboardingDecoupledVerifier(Verifier):
     """Onboarding state must not create persistent TODO/TodoWrite entries."""
     name = "todo-onboarding-decoupled"

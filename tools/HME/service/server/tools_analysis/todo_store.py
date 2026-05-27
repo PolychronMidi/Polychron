@@ -190,6 +190,8 @@ def _render_ledger(meta: dict, todos: list[dict]) -> str:
         lines.append(f"  codex_plan_source: {meta['codex_plan_source']}")
     if "codex_plan_ts" in meta:
         lines.append(f"  codex_plan_ts: {meta['codex_plan_ts']}")
+    if "opencode_todo_synced_ts" in meta:
+        lines.append(f"  opencode_todo_synced_ts: {float(meta.get('opencode_todo_synced_ts', 0.0))}")
     entry_lines: list[str] = []
     for entry in flat_entries(todos):
         entry_id = int(entry.get("id", 0) or 0)
