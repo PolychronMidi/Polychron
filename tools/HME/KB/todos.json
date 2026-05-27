@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 9586,
-      "updated_ts": 1779884154.2109478,
+      "max_id": 9588,
+      "updated_ts": 1779884253.9360921,
       "codex_plan_synced_ts": 1779120063.0248382,
       "codex_plan_source": "${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
       "codex_plan_ts": "2026-05-18T16:00:53.521Z"
@@ -89,6 +89,34 @@
     "source": "hme_todo",
     "on_done": "",
     "ts": 1779884154.2080534,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 9587,
+    "text": "strict-mode todo smoke delta",
+    "activeForm": "strict-mode todo smoke delta",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "hme_todo",
+    "on_done": "",
+    "ts": 1779884253.9329016,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 9588,
+    "text": "strict-mode todo smoke epsilon",
+    "activeForm": "strict-mode todo smoke epsilon",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "hme_todo",
+    "on_done": "",
+    "ts": 1779884253.9340527,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
