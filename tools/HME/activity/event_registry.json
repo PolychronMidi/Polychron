@@ -2,6 +2,18 @@
   "_doc": "Canonical HME telemetry event registry. Edit this file, then run tools/HME/activity/render_events_doc.py to refresh EVENTS.md.",
   "events": [
     {
+      "name": "system_prompt_replaced",
+      "category": "Host / prompt materialization",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "host",
+        "prompt"
+      ],
+      "summary": "A host adapter replaced the outgoing system prompt with HME canonical prompt text."
+    },
+    {
       "name": "cascade_prediction_empty",
       "category": "Cascade / prediction",
       "streams": [

@@ -58,6 +58,8 @@ node src/lab/run.js sketch-name
 ```mermaid
 flowchart LR
     root["Polychron<br/><i>Generative polyrhythmic composition engine. Two independent rhythmic layers</i>"]
+    _opencode[".opencode/"]
+    root --> _opencode
     config["config/<br/><i>Project-level runtime configuration files consumed by src/ entry points.</i>"]
     root --> config
     doc["doc/"]
@@ -66,6 +68,19 @@ flowchart LR
     root --> src
     tools["tools/<br/><i>Project tooling: HME (hierarchical meta-evolution), csv_maestro, bin/.</i>"]
     root --> tools
+```
+
+### `config/`
+
+```mermaid
+flowchart LR
+    config["config/<br/><i>Project-level runtime configuration files consumed by src/ entry points.</i>"]
+    config__omniroute_patches["omniroute-patches/<br/><i>`tools/omniroute/` is currently a tracked local npm wrapper, not an ignored f...</i>"]
+    config__opencode_patches["opencode-patches/<br/><i>`tools/opencode/` is an ignored vendored checkout. Keep local OpenCode custom...</i>"]
+    config__smolagents_patches["smolagents-patches/<br/><i>`tools/smolagents/` is an ignored vendored checkout. Keep local customization...</i>"]
+    config --> config__omniroute_patches
+    config --> config__opencode_patches
+    config --> config__smolagents_patches
 ```
 
 ### `doc/`
@@ -91,7 +106,6 @@ flowchart LR
     src__crossLayer["crossLayer/<br/><i>Consumer of conductor signals, producer of per-beat emission decisions. Signa...</i>"]
     src__fx["fx/<br/><i>Audio effects + post-processing applied to rendered output.</i>"]
     src__lab["lab/<br/><i>Sketch playground for prototyping behavior before promoting to `src/`. Each s...</i>"]
-    src__output["output/"]
     src__play["play/<br/><i>The composition engine -- beat pipeline, layer alternation, note emission, an...</i>"]
     src__rhythm["rhythm/<br/><i>Rhythm generation subsystem. `RhythmManager` is the single hub -- pattern gen...</i>"]
     src__scripts["scripts/<br/><i>Project-level scripts: pipeline orchestrators, generators, utilities.</i>"]
@@ -154,7 +168,6 @@ flowchart LR
     src --> src__crossLayer
     src --> src__fx
     src --> src__lab
-    src --> src__output
     src --> src__play
     src --> src__rhythm
     src --> src__scripts
@@ -220,9 +233,9 @@ flowchart LR
 flowchart LR
     tools["tools/<br/><i>Project tooling: HME (hierarchical meta-evolution), csv_maestro, bin/.</i>"]
     tools__HME["HME/<br/><i>HME meta-system: proxy, hooks, scripts, service, kernel, KB.</i>"]
-    tools__bin["bin/<br/><i>Project-local binary shims and helper executables on PATH.</i>"]
     tools__csv_maestro["csv_maestro/<br/><i>This fork is used in [Polychron](https://github.com/PolychronMidi/Polychron)</i>"]
     tools__omniroute["omniroute/"]
+    tools__update["update/"]
     tools__HME__KB["HME/KB/"]
     tools__HME__activity["HME/activity/<br/><i>Activity-event registry, emitters, and rendered EVENTS.md documentation.</i>"]
     tools__HME__config["HME/config/<br/><i>Declarative HME configuration: invariants, registries, hygiene rules.</i>"]
@@ -244,12 +257,10 @@ flowchart LR
     tools__HME__systemd["HME/systemd/<br/><i>systemd unit files for running HME service components as user/system services.</i>"]
     tools__HME__telemetry["HME/telemetry/<br/><i>Telemetry collectors and rotators for HME runtime metrics.</i>"]
     tools__HME__tests["HME/tests/<br/><i>HME meta-substrate test suite: verifier specs, hook tests, proxy</i>"]
-    tools__HME__warm_context_cache["HME/warm-context-cache/<br/><i>On-disk warm cache for fast context reload between sessions.</i>"]
     tools__csv_maestro___github["csv_maestro/.github/"]
     tools__csv_maestro__doc["csv_maestro/doc/<br/><i>csv_maestro reference documentation: file-format spec and notes.</i>"]
     tools__csv_maestro__py_midicsv["csv_maestro/py_midicsv/<br/><i>Python midicsv port used by csv_maestro for MIDI<->CSV roundtrips.</i>"]
     tools__csv_maestro__tests["csv_maestro/tests/<br/><i>csv_maestro test suite.</i>"]
-    tools__omniroute___next["omniroute/.next/"]
     tools__HME__config__invariants["HME/config/invariants/<br/><i>Per-domain invariant shard files merged by the invariant loader.</i>"]
     tools__HME__event_kernel__native_hooks["HME/event_kernel/native_hooks/<br/><i>Native (in-process) hook handlers used by the event kernel.</i>"]
     tools__HME__hooks__direct["HME/hooks/direct/<br/><i>Direct (non-Claude-Code) hooks invoked by supervisors and launchers.</i>"]
@@ -259,7 +270,7 @@ flowchart LR
     tools__HME__hooks__pretooluse["HME/hooks/pretooluse/<br/><i>PreToolUse hooks (per-tool gates: edit, bash, read, todowrite).</i>"]
     tools__HME__omo_bridge__adapters["HME/omo_bridge/adapters/<br/><i>Universal hook inbound adapters: host-native payloads enter here and become v...</i>"]
     tools__HME__omo_bridge__translators["HME/omo_bridge/translators/<br/><i>Universal hook outbound translators: validated universal decisions leave here...</i>"]
-    tools__HME__opencode__plugin["HME/opencode/plugin/<br/><i>OpenCode plugin entrypoints that relay host lifecycle events into the HME hoo...</i>"]
+    tools__HME__opencode__plugin["HME/opencode/plugin/<br/><i>OpenCode CLI plugin entrypoints that relay host lifecycle events into the HME...</i>"]
     tools__HME__policies__builtin["HME/policies/builtin/<br/><i>Built-in HME policy implementations (read/write/bash gates).</i>"]
     tools__HME__policies__examples["HME/policies/examples/<br/><i>Example HME policy stubs for reference / starter templates.</i>"]
     tools__HME__proxy__contexts["HME/proxy/contexts/<br/><i>Each subdirectory in `contexts/` is the **single façade** for a bounded</i>"]
@@ -324,9 +335,9 @@ flowchart LR
     tools__HME__service__server__tools_analysis__evolution__evolution_invariants["HME/service/server/tools_analysis/evolution/evolution_invariants/<br/><i>Evolution-stage invariant probes evaluated each round.</i>"]
     tools__HME__service__server__tools_analysis__evolution__evolution_selftest["HME/service/server/tools_analysis/evolution/evolution_selftest/<br/><i>Evolution-stage self-test harness, executed during boot.</i>"]
     tools --> tools__HME
-    tools --> tools__bin
     tools --> tools__csv_maestro
     tools --> tools__omniroute
+    tools --> tools__update
     tools__HME --> tools__HME__KB
     tools__HME --> tools__HME__activity
     tools__HME --> tools__HME__config
@@ -348,12 +359,10 @@ flowchart LR
     tools__HME --> tools__HME__systemd
     tools__HME --> tools__HME__telemetry
     tools__HME --> tools__HME__tests
-    tools__HME --> tools__HME__warm_context_cache
     tools__csv_maestro --> tools__csv_maestro___github
     tools__csv_maestro --> tools__csv_maestro__doc
     tools__csv_maestro --> tools__csv_maestro__py_midicsv
     tools__csv_maestro --> tools__csv_maestro__tests
-    tools__omniroute --> tools__omniroute___next
     tools__HME__config --> tools__HME__config__invariants
     tools__HME__event_kernel --> tools__HME__event_kernel__native_hooks
     tools__HME__hooks --> tools__HME__hooks__direct

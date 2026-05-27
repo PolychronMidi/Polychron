@@ -8,6 +8,10 @@ python3 tools/HME/activity/render_events_doc.py
 
 Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (`activity`) and `tools/HME/runtime/metrics/hme-signals.jsonl` (`signal`).
 
+## Host / prompt materialization
+
+- **`system_prompt_replaced`** [activity] -- A host adapter replaced the outgoing system prompt with HME canonical prompt text.
+
 ## Cascade / prediction
 
 - **`cascade_prediction_empty`** [activity] -- A cascade-prediction call returned no candidates.
