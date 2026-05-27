@@ -147,3 +147,54 @@ test('addCodexTranscript respects payload-provided transcript_path', () => {
   const result = addCodexTranscript({ session_id: 'irrelevant', transcript_path: explicit }, root, 'Stop');
   assert.equal(result.transcript_path, explicit);
 });
+
+function opencodeSandbox() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lifecycle-payload-opencode-'));
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'tools', 'HME', 'scripts'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime', 'opencode-transcripts'), { recursive: true });
+  const dumper = path.join(root, 'tools', 'HME', 'scripts', 'opencode_dump_transcript.py');
+  fs.writeFileSync(dumper, [
+    '#!/usr/bin/env python3',
+    'import os, sys',
+    'session_id = sys.argv[1]',
+    'output_path = sys.argv[2]',
+    'os.makedirs(os.path.dirname(output_path), exist_ok=True)',
+    'with open(output_path, "w") as f:',
+    '    f.write(\'{"type":"user","message":{"role":"user","content":[{"type":"text","text":"hello"}]}}\\n\')',
+    'print(output_path)',
+  ].join('\n'));
+  return { root };
+}
+
+test('addOpencodeTranscript invokes dumper and sets transcript_path', () => {
+  const { addOpencodeTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root } = opencodeSandbox();
+  const result = addOpencodeTranscript({ session_id: 'ses_abc' }, root, 'Stop');
+  const expected = path.join(root, 'tools', 'HME', 'runtime', 'opencode-transcripts', 'ses_abc.jsonl');
+  assert.equal(result.transcript_path, expected);
+  assert.ok(fs.existsSync(expected), 'dumper output must exist');
+});
+
+test('addOpencodeTranscript is a no-op for non-Stop events', () => {
+  const { addOpencodeTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root } = opencodeSandbox();
+  const result = addOpencodeTranscript({ session_id: 'ses_abc' }, root, 'PreToolUse');
+  assert.equal(result.transcript_path, undefined);
+});
+
+test('addOpencodeTranscript returns no path when session_id is missing', () => {
+  const { addOpencodeTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root } = opencodeSandbox();
+  const result = addOpencodeTranscript({}, root, 'Stop');
+  assert.equal(result.transcript_path, undefined);
+});
+
+test('addOpencodeTranscript respects payload-provided transcript_path', () => {
+  const { addOpencodeTranscript } = require('../../event_kernel/lifecycle_payload');
+  const { root } = opencodeSandbox();
+  const explicit = path.join(root, 'tmp', 'preset.jsonl');
+  fs.writeFileSync(explicit, '{"type":"user","message":{"role":"user","content":[]}}\n');
+  const result = addOpencodeTranscript({ session_id: 'irrelevant', transcript_path: explicit }, root, 'Stop');
+  assert.equal(result.transcript_path, explicit);
+});

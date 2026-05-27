@@ -120,11 +120,35 @@ function addCodexTranscript(payload, root, event) {
   return payload;
 }
 
+function addOpencodeTranscript(payload, root, event) {
+  if (event !== 'Stop') return payload;
+  if (payload && payload.transcript_path && fs.existsSync(payload.transcript_path)) {
+    try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${payload.transcript_path}\n`); }
+    catch (err) { /* best-effort marker only */ }
+    return payload;
+  }
+  const sessionId = payload && payload.session_id;
+  if (!sessionId) return payload;
+  const outputPath = path.join(root, 'tools', 'HME', 'runtime', 'opencode-transcripts', `${sessionId}.jsonl`);
+  const dumper = path.join(root, 'tools', 'HME', 'scripts', 'opencode_dump_transcript.py');
+  if (!fs.existsSync(dumper)) return payload;
+  const { spawnSync } = require('child_process');
+  const proc = spawnSync('python3', [dumper, sessionId, outputPath], { timeout: 10000, encoding: 'utf8' });
+  if (proc.status !== 0) return payload;
+  const resolved = (proc.stdout || '').trim();
+  if (!resolved || !fs.existsSync(resolved)) return payload;
+  payload.transcript_path = resolved;
+  try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${resolved}\n`); }
+  catch (err) { /* best-effort marker only */ }
+  return payload;
+}
+
 function buildHostPayload({ host, event, root, rawBody, cwd, teamRole }) {
   const payload = normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole });
   if (host === 'claude') addClaudeTranscript(payload, root, event);
   else if (host === 'codex') addCodexTranscript(payload, root, event);
+  else if (host === 'opencode') addOpencodeTranscript(payload, root, event);
   return JSON.stringify(payload);
 }
 
-module.exports = { parseJson, normalizeLifecyclePayload, buildHostPayload, addClaudeTranscript, addCodexTranscript, newestJsonl, writeJsonAtomic };
+module.exports = { parseJson, normalizeLifecyclePayload, buildHostPayload, addClaudeTranscript, addCodexTranscript, addOpencodeTranscript, newestJsonl, writeJsonAtomic };
