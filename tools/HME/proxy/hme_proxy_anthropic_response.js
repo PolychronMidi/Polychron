@@ -20,6 +20,7 @@ const {
   normalizeOmniContextWindowSse,
   retryOmniContextWindowExceeded,
 } = require('./hme_proxy_omni_context_window');
+const { semanticTokenEstimate } = require('./context_token_estimate');
 
 async function handleAnthropicResponseComplete({
   chunks,
