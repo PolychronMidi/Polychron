@@ -10,7 +10,7 @@ from claude_settings import PROJECT_ROOT
 
 OPENCODE_CONFIG_PATH = Path(os.environ.get("OPENCODE_CONFIG") or Path.home() / ".config" / "opencode" / "opencode.jsonc")
 PROVIDER_ID = "hme"
-PROVIDER_NAME = "HME OpenAI-Compatible Proxy"
+PROVIDER_NAME = "HME OpenAI Responses Proxy"
 DEFAULT_MODEL = "hme/gpt-5.5-xhigh"
 DEFAULT_SMALL_MODEL = "hme/gpt-5.5-high"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
