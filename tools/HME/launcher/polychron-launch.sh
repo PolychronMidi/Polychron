@@ -67,6 +67,28 @@ _http_status() {
   curl -sS -o /dev/null -w '%{http_code}' --max-time 1 "$1" 2>/dev/null || printf '000'
 }
 
+_node_script_running() {
+  local script="$1"
+  python3 - "$script" <<'PY'
+import os, sys
+needle = os.path.realpath(sys.argv[1])
+for pid in filter(str.isdigit, os.listdir('/proc')):
+    try:
+        raw = open(f'/proc/{pid}/cmdline', 'rb').read().split(b'\0')
+    except Exception:
+        continue
+    if len(raw) < 2:
+        continue
+    args = [x.decode('utf-8', 'ignore') for x in raw if x]
+    if not args or os.path.basename(args[0]) != 'node':
+        continue
+    for arg in args[1:]:
+        if os.path.realpath(arg) == needle:
+            sys.exit(0)
+sys.exit(1)
+PY
+}
+
 # 0. OmniRoute (OVERDRIVE_MODE=1 translator)
 _OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: optional fallback path.
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
