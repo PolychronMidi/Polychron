@@ -143,6 +143,8 @@ async function mutateClaudeRequest({
   if (passthrough && isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     const dropped = shrinkForPassthrough(payload);
     if (dropped > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+  }
+  if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     if (applyExplicitOtpmCap(payload)) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
 
