@@ -402,6 +402,7 @@ _sv_loop() {
     fi
 
     if _sv_reload_marker_pending && ! _sv_is_maintenance_active; then
+      touch "$_SV_RELOAD_MARKER" 2>/dev/null
       _sv_log "post-commit reload marker pending; running proxy restart"
       if _sv_spawn_and_verify; then
         _sv_log "post-commit reload verified"

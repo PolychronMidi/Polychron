@@ -39,10 +39,13 @@ _AC_COUNTER_FAIL_THRESHOLD=3
 
 _ac_record_failure() {
   local reason="$*"
+  if [ -f "$_AC_FAIL_FLAG" ] && grep -Fq "$reason" "$_AC_FAIL_FLAG" 2>/dev/null; then
+    return 0
+  fi
   local ts
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
 
-  # Channel A: sticky fail-flag file. Overwrite on each failure so the
+  # Channel A: sticky fail-flag file. Overwrite on each distinct failure so the
   # latest reason wins. Directory may not exist if state was wiped.
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
   echo "[$ts] $reason" > "$_AC_FAIL_FLAG" 2>/dev/null || true  # silent-ok: optional fallback path.

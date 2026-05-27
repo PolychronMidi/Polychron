@@ -25,18 +25,23 @@ function _ts() {
 
 // Write to four independent channels on any failure. Every channel is
 function _recordFailure(root, caller, reason) {
+  const body = `[${caller}] ${reason}`;
+  try {
+    const prior = fs.readFileSync(path.join(root, FAIL_FLAG_REL), 'utf8');
+    if (prior.includes(body)) return;
+  } catch (_) { /* no prior failure flag */ }
   const ts = _ts();
   // Channel A: sticky fail flag. Overwrite -- latest wins.
   try {
     fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
     fs.writeFileSync(path.join(root, FAIL_FLAG_REL),
-      `[${ts}] [${caller}] ${reason}\n`);
+      `[${ts}] ${body}\n`);
   } catch (_) { /* best-effort */ }
   // Channel B: hme-errors.log for LIFESAVER text-scan pickup.
   try {
     fs.mkdirSync(path.join(root, 'log'), { recursive: true });
     fs.appendFileSync(path.join(root, ERR_LOG),
-      `[${ts}] [autocommit:proxy] [${caller}] ${reason}\n`);
+      `[${ts}] [autocommit:proxy] ${body}\n`);
   } catch (_) { /* best-effort */ }
   // Channel C: stderr -- ends up in hme-proxy.out.
   try {
