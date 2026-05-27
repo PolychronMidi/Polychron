@@ -68,6 +68,35 @@ function _dynamicOutputCap(payload) {
   return Math.max(1024, Math.min(requested, modelCap, headroomCap, policyCap, envCap));
 }
 
+function _anthropicTransportMaxBytes(payload) {
+  const configured = _positiveNumber(process.env.HME_PROXY_INTERACTIVE_MAX_BYTES);
+  if (configured) return configured;
+  const est = _estimatedInputTokens(payload);
+  if (est >= 240000) return 700000;
+  if (est >= 180000) return 850000;
+  if (est >= 120000) return 1000000;
+  return 0;
+}
+
+function compactLargeInteractiveAnthropicPayload(payload) {
+  if (!payload || !Array.isArray(payload.messages)) return 0;
+  const threshold = _anthropicTransportMaxBytes(payload);
+  if (!threshold) return 0;
+  const bytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+  if (bytes <= threshold) return 0;
+  return compactAnthropicPayload(payload, {
+    route: 'interactive',
+    model: payload.model || payload.target_model || payload.original_model || '',
+    keepMin: Number(process.env.HME_PROXY_INTERACTIVE_KEEP_MIN || 24),
+    effectiveThreshold: () => ({
+      threshold,
+      maxTier: 3,
+      maxToolResultAge: Number(process.env.HME_PROXY_INTERACTIVE_STALE_TOOL_KEEP_TURNS || 32),
+      toolResultByteFloor: Number(process.env.HME_PROXY_INTERACTIVE_TOOL_RESULT_FLOOR || 4000),
+    }),
+  });
+}
+
 function applyExplicitOtpmCap(payload) {
   if (!payload || typeof payload !== 'object') return false;
   const maxTokensCap = _dynamicOutputCap(payload);
