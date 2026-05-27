@@ -289,8 +289,13 @@ def run_smoke(host: str, timeout: int = 180, no_proxy_check: bool = False) -> di
     start = time.perf_counter()
     try:
         proc = subprocess.run(
-            argv, cwd=PROJECT_ROOT, capture_output=True, text=True,
-            timeout=timeout, env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
+            argv, cwd=PROJECT_ROOT, input="", capture_output=True, text=True,
+            timeout=timeout,
+            env={
+                **os.environ,
+                "PROJECT_ROOT": str(PROJECT_ROOT),
+                "HME_CLI_SMOKE": "1",
+            },
         )
         timed_out = False
     except subprocess.TimeoutExpired as exc:
