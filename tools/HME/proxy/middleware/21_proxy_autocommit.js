@@ -133,6 +133,22 @@ function _capturePrecommitFailures(root) {
   } catch (_) { return ''; }
 }
 
+function _autocommitDiagnostics(root, commandResult, precommitDetail) {
+  const pieces = [];
+  pieces.push(`exit=${commandResult.status ?? 'signal:' + commandResult.signal}`);
+  const combined = ((commandResult.stderr || '') + (commandResult.stdout || '')).trim();
+  if (combined) pieces.push(`git=${combined.slice(0, 1000).replace(/\s+/g, ' ')}`);
+  try { pieces.push(`status=${execSync('git status --porcelain=v1', { cwd: root, encoding: 'utf8', timeout: 3000 }).trim().split('\n').filter(Boolean).slice(0, 30).join(';') || 'clean'}`); } catch (e) { pieces.push(`status_err=${String(e.message || e).slice(0, 200)}`); }
+  try { pieces.push(`branch=${execSync('git status --branch --short', { cwd: root, encoding: 'utf8', timeout: 3000 }).trim().replace(/\s+/g, ' ')}`); } catch (_) { /* best-effort */ }
+  try { pieces.push(`head=${execSync('git rev-parse --short HEAD', { cwd: root, encoding: 'utf8', timeout: 1000 }).trim()}`); } catch (_) { /* best-effort */ }
+  try { pieces.push(`index_tree=${execSync('git write-tree', { cwd: root, encoding: 'utf8', timeout: 3000 }).trim()}`); } catch (e) { pieces.push(`index_tree_err=${String(e.message || e).slice(0, 200)}`); }
+  try { pieces.push(`cached_stat=${execSync('git diff --cached --stat --', { cwd: root, encoding: 'utf8', timeout: 3000 }).trim().replace(/\s+/g, ' ') || 'none'}`); } catch (_) { /* best-effort */ }
+  if (precommitDetail) pieces.push(`precommit=${precommitDetail.replace(/\s+/g, ' ')}`);
+  const detail = pieces.join(' | ').slice(0, 4000);
+  try { fs.writeFileSync(path.join(root, STATE_DIR, 'autocommit.err'), `${_ts()} ${detail}\n`); } catch (_) { /* best-effort */ }
+  return detail;
+}
+
 function _attemptCommit(root, caller) {
   _incrementCounter(root);
 
