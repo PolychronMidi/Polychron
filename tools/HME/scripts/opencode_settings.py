@@ -108,7 +108,7 @@ def expected_provider(port: int, project_root: Path = PROJECT_ROOT) -> dict[str,
             entry["limit"] = limit
         models[row["id"]] = entry
     return {
-        "npm": "@ai-sdk/openai-compatible",
+        "npm": "@ai-sdk/openai",
         "name": PROVIDER_NAME,
         "options": {
             "baseURL": hme_base_url(port),
