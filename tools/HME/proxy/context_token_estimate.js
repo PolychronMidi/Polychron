@@ -13,8 +13,6 @@ function _contentTokenChars(value) {
   if (typeof value !== 'object') return 0;
 
   const type = String(value.type || '');
-  // Claude's encrypted thinking signatures are transport/authentication state,
-  // not natural-language context. Counting them as prompt tokens makes a 90k
   if (type === 'thinking' || type === 'redacted_thinking') {
     return _contentTokenChars(value.thinking) + _contentTokenChars(value.text) + _contentTokenChars(value.summary);
   }
