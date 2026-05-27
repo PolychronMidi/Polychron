@@ -235,7 +235,7 @@ flowchart LR
     tools__HME["HME/<br/><i>HME meta-system: proxy, hooks, scripts, service, kernel, KB.</i>"]
     tools__csv_maestro["csv_maestro/<br/><i>This fork is used in [Polychron](https://github.com/PolychronMidi/Polychron)</i>"]
     tools__omniroute["omniroute/"]
-    tools__update["update/"]
+    tools__update["update/<br/><i>Vendor refresh helpers for ignored local tool integrations.</i>"]
     tools__HME__KB["HME/KB/"]
     tools__HME__activity["HME/activity/<br/><i>Activity-event registry, emitters, and rendered EVENTS.md documentation.</i>"]
     tools__HME__config["HME/config/<br/><i>Declarative HME configuration: invariants, registries, hygiene rules.</i>"]
