@@ -100,20 +100,52 @@ def _service_port(name: str = "proxy") -> int:
 def _http_ok(url: str, timeout: float = 1.5) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
-            return 200 <= int(resp.status) < 500
+            return 200 <= int(resp.status) < 300
     except Exception:
         return False
 
 
-def _opencode_uses_hme_provider() -> bool:
-    if not OPENCODE_CONFIG.is_file():
-        return False
-    try:
-        doc = json.loads(_strip_jsonc(OPENCODE_CONFIG.read_text(encoding="utf-8")))
-    except Exception:
-        return False
-    model = str(doc.get("model") or "")
-    return model.startswith("hme/") or "127.0.0.1:9099" in json.dumps(doc)
+def _local_health_url(base_url: str) -> str | None:
+    if not base_url.startswith("http://127.0.0.1:") and not base_url.startswith("http://localhost:"):
+        return None
+    head = base_url.split("/v1", 1)[0].rstrip("/")
+    return f"{head}/health"
+
+
+def _host_health_urls(host: str) -> list[str]:
+    urls: list[str] = []
+    if host == "claude":
+        settings = Path.home() / ".claude" / "settings.json"
+        try:
+            doc = json.loads(settings.read_text(encoding="utf-8"))
+            env = doc.get("env", {}) if isinstance(doc, dict) else {}
+            base = str(env.get("ANTHROPIC_BASE_URL") or "")
+            url = _local_health_url(base)
+            if url:
+                urls.append(url)
+        except Exception:
+            pass  # silent-ok: pending review
+    elif host == "codex":
+        cfg = Path.home() / ".codex" / "config.toml"
+        if cfg.is_file():
+            for line in cfg.read_text(encoding="utf-8", errors="ignore").splitlines():
+                if "base_url" not in line:
+                    continue
+                _, _, raw = line.partition("=")
+                base = raw.strip().strip('"').strip("'")
+                url = _local_health_url(base)
+                if url and url not in urls:
+                    urls.append(url)
+    elif host == "opencode":
+        if OPENCODE_CONFIG.is_file():
+            try:
+                doc = json.loads(_strip_jsonc(OPENCODE_CONFIG.read_text(encoding="utf-8")))
+                blob = json.dumps(doc)
+                if str(doc.get("model") or "").startswith("hme/") or "127.0.0.1:9099" in blob:
+                    urls.append("http://127.0.0.1:9099/health")
+            except Exception:
+                pass  # silent-ok: pending review
+    return urls
 
 
 def preflight(host: str, no_proxy_check: bool = False) -> list[str]:
@@ -121,13 +153,9 @@ def preflight(host: str, no_proxy_check: bool = False) -> list[str]:
     if not _which_host(host):
         issues.append(f"{host} CLI not found on PATH or known install locations")
     if not no_proxy_check:
-        needs_hme_proxy = host in ("codex", "opencode")
-        if host == "opencode":
-            needs_hme_proxy = _opencode_uses_hme_provider()
-        if needs_hme_proxy:
-            port = _service_port("proxy")
-            if not _http_ok(f"http://127.0.0.1:{port}/health"):
-                issues.append(f"HME proxy health check failed on port {port}; start proxy before CLI smoke")
+        for url in _host_health_urls(host):
+            if not _http_ok(url):
+                issues.append(f"{host} configured for local provider but health check failed: {url}")
     return issues
 
 
