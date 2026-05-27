@@ -139,7 +139,7 @@ _up_loop() {
 _up_start() {
   # Idempotent: if an alive supervisor is already recorded, no-op.
   local existing
-  existing=$(cat "$_UP_PID_FILE" 2>/dev/null)
+  existing=$(cat "$_UP_PID_FILE" 2>/dev/null || true)
   if _up_alive "$existing" "universal-pulse-supervisor.sh|bash .*_loop"; then
     _up_log "already running pid=$existing -- no-op"
     return 0
