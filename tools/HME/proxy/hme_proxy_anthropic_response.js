@@ -272,7 +272,7 @@ async function handleAnthropicResponseComplete({
     route: isOmniRouteSwap ? 'omni-context' : (passthrough ? 'passthrough' : 'direct'),
     model: isOmniRouteSwap ? swapModel : payload && payload.model,
     thresholdBytes: isOmniRouteSwap && typeof omniContextThresholdBytes === 'function' ? omniContextThresholdBytes(String(swapModel || '')) : (typeof effectiveCompactThreshold === 'function' ? effectiveCompactThreshold(payload) : 0),
-    estimatedTokensFn: estimatedContextTokens,
+    estimatedTokensFn: () => semanticTokenEstimate(payload, process.env),
     getLastInputTokensRemaining,
     getLastInputTokensLimit,
   });
