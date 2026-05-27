@@ -10,21 +10,77 @@ const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./m
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { requestTelemetry } = require('./request_telemetry');
 
+let _outputRegistry = { mtimeMs: 0, map: new Map() };
+function _positiveNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+function _loadOutputRegistry() {
+  const modelsPath = path.join(PROJECT_ROOT, 'config', 'models.json');
+  let stat; try { stat = fs.statSync(modelsPath); } catch { return _outputRegistry.map; }
+  if (stat.mtimeMs === _outputRegistry.mtimeMs) return _outputRegistry.map;
+  const text = fs.readFileSync(modelsPath, 'utf8');
+  const stripped = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  let cfg; try { cfg = JSON.parse(stripped); } catch { return _outputRegistry.map; }
+  const map = new Map();
+  for (const tier of Object.values(cfg.tiers || {})) {
+    for (const m of tier.models || []) {
+      const out = _positiveNumber(m.max_output_tokens);
+      const input = _positiveNumber(m.max_input_tokens);
+      const ctx = _positiveNumber(m.context_length);
+      if (!out) continue;
+      const info = { maxOutput: out, maxInput: input, context: ctx };
+      if (m.id) map.set(String(m.id), info);
+      if (m.api_model) map.set(String(m.api_model), info);
+    }
+  }
+  _outputRegistry = { mtimeMs: stat.mtimeMs, map };
+  return map;
+}
+function _modelOutputInfo(modelId) {
+  const id = String(modelId || '');
+  const reg = _loadOutputRegistry();
+  if (reg.has(id)) return reg.get(id);
+  for (const [k, v] of reg) if (id.includes(k)) return v;
+  return { maxOutput: 32768, maxInput: 0, context: 0 };
+}
+function _estimatedInputTokens(payload) {
+  const bytes = Buffer.byteLength(JSON.stringify(payload || {}), 'utf8');
+  const perTok = _positiveNumber(process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST) || 4;
+  return Math.ceil(bytes / perTok);
+}
+function _dynamicOutputCap(payload) {
+  const info = _modelOutputInfo(payload && payload.model);
+  const modelCap = info.maxOutput || 32768;
+  const requested = _positiveNumber(payload && payload.max_tokens) || modelCap;
+  const inputTokens = _estimatedInputTokens(payload);
+  const context = info.context || ((info.maxInput || 0) + modelCap);
+  const headroomCap = context > 0 ? Math.max(2048, context - inputTokens - 8192) : modelCap;
+  let policyCap = 16384;
+  if (inputTokens > 240000) policyCap = 4096;
+  else if (inputTokens > 180000) policyCap = 6144;
+  else if (inputTokens > 120000) policyCap = 8192;
+  else if (inputTokens > 60000) policyCap = 12288;
+  else policyCap = 32768;
+  const envCeil = _positiveNumber(process.env.HME_PROXY_MAX_OUTPUT_TOKENS);
+  const envCap = envCeil ? envCeil + 2048 : Infinity;
+  return Math.max(1024, Math.min(requested, modelCap, headroomCap, policyCap, envCap));
+}
+
 function applyExplicitOtpmCap(payload) {
-  const raw = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
-  if (!raw) return false;
-  const cap = parseInt(raw, 10);
-  const maxTokensCap = cap + 2048;
+  if (!payload || typeof payload !== 'object') return false;
+  const maxTokensCap = _dynamicOutputCap(payload);
+  const thinkingCap = Math.max(1024, Math.min(maxTokensCap - 1024, Math.floor(maxTokensCap * 0.8)));
   let changed = false;
   if (payload.thinking && typeof payload.thinking === 'object') {
-    if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > cap) {
-      console.error(`OTPM-cap (explicit): thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${cap}`);
-      payload.thinking.budget_tokens = cap;
+    if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > thinkingCap) {
+      console.error(`OTPM-cap (dynamic): thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${thinkingCap}`);
+      payload.thinking.budget_tokens = thinkingCap;
       changed = true;
     }
   }
   if (typeof payload.max_tokens === 'number' && payload.max_tokens > maxTokensCap) {
-    console.error(`OTPM-cap (explicit): max_tokens ${payload.max_tokens} -> ${maxTokensCap}`);
+    console.error(`OTPM-cap (dynamic): max_tokens ${payload.max_tokens} -> ${maxTokensCap} model=${payload.model || ''} est_input=${_estimatedInputTokens(payload)}`);
     payload.max_tokens = maxTokensCap;
     changed = true;
   }
