@@ -60,19 +60,28 @@ function _pidAlive(pid) {
   try { process.kill(pid, 0); return true; } catch (_) { return false; }
 }
 
-function _shouldRespawn(slot) {
+function _respawnDecision(slot) {
   const s = state[slot];
   const now = Date.now();
   const h = _readJSONSafe(HEALTH[slot]);
   if (!h) {
     if (!s.missingSince) s.missingSince = now;
-    return (now - s.missingSince) >= STALE_MS;
+    if ((now - s.missingSince) >= STALE_MS) {
+      return { yes: true, kind: 'missing', reason: `health file missing > ${Math.round(STALE_MS / 1000)}s` };
+    }
+    return { yes: false };
   }
   s.missingSince = 0;
   const heartbeatAge = now - Number(h.ts || 0);
-  if (heartbeatAge < STALE_MS) return false;
-  if (_pidAlive(h.pid)) return false;
-  return true;
+  if (heartbeatAge >= STALE_MS && !_pidAlive(h.pid)) {
+    return { yes: true, kind: 'dead', reason: `heartbeat ${Math.round(heartbeatAge / 1000)}s stale, pid ${h.pid} dead` };
+  }
+  const wanted = _currentRepoGitSha();
+  const have = String(h.git_sha || '').slice(0, 12);
+  if (wanted && have && have !== wanted) {
+    return { yes: true, kind: 'drift', reason: `git_sha drift live=${have} wanted=${wanted}` };
+  }
+  return { yes: false };
 }
 
 function _respawn(slot, reason) {
