@@ -323,4 +323,4 @@ async function mutateClaudeRequest({
   return { outBody, injected, passthrough };
 }
 
-module.exports = { mutateClaudeRequest, applyExplicitOtpmCap };
+module.exports = { mutateClaudeRequest, applyExplicitOtpmCap, compactLargeInteractiveAnthropicPayload };
