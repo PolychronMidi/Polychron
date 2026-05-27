@@ -274,7 +274,7 @@ async function runStopChain(stdinJson) {
     shared: {},
   };
 
-  for (const name of POLICY_NAMES) {
+  for (const name of _policyNamesForMode()) {
     appendTrace('enter', name);
 
     // Honor unified-registry disable: if the user has opted out of this
