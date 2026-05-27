@@ -1,6 +1,6 @@
 """llama.cpp persistence daemon -- supervisor, RAG router, health proxy.
 
-Runs on the `llamacpp_daemon` service-registry port and writes PID to /tmp/hme-llamacpp-daemon.pid.
+Runs on the `llamacpp_daemon` service-registry port and writes PID to the configured runtime pid file.
 
 Owns:
   1. llama-server supervisor -- spawn/adopt/restart arbiter + coder

@@ -37,7 +37,7 @@ test('runlock: unlink', async () => { await _runDeny(`unlink tmp/${LOCK}`); });
 test('runlock: shred -u', async () => { await _runDeny(`shred -u tmp/${LOCK}`); });
 test('runlock: truncate', async () => { await _runDeny(`truncate -s 0 tmp/${LOCK}`); });
 test('runlock: find -delete', async () => { await _runDeny(`find . -name ${LOCK} -delete`); });
-test('runlock: mv away', async () => { await _runDeny(`mv tmp/${LOCK} /tmp/elsewhere`); });
+test('runlock: mv away', async () => { await _runDeny(`mv tmp/${LOCK} ${process.env.HME_TEST_TMPDIR || 'var/tmp'}/elsewhere`); });
 test('runlock: redirect-truncate', async () => { await _runDeny(`> tmp/${LOCK}`); });
 test('runlock: python os.remove', async () => {
   await _runDeny(`python3 -c "import os; os.remove('tmp/${LOCK}')"`);
@@ -48,11 +48,11 @@ test('runlock: variable-aliased rm (lockTokens still match in source)', async ()
 
 test('runlock: command without the lock string is allowed', async () => {
   await _runAllow('echo hello');
-  await _runAllow(`rm /tmp/somefile.txt`);
+  await _runAllow(`rm ${process.env.HME_TEST_TMPDIR || 'var/tmp'}/somefile.txt`);
 });
 
 test('runlock: deletion verb against UNRELATED file is allowed (no run.lock token)', async () => {
-  await _runAllow('rm /tmp/cache.tmp');
+  await _runAllow(`rm ${process.env.HME_TEST_TMPDIR || 'var/tmp'}/cache.tmp`);
 });
 
 test('runlock: lock token in non-deletion context is allowed', async () => {

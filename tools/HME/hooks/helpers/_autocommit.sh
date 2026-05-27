@@ -136,12 +136,25 @@ _ac_do_commit() {
   # shellcheck disable=SC2094
   exec 9>"$_AC_LOCK_FILE"
   if ! flock -w 30 9 2>/dev/null; then  # silent-ok: optional fallback path.
-    _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE (proceeding unlocked)"
+    _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE; aborting autocommit rather than proceeding unlocked"
+    rm -f "$_ac_err_buf" 2>/dev/null
+    exec 9>&-
+    return 1
   fi
 
   # git add -A runs best-effort (picks up new untracked files).  Failure
   # is non-fatal -- `commit -a` handles tracked-file modifications below.
   git -C "$_AC_ROOT" add -A >"$_ac_err_buf" 2>&1 || true
+
+  local _empty_tree _index_tree
+  _empty_tree="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+  _index_tree=$(git -C "$_AC_ROOT" write-tree 2>/dev/null || echo "")
+  if [ "$_index_tree" = "$_empty_tree" ]; then
+    _ac_record_failure "[$caller] autocommit refused empty index tree (would nuke HEAD)"
+    rm -f "$_ac_err_buf" 2>/dev/null
+    exec 9>&-
+    return 1
+  fi
 
   # Refuse to commit if any staged file has unresolved git conflict markers.
   if git -C "$_AC_ROOT" diff --cached -U0 2>/dev/null | grep -qE '^\+(<{7} |={7}$|>{7} )'; then  # spam-ok: conflict-marker regex

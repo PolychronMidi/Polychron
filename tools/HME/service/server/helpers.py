@@ -64,7 +64,7 @@ def get_context_budget() -> str:
     Audit sessions get a budget boost (more data density desired).
     Editing sessions get a budget reduction (concise output preferred)."""
     try:
-        with open("/tmp/claude-context.json") as _f:  #
+        with open(os.environ["HME_CLAUDE_CONTEXT_FILE"]) as _f:
             ctx_data = json.load(_f)
         remaining = ctx_data.get("remaining_pct") or 50
     except Exception as _err:

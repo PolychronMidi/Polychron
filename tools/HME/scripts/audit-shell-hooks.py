@@ -18,7 +18,7 @@ Rules:
   R1 -- BASH_SOURCE-ascent-outside-hooks
        `${BASH_SOURCE[0]}` combined with `../..` (or deeper) OR a
        reference to a repo-root target (.env, .git, /src, /scripts,
-       /proxy, /output, /tmp, /log, /tools/HME/<non-hooks>) is fragile
+       /proxy, /output, project scratch, /log, /tools/HME/<non-hooks>) is fragile
        under unusual invocation contexts. Resolve via $PROJECT_ROOT
        instead. Exempt: hooks in `direct/` that explicitly walk-up
        looking for .git (pattern `while ... dirname`), since they build
@@ -35,6 +35,7 @@ Usage:
 """
 import json
 import os
+import tempfile
 import re
 import sys
 
@@ -50,7 +51,7 @@ _REPO_ROOT_TARGETS = (
     "/src/",
     "/scripts/",
     "/output/",
-    "/tmp/",  #
+    tempfile.gettempdir().rstrip(os.sep) + os.sep,
     "/log/",
     "/tools/HME/service/",
     "/tools/HME/proxy/",

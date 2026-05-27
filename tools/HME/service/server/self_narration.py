@@ -86,7 +86,7 @@ def build_status_narrative() -> str:
         if recovery_rate < 0.8:
             lines.append(
                 f"Recovery success rate is {recovery_rate:.0%} -- the system has been struggling to self-heal. "
-                "Consider restarting the shim manually: kill $(cat /tmp/hme-http-shim.pid)"
+                "Consider restarting the shim manually: kill $(cat "$HME_HTTP_SHIM_PID_FILE")"
             )
 
         # Crash loop (Layer 5)

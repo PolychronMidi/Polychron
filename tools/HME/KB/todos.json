@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 9918,
-      "updated_ts": 1779890912.9712417,
+      "max_id": 10049,
+      "updated_ts": 1779892403.3189976,
       "codex_plan_synced_ts": 1779120063.0248382,
       "codex_plan_source": "${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
       "codex_plan_ts": "2026-05-18T16:00:53.521Z"
@@ -92,5 +92,61 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
+  },
+  {
+    "id": 9590,
+    "text": "If size=0: OK; if mtime < summary_mtime: skip; if no \"exit=0\" after last start: warn/fail",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
+  },
+  {
+    "id": 9591,
+    "text": "But sys-reminder showed auto-brief w/ OLD file head still showing `\"waivers\": []` - this hook's cached preview, not actual file",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
+  },
+  {
+    "id": 9592,
+    "text": "If same cmd appears twice w/o edit n b/w, blocks",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
+  },
+  {
+    "id": 9593,
+    "text": "This cause `_current_turn_noop_tools` - inflate `failed_reads` n block legitimate cmds",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
+  },
+  {
+    "id": 9594,
+    "text": "Or maybe `contexts/upstream_dispatch/contexts/upstream_dispatch/` - nested",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
+  },
+  {
+    "id": 9595,
+    "text": "If baseline doesn't exist, write it & exit 0",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
+  },
+  {
+    "id": 9596,
+    "text": "If baseline exists, compare",
+    "status": "pending",
+    "critical": false,
+    "source": "auto_thinking",
+    "created": "2026-05-27T14:36:14Z"
   }
 ]

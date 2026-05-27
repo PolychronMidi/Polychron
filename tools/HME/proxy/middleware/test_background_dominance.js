@@ -4,7 +4,7 @@
  *
  * Strategy:
  *   1. Create a fake task-output file at the real discovery path
- *      (/tmp/claude-<uid>/<dir>/tasks/<id>.output).
+ *      (the OS tempdir claude-task output path).
  *   2. Build a synthetic API payload containing a tool_use (Bash,
  *      `i/review mode=forget`) and its matching tool_result with the
  *      "Command running in background with ID: <id>" stub.
@@ -39,7 +39,7 @@ function assert(cond, msg) {
 }
 
 async function setupFakeTask(taskId, content) {
-  // Create under /tmp/claude-TEST- <pid>/test-session/tasks/<id>.output so
+  // Create under os.tmpdir()/claude-TEST-<pid>/test-session/tasks/<id>.output so
   // the middleware's walker finds it via the existing discovery logic.
   const base = path.join(os.tmpdir(), `claude-TEST-${process.pid}`);
   const dir = path.join(base, 'test-session', 'tasks');
@@ -70,7 +70,7 @@ function buildPayload(toolUseId, taskId, cmd) {
         content: [{
           type: 'tool_result',
           tool_use_id: toolUseId,
-          content: `Command running in background with ID: ${taskId}. Output is being written to: /tmp/...`, //
+          content: `Command running in background with ID: ${taskId}. Output is being written to: <tmpdir>/...`,
         }],
       },
     ],

@@ -24,7 +24,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hme_env import ENV  # noqa: E402
 
-PID_FILE = "/tmp/hme-vram-monitor.pid"  #
+PID_FILE = os.environ["HME_VRAM_MONITOR_PID_FILE"]
 POLL_INTERVAL = ENV.require_int("HME_VRAM_POLL_S")
 MAX_SAMPLES = ENV.require_int("HME_VRAM_MAX_SAMPLES")
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")

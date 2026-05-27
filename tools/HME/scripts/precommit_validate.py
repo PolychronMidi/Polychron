@@ -168,16 +168,16 @@ def staged_blob(path: str) -> bytes | None:
 
 
 def tracked_blob(path: str) -> bytes | None:
-    proc = subprocess.run(
-        ["git", "-C", str(ROOT), "show", f"HEAD:{path}"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    if proc.returncode == 0:
-        return proc.stdout
     try:
         return (ROOT / path).read_bytes()
     except OSError:
+        proc = subprocess.run(
+            ["git", "-C", str(ROOT), "show", f"HEAD:{path}"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        if proc.returncode == 0:
+            return proc.stdout
         return None
 
 
@@ -380,31 +380,11 @@ def full_repo_content_check() -> None:
 def main() -> int:
     load_env_secrets()
     failures.extend(self_protect_failures(ROOT, POLICY, HOOK_PATH, POST_COMMIT_HOOK_PATH, MARKER))
+    if head_tree_empty() and tracked_paths():
+        failures.append("HEAD tree is empty while index has tracked files; refuse to commit from nuked HEAD state")
     full_env_failfast_check()
     full_python_compile_check()
-    for path in staged_paths():
-        reason = blocked_path_reason(path, POLICY)
-        if reason:
-            failures.append(f"{q(path)}: blocked path ({reason})")
-            continue
-        mode = staged_mode(path)
-        if mode == "120000":
-            continue
-        size = staged_size(path)
-        if size is not None and size > MAX_BYTES:
-            failures.append(f"{q(path)}: staged file is {size} bytes, exceeds {MAX_BYTES} byte pre-commit limit")
-            continue
-        data = staged_blob(path)
-        if data is None:
-            continue
-        failures.extend(secret_hits(path, data))
-        if has_conflict_markers(data):
-            failures.append(f"{q(path)}: contains unresolved merge-conflict markers")
-        if is_text(data):
-            text = data.decode("utf-8", "replace")
-            failures.extend(local_path_hits(path, text))
-        executable_sanity(path, mode, data)
-        syntax_check(path, data)
+    full_repo_content_check()
     if failures:
         print("ERROR: pre-commit validation blocked this commit.", file=sys.stderr)
         print("Fix or unstage the following:", file=sys.stderr)

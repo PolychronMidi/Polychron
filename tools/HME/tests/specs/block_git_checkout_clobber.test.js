@@ -75,8 +75,8 @@ test('allows git show HEAD~1 -- .', async () => {
   assert.strictEqual(r.allowed, true);
 });
 
-test('allows git worktree add /tmp/x HEAD~1', async () => {
-  const c = _ctx('git worktree add /tmp/x HEAD~1');
+test('allows git worktree add <isolated-path> HEAD~1', async () => {
+  const c = _ctx('git worktree add ../isolated-worktree HEAD~1');
   const r = await policy.fn(c);
   assert.strictEqual(r.allowed, true);
 });
