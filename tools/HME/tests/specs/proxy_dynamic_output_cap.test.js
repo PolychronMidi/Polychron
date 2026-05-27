@@ -5,6 +5,9 @@ const test = require('node:test');
 const OLD_ENV_CAP = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
 delete process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
 const { applyExplicitOtpmCap } = require('../../proxy/hme_proxy_request_mutation');
+// hme_proxy_request_mutation imports shared.js, which loads .env. Remove the
+// live deployment guardrail again so these tests exercise dynamic policy tiers.
+delete process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
 
 function payloadOf({ model = 'cx/gpt-5.5-xhigh', maxTokens = 128000, approxTokens = 1000 }) {
   // The estimator uses JSON byte size / HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST.
