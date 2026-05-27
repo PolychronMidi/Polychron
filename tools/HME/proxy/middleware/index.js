@@ -195,7 +195,6 @@ const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
   'bash_enrichment',
   'web_enrichment',
   'todo_status_filter',
-  'empty_result_marker',
   'subagent_clean_gate',
   'edit_failure_context',
 ]);
