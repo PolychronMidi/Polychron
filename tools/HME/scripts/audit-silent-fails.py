@@ -28,6 +28,8 @@ from collections import Counter
 
 ROOT = Path(__file__).parent.parent
 HOOKS = ROOT / "hooks"
+if not HOOKS.is_dir():
+    raise SystemExit(f"hooks directory missing: {HOOKS}")
 
 # Patterns that classify a hit as legitimate-tolerant (low priority).
 LEGITIMATE_PATTERNS = [
