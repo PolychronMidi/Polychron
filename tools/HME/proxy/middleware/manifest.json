@@ -16,7 +16,6 @@
     { "file": "03_filter_tools.js", "phase": "normalize", "name": "filter_tools" },
     { "file": "04_compact_tool_descriptions.js", "phase": "normalize", "name": "compact_tool_descriptions" },
     { "file": "04a_memory_redirect.js", "phase": "normalize", "name": "memory_redirect" },
-    { "file": "04b_disable_todowrite_on_direct_tool_surface.js", "phase": "normalize", "name": "disable_todowrite_on_direct_tool_surface" },
     { "file": "05_dominance_prefetch.js", "phase": "enrich", "name": "dominance_prefetch" },
     { "file": "06_secret_sanitizer.js", "phase": "normalize", "name": "secret_sanitizer" },
     { "file": "06a_file_unchanged_swap.js", "phase": "normalize", "name": "file_unchanged_swap" },
