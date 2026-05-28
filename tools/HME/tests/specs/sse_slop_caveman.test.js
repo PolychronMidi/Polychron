@@ -122,8 +122,8 @@ test('caveman patterns do not mutate content inside backtick spans', () => {
 
 test('caveman cleanup preserves boundaries after highlighted code words', () => {
   const result = _stripSlop('Use `stripSlop` testing and `parseResult` relation.');
-  assert.equal(result.out, 'Use `stripSlop` testin & `parseResult` relatn.');
-  assert.doesNotMatch(result.out, /`stripSlop`testin|`parseResult`relatn/);
+  assert.equal(result.out, 'Use `stripSlop` testn & `parseResult` relatn.');
+  assert.doesNotMatch(result.out, /`stripSlop`testn|`parseResult`relatn/);
 });
 
 test('caveman cleanup preserves boundaries around protected file and flag tokens', () => {
