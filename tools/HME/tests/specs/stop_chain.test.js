@@ -84,6 +84,8 @@ function _withChainSandbox(fn) {
     } finally {
       if (original === undefined) delete process.env.PROJECT_ROOT;
       else process.env.PROJECT_ROOT = original;
+      if (originalStrict === undefined) delete process.env.strict_mode;
+      else process.env.strict_mode = originalStrict;
       // Clear cache again so subsequent tests in the same process see the
       // production root.
       for (const k of Object.keys(require.cache)) {
