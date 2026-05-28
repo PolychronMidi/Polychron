@@ -55,8 +55,7 @@ function _dynamicOutputCap(payload) {
   const requested = _positiveNumber(payload && payload.max_tokens) || modelCap;
   const inputTokens = _estimatedInputTokens(payload);
   const context = info.context || ((info.maxInput || 0) + modelCap);
-  // Physical headroom only: output cannot overflow the remaining context
-  // window (reserve 8192 tokens of slack). No input-size policy ladder --
+  // Physical headroom only -- output can't overflow remaining context; no input-size thr
   const headroomCap = context > 0 ? Math.max(2048, context - inputTokens - 8192) : modelCap;
   // Opt-in deliberate ceiling for genuine provider OTPM limits; unset = no throttle.
   const envCeil = _positiveNumber(process.env.HME_PROXY_MAX_OUTPUT_TOKENS);
