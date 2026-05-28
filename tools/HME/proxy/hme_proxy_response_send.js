@@ -158,12 +158,14 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
       stopHookRewritersForSlot,
     } = require('./sse_rewriters');
     const { providerReasoningToThinkingRewrite } = require('./reasoning_to_thinking');
+    const { asciiStripRewrite } = require('./sse_ascii_strip_rewriter');
     const xform = new SseTransform({
       rewriters: [
         dropToolUseRewrite,
         editFallbackToReadRewrite,
         readInputNormalizeRewrite,
         providerReasoningToThinkingRewrite,
+        asciiStripRewrite,
         ...stopHookRewritersForSlot('pre-tool'),
         bashPolicyRewrite,
         longLeadingSleepRewrite,
