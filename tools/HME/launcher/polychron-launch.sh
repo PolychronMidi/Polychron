@@ -207,19 +207,19 @@ else
 fi
 
 # Worker.py: shared across both slots (slots run with HME_PROXY_SUPERVISE=0).
-# Spawn directly here so a single worker serves both backends on :9098.
+# Delegate to proxy-supervisor so launch and recovery use one worker path.
 _WORKER_PORT="${HME_WORKER_PORT:-9098}"
 _WORKER_URL="http://127.0.0.1:${_WORKER_PORT}"
+_PROXY_SUPERVISOR="$PROJECT_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
 if _port_healthy "${_WORKER_URL}/health"; then
   echo "[launch] worker already up on :${_WORKER_PORT}" >&2
+elif [ -x "$_PROXY_SUPERVISOR" ] || [ -f "$_PROXY_SUPERVISOR" ]; then
+  echo "[launch] starting worker.py via proxy-supervisor on :${_WORKER_PORT}..." >&2
+  PROJECT_ROOT="$PROJECT_ROOT" HME_WORKER_PORT="$_WORKER_PORT" bash "$_PROXY_SUPERVISOR" worker-restart || \
+    echo "[launch] WARNING: proxy-supervisor worker-restart failed" >&2
 else
-  echo "[launch] starting worker.py on :${_WORKER_PORT}..." >&2
-  PROJECT_ROOT="$PROJECT_ROOT" HME_WORKER_PORT="$_WORKER_PORT" \
-    setsid nohup python3 "$PROJECT_ROOT/tools/HME/service/worker.py" --port "$_WORKER_PORT" \
-      >> "$PROJECT_ROOT/log/hme-worker.out" 2>&1 < /dev/null &
-  _WORKER_PID=$!
-  disown 2>/dev/null || true
-  _record_pid "worker" "$_WORKER_PID"
+  echo "[launch] ERROR: proxy-supervisor missing; cannot start shared worker" >&2
+  exit 1
 fi
 
 # File-watcher: auto-restart slots (alternating) on tools/HME/proxy/** changes.
