@@ -148,6 +148,9 @@ function recentActivity(n = 4, maxAgeMs = ACTIVITY_MAX_AGE_MS) {
       const e = JSON.parse(line);
       if (!ACTIONABLE.has(e.event)) continue;
       if (e.event === 'coherence_violation' && e.verdict === 'STALE') continue;
+      if (e.event === 'coherence_violation' && e.session === 'autocommit') {
+        try { if (!fs.existsSync(tmpPath('autocommit.fail'))) continue; } catch (_err) { continue; }
+      }
       if (!_isFresh(e, maxAgeMs, now)) continue;
       const parts = [e.event];
       for (const k of ['verdict', 'reason', 'tool']) {
