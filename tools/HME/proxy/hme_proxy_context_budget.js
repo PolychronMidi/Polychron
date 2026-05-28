@@ -278,13 +278,15 @@ function createContextBudget() {
   }
 
   function shrinkForProxyPassthrough(payload) {
+    const plan = effectiveCompactThreshold(payload);
+    if ((plan.maxTier || 0) <= 0) return 0;
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'proxy-passthrough',
       model: payload && (payload.model || payload.target_model || payload.original_model) || '',
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
     return shrinkForPassthrough(payload, {
-      effectiveThreshold: effectiveCompactThreshold,
+      effectiveThreshold: () => plan,
       keepMin,
       maxToolResultAge: staleToolKeepTurns,
       route: 'proxy-passthrough',
