@@ -60,7 +60,7 @@ _SV_SLOT_HEALTH_A="$_SV_ROOT/tools/HME/runtime/proxy-a.health"
 _SV_SLOT_HEALTH_B="$_SV_ROOT/tools/HME/runtime/proxy-b.health"
 _SV_POLL_INTERVAL=10
 _SV_MISS_THRESHOLD=3
-_SV_RELOAD_DEBOUNCE_SECS=300
+_SV_RELOAD_DEBOUNCE_SECS="${HME_PROXY_RELOAD_DEBOUNCE_SEC:-10}"
 
 # Crash-loop detection. If the proxy bundle fails to become healthy after a
 # spawn attempt, count a failure. Repeated failures back off and alert.
