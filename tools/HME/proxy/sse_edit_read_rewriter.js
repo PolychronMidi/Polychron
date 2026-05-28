@@ -26,12 +26,6 @@ function _emitHeldInput(state, index, input) {
 
 // Edit/MultiEdit missing required params -> rewrite to Read of the same file.
 // Claude Code's client-side schema validator rejects Edit calls without
-// old_string/new_string with InputValidationError, forcing a retry-loop.
-// Convert the tool_use block in-flight: if the model emitted Edit-without-
-// required-fields, the call almost always meant "I need to see what's in
-// this file first". Synthesize a Read call (using offset/limit if the Edit
-// hinted at them, else first 50 lines) so the model gets the content
-// instead of a hard error.
 const { editToReadFallback, isInvalidEditInput, isEditFamilyTool, isWriteTool } = require('./edit_validation');
 
 const READ_FALLBACK_TOOL_NAMES = new Set(['Read']);

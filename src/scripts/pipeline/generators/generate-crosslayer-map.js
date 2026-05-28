@@ -1,15 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/generators/generate-crosslayer-map.js
 // Auto-generates a cross-layer intelligence map showing module interactions,
-// ATG channel usage, lifecycle scopes, and inter-module communication paths.
-//
-// Scans src/crossLayer/ source files to extract registration calls, ATG channel
-// references, and inter-module dependency patterns. Produces both JSON and
-// Markdown outputs for forensic and narrative use.
-//
-// Output: metrics/crosslayer-map.json, metrics/crosslayer-map.md
-// Run: node src/scripts/pipeline/generators/generate-crosslayer-map.js
-// Integrated into `npm run main` pipeline.
 
 'use strict';
 

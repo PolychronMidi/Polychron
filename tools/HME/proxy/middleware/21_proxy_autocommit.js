@@ -99,10 +99,6 @@ function _incrementCounter(root) {
 
 // Sweep stale .git/index.lock. Git removes its own lock on clean exit, but
 // SIGKILL'd children (timeouts, OOM, ENOSPC mid-write) leave it behind. The
-// agent should never have to `rm .git/index.lock` by hand -- this is that
-// maintenance, automated. Only removes when (a) no live git process owns
-// the lock (lsof unavailable, so we use age) and (b) the lock is older than
-// a generous threshold so we don't fight an active git invocation.
 function _sweepStaleIndexLock(root) {
   const lock = path.join(root, '.git', 'index.lock');
   let st;
@@ -194,10 +190,6 @@ function _attemptCommit(root, caller) {
   const tstamp = new Date().toISOString().slice(0, 19);
   // Forbid broad git add forms per AGENTS.md.
   // Stage tracked-only via -u, then add untracked files matching safe extensions.
-  // Commit inside the same flock; retry once for transient lock contention.
-  // Gate commit on `git diff --cached --quiet` because `git commit --quiet`
-  // exits 1 with NO stderr/stdout when index is empty -- previously surfaced
-  // as the cryptic "git commit failed twice: no git stderr" failure spam.
   const stageAndCommitScript = [
     'set -e',
     'git add -u',

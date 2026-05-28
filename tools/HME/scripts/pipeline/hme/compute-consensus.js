@@ -1,9 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../proxy/shared/load_env.js');
 // Cross-substrate consensus: 7 substrates (HCI, invariants, predictions,
 // fingerprint, axis rebalance, CLAP, listening verdict) each map to [-1,+1].
-// Mean = consensus, stdev = divergence (often more actionable than any single
-// verdict). Output: metrics/hme-consensus.json; emits consensus_divergence
-// activity event when stdev exceeds threshold. Non-fatal.
 
 'use strict';
 

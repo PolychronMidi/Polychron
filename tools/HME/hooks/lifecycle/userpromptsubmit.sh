@@ -153,11 +153,6 @@ fi
 
 # HME critical todos: surface cached output from prior BG refresh; refresh in
 # background. The synchronous python3 invocation here was a ~500ms hot-path tax
-# that pushed UserPromptSubmit over its 3s warn budget. Cache lag is one turn,
-# which is acceptable for a critical-todos surface (the items change only when
-# todo.md / KB are touched, both already trigger pretooluse/posttooluse hooks).
-# Stderr from the BG worker still lands in hme-bg-critical-todos.err for
-# fail-loud auditing.
 _CRIT_CACHE="$_HME_PROJECT_TMP/hme-critical-todos.cache"
 CRIT_OUT=""
 if [ -s "$_CRIT_CACHE" ]; then

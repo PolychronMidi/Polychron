@@ -1,13 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../proxy/shared/load_env.js');
 // tools/HME/scripts/pipeline/hme/emit-legacy-override-history.js
 //
-// Read axisEnergyEquilibrator.perLegacyOverride + perLegacyOverrideEntries
-// from metrics/trace-summary.json and append one row per pipeline run to
-// metrics/legacy-override-history.jsonl. Enables trend analysis: "has
-// entropy-cap-0.19 ever fired?" is a simple grep over history.
-//
-// Writes a one-line console summary for pipeline output consumption.
-// Non-fatal -- missing trace-summary is a skip, not an error.
 
 'use strict';
 

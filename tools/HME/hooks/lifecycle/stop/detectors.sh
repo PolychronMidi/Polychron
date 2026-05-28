@@ -1,11 +1,6 @@
 source "${_HME_HELPERS_DIR:-${PROJECT_ROOT}/tools/HME/hooks/helpers}/_hooks_bootstrap.sh"
 # Consolidated detector run
 # All 6 stop-side detectors (poll_count / idle_after_bg / psycho_stop /
-# ack_skip / abandon_check / stop_work) run in ONE python3 invocation via
-# run_all.py -- parse the transcript once, share the cache, amortize the
-# ~400ms python-interpreter startup that used to fire per detector.
-# Previous p95 was 5.5s (n=78); consolidated is ~170ms on small
-# transcripts, grows sub-linearly with transcript size.
 INPUT="${INPUT:?detectors.sh requires INPUT from dispatcher (Stop payload)}"
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 # Detector init / parse-case / persist-block all generated from registry.json.

@@ -1,15 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/pipeline/generators/generate-predictions.js
 //
-// Phase 3.4 -- generate cascade predictions for this round's changed files.
-// Reads dependency-graph.json, runs BFS from each changed src/ file, and
-// appends prediction records to metrics/hme-predictions.jsonl.
-//
-// This is the PIPELINE trigger that review_unified couldn't reliably fire
-// (import context issues). Runs as a POST_COMPOSITION step so it has the
-// fresh dependency graph from the current pipeline run.
-//
-// Non-fatal diagnostic -- prediction data feeds reconcile-predictions.js.
 
 'use strict';
 

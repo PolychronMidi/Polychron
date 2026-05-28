@@ -9,13 +9,6 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
 # rationale: fast-path bypass eliminates cold `node -e` startup (~500-2000ms)
 # for commands that cannot possibly trip any policy gate in bash_command_policy.
-# Policy gates target: shell-meta pipelines, mkdir/rm/curl|sh, reader-guard cmds
-# (cat/head/tail/sed/awk/grep/git diff|show|log|blame|cat-file), npm run main|
-# snapshot|lint, snapshot-fingerprint, run.lock writes, polling tail/cat on
-# tmp/*.output, i/<tool> short-form rewrite, lifesaver escalation.
-# A CMD with NO shell metas AND a leading binary that is none of the above is
-# guaranteed allow-noop. The node policy stays authoritative for everything
-# else; this is a pure performance gate, not a semantic divergence.
 _HME_BASH_FAST_OK=0
 case "$CMD" in
   ''|':'|'true'|'false') _HME_BASH_FAST_OK=1 ;;

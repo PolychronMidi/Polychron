@@ -1,14 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // src/scripts/live-dashboard.js
 // Real-time composition dashboard -- WebSocket server that streams
-// telemetry from trace.jsonl as it is written, plus a static HTML page.
-//
-// Usage:
-//   node src/scripts/live-dashboard.js          # start server on :3377
-//   node src/scripts/live-dashboard.js --port N # custom port
-//
-// Open http://localhost:3377 in a browser, then run `npm run main` in
-// another terminal. The dashboard updates in real time as beats are emitted.
 
 'use strict';
 
