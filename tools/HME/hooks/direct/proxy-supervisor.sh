@@ -647,8 +647,7 @@ case "$_action" in
     ;;
   worker-restart)
     _sv_log "manual worker-restart requested"
-    _sv_stop_worker
-    _sv_start_worker
+    _sv_restart_worker
     ;;
   worker-health)
     if curl -sf --max-time 3 "$_SV_WORKER_URL"; then
