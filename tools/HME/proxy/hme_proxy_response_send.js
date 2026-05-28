@@ -187,6 +187,25 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
         );
       } catch (_e) { /* best-effort */ }
     } catch (_e) { /* best-effort */ }
+    // Raw-wire tap: capture the EXACT post-transform bytes streamed to the
+    // client (the dump only has pre-transform outBuf). Fan-out preserves
+    // backpressure; gated on trace so it adds nothing when off.
+    if (process.env.HME_PROXY_RESPONSE_TRACE === '1') {
+      try {
+        const { PassThrough } = require('stream');
+        const tap = new PassThrough();
+        const dir = path.join(projectRoot, 'tmp', 'blank-debug');
+        fs.mkdirSync(dir, { recursive: true });
+        const wirePath = path.join(dir, `wire-${Date.now()}-${process.pid}.sse`);
+        const sink = fs.createWriteStream(wirePath);
+        sink.on('error', () => {});
+        xform.pipe(tap);
+        tap.pipe(clientRes);
+        tap.pipe(sink);
+        xform.end(outBuf);
+        return;
+      } catch (_e) { /* fall through to untapped pipe */ }
+    }
     xform.pipe(clientRes);
     xform.end(outBuf);
     return;
