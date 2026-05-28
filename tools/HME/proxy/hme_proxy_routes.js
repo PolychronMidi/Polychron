@@ -26,10 +26,10 @@ function requiredSupervisorFailures(supervisor) {
     .map(([name]) => name);
 }
 
-function healthVerdict(supervisor, runningSha, currentShaFn = currentRepoGitSha) {
+function healthVerdict(supervisor, runningFingerprint, currentFingerprintFn = () => currentRuntimeFingerprint(PROJECT_ROOT)) {
   const supervisor_failures = requiredSupervisorFailures(supervisor);
-  const current_git_sha = currentShaFn();
-  const runtime_stale = Boolean(current_git_sha && runningSha && current_git_sha !== runningSha);
+  const current_runtime_fingerprint = currentFingerprintFn();
+  const runtime_stale = Boolean(current_runtime_fingerprint && runningFingerprint && current_runtime_fingerprint !== runningFingerprint);
   const ok = supervisor_failures.length === 0;
   return {
     ok,
@@ -37,7 +37,8 @@ function healthVerdict(supervisor, runningSha, currentShaFn = currentRepoGitSha)
     status: ok ? 'ok' : 'degraded',
     httpStatus: ok ? 200 : 503,
     supervisor_failures,
-    current_git_sha,
+    current_git_sha: currentRepoGitSha(),
+    current_runtime_fingerprint,
     runtime_stale,
   };
 }
