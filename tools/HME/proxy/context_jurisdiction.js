@@ -47,21 +47,6 @@ function loadBiasManifest() {
   return _biasByFile;
 }
 
-function loadStalenessMap() {
-  const now = Date.now();
-  if (_stalenessByModule && now - _stalenessLoadedAt < REFRESH_INTERVAL_MS) return _stalenessByModule;
-  _stalenessByModule = new Map();
-  try {
-    const raw = fs.readFileSync(STALENESS_PATH, 'utf8');
-    const data = JSON.parse(raw);
-    for (const m of data.modules || []) {
-      if (m.module) _stalenessByModule.set(m.module, m);
-    }
-  } catch (_err) { /* staleness index absent */ }
-  _stalenessLoadedAt = now;
-  return _stalenessByModule;
-}
-
 function loadOpenHypothesesMap() {
   const now = Date.now();
   if (_openHypothesesByModule && now - _hypothesesLoadedAt < REFRESH_INTERVAL_MS) return _openHypothesesByModule;
