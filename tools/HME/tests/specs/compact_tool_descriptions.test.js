@@ -72,12 +72,10 @@ test('compact_tool_descriptions inserts canonical TodoWrite when missing', () =>
   assert.deepEqual(todo.input_schema.required, ['todos']);
 });
 
-test('legacy direct-surface middleware preserves TodoWrite', () => {
-  const mw = require('../../proxy/middleware/04b_disable_todowrite_on_direct_tool_surface');
+test('retired direct-surface TodoWrite disabler is gone', () => {
+  assert.equal(fs.existsSync(path.join(__dirname, '..', '..', 'proxy', 'middleware', '04b_disable_todowrite_on_direct_tool_surface.js')), false);
   const payload = { tools: [{ name: 'Read' }, { name: 'TodoWrite' }, { name: 'Bash' }] };
-  let dirty = false;
-  mw.onRequest({ payload, ctx: { markDirty: () => { dirty = true; } } });
-  assert.equal(dirty, false);
+  assert.equal(run(payload), true);
   assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TodoWrite', 'Bash']);
 });
 
