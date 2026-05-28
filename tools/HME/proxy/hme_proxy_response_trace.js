@@ -132,6 +132,14 @@ async function traceAnthropicResponse({
 }) {
   if (!isAnthropic) return { outStatus, outHeaders, outBuf };
   try {
+    const traceEnabled = (process.env.HME_PROXY_RESPONSE_TRACE || '0') === '1';
+    const isSse = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
+    const bodyStr = outBuf.toString('utf8');
+    const stats = isSse ? _sseStats(bodyStr) : _jsonStats(bodyStr);
+    const hasErrorEvent = stats.errorEventsSeen.length > 0;
+    const isBlank = !hasErrorEvent && stats.textChars === 0 && stats.toolUseBlocks === 0;
+    const verdict = hasErrorEvent ? 'ERROR' : (isBlank ? 'BLANK' : 'OK');
+    if (!traceEnabled && verdict === 'OK') return { outStatus, outHeaders, outBuf };
     const dumpDir = path.join(PROJECT_ROOT, 'tmp', 'blank-debug');
     try { fs.mkdirSync(dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
     try {
@@ -144,12 +152,6 @@ async function traceAnthropicResponse({
       }
     } catch (_e) { /* ignore rotation errors */ }
 
-    const isSse = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
-    const bodyStr = outBuf.toString('utf8');
-    const stats = isSse ? _sseStats(bodyStr) : _jsonStats(bodyStr);
-    const hasErrorEvent = stats.errorEventsSeen.length > 0;
-    const isBlank = !hasErrorEvent && stats.textChars === 0 && stats.toolUseBlocks === 0;
-    const verdict = hasErrorEvent ? 'ERROR' : (isBlank ? 'BLANK' : 'OK');
     console.error(`[hme-proxy] verdict=${verdict} omni=${isOmniRouteSwap} chain=${swapChain.length} blank=${isBlank} text=${stats.textChars} tools=${stats.toolUseBlocks}`);
 
     const blankRetry = await retryBlankOmniRouteResponse({
