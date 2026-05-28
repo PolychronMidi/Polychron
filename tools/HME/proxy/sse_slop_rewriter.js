@@ -74,6 +74,7 @@ const _ABBREVIATION_MAP = Object.freeze({
   'question': 'q',
   'questions': 'qs',
   'acknowledged': 'k',
+  'understood': 'k',
   'complete': 'done',
   'completed': 'done',
   'current': 'cur',
@@ -173,6 +174,10 @@ const _ABBREVIATION_MAP = Object.freeze({
   'understandable': 'clear',
 
   // Tech & dev.
+  'server': 'svr',
+  'servers': 'svrs',
+  'service': 'svc',
+  'services': 'svcs',
   'autocommit': 'autocmt',
   'clear': 'clr',
   'clearing': 'clrn',
