@@ -176,11 +176,10 @@
     },
     {
       "id": "status-new-modes-dispatched",
-      "description": "status_unified must dispatch the Phase 2.2-2.4 modes (staleness, coherence, blindspots)",
+      "description": "status_unified must dispatch the active Phase 2.3-2.4 modes (coherence, blindspots)",
       "type": "patterns_all_in_file",
       "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [
-        "\"staleness\":",
         "\"coherence\":",
         "\"blindspots\":"
       ],
