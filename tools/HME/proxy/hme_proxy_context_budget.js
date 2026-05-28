@@ -175,7 +175,7 @@ function createContextBudget() {
 
   function payloadModelInfo(payload) {
     const statusline = statuslineContextUsage();
-    const fallbackBudget = statusline.size || lastInputTokensLimit || 0;
+    const fallbackBudget = lastInputTokensLimit || statusline.size || 0;
     if (!payload || typeof payload !== 'object') return { model: '', budget: fallbackBudget };
     const candidates = [payload.model, payload.original_model, payload.target_model].filter(Boolean).map(String);
     for (const id of candidates) {
