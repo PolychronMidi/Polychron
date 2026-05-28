@@ -106,6 +106,7 @@ test('omniroute 200 api_error terminated retries same target once', async () => 
   const transport = makeTransport({ statusCode: 200, body: 'data: {"type":"message_start"}\n\n', headers: { 'content-type': 'text/event-stream' }, calls });
   const { args } = commonArgs({ transport });
   args.status = 200;
+  args.headers = { 'content-type': 'text/event-stream' };
   args.fullBody = Buffer.from('event: error\ndata: {"type":"error","error":{"type":"api_error","message":"terminated"}}\n\n');
   const { handleUpstreamFailureOrSuccess } = require(FAILURE_MOD);
   const out = await handleUpstreamFailureOrSuccess(args);
