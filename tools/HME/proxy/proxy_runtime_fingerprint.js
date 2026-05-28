@@ -6,6 +6,11 @@ const crypto = require('crypto');
 
 const EXT_RE = /\.(js|mjs|cjs|json)$/;
 const SKIP_DIRS = new Set(['node_modules', 'runtime', 'shuffler']);
+const EXTRA_RUNTIME_FILES = [
+  path.join('tools', 'HME', 'launcher', 'polychron-launch.sh'),
+  path.join('tools', 'HME', 'launcher', 'polychron-slot-restart.sh'),
+  path.join('tools', 'HME', 'hooks', 'direct', 'proxy-supervisor.sh'),
+];
 let cache = { root: '', ts: 0, value: '' };
 
 function _walk(dir, out) {
