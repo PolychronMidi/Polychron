@@ -316,7 +316,8 @@ _sv_stop_worker() {
 }
 
 _sv_start_worker() {
-  if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+  if _sv_worker_healthy; then
+    _sv_log "worker already healthy at $_SV_WORKER_URL; adopting existing instance"
     return 0
   fi
   if [ ! -f "$_SV_WORKER_SCRIPT" ]; then
