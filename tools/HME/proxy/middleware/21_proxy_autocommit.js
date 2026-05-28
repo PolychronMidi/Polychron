@@ -12,6 +12,7 @@ const FAIL_FLAG_REL = path.join(STATE_DIR, 'autocommit.fail');
 const COUNTER_REL = path.join(STATE_DIR, 'autocommit.counter');
 const LAST_SUCCESS_REL = path.join(STATE_DIR, 'autocommit.last-success');
 const HEARTBEAT_REL = path.join(STATE_DIR, 'heartbeat-autocommit.ts');
+const LAST_ATTEMPT_REL = path.join(STATE_DIR, 'autocommit.last-attempt');
 // Same lock file _autocommit.sh uses; serializes JS+bash autocommit callers.
 const LOCK_REL = path.join(STATE_DIR, 'autocommit.lock');
 
