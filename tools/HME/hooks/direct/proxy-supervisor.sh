@@ -253,6 +253,102 @@ _sv_spawn_proxy() {
   return 0
 }
 
+
+_sv_worker_pids() {
+  ps -eo pid=,args= 2>/dev/null | awk -v self="$$" -v ppid="$PPID" '
+    $1 == self || $1 == ppid { next }
+    $0 ~ /awk -v self=/ { next }
+    $0 ~ /tools\/HME\/service\/worker\.py/ || $0 ~ /(^|[[:space:]])worker\.py([[:space:]]|$)/ { print $1 }
+  ' | sort -u
+}
+
+_sv_record_bundle_pid() {
+  local label="$1" pid="$2" tmp
+  [ -n "$label" ] && [ -n "$pid" ] || return 0
+  mkdir -p "$(dirname "$_SV_PID_LOG")" 2>/dev/null || true
+  tmp="${_SV_PID_LOG}.tmp.$$"
+  if [ -f "$_SV_PID_LOG" ]; then
+    awk -F= -v drop="$label" '$1 != drop { print }' "$_SV_PID_LOG" > "$tmp" 2>/dev/null || true
+  else
+    : > "$tmp"
+  fi
+  printf '%s=%s\n' "$label" "$pid" >> "$tmp"
+  mv "$tmp" "$_SV_PID_LOG" 2>/dev/null || true
+}
+
+_sv_wait_worker_healthy() {
+  local timeout="${1:-90}" waited=0
+  while [ "$waited" -lt "$timeout" ]; do
+    if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 1
+}
+
+_sv_stop_worker() {
+  local pids pid waited alive
+  mapfile -t pids < <(_sv_worker_pids)
+  [ "${#pids[@]}" -gt 0 ] || return 0
+  for pid in "${pids[@]}"; do
+    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+  done
+  waited=0
+  while [ "$waited" -lt 6 ]; do
+    alive=0
+    for pid in "${pids[@]}"; do
+      [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && alive=1
+    done
+    [ "$alive" = "0" ] && return 0
+    sleep 1
+    waited=$((waited + 1))
+  done
+  for pid in "${pids[@]}"; do
+    [ -n "$pid" ] && kill -KILL "$pid" 2>/dev/null || true
+  done
+  return 0
+}
+
+_sv_start_worker() {
+  if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+    return 0
+  fi
+  if [ ! -f "$_SV_WORKER_SCRIPT" ]; then
+    _sv_log "worker spawn aborted: $_SV_WORKER_SCRIPT missing"
+    return 1
+  fi
+  mkdir -p "$(dirname "$_SV_WORKER_LOG")" 2>/dev/null || true
+  local pythonpath="$_SV_ROOT/tools/HME/service"
+  [ -n "${PYTHONPATH:-}" ] && pythonpath="$pythonpath:${PYTHONPATH}"
+  PROJECT_ROOT="$_SV_ROOT" HME_WORKER_PORT="$_SV_WORKER_PORT" PYTHONPATH="$pythonpath" \
+    setsid nohup python3 "$_SV_WORKER_SCRIPT" --port "$_SV_WORKER_PORT" \
+      >> "$_SV_WORKER_LOG" 2>&1 < /dev/null &
+  local pid=$!
+  disown 2>/dev/null || true
+  _sv_record_bundle_pid worker "$pid"
+  _sv_log "worker spawn attempted (pid=$pid url=$_SV_WORKER_URL)"
+  _sv_wait_worker_healthy 90
+}
+
+_sv_restart_worker() {
+  if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+    return 0
+  fi
+  _sv_log "worker unhealthy at $_SV_WORKER_URL; restarting worker.py directly"
+  _sv_stop_worker
+  _sv_start_worker
+}
+
+_sv_recover_health_issue() {
+  local issue="$1"
+  case "$issue" in
+    worker\ *) _sv_restart_worker ;;
+    *) _sv_spawn_and_verify ;;
+  esac
+}
+
 _sv_spawn_and_verify() {
   # Ensure OmniRoute when required, spawn proxy, wait for bundle health.
 
