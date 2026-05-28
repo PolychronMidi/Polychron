@@ -204,7 +204,7 @@ def kb_health() -> str:
     if not rows:
         return "KB is empty."
     parts = ["# KB Health Report"]
-    # Category / age distribution summary -- always useful even when no staleness.
+    # Category / age distribution summary -- always useful even when no durability issues
     cat_counts = Counter(e.get("category", "general") for e in rows)
     now_ts = time.time()
     ages = [((now_ts - _ts) / 86400) for e in rows
