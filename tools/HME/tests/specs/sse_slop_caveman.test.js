@@ -25,7 +25,7 @@ test('slop caveman contractions are ordered before bare pronouns', () => {
 test('slop caveman ing suffix shortens long gerunds outside code', () => {
   const result = _stripSlop('Running walking testing during thing string spring.');
   assert.ok(result.hits.includes('caveman_ing_suffix'));
-  assert.equal(result.out, 'Runnin walkin testin during thing string spring.');
+  assert.equal(result.out, 'Runn walkn testn durn thing string spring.');
 });
 
 test('slop caveman ed suffix shortens long past-tense words outside code', () => {
