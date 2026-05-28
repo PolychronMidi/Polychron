@@ -972,6 +972,34 @@ test('OmniRoute preflight ignores thinking signatures when deciding compaction p
 });
 
 
+test('unknown Claude model payload does not byte-compact without context budget pressure', () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '2.6';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '20';
+    process.env.HME_PROXY_COMPACT_BYTES = '4000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.99';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '1.10';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.95';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.99';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '1.10';
+    const budget = createContextBudget();
+    const payload = { model: 'claude-opus-4-7', messages: [] };
+    for (let i = 0; i < 80; i += 1) payload.messages.push({ role: i % 2 ? 'assistant' : 'user', content: [{ type: 'text', text: 'x'.repeat(70000) }] });
+    assert.ok(JSON.stringify(payload).length > 4_000_000);
+    const plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.threshold, Infinity);
+    const before = JSON.stringify(payload);
+    assert.equal(budget.shrinkForPassthrough(payload), 0);
+    assert.equal(JSON.stringify(payload), before);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
 test('explicit compact byte cap does not force emergency tier below high-water', () => {
   const oldEnv = { ...process.env };
   try {
