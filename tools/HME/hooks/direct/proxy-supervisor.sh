@@ -179,14 +179,28 @@ _sv_live_git_sha() {
   python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true
 }
 
+# Authoritative staleness: the running proxy computes its boot-time runtime
+# fingerprint vs the current on-disk fingerprint and exposes runtime_stale.
+# Returns 0 (stale -> reload warranted) only when proxy-process CODE actually
+_sv_runtime_stale() {
+  local stale
+  stale=$(curl -sS --max-time 3 "$_SV_URL" 2>/dev/null \
+    | python3 -c 'import json,sys
+try: print("1" if json.load(sys.stdin).get("runtime_stale") else "0")
+except Exception: print("0")' 2>/dev/null)
+  [ "$stale" = "1" ]
+}
+
 _sv_reload_marker_pending() {
   [ -f "$_SV_RELOAD_MARKER" ] || return 1
   local wanted live marker_age now marker_mtime
   wanted=$(cat "$_SV_RELOAD_MARKER" 2>/dev/null | head -1)
   live=$(_sv_live_git_sha)
-  if [ -n "$wanted" ] && [ -n "$live" ] && { [ "$wanted" = "$live" ] || [ "${wanted:0:9}" = "${live:0:9}" ]; }; then
+  # Fingerprint is the real signal: if the running proxy code already matches
+  # disk, the commit touched non-proxy files. Clear the marker (sync the sha
+  if ! _sv_runtime_stale; then
     rm -f "$_SV_RELOAD_MARKER" 2>/dev/null
-    _sv_log "reload marker satisfied wanted=[$wanted] live=[$live]; cleared"
+    _sv_log "reload marker cleared (runtime not stale; non-proxy commit) wanted=[$wanted] live=[$live]"
     return 1
   fi
   marker_mtime=$(stat -c %Y "$_SV_RELOAD_MARKER" 2>/dev/null || echo 0)
@@ -195,10 +209,10 @@ _sv_reload_marker_pending() {
   # Trace one-shot per (wanted,live,age-bucket) pair so silent skips become diagnosable.
   local trace_key="${wanted}:${live}:$((marker_age / _SV_RELOAD_DEBOUNCE_SECS))"
   if [ "$trace_key" != "${_SV_RELOAD_TRACE_LAST:-}" ]; then
-    _sv_log "reload-marker probe wanted=[$wanted] live=[$live] marker_age=${marker_age}s"
+    _sv_log "reload-marker probe (runtime STALE) wanted=[$wanted] live=[$live] marker_age=${marker_age}s"
     _SV_RELOAD_TRACE_LAST="$trace_key"
   fi
-  [ -n "$wanted" ] && [ "$wanted" != "$live" ] && [ "$marker_age" -ge "$_SV_RELOAD_DEBOUNCE_SECS" ]
+  [ "$marker_age" -ge "$_SV_RELOAD_DEBOUNCE_SECS" ]
 }
 
 _sv_wait_bundle_healthy() {
