@@ -73,7 +73,6 @@ HME_METRIC_NAMES = {
     "detector-stats.jsonl",
     "hci-regression-alert.json",
     "kb-signatures.json",
-    "kb-staleness.json",
     "kb-trust-weights.json",
     "legacy-override-history.jsonl",
     "mode-classifier.jsonl",

@@ -5,7 +5,6 @@ rounds and computes what the Evolver has *systematically avoided*:
 
   - Subsystems untouched in the last N rounds
   - Modules written without a prior HME read in the last M rounds
-  - Modules flagged by KB staleness (MISSING coverage entirely)
 
 Surfaced via `status(mode='blindspots')` so the Evolver can query it during
 Phase 1 perception. Intentionally factual ("never touched") rather than
@@ -93,23 +92,6 @@ def _subsystem_for_path(path: str) -> str | None:
     return first
 
 
-def _load_staleness_modules() -> dict[str, str]:
-    path = hme_metric("kb-staleness.json")
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
-    out: dict[str, str] = {}
-    for m in data.get("modules", []):
-        mod = m.get("module")
-        status = m.get("status")
-        if mod and status:
-            out[mod] = status
-    return out
-
 
 def _count_subsystem_files() -> dict[str, int]:
     """Count how many .js files each subsystem contains (full repo total)."""
@@ -193,14 +175,6 @@ def blindspots(window: int = 0) -> str:
         if count >= 2
     ]
 
-    # KB-missing modules that WERE touched in this window
-    staleness_status = _load_staleness_modules()
-    kb_missing_touched = []
-    for mod, _count in modules_written.most_common():
-        if staleness_status.get(mod) == "MISSING":
-            kb_missing_touched.append(mod)
-    kb_missing_touched = kb_missing_touched[:20]
-
     lines = [
         "# Blind Spot Report",
         "",
@@ -223,14 +197,6 @@ def blindspots(window: int = 0) -> str:
             lines.append(f"  - {mod:<30} {count} write(s) without prior read")
     else:
         lines.append("  None -- every repeated write preceded by at least one HME read.")
-
-    lines.append("")
-    lines.append("## Touched modules with no KB coverage")
-    if kb_missing_touched:
-        for mod in kb_missing_touched:
-            lines.append(f"  - {mod}")
-    else:
-        lines.append("  All touched modules have at least one matching KB entry.")
 
     # Bottom-line coverage ratio
     total_modules_touched = len(modules_written)

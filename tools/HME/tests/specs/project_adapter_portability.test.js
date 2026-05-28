@@ -173,7 +173,6 @@ test('project-specific HME analyzer skips when adapter capability is off', () =>
 
 test('metric path helpers split HME and composition outputs', () => {
   assert.match(hmePaths.writeMetricPath('hme-activity.jsonl'), /tools[\/]HME[\/]runtime[\/]metrics/);
-  assert.match(hmePaths.writeMetricPath('kb-staleness.json'), /tools[\/]HME[\/]runtime[\/]metrics/);
   assert.match(hmePaths.writeMetricPath('pipeline-summary.json'), /src[\/]output[\/]metrics/);
   assert.match(hmePaths.writeMetricPath('trace.jsonl'), /src[\/]output[\/]metrics/);
 });
