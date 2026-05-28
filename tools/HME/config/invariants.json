@@ -13,7 +13,7 @@
     "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry",
     "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other",
     "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)",
-    "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
+    "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (durability signal)",
     "shell_output_empty": "Run a command; fail on disallowed exit code, stderr, or stdout. Optional: allow_exit_codes, capture_stderr, finding_label, success_detail.",
     "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken.",
     "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome -- i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
