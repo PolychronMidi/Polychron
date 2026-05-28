@@ -30,7 +30,7 @@ def learn(query: str = "", title: str = "", content: str = "",
     action='export' -> export KB as markdown.
     action='graph' -> spreading-activation knowledge graph (uses query).
     action='dream' -> pairwise similarity pass, find hidden connections.
-    action='health' -> KB staleness check.
+    action='health' -> KB durability/coverage check.
     action='hypothesize' -> register a hypothesis (title=claim, content=
       falsification criterion, tags=modules, query=round tag,
       listening_notes=initial evidence).
