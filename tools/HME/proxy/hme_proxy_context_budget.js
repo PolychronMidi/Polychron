@@ -151,8 +151,8 @@ function createContextBudget() {
     return 3;
   }
 
-  function planForUsage({ usedTokens, budgetTokens, fallbackBytes }) {
-    if (!budgetTokens || budgetTokens <= 0) return { threshold: fallbackBytes, maxTier: 3 };
+  function planForUsage({ usedTokens, budgetTokens }) {
+    if (!budgetTokens || budgetTokens <= 0) return { threshold: Infinity, maxTier: 0 };
     const usedFraction = usedTokens / budgetTokens;
     const gear = pressureForFraction(usedFraction);
     if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
