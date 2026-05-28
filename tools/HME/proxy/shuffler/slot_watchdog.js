@@ -65,10 +65,10 @@ function _respawnDecision(slot) {
   if (heartbeatAge >= STALE_MS && !_pidAlive(h.pid)) {
     return { yes: true, kind: 'dead', reason: `heartbeat ${Math.round(heartbeatAge / 1000)}s stale, pid ${h.pid} dead` };
   }
-  const wanted = _currentRepoGitSha();
-  const have = String(h.git_sha || '').slice(0, 12);
+  const wanted = _currentRuntimeFingerprint();
+  const have = String(h.runtime_fingerprint || '');
   if (wanted && have && have !== wanted) {
-    return { yes: true, kind: 'drift', reason: `git_sha drift live=${have} wanted=${wanted}` };
+    return { yes: true, kind: 'drift', reason: `runtime fingerprint drift live=${have.slice(0, 12)} wanted=${wanted.slice(0, 12)}` };
   }
   return { yes: false };
 }
