@@ -44,6 +44,7 @@ function slotConfig() {
     runtimeDir,
     projectRoot,
     gitSha: _resolveGitSha(projectRoot),
+    runtimeFingerprint: _resolveRuntimeFingerprint(projectRoot),
   };
 }
 
