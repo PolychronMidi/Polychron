@@ -197,9 +197,17 @@ function createContextBudget() {
     console.error(`[hme-proxy] compact-decision model=${model || 'unknown'} bytes=${bytes} est_tokens=${usedTokens} budget=${budgetTokens || 'unknown'} used=${pct} gear=${plan.maxTier || 0} threshold=${threshold} explicit_byte_cap=${cappedByBytes ? 'yes' : 'no'} telemetry_limited=${telemetryLimited ? 'yes' : 'no'}`);
   }
 
+  function compactPressureTokens(payload, bytes) {
+    const statusline = statuslineContextUsage();
+    if (statusline.used > 0) return { usedTokens: statusline.used, source: 'statusline' };
+    if (payload) return { usedTokens: semanticTokenEstimate(payload, process.env), source: 'semantic' };
+    return { usedTokens: Math.ceil(bytes / contextBytesPerTokenEst), source: 'bytes' };
+  }
+
   function effectiveCompactThreshold(payload = null) {
     const bytes = payload ? serializedBytes(payload) : lastPayloadBytes;
-    const usedTokens = payload ? semanticTokenEstimate(payload, process.env) : Math.ceil(bytes / contextBytesPerTokenEst);
+    const pressure = compactPressureTokens(payload, bytes);
+    const usedTokens = pressure.usedTokens;
     const modelInfo = payloadModelInfo(payload);
     // Compaction must be driven by the MODEL CONTEXT WINDOW, never by the
     // Anthropic rate-limit headers (anthropic-ratelimit-input-tokens-*). The
