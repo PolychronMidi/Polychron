@@ -1,4 +1,4 @@
-// src/conductor/texture/articulation/articulationProfiler.js - Note-duration distribution analysis.
+// articulationProfiler.js - Note-duration distribution analysis.
 // Detects staccato-heavy vs legato-heavy texture; flags duration monotony.
 // Pure query API - biases duration selection in motifConfig.
 

@@ -1,4 +1,4 @@
-// src/conductor/texture/phrasing/pedalPointDetector.js - Sustained/repeated bass note detection.
+// pedalPointDetector.js - Sustained/repeated bass note detection.
 // Detects harmonic anchoring from bass pedal points (MIDI <= 55).
 // Stateless - queries ATW per call; returns dominant bass PC and staleness.
 //

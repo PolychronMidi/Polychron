@@ -16,7 +16,7 @@ fi
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
-# Antagonism warning: fires when this edit's module + a prior same-turn edit are registered antagonists (r<=-0.3).
+# Antagonism warning: current edit vs prior same-turn antagonist.
 _TURN_EDIT_STATE="${PROJECT_ROOT}/${_TMP_SUBDIR}/hme-turn-edits.txt"
 _MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
 if [ -n "$_MODULE_BASE" ] && [ -f "${PROJECT_ROOT}/src/output/metrics/hme-coupling.json" ]; then

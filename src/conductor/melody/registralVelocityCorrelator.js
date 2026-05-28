@@ -1,4 +1,4 @@
-// src/conductor/melody/registralVelocityCorrelator.js - Register-velocity correlation tracker.
+// registralVelocityCorrelator.js - Register-velocity correlation tracker.
 // Analyzes correlation between pitch height and velocity (dynamics).
 // Signals when correlation is too rigid (always loud=high) or too random.
 // Flicker modifier to encourage natural but varied register-dynamic mapping.
