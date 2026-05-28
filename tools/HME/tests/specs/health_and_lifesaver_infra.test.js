@@ -62,12 +62,14 @@ module.exports.healthAllowsOptionalSupervisorFailure = async function () {
 };
 
 module.exports.healthFlagsStaleProxyRuntime = async function () {
-  const res = dispatchHealth({
-    worker: { required: true, alive: true, healthy: true, gaveUp: false },
-  }, 'stale-sha');
-  assert.strictEqual(res.statusCode, 200);
-  assert.strictEqual(res.body.ok, true);
-  assert.strictEqual(res.body.runtime_stale, true);
+  const verdict = healthVerdict(
+    { worker: { required: true, alive: true, healthy: true, gaveUp: false } },
+    'old-fingerprint',
+    () => 'new-fingerprint',
+  );
+  assert.strictEqual(verdict.httpStatus, 200);
+  assert.strictEqual(verdict.ok, true);
+  assert.strictEqual(verdict.runtime_stale, true);
 };
 
 module.exports.lifesaverEscalatesCriticalInfraSelfTags = async function () {
