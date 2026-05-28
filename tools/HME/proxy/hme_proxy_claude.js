@@ -54,7 +54,7 @@ const {
 
 function createClaudeHandler(deps) {
   const {
-    PORT, PROXY_VERSION, PROXY_GIT_SHA, PROXY_STARTED_AT, routeMetrics: _routeMetrics,
+    PORT, PROXY_VERSION, PROXY_GIT_SHA, PROXY_RUNTIME_FINGERPRINT, PROXY_STARTED_AT, routeMetrics: _routeMetrics,
     recordProxyRoute,
     effectiveCompactThreshold: _effectiveCompactThreshold,
     shrinkForPassthrough: _shrinkForPassthrough,
