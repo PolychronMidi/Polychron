@@ -31,6 +31,7 @@ function computeRuntimeFingerprint(projectRoot) {
   const proxyRoot = path.join(projectRoot, 'tools', 'HME', 'proxy');
   const files = [];
   _walk(proxyRoot, files);
+  for (const rel of EXTRA_RUNTIME_FILES) files.push(path.join(projectRoot, rel));
   files.sort();
   const hash = crypto.createHash('sha256');
   hash.update('hme-proxy-runtime-v1\0');
