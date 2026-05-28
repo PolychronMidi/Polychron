@@ -72,8 +72,7 @@ _SV_BACKOFF_MAX=600       # cap at 10 minutes
 _SV_SPAWN_MIN_INTERVAL_S=30
 _SV_LAST_SPAWN_FILE="$_SV_ROOT/tools/HME/runtime/proxy-supervisor-last-spawn.ts"
 
-# Active-active slots run with HME_PROXY_SUPERVISE=0, so worker.py is a shared
-# sidecar, not a child of either slot. Keep worker recovery here instead of
+# Active-active slots share worker.py; recover it directly here.
 _SV_WORKER_PORT="$(_hme_service_port worker 2>/dev/null || printf '%s' "${HME_WORKER_PORT:-9098}")"  # silent-ok: optional fallback path.
 _SV_WORKER_URL="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_WORKER_PORT")"  # silent-ok: optional fallback path.
 _SV_WORKER_SCRIPT="$_SV_ROOT/tools/HME/service/worker.py"
