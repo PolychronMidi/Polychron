@@ -2,10 +2,12 @@
 /**
  * Shared non-ASCII -> ASCII replacement table.
  *
- * Single source of truth for both the lint-time fixer
- * (fix-non-ascii.js) and the proxy SSE stripper
- * (tools/HME/proxy/sse_ascii_strip_rewriter.js). Add a mapping here once and
- * every consumer picks it up.
+ * Single source of truth for both the lint-time fixer (fix-non-ascii.js) and
+ * the proxy SSE stripper (tools/HME/proxy/sse_ascii_strip_rewriter.js). Add a
+ * mapping here once and every consumer picks it up.
+ *
+ * Keys use \u escapes so this file stays ASCII-clean (the no-non-ascii lint
+ * rule forbids literal non-ASCII in source).
  */
 
 // Known non-ASCII -> ASCII equivalents.
