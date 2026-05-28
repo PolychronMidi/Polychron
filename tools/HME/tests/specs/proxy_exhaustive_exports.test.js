@@ -65,6 +65,7 @@ for (const { rel, full } of modules) {
   }
 }
 process.stdout.write(JSON.stringify(failures));
+process.exit(failures.length ? 1 : 0);
 `;
   const r = spawnSync(process.execPath, ['-e', script], {
     cwd: REPO_ROOT,
