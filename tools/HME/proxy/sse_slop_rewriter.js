@@ -86,6 +86,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'become': 'bcm',
   'leave': 'lve',
   'live': 'lv',
+  'healthy': 'hlty',
+  'confirm': 'conf',
   'candidate': 'cand',
   'candidates': 'cands',
 
