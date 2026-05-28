@@ -71,7 +71,7 @@ function createProxyRouteDispatcher({
     if (url === '/health' || url === '/ready') {
       const statusFn = supervisorStatus || require('./supervisor/index').status;
       const supervisor = statusFn();
-      const verdict = healthVerdict(supervisor, PROXY_GIT_SHA);
+      const verdict = healthVerdict(supervisor, PROXY_RUNTIME_FINGERPRINT);
       const readyOnly = url === '/ready';
       const readyOk = !verdict.runtime_stale;
       json(clientRes, readyOnly ? (readyOk ? 200 : 503) : verdict.httpStatus, {
