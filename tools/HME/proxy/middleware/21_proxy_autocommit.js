@@ -222,10 +222,14 @@ function _attemptCommit(root, caller) {
       `git commit -m ${JSON.stringify(tstamp + '-retry')} --quiet $no_verify; ` +
     `fi`,
   ].join(' && ');
-  const r = spawnSync('flock', ['-w', '10', lockPath,
+  // -E 75: distinct exit code when the lock is held by another autocommit
+  // caller (onRequest/stop-hook/userpromptsubmit all contend). A conflict
+  // means a concurrent caller is committing the same dirty tree -- benign,
+  const r = spawnSync('flock', ['-E', '75', '-w', '10', lockPath,
     'bash', '-c', stageAndCommitScript],
     { cwd: root, timeout: 60000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
+  if (r.status === 75) return;  // lock held by concurrent caller; let it own the commit
   const combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
   // When the pre-commit hook rejects, git often funnels its stderr away from
