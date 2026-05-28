@@ -24,28 +24,6 @@ function bg(cmd, args, ctx, toolResult, opts = {}) {
 function fp(input) { return (input && (input.file_path || input.path)) || ''; }
 function isWriteTool(name) { return ['Edit', 'Write', 'MultiEdit', 'NotebookEdit'].includes(name); }
 
-function stalenessForFile(file) {
-  const stem = path.basename(file, path.extname(file));
-  try {
-    const data = JSON.parse(fs.readFileSync(STALENESS_PATH, 'utf8'));
-    return (data.modules || []).find((m) => m && m.module === stem) || null;
-  } catch (_err) {
-    return null;
-  }
-}
-
-function emitWriteCoherence(ctx, file) {
-  if (!ctx || typeof ctx.emit !== 'function') return;
-  const stale = stalenessForFile(file);
-  if (!stale || !stale.status) return;
-  const moduleName = path.basename(file, path.extname(file));
-  if (stale.status === 'MISSING') {
-    ctx.emit({ event: 'productive_incoherence', module: moduleName, file, verdict: 'MISSING' });
-  } else if (stale.status === 'STALE') {
-    ctx.emit({ event: 'coherence_violation', module: moduleName, file, verdict: 'STALE' });
-  }
-}
-
 module.exports = {
   name: 'post_write_side_effects',
   onToolResult({ toolUse, toolResult, ctx }) {
