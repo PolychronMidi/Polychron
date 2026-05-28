@@ -1,6 +1,5 @@
 'use strict';
-// Strip non-ASCII from prose channels (text + thinking deltas); leave tool args untouche
-// The first delta in a block that contains non-ASCII gets the redaction banner
+// Strip non-ASCII from prose deltas (tool args untouched); banner once per contaminated 
 
 const ENABLED = process.env.HME_PROXY_STRIP_NON_ASCII === '1';
 
