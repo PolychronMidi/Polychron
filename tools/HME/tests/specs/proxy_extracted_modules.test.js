@@ -85,6 +85,34 @@ function quiet(fn) {
   try { return fn(); } finally { console.error = orig; }
 }
 
+function preserveStatuslineAbsent() {
+  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
+  try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
+  return () => {
+    if (prevStatusline == null) {
+      try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: tempfile cleanup */ }
+    } else {
+      fs.mkdirSync(runtimeDir, { recursive: true });
+      fs.writeFileSync(statusline, prevStatusline);
+    }
+  };
+}
+
+function withStatuslineUnavailable(fn) {
+  const restore = preserveStatuslineAbsent();
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') return result.finally(restore);
+    restore();
+    return result;
+  } catch (err) {
+    restore();
+    throw err;
+  }
+}
+
 function fakeClientRes() {
   const calls = { headers: [], writes: [], ended: false };
   return {
