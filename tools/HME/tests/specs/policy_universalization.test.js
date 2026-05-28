@@ -257,7 +257,7 @@ test('universal pulse supervisor uses the same heartbeat path as pulse config', 
 
 test('universal pulse does not watch obsolete hme-doctor heartbeat', () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(root, 'tools/HME/config/universal_pulse.json'), 'utf8'));
-  const serialized = JSON.stringify(cfg.get ? cfg : cfg);
+  const serialized = JSON.stringify(cfg);
   assert.doesNotMatch(serialized, /doctor_health/);
   assert.doesNotMatch(serialized, /hme-doctor\.ok/);
 });
