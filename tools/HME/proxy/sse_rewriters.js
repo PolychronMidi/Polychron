@@ -39,6 +39,7 @@ function dropToolUseRewrite(eventName, data, ctx) {
 const { serviceUrl } = require('./service_registry');
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { slopStripRewrite } = require('./sse_slop_rewriter');
+const { asciiStripRewrite } = require('./sse_ascii_strip_rewriter');
 
 const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);
