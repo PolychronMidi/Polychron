@@ -232,6 +232,12 @@ function _attemptCommit(root, caller) {
   if (r.status === 75) return;  // lock held by concurrent caller; let it own the commit
   const combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
+  // Benign-race re-probe: autocommit fires on EVERY request mid-turn, so a
+  // commit can race an in-flight Edit or a concurrent caller. If the tree is
+  try {
+    const after = execSync('git status --porcelain', { cwd: root, encoding: 'utf8', timeout: 3000 });
+    if (!after.trim()) { _recordSuccess(root); return; }
+  } catch (_) { /* fall through to real failure path */ }
   // When the pre-commit hook rejects, git often funnels its stderr away from
   // spawn's pipe (the hook runs in its own process group). Re-run
   const precommitDetail = _capturePrecommitFailures(root);
