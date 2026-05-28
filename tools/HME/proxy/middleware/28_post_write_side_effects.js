@@ -32,8 +32,6 @@ module.exports = {
     const input = toolUse.input || {};
     const file = fp(input);
     if (!file) return;
-    emitWriteCoherence(ctx, file);
-    if (/\/ISA\.md$/.test(file)) bg('python3', ['tools/HME/scripts/isa/checkpoint_hook.py', file], ctx, toolResult);
     if (/\/README\.md$/.test(file)) bg('python3', ['tools/HME/scripts/pipeline/hme/build-dir-intent-index.py'], ctx, toolResult);
     const content = String(input.new_string ?? input.content ?? '');
     if (/\/Polychron\/src\/conductor\//.test(file) && /conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b/.test(content)) {
