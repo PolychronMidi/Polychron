@@ -10,6 +10,9 @@ const EXTRA_RUNTIME_FILES = [
   path.join('tools', 'HME', 'launcher', 'polychron-launch.sh'),
   path.join('tools', 'HME', 'launcher', 'polychron-slot-restart.sh'),
   path.join('tools', 'HME', 'hooks', 'direct', 'proxy-supervisor.sh'),
+  // .env governs proxy behavior (HME_PROXY_* flags read at boot); changes
+  // must flip runtime_stale so the file-watcher rotates slots automatically.
+  '.env',
 ];
 let cache = { root: '', ts: 0, value: '' };
 
