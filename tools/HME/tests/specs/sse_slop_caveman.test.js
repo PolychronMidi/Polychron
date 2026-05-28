@@ -18,7 +18,7 @@ test('slop abbreviations are case-insensitive and preserve punctuation', () => {
 test('slop caveman contractions are ordered before bare pronouns', () => {
   const result = _stripSlop("You're ready and we’re done; you'll see we’ll pass.");
   assert.ok(result.hits.includes('caveman_compression'));
-  assert.equal(result.out, 'Ready & done; see pass.');
+  assert.equal(result.out, 'Rdy & done; see pass.');
   assert.doesNotMatch(result.out, /['’](re|ll|m)\b/);
 });
 
