@@ -28,26 +28,27 @@ function cappedMax(payload) {
   return payload.max_tokens;
 }
 
-test('dynamic output cap allows advanced small-context prompts above emergency 8k', () => {
+test('output cap honors the requested budget for small-context prompts', () => {
   const old = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
   process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
   try {
     const p = payloadOf({ approxTokens: 1000, maxTokens: 64000 });
-    assert.equal(cappedMax(p), 32768);
+    assert.equal(cappedMax(p), 64000);
   } finally {
     if (old === undefined) delete process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
     else process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = old;
   }
 });
 
-test('dynamic output cap scales down as estimated input grows', () => {
+test('growing input does NOT throttle output -- only physical headroom + model cap bind', () => {
   const old = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
   process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
   try {
-    assert.equal(cappedMax(payloadOf({ approxTokens: 70_000 })), 12288);
-    assert.equal(cappedMax(payloadOf({ approxTokens: 130_000 })), 8192);
-    assert.equal(cappedMax(payloadOf({ approxTokens: 190_000 })), 6144);
-    assert.equal(cappedMax(payloadOf({ approxTokens: 250_000 })), 4096);
+    // gpt-5.5-xhigh modelCap is 128000; large-but-not-overflowing inputs keep full outpu
+    assert.equal(cappedMax(payloadOf({ approxTokens: 70_000 })), 128000);
+    assert.equal(cappedMax(payloadOf({ approxTokens: 130_000 })), 128000);
+    assert.equal(cappedMax(payloadOf({ approxTokens: 190_000 })), 128000);
+    assert.equal(cappedMax(payloadOf({ approxTokens: 250_000 })), 128000);
   } finally {
     if (old === undefined) delete process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
     else process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = old;
