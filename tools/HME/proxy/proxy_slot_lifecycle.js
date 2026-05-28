@@ -7,14 +7,23 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { requireEnv } = require('./shared/load_env');
+const { computeRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
 
 let _CACHED_GIT_SHA = '';
+let _CACHED_RUNTIME_FINGERPRINT = '';
 function _resolveGitSha(projectRoot) {
   if (_CACHED_GIT_SHA) return _CACHED_GIT_SHA;
   try {
     _CACHED_GIT_SHA = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf8', timeout: 1000 }).trim().slice(0, 12);
   } catch (_) { _CACHED_GIT_SHA = 'unknown'; }
   return _CACHED_GIT_SHA;
+}
+
+function _resolveRuntimeFingerprint(projectRoot) {
+  if (_CACHED_RUNTIME_FINGERPRINT) return _CACHED_RUNTIME_FINGERPRINT;
+  try { _CACHED_RUNTIME_FINGERPRINT = computeRuntimeFingerprint(projectRoot); }
+  catch (_) { _CACHED_RUNTIME_FINGERPRINT = 'unknown'; }
+  return _CACHED_RUNTIME_FINGERPRINT;
 }
 
 function slotConfig() {
