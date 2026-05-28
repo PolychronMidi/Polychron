@@ -18,8 +18,6 @@ const JURISDICTION_ZONES = [
 
 let _biasByFile = null;
 let _biasLoadedAt = 0;
-let _stalenessByModule = null;
-let _stalenessLoadedAt = 0;
 let _openHypothesesByModule = null;
 let _hypothesesLoadedAt = 0;
 let _driftByModule = null;
