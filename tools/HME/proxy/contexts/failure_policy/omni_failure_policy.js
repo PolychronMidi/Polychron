@@ -9,6 +9,7 @@ function classifyFailure(status, errInfo) {
   const text = `${type} ${message} ${code}`;
   if (status === 429 || type === 'rate_limit_error') return 'rate_limit';
   if (type === 'stream_timeout' || code === 'stream_readiness_timeout' || /STREAM_READINESS_TIMEOUT|stream_timeout/i.test(text)) return 'stream_timeout';
+  if (status >= 200 && status < 300 && type === 'api_error' && /^terminated$/i.test(message.trim())) return 'stream_timeout';
   if (/input exceeds the context window/i.test(message)) return 'context_window';
   if ([400, 401, 403].includes(status) && CREDENTIAL_KEYWORDS.test(text)) return 'credential_failure';
   if (status >= 500 && status < 600) return 'upstream_5xx';
