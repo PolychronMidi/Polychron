@@ -1051,7 +1051,7 @@ test('request mutation does not pre-route compact normal OmniRoute Anthropic pay
 });
 
 
-test('explicit compact byte cap does not force emergency tier below high-water', () => {
+test('explicit compact byte cap does not force emergency tier below high-water', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
@@ -1066,7 +1066,7 @@ test('explicit compact byte cap does not force emergency tier below high-water',
   } finally {
     process.env = oldEnv;
   }
-});
+}));
 
 test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () => {
   const oldEnv = { ...process.env };
