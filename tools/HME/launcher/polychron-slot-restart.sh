@@ -197,16 +197,22 @@ while :; do
     fi
   fi
   if ! kill -0 "$_new_pid" 2>/dev/null; then
-    echo "[slot-restart:$SLOT] ERROR: spawned pid $_new_pid died before ready; tail $LOG_FILE" >&2
+    _reason="spawned pid $_new_pid died before ready; tail $LOG_FILE"
+    echo "[slot-restart:$SLOT] ERROR: $_reason" >&2
+    _record_failure "$_reason"
     exit 1
   fi
   if [ $(( $(date +%s) - _t0 )) -ge 30 ]; then
-    echo "[slot-restart:$SLOT] WARN: backend not ready within 30s; tail $LOG_FILE" >&2
-    break
+    _reason="backend not ready within 30s; tail $LOG_FILE"
+    echo "[slot-restart:$SLOT] ERROR: $_reason" >&2
+    _record_failure "$_reason"
+    exit 1
   fi
   sleep 1
 done
 
 # Step 5: bump throttle sentinel on success.
 date +%s > "$RESTART_SENTINEL"
+git -C "$PROJECT_ROOT" rev-parse --short=12 HEAD > "$LAST_VIABLE_FILE" 2>/dev/null || true
+rm -f "$RESTART_FAILURE_FILE" 2>/dev/null || true
 echo "[slot-restart:$SLOT] complete" >&2
