@@ -9,7 +9,6 @@ const hmePaths = require('./infra/hme_paths');
 const REFRESH_INTERVAL_MS = 60_000;
 
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'src/scripts/pipeline/bias-bounds-manifest.json');
-const STALENESS_PATH = hmePaths.hmeMetric('kb-staleness.json');
 const HYPOTHESES_PATH = hmePaths.hmeMetric('hme-hypotheses.json');
 const DRIFT_PATH = hmePaths.hmeMetric('hme-semantic-drift.json');
 const JURISDICTION_ZONES = [
