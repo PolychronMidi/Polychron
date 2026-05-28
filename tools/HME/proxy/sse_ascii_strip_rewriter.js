@@ -22,8 +22,7 @@ function _flaggedSet(ctx) {
 function _rewriteField(data, field, ctx) {
   const original = data.delta[field];
   if (_strip(original) === original) return data;   // clean delta, pass through
-  // Contaminated delta: the stripped residual is itself mangled spam, so we
-  // do NOT keep it. Emit the banner once per block; drop every later
+  // Contaminated: residual is mangled spam, drop it. Banner once per block; later contam
   const flagged = _flaggedSet(ctx);
   const idx = data.index;
   if (flagged.has(idx)) return null;
