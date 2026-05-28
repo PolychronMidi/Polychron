@@ -64,7 +64,9 @@ function _withChainSandbox(fn) {
     fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'), { recursive: true });
     const original = process.env.PROJECT_ROOT;
+    const originalStrict = process.env.strict_mode;
     process.env.PROJECT_ROOT = sandbox;
+    process.env.strict_mode = '1';
     // Bust the require cache for any module that captured PROJECT_ROOT at load
     // time (proxy/shared.js, stop_chain/index.js, stop_chain/shell_policy.js,
     // every policy module, and the unified policy registry). Re-loading after
