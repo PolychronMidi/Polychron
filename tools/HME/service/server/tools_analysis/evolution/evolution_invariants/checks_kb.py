@@ -68,7 +68,7 @@ def _is_regex(s: str) -> bool:
 
 
 def _check_kb_freshness(inv: dict) -> tuple[bool, str]:
-    """Warn if no KB entry has been updated within max_age_days days (staleness signal)."""
+    """Warn if no KB entry has been updated within max_age_days days (durability signal)."""
     if ctx.project_engine is None:
         return True, "engine not available -- skipped (pipeline context)"
     import time
