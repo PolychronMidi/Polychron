@@ -369,8 +369,11 @@ class CommentBloatVerifier(Verifier):
             return errored(summary="could not parse audit output", details=[err[:500]])
         fail_count = len(payload.get("fail", []))
         warn_count = len(payload.get("warn", []))
-        if fail_count == 0:
+        long_count = len(payload.get("long_lines", []))
+        if fail_count == 0 and long_count == 0:
             return passed(summary=f"no comment-bloat FAILs ({warn_count} WARNs)")
-        top = sorted(payload.get("fail", []), key=lambda x: -x.get("block_len", 0))[:10]
-        detail = [f"{e['block_len']:>3}L  {e['path']}:{e['line']}" for e in top]
-        return passed(score=1.0, summary=f"{fail_count} comment-bloat FAIL(s), {warn_count} WARN(s) tracked in canonical backlog", details=detail)
+        top_blocks = sorted(payload.get("fail", []), key=lambda x: -x.get("block_len", 0))[:10]
+        top_long = sorted(payload.get("long_lines", []), key=lambda x: -x.get("line_len", 0))[:10]
+        detail = [f"{e['block_len']:>3}L  {e['path']}:{e['line']}" for e in top_blocks]
+        detail.extend(f"{e['line_len']:>3}c  {e['path']}:{e['line']}" for e in top_long)
+        return failed(summary=f"{fail_count} comment-bloat FAIL(s), {long_count} long comment line(s), {warn_count} WARN(s)", details=detail)
