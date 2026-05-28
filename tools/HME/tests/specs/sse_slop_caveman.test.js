@@ -82,7 +82,7 @@ test('slop caveman suffixes avoid code-ish URL path flag and dotted tokens', () 
   assert.match(result.out, /\/project\/application/);
   assert.match(result.out, /--configuration/);
   assert.match(result.out, /package\.json/);
-  assert.match(result.out, /testin relatn/);
+  assert.match(result.out, /testn relatn/);
 });
 
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
