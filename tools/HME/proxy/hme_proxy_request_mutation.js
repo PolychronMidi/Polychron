@@ -219,7 +219,8 @@ async function mutateClaudeRequest({
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
   if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
-    let compacted = shrinkForPassthrough(payload);
+    let compacted = 0;
+    if (passthrough) compacted += shrinkForPassthrough(payload);
     compacted += compactLargeInteractiveAnthropicPayload(payload);
     if (compacted > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
     if (applyExplicitOtpmCap(payload)) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
