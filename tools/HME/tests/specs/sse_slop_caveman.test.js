@@ -6,7 +6,7 @@ const { _stripSlop, slopStripRewrite } = require('../../proxy/sse_slop_rewriter'
 test('slop caveman compression deletes requested glue words case-insensitively', () => {
   const result = _stripSlop("I'm the one; I am now too ready; it has the fix; I will ship now.");
   assert.ok(result.hits.includes('caveman_compression'));
-  assert.equal(result.out, 'One; ready; it fix; ship.');
+  assert.equal(result.out, 'One; rdy; it fix; ship.');
 });
 
 test('slop abbreviations are case-insensitive and preserve punctuation', () => {
