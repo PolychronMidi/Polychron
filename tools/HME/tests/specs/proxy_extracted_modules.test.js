@@ -923,6 +923,11 @@ test('context budget compaction gears start near context high-water and escalate
     assert.equal(plan.threshold, 970);
   } finally {
     process.env = oldEnv;
+    if (prevStatusline == null) {
+      try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: tempfile cleanup */ }
+    } else {
+      fs.writeFileSync(statusline, prevStatusline);
+    }
   }
 });
 
