@@ -76,7 +76,6 @@ const POST_COMPOSITION = [
   { label: 'snapshot-run',                 cmd: 'node src/scripts/pipeline/snapshot-run.js --perceptual' },
   { label: 'train-verdict-predictor',      cmd: 'node src/scripts/pipeline/train-verdict-predictor.js' },
   // -- HME self-coherence steps --
-  { label: 'build-kb-staleness-index',     cmd: 'python3 tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py' },
   { label: 'check-kb-semantic-drift',      cmd: 'python3 tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py' },
   { label: 'compute-coherence-score',      cmd: 'node tools/HME/scripts/pipeline/hme/compute-coherence-score.js' },
   { label: 'generate-predictions',         cmd: 'node src/scripts/pipeline/generators/generate-predictions.js' },

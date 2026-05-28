@@ -1,6 +1,6 @@
-// HME evolution-priority capstone. Aggregates 12 subsystem signals (negative
-// space, KB staleness, blind spots, coherence budget, trajectory, prediction
-// accuracy, intention gap, semantic drift, patterns, constitutional, doc drift,
+// HME evolution-priority capstone. Aggregates subsystem signals (negative
+// space, blind spots, coherence budget, trajectory, prediction accuracy,
+// intention gap, semantic drift, patterns, constitutional, doc drift,
 // adversarial probes) -> ranked evidence-backed priorities. Output:
 // metrics/hme-evolution-priority.json. Read by Evolver Phase 2. Non-fatal.
 
@@ -29,23 +29,7 @@ function main() {
     }
   }
 
-  // 2. KB staleness -> stale modules need re-understanding
-  const stale = loadJson(metricPath('kb-staleness.json'));
-  if (stale && Array.isArray(stale.modules)) {
-    const staleModules = stale.modules
-      .filter((m) => m.status === 'STALE' || m.status === 'MISSING')
-      .sort((a, b) => (b.staleness_days || 0) - (a.staleness_days || 0));
-    for (const m of staleModules.slice(0, 5)) {
-      priorities.push({
-        target: m.module,
-        category: 'kb_stale',
-        evidence: [{ source: 'staleness', signal: m.status, score: Math.min(1, (m.staleness_days || 0) / 30) }],
-        weight: Math.min(1, (m.staleness_days || 0) / 30) * 0.7,
-      });
-    }
-  }
-
-  // 3. Semantic drift -> KB entries that are wrong
+  // 2. Semantic drift -> KB entries that are wrong
   const drift = loadJson(metricPath('hme-semantic-drift.json'));
   if (drift && Array.isArray(drift.drifted_entries)) {
     for (const d of drift.drifted_entries.slice(0, 5)) {
@@ -59,7 +43,7 @@ function main() {
     }
   }
 
-  // 4. Coherence budget -> too disciplined = explore; too chaotic = consolidate
+  // 3. Coherence budget -> too disciplined = explore; too chaotic = consolidate
   const budget = loadJson(metricPath('hme-coherence-budget.json'));
   if (budget) {
     const score = budget.current_coherence || 0;
@@ -83,7 +67,7 @@ function main() {
     }
   }
 
-  // 5. Compositional trajectory -> plateau detection
+  // 4. Compositional trajectory -> plateau detection
   const trajectory = loadJson(metricPath('hme-compositional-trajectory.json'));
   if (trajectory) {
     const trend = trajectory.classification || trajectory.trend;
@@ -98,7 +82,7 @@ function main() {
     }
   }
 
-  // 6. Prediction accuracy -> where HME's model is wrong
+  // 5. Prediction accuracy -> where HME's model is wrong
   const pred = loadJson(metricPath('hme-prediction-accuracy.json'));
   if (pred && pred.ema !== null && pred.ema < 0.5) {
     priorities.push({
@@ -110,7 +94,7 @@ function main() {
     });
   }
 
-  // 7. Intention gap -> what keeps getting abandoned
+  // 6. Intention gap -> what keeps getting abandoned
   const gap = loadJson(metricPath('hme-intention-gap.json'));
   if (gap && gap.ema !== null && gap.ema > 0.3) {
     priorities.push({
@@ -122,7 +106,7 @@ function main() {
     });
   }
 
-  // 8. Crystallized patterns -> ripe for exploitation
+  // 7. Crystallized patterns -> ripe for exploitation
   const cryst = loadJson(metricPath('hme-crystallized.json'));
   if (cryst && Array.isArray(cryst.patterns || cryst.crystals)) {
     const patterns = cryst.patterns || cryst.crystals;
@@ -137,7 +121,7 @@ function main() {
     }
   }
 
-  // 9. Doc drift -> documentation lagging
+  // 8. Doc drift -> documentation lagging
   const docDrift = loadJson(metricPath('hme-doc-drift.json'));
   if (docDrift && docDrift.meta && docDrift.meta.kb_orphans > 50) {
     priorities.push({
@@ -162,7 +146,7 @@ function main() {
     meta: {
       script: 'compute-evolution-priority.js',
       timestamp: new Date().toISOString(),
-      signals_aggregated: 9,
+      signals_aggregated: 8,
       priorities_generated: ranked.length,
     },
     priorities: ranked.slice(0, 15),

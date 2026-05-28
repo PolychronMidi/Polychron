@@ -12,7 +12,6 @@ Schema (matches propose-next-actions.py's reader):
     "window_rounds": <int>,
     "dark_subsystems":      [{"subsystem": <str>, "files_in_repo": <int>, "rounds_without_writes": <int>}],
     "chronic_unread_modules": [{"module": <str>, "write_count": <int>}],
-    "uncovered_modules":    [<module-name>, ...]
   }
 """
 from __future__ import annotations
@@ -30,7 +29,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 from hme_paths import PROJECT_ROOT, hme_metric  # noqa: E402
 
 ACTIVITY = hme_metric("hme-activity.jsonl")
-STALENESS = hme_metric("kb-staleness.json")
 OUT = hme_metric("hme-blindspots.json")
 WINDOW = int(os.environ['HME_BLINDSPOT_WINDOW'])
 
@@ -98,21 +96,6 @@ def _count_subsystem_files() -> dict[str, int]:
     return counts
 
 
-def _load_staleness() -> dict[str, str]:
-    if not STALENESS.is_file():
-        return {}
-    try:
-        data = json.loads(STALENESS.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {}
-    out: dict[str, str] = {}
-    for m in data.get("modules", []):
-        mod = m.get("module")
-        status = m.get("status")
-        if mod and status:
-            out[mod] = status
-    return out
-
 
 def main() -> int:
     events = _load_events()
@@ -158,19 +141,12 @@ def main() -> int:
         if c >= 2
     ]
 
-    staleness = _load_staleness()
-    uncovered_modules = [
-        mod for mod in modules_written
-        if staleness.get(mod) == "MISSING"
-    ][:20]
-
     out = {
         "generated_at": int(time.time()),
         "window_rounds": len(window_rounds),
         "total_closed_rounds": len(closed),
         "dark_subsystems": dark_subsystems,
         "chronic_unread_modules": chronic_unread,
-        "uncovered_modules": uncovered_modules,
         "coverage": {
             "unique_modules_touched": len(modules_written),
             "total_file_writes": int(sum(modules_written.values())),
@@ -180,7 +156,7 @@ def main() -> int:
     with open(OUT, "w") as f:
         json.dump(out, f, indent=2)
     print(f"compute-blindspots: {len(dark_subsystems)} dark subsystem(s), "
-          f"{len(chronic_unread)} chronic unread, {len(uncovered_modules)} uncovered "
+          f"{len(chronic_unread)} chronic unread "
           f"(window={len(window_rounds)} rounds)")
     return 0
 

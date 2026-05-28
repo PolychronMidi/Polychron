@@ -85,7 +85,6 @@
     "kb-freshness",
     "kb-minimum-entries",
     "kb-no-thinking-leak",
-    "kb-staleness-index-exists",
     "kb-trust-weights-script-exists",
     "l0-channels-defined",
     "l0-channels-used",

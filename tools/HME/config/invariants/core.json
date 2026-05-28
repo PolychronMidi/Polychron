@@ -153,17 +153,6 @@
       "context": "llama.cpp wall-clock enforcement belongs exclusively in llamacpp_daemon.py. No synthesis file may (a) spawn a thread and join(timeout=) on it, or (b) urlopen a llama-server inference URL (_LLAMACPP_ARBITER_URL / _LLAMACPP_CODER_URL) directly  all inference must route through _daemon_generate. Health/probe endpoints (/health, /api/ps) are exempt since they are not inference. _cancellable_urlopen is the preemption primitive and is exempt via marker."
     },
     {
-      "id": "staleness-score-wired-pipeline",
-      "description": "main-pipeline.js POST_COMPOSITION must wire the staleness index + coherence score so they regenerate every run",
-      "type": "patterns_all_in_file",
-      "path": "src/scripts/pipeline/main-pipeline.js",
-      "patterns": [
-        "build-kb-staleness-index\\.py",
-        "compute-coherence-score\\.js"
-      ],
-      "severity": "error"
-    },
-    {
       "id": "semantic-drift-scripts-exist",
       "description": "Phase 3.3  semantic drift checker + signature capture must exist",
       "type": "patterns_all_in_file",

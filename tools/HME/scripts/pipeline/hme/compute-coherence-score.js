@@ -1,5 +1,5 @@
-// Phase-2.3 coherence score: (read_coverage * violation_penalty *
-// staleness_penalty) * exploration_bonus. Lazy coherence_violation -> penalty;
+// Phase-2.3 coherence score: read_coverage * violation_penalty * exploration_bonus.
+// Lazy coherence_violation -> penalty;
 // productive_incoherence -> +20% bonus (rewards novel exploration).
 // Output: metrics/hme-coherence.json. POST_COMPOSITION, non-fatal diagnostic.
 
@@ -10,7 +10,6 @@ const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
 
 const ACTIVITY = metricPath('hme-activity.jsonl');
-const STALENESS = metricPath('kb-staleness.json');
 const VIOLATIONS = metricPath('hme-violations.json');
 const OUT = metricPath('hme-coherence.json');
 
@@ -139,19 +138,7 @@ function main() {
   }
 
   // Component 2: violation penalty (lazy violations only).
-  const stalenessIdxEarly = loadJson(STALENESS);
-  const _statusByModuleEarly = new Map();
-  if (stalenessIdxEarly && Array.isArray(stalenessIdxEarly.modules)) {
-    for (const m of stalenessIdxEarly.modules) {
-      _statusByModuleEarly.set(m.module, m.status);
-    }
-  }
-  const hookViolationsRaw = idx.get('coherence_violation') || [];
-  const hookViolations = hookViolationsRaw.filter(ev => {
-    if (!ev || !ev.module) return true;
-    const status = _statusByModuleEarly.get(ev.module);
-    return status !== 'MISSING';
-  });
+  const hookViolations = idx.get('coherence_violation') || [];
   const violationsFromFile = loadJson(VIOLATIONS);
   const lazyViolationCount = hookViolations.length +
     (violationsFromFile && Array.isArray(violationsFromFile.violations)
@@ -164,45 +151,9 @@ function main() {
   const productiveCount = productiveEvents.length;
   const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
-  // Staleness penalty: ratio of writes to STALE modules only (KB drifted).
-  const stalenessIdx = loadJson(STALENESS);
-  let stalenessPenalty = 1;
-  let touchesOnStale = 0;
-  let touchesOnMissing = 0;
-  let touchesOnFresh = 0;
-  let touchesWithIndexInfo = 0;
-  if (stalenessIdx && Array.isArray(stalenessIdx.modules)) {
-    const statusByModule = new Map();
-    for (const m of stalenessIdx.modules) {
-      statusByModule.set(m.module, m.status);
-    }
-    for (const w of writes) {
-      const mod = w.module;
-      if (!mod) continue;
-      const status = statusByModule.get(mod);
-      if (status === undefined) continue;
-      touchesWithIndexInfo++;
-      if (status === 'STALE') {
-        touchesOnStale++;
-      } else if (status === 'MISSING') {
-        touchesOnMissing++;
-      } else if (status === 'FRESH') {
-        touchesOnFresh++;
-      }
-    }
-    // Only STALE touches (known-drifted code edited without KB refresh)
-    // count against the penalty. MISSING touches are exploration.
-    const penalizingTouches = touchesOnStale;
-    const nonMissingTouches = touchesOnStale + touchesOnFresh;
-    if (nonMissingTouches > 0) {
-      stalenessPenalty = 1 - penalizingTouches / nonMissingTouches;
-    }
-    // If EVERY touch was MISSING, stalenessPenalty stays at 1.0 --
-  }
-
   // When read_coverage is null (no measurable human/agent writes), emit
   const baseScore = readCoverage !== null
-    ? (readCoverage * violationPenalty * stalenessPenalty)
+    ? (readCoverage * violationPenalty)
     : null;
   const score = baseScore !== null
     ? clamp(baseScore * explorationBonus, 0, 1)
@@ -239,21 +190,7 @@ function main() {
         from_activity_stream: hookViolations.length,
         from_violations_file: violationsFromFile && Array.isArray(violationsFromFile.violations)
           ? violationsFromFile.violations.length : 0,
-      },
-      staleness_penalty: Number(stalenessPenalty.toFixed(4)),
-      staleness_detail: {
-        touches_on_stale: touchesOnStale,
-        touches_on_missing: touchesOnMissing,
-        touches_on_fresh: touchesOnFresh,
-        touches_with_index_info: touchesWithIndexInfo,
-        // Distinguishes "no writes to evaluate" (staleness is vacuously
-        evaluation_reason: writes.length === 0
-          ? 'no_writes_to_evaluate'
-          : (touchesWithIndexInfo === 0
-              ? 'writes_exist_but_none_match_staleness_index'
-              : 'evaluated'),
-      },
-      exploration_bonus: Number(explorationBonus.toFixed(4)),
+      },      exploration_bonus: Number(explorationBonus.toFixed(4)),
       exploration_detail: {
         productive_incoherence_count: productiveCount,
         bonus_cap: 1.2,
@@ -272,7 +209,6 @@ function main() {
     `compute-coherence-score: ${pct}/100${deltaStr}  ` +
       `[read=${readPct} ` +
       `lazy=${lazyViolationCount} ` +
-      `stale_pen=${(stalenessPenalty * 100).toFixed(0)}% ` +
       `expl_bonus=${((explorationBonus - 1) * 100).toFixed(0)}% (${productiveCount} productive)]` +
       (readCoverageNullReason ? `  [${readCoverageNullReason}]` : ''),
   );

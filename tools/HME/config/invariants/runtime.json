@@ -7,13 +7,5 @@
       "type": "file_exists",
       "path": "tools/HME/activity/emit.py",
       "severity": "error"
-    },
-    {
-      "id": "kb-staleness-index-exists",
-      "description": "Phase 2.2  KB staleness index builder must exist",
-      "type": "file_exists",
-      "path": "tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py",
-      "severity": "error"
-    }
-  ]
+    }  ]
 }

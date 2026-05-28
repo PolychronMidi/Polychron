@@ -245,23 +245,9 @@
       "patterns": [
         "ctx.emit",
         "post_write_side_effect_failed",
-        "productive_incoherence",
-        "coherence_violation"
+        "bias_bounds_snapshot_queued"
       ],
       "severity": "error",
       "born_from": "2026-05-16 post-write side effects moved from hook fragments to proxy middleware"
-    },
-    {
-      "id": "productive-incoherence-hook-wired",
-      "description": "post-write proxy side effects must classify writes against the staleness index",
-      "type": "patterns_all_in_file",
-      "path": "tools/HME/proxy/middleware/28_post_write_side_effects.js",
-      "patterns": [
-        "productive_incoherence",
-        "kb-staleness.json",
-        "coherence_violation"
-      ],
-      "severity": "error"
-    }
-  ]
+    }  ]
 }
