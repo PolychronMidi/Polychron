@@ -21,6 +21,7 @@ function withEnv(values, fn) {
     'HME_OMO_PHASES',
     'HME_OMO_PRELOAD',
     'HME_OMO_TOOL_BEFORE_WARM_ONLY',
+    'strict_mode',
   ];
   const old = {};
   for (const key of omoKeys) old[key] = process.env[key];
