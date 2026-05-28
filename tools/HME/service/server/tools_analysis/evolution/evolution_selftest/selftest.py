@@ -321,7 +321,7 @@ def hme_selftest(verbose: bool = False) -> str:
         from server.tools_knowledge_dream import kb_health as _kbh
         _kb_health_result = _kbh()
         if "Total:" in _kb_health_result:
-            results.append("PASS: KB health -- staleness/durability check ok")
+            results.append("PASS: KB health -- durability check ok")
         else:
             results.append("WARN: KB health -- returned output but missing expected sections")
     except Exception as e:
