@@ -48,6 +48,8 @@ async function _withMockedStopPolicies(overrides, fn) {
     Module._load = originalLoad;
     if (originalRoot === undefined) delete process.env.PROJECT_ROOT;
     else process.env.PROJECT_ROOT = originalRoot;
+    if (originalStrict === undefined) delete process.env.strict_mode;
+    else process.env.strict_mode = originalStrict;
     for (const k of Object.keys(require.cache)) {
       if (k.startsWith(proxyDir) || k.startsWith(telemetryDir)) delete require.cache[k];
     }
