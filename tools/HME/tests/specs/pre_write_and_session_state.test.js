@@ -37,7 +37,7 @@ function _withSandbox(prefix = 'hme-hooks-') {
   fs.writeFileSync(fakeGit, [
     '#!/usr/bin/env bash',
     'if [ "$1" = "-C" ]; then shift 2; fi',
-    'case "$1" in add|commit|diff|status) exit 0 ;; write-tree) echo 4b825dc642cb6eb9a060e54bf8d69288fbee4904; exit 0 ;; rev-parse) echo testtree; exit 0 ;; *) exit 0 ;; esac',
+    'case "$1" in add|commit|diff|status) exit 0 ;; write-tree) echo 1111111111111111111111111111111111111111; exit 0 ;; rev-parse) echo testtree; exit 0 ;; *) exit 0 ;; esac',
     '',
   ].join('\n'));
   fs.chmodSync(fakeGit, 0o755);
