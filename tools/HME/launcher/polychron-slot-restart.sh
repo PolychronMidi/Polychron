@@ -66,7 +66,85 @@ fi
 
 mkdir -p "$RUNTIME_DIR" "$PROJECT_ROOT/log"
 
-# Step 1: write drain flag; lifecycle inside proxy will observe within HEARTBEAT_SEC and 
+_record_failure() {
+  _reason="$1"
+  _head="$(git -C "$PROJECT_ROOT" rev-parse --short=12 HEAD 2>/dev/null || printf unknown)"
+  printf '[%s] slot=%s head=%s reason=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SLOT" "$_head" "$_reason" > "$RESTART_FAILURE_FILE"
+}
+
+_pick_probe_port() {
+  python3 - <<'PY'
+import socket
+s = socket.socket()
+s.bind(('127.0.0.1', 0))
+print(s.getsockname()[1])
+s.close()
+PY
+}
+
+_wait_ready_file() {
+  _file="$1"
+  _pid="$2"
+  _timeout="$3"
+  _t0="$(date +%s)"
+  while :; do
+    if [ -s "$_file" ]; then
+      _ready="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print('1' if d.get('ready') else '')" "$_file" 2>/dev/null || echo "")"
+      if [ "$_ready" = "1" ]; then
+        return 0
+      fi
+    fi
+    if ! kill -0 "$_pid" 2>/dev/null; then
+      return 2
+    fi
+    if [ $(( $(date +%s) - _t0 )) -ge "$_timeout" ]; then
+      return 3
+    fi
+    sleep 1
+  done
+}
+
+_preflight_candidate() {
+  if [ "${HME_PROXY_PRESTART_PROBE:-1}" = "0" ]; then
+    echo "[slot-restart:$SLOT] prestart probe disabled" >&2
+    return 0
+  fi
+  _probe_port="$(_pick_probe_port)"
+  _probe_health="$RUNTIME_DIR/proxy-$SLOT.preflight.$$.health"
+  _probe_drain="$RUNTIME_DIR/proxy-$SLOT.preflight.$$.drain.flag"
+  _probe_log="$PROJECT_ROOT/log/hme-proxy-$SLOT.preflight.out"
+  rm -f "$_probe_health" "$_probe_drain" 2>/dev/null || true
+  echo "[slot-restart:$SLOT] preflight current build on :$_probe_port before draining incumbent" >&2
+  env HME_PROXY_SLOT="$SLOT" \
+      HME_PROXY_BACKEND_PORT_OVERRIDE="$_probe_port" \
+      HME_PROXY_HEALTH_FILE_OVERRIDE="$_probe_health" \
+      HME_PROXY_DRAIN_FLAG_OVERRIDE="$_probe_drain" \
+      HME_PROXY_SUPERVISE=0 \
+      HME_PROXY_QUIET_IMPORT=1 \
+      node "$PROXY_SCRIPT" >> "$_probe_log" 2>&1 < /dev/null &
+  _probe_pid=$!
+  if _wait_ready_file "$_probe_health" "$_probe_pid" 20; then
+    echo "[slot-restart:$SLOT] preflight ready; preserving last viable fallback while replacing incumbent" >&2
+    kill -TERM "$_probe_pid" 2>/dev/null || true
+    sleep 1
+    kill -KILL "$_probe_pid" 2>/dev/null || true
+    rm -f "$_probe_health" "$_probe_drain" 2>/dev/null || true
+    return 0
+  fi
+  _rc=$?
+  _reason="preflight_failed rc=$_rc port=$_probe_port log=$_probe_log"
+  echo "[slot-restart:$SLOT] ABORT: $_reason; incumbent slot left running" >&2
+  _record_failure "$_reason"
+  kill -TERM "$_probe_pid" 2>/dev/null || true
+  sleep 1
+  kill -KILL "$_probe_pid" 2>/dev/null || true
+  rm -f "$_probe_health" "$_probe_drain" 2>/dev/null || true
+  return 1
+}
+
+_preflight_candidate || exit 1
+
+# Step 1: write drain flag only after the replacement build proves it can boot.
 echo "[slot-restart:$SLOT] writing drain flag $DRAIN_FLAG" >&2
 touch "$DRAIN_FLAG"
 
