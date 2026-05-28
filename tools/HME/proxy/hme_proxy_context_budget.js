@@ -174,13 +174,15 @@ function createContextBudget() {
   }
 
   function payloadModelInfo(payload) {
-    if (!payload || typeof payload !== 'object') return { model: '', budget: lastInputTokensLimit || 0 };
+    const statusline = statuslineContextUsage();
+    const fallbackBudget = statusline.size || lastInputTokensLimit || 0;
+    if (!payload || typeof payload !== 'object') return { model: '', budget: fallbackBudget };
     const candidates = [payload.model, payload.original_model, payload.target_model].filter(Boolean).map(String);
     for (const id of candidates) {
       const ctx = resolveModelCtx(id);
       if (ctx && ctx !== 1000000) return { model: id, budget: ctx };
     }
-    return { model: candidates[0] || '', budget: candidates.length ? 0 : (lastInputTokensLimit || 0) };
+    return { model: candidates[0] || '', budget: fallbackBudget };
   }
 
   function compactDecisionTelemetry({ payload, bytes, usedTokens, budgetTokens, plan, cappedByBytes, telemetryLimited }) {
