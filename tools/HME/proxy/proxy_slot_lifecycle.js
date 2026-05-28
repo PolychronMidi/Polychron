@@ -67,6 +67,7 @@ function attachSlotLifecycle(server, cfg) {
       port: cfg.port,
       slot: cfg.slot,
       git_sha: cfg.gitSha,
+      runtime_fingerprint: cfg.runtimeFingerprint,
     };
     try {
       const tmp = `${cfg.healthFile}.tmp`;
