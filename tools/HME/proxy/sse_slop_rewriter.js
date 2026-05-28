@@ -89,6 +89,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'healthy': 'hlty',
   'confirm': 'conf',
   'reason': 'rsn',
+  'forward': 'fwd',
+  'available': 'avail',
   'candidate': 'cand',
   'candidates': 'cands',
 
@@ -463,9 +465,9 @@ const _SLOP_PATTERNS = [
   // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
   // Prefix must be at least 4 letters, because 4 + "ed" = 6.
   // Runs after compression so explicit deletes like "agreed" win first.
-  // Examples: tested -> testd, walked -> walkd, checked -> checkd.
-  // Non-examples: fixed, red, bed.
-  _suffixRule('caveman_ed_suffix', 'ed', 4, 'd'),
+  _suffixRule('caveman_ed_suffix', 'ed', 3, 'd'),
+
+  _suffixRule('caveman_er_suffix', 'er', 3, 'r'),
 
   // Caveman -tion suffix pass. Only words greater than 6 letters are changed.
   // Prefix must be at least 3 letters, because 3 + "tion" = 7.
