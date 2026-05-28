@@ -47,7 +47,7 @@ function commonArgs({ transport }) {
     tmp,
     args: {
       status: 502,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-test-id': Math.random().toString(36).slice(2) },
       fullBody: Buffer.from(body),
       outBody: Buffer.from('{"model":"claude/claude-opus-4-7","stream":true}'),
       clientReq: { method: 'POST', url: '/v1/messages', headers: {} },
