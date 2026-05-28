@@ -339,7 +339,8 @@ _sv_start_worker() {
 }
 
 _sv_restart_worker() {
-  if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+  if _sv_worker_healthy; then
+    _sv_log "worker already healthy at $_SV_WORKER_URL; adopting existing instance"
     return 0
   fi
   _sv_log "worker unhealthy at $_SV_WORKER_URL; restarting worker.py directly"
