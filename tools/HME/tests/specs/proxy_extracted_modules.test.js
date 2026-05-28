@@ -1068,7 +1068,7 @@ test('explicit compact byte cap does not force emergency tier below high-water',
   }
 }));
 
-test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () => {
+test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   const logs = [];
   try {
@@ -1099,7 +1099,7 @@ test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () =>
   } finally {
     process.env = oldEnv;
   }
-});
+}));
 
 
 test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', async () => {
