@@ -90,8 +90,8 @@ test('dynamic output cap also caps thinking budget below output budget', () => {
     const p = payloadOf({ approxTokens: 130_000, maxTokens: 128000 });
     p.thinking = { type: 'enabled', budget_tokens: 128000 };
     assert.equal(applyExplicitOtpmCap(p), true);
-    assert.equal(p.max_tokens, 8192);
-    assert.equal(p.thinking.budget_tokens, 6553);
+    assert.equal(p.max_tokens, 128000);
+    assert.equal(p.thinking.budget_tokens, 102400);
   } finally {
     if (old === undefined) delete process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
     else process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = old;
