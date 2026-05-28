@@ -305,8 +305,9 @@ function createContextBudget() {
     const model = String(swapModel || '');
     const budget = resolveModelCtx(model);
     const before = serializedBytes(payload);
-    const usedTokens = semanticTokenEstimate(payload, process.env);
-    const plan = planForUsage({ usedTokens, budgetTokens: budget, fallbackBytes: passthroughCompactBytes });
+    const pressure = compactPressureTokens(payload, before);
+    const usedTokens = pressure.usedTokens;
+    const plan = planForUsage({ usedTokens, budgetTokens: budget });
     if (!budget || plan.maxTier <= 0) return 0;
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'omni-context',
@@ -314,8 +315,8 @@ function createContextBudget() {
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
     const afterPruneBytes = serializedBytes(payload);
-    const pruneUsedTokens = semanticTokenEstimate(payload, process.env);
-    const prunePlan = planForUsage({ usedTokens: pruneUsedTokens, budgetTokens: budget, fallbackBytes: passthroughCompactBytes });
+    const prunePressure = compactPressureTokens(payload, afterPruneBytes);
+    const prunePlan = planForUsage({ usedTokens: prunePressure.usedTokens, budgetTokens: budget });
     if (prunePlan.maxTier <= 0 || afterPruneBytes <= prunePlan.threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
       effectiveThreshold: () => prunePlan,
@@ -328,8 +329,8 @@ function createContextBudget() {
       projectRoot: PROJECT_ROOT,
     });
     const after = serializedBytes(payload);
-    const afterTokens = semanticTokenEstimate(payload, process.env);
-    console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${Number.isFinite(prunePlan.threshold) ? prunePlan.threshold : 'none'}B tier=${prunePlan.maxTier} model=${model} est=${afterTokens}/${budget} semantic_tokens changed=${changed}`);
+    const afterPressure = compactPressureTokens(payload, after);
+    console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${Number.isFinite(prunePlan.threshold) ? prunePlan.threshold : 'none'}B tier=${prunePlan.maxTier} model=${model} pressure=${afterPressure.usedTokens}/${budget} pressure_source=${afterPressure.source} changed=${changed}`);
     return changed;
   }
 
