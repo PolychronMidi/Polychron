@@ -99,10 +99,10 @@ def merge_native_todowrite(incoming: list) -> list:
         critical_shown = 0
         critical_overflow = 0
         for t in sorted_entries:
+            if t.get("status") == "completed" or t.get("done") is True:
+                continue
             is_critical = bool(t.get("critical"))
             if is_critical:
-                if t.get("status") == "completed":
-                    continue
                 if critical_shown >= _MAX_CRITICAL_IN_MERGE:
                     critical_overflow += 1
                     continue
@@ -119,6 +119,8 @@ def merge_native_todowrite(incoming: list) -> list:
                 "priority": "high" if is_critical else (t.get("priority") or "medium"),
             })
             for s in t.get("subs", []):
+                if s.get("status") == "completed" or s.get("done") is True:
+                    continue
                 sub_prefix = "  + "
                 flat.append({
                     "content": sub_prefix + s["text"],

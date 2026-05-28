@@ -80,6 +80,10 @@ def _strip_echoes(items: list) -> list:
     return cleaned
 
 
+def _strip_completed(items: list) -> list:
+    return [item for item in items or [] if item.get("status") != "completed"]
+
+
 def main() -> int:
     raw = sys.stdin.read()
     fallback = "[]"
@@ -90,7 +94,7 @@ def main() -> int:
         payload = {}
 
     incoming = payload.get("tool_input", {}).get("todos", []) or []
-    fallback = json.dumps(incoming)
+    fallback = json.dumps(_strip_completed(_strip_echoes(incoming)))
 
     try:
         _stub_server_namespace()

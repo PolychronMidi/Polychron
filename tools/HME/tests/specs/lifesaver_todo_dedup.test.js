@@ -70,6 +70,26 @@ function _withSandboxedTodoStore(fn) {
   }
 }
 
+test('TodoWrite merge helper fallback suppresses completed spam', () => {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-todo-merge-fallback-'));
+  try {
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const helper = path.join(repoRoot, 'tools', 'HME', 'hooks', 'helpers', '_todo_merge.py');
+    const result = spawnSync('python3', [helper], {
+      env: { ...process.env, PROJECT_ROOT: sandbox },
+      encoding: 'utf8',
+      input: JSON.stringify({ tool_input: { todos: [
+        { content: 'old completed', status: 'completed', priority: 'medium' },
+        { content: 'still open', status: 'pending', priority: 'medium' },
+      ] } }),
+    });
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.deepStrictEqual(JSON.parse(result.stdout).map((t) => t.content), ['still open']);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
 test('lifesaver-todo dedup: memory-variant errors collapse to one entry', () => {
   _withSandboxedTodoStore((sandbox) => {
     const result = _runPython(sandbox, `
@@ -188,6 +208,7 @@ todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
 print(json.dumps({
   "native_completed": native.get("status") == "completed" and native.get("done") is True,
   "native_tier_preserved": native.get("tier") == "E5",
+  "completed_native_suppressed": all(i.get("content") != "native item" for i in merged),
   "hme_only_preserved": hme.get("tier") == "E4" and any(i.get("content") == "persistent HME item" for i in merged),
   "todo_has_done_native": bool(__import__("re").search(r"^- \\[x\\] \\[E5\\] native item\\s+#\\d+", todo_md, __import__("re").MULTILINE)),
   "todo_has_hme_next": bool(__import__("re").search(r"^- \\[ \\] \\[E4\\] persistent HME item\\s+#\\d+", todo_md, __import__("re").MULTILINE)),
@@ -197,6 +218,7 @@ print(json.dumps({
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
     assert.strictEqual(parsed.native_completed, true, 'native completion flows into todos.json');
     assert.strictEqual(parsed.native_tier_preserved, true, 'existing native tier survives later native updates');
+    assert.strictEqual(parsed.completed_native_suppressed, true, 'completed native items must not return to TodoWrite');
     assert.strictEqual(parsed.hme_only_preserved, true, 'HME-only item survives native merge and returned payload');
     assert.strictEqual(parsed.todo_has_done_native, true, 'TODO.md renders completed native item in Done');
     assert.strictEqual(parsed.todo_has_hme_next, true, 'TODO.md renders HME-only item in Next');
