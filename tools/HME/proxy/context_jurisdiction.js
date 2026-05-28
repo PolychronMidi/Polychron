@@ -107,11 +107,10 @@ function buildJurisdictionContext(filePaths) {
     const rel = idx >= 0 ? fp.slice(idx) : fp;
     const stem = path.basename(rel, path.extname(rel));
     const bias = biasMap.get(rel) || [];
-    const stale = staleMap.get(stem);
     const hypotheses = hypMap.get(stem) || [];
     const drifted = driftMap.get(stem);
     const inZone = JURISDICTION_ZONES.some((z) => rel.includes(z));
-    if (!inZone && bias.length === 0 && !stale && hypotheses.length === 0 && !drifted) continue;
+    if (!inZone && bias.length === 0 && hypotheses.length === 0 && !drifted) continue;
     anyMatched = true;
     lines.push(`### ${rel}`);
     if (inZone) lines.push(`- Zone: hypermeta jurisdiction -- controller authority boundary`);
