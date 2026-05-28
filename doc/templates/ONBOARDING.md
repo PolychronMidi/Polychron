@@ -103,7 +103,7 @@ i/evolve focus=invariants                40 declarative structural checks
 i/evolve focus=stress                    35 adversarial enforcement probes
 i/evolve focus=contradict                KB conflict scanner
 i/learn query=...                          KB search
-i/learn action=health                    KB staleness check
+i/learn action=health                    KB durability/coverage check
 i/hme admin action=index                 reindex after batch changes
 i/hme admin action=reload                hot-reload tool modules
 TodoWrite                                Claude native task list; HME merges persistent
@@ -177,7 +177,7 @@ A set of post-composition instrumentation features -- musical correlation, coher
 - `kb_trust` -- which KB entries are most trustworthy? (HIGH/MED/LOW tiers + ground-truth override)
 - `crystallized` -- what patterns has HME crystallized? (multi-round patterns from >=3 members * >=3 rounds)
 - `constitution` -- what does Polychron fundamentally IS? (positive identity claims)
-- `staleness` / `doc_drift` -- what KB modules are stale / missing?
+- `drift` / `doc_drift` -- what semantic signatures or docs have diverged?
 - `blindspots` -- what has HME structurally avoided?
 - `probes` -- where might cascade predictions be wrong? (adversarial candidates)
 - `negative_space` -- what architectural gaps does topology predict?

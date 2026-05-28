@@ -204,7 +204,6 @@ def _list_modes():
             ("hme", "full HME selftest output"),
             ("health", "codebase line-count / convention / boundary scan"),
             ("doc_drift", "per-doc orphan-reference counts"),
-            ("staleness", "FRESH/STALE/MISSING per module"),
         ]),
         ("Evolution / planning", [
             ("priorities", "ranked evolution priorities (alias of `next`)"),

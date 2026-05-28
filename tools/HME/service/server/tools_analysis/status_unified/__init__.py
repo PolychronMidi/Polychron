@@ -8,7 +8,7 @@ Original 1244-line status_unified.py split into:
   mode_handlers.py       short _mode_* wrappers + _STATUS_MODES registry
   resource_reports.py    VRAM + freshness + budget reports
   lifecycle_reports.py   resume briefing + evolution priorities + trajectory
-  metric_reports.py      staleness + coherence
+  metric_reports.py      coherence
   dispatch.py            status() function (main dispatcher)
 
 Each submodule is imported at package load so MCP-tool decorators
