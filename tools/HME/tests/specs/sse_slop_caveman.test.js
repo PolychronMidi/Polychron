@@ -128,8 +128,8 @@ test('caveman cleanup preserves boundaries after highlighted code words', () => 
 
 test('caveman cleanup preserves boundaries around protected file and flag tokens', () => {
   const result = _stripSlop('Check package.json testing and --dry-run relation.');
-  assert.equal(result.out, 'Check package.json testin & --dry-run relatn.');
-  assert.doesNotMatch(result.out, /package\.jsontestin|--dry-runrelatn/);
+  assert.equal(result.out, 'Check package.json testn & --dry-run relatn.');
+  assert.doesNotMatch(result.out, /package\.jsontestn|--dry-runrelatn/);
 });
 
 test('caveman patterns do not mutate content inside triple-backtick fences', () => {
