@@ -4,6 +4,7 @@
 # PID at tools/HME/runtime/proxy-supervisor.pid; new invocations no-op if alive.
 # Skips spawn during proxy-maintenance.sh flag windows.
 # Stop: `proxy-supervisor.sh stop`; restart/reload restarts the live proxy child.
+# Worker: `worker-restart` recovers shared worker.py without proxy-slot churn.
 
 set +e
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/helpers/_hooks_bootstrap.sh"
