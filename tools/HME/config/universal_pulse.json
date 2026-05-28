@@ -41,12 +41,6 @@
       "path": "tools/HME/runtime/metrics/hme-activity.jsonl",
       "max_stale_sec": 1800,
       "_why": "Activity bridge writes here for hook/proxy/fs events. Stale-for-30min means the bridge is idle or stopped."
-    },
-    {
-      "name": "doctor_health",
-      "path": "tmp/hme-doctor.ok",
-      "max_stale_sec": 1800,
-      "_why": "hme-doctor writes this after successful health checks; stale means doctor stopped running or health is failing."
     }
   ],
   "hook_latency_probes": [
