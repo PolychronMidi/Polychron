@@ -21,7 +21,7 @@ function slotConfig() {
   const slot = process.env.HME_PROXY_SLOT;
   if (!slot || (slot !== 'a' && slot !== 'b')) return null;
   const projectRoot = requireEnv('PROJECT_ROOT');
-  const backendPort = Number(requireEnv(slot === 'a' ? 'HME_PROXY_BACKEND_A_PORT' : 'HME_PROXY_BACKEND_B_PORT'));
+  const backendPort = Number(process.env.HME_PROXY_BACKEND_PORT_OVERRIDE || requireEnv(slot === 'a' ? 'HME_PROXY_BACKEND_A_PORT' : 'HME_PROXY_BACKEND_B_PORT'));
   const heartbeatSec = Number(requireEnv('HME_PROXY_HEARTBEAT_SEC'));
   const drainTimeoutSec = Number(requireEnv('HME_PROXY_DRAIN_TIMEOUT_SEC'));
   const runtimeDir = path.join(projectRoot, 'tools', 'HME', 'runtime');
@@ -30,8 +30,8 @@ function slotConfig() {
     port: backendPort,
     heartbeatMs: Math.max(250, heartbeatSec * 1000),
     drainTimeoutMs: Math.max(1000, drainTimeoutSec * 1000),
-    healthFile: path.join(runtimeDir, `proxy-${slot}.health`),
-    drainFlagFile: path.join(runtimeDir, `proxy-${slot}.drain.flag`),
+    healthFile: process.env.HME_PROXY_HEALTH_FILE_OVERRIDE || path.join(runtimeDir, `proxy-${slot}.health`),
+    drainFlagFile: process.env.HME_PROXY_DRAIN_FLAG_OVERRIDE || path.join(runtimeDir, `proxy-${slot}.drain.flag`),
     runtimeDir,
     projectRoot,
     gitSha: _resolveGitSha(projectRoot),
