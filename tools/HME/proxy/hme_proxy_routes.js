@@ -82,6 +82,8 @@ function createProxyRouteDispatcher({
         version: PROXY_VERSION,
         git_sha: PROXY_GIT_SHA,
         current_git_sha: verdict.current_git_sha,
+        runtime_fingerprint: PROXY_RUNTIME_FINGERPRINT,
+        current_runtime_fingerprint: verdict.current_runtime_fingerprint,
         runtime_stale: verdict.runtime_stale,
         supervisor_failures: verdict.supervisor_failures,
         started_at: PROXY_STARTED_AT,
