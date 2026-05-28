@@ -31,6 +31,14 @@ const hmeDispatcher = require('../../proxy/hme_dispatcher');
 
 // Invariant: if a circular dependency causes any import to resolve as undefined,
 // fail fast before any test logic runs. Each entry is [name, value, expectedType].
+test('proxy bootstrap reads WORKER_PORT from supervisorChildren', () => {
+  const source = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/proxy/hme_proxy.js'), 'utf8');
+  assert.match(source, /require\('\.\/contexts\/lifecycle_bridge'\)\.supervisorChildren/);
+  const { supervisorChildren } = require('../../proxy/contexts/lifecycle_bridge');
+  assert.equal(typeof supervisorChildren.WORKER_PORT, 'number');
+  assert.ok(supervisorChildren.WORKER_PORT > 0);
+});
+
 test('no circular dependency nullifies imported bindings', () => {
   const checks = [
     ['sessionKey', sessionKey, 'function'],
