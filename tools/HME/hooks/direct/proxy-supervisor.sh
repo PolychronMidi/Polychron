@@ -276,10 +276,14 @@ _sv_record_bundle_pid() {
   mv "$tmp" "$_SV_PID_LOG" 2>/dev/null || true
 }
 
+_sv_worker_healthy() {
+  curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1
+}
+
 _sv_wait_worker_healthy() {
   local timeout="${1:-90}" waited=0
   while [ "$waited" -lt "$timeout" ]; do
-    if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+    if _sv_worker_healthy; then
       return 0
     fi
     sleep 1
