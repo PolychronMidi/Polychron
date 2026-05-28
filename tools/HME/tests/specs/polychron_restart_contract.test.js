@@ -36,3 +36,11 @@ test('codex proxy supervisor restarts on shared routing dependency edits', () =>
     assert.match(supervisor, new RegExp(dep.replace('.', '\\.')));
   }
 });
+
+test('proxy runtime fingerprint covers worker supervisor and launcher paths', () => {
+  const fingerprint = read('tools/HME/proxy/proxy_runtime_fingerprint.js');
+  assert.match(fingerprint, /EXTRA_RUNTIME_FILES/);
+  assert.match(fingerprint, /proxy-supervisor\.sh/);
+  assert.match(fingerprint, /polychron-launch\.sh/);
+  assert.match(fingerprint, /polychron-slot-restart\.sh/);
+});
