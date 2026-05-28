@@ -318,6 +318,7 @@ _sv_start_worker() {
     _sv_log "worker spawn aborted: $_SV_WORKER_SCRIPT missing"
     return 1
   fi
+  [ "$(dirname "$_SV_WORKER_LOG")" = "$_SV_ROOT/log" ] || return 1
   mkdir -p "$(dirname "$_SV_WORKER_LOG")" 2>/dev/null || true
   local pythonpath="$_SV_ROOT/tools/HME/service"
   [ -n "${PYTHONPATH:-}" ] && pythonpath="$pythonpath:${PYTHONPATH}"
