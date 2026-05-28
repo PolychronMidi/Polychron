@@ -1,5 +1,5 @@
 'use strict';
-// Strip non-ASCII from prose deltas (tool args untouched); banner once per contaminated 
+// Strip non-ASCII from prose deltas; tool args untouched.
 
 const ENABLED = process.env.HME_PROXY_STRIP_NON_ASCII === '1';
 
