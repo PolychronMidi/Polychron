@@ -23,6 +23,7 @@ async function _withMockedStopPolicies(overrides, fn) {
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'), { recursive: true });
   process.env.PROJECT_ROOT = sandbox;
+  process.env.strict_mode = '1';
   const proxyDir = path.resolve(__dirname, '..', '..', 'proxy');
   const telemetryDir = path.resolve(__dirname, '..', '..', 'telemetry');
   for (const k of Object.keys(require.cache)) {
