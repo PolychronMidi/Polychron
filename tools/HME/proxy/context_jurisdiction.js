@@ -156,7 +156,6 @@ function driftFor(stem) { return loadDriftMap().get(stem) || null; }
 
 module.exports = {
   loadBiasManifest,
-  loadStalenessMap,
   loadOpenHypothesesMap,
   loadDriftMap,
   isJurisdictionFile,
