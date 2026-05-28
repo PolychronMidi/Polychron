@@ -1,6 +1,5 @@
 'use strict';
-// Strip non-ASCII from model PROSE channels (text + thinking deltas) only.
-// Tool-call arguments (input_json_delta) are left untouched: file contents,
+// Strip non-ASCII from prose channels (text + thinking deltas); leave tool args untouche
 
 const ENABLED = process.env.HME_PROXY_STRIP_NON_ASCII === '1';
 
