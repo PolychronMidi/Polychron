@@ -7,7 +7,6 @@
     "tools/HME/tests/specs/metaprofile_next_level.test.js",
     "tools/HME/tests/specs/rhythm_flair.test.js",
     "tools/csv_maestro/py_midicsv/midi_converters.py",
-    "tools/HME/skills/ISA/TEMPLATE.md",
     "tools/HME/hooks/README.md",
     "tools/HME/service/server/tools_analysis/perceptual_inference.py",
     "tools/HME/service/server/tools_analysis/trust_analysis.py",

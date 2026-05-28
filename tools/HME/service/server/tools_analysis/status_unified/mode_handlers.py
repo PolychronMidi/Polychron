@@ -10,7 +10,7 @@ from .resource_reports import _vram_report, _freshness_report, _budget_report
 from .lifecycle_reports import (
     _resume_briefing, _evolution_priority_report, _trajectory_report,
 )
-from .metric_reports import _staleness_report, _coherence_report
+from .metric_reports import _coherence_report
 
 # Re-export handlers from sibling modules.
 from .status_modes_basic import (  # noqa: F401
@@ -71,7 +71,6 @@ _STATUS_MODES: dict[str, callable] = {
     "codex_unknown_calls": _mode_codex_unknown_calls,
     "hook-decisions": _mode_hook_decisions,
     "hook_decisions": _mode_hook_decisions,
-    "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,
     "hypotheses": _mode_hypotheses,

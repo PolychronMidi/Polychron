@@ -1,4 +1,4 @@
-"""Metric reports: staleness, coherence."""
+"""Metric reports: coherence."""
 from __future__ import annotations
 
 import json
@@ -12,72 +12,6 @@ from ..synthesis_session import append_session_narrative, get_session_narrative,
 
 logger = logging.getLogger("HME")
 
-
-def _staleness_report() -> str:
-    """Render metrics/kb-staleness.json. Phase 2.2 of openshell feature mapping."""
-    path = hme_metric("kb-staleness.json")
-    if not os.path.exists(path):
-        return (
-            "# KB Staleness Index\n\n"
-            "tools/HME/runtime/metrics/kb-staleness.json not found.\n"
-            "Run: python3 tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py"
-        )
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError) as _e:
-        return f"# KB Staleness Index\n\nCould not read: {type(_e).__name__}: {_e}"
-    meta = data.get("meta", {})
-    modules = data.get("modules", [])
-    by_status = meta.get("by_status", {})
-    by_territory = meta.get("by_territory_status", {}) or {}
-    stale = [m for m in modules if m.get("status") == "STALE"]
-    def _stale_key(m):
-        _sd = m.get("staleness_days")
-        return 0 if _sd is None else _sd
-    stale.sort(key=_stale_key, reverse=True)
-    missing = [m for m in modules if m.get("status") == "MISSING"]
-    missing.sort(key=lambda m: (m.get("territory") != "project", m.get("module", "")))
-    lines = [
-        "# KB Staleness Index",
-        "",
-        f"Generated: {meta.get('timestamp_iso', '?')}  "
-        f"modules={meta.get('modules_tracked', '?')}  "
-        f"KB entries={meta.get('kb_entries_total', '?')}",
-        f"Threshold: {meta.get('stale_days_threshold', '?')} days",
-        "",
-        "## Status counts",
-        f"  FRESH   {by_status.get('FRESH', 0)}",
-        f"  STALE   {by_status.get('STALE', 0)}",
-        f"  MISSING {by_status.get('MISSING', 0)}",
-    ]
-    if by_territory:
-        lines.append("")
-        lines.append("## Status by territory")
-        for territory, counts in sorted(by_territory.items()):
-            lines.append(
-                f"  {territory:<7} FRESH={counts.get('FRESH', 0)} "
-                f"STALE={counts.get('STALE', 0)} "
-                f"MISSING={counts.get('MISSING', 0)}"
-            )
-    if stale:
-        lines.append("")
-        lines.append("## Stale modules (KB older than code)")
-        for m in stale[:25]:
-            days = m.get("staleness_days")
-            days_s = f"{days:6.1f}d" if isinstance(days, (int, float)) else "  ?"
-            lines.append(
-                f"  {days_s}  {m.get('module', '?'):<30}  "
-                f"{m.get('kb_entries_matched', 0)} hits  {m.get('file_path', '?')}"
-            )
-        if len(stale) > 25:
-            lines.append(f"  ... and {len(stale) - 25} more")
-    if missing:
-        lines.append("")
-        lines.append(f"## Modules with no KB coverage ({len(missing)} total, showing first 20)")
-        for m in missing[:20]:
-            lines.append(f"  - {m.get('module', '?')}  ({m.get('file_path', '?')})")
-    return "\n".join(lines)
 
 
 def _coherence_report() -> str:
@@ -121,13 +55,10 @@ def _coherence_report() -> str:
     # Display labels use *_score (higher=better, 100=perfect) so the "penalty"
     _rcd = comps.get('read_coverage_detail') if isinstance(comps.get('read_coverage_detail'), dict) else {}
     _vd = comps.get('violation_detail') if isinstance(comps.get('violation_detail'), dict) else {}
-    _sd = comps.get('staleness_detail') if isinstance(comps.get('staleness_detail'), dict) else {}
     _v_count = _vd['count'] if 'count' in _vd else 0
     _v_saturated = " -- SATURATED, >=10 violations indistinguishable" if _v_count >= 10 else ""
     _rc_prior = _rcd['writes_with_prior_read'] if 'writes_with_prior_read' in _rcd else 0
     _rc_total = _rcd['total_writes'] if 'total_writes' in _rcd else 0
-    _st_touched = _sd['touches_on_stale_or_missing'] if 'touches_on_stale_or_missing' in _sd else 0
-    _st_withinfo = _sd['touches_with_index_info'] if 'touches_with_index_info' in _sd else 0
     lines = [
         "# Round Coherence Score",
         "",
@@ -138,14 +69,12 @@ def _coherence_report() -> str:
         f"({_rc_prior}/{_rc_total} writes had prior HME read)",
         f"  boundary_score  {_pct(comps.get('violation_penalty'))}   "
         f"({_v_count} boundary violations this round{_v_saturated})",
-        f"  kb_freshness    {_pct(comps.get('staleness_penalty'))}   "
-        f"({_st_touched}/{_st_withinfo} writes touched stale/missing-KB modules)",
     ]
     # Gentle interpretation line -- helps users who aren't steeped in the scoring.
     if isinstance(score, (int, float)):
         if score >= 90:
             lines.append("")
-            lines.append("Interpretation: HEALTHY -- high read-coverage, few violations, KB tracks code.")
+            lines.append("Interpretation: HEALTHY -- high read-coverage and few violations.")
         elif score >= 70:
             lines.append("")
             lines.append("Interpretation: ACCEPTABLE -- one or two components dragging; see the lowest above.")
@@ -154,7 +83,7 @@ def _coherence_report() -> str:
             lines.append("Interpretation: DEGRADED -- address the lowest component before next major change.")
         else:
             lines.append("")
-            lines.append("Interpretation: POOR -- KB/code alignment is breaking down. Do `i/status mode=staleness` + `i/status mode=blindspots` for specifics.")  # tool-form-ok: prose with embedded command examples
+            lines.append("Interpretation: POOR -- coherence is breaking down. Do `i/status mode=blindspots` for specifics.")  # tool-form-ok: prose with embedded command examples
     if prev is not None:
         lines.append("")
         if isinstance(prev, (int, float)) and isinstance(score, (int, float)):

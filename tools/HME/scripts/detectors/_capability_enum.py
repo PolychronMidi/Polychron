@@ -41,7 +41,6 @@ THINKING_CAPABILITIES = (
     # Project-specific
     "FeedbackMemoryConsult",    # grep prior feedback / KB for matching incidents
     "ContextSearch",            # 2-phase prior project work search
-    "ISA",                      # ISA-skill invocation (when analytical, not just scaffold)
     "Evals",                    # code/model/human grader scoring
     "BeCreative",               # divergent ideation
     "BitterPillEngineering",    # over-prompting audit
