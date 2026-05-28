@@ -13,6 +13,10 @@ test('502 stream_timeout -> stream_timeout', () => {
   assert.equal(classifyFailure(502, { code: 'STREAM_READINESS_TIMEOUT' }), 'stream_timeout');
 });
 
+test('OmniRoute 200 api_error terminated -> stream_timeout', () => {
+  assert.equal(classifyFailure(200, { type: 'api_error', message: 'terminated' }), 'stream_timeout');
+});
+
 test('SSE context-window message -> context_window', () => {
   assert.equal(classifyFailure(200, { message: 'input exceeds the context window' }), 'context_window');
 });
