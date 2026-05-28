@@ -220,7 +220,7 @@ def kb_health() -> str:
     parts.append("\n## Category distribution")
     for cat, n in cat_counts.most_common():
         parts.append(f"  {cat:<16s} {n}")
-    stale = []
+    issue_rows = []
     healthy = []
     for entry in rows:
         title = entry.get("title", "")
