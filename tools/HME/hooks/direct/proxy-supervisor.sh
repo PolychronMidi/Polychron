@@ -389,6 +389,13 @@ _sv_spawn_and_verify() {
     if _sv_bundle_healthy; then
       return 0
     fi
+    local child_issue
+    child_issue=$(_sv_child_health_issue)
+    if [ -n "$child_issue" ]; then
+      case "$child_issue" in
+        worker\ *) _sv_restart_worker; return $? ;;
+      esac
+    fi
     local restart_script="$_SV_ROOT/tools/HME/launcher/polychron-proxy-restart.sh"
     if [ -x "$restart_script" ]; then
       _sv_log "proxy responding with unhealthy state (http=${proxy_code}); running polychron-proxy-restart.sh"
