@@ -209,8 +209,6 @@ function createContextBudget() {
     const pressure = compactPressureTokens(payload, bytes);
     const usedTokens = pressure.usedTokens;
     const modelInfo = payloadModelInfo(payload);
-    // Compaction must be driven by the MODEL CONTEXT WINDOW, never by the
-    // Anthropic rate-limit headers (anthropic-ratelimit-input-tokens-*). The
     const budgetTokens = modelInfo.budget;
     let plan = planForUsage({ usedTokens, budgetTokens, fallbackBytes: passthroughCompactBytes });
     let cappedByBytes = false;
