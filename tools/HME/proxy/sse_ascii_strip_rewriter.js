@@ -21,16 +21,14 @@ function _flaggedSet(ctx) {
 
 function _rewriteField(data, field, ctx) {
   const original = data.delta[field];
-  const stripped = _strip(original);
-  if (stripped === original) return data;     // clean delta, pass through
+  if (_strip(original) === original) return data;   // clean delta, pass through
+  // Contaminated delta: the stripped residual is itself mangled spam, so we
+  // do NOT keep it. Emit the banner once per block; drop every later
   const flagged = _flaggedSet(ctx);
   const idx = data.index;
-  let out = stripped;
-  if (!flagged.has(idx)) {
-    flagged.add(idx);
-    out = stripped.trim() ? `${BANNER} ${stripped}` : BANNER;
-  }
-  return { ...data, delta: { ...data.delta, [field]: out } };
+  if (flagged.has(idx)) return null;
+  flagged.add(idx);
+  return { ...data, delta: { ...data.delta, [field]: BANNER } };
 }
 
 function asciiStripRewrite(eventName, data, ctx) {
