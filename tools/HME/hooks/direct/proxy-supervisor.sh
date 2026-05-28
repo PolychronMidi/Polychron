@@ -638,6 +638,17 @@ case "$_action" in
     "$_SV_ROOT/tools/HME/launcher/polychron-proxy-restart.sh"
     "$_SV_SELF" start >/dev/null 2>&1 || true
     ;;
+  worker-restart)
+    _sv_log "manual worker-restart requested"
+    _sv_stop_worker
+    _sv_start_worker
+    ;;
+  worker-health)
+    if curl -sf --max-time 3 "$_SV_WORKER_URL"; then
+      exit 0
+    fi
+    exit 1
+    ;;
   status)
     if [ -f "$_SV_PID_FILE" ]; then
       pid=$(cat "$_SV_PID_FILE")
@@ -648,6 +659,11 @@ case "$_action" in
       fi
     else
       echo "not running"
+    fi
+    if curl -sf --max-time 3 "$_SV_WORKER_URL" >/dev/null 2>&1; then
+      echo "worker healthy ($_SV_WORKER_URL)"
+    else
+      echo "worker unhealthy ($_SV_WORKER_URL)"
     fi
     ;;
   _loop)
