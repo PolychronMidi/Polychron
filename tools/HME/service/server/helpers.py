@@ -63,9 +63,16 @@ def get_context_budget() -> str:
     Returns 'greedy', 'moderate', 'conservative', or 'minimal'.
     Audit sessions get a budget boost (more data density desired).
     Editing sessions get a budget reduction (concise output preferred)."""
-    context_file = os.environ["HME_CLAUDE_CONTEXT_FILE"]
-    with open(context_file) as _f:
-        ctx_data = json.load(_f)
+    context_file = os.environ.get("HME_CLAUDE_CONTEXT_FILE") or os.environ.get("HME_CTX_FILE")
+    if context_file and not os.path.exists(context_file):
+        fallback = os.environ.get("HME_CTX_FILE")
+        if fallback and os.path.exists(fallback):
+            context_file = fallback
+    if context_file and os.path.exists(context_file):
+        with open(context_file) as _f:
+            ctx_data = json.load(_f)
+    else:
+        ctx_data = {}
     remaining = ctx_data.get("remaining_pct") or 50
 
     # Session intent adjustment (soft signal -- safe to skip if session module
