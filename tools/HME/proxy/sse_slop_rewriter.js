@@ -83,6 +83,11 @@ const _ABBREVIATION_MAP = Object.freeze({
   'difficult': 'hard',
   'important': 'impt',
   'necessary': 'req',
+  'become': 'bcm',
+  'leave': 'lve',
+  'live': 'lv',
+  'candidate': 'cand',
+  'candidates': 'cands',
 
   // Contractions / common modal phrases.
   'cannot': "can't",
