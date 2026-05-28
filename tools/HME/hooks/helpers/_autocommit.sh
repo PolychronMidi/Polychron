@@ -157,8 +157,18 @@ _ac_do_commit() {
   _ac_err_buf=$(mktemp "$_AC_ROOT/tools/HME/runtime/hme-ac-err.XXXXXX" 2>/dev/null || echo "$_AC_ROOT/tools/HME/runtime/hme-ac-err.$$")  # silent-ok: optional fallback path.
   # shellcheck disable=SC2094
   exec 9>"$_AC_LOCK_FILE"
-  if ! flock -w 30 9 2>/dev/null; then  # silent-ok: optional fallback path.
-    _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE; aborting autocommit rather than proceeding unlocked"
+  # -E 75: lock held by a concurrent autocommit caller (proxy onRequest /
+  # other hook) means that caller owns this dirty tree -- benign, NOT a
+  # failure. Only a genuine non-conflict flock error is worth recording.
+  flock -E 75 -w 30 9 2>/dev/null
+  _ac_flock_rc=$?
+  if [ "$_ac_flock_rc" = 75 ]; then
+    rm -f "$_ac_err_buf" 2>/dev/null
+    exec 9>&-
+    return 0
+  fi
+  if [ "$_ac_flock_rc" != 0 ]; then
+    _ac_record_failure "[$caller] flock failed (rc=$_ac_flock_rc) on $_AC_LOCK_FILE; aborting autocommit rather than proceeding unlocked"
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
     return 1
