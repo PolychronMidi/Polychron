@@ -197,9 +197,11 @@ function createContextBudget() {
     console.error(`[hme-proxy] compact-decision model=${model || 'unknown'} bytes=${bytes} est_tokens=${usedTokens} budget=${budgetTokens || 'unknown'} used=${pct} gear=${plan.maxTier || 0} threshold=${threshold} explicit_byte_cap=${cappedByBytes ? 'yes' : 'no'} telemetry_limited=${telemetryLimited ? 'yes' : 'no'}`);
   }
 
-  function compactPressureTokens(payload, bytes) {
-    const statusline = statuslineContextUsage();
-    if (statusline.used > 0) return { usedTokens: statusline.used, source: 'statusline' };
+  function compactPressureTokens(payload, bytes, opts = {}) {
+    if (!opts.ignoreStatusline) {
+      const statusline = statuslineContextUsage();
+      if (statusline.used > 0) return { usedTokens: statusline.used, source: 'statusline' };
+    }
     if (payload) return { usedTokens: semanticTokenEstimate(payload, process.env), source: 'semantic' };
     return { usedTokens: Math.ceil(bytes / contextBytesPerTokenEst), source: 'bytes' };
   }
@@ -305,7 +307,7 @@ function createContextBudget() {
     const model = String(swapModel || '');
     const budget = resolveModelCtx(model);
     const before = serializedBytes(payload);
-    const pressure = compactPressureTokens(payload, before);
+    const pressure = compactPressureTokens(payload, before, { ignoreStatusline: true });
     const usedTokens = pressure.usedTokens;
     const plan = planForUsage({ usedTokens, budgetTokens: budget });
     if (!budget || plan.maxTier <= 0) return 0;
@@ -315,7 +317,7 @@ function createContextBudget() {
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
     const afterPruneBytes = serializedBytes(payload);
-    const prunePressure = compactPressureTokens(payload, afterPruneBytes);
+    const prunePressure = compactPressureTokens(payload, afterPruneBytes, { ignoreStatusline: true });
     const prunePlan = planForUsage({ usedTokens: prunePressure.usedTokens, budgetTokens: budget });
     if (prunePlan.maxTier <= 0 || afterPruneBytes <= prunePlan.threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
@@ -329,7 +331,7 @@ function createContextBudget() {
       projectRoot: PROJECT_ROOT,
     });
     const after = serializedBytes(payload);
-    const afterPressure = compactPressureTokens(payload, after);
+    const afterPressure = compactPressureTokens(payload, after, { ignoreStatusline: true });
     console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${Number.isFinite(prunePlan.threshold) ? prunePlan.threshold : 'none'}B tier=${prunePlan.maxTier} model=${model} pressure=${afterPressure.usedTokens}/${budget} pressure_source=${afterPressure.source} changed=${changed}`);
     return changed;
   }
