@@ -885,7 +885,11 @@ test('stop SSE writer includes required Anthropic stream envelope', () => {
 
 test('context budget compaction gears start near context high-water and escalate', () => {
   const oldEnv = { ...process.env };
+  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
   try {
+    try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
