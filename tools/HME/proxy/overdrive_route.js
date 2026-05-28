@@ -193,12 +193,15 @@ function upstreamModelId(model) {
 
 function _stripGo(id) { return upstreamModelId(id); }
 
-function stripOmniUnsupportedRequestFields(payload, _omniProvider) {
+function stripOmniUnsupportedRequestFields(payload, omniProvider) {
   if (!payload || typeof payload !== 'object') return false;
   let changed = false;
   if (payload.thinking && typeof payload.thinking === 'object') {
     const thinkingType = String(payload.thinking.type || '').toLowerCase();
-    if (thinkingType === 'adaptive') {
+    // adaptive thinking is Anthropic-native. PRESERVE it for provider-default
+    // targets (claude/anthropic upstream); only strip for foreign formats
+    const targetFormat = omniTargetFormat(omniProvider);
+    if (thinkingType === 'adaptive' && targetFormat !== 'provider-default') {
       delete payload.thinking;
       changed = true;
     }
