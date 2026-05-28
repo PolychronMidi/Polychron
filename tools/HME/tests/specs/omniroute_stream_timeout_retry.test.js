@@ -100,6 +100,20 @@ test('omniroute 502 stream_timeout retry that also fails falls through and advan
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+test('omniroute 200 api_error terminated retries same target once', async () => {
+  delete require.cache[require.resolve(FAILURE_MOD)];
+  const calls = [];
+  const transport = makeTransport({ statusCode: 200, body: 'data: {"type":"message_start"}\n\n', headers: { 'content-type': 'text/event-stream' }, calls });
+  const { args } = commonArgs({ transport });
+  args.status = 200;
+  args.fullBody = Buffer.from('event: error\ndata: {"type":"error","error":{"type":"api_error","message":"terminated"}}\n\n');
+  const { handleUpstreamFailureOrSuccess } = require(FAILURE_MOD);
+  const out = await handleUpstreamFailureOrSuccess(args);
+  assert.strictEqual(out.status, 200, 'retry success surfaces 200');
+  assert.strictEqual(calls.length, 1, 'terminated maps to stream retry');
+  assert.match(out.fullBody.toString('utf8'), /message_start/);
+});
+
 test('non-stream_timeout 502 does not trigger the new retry path', async () => {
   delete require.cache[require.resolve(FAILURE_MOD)];
   const calls = [];
