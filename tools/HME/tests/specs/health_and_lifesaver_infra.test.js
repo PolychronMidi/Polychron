@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const { createProxyRouteDispatcher } = require('../../proxy/hme_proxy_routes.js');
+const { createProxyRouteDispatcher, healthVerdict } = require('../../proxy/hme_proxy_routes.js');
 
 function currentSha() {
   return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
