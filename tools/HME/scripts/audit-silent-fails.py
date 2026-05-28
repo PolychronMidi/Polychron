@@ -27,7 +27,7 @@ from pathlib import Path
 from collections import Counter
 
 ROOT = Path(__file__).parent.parent
-HOOKS = ROOT / "tools" / "HME" / "hooks"
+HOOKS = ROOT / "hooks"
 
 # Patterns that classify a hit as legitimate-tolerant (low priority).
 LEGITIMATE_PATTERNS = [

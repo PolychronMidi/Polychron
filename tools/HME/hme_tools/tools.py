@@ -9,8 +9,8 @@ from typing import Any
 
 from .base import HMETool
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[2])
-SOURCE_ROOT = Path(os.environ.get("HME_SOURCE_ROOT") or Path(__file__).resolve().parents[2])
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
+SOURCE_ROOT = Path(os.environ.get("HME_SOURCE_ROOT") or Path(__file__).resolve().parents[3])
 STRUCTURED_TOOL = SOURCE_ROOT / "tools" / "HME" / "scripts" / "codex_structured_tool.js"
 
 DESTRUCTIVE_BASH_RE = re.compile(

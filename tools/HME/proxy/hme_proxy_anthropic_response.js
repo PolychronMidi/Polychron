@@ -8,7 +8,7 @@ const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_respons
 const { emit } = require('./shared');
 const {
   handleUpstreamFailureOrSuccess,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/hme_proxy_upstream_failure');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
 const {
   captureRateLimitTelemetry,

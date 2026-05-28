@@ -36,7 +36,7 @@ import sys
 
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-_MCP_ROOT = os.path.join(_PROJECT_ROOT, "tools", "HME", "mcp")
+_HME_ROOT = os.path.join(_PROJECT_ROOT, "tools", "HME")
 
 # Allow-list for try/except bodies that are legitimately quiet:
 # each must carry `# silent-ok: <reason>` on the except line.
@@ -99,7 +99,7 @@ def _scan_file(path: str) -> list[str]:
 
 def main() -> int:
     violations: list[str] = []
-    for root, _dirs, files in os.walk(_MCP_ROOT):
+    for root, _dirs, files in os.walk(_HME_ROOT):
         if "__pycache__" in root or "/venv/" in root or "/lancedb_data" in root:
             continue
         for f in files:

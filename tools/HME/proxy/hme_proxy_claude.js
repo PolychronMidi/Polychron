@@ -7,11 +7,11 @@ const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./contexts/upstream_dispatch');
 const { applyOverdriveRoute } = require('./contexts/upstream_dispatch');
-const { handleLegacySwapResponse } = require('./contexts/response_transform');
+const { handleLegacySwapResponse } = require('./legacy_swap_response');
 function handleAnthropicResponseComplete(...args) {
   // LAZY: avoids loading response/failure-policy stack while upstream_dispatch
   // is still initializing hme_proxy_claude.
-  return require('./contexts/response_transform').handleAnthropicResponseComplete(...args);
+  return require('./hme_proxy_anthropic_response').handleAnthropicResponseComplete(...args);
 }
 const middleware = require('./contexts/request_mutation').middleware;
 function mutateClaudeRequest(...args) {
@@ -33,7 +33,7 @@ function lifecycleBridge() {
 const {
   handleMidResponseError,
   handleConnectionError,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/hme_proxy_connection_errors');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 if __package__ in (None, ""):
+    os.environ.setdefault("PROJECT_ROOT", str(Path(__file__).resolve().parents[3]))
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from hme_tools.base import missing_required_inputs  # type: ignore
     from hme_tools.tools import tool_by_name  # type: ignore
@@ -31,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("payload", nargs="?", default="{}")
     parser.add_argument("--json", action="store_true", help="Read JSON payload from stdin")
     parsed = parser.parse_args(argv)
-    os.environ.setdefault("PROJECT_ROOT", str(Path(__file__).resolve().parents[2]))
+    os.environ.setdefault("PROJECT_ROOT", str(Path(__file__).resolve().parents[3]))
     tool = tool_by_name(parsed.name)
     payload = read_payload(parsed)
     missing = missing_required_inputs(tool, payload)
