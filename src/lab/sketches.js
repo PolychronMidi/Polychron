@@ -9,7 +9,6 @@ module.exports = [
 
   // METAPROFILE A/B: Run atmospheric for first half, switch to chaotic at midpoint.
   // Validates: hot-switching, regime distribution shift, coupling ceiling scaling,
-  // trust ecology reconfiguration, CIM independence bias. Listen for the pivot.
   {
     name: 'metaprofile-atmospheric-to-chaotic',
     patches: ['conductorConfig.applyPhaseProfile'],
@@ -63,8 +62,6 @@ module.exports = [
 
   // METAPROFILE ELEGIAC: Coherent + descending tension across the run.
   // Validates: the new 'descending' tension shape produces a release/denouement
-  // arc -- tension should start near ceiling (0.55) and trend toward floor (0.20)
-  // across sections. Listen for the falling pressure curve.
   {
     name: 'metaprofile-elegiac',
     patches: [],
@@ -137,8 +134,6 @@ module.exports = [
   {
     // COUPLING DECAY PREDICTOR: track coupling strength trend over 12 beats.
     // When coupling is decaying rapidly, boost convergenceTarget via L0 to
-    // prevent phase collapse. When coupling is building, relax convergence
-    // to let organic growth continue. Self-stabilizing coupling awareness.
     name: 'coupling-decay-predictor',
     patches: ['playNotesEmitPick'],
     overrides: {

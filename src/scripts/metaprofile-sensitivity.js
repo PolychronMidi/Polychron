@@ -2,7 +2,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../tools/HME/proxy/shared/load_env.js');
 // metaprofile-sensitivity: aggregate metaprofile-attribution.jsonl into
 // per-profile mean/std/quantiles + per-section-type breakdowns.
-// Output: src/output/metrics/metaprofile-sensitivity.json + stdout Markdown.
 
 'use strict';
 

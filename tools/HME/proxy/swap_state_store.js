@@ -46,7 +46,6 @@ function currentIndex(chain, projectRoot = PROJECT_ROOT) {
 
 // record failure, advance idx; returns new state for logging.
 // recordFailure() is called AFTER an upstream request failed, so the index
-// the caller used must move forward. currentIndex() mirrors the resolution
 function recordFailure(chain, projectRoot = PROJECT_ROOT) {
   const sig = chainSignature(chain);
   let st = _read(projectRoot);

@@ -1,8 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // generate-conductor-map: auto-generates Conductor Intelligence Map
 // (per-module: signals read / biases contributed / domain / reset scope /
-// feedback partners). In: system-manifest+boot-order+source. Out:
-// metrics/conductor-map.{json,md}. Wired into npm run main.
 
 'use strict';
 

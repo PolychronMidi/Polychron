@@ -85,7 +85,6 @@ function autocompactLifesaver(root, raw, trueSize) {
     }
     // Ratio drift: autocompact widget compares remaining/limit, so compare
     // the *percent remaining* the proxy injected vs the percent remaining the
-    // statusline ground truth reports. Tolerate up to 5 percentage points to
     const truthRemPct = ((truthSize - truthTotal) / truthSize) * 100;
     const normRemPct = (norm.remaining / norm.size) * 100;
     const pctGap = Math.abs(truthRemPct - normRemPct);
@@ -164,7 +163,6 @@ async function main() {
     const remainingPct = trueSize > 0 ? Math.max(0, 100 - usedPct) : Math.round(Number(ctx.remaining_percentage || 0));
     // Quiet info tag: proxy's injectContextHeader already overrides upstream
     // rate-limit headers to registry truth, so Claude Code's autocompact
-    // widget sees the right denominator. The raw claim mismatch is mitigated;
     let sizeAlert = '';
     if (registrySize > 0 && claimedSize > 0 && claimedSize !== registrySize) {
       sizeAlert = ` | ctx-claim-overridden:${claimedSize}->${registrySize}`;

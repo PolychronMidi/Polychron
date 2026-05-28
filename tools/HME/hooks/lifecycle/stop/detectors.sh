@@ -5,7 +5,6 @@ INPUT="${INPUT:?detectors.sh requires INPUT from dispatcher (Stop payload)}"
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 # Detector init / parse-case / persist-block all generated from registry.json.
 # Mandatory stop checks must fail closed: if the generated detector shell glue or
-# the detector runner fails, do not persist all-ok defaults and allow stopping.
 _DET_ERR_DIR="${PROJECT_ROOT}/tools/HME/runtime"
 mkdir -p "$_DET_ERR_DIR" 2>/dev/null
 _DET_EMIT_ERR=$(mktemp "$_DET_ERR_DIR/det_emit_err.XXXXXX" 2>/dev/null || echo "$_DET_ERR_DIR/_det_emit_err_$$")  # silent-ok: optional fallback path.

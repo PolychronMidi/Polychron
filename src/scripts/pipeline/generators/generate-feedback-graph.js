@@ -1,8 +1,6 @@
 const { requireEnv: _hmeRequireEnv } = require('../../../../tools/HME/proxy/shared/load_env.js');
 // generate-feedback-graph: auto-generates metrics/feedback_graph.json by
 // scanning closedLoopController.create() + feedbackRegistry.registerLoop()
-// calls, merging with curated annotations. New loops scaffolded with TODOs.
-// Modes: default = generate/merge; --check = exit 1 if stale. In npm run main.
 
 'use strict';
 

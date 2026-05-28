@@ -112,7 +112,6 @@ function applyExplicitOtpmCap(payload) {
 
 // Claude Code autocompact prompt signature (extracted from cli binary strings).
 // If a request carries this prompt, autocompact has fired despite our env-level
-// kill (DISABLE_AUTO_COMPACT=1 + CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=100 +
 const _AUTOCOMPACT_SIG_RE = /Your task is to create a detailed summary of (?:this conversation|the conversation so far)/;
 
 function _detectAutocompactRequest(payload) {

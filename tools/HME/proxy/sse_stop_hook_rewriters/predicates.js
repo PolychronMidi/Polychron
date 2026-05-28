@@ -25,8 +25,6 @@ const _ACK_PATTERNS = [
 
 // Catch responses the keyword patterns miss: empty, bare punctuation
 // (`.`, `..`, `!?`), or single-glyph non-letter responses that the model
-// emits under stop-hook pressure to dodge the no-text-output gate
-// without saying anything substantive.
 function _isMinimalAck(text) {
   const t = (text || '').trim();
   if (!t) return true;
@@ -42,8 +40,6 @@ function _isHallucinatedTurnPrefix(text) {
   if (/^\s*(?:(?:Human|Assistant)\s*:\s*){1,}\s*$/.test(text)) return true;
   // Prefix followed by ANYTHING (free-form fabricated turn, system-
   // reminder echo, stop-hook payload echo, anything else). Anchored
-  // at start so we only catch the FAKE-TURN-START shape, not mid-text
-  // mentions of "Human:" in legitimate prose.
   if (/^\s*(?:Human|Assistant)\s*:\s+\S/.test(text)) return true;
   return false;
 }
@@ -53,8 +49,6 @@ function _isCeremonyDodge(text) {
   if (typeof text !== 'string') return false;
   // Block-start anchor only. Trailing solo-rationale paragraphs in
   // otherwise-substantive responses are handled SURGICALLY by
-  // _trimSoloRationaleParagraph (called from soloRationaleTrimRewrite)
-  // -- whole-block strip would nuke the substantive content too.
   if (/^\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
   if (/^\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
   if (/^\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
@@ -82,8 +76,6 @@ function _isBareAck(text) {
   if (_isMinimalAck(text)) return true;
   // Turn-prefix hallucinations are also bare-ack class for the
   // ackStripRewrite path. A separate always-on rewriter
-  // (hallucinatedTurnPrefixStripRewrite below) catches them
-  // regardless of priorUserWasDeny gate.
   if (_isHallucinatedTurnPrefix(text)) return true;
   // Stop-hook ceremony-dodge: same treatment -- always spam, the
   // always-on rewriter strips it regardless of gate.
@@ -126,7 +118,6 @@ function _isStopHookCeremony(text) {
   if (typeof text !== 'string' || !text) return false;
   // Scan only the first 200 chars to keep this conservative -- long
   // substantive responses that incidentally use one of these tokens
-  // deep in the body are not affected.
   const lead = text.slice(0, 200);
   return _STOP_HOOK_CEREMONY_PATTERNS.some((p) => p.test(lead));
 }

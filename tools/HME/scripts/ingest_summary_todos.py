@@ -61,7 +61,6 @@ if banner_m:
 
 # Thinking-block bullets are stream-of-consciousness reasoning, not
 # commitments. Earlier behavior captured fragments like "If size=0: OK"
-# as todos. SUMMARY "what's next" remains the only auto-ingest surface.
 
 if not all_items:
     sys.exit(0)

@@ -65,8 +65,6 @@ _onb_init
 
 # HME Proxy health check. Launchers (polychron-launch.sh / polychron-proxy-restart.sh)
 # own the proxy lifecycle; SessionStart hooks fire too frequently (subagents,
-# background tasks) to safely spawn. If proxy is down, surface a warning so
-# the operator knows to run the launcher.
 if [ "${HME_PROXY_ENABLED}" = "1" ]; then
   PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
   # Thundering-herd guard: when N hooks fire concurrently (subagents,
@@ -96,7 +94,6 @@ if [ "${HME_PROXY_ENABLED}" = "1" ]; then
     {
       # Mid-restart blip guard: if the runtime PID is alive, treat probe
       # transient failures as `ok` rather than `down`. The proxy is owned by
-      # the supervisor; if its PID exists, the operator does NOT need to
       _ss_runtime_pid_alive() {
         local pid
         pid=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("pid") or "")' \
@@ -238,7 +235,6 @@ echo -e "Onboarding: $ONB_STEP$MSG" >&2
 
 # Surface carried-over todos from cached prior BG run; refresh in background.
 # The inline heredoc with PYTHONPATH-loaded server imports was a ~500ms-1s
-# hot-path tax on every SessionStart -- same BG+cache pattern as _TRAJ_CACHE
 _CARRY_CACHE="$PROJECT/tmp/hme-carried-over.cache"  #
 [ -s "$_CARRY_CACHE" ] && cat "$_CARRY_CACHE" >&2
 export _CARRY_CACHE
@@ -314,7 +310,6 @@ fi
 
 # Read cached HCI trajectory summary; the BG analyze-hci-trajectory invocation
 # above writes ${METRICS_DIR}/hme-trajectory.json.summary. Reading the cache
-# avoids a 1-2s python3 launch on the SessionStart hot path. Only fall back to
 _TRAJ_CACHE="${METRICS_DIR}/hme-trajectory.json.summary"
 if [ -s "$_TRAJ_CACHE" ]; then
   cat "$_TRAJ_CACHE" >&2
@@ -383,7 +378,6 @@ fi
 
 # Learning-surface: same cache+bg pattern; the keyword (first TODO item) is
 # captured at scheduling time so the BG worker has a stable input even if
-# TODO.md changes mid-session.
 _LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
 _TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
 _LE_CACHE="$PROJECT/tmp/hme-learning-surface.cache"  #

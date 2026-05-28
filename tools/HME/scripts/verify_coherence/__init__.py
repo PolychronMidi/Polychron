@@ -154,6 +154,4 @@ from .host_cli_smoke import (  # noqa: F401
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
-# to _base._REGISTRY. Order = file order in this __init__.py times
-# class-declaration order within each file.
 REGISTRY = _REGISTRY

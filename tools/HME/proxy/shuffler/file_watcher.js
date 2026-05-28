@@ -120,7 +120,6 @@ function discoverExternalDeps() {
 
 // Polling-based file watcher: uses fs.statSync every POLL_INTERVAL_MS to
 // detect mtime changes. Avoids the inotify kernel watch limit (ENOSPC) that
-// becomes a hard ceiling on hosts shared with other watch-heavy apps
 const POLL_INTERVAL_MS = 2000;
 
 function _enumerateAllWatchedFiles() {

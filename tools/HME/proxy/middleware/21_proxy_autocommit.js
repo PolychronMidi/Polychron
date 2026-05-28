@@ -117,7 +117,6 @@ function _sweepStaleIndexLock(root) {
 
 // Capture precommit_validate.py output directly so failures surface with
 // file:line and reason in autocommit.fail + hme-errors.log. Without this,
-// `git commit` failures showed up as 'git commit failed twice: unknown'.
 function _capturePrecommitFailures(root) {
   const script = path.join(root, 'tools', 'HME', 'scripts', 'precommit_validate.py');
   if (!fs.existsSync(script)) return '';
@@ -183,8 +182,6 @@ function _attemptCommit(root, caller) {
 
   // Hold one flock across stage AND commit so a concurrent autocommit caller
   // (proxy onRequest, _autocommit.sh from stop hook, or autocommit-direct.sh)
-  // can't sneak `git add` in while another's `git commit` holds .git/index.lock.
-  // Earlier design released flock between stage and commit, opening that race.
   const lockPath = path.join(root, LOCK_REL);
   try { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); } catch (_) { /* lock dir may already exist */ }
   const tstamp = new Date().toISOString().slice(0, 19);
@@ -216,8 +213,6 @@ function _attemptCommit(root, caller) {
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
   // When the pre-commit hook rejects, git often funnels its stderr away from
   // spawn's pipe (the hook runs in its own process group). Re-run
-  // precommit_validate.py directly so the actual blocker (file:line + reason)
-  // lands in autocommit.fail + hme-errors.log instead of 'unknown'.
   const precommitDetail = _capturePrecommitFailures(root);
   const detail = _autocommitDiagnostics(root, r, precommitDetail);
   _recordFailure(root, caller, `git commit failed twice: ${detail}`);

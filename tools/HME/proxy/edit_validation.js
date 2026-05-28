@@ -80,8 +80,6 @@ function isWriteFamilyTool(name) {
 
 // Apply Edit->Read fallback to a parsed non-SSE Anthropic response body.
 // Walks body.content[], rewrites every edit-family tool_use with invalid
-// input into a Read tool_use. Returns { body, count } where count is the
-// number of rewrites performed.
 function rewriteNonSseEditFallback(body, options = {}) {
   if (!body || typeof body !== 'object' || !Array.isArray(body.content)) return { body, count: 0 };
   let count = 0;

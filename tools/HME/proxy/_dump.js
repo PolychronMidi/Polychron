@@ -2,8 +2,6 @@
 const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
 // Payload dump util. Called from middleware/24_dump_system.js (post-pipeline)
 // and from hme_proxy.js (pre-pipeline). Off by default; HME_DUMP_SYSTEM_PROMPT=1
-// in .env enables both writes -- the pre/post pair lets the operator diff
-// what HME mutated.
 
 const fs = require('fs');
 const path = require('path');

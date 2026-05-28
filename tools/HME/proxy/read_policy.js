@@ -90,7 +90,6 @@ function evaluateReadInput(input = {}, opts = {}) {
   const rel = relPath(file, root);
   // verify-landed antipattern: fires only when the Read window actually
   // overlaps an edited line range. Reads of different regions, or reads of
-  // unedited files, proceed normally.
   if (opts.verifyLanded !== false) {
     const ranges = editedRangesThisTurn(file, root);
     if (ranges.length > 0 && _readWindowOverlapsEdits(input, ranges)) {

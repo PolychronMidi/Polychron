@@ -54,8 +54,6 @@ _HME_HOOK_VERDICT=""
 
 # 4) Tunable constants -- set before any sub-file references them.
 # Keep bootstrap hot path shell-only: service_registry.py startup was a frequent
-# >1s latency source in PreToolUse. The worker default is stable and env may
-# override it; deeper service metadata remains available through _hme_service_*.
 _HME_HTTP_PORT="${HME_WORKER_PORT:-9098}"
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'

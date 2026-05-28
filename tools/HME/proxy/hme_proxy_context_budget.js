@@ -125,7 +125,6 @@ function createContextBudget() {
   let lastInputTokensLimit = null;
   // Cross-slot rate-limit state: each slot reads the shared file before deciding
   // whether to back off, and writes after each 429 increment so the sibling slot
-  // (drain reroute or sticky-loss scenarios) honors the same backoff cap.
   const SLOT_LABEL = process.env.HME_PROXY_SLOT || 'single';
   let consecutive429s = (crossSlot.readRateLimitState().consecutive_429s || 0);
   let lastPayloadBytes = 0;

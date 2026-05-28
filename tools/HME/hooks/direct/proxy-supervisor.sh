@@ -337,7 +337,6 @@ _sv_fire_crashloop_lifesaver() {
 _sv_loop() {
   # Singleton check via flock advisory lock + pid-file confirmation.
   # Use a supervisor-owned lock path distinct from historical child-inherited
-  # locks; proxy children close fd 200 on spawn, but old live children may still
   _SV_LOCK_FILE="$_SV_PID_FILE.supervisor.lock"
   exec 200>"$_SV_LOCK_FILE" 2>/dev/null || true  # silent-ok: optional fallback path.
   if command -v flock >/dev/null 2>&1; then

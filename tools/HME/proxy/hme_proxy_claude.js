@@ -151,7 +151,6 @@ function createClaudeHandler(deps) {
 
       // Discriminator: only INTERACTIVE-path 429s trip the global escape
       // hatch. OVERDRIVE/loopback callers self-handle via their own circuit
-      // breaker; tripping global on them breaks Claude Code's UI.
       const _isInteractivePath = (upstream.provider === 'anthropic' || _isOmniRouteSwap)
         && (typeof clientReq.headers.authorization === 'string'
             || typeof clientReq.headers['x-api-key'] === 'string'
@@ -234,8 +233,6 @@ function createClaudeHandler(deps) {
 
         // Anthropic path: buffer the entire response so we can scan for HME_*
         // tool_uses. If none present, forward buffer + apply SSE transforms
-        // (Bash run_in_background rewrite). If HME_* present, run the
-        // continuation loop until a final HME-free response, then forward it.
         const upstreamResChunks = [];
 
         const scanFpGateChunk = createFpGateScanner({
@@ -312,7 +309,6 @@ function createClaudeHandler(deps) {
       const isStreaming = payload && payload.stream === true;
       // 30-min upstream timeout: covers worst-case multi-MB local subprocess
       // turnaround. The subprocess timeout is the tighter bound; proxy is
-      // not the throttle.
       const UPSTREAM_TIMEOUT_MS = 1_800_000;
       upstreamReq.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
         console.error(`upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);

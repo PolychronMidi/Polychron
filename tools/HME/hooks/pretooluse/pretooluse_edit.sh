@@ -81,7 +81,6 @@ fi
 
 # Hardcoded-project-root guard: rejects host-specific path baked into
 # source. Use $PROJECT_ROOT / $CLAUDE_PROJECT_DIR / walk-up. Matches
-# against LIVE PROJECT_ROOT to avoid false-positive on other clones.
 if echo "$NEW_STRING" | grep -qF "$PROJECT_ROOT" \
    && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
    && ! echo "$NEW_STRING" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
@@ -137,7 +136,6 @@ fi
 
 # Pre-save pattern lint -- block new_string before it lands if it introduces
 # forbidden patterns. Each block cites the rule + the fix, so the message
-# alone is enough for the agent to correct the edit.
 if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
   if echo "$NEW_STRING" | grep -qE '\bglobalThis\.|(^|[^a-zA-Z_])global\.[a-zA-Z_]'; then
     _emit_block "BLOCKED: new_string uses global. or globalThis. -- 5 Core Principles #1 forbids these. Reference the global directly (declared in globals.d.ts)."
@@ -162,8 +160,6 @@ if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
 
   # Semantic bugfix lookup -- ask the worker if this module has a known bugfix
   # in KB that scores high against the current edit intent. High-confidence
-  # hits (score >= 0.6) block: the edit is likely re-introducing a past bug.
-  # Cache in project-root tmp by content hash so repeat attempts don't re-query.
   MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
   if [ -n "$MODULE" ] && [ ${#NEW_STRING} -gt 20 ]; then
     HASH=$(printf '%s' "$NEW_STRING" | sha1sum | cut -c1-16)
@@ -229,7 +225,6 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
         && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
       # /enrich KB hits (~70ms) + head of target file. 500ms timeout
       # for CPU-saturated worker; brief is compact (<2 KB).
-      # time. Healthy /enrich is ~70ms so the new ceiling is 7x headroom.
       _kb_hits=$({ curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
         "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" \

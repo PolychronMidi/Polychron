@@ -90,14 +90,12 @@ function _sanitizePayload(payload) {
 async function _injectHmeTools(payload) {
   // HME tools are invoked as Bash(`npm run <tool>`) calls; inline API-tool
   // injection is disabled by default. Set HME_INJECT_TOOLS=1 in .env to
-  // restore the old path (Claude sees HME_* as inline tools directly).
   if (process.env.HME_INJECT_TOOLS !== '1') return 0;
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();
     // Do NOT strip Claude Code's cache_control markers -- they're part of
     // the cache key. Don't add our own either (our ttl=5m after CC's ttl=1h
-    // produces a 400). Skip already-present HME_ tools (retry-idempotent).
     const existing = new Set(payload.tools.map((t) => t && t.name).filter(Boolean));
     let injected = 0;
     for (const s of schemas) {

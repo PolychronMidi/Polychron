@@ -324,7 +324,6 @@ fi
 
 # 5. Proxy-bypass guard: any claude CLI in the process tree that lacks
 #    ANTHROPIC_BASE_URL bypasses HME middleware. Warn (and optionally bail)
-#    so the operator knows to relaunch claude from a shell with .env sourced.
 if [ -n "${ANTHROPIC_BASE_URL}" ]; then
   _bypass_pids=""
   for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do  # silent-ok: optional fallback path.

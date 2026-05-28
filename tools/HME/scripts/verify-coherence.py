@@ -19,7 +19,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Load .env strictly BEFORE importing verify_coherence; the package's _base.py
 # uses os.environ['KEY'] subscripts (no silent fallbacks). Entrypoint shim
-# owns env loading; library modules consume.
 from _env_loader import load_env  # noqa: E402
 load_env()
 

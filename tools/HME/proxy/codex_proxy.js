@@ -44,7 +44,6 @@ const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, err
 
 // Per-conversation storage key: use the Codex CLI's own session_id (the UUID
 // that `codex --resume <session-id>` resumes against) so each conversation has
-// its own JSONL store and conversations never bleed into each other.
 function _captureRequestInputItems(body, sessionId) {
   if (!body || !sessionId) return 0;
   if (!Array.isArray(body.input)) return 0;
@@ -234,7 +233,6 @@ async function handleResponses(req, res) {
   if (_convoHistoryInjected > 0) record({ kind: 'codex-history-replay', session: source.session_id, items_prepended: _convoHistoryInjected });
   // OmniRoute's codex provider flips body.store=false -> true before forwarding
   // to ChatGPT, which then rejects 400 "Store must be set to false". When the
-  // field is absent OmniRoute leaves it alone and ChatGPT accepts. Delete.
   if (body && typeof body === 'object' && Object.prototype.hasOwnProperty.call(body, 'store')) delete body.store;
   const autocommit = runCodexAutocommit();
   const lifesaver = injectCodexLifesaver(body);
