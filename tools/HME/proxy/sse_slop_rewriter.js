@@ -474,6 +474,8 @@ const _SLOP_PATTERNS = [
 
   _suffixRule('caveman_er_suffix', 'er', 3, 'r'),
 
+  _suffixRule('caveman_ior_suffix', 'ism', 4, 'sm'),
+
   // Caveman -tion suffix pass. Only words greater than 6 letters are changed.
   // Prefix must be at least 3 letters, because 3 + "tion" = 7.
   // Runs after explicit abbreviations so map entries like "configuration" ->

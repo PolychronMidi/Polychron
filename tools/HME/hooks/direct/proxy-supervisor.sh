@@ -179,9 +179,7 @@ _sv_live_git_sha() {
   python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("git_sha") or "")' "$_SV_RUNTIME_FILE" 2>/dev/null || true
 }
 
-# Authoritative staleness: the running proxy computes its boot-time runtime
-# fingerprint vs the current on-disk fingerprint and exposes runtime_stale.
-# Returns 0 (stale -> reload warranted) only when proxy-process CODE actually
+# Real staleness: proxy /health runtime_stale flips only when proxy-process CODE changes.
 _sv_runtime_stale() {
   local stale
   stale=$(curl -sS --max-time 3 "$_SV_URL" 2>/dev/null \
