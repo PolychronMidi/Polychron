@@ -480,8 +480,10 @@ _sv_loop() {
   ' INT TERM
 
   if ! _sv_bundle_healthy && ! _sv_is_maintenance_active; then
-    _sv_log "initial bundle unhealthy on supervisor start: $(_sv_bundle_health_issue)"
-    _sv_spawn_and_verify && _sv_log "initial spawn verified healthy"
+    local initial_issue
+    initial_issue=$(_sv_bundle_health_issue)
+    _sv_log "initial bundle unhealthy on supervisor start: $initial_issue"
+    _sv_recover_health_issue "$initial_issue" && _sv_log "initial recovery verified healthy"
   fi
 
   local misses=0
