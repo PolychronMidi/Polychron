@@ -72,10 +72,11 @@ async function handleUpstreamFailureOrSuccess({
   const coolingDown = _alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
   const shouldRetry = headers['x-should-retry'] === 'true';
   const isRateLimit = errInfo.type === 'rate_limit_error';
-  const isStreamTimeout502 = isOmniRouteSwap
-    && omniroute.isTransientStreamTimeout({ status, errInfo, body: fullBody });
+  const isStreamTimeout = isOmniRouteSwap
+    && (failureKind === 'stream_timeout'
+      || omniroute.isTransientStreamTimeout({ status, errInfo, body: fullBody }));
 
-  if (isStreamTimeout502 && payload && Array.isArray(payload.messages)) {
+  if (isStreamTimeout && payload && Array.isArray(payload.messages)) {
     const streamRetry = await retryStreamTimeout({
       outBody,
       upstreamOpts,
