@@ -1,6 +1,6 @@
 'use strict';
-// Jurisdiction context -- bias bounds, KB staleness, open hypotheses,
-// semantic drift. All file-backed manifest loaders live here.
+// Jurisdiction context -- bias bounds, open hypotheses, semantic drift.
+// All file-backed manifest loaders live here.
 
 const fs = require('fs');
 const path = require('path');
