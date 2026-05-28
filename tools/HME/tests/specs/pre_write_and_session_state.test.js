@@ -109,6 +109,27 @@ test('pre-write check denies malformed or display-redacted Edit input', async ()
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('pre-write accepts native apply_patch patchText through Edit envelope', async () => {
+  const root = _withSandbox('hme-pre-write-apply-patch-');
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  fs.writeFileSync(path.join(root, 'src', 'x.js'), 'const x = 1;\n');
+  const decision = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-patch',
+    tool_input: { patchText: '*** Begin Patch\n*** Update File: src/x.js\n@@\n-const x = 1;\n+const x = 2;\n*** End Patch' },
+  }));
+  assert.strictEqual(decision.permissionDecision, 'allow');
+  assert.doesNotMatch(String(decision.reason || ''), /malformed Edit/);
+  const missing = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-patch',
+    tool_input: { patchText: '*** Begin Patch\n*** Update File: src/missing.js\n@@\n-x\n+y\n*** End Patch' },
+  }));
+  assert.strictEqual(missing.permissionDecision, 'deny');
+  assert.match(missing.reason, /target missing/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('pre-write rewrites long comment lines instead of denying', async () => {
   const root = _withSandbox('hme-pre-write-repeat-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');

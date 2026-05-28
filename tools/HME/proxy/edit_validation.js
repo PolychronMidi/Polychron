@@ -64,7 +64,8 @@ function isInvalidEditInput(input, options = {}) {
 }
 
 const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update', 'edit']);
-const WRITE_FAMILY_TOOL_NAMES = new Set(['Write', 'write', ...EDIT_FAMILY_TOOL_NAMES]);
+const APPLY_PATCH_TOOL_NAMES = new Set(['ApplyPatch', 'apply_patch']);
+const WRITE_FAMILY_TOOL_NAMES = new Set(['Write', 'write', ...EDIT_FAMILY_TOOL_NAMES, ...APPLY_PATCH_TOOL_NAMES]);
 
 function isEditFamilyTool(name) {
   return EDIT_FAMILY_TOOL_NAMES.has(name);
@@ -72,6 +73,10 @@ function isEditFamilyTool(name) {
 
 function isWriteTool(name) {
   return name === 'Write' || name === 'write';
+}
+
+function isApplyPatchTool(name) {
+  return APPLY_PATCH_TOOL_NAMES.has(name);
 }
 
 function isWriteFamilyTool(name) {
@@ -96,4 +101,4 @@ function rewriteNonSseEditFallback(body, options = {}) {
   return { body: { ...body, content: nextContent }, count };
 }
 
-module.exports = { editToReadFallback, editIsStale, isInvalidEditInput, rewriteNonSseEditFallback, EDIT_FAMILY_TOOL_NAMES, WRITE_FAMILY_TOOL_NAMES, isEditFamilyTool, isWriteTool, isWriteFamilyTool, EDIT_FALLBACK_DEFAULT_LIMIT, EDIT_FALLBACK_MAX_LIMIT };
+module.exports = { editToReadFallback, editIsStale, isInvalidEditInput, rewriteNonSseEditFallback, EDIT_FAMILY_TOOL_NAMES, APPLY_PATCH_TOOL_NAMES, WRITE_FAMILY_TOOL_NAMES, isEditFamilyTool, isWriteTool, isApplyPatchTool, isWriteFamilyTool, EDIT_FALLBACK_DEFAULT_LIMIT, EDIT_FALLBACK_MAX_LIMIT };

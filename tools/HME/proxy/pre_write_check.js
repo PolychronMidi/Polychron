@@ -17,6 +17,7 @@ const {
   metricsMessage,
 } = require('./path_policy');
 const { isEditFamilyTool } = require('./edit_validation');
+const { applyPatchDecision } = require('./apply_patch_gate');
 
 function _permission(decision, reason = '', context = '') {
   return { permissionDecision: decision, reason, contextualRules: context ? [context] : [] };
@@ -110,6 +111,7 @@ function _editCurrentFileDecision(payload) {
     const _sessionState = require('./session_state');
     const _sid = payload.session_id || '';
     const current = fs.readFileSync(file, 'utf8');
+    if (typeof input.old_string !== 'string') return null;
     if (!current.includes(input.old_string)) {
       if (input.new_string && current.includes(input.new_string)) {
         return _permission('deny', 'BLOCKED: Edit old_string is absent and new_string is already present. The change appears already applied; do not trust a native Edit success here.');
@@ -261,6 +263,11 @@ async function preWriteCheck(stdinJson) {
   const payload = { ...env.raw, session_id: env.session_id, tool_name: env.tool_name, tool_input: env.tool_input };
   const tool = payload.tool_name || '';
   if (!require('./edit_validation').isWriteFamilyTool(tool)) return _permission('allow');
+  const patchDecision = applyPatchDecision(payload);
+  if (patchDecision) {
+    if (patchDecision.permissionDecision !== 'allow') return _repeatDeny(payload, patchDecision);
+    return patchDecision;
+  }
   const shapeDecision = _editShapeDecision(payload);
   if (shapeDecision) return _repeatDeny(payload, shapeDecision);
 
