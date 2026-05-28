@@ -17,6 +17,7 @@ const stopChain = require('../../proxy/stop_chain');
 async function _withMockedStopPolicies(overrides, fn) {
   const originalLoad = Module._load;
   const originalRoot = process.env.PROJECT_ROOT;
+  const originalStrict = process.env.strict_mode;
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-chain-mock-'));
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
