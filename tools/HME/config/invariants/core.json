@@ -92,7 +92,7 @@
     },
     {
       "id": "kb-freshness",
-      "description": "KB must have been updated within the last 14 days (staleness signal)",
+      "description": "KB must have been updated within the last 14 days (durability signal)",
       "type": "kb_freshness",
       "max_age_days": 14,
       "severity": "warning"
