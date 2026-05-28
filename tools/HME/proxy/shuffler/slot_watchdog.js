@@ -31,25 +31,13 @@ const state = {
 const RESPAWN_COOLDOWN_MS = 30_000;
 const DRIFT_RESPAWN_GAP_MS = Math.max(35_000, RESPAWN_COOLDOWN_MS);
 let lastDriftRespawnTs = 0;
-let cachedHead = { ts: 0, sha: '' };
+let cachedFingerprint = { ts: 0, value: '' };
 
-function _currentRepoGitSha() {
+function _currentRuntimeFingerprint() {
   const now = Date.now();
-  if (cachedHead.sha && (now - cachedHead.ts) < 2000) return cachedHead.sha;
-  try {
-    cachedHead = {
-      ts: now,
-      sha: execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
-        cwd: PROJECT_ROOT,
-        encoding: 'utf8',
-        timeout: 1000,
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim(),
-    };
-  } catch (_) {
-    cachedHead = { ts: now, sha: '' };
-  }
-  return cachedHead.sha;
+  if (cachedFingerprint.value && (now - cachedFingerprint.ts) < 2000) return cachedFingerprint.value;
+  cachedFingerprint = { ts: now, value: currentRuntimeFingerprint(PROJECT_ROOT) };
+  return cachedFingerprint.value;
 }
 
 function _readJSONSafe(p) {
