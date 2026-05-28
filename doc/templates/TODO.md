@@ -1,11 +1,11 @@
 # TODO
 
 <!-- todo-state:
-  max_id: 10213
-  updated_ts: 1779982154.088096
+  max_id: 10217
+  updated_ts: 1779991244.111109
   codex_plan_synced_ts: 1779120063.0248382
   codex_plan_source: ${HOME}/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl
-  opencode_todo_synced_ts: 1779982137.968
+  opencode_todo_synced_ts: 1779991230.919
   entries:
     10115:
       source: opencode
@@ -16,9 +16,9 @@
     10195:
       source: opencode
       ts: 1779907326.639
-    10209:
+    10214:
       source: native
-      ts: 1779982138.386
+      ts: 1779991231.565
     10117:
       source: opencode
       ts: 1779859522.856
@@ -34,18 +34,15 @@
     10197:
       source: opencode
       ts: 1779908083.966
-    10210:
+    10215:
       source: native
-      ts: 1779982138.386
-    10211:
+      ts: 1779991231.565
+    10216:
       source: native
-      ts: 1779982138.386
-    10212:
+      ts: 1779991231.565
+    10217:
       source: native
-      ts: 1779982138.386
-    10213:
-      source: native
-      ts: 1779982138.386
+      ts: 1779991231.565
     9584:
       source: hme_todo
       ts: 1779884154
@@ -94,7 +91,7 @@
 - [ ] [E3] Implement general failed-tool retry guard at tool-call layer with tests  #10115
 - [ ] [E3] Survey repository structure, commands, and current status without reading secrets  #10116
 - [ ] [E3] Create first test todo  #10195
-- [ ] [E3] Survey project rules, structure, and current state  #10209
+- [ ] [E3] Check current lifesaver/autocommit and repo state before continuing  #10214
 
 ## Next
 
@@ -103,10 +100,9 @@
 - [ ] [E3] Run relevant verification and report evidence  #10119
 - [ ] [E3] Create second test todo  #10196
 - [ ] [E3] smoke write-edit  #10197
-- [ ] [E3] Search whole project for fail-fast and pattern optimization candidates  #10210
-- [ ] [E3] Stress-test HME tool paths while investigating and log sub-10 responses  #10211
-- [ ] [E3] Implement coherent hardening/optimization fixes  #10212
-- [ ] [E3] Run focused verification and report mapped evidence  #10213
+- [ ] [E3] Pick next concrete whole-project fail-fast hardening candidate  #10215
+- [ ] [E3] Implement candidate using native apply_patch path only  #10216
+- [ ] [E3] Verify tests and HME stress-test evidence  #10217
 
 ## Done
 
