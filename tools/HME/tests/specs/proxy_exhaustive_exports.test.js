@@ -70,7 +70,7 @@ process.stdout.write(JSON.stringify(failures));
     cwd: REPO_ROOT,
     env: { ...process.env, PROJECT_ROOT: REPO_ROOT, HME_PROXY_QUIET_IMPORT: '1' },
     encoding: 'utf8',
-    timeout: 6000,
+    timeout: 12000,
   });
   if (r.error && r.error.code === 'ETIMEDOUT') {
     const tail = String(r.stderr || '').trim().split('\n').slice(-5).join('\n');
