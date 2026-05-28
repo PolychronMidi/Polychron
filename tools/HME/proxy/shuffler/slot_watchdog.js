@@ -6,8 +6,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawn, execFileSync } = require('child_process');
+const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
+const { currentRuntimeFingerprint } = require('../proxy_runtime_fingerprint');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
 
