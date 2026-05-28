@@ -967,7 +967,7 @@ test('context budget compaction gears start near context high-water and escalate
   }
 });
 
-test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => {
+test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
@@ -984,7 +984,7 @@ test('context budget does not compact 90k token GPT-5.5 payload below high-water
   } finally {
     process.env = oldEnv;
   }
-});
+}));
 
 test('OmniRoute preflight ignores thinking signatures when deciding compaction pressure', () => {
   const oldEnv = { ...process.env };
