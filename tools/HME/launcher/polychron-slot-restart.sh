@@ -123,7 +123,9 @@ _preflight_candidate() {
       HME_PROXY_QUIET_IMPORT=1 \
       node "$PROXY_SCRIPT" >> "$_probe_log" 2>&1 < /dev/null &
   _probe_pid=$!
-  if _wait_ready_file "$_probe_health" "$_probe_pid" 20; then
+  _wait_ready_file "$_probe_health" "$_probe_pid" 20
+  _rc=$?
+  if [ "$_rc" = "0" ]; then
     echo "[slot-restart:$SLOT] preflight ready; preserving last viable fallback while replacing incumbent" >&2
     kill -TERM "$_probe_pid" 2>/dev/null || true
     sleep 1
@@ -131,7 +133,6 @@ _preflight_candidate() {
     rm -f "$_probe_health" "$_probe_drain" 2>/dev/null || true
     return 0
   fi
-  _rc=$?
   _reason="preflight_failed rc=$_rc port=$_probe_port log=$_probe_log"
   echo "[slot-restart:$SLOT] ABORT: $_reason; incumbent slot left running" >&2
   _record_failure "$_reason"
