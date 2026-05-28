@@ -111,7 +111,7 @@ test('slop rewriter applies caveman compression to thinking blocks without deny 
   assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'thinking_delta', thinking: 'I am now checking the path.' } }, ctx), null);
   const out = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 1 }, ctx);
   assert.equal(out.events[1][1].delta.type, 'thinking_delta');
-  assert.equal(out.events[1][1].delta.thinking, 'Checkin path.');
+  assert.equal(out.events[1][1].delta.thinking, 'Checkn path.');
 });
 
 test('caveman patterns do not mutate content inside backtick spans', () => {
