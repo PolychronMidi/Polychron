@@ -75,10 +75,16 @@ const PROXY_GIT_SHA = (() => {
     return r.exit === 0 ? r.stdout.trim() : 'unknown';
   } catch (_) { return 'unknown'; }
 })();
+const PROXY_RUNTIME_FINGERPRINT = (() => {
+  try {
+    const { computeRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
+    return computeRuntimeFingerprint(require('path').resolve(__dirname, '..', '..', '..'));
+  } catch (_) { return 'unknown'; }
+})();
 const PROXY_STARTED_AT = new Date().toISOString();
 function writeRuntimeMetadata() {
   const { writeMarker } = require('./infra/lifecycle_state');
-  writeMarker('PROXY_RUNTIME', { git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, pid: process.pid });
+  writeMarker('PROXY_RUNTIME', { git_sha: PROXY_GIT_SHA, runtime_fingerprint: PROXY_RUNTIME_FINGERPRINT, started_at: PROXY_STARTED_AT, pid: process.pid });
 }
 function logRuntimeMetadataFailure(err) {
   try {
