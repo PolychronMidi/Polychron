@@ -73,9 +73,9 @@ function createProxyRouteDispatcher({
       const supervisor = statusFn();
       const verdict = healthVerdict(supervisor, PROXY_RUNTIME_FINGERPRINT);
       const readyOnly = url === '/ready';
-      const readyOk = !verdict.runtime_stale;
+      const readyOk = verdict.ok;
       json(clientRes, readyOnly ? (readyOk ? 200 : 503) : verdict.httpStatus, {
-        status: readyOnly ? (readyOk ? 'ready' : 'stale') : verdict.status,
+        status: readyOnly ? (readyOk ? 'ready' : 'degraded') : verdict.status,
         ok: readyOnly ? readyOk : verdict.ok,
         listener_ready: true,
         port: PORT,
