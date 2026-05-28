@@ -119,10 +119,6 @@ function buildJurisdictionContext(filePaths) {
       for (const b of bias.slice(0, 8)) lines.push(`    ${b.key}: [${b.lo}, ${b.hi}]`);
       if (bias.length > 8) lines.push(`    ... (+${bias.length - 8} more)`);
     }
-    if (stale) {
-      const ds = typeof stale.staleness_days === 'number' ? `${stale.staleness_days.toFixed(1)}d` : '?';
-      lines.push(`- KB status: ${stale.status}  (${stale.kb_entries_matched} entry matches, delta ${ds})`);
-    }
     if (hypotheses.length > 0) {
       lines.push(`- Open hypotheses (${hypotheses.length}) -- this edit may confirm or refute:`);
       for (const h of hypotheses.slice(0, 4)) {
