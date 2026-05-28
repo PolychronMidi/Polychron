@@ -171,6 +171,7 @@ test('OMO live dispatcher SessionStart preloads OMO runtime', async () => {
       HME_OMO_SOURCE: 'path',
       HME_OMO_PATH: path.relative(repoRoot, sandbox),
       HME_OMO_REQUIRED_VERSION: '',
+      strict_mode: '1',
     }, async () => {
       const { dispatchEvent } = require('../../event_kernel/dispatcher');
       await dispatchEvent('SessionStart', JSON.stringify({ session_id: 'live-preload', marker }));
