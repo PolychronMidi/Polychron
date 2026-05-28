@@ -243,6 +243,7 @@ module.exports = {
     // ctx.PROJECT_ROOT preferred; fallback to path-derived. Never silent-skip
     // (the old `if (!root) return` was the root-cause silent-fail bug).
     const root = (ctx && ctx.PROJECT_ROOT) || DERIVED_ROOT;
+    if (_debounceAutocommit(root)) return;
     _attemptCommit(root, 'onRequest');
   },
 };
