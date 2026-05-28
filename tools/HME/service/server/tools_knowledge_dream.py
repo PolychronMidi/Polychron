@@ -249,16 +249,16 @@ def kb_health() -> str:
             if age_days > 30:
                 issues.append(f"entry is {age_days:.0f} days old")
         if issues:
-            stale.append(f"  [{entry_id}] {title}: {'; '.join(issues)}")
+            issue_rows.append(f"  [{entry_id}] {title}: {'; '.join(issues)}")
         else:
             healthy.append(entry_id)
-    if stale:
-        parts.append(f"\n## Stale ({len(stale)} entries)")
-        for s in stale:
-            parts.append(s)
+    if issue_rows:
+        parts.append(f"\n## Durability issues ({len(issue_rows)} entries)")
+        for row in issue_rows:
+            parts.append(row)
     parts.append(f"\n## Healthy: {len(healthy)} entries")
-    # Highlight the five oldest fresh entries (candidates for refresh
-    # even though they pass the staleness checks).
+    # Highlight the five oldest healthy entries (candidates for refresh
+    # even though they pass durability checks).
     _healthy_set = set(healthy)
     def _id_prefix(entry):
         _i = entry.get("id")
