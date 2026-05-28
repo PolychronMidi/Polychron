@@ -2,6 +2,7 @@
 
 const { runSync } = require('./infra/subprocess');
 const { PROJECT_ROOT } = require('./shared');
+const { currentRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
 
 function json(clientRes, status, body) {
   clientRes.writeHead(status, { 'Content-Type': 'application/json' });
