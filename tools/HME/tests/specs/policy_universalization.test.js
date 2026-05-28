@@ -230,7 +230,9 @@ test('proxy supervisor restart reloads live proxy child semantics', () => {
   assert.match(script, /proxy child stop requested/);
   assert.match(script, /initial bundle unhealthy on supervisor start/);
   assert.match(script, /worker-restart\)/);
-  assert.match(script, /_sv_restart_worker/);
+  assert.match(script, /_sv_worker_healthy/);
+  assert.match(script, /adopting existing instance/);
+  assert.match(script, /worker-restart\)[\s\S]*_sv_restart_worker/);
   assert.match(restart, /PROXY_READY_URL/);
   assert.match(restart, /adopted existing/);
   assert.match(restart, /listener remains ready/);
