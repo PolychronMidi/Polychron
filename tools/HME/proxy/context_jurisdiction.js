@@ -98,7 +98,6 @@ function isJurisdictionFile(filePath) {
 function buildJurisdictionContext(filePaths) {
   if (!filePaths || filePaths.length === 0) return null;
   const biasMap = loadBiasManifest();
-  const staleMap = loadStalenessMap();
   const hypMap = loadOpenHypothesesMap();
   const driftMap = loadDriftMap();
   const lines = [];
