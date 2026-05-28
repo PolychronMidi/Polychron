@@ -194,8 +194,7 @@ _sv_reload_marker_pending() {
   local wanted live marker_age now marker_mtime
   wanted=$(cat "$_SV_RELOAD_MARKER" 2>/dev/null | head -1)
   live=$(_sv_live_git_sha)
-  # Fingerprint is the real signal: if the running proxy code already matches
-  # disk, the commit touched non-proxy files. Clear the marker (sync the sha
+  # Non-proxy commit (runtime not stale): clear marker without restarting.
   if ! _sv_runtime_stale; then
     rm -f "$_SV_RELOAD_MARKER" 2>/dev/null
     _sv_log "reload marker cleared (runtime not stale; non-proxy commit) wanted=[$wanted] live=[$live]"
