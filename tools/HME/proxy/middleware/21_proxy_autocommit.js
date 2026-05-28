@@ -147,6 +147,22 @@ function _autocommitDiagnostics(root, commandResult, precommitDetail) {
   return detail;
 }
 
+function _debounceAutocommit(root) {
+  const debounceMs = Number(process.env.HME_AUTOCOMMIT_DEBOUNCE_MS || '5000');
+  if (!Number.isFinite(debounceMs) || debounceMs <= 0) return false;
+  const now = Date.now();
+  const p = path.join(root, LAST_ATTEMPT_REL);
+  try {
+    const prior = Number(fs.readFileSync(p, 'utf8').trim());
+    if (Number.isFinite(prior) && (now - prior) < debounceMs) return true;
+  } catch (_) { /* no prior attempt */ }
+  try {
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, String(now));
+  } catch (_) { /* best-effort */ }
+  return false;
+}
+
 function _attemptCommit(root, caller) {
   _incrementCounter(root);
 
