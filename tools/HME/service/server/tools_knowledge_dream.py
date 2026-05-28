@@ -196,7 +196,7 @@ def knowledge_graph(query: str) -> str:
 
 
 def kb_health() -> str:
-    """Check all KB entries for staleness: do the files/modules they mention still exist? Are line counts accurate?"""
+    """Check all KB entries for durability: do referenced files/modules still exist and line counts remain plausible?"""
     ctx.ensure_ready_sync()
     import re
     from collections import Counter
