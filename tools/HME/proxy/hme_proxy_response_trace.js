@@ -137,7 +137,11 @@ async function traceAnthropicResponse({
     const bodyStr = outBuf.toString('utf8');
     const stats = isSse ? _sseStats(bodyStr) : _jsonStats(bodyStr);
     const hasErrorEvent = stats.errorEventsSeen.length > 0;
-    const isBlank = !hasErrorEvent && stats.textChars === 0 && stats.toolUseBlocks === 0;
+    // Blank = NO usable content at all. Thinking counts as content: a
+    // thinking-only response (stop=end_turn) is real, not blank -- flagging it
+    // triggered a model-swap retry that returned JSON to an open SSE stream.
+    const isBlank = !hasErrorEvent && stats.textChars === 0 && stats.toolUseBlocks === 0
+      && stats.thinkingChars === 0 && stats.thinkingBlocks === 0;
     const verdict = hasErrorEvent ? 'ERROR' : (isBlank ? 'BLANK' : 'OK');
     if (!traceEnabled && verdict === 'OK') return { outStatus, outHeaders, outBuf };
     const dumpDir = path.join(PROJECT_ROOT, 'tmp', 'blank-debug');
