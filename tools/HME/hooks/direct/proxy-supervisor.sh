@@ -533,14 +533,14 @@ _sv_loop() {
       local child_issue
       child_issue=$(_sv_child_health_issue)
       if [ -n "$child_issue" ]; then
-        _sv_log "child-only issue; restarting proxy bundle to recover supervised child: $child_issue"
-        if _sv_spawn_and_verify; then
-          _sv_log "child recovery restart verified"
+        _sv_log "child issue detected; recovering: $child_issue"
+        if _sv_recover_health_issue "$child_issue"; then
+          _sv_log "child recovery verified"
           consecutive_spawn_fails=0
           misses=0
         else
           consecutive_spawn_fails=$((consecutive_spawn_fails + 1))
-          _sv_log "child recovery restart failed (consecutive_fails=$consecutive_spawn_fails)"
+          _sv_log "child recovery failed (consecutive_fails=$consecutive_spawn_fails)"
           if [ "$consecutive_spawn_fails" -ge "$_SV_CRASH_LOOP_THRESHOLD" ]; then
             _sv_fire_crashloop_lifesaver "$consecutive_spawn_fails"
             backoff_secs=$_SV_BACKOFF_INITIAL
