@@ -1,15 +1,16 @@
 "use strict";
-// DDoC non-ASCII scrubber for ALL response channels.
+// DDoC non-ASCII scrubber for ALL response channels. Block structure and
+// indices are preserved (no shifting) so the client's block table stays in
+// sync; only delta CONTENT is scrubbed.
 //
-// text_delta (visible): typography folded to ASCII via shared table; genuinely
-//   foreign residue is replaced inline with the redaction banner.
-// thinking_delta: a thinking block carries a signature sealing its EXACT text,
-//   so we cannot rewrite the text in place. Instead we BUFFER the whole block
-//   (start..stop) and, if any delta contains foreign residue after folding,
-//   DROP the entire block atomically -- start, deltas, signature, stop. A
-//   message with no thinking block is valid; dropping avoids both seal
-//   mismatch and orphaned (unsigned) blocks. Later block indices shift down by
-//   one per dropped block so the content array has no gap.
+// text_delta: typography folded to ASCII via shared table; genuinely foreign
+//   residue replaced inline with the redaction banner (once per block, later
+//   contaminated deltas dropped).
+// thinking_delta: folded to ASCII; if foreign residue remains, the delta text
+//   is replaced with a minimal "." placeholder (once per block, later
+//   contaminated deltas dropped). The block's signature_delta is then dropped
+//   too -- the signature sealed the ORIGINAL text, so keeping it after we
+//   changed the text would be a mismatch. Block start/stop stay intact.
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
 
@@ -24,74 +25,59 @@ function _hasNonAscii(s) {
   return typeof s === "string" && NON_ASCII_RE.test(s);
 }
 
-function _state(ctx) {
-  let st = ctx && ctx.get && ctx.get("ascii_strip_state");
-  if (!st) {
-    st = { think: new Map(), shift: 0, bannered: new Set() };
-    if (ctx && ctx.set) ctx.set("ascii_strip_state", st);
-  }
-  return st;
-}
-
-// Re-index an event's block index down by the running shift.
-function _shifted(data, shift) {
-  if (shift && typeof data.index === "number") {
-    return { ...data, index: data.index - shift };
-  }
-  return data;
-}
-
-function _handleText(data, st) {
-  const original = data.delta.text;
-  const normalized = normalizeToAscii(original);
-  if (!_hasNonAscii(normalized)) {
-    const base = _shifted(data, st.shift);
-    if (normalized === original) return base;
-    return { ...base, delta: { ...base.delta, text: normalized } };
-  }
-  const idx = data.index;
-  if (st.bannered.has(idx)) return null;            // banner once per block
-  st.bannered.add(idx);
-  const base = _shifted(data, st.shift);
-  return { ...base, delta: { ...base.delta, text: BANNER } };
+function _ctxSet(ctx, key) {
+  let s = ctx && ctx.get && ctx.get(key);
+  if (!s) { s = new Set(); if (ctx && ctx.set) ctx.set(key, s); }
+  return s;
 }
 
 function asciiStripRewrite(eventName, data, ctx) {
   if (!ENABLED) return data;
-  if (!data) return data;
-  const st = _state(ctx);
-
-  // --- thinking block buffering (atomic drop-if-contaminated) ---
-  if (eventName === "content_block_start" && data.content_block
-      && data.content_block.type === "thinking") {
-    st.think.set(data.index, { events: [["content_block_start", data]], dirty: false });
-    return null;                                    // hold until stop
-  }
-  const buffered = (typeof data.index === "number") ? st.think.get(data.index) : null;
-  if (buffered) {
-    if (eventName === "content_block_delta" && data.delta
-        && data.delta.type === "thinking_delta"
-        && _hasNonAscii(normalizeToAscii(data.delta.thinking))) {
-      buffered.dirty = true;
+  if (eventName !== "content_block_delta" || !data || !data.delta) {
+    // Drop the seal on any block whose text we redacted.
+    if (eventName === "content_block_delta" && data && data.delta
+        && data.delta.type === "signature_delta") {
+      const redacted = _ctxSet(ctx, "ascii_redacted_blocks");
+      if (redacted.has(data.index)) return null;
     }
-    buffered.events.push([eventName, data]);
-    if (eventName === "content_block_stop") {
-      st.think.delete(data.index);
-      if (buffered.dirty) { st.shift += 1; return null; }   // drop whole block
-      // clean: flush buffered events with shifted indices
-      return { events: buffered.events.map(([n, d]) => [n, _shifted(d, st.shift)]) };
+    return data;
+  }
+  const t = data.delta.type;
+
+  if (t === "text_delta" && typeof data.delta.text === "string") {
+    const original = data.delta.text;
+    const normalized = normalizeToAscii(original);
+    if (!_hasNonAscii(normalized)) {
+      if (normalized === original) return data;
+      return { ...data, delta: { ...data.delta, text: normalized } };
     }
-    return null;                                    // still buffering
+    const banner = _ctxSet(ctx, "ascii_banner_blocks");
+    if (banner.has(data.index)) return null;
+    banner.add(data.index);
+    return { ...data, delta: { ...data.delta, text: BANNER } };
   }
 
-  // --- visible text channel ---
-  if (eventName === "content_block_delta" && data.delta
-      && data.delta.type === "text_delta" && typeof data.delta.text === "string") {
-    return _handleText(data, st);
+  if (t === "thinking_delta" && typeof data.delta.thinking === "string") {
+    const original = data.delta.thinking;
+    const normalized = normalizeToAscii(original);
+    if (!_hasNonAscii(normalized)) {
+      if (normalized === original) return data;
+      return { ...data, delta: { ...data.delta, thinking: normalized } };
+    }
+    // Foreign residue: redact to a placeholder, drop this block's signature.
+    const redacted = _ctxSet(ctx, "ascii_redacted_blocks");
+    redacted.add(data.index);
+    const placeheld = _ctxSet(ctx, "ascii_think_placeheld");
+    if (placeheld.has(data.index)) return null;     // one placeholder per block
+    placeheld.add(data.index);
+    return { ...data, delta: { ...data.delta, thinking: "." } };
   }
 
-  // --- everything else: just shift the index if needed ---
-  return _shifted(data, st.shift);
+  if (t === "signature_delta") {
+    const redacted = _ctxSet(ctx, "ascii_redacted_blocks");
+    if (redacted.has(data.index)) return null;
+  }
+  return data;
 }
 
 module.exports = { asciiStripRewrite, BANNER };
