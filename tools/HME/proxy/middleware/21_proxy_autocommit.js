@@ -133,6 +133,9 @@ function _recordFailure(root, caller, reason) {
 function _recordSuccess(root) {
   try {
     fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
+    // Close the failure streak: a clean commit ends the grace window so the
+    // next failure (if any) starts a fresh clock rather than inheriting age.
+    _clearFirstFail(root);
     fs.writeFileSync(path.join(root, COUNTER_REL), '0');
     fs.writeFileSync(path.join(root, LAST_SUCCESS_REL), _ts());
     fs.writeFileSync(path.join(root, HEARTBEAT_REL), String(Math.floor(Date.now() / 1000)));
