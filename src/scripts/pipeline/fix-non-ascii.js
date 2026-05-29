@@ -11,38 +11,8 @@
 const fs   = require('fs');
 const path = require('path');
 
-// Known non-ASCII -> ASCII equivalents
-const REPLACEMENTS = [
-  ['\u2014', '--'],         // em dash
-  ['\u2013', '-'],          // en dash
-  ['\u2018', "'"],          // left single quotation mark
-  ['\u2019', "'"],          // right single quotation mark
-  ['\u201C', '"'],          // left double quotation mark
-  ['\u201D', '"'],          // right double quotation mark
-  ['\u2026', '...'],        // horizontal ellipsis
-  ['\u2192', '->'],         // rightwards arrow
-  ['\u2190', '<-'],         // leftwards arrow
-  ['\u21D2', '=>'],         // rightwards double arrow
-  ['\u2260', '!='],         // not equal to
-  ['\u2264', '<='],         // less-than or equal to
-  ['\u2265', '>='],         // greater-than or equal to
-  ['\u2248', '~='],         // almost equal to (approximately)
-  ['\u00D7', '*'],          // multiplication sign
-  ['\u00B7', '.'],          // middle dot
-  ['\u00B1', '+/-'],         // plus-minus sign
-  ['\u00B0', 'deg'],        // degree sign
-  ['\u03B1', 'alpha'],      // greek small alpha
-  ['\u03B2', 'beta'],       // greek small beta
-  ['\u03B3', 'gamma'],      // greek small gamma
-  ['\u03B4', 'delta'],      // greek small delta
-  ['\u03B5', 'epsilon'],    // greek small epsilon
-  ['\u03C0', 'pi'],         // greek small pi
-  ['\u03C3', 'sigma'],      // greek small sigma
-  ['\u03C9', 'omega'],      // greek small omega
-  ['\u00A0', ' '],          // non-breaking space
-  ['\u200B', ''],           // zero-width space
-  ['\uFEFF', ''],           // BOM / zero-width no-break space
-];
+// Shared source of truth for the char table (also used by the proxy stripper).
+const { REPLACEMENTS } = require('./non-ascii-replacements');
 
 const SENTINEL = '?unknown-ascii-character?';
 const NON_ASCII = /[^\x09\x0A\x0D\x20-\x7E]/g;
