@@ -213,4 +213,11 @@ function start() {
   process.on('SIGINT',  () => process.exit(0));
 }
 
-start();
+module.exports = {
+  shouldRestart,
+  _enumerateAllWatchedFiles,
+  EXTRA_WATCH_FILES,
+};
+
+// Only run the live watcher when invoked directly, not when required by tests.
+if (require.main === module) start();
