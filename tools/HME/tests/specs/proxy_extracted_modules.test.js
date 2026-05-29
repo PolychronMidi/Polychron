@@ -537,7 +537,8 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
     assert.notEqual(result.chain[0].provider, 'anthropic',
       'configured provider skip must suppress Anthropic/Claude fronting');
   } else {
-    assert.equal(result.chain[0].id, 'claude-opus-4-7-max-e5');
+    const expectedTop = cfg.manually_toprank.E5.find((id) => id);
+    assert.equal(result.chain[0].id, expectedTop);
   }
   assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
 });
