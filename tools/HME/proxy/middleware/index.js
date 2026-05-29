@@ -485,6 +485,7 @@ async function runPipeline(payload, scan, session) {
         await mod.onToolResult({ toolUse, toolResult, session, ctx });
       } catch (err) {
         console.error(`[middleware] ${mod.name}.onToolResult threw: ${err.message}`);
+        recordMiddlewareThrow(PROJECT_ROOT, mod.name, err);
       }
     }
   }
