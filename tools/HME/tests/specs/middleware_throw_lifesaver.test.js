@@ -4,7 +4,7 @@ const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { formatMiddlewareThrowLine, _MIDDLEWARE_THROW_RE } = require('../../proxy/middleware/middleware_throw_lifesaver');
+const { formatMiddlewareThrowLine, _MIDDLEWARE_THROW_RE } = require('../../proxy/middleware/_middleware_throw_lifesaver');
 
 // The UserPromptSubmit scanner (tools/HME/hooks/lifecycle/userpromptsubmit.sh)
 // banners a line iff, after stripping the leading [timestamp]:
