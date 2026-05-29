@@ -343,6 +343,7 @@ def _main() -> int:
         try:
             ok_count, bad_count = _tick(cfg, tracker)
             _write_heartbeat(heartbeat_path, ok_count, bad_count)
+            _refresh_pid_file()
         except Exception as e:  # silent-ok: logged, pulse probe self-heals
             _log_error(
                 f"[universal_pulse] self-error: {type(e).__name__}: "
