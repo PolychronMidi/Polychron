@@ -459,7 +459,7 @@ const _SLOP_PATTERNS = [
 
   // Caveman -ing suffix pass. Only words greater than 5 letters are changed.
   // Prefix must be at least 3 letters, because 3 + "ing" = 6.
-  _suffixRule('caveman_ing_suffix', 'ing', 3, 'n'),
+  _suffixRule('caveman_ing_suffix', 'ing', 2, 'n'),
 
   // Caveman compression: delete low-signal glue words/first-person filler.
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
