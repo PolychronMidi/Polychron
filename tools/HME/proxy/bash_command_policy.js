@@ -219,13 +219,22 @@ function createBashPolicyContext(input = {}, opts = {}) {
   };
 }
 
-// Manual proxy/worker restart scripts are banned from Bash: zero-downtime
-// auto-restart liveness is already tested and guaranteed (file_watcher +
-// slot_watchdog converge slots to current code with routable_count never < 1).
-const _RESTART_SCRIPT_RE = /(?:tools\/HME\/launcher\/[\w.-]+\.sh|polychron-(?:proxy-restart|slot-restart|launch|shutdown)\.sh|proxy-supervisor\.sh|codex-proxy-supervisor\.sh|universal-pulse-supervisor\.sh|proxy-watchdog\.sh|worker-restart\b|slot_watchdog\.js|file_watcher\.js|shuffler\.js)/;
+// Manual proxy/worker restart is banned from Bash: zero-downtime auto-restart
+// liveness is already tested and guaranteed (file_watcher + slot_watchdog
+// converge slots to current code, routable_count never < 1). Match only
+const _RESTART_TARGET = '(?:polychron-(?:proxy-restart|slot-restart|launch|shutdown)\\.sh|proxy-supervisor\\.sh|codex-proxy-supervisor\\.sh|universal-pulse-supervisor\\.sh|proxy-watchdog\\.sh|slot_watchdog\\.js|file_watcher\\.js|shuffler\\.js)';
+const _RESTART_SCRIPT_RE = new RegExp(
+  // exec verb (bash/sh/node/setsid/nohup/source/./exec) immediately preceding a restart 
+  '(?:\\b(?:bash|sh|node|setsid|nohup|exec|source)\\b[^;&|]*?|(?:^|[;&|]|\\s)\\.?/?\\S*?)' + _RESTART_TARGET
+  // ...or a launcher-dir script run directly, or the worker-restart subcommand.
+  + '|tools/HME/launcher/[\\w.-]+\\.sh|\\bworker-restart\\b',
+);
 
 const BASH_POLICIES = [
   { name: 'restart-script-ban', evaluate(ctx) {
+    // Skip pure read-only inspection commands even if they name a target.
+    if (/^\s*(?:pgrep|pkill\s+-0|ps\b|tail\b|head\b|cat\b|grep\b|rg\b|ls\b|stat\b|wc\b|git\s+(?:log|show|diff|status))/.test(ctx.cmd)
+        && !/\b(?:bash|sh|node|setsid|nohup|exec|source)\b/.test(ctx.cmd)) return null;
     return _RESTART_SCRIPT_RE.test(ctx.cmd)
       ? deny('BLOCKED: proxy/worker auto-restart liveness is already tested and guaranteed (file_watcher + slot_watchdog auto-heal to current code, routable_count never drops below 1 -- zero downtime). Manual restart scripts are redundant churn; just edit code and let the supervisors converge.')
       : null;
