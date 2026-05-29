@@ -318,7 +318,9 @@ function _validateMiddlewareShape(mod) {
   const hasTR = typeof mod.onToolResult === 'function';
   if (!hasReq && !hasTR) throw new Error(`middleware "${mod.name}" exports neither onRequest nor onToolResult -- nothing to do`);
   const ALLOWED = new Set(['name', 'onRequest', 'onToolResult']);
-  const unknown = Object.keys(mod).filter((k) => !ALLOWED.has(k));
+  // UPPER_SNAKE_CASE keys are exported constants (test/introspection data),
+  // not handlers -- they can't be a mistyped onRequest/onToolResult, so allow
+  const unknown = Object.keys(mod).filter((k) => !ALLOWED.has(k) && !/^[A-Z][A-Z0-9_]*$/.test(k));
   if (unknown.length > 0) throw new Error(`middleware "${mod.name}" exports unknown keys ${JSON.stringify(unknown)}`);
 }
 
