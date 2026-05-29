@@ -31,12 +31,20 @@ function _ctxSet(ctx, key) {
   return s;
 }
 
-// Returns { text, foreign } where foreign=true means the input was essentially
-// all non-ASCII (nothing meaningful survived folding + stripping).
+// Returns { text, changed, foreign }. foreign=true means the delta is genuine
+// foreign-script spam (high density of non-ASCII), not English with a stray
+// symbol. Stripping foreign text inline would leave mangled consonant
+// skeletons ("Nguoi" -> "Ngi"), which is itself the spam we must redact -- so
+// dense deltas get the banner, sparse strays get stripped in place.
+const FOREIGN_RATIO = 0.10;   // > 10% non-ASCII chars => treat as foreign
+const FOREIGN_ABS = 3;        // ...or >= 3 non-ASCII chars in the fragment
 function _scrub(original) {
   const folded = normalizeToAscii(original);
+  const nonAsciiCount = (folded.match(NON_ASCII_RE) || []).length;
   const stripped = _stripNonAscii(folded);
-  const foreign = stripped.trim() === "" && original.trim() !== "";
+  const len = folded.length || 1;
+  const dense = nonAsciiCount >= FOREIGN_ABS || (nonAsciiCount / len) > FOREIGN_RATIO;
+  const foreign = nonAsciiCount > 0 && dense;
   return { text: stripped, folded, changed: stripped !== original, foreign };
 }
 
