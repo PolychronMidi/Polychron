@@ -32,6 +32,37 @@ function _ts() {
 // the very next attempt succeeds. Only surface to the agent (fail flag +
 const _SURFACE_AFTER_FAILS = 2;
 
+// Grace window (ms): a failure must remain unresolved this long -- measured from
+// the first failure of the streak, not from when the alert would fire -- before
+const _SURFACE_GRACE_MS = (() => {
+  const n = parseInt(process.env.HME_AUTOCOMMIT_SURFACE_GRACE_MS || '', 10);
+  return Number.isFinite(n) && n >= 0 ? n : 90_000;
+})();
+
+// First-failure timestamp of the current unresolved streak. Returns 0 when no
+// streak is open (cleared on success).
+function _firstFailMs(root) {
+  try {
+    const n = parseInt(fs.readFileSync(path.join(root, FIRST_FAIL_REL), 'utf8').trim(), 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch (_) { return 0; }
+}
+
+function _markFirstFail(root, now) {
+  try {
+    fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
+    const p = path.join(root, FIRST_FAIL_REL);
+    if (_firstFailMs(root) === 0) fs.writeFileSync(p, String(now));
+  } catch (_) { /* best-effort */ }
+}
+
+function _clearFirstFail(root) {
+  try {
+    const p = path.join(root, FIRST_FAIL_REL);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  } catch (_) { /* best-effort */ }
+}
+
 // Lock contention from a concurrent autocommit caller (onRequest / stop-hook /
 // userpromptsubmit all contend) is benign: the other caller owns the commit.
 // "nothing to commit" means another caller already landed it. Neither is a
