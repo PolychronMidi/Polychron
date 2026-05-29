@@ -21,6 +21,18 @@ fi
 
 PROJECT_ROOT="${PROJECT_ROOT}"
 
+# Cycle the universal-pulse supervisor so it picks up current code. Unlike the
+# proxy slots (which auto-heal via the slot-watchdog), the pulse supervisor is a
+_cycle_pulse_supervisor() {
+  local sv="$PROJECT_ROOT/tools/HME/hooks/direct/universal-pulse-supervisor.sh"
+  [ -f "$sv" ] || return 0
+  echo "[proxy-restart] cycling universal-pulse supervisor (load current code)" >&2
+  bash "$sv" stop 2>/dev/null || true
+  sleep 1
+  nohup bash "$sv" start >> "$PROJECT_ROOT/log/hme-universal-pulse.log" 2>&1 < /dev/null &
+  disown 2>/dev/null || true
+}
+
 # 1-minute restart throttle: rapid-fire restarts (one per file-edit cycle)
 # churn the proxy, kill in-flight requests, and waste 30-60s of warmup each
 _RESTART_THROTTLE_SEC="${HME_PROXY_RESTART_THROTTLE_SEC:-60}"
