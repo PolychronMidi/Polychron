@@ -96,6 +96,16 @@ class _Handler(BaseHTTPRequestHandler):
             "rag_ready": rag_engines._engine_ready.is_set() and rag_engines._project_engine is not None,
         })
 
+    def _worker_code_fingerprint(self):
+        # Boot-time hash of the worker's own loaded code so the supervisor can
+        # detect "alive but stale" and restart. Best-effort: never break the
+        try:
+            from server import worker_code_fingerprint as _wcf
+            from repo_root import resolve as _resolve_root
+            return _wcf.current(_resolve_root())
+        except Exception:
+            return ""
+
     def _get_health(self):
         # Unified health: worker tool-registry status + shim-absorbed RAG status.
         import rag_engines
