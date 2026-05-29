@@ -108,6 +108,22 @@ test('shortcuts_rewriter expands c at end of system-reminder string', async () =
   assert.equal(payload.messages[0].content, `${reminder}\ncontinue`);
 });
 
+test('SHORTCUT_RE is derived from SHORTCUTS -- no drift (every map key matches)', () => {
+  const { SHORTCUTS, SHORTCUT_RE } = shortcutsRewriter;
+  for (const key of Object.keys(SHORTCUTS)) {
+    assert.match(key, SHORTCUT_RE, `map key ${key} must match SHORTCUT_RE`);
+  }
+});
+
+test('r shortcut with a trailing system-reminder preserves the reminder (drift regression)', async () => {
+  const reminder = '<system-reminder>noise</system-reminder>';
+  const payload = { messages: [{ role: 'user', content: `${reminder}\nr` }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  // Before the fix, r fell through to "return value" and nuked the reminder.
+  assert.equal(payload.messages[0].content, `${reminder}\nrestarted. continue`);
+});
+
 test('shortcuts_rewriter tolerates middleware contexts without markDirty', () => {
   const payload = { messages: [{ role: 'user', content: 'n' }] };
   assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
