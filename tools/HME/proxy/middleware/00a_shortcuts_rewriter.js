@@ -11,7 +11,12 @@ const SHORTCUTS = {
 };
 
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
-const SHORTCUT_RE = /^\s*(n|m|d|c|cc)\s*$/;
+// Derive the match alternation from the map keys (plus the special-cased `cc`
+// compact shortcut) so the regex can never drift out of sync with SHORTCUTS.
+const _SHORTCUT_KEYS = [...Object.keys(SHORTCUTS), 'cc'].sort((a, b) => b.length - a.length);
+const _SHORTCUT_ALT = _SHORTCUT_KEYS.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+const SHORTCUT_RE = new RegExp(`^\\s*(${_SHORTCUT_ALT})\\s*$`);
+const _SHORTCUT_TAIL_RE = new RegExp(`(^|\\n)([ \\t]*)(${_SHORTCUT_ALT})([ \\t]*)$`, 'i');
 
 function _withoutSystemReminders(text) {
   return String(text || '').replace(SYSTEM_REMINDER_RE, '').trim();
