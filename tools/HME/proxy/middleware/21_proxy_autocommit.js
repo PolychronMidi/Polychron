@@ -24,22 +24,37 @@ function _ts() {
   return new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 }
 
+// A single failed attempt is usually a benign race: autocommit fires on EVERY
+// request mid-turn, so it routinely collides with an in-flight file write and
+// the very next attempt succeeds. Only surface to the agent (fail flag +
+const _SURFACE_AFTER_FAILS = 2;
+
+function _readCounter(root) {
+  try {
+    const n = parseInt(fs.readFileSync(path.join(root, COUNTER_REL), 'utf8').trim(), 10);
+    return Number.isFinite(n) ? n : 0;
+  } catch (_) { return 0; }
+}
+
 // Write to four independent channels on any failure. Every channel is
 function _recordFailure(root, caller, reason) {
   const body = `[${caller}] ${reason}`;
+  // Suppress agent-facing channels (A: fail flag, B: error log) for transient
+  // sub-threshold failures so they don't spam LIFESAVER. Stderr + activity
+  const surface = _readCounter(root) >= _SURFACE_AFTER_FAILS;
   try {
     const prior = fs.readFileSync(path.join(root, FAIL_FLAG_REL), 'utf8');
     if (prior.includes(body)) return;
   } catch (_) { /* no prior failure flag */ }
   const ts = _ts();
   // Channel A: sticky fail flag. Overwrite -- latest wins.
-  try {
+  if (surface) try {
     fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
     fs.writeFileSync(path.join(root, FAIL_FLAG_REL),
       `[${ts}] ${body}\n`);
   } catch (_) { /* best-effort */ }
   // Channel B: hme-errors.log for LIFESAVER text-scan pickup.
-  try {
+  if (surface) try {
     fs.mkdirSync(path.join(root, 'log'), { recursive: true });
     fs.appendFileSync(path.join(root, ERR_LOG),
       `[${ts}] [autocommit:proxy] ${body}\n`);
