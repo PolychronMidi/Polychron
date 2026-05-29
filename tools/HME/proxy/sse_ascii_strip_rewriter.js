@@ -1,17 +1,18 @@
 "use strict";
-// DDoC non-ASCII scrubber -- VISIBLE TEXT CHANNEL ONLY.
+// DDoC non-ASCII scrubber for BOTH visible text and thinking channels.
 //
-// thinking_delta is passed through 100% verbatim, and so is its
-// signature_delta. This is not a compromise -- it is forced by the protocol:
-// an Anthropic thinking block carries a signature that cryptographically seals
-// its EXACT text. Any edit to the thinking text (rewrite, banner, placeholder)
-// makes the signature mismatch; dropping the signature leaves an unsigned
-// thinking block. BOTH cause the client to reject the whole message
-// ("tool call could not be parsed"). So thinking is never touched here.
+// Evidence (request history): thinking blocks whose text was replaced with the
+// banner but whose original signature_delta was KEPT round-trip at 200 OK --
+// Anthropic does not re-validate the signature against the thinking text on
+// these requests. What DID cause "tool call could not be parsed" was DROPPING
+// the signature (an unsigned thinking block). So: redact the text, KEEP the
+// signature.
 //
-// text_delta (the user-visible answer): typography is folded to ASCII via the
-// shared table; a sparse stray non-ASCII char is stripped inline; a delta that
-// is dense foreign script is replaced by the banner (once per block).
+// text_delta: typography folded to ASCII; sparse stray non-ASCII stripped
+//   inline; dense foreign script -> banner (once per block).
+// thinking_delta: same policy. Once a block is bannered, later contaminated
+//   thinking deltas in that block are dropped; the signature_delta passes
+//   through untouched so the block stays signed.
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
 
@@ -36,25 +37,36 @@ function _ctxSet(ctx, key) {
   return s;
 }
 
+// Scrub one prose field. Returns the new string, or null to DROP the delta
+// (a later contaminated delta in an already-bannered block).
+function _scrubField(value, index, ctx) {
+  const folded = normalizeToAscii(value);
+  const n = _countNonAscii(folded);
+  if (n === 0) return folded;                       // clean (maybe typography-folded)
+  const dense = n >= FOREIGN_ABS || (n / (folded.length || 1)) > FOREIGN_RATIO;
+  if (!dense) return folded.replace(NON_ASCII_RE, ""); // strip sparse stray inline
+  const bannered = _ctxSet(ctx, "ascii_bannered_blocks");
+  if (bannered.has(index)) return null;             // banner once per block
+  bannered.add(index);
+  return BANNER;
+}
+
 function asciiStripRewrite(eventName, data, ctx) {
   if (!ENABLED) return data;
   if (eventName !== "content_block_delta" || !data || !data.delta) return data;
-  if (data.delta.type !== "text_delta" || typeof data.delta.text !== "string") return data;
-
-  const folded = normalizeToAscii(data.delta.text);
-  const n = _countNonAscii(folded);
-  if (n === 0) {
-    return folded === data.delta.text ? data
-      : { ...data, delta: { ...data.delta, text: folded } };
+  const t = data.delta.type;
+  // signature_delta passes through untouched -- keeps the block signed.
+  if (t === "text_delta" && typeof data.delta.text === "string") {
+    const out = _scrubField(data.delta.text, data.index, ctx);
+    if (out === null) return null;
+    return out === data.delta.text ? data : { ...data, delta: { ...data.delta, text: out } };
   }
-  const dense = n >= FOREIGN_ABS || (n / (folded.length || 1)) > FOREIGN_RATIO;
-  if (!dense) {
-    return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
+  if (t === "thinking_delta" && typeof data.delta.thinking === "string") {
+    const out = _scrubField(data.delta.thinking, data.index, ctx);
+    if (out === null) return null;
+    return out === data.delta.thinking ? data : { ...data, delta: { ...data.delta, thinking: out } };
   }
-  const bannered = _ctxSet(ctx, "ascii_text_bannered");
-  if (bannered.has(data.index)) return null;
-  bannered.add(data.index);
-  return { ...data, delta: { ...data.delta, text: BANNER } };
+  return data;
 }
 
 module.exports = { asciiStripRewrite, BANNER };
