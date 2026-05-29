@@ -23,7 +23,7 @@ const _ABBREVIATION_MAP = Object.freeze({
   // Common phrases.
   'in order to': 'to',
   'as well as': '&',
-  'for the purpose of': 'for',
+  'for the purpose of': '4',
   'with respect to': 're:',
   'in terms of': 'via',
   'at the present time': 'now',
@@ -48,6 +48,7 @@ const _ABBREVIATION_MAP = Object.freeze({
   'with': 'w/',
   'between': 'b/w',
   'before': 'b4',
+  'for': '4',
   'because': 'b/c',
   'amount': 'amt',
   'and': '&',
@@ -467,7 +468,7 @@ const _SLOP_PATTERNS = [
   // sides. The apostrophe guard is critical: without it, bare `i` followed by
   // "'" matches the "i" in "i'm" and deletes ONLY the letter, leaving "'m".
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
+    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|the|that|that['’]s|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
     repl: '' },
 
   // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
