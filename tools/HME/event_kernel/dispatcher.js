@@ -53,6 +53,21 @@ const RETRY_STATE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-ret
 const RETRY_LOG = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-retry-guard.jsonl');
 const INSPECTION_TOOLS = new Set(['Read', 'Grep', 'Glob']);
 
+// Declared routing contract: non-derivable route facts (policyContext per event).
+const ROUTES_FILE = path.join(__dirname, 'dispatcher-routes.json');
+let _routeContext = null;
+function policyContext(eventName) {
+  if (_routeContext === null) {
+    _routeContext = {};
+    try {
+      const data = JSON.parse(fs.readFileSync(ROUTES_FILE, 'utf8'));
+      for (const r of (data.routes || [])) _routeContext[r.event] = r.policyContext;
+    } catch (_e) { /* silent-ok: contract missing falls back to caller default */ }
+  }
+  return Object.prototype.hasOwnProperty.call(_routeContext, eventName)
+    ? _routeContext[eventName] : eventName;
+}
+
 function _stable(value) {
   if (Array.isArray(value)) return value.map(_stable);
   if (!value || typeof value !== 'object') return value;
