@@ -39,6 +39,9 @@ function _ctxSet(ctx, key) {
 // Scrub one prose field. Returns the new string, or null to DROP the delta
 // (a later contaminated delta in an already-bannered block).
 function _scrubField(value, index, ctx) {
+  // Once a block is bannered, the rest of that block is part of the same spam
+  // span -> drop every later delta in it (no inline-strip leak of "rc" etc).
+  if (_ctxSet(ctx, "ascii_bannered_blocks").has(index)) return null;
   const folded = normalizeToAscii(value);
   const n = _countNonAscii(folded);
   if (n === 0) return folded;                       // clean (maybe typography-folded)
