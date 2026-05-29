@@ -106,28 +106,50 @@ function _respawn(slot, reason) {
   });
 }
 
+function _routableCount() {
+  // A slot is routable when its health file is fresh, ready, and not draining.
+  let n = 0;
+  for (const slot of ['a', 'b']) {
+    const h = _readJSONSafe(HEALTH[slot]);
+    if (h && h.ready && !h.draining && (Date.now() - Number(h.ts || 0)) <= STALE_MS) n += 1;
+  }
+  return n;
+}
+
 function _tick() {
   const now = Date.now();
+  // First pass: clear state for healthy slots and record drift timers/alerts.
+  const needs = [];
   for (const slot of ['a', 'b']) {
     const s = state[slot];
     const decision = _respawnDecision(slot);
-    if (!decision.yes) {
-      s.driftSince = 0;
-      s.alerted = false;
-      continue;
-    }
+    if (!decision.yes) { s.driftSince = 0; s.alerted = false; continue; }
     if (decision.kind === 'drift') {
       if (!s.driftSince) s.driftSince = now;
-      // Stranded too long despite respawn attempts -> LIFESAVER (once per episode).
       if (!s.alerted && (now - s.driftSince) >= DRIFT_ALERT_MS) {
         s.alerted = true;
         _alertStaleSlot(slot, decision.reason);
       }
     }
-    // Per-slot cooldown inside _respawn serializes; no global gate, so both
-    // slots can heal in the same sweep instead of starving one another.
-    _respawn(slot, decision.reason);
+    needs.push({ slot, decision });
   }
+  if (needs.length === 0) return;
+
+  // ZERO-DOWNTIME INVARIANT: never take the last routable backend offline.
+  // If a respawn is already in flight, wait for it. Otherwise heal at most ONE
+  const inFlight = ['a', 'b'].some((slot) => state[slot].respawnInFlight);
+  if (inFlight) return;
+
+  const routable = _routableCount();
+  const target = needs[0];
+  const targetRoutable = (() => {
+    const h = _readJSONSafe(HEALTH[target.slot]);
+    return Boolean(h && h.ready && !h.draining && (now - Number(h.ts || 0)) <= STALE_MS);
+  })();
+  // Restarting `target` removes it from rotation iff it is currently routable.
+  // Permit only when at least one OTHER slot remains routable, OR nothing is
+  if (targetRoutable && routable <= 1) return;   // would zero out rotation -> defer
+  _respawn(target.slot, target.decision.reason);
 }
 
 function start() {
