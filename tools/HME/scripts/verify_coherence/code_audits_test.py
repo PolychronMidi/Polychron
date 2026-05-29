@@ -33,6 +33,30 @@ from ._base import (
 )
 
 
+def _record_backlog(key: str, count: int):
+    """Persist `count` for a backlog metric and return the PRIOR value (or None
+    on first record). Lets a verifier surface a regression delta instead of a
+    flat threshold. Best-effort: never raises into the verdict path."""
+    metrics_dir = os.environ.get("HME_METRICS_DIR") or METRICS_DIR
+    path = os.path.join(metrics_dir, "verifier-backlog.json")
+    prev = None
+    data = {}
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        prev = data.get(key, {}).get("count")
+    except Exception:
+        data = {}  # silent-ok: first run / unreadable -> no prior baseline
+    try:
+        data[key] = {"count": count, "ts": time.time()}
+        os.makedirs(metrics_dir, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2, sort_keys=True)
+    except OSError:
+        pass  # silent-ok: metric persistence is best-effort, must not gate
+    return prev
+
+
 @register
 class SilentFailureClassVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-silent-failure-class.py, which surfaces
