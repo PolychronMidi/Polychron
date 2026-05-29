@@ -28,6 +28,33 @@ test('text: dense foreign script -> banner once per block', () => {
   assert.equal(text(ctx, 1, 'еще'), null);
 });
 
+test('text: a lone stray char in short English never banners (the "precise" regression)', () => {
+  // Single unmapped non-ASCII char in a short chunk: 1/8 > 10% would have
+  // tripped the ratio gate and bannered the whole word. It must NOT.
+  for (const stray of [' ', ' ', '⁠', '­']) {
+    const out = text(mkCtx(), 1, 'prec' + stray + 'ise ');
+    assert.notEqual(out && out.delta && out.delta.text, BANNER, JSON.stringify(stray));
+    assert.ok(out.delta.text.includes('prec') && out.delta.text.includes('ise'), JSON.stringify(stray));
+  }
+});
+
+test('text: common benign whitespace/punct fold to ASCII (not counted as foreign)', () => {
+  assert.equal(text(mkCtx(), 1, 'a b').delta.text, 'a b');     // thin space
+  assert.equal(text(mkCtx(), 1, 'a b').delta.text, 'a b');     // narrow nbsp
+  assert.equal(text(mkCtx(), 1, 'a‒b').delta.text, 'a-b');     // figure dash
+  assert.equal(text(mkCtx(), 1, 'a―b').delta.text, 'a--b');    // horizontal bar
+  assert.equal(text(mkCtx(), 1, 'a•b').delta.text, 'a*b');     // bullet
+  assert.equal(text(mkCtx(), 1, 'a­b').delta.text, 'ab');      // soft hyphen
+  assert.equal(text(mkCtx(), 1, 'a⁠b').delta.text, 'ab');      // word joiner
+});
+
+test('text: two residual foreign letters in a short chunk still strip inline, not banner', () => {
+  // n=2, below FOREIGN_ABS, must strip inline rather than nuke the chunk.
+  const out = text(mkCtx(), 1, 'hi да there');
+  assert.notEqual(out.delta.text, BANNER);
+  assert.ok(out.delta.text.includes('hi') && out.delta.text.includes('there'));
+});
+
 test('thinking: clean block flushes verbatim with signature, typography folded', () => {
   const ctx = mkCtx();
   assert.equal(start(ctx, 0), null);
