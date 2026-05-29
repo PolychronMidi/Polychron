@@ -153,6 +153,27 @@ _sv_child_health_issue() {
       return 0
     fi
   done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
+  # Worker stale-code drift: alive but serving old code. Recovers via the
+  # "worker *" case in _sv_recover_health_issue -> _sv_restart_worker.
+  _sv_worker_drift_issue
+}
+
+# Compare the worker's live /health code_fingerprint against the on-disk worker
+# code. A mismatch means the worker is alive but running stale code (the
+_sv_worker_drift_issue() {
+  local live wanted
+  live=$(curl -sf --max-time 3 "$_SV_WORKER_URL" 2>/dev/null \
+    | python3 -c 'import json,sys
+try: print(json.load(sys.stdin).get("code_fingerprint") or "")
+except Exception: print("")' 2>/dev/null)
+  [ -n "$live" ] || return 0   # no fingerprint exposed (old worker / probe miss) -> not a drift signal
+  wanted=$(cd "$_SV_ROOT/tools/HME/service" 2>/dev/null \
+    && PYTHONPATH="$_SV_ROOT/tools/HME/service" python3 -c 'import sys; sys.path.insert(0, "server"); import worker_code_fingerprint as w, os; print(w.compute(os.environ["PROJECT_ROOT"]))' 2>/dev/null)
+  [ -n "$wanted" ] || return 0
+  if [ "$live" != "$wanted" ]; then
+    echo "worker stale code (fingerprint live=${live} wanted=${wanted})"
+    return 0
+  fi
 }
 
 _sv_bundle_health_issue() {
