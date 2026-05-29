@@ -56,6 +56,21 @@ _up_kill_child() {
   rm -f "$_UP_CHILD_PID_FILE" 2>/dev/null
 }
 
+# Newest mtime across the pulse script + the modules it imports at runtime, so a
+# code change to any of them triggers a reload (the daemon otherwise runs the
+# version it was forked with until it dies -- stale-code drift).
+_up_code_mtime() {
+  local newest=0 m
+  for f in "$_UP_PYTHON_SCRIPT" \
+           "$_SV_ROOT/tools/HME/scripts/refresh_pid_file.py" \
+           "$_SV_ROOT/tools/HME/scripts/service_registry.py"; do
+    [ -f "$f" ] || continue
+    m=$(stat -c %Y "$f" 2>/dev/null || echo 0)
+    [ "$m" -gt "$newest" ] && newest="$m"
+  done
+  echo "$newest"
+}
+
 _up_spawn_child() {
   if [ ! -f "$_UP_PYTHON_SCRIPT" ]; then
     _up_log "FATAL: python script missing: $_UP_PYTHON_SCRIPT"
@@ -67,7 +82,9 @@ _up_spawn_child() {
   local cp=$!
   disown "$cp" 2>/dev/null
   echo "$cp" > "$_UP_CHILD_PID_FILE"
-  _up_log "spawned universal_pulse.py pid=$cp"
+  # Record the code version this child was forked with, for stale-code detection.
+  _UP_CHILD_CODE_MTIME=$(_up_code_mtime)
+  _up_log "spawned universal_pulse.py pid=$cp code_mtime=$_UP_CHILD_CODE_MTIME"
 }
 
 _write_heartbeat() {
