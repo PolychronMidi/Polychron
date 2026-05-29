@@ -243,12 +243,11 @@ async function mutateClaudeRequest({
       const hns = common.hook_noise;
       const b = stripBoilerplate(payload);
       const s = stripSemanticRedundancy(payload);
-      // Narrative-control gate: strip benign host reminders, escalate any
-      // imperative-override contaminant via LIFESAVER. Provenance is the
-      let prov = { stripped: 0, contaminants: [] };
+      // Narrative-control gate: strip every <system-reminder>/<ide_selection>
+      // block that is not of HME origin (binary -- ours or gone).
+      let prov = { stripped: 0 };
       try {
         prov = enforceReminderProvenance(payload, { ledger: loadLedger(PROJECT_ROOT) });
-        if (prov.contaminants.length > 0) _raiseReminderContaminationLifesaver(PROJECT_ROOT, prov.contaminants);
       } catch (err) { console.error(`reminder-provenance failed: ${err.message}`); }
       const r = stripHmePrefixOutgoing(payload);
       const n = await injectHmeTools(payload);
