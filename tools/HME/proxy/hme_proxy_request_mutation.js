@@ -243,10 +243,17 @@ async function mutateClaudeRequest({
       const hns = common.hook_noise;
       const b = stripBoilerplate(payload);
       const s = stripSemanticRedundancy(payload);
+      // Narrative-control gate: strip benign host reminders, escalate any
+      // imperative-override contaminant via LIFESAVER. Provenance is the
+      let prov = { stripped: 0, contaminants: [] };
+      try {
+        prov = enforceReminderProvenance(payload, { ledger: loadLedger(PROJECT_ROOT) });
+        if (prov.contaminants.length > 0) _raiseReminderContaminationLifesaver(PROJECT_ROOT, prov.contaminants);
+      } catch (err) { console.error(`reminder-provenance failed: ${err.message}`); }
       const r = stripHmePrefixOutgoing(payload);
       const n = await injectHmeTools(payload);
       sanitizePayload(payload);
-      if (iw > 0 || hns.stripped > 0 || common.sanitized > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
+      if (iw > 0 || hns.stripped > 0 || common.sanitized > 0 || b > 0 || s > 0 || prov.stripped > 0 || r || n > 0) bodyDirtiedByStrip = true;
     }
 
     if (isAnthropic) {
