@@ -135,7 +135,10 @@ function _appendRateLimited(payload, ctx, source, banner, meta = {}) {
     ctx.emit({ event: 'lifesaver_inject_suppressed', source, interval_ms: NON_STRICT_LIFESAVER_INTERVAL_MS });
     return false;
   }
-  if (!_appendToLastUser(payload, `\n\n[lifesaver inject from proxy]\n${banner}\n`)) return false;
+  // Wrap in <system-reminder> so this reads as system-origin guidance, not the
+  // user's own prose: (1) it never contaminates a bare-shortcut turn -- the
+  // shortcuts_rewriter strips <system-reminder> blocks before matching, so `r`
+  if (!_appendToLastUser(payload, `\n<system-reminder>\n[lifesaver inject from proxy]\n${banner}\n</system-reminder>`)) return false;
   _recordNonStrictInject(ctx.PROJECT_ROOT);
   assertRealLifesaverInjection(ctx.PROJECT_ROOT, source, banner, meta);
   ctx.markDirty();
