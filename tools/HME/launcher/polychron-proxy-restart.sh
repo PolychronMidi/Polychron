@@ -44,7 +44,15 @@ if [ "$_LEGACY_MODE" = "0" ] && [ -x "$_SLOT_SCRIPT" ]; then
   "$_SLOT_SCRIPT" --slot a $_slot_args || { echo "[proxy-restart] slot a restart failed; aborting before slot b" >&2; exit 1; }
   sleep 2
   "$_SLOT_SCRIPT" --slot b $_slot_args || { echo "[proxy-restart] slot b restart failed; slot a is fresh, shuffler will route there" >&2; exit 1; }
-  echo "[proxy-restart] zero-downtime restart complete" >&2
+  # Converge the SHARED worker too. The slot restarts only cycle the proxy
+  # backends; the worker is a separate long-lived process and would otherwise
+  _SV="$PROJECT_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
+  if [ -f "$_SV" ]; then
+    echo "[proxy-restart] converging shared worker (worker-restart)" >&2
+    bash "$_SV" worker-restart >> "$PROJECT_ROOT/log/hme-proxy-lifecycle.log" 2>&1 || \
+      echo "[proxy-restart] worker-restart returned non-zero; supervisor will retry on drift" >&2
+  fi
+  echo "[proxy-restart] zero-downtime restart complete (slots + worker)" >&2
   exit 0
 fi
 
