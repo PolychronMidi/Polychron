@@ -9,6 +9,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
 const { watchSelfAndReexec } = require('./self_reexec');
+const { extraRuntimeFiles } = require('../proxy_runtime_fingerprint');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
 
@@ -17,6 +18,9 @@ const WATCH_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'proxy');
 const SLOT_SCRIPT = path.join(PROJECT_ROOT, 'tools', 'HME', 'launcher', 'polychron-slot-restart.sh');
 const DEBOUNCE_MS = 5000;
 const SHUFFLER_OWN_DIR = path.join(WATCH_DIR, 'shuffler');
+// Files OUTSIDE the proxy tree that still feed the runtime fingerprint (.env,
+// launcher + supervisor scripts). If the watcher ignores these, a change flips
+const EXTRA_WATCH_FILES = new Set(extraRuntimeFiles(PROJECT_ROOT));
 
 const SKIP_PATTERNS = [
   /node_modules\//,
