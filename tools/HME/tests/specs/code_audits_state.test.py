@@ -2,12 +2,27 @@
 """Smoke + class-shape tests for verify_coherence.code_audits_state."""
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
 from helpers import assert_class_shape, smoke_run
+
+_PROJECT = Path(__file__).resolve().parents[4]
+_AUDIT = _PROJECT / "tools" / "HME" / "scripts" / "audit-state-file-ownership.py"
+
+
+def _run_audit():
+    rc = subprocess.run(
+        ["python3", str(_AUDIT)],
+        capture_output=True, text=True, timeout=60,
+        env={**os.environ, "PROJECT_ROOT": str(_PROJECT)},
+    )
+    return rc.returncode, rc.stdout
 
 
 def _classes():
