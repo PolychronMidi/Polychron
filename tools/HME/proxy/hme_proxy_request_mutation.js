@@ -147,6 +147,18 @@ function _writeAutocompactLifesaver(root, payload) {
   } catch (_e) { /* best effort */ }
 }
 
+function _raiseReminderContaminationLifesaver(root, contaminants) {
+  try {
+    const logDir = path.join(root, 'log');
+    fs.mkdirSync(logDir, { recursive: true });
+    const ts = new Date().toISOString();
+    const summary = contaminants.map((c) => c.core.slice(0, 200)).join(' || ');
+    const line = `[${ts}] [reminder-contamination] ${contaminants.length} imperative-override system-reminder(s) not of HME origin: ${summary}\n`;
+    fs.appendFileSync(path.join(logDir, 'hme-errors.log'), line);
+    process.stderr.write(`LIFESAVER -- reminder contamination: ${contaminants.length} non-HME imperative system-reminder(s) detected. See log/hme-errors.log\n`);
+  } catch (_e) { /* lifesaver log best-effort */ }
+}
+
 function _lastUserPromptText(payload) {
   const last = payload && Array.isArray(payload.messages) ? payload.messages[payload.messages.length - 1] : null;
   if (!last || last.role !== 'user') return '';
