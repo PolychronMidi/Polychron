@@ -530,6 +530,7 @@ _sv_loop() {
   local backoff_secs=0
   while true; do
     _sv_reexec_if_self_changed
+    _sv_ensure_shuffler_procs
     # Exponential backoff after crash loop: skip health polling during
     if [ "$backoff_secs" -gt 0 ]; then
       sleep "$backoff_secs"
