@@ -464,7 +464,7 @@ const _SLOP_PATTERNS = [
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
   // happen before small words are removed.
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|\swe\s|\si\s|\sa\s|\sas\s|\sour\s|right|okay|hmm|let\s+me|them|they|was|\shas\s|need|\stoo\s|also|needs|\sis\s|\sthe\s|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|\s+we+\s|\s+i+\s|\s+a+\s|\s+as+\s|\s+our+\s|right|okay|hmm|let\s+me|them|they|was|\s+has+\s|need|\s+too+\s|also|needs|\s+is+\s|\s+the+\s|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
 
   // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
