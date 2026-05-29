@@ -60,6 +60,7 @@ const _ABBREVIATION_MAP = Object.freeze({
   'you': 'u',
   'your': 'ur',
   'are': 'r',
+  'both': 'bth',
   'please': 'pls',
   'thanks': 'thx',
   'thank you': 'thx',
