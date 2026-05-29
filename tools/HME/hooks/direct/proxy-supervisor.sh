@@ -196,9 +196,10 @@ _sv_reload_marker_pending() {
   live=$(_sv_live_git_sha)
   # Already-satisfied: live proxy slot sha matches the marker's wanted sha,
   # so the reload it asked for has happened. Clear without restarting.
-  if [ -n "$wanted" ] && [ "$wanted" = "$live" ]; then
+  live_runtime="$(_sv_runtime_fingerprint)"
+  if [ -n "$wanted" ] && { [ "$wanted" = "$live" ] || [ "$wanted" = "$live_runtime" ]; }; then
     rm -f "$_SV_RELOAD_MARKER" 2>/dev/null
-    _sv_log "reload marker satisfied wanted=[$wanted] live=[$live]; marker cleared"
+    _sv_log "reload marker satisfied wanted=[$wanted] live=[$live] runtime=[$live_runtime]; marker cleared"
     return 1
   fi
   # Non-proxy commit (runtime not stale): clear marker without restarting.
