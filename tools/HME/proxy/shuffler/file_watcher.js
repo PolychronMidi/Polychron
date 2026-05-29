@@ -61,7 +61,10 @@ function scheduleRestart(filePath) {
 
 function runRestart(triggerPath) {
   if (inFlightRestart) {
-    console.error(`[file-watcher] restart already in-flight; deferring trigger from ${path.relative(PROJECT_ROOT, triggerPath)}`);
+    // Don't DROP it -- queue a re-trigger so the latest code still gets a
+    // restart once the in-flight one finishes. Dropping here was the root
+    retriggerQueued = true;
+    console.error(`[file-watcher] restart in-flight; queued re-trigger from ${path.relative(PROJECT_ROOT, triggerPath)}`);
     return;
   }
   inFlightRestart = true;
@@ -76,6 +79,12 @@ function runRestart(triggerPath) {
   proc.on('exit', (code) => {
     inFlightRestart = false;
     if (code !== 0) console.error(`[file-watcher] slot-restart ${slot} exited ${code}; check log/hme-proxy-${slot}.out`);
+    if (retriggerQueued) {
+      retriggerQueued = false;
+      // A change landed mid-restart -> restart the OTHER slot now so both
+      // converge to current code. Zero-downtime: this slot is already back up.
+      runRestart(triggerPath);
+    }
   });
 }
 
