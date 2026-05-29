@@ -122,9 +122,16 @@ _up_maint_active() {
   [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
 }
 
+_up_self_mtime() {
+  stat -c %Y "${BASH_SOURCE[0]}" 2>/dev/null || echo 0
+}
+
 _up_loop() {
   echo "$$" > "$_UP_PID_FILE"
   _up_log "supervisor started pid=$$"
+  # Record this supervisor's own source mtime. A long-lived bash process does
+  # not re-read its script after launch, so on an edit we must re-exec to run
+  local _self_mtime; _self_mtime=$(_up_self_mtime)
 
   _write_heartbeat supervisor-starting 0 0
   _up_spawn_child
@@ -132,6 +139,13 @@ _up_loop() {
   while true; do
     sleep "$_UP_POLL_INTERVAL"
     if _up_maint_active; then continue; fi
+
+    # Self-converge to current code: re-exec when our own .sh changed on disk.
+    # exec replaces this process in place, preserving the PID file + child.
+    if [ "$(_up_self_mtime)" -gt "$_self_mtime" ]; then
+      _up_log "supervisor source changed -- re-exec'ing into new code (pid=$$)"
+      exec bash "${BASH_SOURCE[0]}" _loop
+    fi
 
     local cp age
     cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
