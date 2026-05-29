@@ -150,6 +150,16 @@ _up_loop() {
       _up_spawn_child
       continue
     fi
+    # Stale-code reload: if the pulse script or its imports changed on disk since
+    # this child was forked, cycle it so the new code goes live (mirrors the
+    local code_mtime
+    code_mtime=$(_up_code_mtime)
+    if [ -n "${_UP_CHILD_CODE_MTIME:-}" ] && [ "$code_mtime" -gt "$_UP_CHILD_CODE_MTIME" ]; then
+      _up_log "code changed (mtime $_UP_CHILD_CODE_MTIME -> $code_mtime) -- reloading child pid=$cp"
+      _up_kill_child
+      _up_spawn_child
+      continue
+    fi
   done
 }
 
