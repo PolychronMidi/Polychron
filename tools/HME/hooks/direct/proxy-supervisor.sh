@@ -714,8 +714,10 @@ case "$_action" in
     "$_SV_SELF" start >/dev/null 2>&1 || true
     ;;
   worker-restart)
-    _sv_log "manual worker-restart requested"
-    _sv_restart_worker
+    # Explicit worker-restart means "I want fresh code" -- force past the
+    # healthy-adopt shortcut, since a worker on stale code is still healthy.
+    _sv_log "manual worker-restart requested (forced)"
+    _sv_restart_worker 1
     ;;
   worker-health)
     if curl -sf --max-time 3 "$_SV_WORKER_URL"; then
