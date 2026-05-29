@@ -38,9 +38,30 @@ function recordMiddlewareThrow(root, modName, err) {
   }
 }
 
+// Generic proxy-failure -> LIFESAVER sink. Project rule: EVERY swallowed
+// failure must surface as a LIFESAVER, not a console.error that dies in
+function formatProxyFailureLine(site, err) {
+  const tag = String(site || 'proxy').replace(/\s+/g, '-');
+  const msg = _errText(err).replace(/\s+/g, ' ').slice(0, 600);
+  return `[${_ts()}] [proxy-failure] LIFESAVER -- ${tag} failed and was swallowed: ${msg}`;
+}
+
+function recordProxyFailure(root, site, err) {
+  try {
+    const logPath = path.join(root, ERROR_LOG_REL);
+    fs.mkdirSync(path.dirname(logPath), { recursive: true });
+    fs.appendFileSync(logPath, formatProxyFailureLine(site, err) + '\n');
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
 module.exports = {
   formatMiddlewareThrowLine,
   recordMiddlewareThrow,
+  formatProxyFailureLine,
+  recordProxyFailure,
   _MIDDLEWARE_THROW_RE,
   ERROR_LOG_REL,
 };
