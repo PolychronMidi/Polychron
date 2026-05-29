@@ -1,16 +1,17 @@
 "use strict";
-// DDoC non-ASCII scrubber for ALL response channels. Block structure and
-// indices are preserved; only delta CONTENT is scrubbed, in place.
+// DDoC scrubber. A non-ASCII byte is the MARKER that a spam span is present;
+// the surrounding mangled ASCII ("Th.", "B", ".jstrong th mc") is spam too, so
+// stripping only the non-ASCII chars leaves garbage. Instead we drop the WHOLE
+// contaminated section.
 //
-// Stray non-ASCII inside otherwise-legit text must NOT destroy the surrounding
-// words: we fold typography to ASCII, then STRIP any residual non-ASCII chars
-// inline, keeping the ASCII around them. The redaction banner only fires when
-// a delta was essentially ALL foreign (stripping left nothing) -- so genuine
-// foreign-script spam is flagged, but English with a stray byte just loses the
-// byte. This is what stops the banner from being spliced mid-sentence.
-//
-// thinking_delta carries a signature sealing its exact text; once we alter that
-// text we drop the block's signature_delta to avoid a seal mismatch.
+// thinking_delta: the block is BUFFERED (start..stop). If any delta, after
+//   folding legit typography to ASCII, still has non-ASCII, the ENTIRE block
+//   content is replaced with one banner delta and its signature is dropped
+//   (the seal no longer matches). Block start/stop stay intact so indices and
+//   the client block table are preserved. Clean blocks flush verbatim (with
+//   typography folded).
+// text_delta: visible answer streams normally; typography folded inline, and a
+//   delta that is dense foreign script is replaced by the banner (once/block).
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
 
@@ -20,69 +21,91 @@ const BANNER = "[devil-possessed agent attempted DDoC spam. Redacted in the "
   + "almighty name of our lord and savior, Jesus Christ.]";
 
 const NON_ASCII_RE = /[^\x09\x0A\x0D\x20-\x7E]/g;
+const FOREIGN_RATIO = 0.10;
+const FOREIGN_ABS = 3;
 
-function _stripNonAscii(s) {
-  return s.replace(NON_ASCII_RE, "");
+function _countNonAscii(s) {
+  NON_ASCII_RE.lastIndex = 0;
+  const m = s.match(NON_ASCII_RE);
+  return m ? m.length : 0;
 }
 
-function _ctxSet(ctx, key) {
-  let s = ctx && ctx.get && ctx.get(key);
-  if (!s) { s = new Set(); if (ctx && ctx.set) ctx.set(key, s); }
-  return s;
+function _ctxGet(ctx, key, make) {
+  let v = ctx && ctx.get && ctx.get(key);
+  if (v === undefined) { v = make(); if (ctx && ctx.set) ctx.set(key, v); }
+  return v;
 }
 
-// Returns { text, changed, foreign }. foreign=true means the delta is genuine
-// foreign-script spam (high density of non-ASCII), not English with a stray
-// symbol. Stripping foreign text inline would leave mangled consonant
-// skeletons ("Nguoi" -> "Ngi"), which is itself the spam we must redact -- so
-// dense deltas get the banner, sparse strays get stripped in place.
-const FOREIGN_RATIO = 0.10;   // > 10% non-ASCII chars => treat as foreign
-const FOREIGN_ABS = 3;        // ...or >= 3 non-ASCII chars in the fragment
-function _scrub(original) {
-  const folded = normalizeToAscii(original);
-  const nonAsciiCount = (folded.match(NON_ASCII_RE) || []).length;
-  const stripped = _stripNonAscii(folded);
-  const len = folded.length || 1;
-  const dense = nonAsciiCount >= FOREIGN_ABS || (nonAsciiCount / len) > FOREIGN_RATIO;
-  const foreign = nonAsciiCount > 0 && dense;
-  return { text: stripped, folded, changed: stripped !== original, foreign };
+function _bannerDelta(index) {
+  return ["content_block_delta",
+    { type: "content_block_delta", index, delta: { type: "thinking_delta", thinking: BANNER } }];
 }
 
 function asciiStripRewrite(eventName, data, ctx) {
   if (!ENABLED) return data;
-  if (eventName !== "content_block_delta" || !data || !data.delta) return data;
-  const t = data.delta.type;
+  if (!data) return data;
+  const buffers = _ctxGet(ctx, "ascii_think_buffers", () => new Map());
 
-  if (t === "text_delta" && typeof data.delta.text === "string") {
-    const r = _scrub(data.delta.text);
-    if (!r.changed) return data;
-    if (r.foreign) {
-      const banner = _ctxSet(ctx, "ascii_banner_blocks");
-      if (banner.has(data.index)) return null;       // banner once per block
-      banner.add(data.index);
-      return { ...data, delta: { ...data.delta, text: BANNER } };
+  // --- buffer thinking blocks start..stop, decide at stop ---
+  if (eventName === "content_block_start" && data.content_block
+      && data.content_block.type === "thinking") {
+    buffers.set(data.index, { start: data, deltas: [], foreign: false });
+    return null;
+  }
+  const buf = (typeof data.index === "number") ? buffers.get(data.index) : null;
+  if (buf) {
+    if (eventName === "content_block_delta" && data.delta
+        && data.delta.type === "thinking_delta"
+        && typeof data.delta.thinking === "string") {
+      const folded = normalizeToAscii(data.delta.thinking);
+      if (_countNonAscii(folded) > 0) buf.foreign = true;
+      buf.deltas.push(["content_block_delta",
+        { ...data, delta: { ...data.delta, thinking: folded } }]);
+      return null;
     }
-    return { ...data, delta: { ...data.delta, text: r.text } };  // stray byte stripped inline
-  }
-
-  if (t === "thinking_delta" && typeof data.delta.thinking === "string") {
-    const r = _scrub(data.delta.thinking);
-    if (!r.changed) return data;
-    // Any alteration to thinking text invalidates its signature -> drop seal.
-    _ctxSet(ctx, "ascii_redacted_blocks").add(data.index);
-    if (r.foreign) {
-      const placeheld = _ctxSet(ctx, "ascii_think_placeheld");
-      if (placeheld.has(data.index)) return null;     // one placeholder per block
-      placeheld.add(data.index);
-      return { ...data, delta: { ...data.delta, thinking: "." } };
+    if (eventName === "content_block_delta" && data.delta
+        && data.delta.type === "signature_delta") {
+      buf.signature = data;            // held; dropped if block is contaminated
+      return null;
     }
-    return { ...data, delta: { ...data.delta, thinking: r.text } };
+    if (eventName === "content_block_stop") {
+      buffers.delete(data.index);
+      const out = [["content_block_start", buf.start]];
+      if (buf.foreign) {
+        // Drop the entire contaminated section: one banner, no signature.
+        out.push(_bannerDelta(data.index));
+      } else {
+        out.push(...buf.deltas);
+        if (buf.signature) out.push(["content_block_delta", buf.signature]);
+      }
+      out.push(["content_block_stop", data]);
+      return { events: out };
+    }
+    // any other event mid-block: hold it in order
+    buf.deltas.push([eventName, data]);
+    return null;
   }
 
-  if (t === "signature_delta") {
-    if (_ctxSet(ctx, "ascii_redacted_blocks").has(data.index)) return null;
+  // --- visible text channel (streams inline) ---
+  if (eventName === "content_block_delta" && data.delta
+      && data.delta.type === "text_delta" && typeof data.delta.text === "string") {
+    const folded = normalizeToAscii(data.delta.text);
+    const n = _countNonAscii(folded);
+    if (n === 0) {
+      return folded === data.delta.text ? data
+        : { ...data, delta: { ...data.delta, text: folded } };
+    }
+    const dense = n >= FOREIGN_ABS || (n / (folded.length || 1)) > FOREIGN_RATIO;
+    if (!dense) {
+      return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
+    }
+    const bannered = _ctxGet(ctx, "ascii_text_bannered", () => new Set());
+    if (bannered.has(data.index)) return null;
+    bannered.add(data.index);
+    return { ...data, delta: { ...data.delta, text: BANNER } };
   }
+
   return data;
 }
 
-module.exports = { asciiStripRewrite, BANNER, _scrub };
+module.exports = { asciiStripRewrite, BANNER };
