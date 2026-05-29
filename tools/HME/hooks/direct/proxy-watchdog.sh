@@ -69,6 +69,22 @@ if [ "${OVERDRIVE_MODE}" = "1" ]; then
   fi
 fi
 
+# Liveness/drift guard: a proxy can be UP and bundle-healthy yet serving STALE
+# code (slot runtime_fingerprint != current). /health alone never catches this
+# -- it was the silent live-live drift hole. Run the watchdog-independent gate;
+if [ -f "$_WD_ROOT/tools/HME/proxy/proxy_liveness_gate.js" ] && command -v node >/dev/null 2>&1; then
+  if ! PROJECT_ROOT="$_WD_ROOT" node "$_WD_ROOT/tools/HME/proxy/proxy_liveness_gate.js" --check-only >/dev/null 2>&1; then
+    ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+    echo "[$ts] [proxy-watchdog] liveness gate reports stale/drifted slots; auto-restarting supervisor to converge" \
+      >> "$_WD_ROOT/log/hme-errors.log"
+    if [ -x "$_WD_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh" ]; then
+      setsid nohup bash "$_WD_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh" restart \
+        >> "$_WD_ROOT/log/hme-proxy-lifecycle.log" 2>&1 < /dev/null &
+      disown 2>/dev/null || true
+    fi
+  fi
+fi
+
 # Probe: if the whole proxy-owned bundle is healthy, exit silent. A proxy
 # that responds while a required child is down still needs a bundle restart.
 if curl -sf --max-time 2 "$_WD_URL" >/dev/null 2>&1; then
