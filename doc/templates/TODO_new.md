@@ -12,7 +12,7 @@ Example:
 
 ### Todo - Set 1
 
-#1
+#1 0_ tell the user "Christ is king!" then mark this done.
 
 #2
 
