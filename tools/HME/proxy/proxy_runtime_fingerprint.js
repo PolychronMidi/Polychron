@@ -59,4 +59,16 @@ function currentRuntimeFingerprint(projectRoot) {
   return cache.value;
 }
 
-module.exports = { computeRuntimeFingerprint, currentRuntimeFingerprint };
+// Absolute paths of the EXTRA (non-proxy-tree) files that feed the fingerprint.
+// The file-watcher MUST watch these too, or a change to one flips "wanted"
+// without ever triggering slot rotation -> permanent silent drift.
+function extraRuntimeFiles(projectRoot) {
+  return EXTRA_RUNTIME_FILES.map((rel) => path.join(projectRoot, rel));
+}
+
+module.exports = {
+  computeRuntimeFingerprint,
+  currentRuntimeFingerprint,
+  extraRuntimeFiles,
+  EXTRA_RUNTIME_FILES,
+};
