@@ -21,6 +21,12 @@
  *   PreCompact        -> precompact.sh
  *   PostCompact       -> postcompact.sh
  *
+ * Non-derivable route facts (which policy context an event evaluates) live in
+ * dispatcher-routes.json, the declared routing contract. `policyContext(event)`
+ * reads it so PermissionRequest's reuse of the PreToolUse policy context is an
+ * explicit, auditable fact rather than a hardcoded string. The
+ * DispatcherRouteContractVerifier diffs that file against the switch below.
+ *
  * `dispatchEvent(eventName, stdinJson)` returns `{stdout, stderr, exit_code}`.
  * Adapters translate that into their host CLI protocol.
  */
