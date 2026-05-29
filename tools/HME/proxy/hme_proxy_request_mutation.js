@@ -272,6 +272,7 @@ async function mutateClaudeRequest({
         );
       } catch (err) {
         console.error(`pre-dump failed: ${err.message}`);
+        recordProxyFailure(PROJECT_ROOT, 'pre-dump', err);
       }
       if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
         if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
