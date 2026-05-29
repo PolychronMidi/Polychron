@@ -147,7 +147,8 @@ function bashPolicyRewrite(eventName, data, ctx) {
   const verdict = evaluateBashInput(input, { supportsRunInBackground: true });
   if (!verdict || verdict.decision === 'allow' && !verdict.changed) return data;
   if (verdict.decision === 'deny') {
-    state.partial = JSON.stringify({ ...input, command: blockedCommand(verdict.reason), description: 'blocked by HME policy' });
+    // Leave the command UNTOUCHED so it reaches Claude Code's PreToolUse hook
+    // (pretooluse_bash.sh runs the same policy and returns a real
     return data;
   }
   state.partial = JSON.stringify(verdict.input || input);
