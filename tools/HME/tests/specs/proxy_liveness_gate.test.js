@@ -26,29 +26,38 @@ test('a slot running a stale fingerprint is flagged drift (serves old code)', ()
   assert.equal(r.problems[0].kind, 'drift');
 });
 
-test('a missing health file is flagged', () => {
+test('a lone missing slot is BENIGN while the other serves current code (zero-downtime rotation)', () => {
   const r = evaluateSlots({ a: health(), b: null }, 'GOOD', NOW, aliveAll);
-  assert.equal(r.ok, false);
-  assert.equal(r.problems[0].kind, 'missing');
+  assert.equal(r.ok, true, 'one slot rotating must not alarm when the other is routable-current');
+  assert.equal(r.problems.length, 0);
 });
 
-test('a dead pid is flagged even if the health file looks fresh', () => {
+test('a lone dead slot is BENIGN while the other serves current code', () => {
   const deps = { isAlive: (pid) => pid !== 666, staleMs: STALE_MS };
   const r = evaluateSlots({ a: health(), b: health({ pid: 666 }) }, 'GOOD', NOW, deps);
-  assert.equal(r.ok, false);
-  assert.equal(r.problems[0].kind, 'dead');
+  assert.equal(r.ok, true);
 });
 
-test('a stale heartbeat (old ts) is flagged', () => {
+test('a lone stale slot is BENIGN while the other serves current code', () => {
   const r = evaluateSlots({ a: health(), b: health({ ts: NOW - STALE_MS - 1 }) }, 'GOOD', NOW, aliveAll);
-  assert.equal(r.ok, false);
-  assert.equal(r.problems[0].kind, 'stale');
+  assert.equal(r.ok, true);
 });
 
-test('BOTH slots down -> still one problem entry per slot (total proxy outage)', () => {
+test('a slot on OLD code (drift) ALWAYS alarms even if the other is current', () => {
+  const r = evaluateSlots({ a: health(), b: health({ runtime_fingerprint: 'OLD' }) }, 'GOOD', NOW, aliveAll);
+  assert.equal(r.ok, false);
+  assert.equal(r.problems[0].kind, 'drift');
+});
+
+test('BOTH slots down -> total outage alarms (no routable-current slot)', () => {
   const r = evaluateSlots({ a: null, b: null }, 'GOOD', NOW, aliveAll);
   assert.equal(r.ok, false);
   assert.equal(r.problems.length, 2);
+});
+
+test('one down + one drift -> alarms (no routable-current slot)', () => {
+  const r = evaluateSlots({ a: null, b: health({ runtime_fingerprint: 'OLD' }) }, 'GOOD', NOW, aliveAll);
+  assert.equal(r.ok, false);
 });
 
 test('formatLifesaver line satisfies the UserPromptSubmit scanner contract', () => {

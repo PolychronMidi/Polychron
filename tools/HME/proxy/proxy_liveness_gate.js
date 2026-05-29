@@ -15,20 +15,31 @@ function _isAlive(pid) {
 function evaluateSlots(slots, wantedFingerprint, now, deps) {
   const isAlive = (deps && deps.isAlive) || _isAlive;
   const staleMs = (deps && deps.staleMs) || 30_000;
-  const problems = [];
+  // Per-slot classification. A single slot being missing/dead/stale is NORMAL
+  // during zero-downtime rotation (the watcher restarts one slot while the
+  // other serves), so it is NOT alarm-worthy on its own. Two states ARE always
+  let routableCurrent = 0;
+  const drift = [];
+  const down = [];
   for (const slot of ['a', 'b']) {
     const h = slots[slot];
-    if (!h) { problems.push({ slot, kind: 'missing', detail: 'health file missing/unreadable' }); continue; }
-    if (!isAlive(h.pid)) { problems.push({ slot, kind: 'dead', detail: `pid ${h.pid} not alive` }); continue; }
+    if (!h) { down.push({ slot, kind: 'missing', detail: 'health file missing/unreadable' }); continue; }
+    if (!isAlive(h.pid)) { down.push({ slot, kind: 'dead', detail: `pid ${h.pid} not alive` }); continue; }
     if ((now - Number(h.ts || 0)) > staleMs) {
-      problems.push({ slot, kind: 'stale', detail: `heartbeat ${Math.round((now - Number(h.ts || 0)) / 1000)}s stale` });
+      down.push({ slot, kind: 'stale', detail: `heartbeat ${Math.round((now - Number(h.ts || 0)) / 1000)}s stale` });
       continue;
     }
     const have = String(h.runtime_fingerprint || '');
     if (wantedFingerprint && have && have !== wantedFingerprint) {
-      problems.push({ slot, kind: 'drift', detail: `live=${have.slice(0, 12)} wanted=${wantedFingerprint.slice(0, 12)}` });
+      drift.push({ slot, kind: 'drift', detail: `live=${have.slice(0, 12)} wanted=${wantedFingerprint.slice(0, 12)}` });
+      continue;
     }
+    routableCurrent += 1; // alive, fresh, current code
   }
+  // Drift always alarms. Total outage (no routable-current slot) alarms.
+  // A lone down slot while the other is routable-current is benign rotation.
+  const problems = [...drift];
+  if (routableCurrent === 0) problems.push(...down);
   return { ok: problems.length === 0, problems };
 }
 
