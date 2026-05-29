@@ -255,16 +255,29 @@ function _attemptCommit(root, caller) {
   if (r.status === 75) return;  // lock held by concurrent caller; let it own the commit
   const combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
+  // Benign-race concede: lock contention means a concurrent autocommit caller
+  // owns the commit -- not a failure. Surfacing it as LIFESAVER is crying wolf.
+  if (_isBenignRace(combined)) return;
   // Benign-race re-probe: autocommit fires on EVERY request mid-turn, so a
-  // commit can race an in-flight Edit or a concurrent caller. If the tree is
-  try {
-    const after = execSync('git status --porcelain', { cwd: root, encoding: 'utf8', timeout: 3000 });
-    if (!after.trim()) { _recordSuccess(root); return; }
-  } catch (_) { /* fall through to real failure path */ }
+  // commit can race an in-flight Edit or a concurrent caller. Retry briefly so
+  for (let i = 0; i < 5; i += 1) {
+    try {
+      const after = execSync('git status --porcelain', { cwd: root, encoding: 'utf8', timeout: 3000 });
+      if (!after.trim()) { _recordSuccess(root); return; }
+    } catch (probeErr) {
+      // The probe itself can collide with a concurrent caller's index.lock --
+      // that is benign, not a commit failure. Concede.
+      if (_isBenignRace(String(probeErr.message || probeErr))) return;
+    }
+    try { execSync('sleep 0.2', { timeout: 1000 }); } catch (_) { /* best-effort backoff */ }
+  }
   // When the pre-commit hook rejects, git often funnels its stderr away from
   // spawn's pipe (the hook runs in its own process group). Re-run
   const precommitDetail = _capturePrecommitFailures(root);
   const detail = _autocommitDiagnostics(root, r, precommitDetail);
+  // Final benign-race guard: the diagnostics themselves run git write-tree /
+  // status outside the lock and can fabricate an index.lock error. If the
+  if (_isBenignRace(detail) && !precommitDetail) return;
   _recordFailure(root, caller, `git commit failed twice: ${detail}`);
 }
 
