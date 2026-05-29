@@ -11,6 +11,10 @@ const WRITE_INTENT_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
+// Claude Code auto-injects this task-tools nag as a standalone `role: system`
+// message (string content) -- pure context-burn. Match bare or sys-reminder-wrapped.
+const TASK_TOOLS_NAG_RE = /(?:<system-reminder>\s*)?The task tools haven't been used recently[\s\S]*?ignore if not applicable\.?\s*(?:<\/system-reminder>)?/;
+
 // Boilerplate stub stripper
 const BOILERPLATE_PATTERNS = [
   {
