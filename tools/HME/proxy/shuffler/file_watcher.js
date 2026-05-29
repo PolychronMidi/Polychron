@@ -71,9 +71,7 @@ function runRestart(triggerPath) {
   const slot = nextSlot;
   nextSlot = slot === 'a' ? 'b' : 'a';
   console.error(`[file-watcher] proxy change detected (${path.relative(PROJECT_ROOT, triggerPath)}); restarting slot ${slot}`);
-  // Code-change convergence must not be defeated by the per-slot throttle.
-  // The watcher already debounces, serializes in-flight restarts, and alternates
-  // slots for zero downtime; if a throttle returns 0 here, the watcher treats a
+  // Force: debounce + in-flight serialization already bound code-change churn.
   const proc = spawn('bash', [SLOT_SCRIPT, '--slot', slot, '--force'], {
     cwd: PROJECT_ROOT,
     env: { ...process.env },
