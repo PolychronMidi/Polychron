@@ -72,7 +72,7 @@ class StateOwnershipGateTests(unittest.TestCase):
         d = _PROJECT / "tools" / "HME" / "hooks" / "pretooluse" / "bash" / "_disabled"
         d.mkdir(parents=True, exist_ok=True)
         rogue = d / "_gate_test_inert.sh"
-        rogue.write_text('#!/usr/bin/env bash\necho x >> log/hme-errors.log\n', encoding="utf-8")
+        rogue.write_text(_ROGUE_BODY, encoding="utf-8")
         try:
             rc, out = _run_audit()
             self.assertEqual(rc, 0, f"_disabled writers must be ignored; got rc={rc}\n{out}")
