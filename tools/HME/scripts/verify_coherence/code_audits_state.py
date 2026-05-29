@@ -78,16 +78,17 @@ class StateFileOwnershipVerifier(Verifier):
             return skipped(summary="audit script not found", details=[script, *issues])
         rc, out, err = _run_subprocess([script])
         if rc == 0 and not issues:
-            return passed(summary=out.splitlines()[-1] if out else "all writers declared")
+            return passed(summary=out.splitlines()[-1].strip() if out else "all writers declared")
+        # rc is the audit's authoritative drift signal (1 = drift, 0 = clean);
+        # drift_lines are for display only (the "no drift" summary contains the
         drift_lines = [l for l in out.splitlines()
-                       if ("drift" in l and not l.startswith("no drift"))
-                       or " -- writer not declared" in l
+                       if " -- writer not declared" in l
                        or "writes detected but not in registry" in l]
         details = drift_lines[:15] + issues[:15]
         # Gating per the class contract: a real undeclared writer of shared
         # state (concurrent append/truncate risk) FAILs. Registry-helper or
-        if drift_lines:
-            score = max(0.0, 1.0 - len(drift_lines) / (len(drift_lines) + 1))
+        if rc != 0:
+            score = max(0.0, 1.0 - len(drift_lines) / (len(drift_lines) + 1)) if drift_lines else 0.0
             return failed(score=score, summary=f"{len(drift_lines)} undeclared writer(s) of shared state, {len(issues)} registry issue(s)", details=details)
         return warned(summary=f"{len(issues)} registry issue(s) (no writer drift)", details=details)
 
