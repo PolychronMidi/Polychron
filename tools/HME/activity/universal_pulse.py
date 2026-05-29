@@ -181,6 +181,21 @@ def _write_heartbeat(path: Path, targets_ok: int, targets_bad: int) -> None:
     tmp.replace(path)
 
 
+def _refresh_pid_file() -> None:
+    # Reconcile log/hme-pids against live process ground-truth each tick, so the
+    # launcher's boot-time snapshot can't go stale as supervisors respawn children.
+    try:
+        scripts_dir = PROJECT_ROOT / "tools" / "HME" / "scripts"
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from refresh_pid_file import refresh
+        refresh(PROJECT_ROOT)
+    except Exception as e:  # silent-ok: pid-file reconcile is best-effort
+        _log_error(
+            f"[universal_pulse] pid-file refresh skipped: "
+            f"{type(e).__name__}: {str(e)[:120]}")
+
+
 def _maintenance_active() -> bool:
     if not MAINTENANCE_FLAG.is_file():
         return False
