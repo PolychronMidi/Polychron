@@ -377,11 +377,14 @@ _sv_start_worker() {
 }
 
 _sv_restart_worker() {
-  if _sv_worker_healthy; then
+  # force=1 skips the healthy-adopt shortcut. A worker serving STALE code is
+  # still /health-healthy, so drift recovery MUST force or it no-ops forever.
+  local force="${1:-0}"
+  if [ "$force" != "1" ] && _sv_worker_healthy; then
     _sv_log "worker already healthy at $_SV_WORKER_URL; adopting existing instance"
     return 0
   fi
-  _sv_log "worker unhealthy at $_SV_WORKER_URL; restarting worker.py directly"
+  _sv_log "worker restart (force=$force) at $_SV_WORKER_URL; restarting worker.py directly"
   _sv_stop_worker
   _sv_start_worker
 }
@@ -389,6 +392,7 @@ _sv_restart_worker() {
 _sv_recover_health_issue() {
   local issue="$1"
   case "$issue" in
+    worker\ stale\ code*) _sv_restart_worker 1 ;;  # drift: force past healthy-adopt
     worker\ *) _sv_restart_worker ;;
     *) _sv_spawn_and_verify ;;
   esac
