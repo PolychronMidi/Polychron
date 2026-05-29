@@ -682,6 +682,8 @@ function _emitHeldTextEvents(state, index) {
   const events = [];
   if (state.startData) events.push(['content_block_start', state.startData]);
 
+  // Word-level slop rules (compression, suffix, abbreviation) are ONLY safe on
+  // the FULL contiguous block text. Striping a partial buffer mid-stream splits
   let assembled = '';
   for (const d of state.deltas || []) {
     if (!d || !d.delta) continue;
@@ -689,29 +691,27 @@ function _emitHeldTextEvents(state, index) {
     if (typeof d.delta.thinking === 'string') assembled += d.delta.thinking;
   }
 
-  if (!assembled) {
-    state.startData = null;
-    state.deltas = [];
-    state.flushed = true;
-    return { events, hits: [], out: '' };
+  let hits = [];
+  if (assembled) {
+    const stripped = _stripSlop(assembled);
+    hits = stripped.hits;
+    if (hits.length === 0) {
+      for (const d of state.deltas || []) events.push(['content_block_delta', d]);
+    } else if (stripped.out) {
+      const delta = state.blockType === 'thinking'
+        ? { type: 'thinking_delta', thinking: stripped.out }
+        : { type: 'text_delta', text: stripped.out };
+      events.push(['content_block_delta', { type: 'content_block_delta', index, delta }]);
+    }
   }
 
-  const { out, hits } = _stripSlop(assembled);
-  if (hits.length === 0) {
-    for (const d of state.deltas || []) events.push(['content_block_delta', d]);
-  } else if (out) {
-    const delta = state.blockType === 'thinking'
-      ? { type: 'thinking_delta', thinking: out }
-      : { type: 'text_delta', text: out };
-    events.push(['content_block_delta', {
-      type: 'content_block_delta',
-      index,
-      delta,
-    }]);
-  }
+  // Replay non-text passthrough deltas (signature_delta, etc.) after content,
+  // preserving their relative order.
+  for (const d of state.passthrough || []) events.push(['content_block_delta', d]);
 
   state.startData = null;
   state.deltas = [];
+  state.passthrough = [];
   state.flushed = true;
   return { events, hits, out: assembled };
 }
