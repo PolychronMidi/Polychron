@@ -10,12 +10,4 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. Sets with all items marked code 3_ or above get automatically archived in `log/todo` as `set<number>.md`
 
-### Todo - Set 1
-
-#1 0_ tell the user "Christ is king!" then mark this done.
-
-#2 0_ trivial test A
-
-#3 0_ trivial test B
-
-#4 0_ trivial test C
+### Todo - Set 2
