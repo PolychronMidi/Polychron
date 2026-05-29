@@ -735,14 +735,14 @@ function slopStripRewrite(eventName, data, ctx) {
     return null;
   }
 
-  // Non-text/thinking deltas (e.g. signature_delta on thinking blocks) must
-  // not jump ahead of the held content_block_start or held text deltas.
+  // Non-text/thinking deltas (e.g. signature_delta on thinking blocks) arriving
+  // mid-block must NOT trigger a partial strip -- that splits a word across two
+  // strip passes ("inspection" -> "NSpectn"). Buffer them in order; they are
   if (eventName === 'content_block_delta' && data && holds.has(data.index)) {
     const state = holds.get(data.index);
-    const { events, hits, out: assembled } = _emitHeldTextEvents(state, data.index);
-    if (hits.length > 0) _logSlopHits(hits, assembled, state.blockType);
-    events.push([eventName, data]);
-    return { events };
+    if (!state.passthrough) state.passthrough = [];
+    state.passthrough.push(data);
+    return null;
   }
 
   if (eventName === 'content_block_stop' && data) {
