@@ -29,6 +29,14 @@ function _ts() {
 // the very next attempt succeeds. Only surface to the agent (fail flag +
 const _SURFACE_AFTER_FAILS = 2;
 
+// Lock contention from a concurrent autocommit caller (onRequest / stop-hook /
+// userpromptsubmit all contend) is benign: the other caller owns the commit.
+// "nothing to commit" means another caller already landed it. Neither is a
+const _BENIGN_RACE_RE = /index\.lock|Another git process seems to be running|nothing to commit/i;
+function _isBenignRace(combined) {
+  return _BENIGN_RACE_RE.test(String(combined || ''));
+}
+
 function _readCounter(root) {
   try {
     const n = parseInt(fs.readFileSync(path.join(root, COUNTER_REL), 'utf8').trim(), 10);

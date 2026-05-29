@@ -89,3 +89,16 @@ test('proxy autocommit failure logging dedupes identical sticky failures', () =>
   assert.match(middleware, /return;/);
 });
 
+test('_isBenignRace classifies concurrent-caller lock contention as benign (no LIFESAVER)', () => {
+  const { _isBenignRace } = require(path.join(repoRoot, 'tools/HME/proxy/middleware/21_proxy_autocommit.js'));
+  assert.equal(typeof _isBenignRace, 'function');
+  // index.lock contention from a concurrent autocommit caller -- benign.
+  assert.equal(_isBenignRace("fatal: Unable to create '/r/.git/index.lock': File exists."), true);
+  assert.equal(_isBenignRace('Another git process seems to be running in this repository'), true);
+  assert.equal(_isBenignRace('nothing to commit, working tree clean'), true);
+  // A real failure (e.g. precommit rejection) is NOT benign -- must surface.
+  assert.equal(_isBenignRace('ERROR: pre-commit validation blocked this commit'), false);
+  assert.equal(_isBenignRace('error: failed to push some refs'), false);
+  assert.equal(_isBenignRace(''), false);
+});
+
