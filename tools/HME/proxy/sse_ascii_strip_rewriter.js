@@ -95,7 +95,10 @@ function asciiStripRewrite(eventName, data, ctx) {
       return folded === data.delta.text ? data
         : { ...data, delta: { ...data.delta, text: folded } };
     }
-    const dense = n >= FOREIGN_ABS || (n / (folded.length || 1)) > FOREIGN_RATIO;
+    // Banner only on a genuine dense foreign-script span: BOTH an absolute
+    // floor of non-ASCII chars AND a high ratio. A lone/sparse stray char in
+    // short English (the "precise" regression) must fall through to inline
+    const dense = n >= FOREIGN_ABS && (n / (folded.length || 1)) > FOREIGN_RATIO;
     if (!dense) {
       return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
     }

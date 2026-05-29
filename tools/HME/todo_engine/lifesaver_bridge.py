@@ -25,11 +25,11 @@ LIFESAVER_PREFIX = "LIFESAVER:"
 _OPEN_CODES = ("0", "1", "2", "4", "4f")   # not 3 (blocked) or 5 (done)
 
 
-def _dedup_key(source: str, error: str) -> str:
-    # Collapse variable tokens (numbers, hex, sizes) so structurally identical
-    # alerts that differ only by runtime values map to one todo.
-    norm = re.sub(r"\b\d+(?:\.\d+)?\b", "#", f"{source}: {error}")
-    norm = re.sub(r"0x[0-9a-fA-F]+", "#", norm)
+def _dedup_key(text: str) -> str:
+    # Collapse variable tokens (numbers, hex) so structurally identical alerts
+    # that differ only by runtime values map to one todo.
+    norm = re.sub(r"0x[0-9a-fA-F]+", "#", text)
+    norm = re.sub(r"\b\d+(?:\.\d+)?\b", "#", norm)
     return re.sub(r"\s+", " ", norm).strip().lower()[:160]
 
 
@@ -40,17 +40,17 @@ def _text_for(source: str, error: str) -> str:
 
 def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL") -> None:
     """Append a status-0 todo for a runtime alert, deduped by normalized text."""
-    key = _dedup_key(source, error)
+    text = _text_for(source, error)
+    want = _dedup_key(text)
 
     def _mut(_header, todos):
         for t in todos:
-            if not t.text.startswith(LIFESAVER_PREFIX):
-                continue
-            if t.code in ("5",):           # resolved -- allow a fresh recurrence
-                continue
-            if _dedup_key("", t.text[len(LIFESAVER_PREFIX):]) == _dedup_key("", _text_for(source, error)[len(LIFESAVER_PREFIX):]):
-                return False               # already present and open; no-op
-        todos.append(Todo(id=store.next_id(todos), code="0", text=_text_for(source, error)))
+            # An open lifesaver item with the same normalized text already
+            # exists -> no-op. A resolved (5_) one allows a fresh recurrence.
+            if (t.text.startswith(LIFESAVER_PREFIX) and t.code != "5"
+                    and _dedup_key(t.text) == want):
+                return False
+        todos.append(Todo(id=store.next_id(todos), code="0", text=text))
         return True
 
     store.mutate(_mut)
