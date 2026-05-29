@@ -12,35 +12,35 @@
 
 // Known non-ASCII -> ASCII equivalents.
 const REPLACEMENTS = [
-  ['—', '--'],        // em dash
-  ['–', '-'],         // en dash
-  ['‘', "'"],         // left single quotation mark
-  ['’', "'"],         // right single quotation mark
-  ['“', '"'],         // left double quotation mark
-  ['”', '"'],         // right double quotation mark
-  ['…', '...'],       // horizontal ellipsis
-  ['→', '->'],        // rightwards arrow
-  ['←', '<-'],        // leftwards arrow
-  ['⇒', '=>'],        // rightwards double arrow
-  ['≠', '!='],        // not equal to
-  ['≤', '<='],        // less-than or equal to
-  ['≥', '>='],        // greater-than or equal to
-  ['≈', '~='],        // almost equal to (approximately)
-  ['×', '*'],         // multiplication sign
-  ['·', '.'],         // middle dot
-  ['±', '+/-'],       // plus-minus sign
-  ['°', 'deg'],       // degree sign
-  ['α', 'alpha'],     // greek small alpha
-  ['β', 'beta'],      // greek small beta
-  ['γ', 'gamma'],     // greek small gamma
-  ['δ', 'delta'],     // greek small delta
-  ['ε', 'epsilon'],   // greek small epsilon
-  ['π', 'pi'],        // greek small pi
-  ['σ', 'sigma'],     // greek small sigma
-  ['ω', 'omega'],     // greek small omega
-  [' ', ' '],         // non-breaking space
-  ['​', ''],          // zero-width space
-  ['﻿', ''],          // BOM / zero-width no-break space
+  ['\u2014', '--'],  // em dash
+  ['\u2013', '-'],  // en dash
+  ['\u2018', '\''],  // left single quotation mark
+  ['\u2019', '\''],  // right single quotation mark
+  ['\u201C', '"'],  // left double quotation mark
+  ['\u201D', '"'],  // right double quotation mark
+  ['\u2026', '...'],  // horizontal ellipsis
+  ['\u2192', '->'],  // rightwards arrow
+  ['\u2190', '<-'],  // leftwards arrow
+  ['\u21D2', '=>'],  // rightwards double arrow
+  ['\u2260', '!='],  // not equal to
+  ['\u2264', '<='],  // less-than or equal to
+  ['\u2265', '>='],  // greater-than or equal to
+  ['\u2248', '~='],  // almost equal to (approximately)
+  ['\u00D7', '*'],  // multiplication sign
+  ['\u00B7', '.'],  // middle dot
+  ['\u00B1', '+/-'],  // plus-minus sign
+  ['\u00B0', 'deg'],  // degree sign
+  ['\u03B1', 'alpha'],  // greek small alpha
+  ['\u03B2', 'beta'],  // greek small beta
+  ['\u03B3', 'gamma'],  // greek small gamma
+  ['\u03B4', 'delta'],  // greek small delta
+  ['\u03B5', 'epsilon'],  // greek small epsilon
+  ['\u03C0', 'pi'],  // greek small pi
+  ['\u03C3', 'sigma'],  // greek small sigma
+  ['\u03C9', 'omega'],  // greek small omega
+  ['\u00A0', ' '],  // non-breaking space
+  ['\u200B', ''],  // zero-width space
+  ['\uFEFF', ''],  // BOM / zero-width no-break space
 ];
 
 const _MAP = new Map(REPLACEMENTS);
