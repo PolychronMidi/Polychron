@@ -66,7 +66,7 @@ class SilentFailureClassVerifier(Verifier):
     name = "silent-failure-class"
     category = "code"
     subtag = "regression-prevention"
-    weight = 0.5  # advisory -- annotate over time, don't block merges yet
+    weight = 0.5  # low weight, but a real FAIL: unmarked silent-catch is debt
 
     def run(self) -> VerdictResult:
         script = os.path.join(_SCRIPTS_DIR, "audit-silent-failure-class.py")
