@@ -22,8 +22,7 @@ const BANNER = "[devil-possessed agent attempted DDoC spam. Redacted in the "
   + "almighty name of our lord and savior, Jesus Christ.]";
 
 const NON_ASCII_RE = /[^\x09\x0A\x0D\x20-\x7E]/g;
-const FOREIGN_RATIO = 0.10;
-const FOREIGN_ABS = 3;
+const FOREIGN_ABS = 3;  // >=3 non-ASCII in a delta => foreign script -> banner; 1-2 => stray symbol -> strip inline
 
 function _countNonAscii(s) {
   NON_ASCII_RE.lastIndex = 0;
@@ -43,7 +42,7 @@ function _scrubField(value, index, ctx) {
   const folded = normalizeToAscii(value);
   const n = _countNonAscii(folded);
   if (n === 0) return folded;                       // clean (maybe typography-folded)
-  const dense = n >= FOREIGN_ABS || (n / (folded.length || 1)) > FOREIGN_RATIO;
+  const dense = n >= FOREIGN_ABS;
   if (!dense) return folded.replace(NON_ASCII_RE, ""); // strip sparse stray inline
   const bannered = _ctxSet(ctx, "ascii_bannered_blocks");
   if (bannered.has(index)) return null;             // banner once per block
