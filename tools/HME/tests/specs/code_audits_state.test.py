@@ -45,5 +45,40 @@ class CodeAuditsStateModuleTests(unittest.TestCase):
         smoke_run(self, _classes())
 
 
+class StateOwnershipGateTests(unittest.TestCase):
+    """The gate must be able to FAIL -- a verifier that can only pass is a
+    coherence illusion. Asserts the audit is clean now and that an injected
+    undeclared writer of a shared state file trips drift (rc=1)."""
+
+    def test_clean_tree_passes(self):
+        rc, out = _run_audit()
+        self.assertEqual(rc, 0, f"expected clean audit, got rc={rc}\n{out}")
+
+    def test_undeclared_writer_fails(self):
+        rogue = _PROJECT / "tools" / "HME" / "hooks" / "pretooluse" / "_gate_test_rogue.sh"
+        rogue.write_text('#!/usr/bin/env bash\necho boom >> log/hme-errors.log\n', encoding="utf-8")
+        try:
+            rc, out = _run_audit()
+            self.assertEqual(rc, 1, f"undeclared writer must trip drift; got rc={rc}\n{out}")
+            self.assertIn("_gate_test_rogue.sh", out)
+        finally:
+            rogue.unlink(missing_ok=True)
+
+    def test_disabled_dir_is_ignored(self):
+        d = _PROJECT / "tools" / "HME" / "hooks" / "pretooluse" / "bash" / "_disabled"
+        d.mkdir(parents=True, exist_ok=True)
+        rogue = d / "_gate_test_inert.sh"
+        rogue.write_text('#!/usr/bin/env bash\necho x >> log/hme-errors.log\n', encoding="utf-8")
+        try:
+            rc, out = _run_audit()
+            self.assertEqual(rc, 0, f"_disabled writers must be ignored; got rc={rc}\n{out}")
+        finally:
+            rogue.unlink(missing_ok=True)
+            try:
+                d.rmdir()
+            except OSError:
+                pass  # silent-ok: pending review
+
+
 if __name__ == "__main__":
     unittest.main()
