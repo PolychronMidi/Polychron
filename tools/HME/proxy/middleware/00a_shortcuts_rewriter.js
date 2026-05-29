@@ -30,7 +30,7 @@ function _rewriteShortcutText(text, value) {
     const reminders = raw.match(SYSTEM_REMINDER_RE) || [];
     return reminders.length ? `${reminders.join('\n')}\n${value}` : value;
   }
-  const replaced = raw.replace(/(^|\n)([ \t]*)(n|m|d|c|cc)([ \t]*)$/i, (_m, lead, indent) => `${lead}${indent}${value}`);
+  const replaced = raw.replace(_SHORTCUT_TAIL_RE, (_m, lead, indent) => `${lead}${indent}${value}`);
   if (replaced !== raw) return replaced;
   return value;
 }
