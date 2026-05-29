@@ -38,8 +38,9 @@ def _startup_snapshot_nonblocking() -> dict:
         failed:  True if startup raised; `error` carries the exception str.
     """
     try:
-        from tools.HME.service.server.context import startup_status_snapshot
-        return startup_status_snapshot()
+        # Use the same import root as the rest of this module (`from server
+        # import context` at top). The previous `from tools.HME.service.server`
+        return ctx.startup_status_snapshot()
     except Exception as exc:
         return {"ready": False, "loading": False, "failed": True, "error": str(exc)}
 
