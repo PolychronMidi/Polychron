@@ -198,10 +198,9 @@ function stripOmniUnsupportedRequestFields(payload, omniProvider) {
   let changed = false;
   if (payload.thinking && typeof payload.thinking === 'object') {
     const thinkingType = String(payload.thinking.type || '').toLowerCase();
-    // adaptive thinking is Anthropic-native. PRESERVE it for provider-default
-    // targets (claude/anthropic upstream); only strip for foreign formats
-    const targetFormat = omniTargetFormat(omniProvider);
-    if (thinkingType === 'adaptive' && targetFormat !== 'provider-default') {
+    // Claude Code's adaptive-thinking marker is a client-side extra; OmniRoute
+    // payloads must not forward it even when the target provider is Claude.
+    if (thinkingType === 'adaptive') {
       delete payload.thinking;
       changed = true;
     }
