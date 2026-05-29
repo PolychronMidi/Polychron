@@ -537,8 +537,12 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
     assert.notEqual(result.chain[0].provider, 'anthropic',
       'configured provider skip must suppress Anthropic/Claude fronting');
   } else {
-    const expectedTop = cfg.manually_toprank.E5.find((id) => id);
+    // Driver fronts the best E5-tier model. Prefer a configured manual top
+    // when present; otherwise the top-ranked E5 model leads. Either way it
+    const manualTop = (cfg.manually_toprank.E5 || []).find((id) => id);
+    const expectedTop = manualTop || (cfg.tiers.E5.models[0] && cfg.tiers.E5.models[0].id);
     assert.equal(result.chain[0].id, expectedTop);
+    assert.match(result.chain[0].id, /-e5$/);
   }
   assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
 });
