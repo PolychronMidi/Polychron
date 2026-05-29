@@ -37,16 +37,21 @@ def supervisor_child(path: str) -> int:
 
 
 def critical_todos() -> int:
-    # Import lazily so other helper modes do not pay service import cost.
-    from server.tools_analysis.todo import list_critical
+    # Lazy import; the LIFESAVER bridge lives in the standalone todo_engine.
+    import os
+    import sys
+    hme_root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    if hme_root not in sys.path:
+        sys.path.insert(0, hme_root)
+    from todo_engine.lifesaver_bridge import list_critical
 
     items = list_critical()
     if items:
         print("HME CRITICAL TODOS (unresolved):")
         for item in items:
-            source = item.get("source") if isinstance(item, dict) else ""
-            src = f" [{source}]" if source else ""
-            print(f"  !!! #{item['id']} {item['text']}{src}")
+            code = item.get("code") if isinstance(item, dict) else ""
+            tag = f" [{code}_]" if code else ""
+            print(f"  !!! #{item['id']} {item['text']}{tag}")
     return 0
 
 
