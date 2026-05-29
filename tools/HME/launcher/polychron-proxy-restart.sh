@@ -64,7 +64,8 @@ if [ "$_LEGACY_MODE" = "0" ] && [ -x "$_SLOT_SCRIPT" ]; then
     bash "$_SV" worker-restart >> "$PROJECT_ROOT/log/hme-proxy-lifecycle.log" 2>&1 || \
       echo "[proxy-restart] worker-restart returned non-zero; supervisor will retry on drift" >&2
   fi
-  echo "[proxy-restart] zero-downtime restart complete (slots + worker)" >&2
+  _cycle_pulse_supervisor
+  echo "[proxy-restart] zero-downtime restart complete (slots + worker + pulse)" >&2
   exit 0
 fi
 
