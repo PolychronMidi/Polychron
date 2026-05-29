@@ -116,6 +116,7 @@ class _Handler(BaseHTTPRequestHandler):
             "transcript_entries": len(_transcript_entries),
             "recent_errors": _get_recent_errors(minutes=120)[-10:],
             "pid": os.getpid(),
+            "code_fingerprint": _worker_code_fingerprint(),
         })
 
     def _get_version(self):
