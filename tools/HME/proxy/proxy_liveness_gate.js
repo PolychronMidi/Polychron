@@ -101,9 +101,10 @@ function runCli(root) {
   return 0;
 }
 
-module.exports = { evaluateSlots, formatLifesaver, runCli };
+module.exports = { evaluateSlots, formatLifesaver, runCli, runCheckOnly, inspectLive };
 
 if (require.main === module) {
   const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
-  process.exit(runCli(root));
+  const checkOnly = process.argv.includes('--check-only');
+  process.exit(checkOnly ? runCheckOnly(root) : runCli(root));
 }
