@@ -28,7 +28,20 @@ class OpenCodeSettingsTests(unittest.TestCase):
     def test_provider_catalog_excludes_skipped_claude_anthropic_models(self):
         provider = opencode_settings.expected_provider(9099, ROOT)
         ids = set(provider["models"].keys())
-        self.assertNotIn("claude-opus-4-7-max-e5", ids)
+        # Derive the real opus E5 id from config so this exclusion assertion
+        # stays meaningful instead of vacuously checking a retired version.
+        import json
+        import re
+        text = (ROOT / "config" / "models.json").read_text()
+        clean = "\n".join(re.sub(r"//.*$", "", line) for line in text.splitlines())
+        cfg = json.loads(clean)
+        opus_e5 = next(
+            m["id"]
+            for tier in cfg["tiers"].values()
+            for m in tier.get("models", [])
+            if re.match(r"^claude-opus-\d+-\d+-max-e5$", m["id"])
+        )
+        self.assertNotIn(opus_e5, ids)
         self.assertIn("gpt-5.5-xhigh", ids)
 
     def test_managed_config_preserves_unrelated_settings(self):
