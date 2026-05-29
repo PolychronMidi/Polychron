@@ -25,23 +25,26 @@ class OpenCodeSettingsTests(unittest.TestCase):
         self.assertIn("output", model["limit"])
         self.assertNotIn("context", model)
 
-    def test_provider_catalog_excludes_skipped_claude_anthropic_models(self):
+    def test_provider_catalog_excludes_skipped_provider_models(self):
         provider = opencode_settings.expected_provider(9099, ROOT)
         ids = set(provider["models"].keys())
-        # Derive the real opus E5 id from config so this exclusion assertion
-        # stays meaningful instead of vacuously checking a retired version.
+        # Derive the actually-skipped providers and their model ids from config
+        # so this exclusion assertion tracks real skip behavior instead of a
         import json
         import re
         text = (ROOT / "config" / "models.json").read_text()
         clean = "\n".join(re.sub(r"//.*$", "", line) for line in text.splitlines())
         cfg = json.loads(clean)
-        opus_e5 = next(
+        skipped = set(cfg["providers_to_skip"]["providers"])
+        skipped_ids = [
             m["id"]
             for tier in cfg["tiers"].values()
             for m in tier.get("models", [])
-            if re.match(r"^claude-opus-\d+-\d+-max-e5$", m["id"])
-        )
-        self.assertNotIn(opus_e5, ids)
+            if m.get("provider") in skipped
+        ]
+        self.assertTrue(skipped_ids, "expected at least one skipped-provider model in config")
+        for mid in skipped_ids:
+            self.assertNotIn(mid, ids)
         self.assertIn("gpt-5.5-xhigh", ids)
 
     def test_managed_config_preserves_unrelated_settings(self):
