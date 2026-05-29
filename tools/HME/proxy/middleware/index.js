@@ -496,6 +496,7 @@ async function runPipeline(payload, scan, session) {
       await mod.onRequest({ payload, scan, session, ctx });
     } catch (err) {
       console.error(`[middleware] ${mod.name}.onRequest threw: ${err.message}`);
+      recordMiddlewareThrow(PROJECT_ROOT, mod.name, err);
     }
   }
   return _pipelineDirty;
