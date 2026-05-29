@@ -25,12 +25,14 @@ const HEALTH = {
 };
 
 const state = {
-  a: { missingSince: 0, respawnInFlight: false, lastRespawnTs: 0 },
-  b: { missingSince: 0, respawnInFlight: false, lastRespawnTs: 0 },
+  a: { missingSince: 0, respawnInFlight: false, lastRespawnTs: 0, driftSince: 0, alerted: false },
+  b: { missingSince: 0, respawnInFlight: false, lastRespawnTs: 0, driftSince: 0, alerted: false },
 };
 const RESPAWN_COOLDOWN_MS = 30_000;
-const DRIFT_RESPAWN_GAP_MS = Math.max(35_000, RESPAWN_COOLDOWN_MS);
-let lastDriftRespawnTs = 0;
+// A slot stranded on old code past this long means the shuffler failed its
+// one job (immediate liveness on both slots) -> LIFESAVER alert.
+const DRIFT_ALERT_MS = 120_000;
+const ERR_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
 let cachedFingerprint = { ts: 0, value: '' };
 
 function _currentRuntimeFingerprint() {
@@ -73,6 +75,16 @@ function _respawnDecision(slot) {
   return { yes: false };
 }
 
+function _alertStaleSlot(slot, reason) {
+  const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const line = `[${ts}] [shuffler] LIFESAVER slot ${slot} stranded on stale code > `
+    + `${Math.round(DRIFT_ALERT_MS / 1000)}s (${reason}); dual-slot liveness broken -- `
+    + `live requests may hit old proxy code. Investigate slot-restart throttle/cooldown.\n`;
+  try { fs.mkdirSync(path.dirname(ERR_LOG), { recursive: true }); fs.appendFileSync(ERR_LOG, line); }
+  catch (_) { /* best-effort */ }
+  console.error(line.trim());
+}
+
 function _respawn(slot, reason) {
   const s = state[slot];
   const now = Date.now();
@@ -96,14 +108,24 @@ function _respawn(slot, reason) {
 function _tick() {
   const now = Date.now();
   for (const slot of ['a', 'b']) {
+    const s = state[slot];
     const decision = _respawnDecision(slot);
-    if (!decision.yes) continue;
-    if (decision.kind === 'drift') {
-      if ((now - lastDriftRespawnTs) < DRIFT_RESPAWN_GAP_MS) continue;
-      lastDriftRespawnTs = now;
+    if (!decision.yes) {
+      s.driftSince = 0;
+      s.alerted = false;
+      continue;
     }
+    if (decision.kind === 'drift') {
+      if (!s.driftSince) s.driftSince = now;
+      // Stranded too long despite respawn attempts -> LIFESAVER (once per episode).
+      if (!s.alerted && (now - s.driftSince) >= DRIFT_ALERT_MS) {
+        s.alerted = true;
+        _alertStaleSlot(slot, decision.reason);
+      }
+    }
+    // Per-slot cooldown inside _respawn serializes; no global gate, so both
+    // slots can heal in the same sweep instead of starving one another.
     _respawn(slot, decision.reason);
-    if (decision.kind === 'drift') break;
   }
 }
 
