@@ -43,12 +43,20 @@ function shouldRestart(filePath) {
   return true;
 }
 
+const MAX_DEBOUNCE_MS = 12000;   // hard ceiling: continuous churn can't starve a restart
 function scheduleRestart(filePath) {
+  const now = Date.now();
+  if (!firstPendingAt) firstPendingAt = now;
   if (pendingTimer) clearTimeout(pendingTimer);
+  // Normal 5s debounce, but clamp so a sliding window of constant edits
+  // (autocommit fires often) still fires within MAX_DEBOUNCE_MS.
+  const remainingCap = Math.max(0, MAX_DEBOUNCE_MS - (now - firstPendingAt));
+  const wait = Math.min(DEBOUNCE_MS, remainingCap);
   pendingTimer = setTimeout(() => {
     pendingTimer = null;
+    firstPendingAt = 0;
     runRestart(filePath);
-  }, DEBOUNCE_MS);
+  }, wait);
 }
 
 function runRestart(triggerPath) {
