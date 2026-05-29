@@ -66,9 +66,16 @@ class ShellUndefinedVarsVerifier(Verifier):
                 detail.append(
                     f"{fileinfo['file']}:{finding['line']} ${finding['var']} -- {finding['snippet'][:100]}"
                 )
+        from .code_audits_test import _record_backlog
         if count == 0:
+            _record_backlog("shell-undefined-vars", 0)
             return passed(summary=f"no undefined-variable references across {files_scanned} hook(s)")
-        return passed(score=1.0, summary=f"{count} undefined-variable reference(s) tracked in canonical backlog", details=detail[:20])
+        prev = _record_backlog("shell-undefined-vars", count)
+        # No advisory swallow: an undefined $VAR under set -u is silent-disable
+        # class. Any count > 0 FAILs; an upward delta is called out.
+        delta = "" if prev is None else f" (was {prev}, delta {count - prev:+d})"
+        score = max(0.0, 1.0 - count / (count + 5))
+        return failed(score=score, summary=f"{count} undefined-variable reference(s) across {files_scanned} hook(s){delta}", details=detail[:20])
 
 
 
