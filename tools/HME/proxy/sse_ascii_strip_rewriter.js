@@ -1,13 +1,15 @@
 "use strict";
 // Normalize known typographic non-ASCII (em dash, smart quotes, ellipsis,
-// arrows) to ASCII via the shared table; only genuinely foreign residue trips
-// the redaction banner. Covers BOTH visible text_delta and thinking_delta.
+// arrows) to ASCII via the shared table; genuinely foreign residue trips the
+// redaction banner. Applies to VISIBLE text_delta ONLY.
 //
-// Thinking blocks carry a cryptographic signature_delta sealing their exact
-// text. When we redact a thinking block we MUST also drop its signature_delta:
-// shipping the banner text with the original seal is a mismatch the client
-// rejects ("tool call could not be parsed"). Dropping the seal on a redacted
-// block avoids the mismatch while still scrubbing the foreign spam.
+// thinking_delta is intentionally untouched. A streaming rewriter cannot
+// safely redact a thinking block: its content_block_start has already shipped
+// by the time a contaminated delta arrives, and its signature_delta is a
+// cryptographic seal over the EXACT thinking text. Rewriting the text (seal
+// mismatch) OR dropping the seal (unsigned block) both make the client reject
+// the message ("tool call could not be parsed"). So thinking passes verbatim;
+// only the visible answer channel is scrubbed here.
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
 
@@ -22,48 +24,27 @@ function _hasNonAscii(s) {
   return typeof s === "string" && NON_ASCII_RE.test(s);
 }
 
-function _ctxSet(ctx, key) {
-  let s = ctx && ctx.get && ctx.get(key);
-  if (!s) { s = new Set(); if (ctx && ctx.set) ctx.set(key, s); }
+function _flaggedSet(ctx) {
+  let s = ctx && ctx.get && ctx.get("ascii_banner_blocks");
+  if (!s) { s = new Set(); if (ctx && ctx.set) ctx.set("ascii_banner_blocks", s); }
   return s;
-}
-
-function _rewriteField(data, field, ctx) {
-  const original = data.delta[field];
-  const normalized = normalizeToAscii(original);
-  if (!_hasNonAscii(normalized)) {
-    if (normalized === original) return data;          // already clean
-    return { ...data, delta: { ...data.delta, [field]: normalized } };
-  }
-  // Genuine foreign residue -> banner once per block; drop later contaminated
-  // deltas in the same block. Record the block as redacted so its signature
-  // (if a thinking block) gets dropped too.
-  const banner = _ctxSet(ctx, "ascii_banner_blocks");
-  const redacted = _ctxSet(ctx, "ascii_redacted_blocks");
-  const idx = data.index;
-  redacted.add(idx);
-  if (banner.has(idx)) return null;
-  banner.add(idx);
-  return { ...data, delta: { ...data.delta, [field]: BANNER } };
 }
 
 function asciiStripRewrite(eventName, data, ctx) {
   if (!ENABLED) return data;
   if (eventName !== "content_block_delta" || !data || !data.delta) return data;
-  const t = data.delta.type;
-  if (t === "text_delta" && typeof data.delta.text === "string") {
-    return _rewriteField(data, "text", ctx);
+  if (data.delta.type !== "text_delta" || typeof data.delta.text !== "string") return data;
+  const original = data.delta.text;
+  const normalized = normalizeToAscii(original);
+  if (!_hasNonAscii(normalized)) {
+    if (normalized === original) return data;          // already clean
+    return { ...data, delta: { ...data.delta, text: normalized } };
   }
-  if (t === "thinking_delta" && typeof data.delta.thinking === "string") {
-    return _rewriteField(data, "thinking", ctx);
-  }
-  // Drop the seal on any block we redacted -- a banner with the original
-  // signature is a mismatch the client rejects.
-  if (t === "signature_delta") {
-    const redacted = _ctxSet(ctx, "ascii_redacted_blocks");
-    if (redacted.has(data.index)) return null;
-  }
-  return data;
+  const flagged = _flaggedSet(ctx);
+  const idx = data.index;
+  if (flagged.has(idx)) return null;
+  flagged.add(idx);
+  return { ...data, delta: { ...data.delta, text: BANNER } };
 }
 
 module.exports = { asciiStripRewrite, BANNER };
