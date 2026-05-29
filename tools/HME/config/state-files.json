@@ -492,9 +492,6 @@
         "tools/HME/hooks/pretooluse/pretooluse_read.sh",
         "tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh",
         "tools/HME/hooks/posttooluse/posttooluse_read_kb.sh",
-        "tools/HME/hooks/pretooluse/bash/reader_guards.sh",
-        "tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh",
-        "tools/HME/hooks/pretooluse/bash/blackbox_guards.sh",
         "tools/HME/telemetry/index.js",
         "tools/HME/hooks/helpers/safety/latency.sh",
         "tools/HME/event_kernel/hook_watchdog.js"
