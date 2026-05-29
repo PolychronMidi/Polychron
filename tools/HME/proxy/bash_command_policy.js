@@ -216,7 +216,17 @@ function createBashPolicyContext(input = {}, opts = {}) {
   };
 }
 
+// Manual proxy/worker restart scripts are banned from Bash: zero-downtime
+// auto-restart liveness is already tested and guaranteed (file_watcher +
+// slot_watchdog converge slots to current code with routable_count never < 1).
+const _RESTART_SCRIPT_RE = /(?:tools\/HME\/launcher\/[\w.-]+\.sh|polychron-(?:proxy-restart|slot-restart|launch|shutdown)\.sh|proxy-supervisor\.sh|codex-proxy-supervisor\.sh|universal-pulse-supervisor\.sh|proxy-watchdog\.sh|worker-restart\b|slot_watchdog\.js|file_watcher\.js|shuffler\.js)/;
+
 const BASH_POLICIES = [
+  { name: 'restart-script-ban', evaluate(ctx) {
+    return _RESTART_SCRIPT_RE.test(ctx.cmd)
+      ? deny('BLOCKED: proxy/worker auto-restart liveness is already tested and guaranteed (file_watcher + slot_watchdog auto-heal to current code, routable_count never drops below 1 -- zero downtime). Manual restart scripts are redundant churn; just edit code and let the supervisors converge.')
+      : null;
+  } },
   { name: 'lifesaver-escalation', evaluate(ctx) { return lifesaverEscalation(ctx.root); } },
   { name: 'noop-after-failure', evaluate(ctx) {
     const decision = noopAfterFailureDecision(ctx.cmd, ctx.root);
