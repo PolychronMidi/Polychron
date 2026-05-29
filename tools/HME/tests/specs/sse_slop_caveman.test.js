@@ -150,20 +150,50 @@ test('text without backticks takes the fast path unchanged in behavior', () => {
   assert.ok(result.hits.includes('caveman_compression'));
 });
 
-test('signature_delta on held thinking block flushes the start before the delta', () => {
+// Helper: drive the streaming rewriter and collect emitted events.
+function _drive(events) {
+  const ctx = new Map();
+  const out = [];
+  for (const [name, data] of events) {
+    const r = slopStripRewrite(name, data, ctx);
+    if (r === null) continue;
+    if (r && Array.isArray(r.events)) out.push(...r.events);
+    else out.push([name, r]);
+  }
+  return out;
+}
+function _textOf(events) {
+  return events
+    .filter((e) => e[1] && e[1].delta && typeof e[1].delta.text === 'string')
+    .map((e) => e[1].delta.text).join('');
+}
+
+test('mid-block non-text delta does NOT split a word across strip passes (NSpectn regression)', () => {
+  // "inspection" arrives as ["in","spection"] with an interleaved non-text
+  // delta. Before the fix, the partial "in" was compressed to "N" on its own,
+  const out = _drive([
+    ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'in' } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: 'x' } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'spection done' } }],
+    ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+  ]);
+  assert.equal(_textOf(out), 'Inspectn done');
+});
+
+test('signature_delta on held thinking block is preserved (replayed after content at stop)', () => {
   const ctx = new Map();
   const startData = { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } };
   assert.equal(slopStripRewrite('content_block_start', startData, ctx), null);
+  // text then signature mid-block -- both held, nothing flushed yet.
+  assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'plain reasoning' } }, ctx), null);
   const sigDelta = { type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'abc' } };
-  const flushed = slopStripRewrite('content_block_delta', sigDelta, ctx);
-  assert.ok(flushed && Array.isArray(flushed.events), 'signature_delta must trigger flush events');
-  assert.equal(flushed.events[0][0], 'content_block_start', 'start emitted before signature_delta');
-  assert.deepEqual(flushed.events[0][1], startData);
-  assert.equal(flushed.events[1][0], 'content_block_delta');
-  assert.deepEqual(flushed.events[1][1], sigDelta);
+  assert.equal(slopStripRewrite('content_block_delta', sigDelta, ctx), null);
   const stop = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 0 }, ctx);
   assert.ok(stop && Array.isArray(stop.events), 'stop must emit a flush array');
-  const startEventsAfterStop = stop.events.filter((e) => e[0] === 'content_block_start');
-  assert.equal(startEventsAfterStop.length, 0, 'no duplicate content_block_start after stop');
+  // start first, signature preserved, single start, stop last.
+  assert.equal(stop.events[0][0], 'content_block_start');
+  assert.equal(stop.events.filter((e) => e[0] === 'content_block_start').length, 1, 'no duplicate start');
+  assert.ok(JSON.stringify(stop.events).includes('abc'), 'signature preserved');
   assert.equal(stop.events[stop.events.length - 1][0], 'content_block_stop');
 });
