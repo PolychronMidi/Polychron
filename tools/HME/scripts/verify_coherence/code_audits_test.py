@@ -50,19 +50,21 @@ class SilentFailureClassVerifier(Verifier):
             return skipped(summary="audit script not found", details=[script])
         rc, out, err = _run_subprocess([script])
         if rc == 0 and "no unmarked silent-catch sites found" in out:
+            _record_backlog("silent-failure-class", 0)
             return passed(summary="no unmarked silent-catch sites found")
-        # Parse the "N unmarked silent-catch sites across K files" header
         import re as _re_sf
         m = _re_sf.search(r"(\d+) unmarked silent-catch sites across (\d+) files", out)
-        if m:
-            count = int(m.group(1))
-            files = int(m.group(2))
-            # Logarithmic scaling -- expected count is in the hundreds today;
-            if count <= 50:
-                return passed(summary=f"only {count} unmarked silent-catch sites (<=50 threshold)")
-            detail_lines = [l for l in out.splitlines() if ":" in l and "audit-silent-failure-class" not in l][:15]
-            return passed(score=1.0, summary=f"{count} unmarked silent-catch sites across {files} files tracked in canonical backlog", details=detail_lines)
-        return skipped(summary="could not parse audit output", details=[out[:200], err[:200]])
+        if not m:
+            return skipped(summary="could not parse audit output", details=[out[:200], err[:200]])
+        count = int(m.group(1))
+        files = int(m.group(2))
+        prev = _record_backlog("silent-failure-class", count)
+        detail_lines = [l for l in out.splitlines() if ":" in l and "audit-silent-failure-class" not in l][:15]
+        # No advisory swallow, no phantom scaling: any unmarked silent-catch
+        # site is a real regression-prevention failure. Score degrades with
+        delta = "" if prev is None else f" (was {prev}, delta {count - prev:+d})"
+        score = max(0.0, 1.0 - count / (count + 50))
+        return failed(score=score, summary=f"{count} unmarked silent-catch sites across {files} files{delta}", details=detail_lines)
 
 
 
