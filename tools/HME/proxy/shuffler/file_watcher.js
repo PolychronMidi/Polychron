@@ -41,6 +41,9 @@ let firstPendingAt = 0;        // when the current debounce window opened
 
 function shouldRestart(filePath) {
   if (!filePath) return false;
+  // Fingerprint-input files outside the proxy tree (.env, launcher/supervisor
+  // shell scripts) must trigger rotation even though they fail the ext filter.
+  if (EXTRA_WATCH_FILES.has(filePath)) return true;
   if (filePath.startsWith(SHUFFLER_OWN_DIR)) return false;
   for (const re of SKIP_PATTERNS) if (re.test(filePath)) return false;
   if (!/\.(js|mjs|cjs|json)$/.test(filePath)) return false;
