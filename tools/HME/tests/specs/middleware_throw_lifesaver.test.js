@@ -47,7 +47,7 @@ test('non-Error throws are stringified safely', () => {
 });
 
 test('recordMiddlewareThrow appends a newline-terminated line to hme-errors.log', () => {
-  const { recordMiddlewareThrow } = require('../../proxy/middleware/middleware_throw_lifesaver');
+  const { recordMiddlewareThrow } = require('../../proxy/middleware/_middleware_throw_lifesaver');
   const tmpRoot = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'mwthrow-'));
   recordMiddlewareThrow(tmpRoot, '00a_shortcuts_rewriter', new Error('disk test'));
   const logged = fs.readFileSync(path.join(tmpRoot, 'log', 'hme-errors.log'), 'utf8');
