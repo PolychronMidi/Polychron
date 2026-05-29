@@ -95,10 +95,38 @@ function _ensureAllUserMessagesNonEmpty(payload) {
   return fixed;
 }
 
+// Strip the task-tools nag from a standalone string (or string-content message).
+// Returns { text, hit } where hit indicates the nag was present.
+function _stripTaskToolsNagString(text) {
+  if (typeof text !== 'string' || !TASK_TOOLS_NAG_RE.test(text)) return { text, hit: false };
+  return { text: text.replace(TASK_TOOLS_NAG_RE, '').trim(), hit: true };
+}
+
+// Drop whole messages that are nothing but the auto-injected task-tools nag,
+// and strip the nag substring out of string-content messages that carry more.
+function _stripStandaloneNagMessages(payload) {
+  let removed = 0;
+  const kept = [];
+  for (const msg of payload.messages) {
+    if (msg && typeof msg.content === 'string') {
+      const { text, hit } = _stripTaskToolsNagString(msg.content);
+      if (hit) {
+        removed++;
+        if (text === '') continue; // emptied -> drop the whole message
+        msg.content = text;
+      }
+    }
+    kept.push(msg);
+  }
+  if (removed > 0) payload.messages = kept;
+  return removed;
+}
+
 function stripBoilerplate(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
-  let strippedCount = 0;
+  let strippedCount = _stripStandaloneNagMessages(payload);
   const stripped_samples = {};
+  if (strippedCount > 0) stripped_samples.task_tools_nag = strippedCount;
   // Only strip recent messages -- mutating older ones busts the Anthropic cache.
   const recentStart = Math.max(0, payload.messages.length - RECENT_MSG_WINDOW);
   for (const msg of payload.messages.slice(recentStart)) {
