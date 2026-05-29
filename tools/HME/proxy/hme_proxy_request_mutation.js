@@ -8,6 +8,7 @@ const { routeDecision } = require('./contexts/upstream_dispatch');
 const { shouldInject, consumeStatusContext, buildJurisdictionContext, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 const { enforceReminderProvenance, loadLedger } = require('./system_reminder_provenance');
+const { recordProxyFailure } = require('./middleware/_middleware_throw_lifesaver');
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { requestTelemetry } = require('./request_telemetry');
 const { shrinkForPassthrough: compactAnthropicPayload } = require('./passthrough_compact');
