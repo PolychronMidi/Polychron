@@ -291,8 +291,11 @@ function _loadPhaseRegistry() {
   return _phaseRegistry;
 }
 
+// Numeric prefix governs phase. An optional letter suffix (e.g. 06a) inserts
+// a module between integer slots without renumbering; the integer part still
+// determines its phase. See phases.json `_suffix_rule`.
 function _orderPrefix(fname) {
-  const m = /^(\d+)_/.exec(fname || '');
+  const m = /^(\d+)[a-z]?_/.exec(fname || '');
   return m ? parseInt(m[1], 10) : null;
 }
 
