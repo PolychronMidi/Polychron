@@ -516,7 +516,9 @@ async function dispatchEvent(eventName, stdinJson) {
       if (omo.status === 'disabled') await observeOmoShadow('PermissionRequest', empty);
       if (omo.applied && omo.result) return omo.result;
       const tool = _toolName(empty);
-      const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
+      // PermissionRequest reuses the PreToolUse policy context -- declared in
+      // dispatcher-routes.json, not hardcoded, so the reuse is auditable.
+      const unifiedRes = await _runUnifiedPolicies(policyContext('PermissionRequest'), tool, empty);
       return unifiedRes && unifiedRes.stdout ? unifiedRes : { stdout: '', stderr: ' ', exit_code: 0 };
     }
     case 'PostToolUse': {
