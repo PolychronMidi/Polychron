@@ -38,6 +38,7 @@ const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('../shared');
 const { isStrictMode } = require('../strict_mode');
+const { recordMiddlewareThrow } = require('./middleware_throw_lifesaver');
 
 const NEXUS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
 const PHASES_FILE = path.join(__dirname, 'phases.json');
