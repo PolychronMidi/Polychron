@@ -251,6 +251,7 @@ function maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive,
     runInlineFallback('Stop', stdin);
   } catch (err) {
     console.error('inline Stop threw:', err.message);
+    try { require('./middleware/_middleware_throw_lifesaver').recordProxyFailure(require('./shared').PROJECT_ROOT, 'inline-stop-fallback', err); } catch (_e) { /* never let alerting throw */ }
   }
 }
 
