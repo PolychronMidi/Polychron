@@ -196,15 +196,36 @@ function _detectUnparsedToolCallRetry(payload) {
   if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return false;
   const last = payload.messages[payload.messages.length - 1];
   if (!last || last.role !== 'assistant') return false;
+  const toolUseIds = Array.isArray(last.content)
+    ? last.content.filter((b) => b && b.type === 'tool_use' && b.id).map((b) => b.id)
+    : [];
   const hasToolUse = Array.isArray(last.content)
     && last.content.some((b) => b && b.type === 'tool_use');
   if (!hasToolUse) return false;
-  payload.messages.push({ role: 'user', content: 'continue' });
+  // Primary: satisfy the API contract by synthesizing the missing tool_result
+  // for each dangling tool_use (matched by id). A trailing assistant tool_use
+  let recovery;
+  if (toolUseIds.length > 0) {
+    payload.messages.push({
+      role: 'user',
+      content: toolUseIds.map((id) => ({
+        type: 'tool_result',
+        tool_use_id: id,
+        content: '[hme-proxy: prior tool call did not parse/execute; treat as no-op and continue]',
+        is_error: true,
+      })),
+    });
+    recovery = `synthesized ${toolUseIds.length} tool_result(s)`;
+  } else {
+    // Fallback defense: tool_use present but no ids to pair -> plain continue.
+    payload.messages.push({ role: 'user', content: 'continue' });
+    recovery = 'injected user "continue"';
+  }
   try {
     const logDir = path.join(PROJECT_ROOT, 'log');
     fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'),
-      `[${new Date().toISOString()}] [unparsed-tool-call] trailing assistant tool_use with no tool_result; injected user "continue". session=${sessionKey(payload)}\n`);
+      `[${new Date().toISOString()}] [unparsed-tool-call] trailing assistant tool_use with no tool_result; ${recovery}. session=${sessionKey(payload)}\n`);
   } catch (_) { /* best-effort */ }
   return true;
 }
