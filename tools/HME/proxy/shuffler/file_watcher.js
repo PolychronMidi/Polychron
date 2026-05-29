@@ -168,6 +168,9 @@ function _enumerateAllWatchedFiles() {
   }
   walk(WATCH_DIR);
   for (const ext of discoverExternalDeps()) files.add(ext);
+  // Fingerprint-input files outside the proxy tree -- poll them too so a change
+  // to .env / launcher / supervisor actually rotates the slots.
+  for (const extra of EXTRA_WATCH_FILES) files.add(extra);
   return [...files];
 }
 
