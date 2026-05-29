@@ -132,7 +132,7 @@ function _tick() {
 
 function start() {
   watchSelfAndReexec(__filename, [path.join(__dirname, 'self_reexec.js')]);
-  console.error(`[slot-watchdog] polling every ${POLL_MS}ms; stale threshold ${STALE_MS}ms; respawn cooldown ${RESPAWN_COOLDOWN_MS}ms; drift gap ${DRIFT_RESPAWN_GAP_MS}ms`);
+  console.error(`[slot-watchdog] polling every ${POLL_MS}ms; stale threshold ${STALE_MS}ms; respawn cooldown ${RESPAWN_COOLDOWN_MS}ms; drift alert ${DRIFT_ALERT_MS}ms`);
   setInterval(_tick, POLL_MS);
 }
 
