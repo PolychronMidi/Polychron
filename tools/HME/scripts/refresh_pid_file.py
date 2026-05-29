@@ -88,7 +88,11 @@ def resolve_live_pids(root: Path, env: dict | None = None) -> dict[str, int]:
         label = service_pid_label(spec)
         if not label:
             continue
-        pid = _pid_from_pid_file(root, spec) or _pid_from_patterns(spec)
+        pid = (
+            _pid_from_heartbeat(root, spec)
+            or _pid_from_pid_file(root, spec)
+            or _pid_from_patterns(spec)
+        )
         if pid:
             live[label] = pid
     return live
