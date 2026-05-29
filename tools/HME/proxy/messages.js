@@ -38,6 +38,11 @@ const BOILERPLATE_PATTERNS = [
     re: /<system-reminder>\s*The TodoWrite tool hasn't been used recently[\s\S]*?<\/system-reminder>/,
     strip_whole_block: false,
   },
+  {
+    name: 'task_tools_nag',
+    re: TASK_TOOLS_NAG_RE,
+    strip_whole_block: false,
+  },
 ];
 
 function _isBoilerplateText(text) {
