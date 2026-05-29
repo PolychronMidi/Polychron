@@ -13,6 +13,9 @@ const COUNTER_REL = path.join(STATE_DIR, 'autocommit.counter');
 const LAST_SUCCESS_REL = path.join(STATE_DIR, 'autocommit.last-success');
 const HEARTBEAT_REL = path.join(STATE_DIR, 'heartbeat-autocommit.ts');
 const LAST_ATTEMPT_REL = path.join(STATE_DIR, 'autocommit.last-attempt');
+// Timestamp (ms) of the FIRST failure in the current unresolved streak. Lets us
+// hold the agent-facing LIFESAVER alert until a failure has persisted past the
+const FIRST_FAIL_REL = path.join(STATE_DIR, 'autocommit.first-fail');
 // Same lock file _autocommit.sh uses; serializes JS+bash autocommit callers.
 const LOCK_REL = path.join(STATE_DIR, 'autocommit.lock');
 
