@@ -40,6 +40,16 @@ const REPLACEMENTS = [
   ['\u03C9', 'omega'],  // greek small omega
   ['\u00A0', ' '],  // non-breaking space
   ['\u200B', ''],  // zero-width space
+  ['\u2002', ' '],  // en space
+  ['\u2003', ' '],  // em space
+  ['\u2009', ' '],  // thin space
+  ['\u200A', ' '],  // hair space
+  ['\u202F', ' '],  // narrow no-break space
+  ['\u2012', '-'],  // figure dash
+  ['\u2015', '--'],  // horizontal bar
+  ['\u2022', '*'],  // bullet
+  ['\u00AD', ''],  // soft hyphen
+  ['\u2060', ''],  // word joiner
   ['\uFEFF', ''],  // BOM / zero-width no-break space
 ];
 
