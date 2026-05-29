@@ -123,6 +123,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'continue': 'go',
   'continuing': 'doing',
   'continued': 'did',
+  'handle': 'do',
+  'handles': 'does',
   'continues': 'does',
   'validation': 'check',
   'validate': 'check',
