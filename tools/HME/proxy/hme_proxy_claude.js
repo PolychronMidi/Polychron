@@ -46,6 +46,7 @@ const {
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const { routeOpenAICompatibleThroughHme } = require('./openai_compatible_ingress');
+const { evaluateOutbound } = require('./outbound_context_gate');
 const {
   captureNoopReminderLeak,
   maybeBlockEarlyClaudeRequest,
