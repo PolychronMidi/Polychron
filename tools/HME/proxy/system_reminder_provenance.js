@@ -34,7 +34,6 @@ const OURS_PREFIX_RES = [
 const BENIGN_HOST_RES = [
   /the task tools haven't been used recently/i,
   /the todowrite tool hasn't been used recently/i,
-  /<ide_selection>/i,
   /the following deferred tools are now available/i,
   /<task-notification>/i,
   /was read before the last conversation was summarized/i,
