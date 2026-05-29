@@ -13,6 +13,18 @@ const {
   routeSkipReason,
 } = require('./contexts/failure_policy/model_route_health');
 
+// swapWindowCheck: does the request's estimated input exceed the swap model's
+// input cap (with HME_OMNI_SWAP_FIT_FRACTION headroom)? budget 0 => unknown => no gate.
+function swapWindowCheck(payload, swapModel, env = process.env) {
+  const fitFraction = Number(env.HME_OMNI_SWAP_FIT_FRACTION || '0.95');
+  const { modelInputBudget } = require('./hme_proxy_context_budget');
+  const { semanticTokenEstimate } = require('./context_token_estimate');
+  const budget = modelInputBudget(swapModel);
+  const estTokens = semanticTokenEstimate(payload, env);
+  const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
+  return { exceeds, estTokens, budget, fitFraction };
+}
+
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
   return mode === '1' ? '1' : '0';
@@ -273,6 +285,15 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.swapModel = upstreamModelId(result.swapModel);
   if (env.HME_OMNIROUTE_PROVIDER) result.omniProvider = env.HME_OMNIROUTE_PROVIDER;
 
+  // Size gate: if the request won't fit the swap model, don't swap -- leave the
+  // requested Claude model so it routes DIRECT (full Claude window) instead of
+  const _wc = swapWindowCheck(payload, result.swapModel, env);
+  if (_wc.exceeds) {
+    payload.model = requestedClaudeModel || claudeModel || payload.model;
+    console.error(`[hme-proxy] MODE=1 size-gate: ~${_wc.estTokens}tok exceeds ${result.swapModel} input window ${_wc.budget} (*${_wc.fitFraction}); staying on ${payload.model} direct (no swap)`);
+    return result;
+  }
+
   if (env.HME_OMNIROUTE_OFF !== '1') {
     const targetFormat = omniTargetFormat(result.omniProvider);
     console.error(`[hme-proxy] swap pre-omni: chainLen=${result.swapChain.length} model=${result.swapModel} provider=${result.omniProvider} targetFormat=${targetFormat}`);
@@ -331,4 +352,4 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, claudeModelForOverdrive, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, modelRouteKey, applyOverdriveRoute, messageTextForRoleDetection };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, claudeModelForOverdrive, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, modelRouteKey, applyOverdriveRoute, messageTextForRoleDetection, swapWindowCheck };

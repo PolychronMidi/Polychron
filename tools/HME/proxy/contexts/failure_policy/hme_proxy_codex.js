@@ -26,11 +26,18 @@ function recordOmniRouteFailureAdvance({
 }) {
   console.error(`[hme-proxy] fallback probe: _isOmniRouteSwap=${isOmniRouteSwap} chainLen=${swapChain.length} _isRateLimit=${isRateLimit} status=${status}`);
   if (!isOmniRouteSwap || swapChain.length <= 1) return;
-  const st = swapStore.recordFailure(swapChain, projectRoot);
+  // Auth failures are deterministic -> advance now; transient ones wait for the streak.
+  const immediate = status === 401 || status === 403;
+  const threshold = Number.parseInt(process.env.HME_OMNI_SWAP_FAIL_THRESHOLD || '', 10) || 2;
+  const st = swapStore.recordFailure(swapChain, projectRoot, { immediate });
+  const failureKind = isRateLimit ? 'rate-limited' : `status=${status}`;
+  if (!st.advanced) {
+    console.error(`[hme-proxy] MODE=${odMode} fallback: ${failureKind} on ${omniProvider}/${swapModel} -> holding (fail ${st.pending}/${threshold}; retry same target before advancing)`);
+    return;
+  }
   const next = swapChain[st.idx];
   const np = omniProviderForConfigProvider(next.provider || '');
   const ntf = omniTargetFormat(np);
-  const failureKind = isRateLimit ? 'rate-limited' : `status=${status}`;
   console.error(`[hme-proxy] MODE=${odMode} fallback: ${failureKind} on ${omniProvider}/${swapModel} -> advancing to ${np}/${next.id} targetFormat=${ntf} (chain pos ${st.idx}/${swapChain.length}, fail count ${st.fail})`);
 }
 

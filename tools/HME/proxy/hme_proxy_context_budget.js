@@ -45,6 +45,52 @@ function loadModelCtxRegistry() {
   return map;
 }
 
+// Lazy-loaded INPUT-token cap registry, distinct from the total-context budget
+// above: this is the largest input a model will actually accept, used by the
+let _modelInputRegistry = { mtimeMs: 0, map: new Map() };
+
+function _modelInputCap(m) {
+  const maxIn = positiveNumber(m.max_input_tokens);
+  if (maxIn) return maxIn;
+  const ctx = positiveNumber(m.context_length);
+  const out = positiveNumber(m.max_output_tokens);
+  if (ctx && out && ctx > out) return ctx - out;
+  return ctx;
+}
+
+function loadModelInputRegistry() {
+  const modelsPath = path.join(PROJECT_ROOT, 'config', 'models.json');
+  let stat; try { stat = fs.statSync(modelsPath); } catch { return _modelInputRegistry.map; }
+  if (stat.mtimeMs === _modelInputRegistry.mtimeMs) return _modelInputRegistry.map;
+  let cfg;
+  try {
+    const text = fs.readFileSync(modelsPath, 'utf8');
+    const stripped = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    cfg = JSON.parse(stripped);
+  } catch { return _modelInputRegistry.map; }
+  const map = new Map();
+  for (const tier of Object.values(cfg.tiers || {})) {
+    for (const m of tier.models || []) {
+      const cap = _modelInputCap(m);
+      if (cap > 0 && m.id) map.set(String(m.id), cap);
+      if (cap > 0 && m.api_model) map.set(String(m.api_model), cap);
+    }
+  }
+  _modelInputRegistry = { mtimeMs: stat.mtimeMs, map };
+  return map;
+}
+
+// modelInputBudget returns the max INPUT tokens a model accepts, or 0 when the
+// model is unknown (callers MUST treat 0 as "unknown -> do not gate").
+function modelInputBudget(modelId) {
+  const id = String(modelId || '');
+  if (!id) return 0;
+  const reg = loadModelInputRegistry();
+  if (reg.has(id)) return reg.get(id);
+  for (const [k, v] of reg) if (id.includes(k)) return v;
+  return 0;
+}
+
 function _ensureProcessEnvLoaded() {
   loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 }
@@ -354,4 +400,4 @@ function createContextBudget() {
   };
 }
 
-module.exports = { createContextBudget, parseProxyContextEnv, inputBudget };
+module.exports = { createContextBudget, parseProxyContextEnv, inputBudget, modelInputBudget };

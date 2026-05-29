@@ -8,7 +8,7 @@ const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 
 const SUCCESS_WINDOW_MS = 300_000;
-const EMPTY = { idx: 0, ts: 0, fail: 0, chain: '' };
+const EMPTY = { idx: 0, ts: 0, fail: 0, pending: 0, chain: '' };
 
 function _filePath(projectRoot) {
   return path.join(projectRoot || PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
@@ -44,26 +44,37 @@ function currentIndex(chain, projectRoot = PROJECT_ROOT) {
   return Math.min(st.idx || 0, chain.length - 1);
 }
 
-// record failure, advance idx; returns new state for logging.
-// recordFailure() is called AFTER an upstream request failed, so the index
-function recordFailure(chain, projectRoot = PROJECT_ROOT) {
+function _failThreshold(opts) {
+  if (opts && Number.isFinite(opts.threshold)) return Math.max(1, Math.floor(opts.threshold));
+  const env = Number.parseInt(process.env.HME_OMNI_SWAP_FAIL_THRESHOLD || '', 10);
+  return Number.isFinite(env) && env > 0 ? env : 2;
+}
+
+// record a failure. The chain index only advances after `threshold` consecutive
+// in-window failures (default 2) so a single intermittent blip retries the same
+function recordFailure(chain, projectRoot = PROJECT_ROOT, opts = {}) {
   const sig = chainSignature(chain);
-  let st = _read(projectRoot);
-  if (!_matchesChain(st, sig)) st = { ...EMPTY, chain: sig };
+  const len = (chain && chain.length) || 1;
+  const threshold = _failThreshold(opts);
+  const immediate = Boolean(opts && opts.immediate);
+  const st = _read(projectRoot);
   const now = Date.now();
-  const currentIdx = (st.fail > 0 && _inWindow(st, now)) ? (st.idx || 0) : 0;
-  st.idx = (currentIdx + 1) % chain.length;
-  st.ts = now;
-  st.fail = (st.fail || 0) + 1;
-  st.chain = sig;
-  _write(projectRoot, st);
-  return st;
+  const active = _matchesChain(st, sig) && st.fail > 0 && _inWindow(st, now);
+  const baseIdx = active ? (st.idx || 0) : 0;
+  const fail = (active ? (st.fail || 0) : 0) + 1;
+  const pending = (active ? (st.pending || 0) : 0) + 1;
+  let idx = baseIdx;
+  let advanced = false;
+  if (immediate || pending >= threshold) { idx = (baseIdx + 1) % len; advanced = true; }
+  const next = { idx, ts: now, fail, pending: advanced ? 0 : pending, chain: sig };
+  _write(projectRoot, next);
+  return { ...next, advanced };
 }
 
 // success at idx clears fail and pins that target for next request.
 function recordSuccess(chain, idx, projectRoot = PROJECT_ROOT) {
   const sig = chainSignature(chain);
-  const st = { idx: Math.min(idx || 0, Math.max(0, chain.length - 1)), ts: Date.now(), fail: 0, chain: sig };
+  const st = { idx: Math.min(idx || 0, Math.max(0, chain.length - 1)), ts: Date.now(), fail: 0, pending: 0, chain: sig };
   _write(projectRoot, st);
   return st;
 }

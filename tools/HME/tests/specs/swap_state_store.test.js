@@ -62,30 +62,31 @@ test('currentIndex resets to 0 on chain-signature mismatch', () => {
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('recordFailure on empty state advances to idx=1 with fail=1', () => {
+test('recordFailure advances to idx=1 on first failure when threshold=1 (legacy)', () => {
   const root = tmpRoot();
   try {
-    const st = store.recordFailure(CHAIN, root);
-    assert.equal(st.idx, 1, 'first failure must advance off model[0]');
+    const st = store.recordFailure(CHAIN, root, { threshold: 1 });
+    assert.equal(st.idx, 1, 'threshold=1 advances off model[0] on first failure');
     assert.equal(st.fail, 1);
+    assert.equal(st.advanced, true);
     assert.equal(st.chain, store.chainSignature(CHAIN));
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('recordFailure twice in window advances idx', () => {
+test('recordFailure twice advances idx with threshold=1', () => {
   const root = tmpRoot();
   try {
-    store.recordFailure(CHAIN, root);
-    const st = store.recordFailure(CHAIN, root);
+    store.recordFailure(CHAIN, root, { threshold: 1 });
+    const st = store.recordFailure(CHAIN, root, { threshold: 1 });
     assert.equal(st.idx, 2);
     assert.equal(st.fail, 2);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('recordFailure wraps around chain', () => {
+test('recordFailure wraps around chain with threshold=1', () => {
   const root = tmpRoot();
   try {
-    for (let i = 0; i < 3; i++) store.recordFailure(CHAIN, root);
+    for (let i = 0; i < 3; i++) store.recordFailure(CHAIN, root, { threshold: 1 });
     const st = store.peek(root);
     assert.equal(st.idx, 0, 'wrapped past chain.length');
     assert.equal(st.fail, 3);
@@ -113,5 +114,51 @@ test('reset clears state', () => {
     assert.equal(st.idx, 0);
     assert.equal(st.fail, 0);
     assert.equal(st.ts, 0);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('default threshold holds on first failure (no swap off model[0])', () => {
+  const root = tmpRoot();
+  try {
+    const st = store.recordFailure(CHAIN, root, { threshold: 2 });
+    assert.equal(st.idx, 0, 'first intermittent failure must NOT swap');
+    assert.equal(st.advanced, false);
+    assert.equal(st.pending, 1);
+    assert.equal(st.fail, 1);
+    assert.equal(store.currentIndex(CHAIN, root), 0);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('threshold=2 advances on the second consecutive failure', () => {
+  const root = tmpRoot();
+  try {
+    const first = store.recordFailure(CHAIN, root, { threshold: 2 });
+    assert.equal(first.advanced, false);
+    const second = store.recordFailure(CHAIN, root, { threshold: 2 });
+    assert.equal(second.idx, 1);
+    assert.equal(second.advanced, true);
+    assert.equal(second.fail, 2);
+    assert.equal(second.pending, 0);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('immediate forces advance on first failure regardless of threshold', () => {
+  const root = tmpRoot();
+  try {
+    const st = store.recordFailure(CHAIN, root, { threshold: 5, immediate: true });
+    assert.equal(st.idx, 1);
+    assert.equal(st.advanced, true);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('recordSuccess resets pending so the streak restarts', () => {
+  const root = tmpRoot();
+  try {
+    store.recordFailure(CHAIN, root, { threshold: 2 });
+    store.recordSuccess(CHAIN, 0, root);
+    const st = store.recordFailure(CHAIN, root, { threshold: 2 });
+    assert.equal(st.idx, 0, 'post-success failure is treated as first again');
+    assert.equal(st.advanced, false);
+    assert.equal(st.pending, 1);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
