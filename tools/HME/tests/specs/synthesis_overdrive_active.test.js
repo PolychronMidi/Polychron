@@ -32,7 +32,6 @@ const _allIds = Object.values(JSON.parse(_modelsText).tiers)
   .flatMap((t) => (t.models || []).map((m) => m.id));
 const OPUS = (_allIds.find((id) => /^claude-opus-\d+-\d+-/.test(id)) || '')
   .replace(/^(claude-opus-\d+-\d+)-.*$/, '$1');
-const OPUS_VER = OPUS.replace(/^claude-opus-/, ''); // e.g. "4-8"
 
 // cost_order is subscription > free > usage (see config/models.json ranking_rules).
 const EXPECTED_E5_HEAD = [`${OPUS}-max-e5`, 'gpt-5.5-xhigh'];
