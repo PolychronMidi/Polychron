@@ -283,6 +283,7 @@ function _attemptCommit(root, caller) {
 
 module.exports = {
   name: 'proxy_autocommit',
+  _isBenignRace,  // exported for tests
 
   onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.messages)) return;
