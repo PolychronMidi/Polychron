@@ -463,8 +463,11 @@ const _SLOP_PATTERNS = [
   // Caveman compression: delete low-signal glue words/first-person filler.
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
   // happen before small words are removed.
+  // Boundary guards forbid letters, digits, underscore AND apostrophe on both
+  // sides. The apostrophe guard is critical: without it, bare `i` followed by
+  // "'" matches the "i" in "i'm" and deletes ONLY the letter, leaving "'m".
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|as|our|right|okay|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|the|that|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
     repl: '' },
 
   // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
