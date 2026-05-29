@@ -113,6 +113,10 @@ def mutate(mutator, now: float | None = None):
     return _with_lock(_do)
 
 
+def next_id(todos: list[Todo]) -> int:
+    return (max((t.id for t in todos), default=0)) + 1
+
+
 def maybe_archive(now: float | None = None) -> str | None:
     """If the active set is fully resolved (all >= 3_), archive it to
     log/todo/set<N>.md and reset TODO.md to header-only. Returns archive path
