@@ -55,6 +55,27 @@ function _readJSONSafe(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return null; }
 }
 
+// Pure evaluation against the live health files. Returns { ok, problems }.
+function inspectLive(root) {
+  const runtimeDir = path.join(root, 'tools', 'HME', 'runtime');
+  const slots = {
+    a: _readJSONSafe(path.join(runtimeDir, 'proxy-a.health')),
+    b: _readJSONSafe(path.join(runtimeDir, 'proxy-b.health')),
+  };
+  let wanted = '';
+  try {
+    const { currentRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
+    wanted = currentRuntimeFingerprint(root);
+  } catch (_) { /* if fingerprint can't compute, skip the drift dimension */ }
+  return evaluateSlots(slots, wanted, Date.now(), {});
+}
+
+// --check-only: exit non-zero on drift/outage, write nothing. For the
+// SessionStart bootstrap to decide whether to auto-restart the supervisor.
+function runCheckOnly(root) {
+  return inspectLive(root).ok ? 0 : 1;
+}
+
 // CLI entry: read health files + fingerprint, append LIFESAVER to hme-errors.log
 // if degraded. Exits 0 always (the hook scanner does the bannering).
 function runCli(root) {
