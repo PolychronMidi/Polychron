@@ -44,7 +44,7 @@ SCAN_ROOTS = [
     PROJECT_ROOT / "scripts" / "hme",
     PROJECT_ROOT / "scripts" / "detectors",
 ]
-SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist")
+SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist", "_disabled")
 
 
 def _find_writers(path_substr: str) -> list[tuple[str, int]]:

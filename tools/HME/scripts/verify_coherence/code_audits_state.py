@@ -84,7 +84,12 @@ class StateFileOwnershipVerifier(Verifier):
                        or " -- writer not declared" in l
                        or "writes detected but not in registry" in l]
         details = drift_lines[:15] + issues[:15]
-        return passed(score=1.0, summary=f"{len(drift_lines)} undeclared writer(s), {len(issues)} registry issue(s) tracked in canonical backlog", details=details)
+        # Gating per the class contract: a real undeclared writer of shared
+        # state (concurrent append/truncate risk) FAILs. Registry-helper or
+        if drift_lines:
+            score = max(0.0, 1.0 - len(drift_lines) / (len(drift_lines) + 1))
+            return failed(score=score, summary=f"{len(drift_lines)} undeclared writer(s) of shared state, {len(issues)} registry issue(s)", details=details)
+        return warned(summary=f"{len(issues)} registry issue(s) (no writer drift)", details=details)
 
 
 
