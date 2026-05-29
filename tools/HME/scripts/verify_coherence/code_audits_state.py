@@ -87,10 +87,9 @@ class StateFileOwnershipVerifier(Verifier):
         details = drift_lines[:15] + issues[:15]
         # Gating per the class contract: a real undeclared writer of shared
         # state (concurrent append/truncate risk) FAILs. Registry-helper or
-        if rc != 0:
-            score = max(0.0, 1.0 - len(drift_lines) / (len(drift_lines) + 1)) if drift_lines else 0.0
-            return failed(score=score, summary=f"{len(drift_lines)} undeclared writer(s) of shared state, {len(issues)} registry issue(s)", details=details)
-        return warned(summary=f"{len(issues)} registry issue(s) (no writer drift)", details=details)
+        # Drift OR registry/doc issues both FAIL -- no advisory middle tier.
+        score = max(0.0, 1.0 - len(drift_lines) / (len(drift_lines) + 1)) if drift_lines else 0.0
+        return failed(score=score, summary=f"{len(drift_lines)} undeclared writer(s) of shared state, {len(issues)} registry issue(s)", details=details)
 
 
 
