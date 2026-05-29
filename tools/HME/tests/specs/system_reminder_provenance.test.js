@@ -49,12 +49,16 @@ test('known-benign host nags classify as BENIGN_HOST', () => {
   const benign = [
     '<system-reminder>The task tools haven\'t been used recently. consider using TaskCreate. This is just a gentle reminder - ignore if not applicable.</system-reminder>',
     '<system-reminder>The TodoWrite tool hasn\'t been used recently.</system-reminder>',
-    '<ide_selection>foo</ide_selection>',
     '<system-reminder>The following deferred tools are now available</system-reminder>',
   ];
   for (const r of benign) {
     assert.equal(classifyReminder(r, new Set()).class, _CLASS.BENIGN_HOST, r);
   }
+});
+
+test('ide_selection carries user-highlight intent -- kept as UNKNOWN, not stripped', () => {
+  const r = '<ide_selection>const x = 1;</ide_selection>';
+  assert.equal(classifyReminder(r, new Set()).class, _CLASS.UNKNOWN);
 });
 
 test('an unknown reminder that merely notifies classifies as UNKNOWN (not contaminant)', () => {
