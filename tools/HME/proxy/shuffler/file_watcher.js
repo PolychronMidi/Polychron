@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
+const { watchSelfAndReexec } = require('./self_reexec');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
 
@@ -144,6 +145,7 @@ function _enumerateAllWatchedFiles() {
 }
 
 function start() {
+  watchSelfAndReexec(__filename, [path.join(__dirname, 'self_reexec.js')]);
   if (!fs.existsSync(WATCH_DIR)) {
     console.error(`[file-watcher] watch dir missing: ${WATCH_DIR}`);
     process.exit(1);
