@@ -56,6 +56,13 @@ class SseTransform extends Transform {
         try { result = rw(name, d, this._ctx); }
         catch (err) {
           console.error(`[sse-transform] rewriter ${i} threw: ${err.message}`);
+          // A thrown rewriter means a response transform (slop/ascii/shortcut/
+          // stop-hook) silently did NOT run and raw output reached the client.
+          try {
+            const rwName = (rw && rw.name) ? rw.name : `index ${i}`;
+            require('./middleware/_middleware_throw_lifesaver')
+              .recordProxyFailure(require('./shared').PROJECT_ROOT, `sse-rewriter:${rwName}`, err);
+          } catch (_e) { /* never let alerting throw inside the stream */ }
           next.push([name, d]);
           continue;
         }
