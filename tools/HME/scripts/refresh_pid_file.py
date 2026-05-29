@@ -12,6 +12,7 @@ the file only ever lists currently-alive, supervised processes.
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
