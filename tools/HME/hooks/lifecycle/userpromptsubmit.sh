@@ -88,9 +88,7 @@ fi
 # Watchdog-independent proxy liveness gate: detects a proxy serving stale code
 # or a dead/missing slot even when slot_watchdog itself is dead. Writes a
 # blocking LIFESAVER to hme-errors.log, which the scan below surfaces THIS turn.
-if [ "${strict_mode:-1}" != "0" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" timeout 5 node "$PROJECT_ROOT/tools/HME/proxy/proxy_liveness_gate.js" 2>/dev/null || true
-fi
+PROJECT_ROOT="$PROJECT_ROOT" timeout 5 node "$PROJECT_ROOT/tools/HME/proxy/proxy_liveness_gate.js" 2>/dev/null || true
 
 # LIFESAVER error-log monitor: surfaces hme-errors.log new lines as
 # additionalContext. Errors must be FIXED, not acknowledged.
