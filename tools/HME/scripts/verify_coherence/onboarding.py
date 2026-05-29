@@ -63,18 +63,20 @@ class OnboardingFlowVerifier(Verifier):
         if not os.path.isfile(script):
             return skipped(summary="verifier script not found")
         rc, out, _err = _run_subprocess(script)
-        n_passed = sum(1 for ln in out.splitlines() if "PASS:" in ln)
-        n_failed = sum(1 for ln in out.splitlines() if "FAIL:" in ln)
+        # rc is authoritative for the verdict. PASS/FAIL counts are display-only
+        # and matched at line start (anchored) so a token mentioned in prose
+        n_passed = sum(1 for ln in out.splitlines() if ln.lstrip().startswith("PASS:"))
+        n_failed = sum(1 for ln in out.splitlines() if ln.lstrip().startswith("FAIL:"))
         total = n_passed + n_failed
-        if total == 0:
-            return errored(summary="verifier produced no PASS/FAIL output")
-        score = n_passed / total
         if rc == 0:
-            return passed(score=score, summary=f"all {total} onboarding tests pass")
+            if total == 0:
+                return errored(summary="verifier produced no PASS/FAIL output")
+            return passed(score=1.0, summary=f"all {total} onboarding tests pass")
+        score = (n_passed / total) if total else 0.0
         return failed(
             score=score,
-            summary=f"{n_failed}/{total} onboarding tests failed",
-            details=[ln for ln in out.splitlines() if "FAIL:" in ln],
+            summary=f"{n_failed}/{total or '?'} onboarding tests failed (rc={rc})",
+            details=[ln for ln in out.splitlines() if ln.lstrip().startswith("FAIL:")] or out.splitlines()[:15],
         )
 
 
