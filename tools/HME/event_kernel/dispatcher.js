@@ -553,4 +553,4 @@ async function dispatchEvent(eventName, stdinJson) {
   }
 }
 
-module.exports = { dispatchEvent, runHook, runChain, lifecycleContextResult };
+module.exports = { dispatchEvent, runHook, runChain, lifecycleContextResult, policyContext };
