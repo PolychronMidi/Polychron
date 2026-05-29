@@ -45,4 +45,4 @@ TODO surfaces sync automatically: native todo/update_plan/TODO.md.
 === END HME PRIMER ==="
 
 jq -n --arg ctx "$CTX" \
-  '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":$ctx}}'
+  '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","additionalContext":$ctx}}'

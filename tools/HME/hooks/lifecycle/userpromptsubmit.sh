@@ -250,7 +250,7 @@ _PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
 _AUTO_TODO_REMINDER="$_HME_PROJECT_TMP/hme-auto-todos.reminder"
 if [ -f "$_AUTO_TODO_REMINDER" ] && [ -s "$_AUTO_TODO_REMINDER" ]; then
   _BANNER=$(cat "$_AUTO_TODO_REMINDER")
-  jq -n --arg banner "$_BANNER" '{hookSpecificOutput:{additionalContext:$banner}}'
+  jq -n --arg banner "$_BANNER" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
   rm -f "$_AUTO_TODO_REMINDER"
 fi
 
