@@ -161,17 +161,21 @@ _sv_child_health_issue() {
 # Compare the worker's live /health code_fingerprint against the on-disk worker
 # code. A mismatch means the worker is alive but running stale code (the
 _sv_worker_drift_issue() {
-  local live wanted
-  live=$(curl -sf --max-time 3 "$_SV_WORKER_URL" 2>/dev/null \
-    | python3 -c 'import json,sys
+  local body live wanted
+  # Probe once. If unreachable, that's the caller's "unreachable" path, not
+  # our concern -- skip. If reachable, inspect the fingerprint.
+  body=$(curl -sf --max-time 3 "$_SV_WORKER_URL" 2>/dev/null) || return 0
+  [ -n "$body" ] || return 0
+  live=$(printf '%s' "$body" | python3 -c 'import json,sys
 try: print(json.load(sys.stdin).get("code_fingerprint") or "")
 except Exception: print("")' 2>/dev/null)
-  [ -n "$live" ] || return 0   # no fingerprint exposed (old worker / probe miss) -> not a drift signal
   wanted=$(cd "$_SV_ROOT/tools/HME/service" 2>/dev/null \
     && PYTHONPATH="$_SV_ROOT/tools/HME/service" python3 -c 'import sys; sys.path.insert(0, "server"); import worker_code_fingerprint as w, os; print(w.compute(os.environ["PROJECT_ROOT"]))' 2>/dev/null)
   [ -n "$wanted" ] || return 0
+  # A REACHABLE worker that exposes NO fingerprint is running code older than
+  # the fingerprint feature itself -- the strongest drift signal, not a reason
   if [ "$live" != "$wanted" ]; then
-    echo "worker stale code (fingerprint live=${live} wanted=${wanted})"
+    echo "worker stale code (fingerprint live=${live:-none} wanted=${wanted})"
     return 0
   fi
 }
