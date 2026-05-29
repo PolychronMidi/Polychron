@@ -2,7 +2,7 @@
 
 # Emit hookSpecificOutput allow + additionalContext + systemMessage.
 _emit_enrich_allow() {
-  jq -n --arg msg "$1" '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":$msg},"systemMessage":$msg}'
+  jq -n --arg msg "$1" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","additionalContext":$msg},"systemMessage":$msg}'
 }
 
 # Emit hard block decision (required format for built-in tools + hard rules).
