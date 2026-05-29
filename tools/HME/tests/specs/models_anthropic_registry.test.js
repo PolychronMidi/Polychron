@@ -16,12 +16,18 @@ function loadModels() {
 
 test('Anthropic effort variants are registered in requested tiers', () => {
   const cfg = loadModels();
+  // Derive the current opus version from config so this contract test
+  // asserts effort/tier/score structure without rotting on a version bump.
+  const allIds = Object.values(cfg.tiers).flatMap((t) => (t.models || []).map((m) => m.id));
+  const opusVer = (allIds.find((id) => /^claude-opus-\d+-\d+-/.test(id)) || '').replace(/^(claude-opus-\d+-\d+)-.*$/, '$1');
+  assert.ok(opusVer, 'an opus model id must exist in config');
+  const opus = (suffix) => `${opusVer}-${suffix}`;
   const expected = [
-    ['E5', 'claude-opus-4-7-max-e5', 'opus', 'max', 10],
-    ['E4', 'claude-opus-4-7-xhigh-e4', 'opus', 'xhigh', 9],
-    ['E4', 'claude-opus-4-7-high-e4', 'opus', 'high', 7],
-    ['E3', 'claude-opus-4-7-medium-e3', 'opus', 'medium', 9],
-    ['E3', 'claude-opus-4-7-low-e3', 'opus', 'low', 7],
+    ['E5', opus('max-e5'), 'opus', 'max', 10],
+    ['E4', opus('xhigh-e4'), 'opus', 'xhigh', 9],
+    ['E4', opus('high-e4'), 'opus', 'high', 7],
+    ['E3', opus('medium-e3'), 'opus', 'medium', 9],
+    ['E3', opus('low-e3'), 'opus', 'low', 7],
     ['E3', 'claude-sonnet-4-6-max-e3', 'sonnet', 'max', 6],
     ['E3', 'claude-sonnet-4-6-xhigh-e3', 'sonnet', 'xhigh', 5],
     ['E2', 'claude-sonnet-4-6-high-e2', 'sonnet', 'high', 8],
