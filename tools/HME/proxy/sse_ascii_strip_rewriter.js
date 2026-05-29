@@ -1,17 +1,17 @@
 "use strict";
-// DDoC scrubber. A non-ASCII byte is the MARKER that a spam span is present;
-// the surrounding mangled ASCII ("Th.", "B", ".jstrong th mc") is spam too, so
-// stripping only the non-ASCII chars leaves garbage. Instead we drop the WHOLE
-// contaminated section.
+// DDoC non-ASCII scrubber -- VISIBLE TEXT CHANNEL ONLY.
 //
-// thinking_delta: the block is BUFFERED (start..stop). If any delta, after
-//   folding legit typography to ASCII, still has non-ASCII, the ENTIRE block
-//   content is replaced with one banner delta and its signature is dropped
-//   (the seal no longer matches). Block start/stop stay intact so indices and
-//   the client block table are preserved. Clean blocks flush verbatim (with
-//   typography folded).
-// text_delta: visible answer streams normally; typography folded inline, and a
-//   delta that is dense foreign script is replaced by the banner (once/block).
+// thinking_delta is passed through 100% verbatim, and so is its
+// signature_delta. This is not a compromise -- it is forced by the protocol:
+// an Anthropic thinking block carries a signature that cryptographically seals
+// its EXACT text. Any edit to the thinking text (rewrite, banner, placeholder)
+// makes the signature mismatch; dropping the signature leaves an unsigned
+// thinking block. BOTH cause the client to reject the whole message
+// ("tool call could not be parsed"). So thinking is never touched here.
+//
+// text_delta (the user-visible answer): typography is folded to ASCII via the
+// shared table; a sparse stray non-ASCII char is stripped inline; a delta that
+// is dense foreign script is replaced by the banner (once per block).
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
 
@@ -30,85 +30,31 @@ function _countNonAscii(s) {
   return m ? m.length : 0;
 }
 
-function _ctxGet(ctx, key, make) {
-  let v = ctx && ctx.get && ctx.get(key);
-  if (v === undefined) { v = make(); if (ctx && ctx.set) ctx.set(key, v); }
-  return v;
-}
-
-function _bannerDelta(index) {
-  return ["content_block_delta",
-    { type: "content_block_delta", index, delta: { type: "thinking_delta", thinking: BANNER } }];
+function _ctxSet(ctx, key) {
+  let s = ctx && ctx.get && ctx.get(key);
+  if (!s) { s = new Set(); if (ctx && ctx.set) ctx.set(key, s); }
+  return s;
 }
 
 function asciiStripRewrite(eventName, data, ctx) {
   if (!ENABLED) return data;
-  if (!data) return data;
-  const buffers = _ctxGet(ctx, "ascii_think_buffers", () => new Map());
+  if (eventName !== "content_block_delta" || !data || !data.delta) return data;
+  if (data.delta.type !== "text_delta" || typeof data.delta.text !== "string") return data;
 
-  // --- buffer thinking blocks start..stop, decide at stop ---
-  if (eventName === "content_block_start" && data.content_block
-      && data.content_block.type === "thinking") {
-    buffers.set(data.index, { start: data, deltas: [], foreign: false });
-    return null;
+  const folded = normalizeToAscii(data.delta.text);
+  const n = _countNonAscii(folded);
+  if (n === 0) {
+    return folded === data.delta.text ? data
+      : { ...data, delta: { ...data.delta, text: folded } };
   }
-  const buf = (typeof data.index === "number") ? buffers.get(data.index) : null;
-  if (buf) {
-    if (eventName === "content_block_delta" && data.delta
-        && data.delta.type === "thinking_delta"
-        && typeof data.delta.thinking === "string") {
-      const folded = normalizeToAscii(data.delta.thinking);
-      if (_countNonAscii(folded) > 0) buf.foreign = true;
-      buf.deltas.push(["content_block_delta",
-        { ...data, delta: { ...data.delta, thinking: folded } }]);
-      return null;
-    }
-    if (eventName === "content_block_delta" && data.delta
-        && data.delta.type === "signature_delta") {
-      buf.signature = data;            // held; dropped if block is contaminated
-      return null;
-    }
-    if (eventName === "content_block_stop") {
-      buffers.delete(data.index);
-      const out = [["content_block_start", buf.start]];
-      if (buf.foreign) {
-        // Drop the entire contaminated section: one banner, no signature.
-        out.push(_bannerDelta(data.index));
-      } else {
-        out.push(...buf.deltas);
-        if (buf.signature) out.push(["content_block_delta", buf.signature]);
-      }
-      out.push(["content_block_stop", data]);
-      return { events: out };
-    }
-    // any other event mid-block: hold it in order
-    buf.deltas.push([eventName, data]);
-    return null;
+  const dense = n >= FOREIGN_ABS || (n / (folded.length || 1)) > FOREIGN_RATIO;
+  if (!dense) {
+    return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
   }
-
-  // --- visible text channel (streams inline) ---
-  if (eventName === "content_block_delta" && data.delta
-      && data.delta.type === "text_delta" && typeof data.delta.text === "string") {
-    const folded = normalizeToAscii(data.delta.text);
-    const n = _countNonAscii(folded);
-    if (n === 0) {
-      return folded === data.delta.text ? data
-        : { ...data, delta: { ...data.delta, text: folded } };
-    }
-    // Banner only on a genuine dense foreign-script span: BOTH an absolute
-    // floor of non-ASCII chars AND a high ratio. A lone/sparse stray char in
-    // short English (the "precise" regression) must fall through to inline
-    const dense = n >= FOREIGN_ABS && (n / (folded.length || 1)) > FOREIGN_RATIO;
-    if (!dense) {
-      return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
-    }
-    const bannered = _ctxGet(ctx, "ascii_text_bannered", () => new Set());
-    if (bannered.has(data.index)) return null;
-    bannered.add(data.index);
-    return { ...data, delta: { ...data.delta, text: BANNER } };
-  }
-
-  return data;
+  const bannered = _ctxSet(ctx, "ascii_text_bannered");
+  if (bannered.has(data.index)) return null;
+  bannered.add(data.index);
+  return { ...data, delta: { ...data.delta, text: BANNER } };
 }
 
 module.exports = { asciiStripRewrite, BANNER };
