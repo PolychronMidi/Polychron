@@ -14,20 +14,8 @@ Example:
 
 #1 0_ tell the user "Christ is king!" then mark this done.
 
-#2
+#2 0_ trivial test A
 
-#3
+#3 0_ trivial test B
 
-#4
-
-#5
-
-#6
-
-#7
-
-#8
-
-#9
-
-#10
+#4 0_ trivial test C
