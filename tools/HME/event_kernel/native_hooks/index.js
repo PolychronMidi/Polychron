@@ -2,16 +2,15 @@
 
 const agent = require('./agent');
 const diagnostics = require('./diagnostics');
-const todo = require('./todo');
+// Native TodoWrite mirror retired: TODO.md is now the single source of truth
+// via the standalone todo_engine. No native-tool interception/mirroring.
 
 const preToolHandlers = {
   Agent: agent.pretoolAgent,
-  TodoWrite: todo.pretoolTodoWrite,
 };
 
 const postToolHandlers = {
   Agent: agent.posttoolAgent,
-  TodoWrite: todo.posttoolTodoWrite,
   Edit: diagnostics.posttoolDiagnostics,
   MultiEdit: diagnostics.posttoolDiagnostics,
   Write: diagnostics.posttoolDiagnostics,
@@ -20,7 +19,6 @@ const postToolHandlers = {
 module.exports = {
   ...agent,
   ...diagnostics,
-  ...todo,
   preToolHandlers,
   postToolHandlers,
 };
