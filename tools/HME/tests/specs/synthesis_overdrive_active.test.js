@@ -102,14 +102,14 @@ def fake_urlopen(req, timeout=None):
     captured["payload"] = json.loads(req.data.decode())
     return Resp()
 urllib.request.urlopen = fake_urlopen
-text, rate = so._try_overdrive_model('claude-opus-4-7-max-e5', 'prompt', '', 4096)
+text, rate = so._try_overdrive_model('${OPUS}-max-e5', 'prompt', '', 4096)
 print(json.dumps({"text": text, "rate": rate, "payload": captured["payload"]}))
 `);
   assert.equal(result.status, 0, result.stderr);
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
   assert.equal(parsed.text, 'ok');
   assert.equal(parsed.rate, false);
-  assert.equal(parsed.payload.model, 'claude/claude-opus-4-7');
+  assert.equal(parsed.payload.model, `claude/${OPUS}`);
   assert.equal(Object.prototype.hasOwnProperty.call(parsed.payload, 'thinkingLevel'), false);
 });
 
