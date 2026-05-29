@@ -16,7 +16,7 @@ const stop = (ctx, i) => asciiStripRewrite('content_block_stop', { type: 'conten
 const text = (ctx, i, t) => asciiStripRewrite('content_block_delta',
   { type: 'content_block_delta', index: i, delta: { type: 'text_delta', text: t } }, ctx);
 
-// Source stays ASCII-clean (no-non-ascii lint): all non-ASCII via \u escapes.
+// Source stays ASCII-clean (no-non-ascii lint): every non-ASCII char via \u escape.
 const EM_DASH = '—';
 const RSQUO = '’';
 const HELLIP = '…';
@@ -29,8 +29,8 @@ const BULLET = '•';
 const SOFT_HYPHEN = '­';
 const WORD_JOINER = '⁠';
 const VN = 'Người dùng muốn';   // Vietnamese
-const CYR_ESHCHE = 'еще';             // Cyrillic " еще"
-const CYR_DA = 'да';                       // Cyrillic "да"
+const CYR_ESHCHE = 'еще';            // Cyrillic
+const CYR_DA = 'да';                       // Cyrillic "da"
 
 test('text: clean passes, typography folds, stray symbol stripped inline', () => {
   assert.equal(text(mkCtx(), 1, ' plain').delta.text, ' plain');
@@ -100,6 +100,6 @@ test('thinking: ANY contaminated delta collapses the WHOLE block to one banner, 
 
 test('block indices preserved (no shift) so client block table stays in sync', () => {
   const ctx = mkCtx();
-  start(ctx, 2); think(ctx, 2, 'спам');  // Cyrillic "спам"
+  start(ctx, 2); think(ctx, 2, 'спам');  // Cyrillic "spam"
   assert.equal(stop(ctx, 2).events[0][1].index, 2);
 });
