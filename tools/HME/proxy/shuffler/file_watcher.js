@@ -32,6 +32,8 @@ const SKIP_PATTERNS = [
 let pendingTimer = null;
 let nextSlot = 'a';
 let inFlightRestart = false;
+let retriggerQueued = false;   // a change arrived while a restart was in flight
+let firstPendingAt = 0;        // when the current debounce window opened
 
 function shouldRestart(filePath) {
   if (!filePath) return false;
