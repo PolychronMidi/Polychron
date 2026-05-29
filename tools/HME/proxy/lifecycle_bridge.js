@@ -69,7 +69,7 @@ async function runInlineFallback(event, stdinJson) {
     }
   } catch (err) {
     console.error(`inline ${event} failed: ${err.message}`);
-    try { require('./middleware/_middleware_throw_lifesaver').recordProxyFailure(require('./shared').PROJECT_ROOT, `inline-fallback:${event}`, err); } catch (_e) { /* never let alerting throw */ }
+    try { require('./middleware/_middleware_throw_lifesaver').recordProxyFailure(PROJECT_ROOT, `inline-fallback:${event}`, err); } catch (_e) { /* never let alerting throw */ }
   }
 }
 
