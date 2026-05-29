@@ -15,6 +15,10 @@ from helpers import assert_class_shape, smoke_run
 _PROJECT = Path(__file__).resolve().parents[4]
 _AUDIT = _PROJECT / "tools" / "HME" / "scripts" / "audit-state-file-ownership.py"
 
+# Assemble the redirect-write line from parts so THIS test file's own source
+# never matches the audit's `>> log/...` write regex (which would make the
+_ROGUE_BODY = "#!/usr/bin/env bash\necho boom " + (">" * 2) + " log/hme-errors.log\n"
+
 
 def _run_audit():
     rc = subprocess.run(
