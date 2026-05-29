@@ -146,9 +146,18 @@ track = _track
 think_local_or_claude = _think_local_or_claude
 local_think = _local_think
 
-# Coordinator entry points used by external bootstrappers
-from .todo import (  # noqa: E402, F401
+# LIFESAVER<->todo bridge now lives in the standalone todo_engine: runtime
+# alerts become ordinary status-0 items in the unified TODO.md, which the agent
+# reassesses. These override the legacy todo.py implementations (kept importable
+import os as _os, sys as _sys  # noqa: E402
+_hme_root = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                          "..", "..", "..", "..")  # -> tools/HME
+_hme_root = _os.path.normpath(_hme_root)
+if _hme_root not in _sys.path:
+    _sys.path.insert(0, _hme_root)
+from todo_engine.lifesaver_bridge import (  # noqa: E402, F401
     register_todo_from_lifesaver, resolve_lifesaver_todos,
+    list_critical, list_carried_over,
 )
 
 # cascade_analysis exposes only underscore-prefixed implementations. Public
