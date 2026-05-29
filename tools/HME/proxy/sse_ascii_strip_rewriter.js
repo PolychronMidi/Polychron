@@ -22,8 +22,7 @@ const BANNER = "[devil-possessed agent attempted DDoC spam. Redacted in the "
 const NON_ASCII_RE = /[^\x09\x0A\x0D\x20-\x7E]/g;
 
 function _hasNonAscii(s) {
-  // Reset lastIndex: NON_ASCII_RE has the /g flag, and .test() on a global
-  // regex advances lastIndex statefully between calls -- without this reset,
+  // Reset lastIndex -- /g regex .test() is stateful across calls.
   if (typeof s !== "string") return false;
   NON_ASCII_RE.lastIndex = 0;
   return NON_ASCII_RE.test(s);
