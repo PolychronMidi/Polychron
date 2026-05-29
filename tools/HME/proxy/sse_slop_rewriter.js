@@ -185,6 +185,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'uncharacteristically': 'oddly',
   'unconditionally': 'always',
   'understandable': 'clear',
+  'signature': 'sig',
+  'signatures': 'sigs',
 
   // Tech & dev.
   'server': 'svr',
