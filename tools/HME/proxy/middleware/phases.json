@@ -1,6 +1,6 @@
 {
   "_doc": "Middleware phase registry. File prefixes still define order; this file names the canonical phase ranges so audits/docs do not invent parallel ordering stories.",
-  "_suffix_rule": "A filename may carry an optional lowercase-letter suffix on its numeric prefix (e.g. 06a_, 25a_) to insert a module between integer slots without renumbering. The INTEGER part alone determines the phase: 06a falls in the same phase as range member 6. Enforced by middleware/index.js _orderPrefix and the MiddlewarePhaseSuffixVerifier.",
+  "_suffix_rule": "A filename may carry an optional lowercase-letter suffix on its numeric prefix (e.g. 06a_, 25a_) to insert a module between integer slots without renumbering. The INTEGER part alone determines the phase: 06a falls in the same phase as range member 6. Enforced by middleware/index.js _orderPrefix and the ProxyMiddlewareRegistryVerifier (exactly-one-phase check).",
   "phases": [
     {
       "id": "normalize",
