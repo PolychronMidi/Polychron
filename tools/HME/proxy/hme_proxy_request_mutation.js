@@ -189,43 +189,36 @@ function _detectAndMarkUndefinedUserPrompt(payload) {
   return corrupted;
 }
 
-// Unparsed-tool-call recovery: when the client fails to parse a tool call
-// ("The model's tool call could not be parsed (retry also failed)"), Claude
-// Code re-sends the conversation with the assistant tool_use turn LAST and no
+// Unparsed-tool-call recovery (the user's "continue" fix). When a tool call
+// fails to parse, Claude Code injects a user-role text block with one of these
+// literal strings and re-sends. Detected from real request bodies -- this is
+const _PARSE_FAIL_RE = /tool call (?:was malformed and could not|could not) be parsed|retry also failed/i;
+
+function _lastUserTextBlocks(payload) {
+  const last = payload.messages[payload.messages.length - 1];
+  if (!last || last.role !== 'user') return [];
+  if (typeof last.content === 'string') return [last.content];
+  if (Array.isArray(last.content)) {
+    return last.content.filter((b) => b && b.type === 'text' && typeof b.text === 'string').map((b) => b.text);
+  }
+  return [];
+}
+
 function _detectUnparsedToolCallRetry(payload) {
   if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return false;
-  const last = payload.messages[payload.messages.length - 1];
-  if (!last || last.role !== 'assistant') return false;
-  const toolUseIds = Array.isArray(last.content)
-    ? last.content.filter((b) => b && b.type === 'tool_use' && b.id).map((b) => b.id)
-    : [];
-  const hasToolUse = Array.isArray(last.content)
-    && last.content.some((b) => b && b.type === 'tool_use');
-  if (!hasToolUse) return false;
-  // Primary: satisfy the API contract by synthesizing the missing tool_result
-  // for each dangling tool_use (matched by id). A trailing assistant tool_use
-  let recovery;
-  if (toolUseIds.length > 0) {
-    payload.messages.push({
-      role: 'user',
-      content: toolUseIds.map((id) => ({
-        type: 'tool_result',
-        tool_use_id: id,
-        content: '[hme-proxy: prior tool call did not parse/execute; treat as no-op and continue]',
-        is_error: true,
-      })),
-    });
-    recovery = `synthesized ${toolUseIds.length} tool_result(s)`;
-  } else {
-    // Fallback defense: tool_use present but no ids to pair -> plain continue.
-    payload.messages.push({ role: 'user', content: 'continue' });
-    recovery = 'injected user "continue"';
-  }
+  const texts = _lastUserTextBlocks(payload);
+  if (texts.length === 0) return false;
+  // Only fire when the parse-error text is essentially the WHOLE last message
+  // (the client's stand-in), not when the user merely quoted the phrase.
+  const blob = texts.join('\n');
+  if (!_PARSE_FAIL_RE.test(blob)) return false;
+  if (blob.length > 400) return false;   // a real user message that just mentions it -> skip
+  payload.messages.push({ role: 'user', content: 'continue' });
   try {
     const logDir = path.join(PROJECT_ROOT, 'log');
     fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'),
-      `[${new Date().toISOString()}] [unparsed-tool-call] trailing assistant tool_use with no tool_result; ${recovery}. session=${sessionKey(payload)}\n`);
+      `[${new Date().toISOString()}] [unparsed-tool-call] parse-failure text detected as last user message; injected user "continue". session=${sessionKey(payload)}\n`);
   } catch (_) { /* best-effort */ }
   return true;
 }
