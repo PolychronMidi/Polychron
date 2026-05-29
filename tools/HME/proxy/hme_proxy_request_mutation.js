@@ -189,6 +189,26 @@ function _detectAndMarkUndefinedUserPrompt(payload) {
   return corrupted;
 }
 
+// Unparsed-tool-call recovery: when the client fails to parse a tool call
+// ("The model's tool call could not be parsed (retry also failed)"), Claude
+// Code re-sends the conversation with the assistant tool_use turn LAST and no
+function _detectUnparsedToolCallRetry(payload) {
+  if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return false;
+  const last = payload.messages[payload.messages.length - 1];
+  if (!last || last.role !== 'assistant') return false;
+  const hasToolUse = Array.isArray(last.content)
+    && last.content.some((b) => b && b.type === 'tool_use');
+  if (!hasToolUse) return false;
+  payload.messages.push({ role: 'user', content: 'continue' });
+  try {
+    const logDir = path.join(PROJECT_ROOT, 'log');
+    fs.mkdirSync(logDir, { recursive: true });
+    fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'),
+      `[${new Date().toISOString()}] [unparsed-tool-call] trailing assistant tool_use with no tool_result; injected user "continue". session=${sessionKey(payload)}\n`);
+  } catch (_) { /* best-effort */ }
+  return true;
+}
+
 async function mutateClaudeRequest({
   payload,
   outBody,
