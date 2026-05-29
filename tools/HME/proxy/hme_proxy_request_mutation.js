@@ -288,7 +288,7 @@ async function mutateClaudeRequest({
       let prov = { stripped: 0 };
       try {
         prov = enforceReminderProvenance(payload, { ledger: loadLedger(PROJECT_ROOT) });
-      } catch (err) { console.error(`reminder-provenance failed: ${err.message}`); }
+      } catch (err) { console.error(`reminder-provenance failed: ${err.message}`); recordProxyFailure(PROJECT_ROOT, 'reminder-provenance', err); }
       const r = stripHmePrefixOutgoing(payload);
       const n = await injectHmeTools(payload);
       sanitizePayload(payload);
