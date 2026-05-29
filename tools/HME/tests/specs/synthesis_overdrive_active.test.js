@@ -24,9 +24,19 @@ function run(envOverrides, body) {
   } finally { fs.rmSync(sandbox, { recursive: true, force: true }); }
 }
 
+// Derive the current opus version from real config so these chain assertions
+// track effort/cost ordering without rotting on an opus version bump.
+const _modelsText = fs.readFileSync(path.join(REPO, 'config', 'models.json'), 'utf8')
+  .split(/\n/).map((l) => l.replace(/\/\/.*$/, '')).join('\n');
+const _allIds = Object.values(JSON.parse(_modelsText).tiers)
+  .flatMap((t) => (t.models || []).map((m) => m.id));
+const OPUS = (_allIds.find((id) => /^claude-opus-\d+-\d+-/.test(id)) || '')
+  .replace(/^(claude-opus-\d+-\d+)-.*$/, '$1');
+const OPUS_VER = OPUS.replace(/^claude-opus-/, ''); // e.g. "4-8"
+
 // cost_order is subscription > free > usage (see config/models.json ranking_rules).
-const EXPECTED_E5_HEAD = ['claude-opus-4-7-max-e5', 'gpt-5.5-xhigh'];
-const EXPECTED_E4_HEAD = ['claude-opus-4-7-xhigh-e4', 'gpt-5.5-medium'];
+const EXPECTED_E5_HEAD = [`${OPUS}-max-e5`, 'gpt-5.5-xhigh'];
+const EXPECTED_E4_HEAD = [`${OPUS}-xhigh-e4`, 'gpt-5.5-medium'];
 const EXPECTED_E2_HEAD = ['claude-sonnet-4-6-high-e2', 'claude-sonnet-4-6-medium-e2'];
 
 test('registry helper still resolves tier chains for mode 1', () => {
