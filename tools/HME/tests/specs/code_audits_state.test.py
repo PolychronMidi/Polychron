@@ -60,7 +60,7 @@ class StateOwnershipGateTests(unittest.TestCase):
 
     def test_undeclared_writer_fails(self):
         rogue = _PROJECT / "tools" / "HME" / "hooks" / "pretooluse" / "_gate_test_rogue.sh"
-        rogue.write_text('#!/usr/bin/env bash\necho boom >> log/hme-errors.log\n', encoding="utf-8")
+        rogue.write_text(_ROGUE_BODY, encoding="utf-8")
         try:
             rc, out = _run_audit()
             self.assertEqual(rc, 1, f"undeclared writer must trip drift; got rc={rc}\n{out}")
