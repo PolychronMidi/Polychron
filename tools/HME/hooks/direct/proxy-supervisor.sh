@@ -337,8 +337,10 @@ _sv_start_worker() {
   fi
   [ "$(dirname "$_SV_WORKER_LOG")" = "$_SV_ROOT/log" ] || return 1
   mkdir -p "$(dirname "$_SV_WORKER_LOG")" 2>/dev/null || true
+  # Set PYTHONPATH outright to the service dir (matches sessionstart.sh and
+  # userpromptsubmit.sh). No inline default for this declared env key -- the
+  # env fail-fast invariant forbids inline defaults for declared env keys.
   local pythonpath="$_SV_ROOT/tools/HME/service"
-  [ -n "${PYTHONPATH:-}" ] && pythonpath="$pythonpath:${PYTHONPATH}"
   PROJECT_ROOT="$_SV_ROOT" HME_WORKER_PORT="$_SV_WORKER_PORT" PYTHONPATH="$pythonpath" \
     setsid nohup python3 "$_SV_WORKER_SCRIPT" --port "$_SV_WORKER_PORT" \
       >> "$_SV_WORKER_LOG" 2>&1 < /dev/null &

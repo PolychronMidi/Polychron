@@ -33,8 +33,11 @@ module.exports = {
   onRequest({ payload, ctx }) {
     if (!ENABLED) return;
     if (!payload) return;
-    // Only act when thinking is already configured (don't enable thinking
+    // Only act when adaptive thinking is already configured. Do NOT attach
+    // display to thinking.type=disabled; Anthropic rejects disabled.display.
     if (!payload.thinking || typeof payload.thinking !== 'object') return;
+    const type = String(payload.thinking.type || '').toLowerCase();
+    if (type !== 'adaptive') return;
     if (payload.thinking.display === DISPLAY) return;
     payload.thinking.display = DISPLAY;
     ctx.markDirty();

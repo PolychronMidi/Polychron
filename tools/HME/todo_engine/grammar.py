@@ -18,7 +18,7 @@ markdown stays clean. Only timed codes (2_, 4f_) carry it.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 TIMED_CODES = ("2", "4f")
 KNOWN_CODES = ("0", "1", "2", "3", "4", "4f", "5")
@@ -84,22 +84,51 @@ def render_line(todo: Todo) -> str:
     return line
 
 
+_SET_RE = re.compile(r"^\s*###\s+Todo\s+-\s+Set\s+(\d+)\s*$", re.I)
+
+
 def parse_document(text: str) -> tuple[list[str], list[Todo]]:
-    """Return (header_lines, todos). Header = everything before the first
-    todo line (the format-rules / set-title preamble), preserved verbatim."""
+    """Return (header_lines, todos). If a `### Todo - Set N` marker exists,
+    only todo lines AFTER that marker are active items; earlier example lines
+    stay header. Fallback: old behavior, first todo starts the active section."""
+    lines = text.splitlines()
+    marker_idx = None
+    for i, raw in enumerate(lines):
+        if _SET_RE.match(raw):
+            marker_idx = i
+            break
+    if marker_idx is not None:
+        header = lines[:marker_idx + 1]
+        body = lines[marker_idx + 1:]
+        return header, [t for raw in body if (t := parse_line(raw)) is not None]
+
     header: list[str] = []
     todos: list[Todo] = []
     seen_todo = False
-    for raw in text.splitlines():
+    for raw in lines:
         todo = parse_line(raw)
         if todo is not None:
             seen_todo = True
             todos.append(todo)
         elif not seen_todo:
             header.append(raw)
-        # lines after the first todo that aren't todos (blanks) are dropped
-        # on render; render reinserts a blank between items for readability.
     return header, todos
+
+
+def advance_set_header(header: list[str], next_number: int) -> list[str]:
+    out = []
+    changed = False
+    for raw in header:
+        if not changed and _SET_RE.match(raw):
+            out.append(f"### Todo - Set {next_number}")
+            changed = True
+        else:
+            out.append(raw)
+    if not changed:
+        if out and out[-1].strip():
+            out.append("")
+        out.append(f"### Todo - Set {next_number}")
+    return out
 
 
 def render_document(header: list[str], todos: list[Todo]) -> str:

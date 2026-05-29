@@ -12,7 +12,7 @@ import os
 import time
 from pathlib import Path
 
-from .grammar import Todo, parse_document, render_document
+from .grammar import Todo, advance_set_header, parse_document, render_document
 from .lifecycle import apply_timers, set_is_archivable
 
 
@@ -133,7 +133,8 @@ def maybe_archive(now: float | None = None) -> str | None:
         n = _next_set_number()
         dest = d / f"set{n}.md"
         dest.write_text(render_document(header, todos), encoding="utf-8")
-        _atomic_write(render_document(header, []))   # reset to fresh slate
+        next_header = advance_set_header(header, n + 1)
+        _atomic_write(render_document(next_header, []))
         return str(dest)
 
     return _with_lock(_do)
