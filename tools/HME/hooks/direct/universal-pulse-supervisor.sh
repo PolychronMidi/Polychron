@@ -76,6 +76,15 @@ _up_spawn_child() {
     _up_log "FATAL: python script missing: $_UP_PYTHON_SCRIPT"
     return 1
   fi
+  # Adopt an already-alive child instead of spawning a duplicate. This matters
+  # on supervisor re-exec: the loop restarts from the top with the prior child
+  local _existing
+  _existing=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
+  if _up_alive "$_existing" "universal_pulse.py"; then
+    _UP_CHILD_CODE_MTIME=$(_up_code_mtime)
+    _up_log "adopted existing universal_pulse.py pid=$_existing (no respawn)"
+    return 0
+  fi
   mkdir -p "$_SV_ROOT/log" "$_SV_ROOT/tmp" 2>/dev/null
   PROJECT_ROOT="$_SV_ROOT" python3 "$_UP_PYTHON_SCRIPT" \
     >> "$_UP_LIFECYCLE_LOG" 2>&1 &
