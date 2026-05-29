@@ -182,6 +182,36 @@ function createClaudeHandler(deps) {
       injected = mutation.injected;
       const _passthrough = mutation.passthrough;
 
+      // Final outbound context-budget gate: the single invariant that no later
+      // mutation can bypass -- never ship a request over the resolved route's
+      if (isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
+        const gateModel = _isOmniRouteSwap ? _swapModel : (payload.model || '');
+        const verdict = evaluateOutbound({ payload, modelId: gateModel, swapChain: _swapChain });
+        if (verdict.action === 'compacted') {
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          emit({ event: 'outbound_gate_compacted', session: _sessionForTelemetry, model: gateModel, tokens: verdict.tokens, budget: verdict.budget });
+        } else if (verdict.action === 'rerouted') {
+          // OmniRoute swap targets share one upstream host; reroute = rewrite the
+          // model string + re-serialize. payload.model is `provider/model`.
+          const newModel = verdict.reroute.api_model || verdict.reroute.id;
+          if (_isOmniRouteSwap && typeof payload.model === 'string' && payload.model.includes('/')) {
+            payload.model = `${payload.model.split('/')[0]}/${newModel}`;
+          } else {
+            payload.model = newModel;
+          }
+          _swapModel = newModel;
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          emit({ event: 'outbound_gate_rerouted', session: _sessionForTelemetry, from: gateModel, to: newModel, tokens: verdict.tokens });
+        } else if (!verdict.ok) {
+          const reason = `UPSTREAM_PREFLIGHT_OVER_WINDOW: est ${verdict.tokens} input tokens > route budget ${verdict.budget} for ${verdict.model}; compaction and reroute exhausted. Refusing to ship a known-over-window request.`;
+          recordUpstreamFailure(reason, { session: _sessionForTelemetry, model: verdict.model });
+          emit({ event: 'outbound_gate_over_window', session: _sessionForTelemetry, model: verdict.model, tokens: verdict.tokens, budget: verdict.budget });
+          clientRes.writeHead(413, { 'Content-Type': 'application/json' });
+          clientRes.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: reason } }));
+          return;
+        }
+      }
+
       const upstreamHeaders = prepareUpstreamHeaders({
         clientReq,
         upstream,
