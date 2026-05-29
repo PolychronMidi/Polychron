@@ -81,9 +81,14 @@ function _readCounter(root) {
 // Write to four independent channels on any failure. Every channel is
 function _recordFailure(root, caller, reason) {
   const body = `[${caller}] ${reason}`;
-  // Suppress agent-facing channels (A: fail flag, B: error log) for transient
-  // sub-threshold failures so they don't spam LIFESAVER. Stderr + activity
-  const surface = _readCounter(root) >= _SURFACE_AFTER_FAILS;
+  // Open (or keep) the failure streak so the grace window has an origin.
+  const now = Date.now();
+  _markFirstFail(root, now);
+  const streakMs = now - (_firstFailMs(root) || now);
+  // Suppress agent-facing channels (A: fail flag, B: error log) until the failure
+  // has BOTH recurred (count >= threshold) AND persisted past the grace window
+  const surface = _readCounter(root) >= _SURFACE_AFTER_FAILS
+    && streakMs >= _SURFACE_GRACE_MS;
   try {
     const prior = fs.readFileSync(path.join(root, FAIL_FLAG_REL), 'utf8');
     if (prior.includes(body)) return;
