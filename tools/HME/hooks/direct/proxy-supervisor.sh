@@ -463,6 +463,27 @@ _sv_fire_crashloop_lifesaver() {
   echo "--- end proxy log tail ---" >&2
 }
 
+# Keep the shuffler helper procs (router + file-watcher + slot-watchdog) alive.
+# Nothing else respawns them: polychron-launch starts them once with nohup, so
+_sv_ensure_shuffler_procs() {
+  _sv_is_maintenance_active && return 0
+  local sdir="$_SV_ROOT/tools/HME/proxy/shuffler"
+  local name script logf
+  for name in file_watcher slot_watchdog; do
+    script="$sdir/${name}.js"
+    [ -f "$script" ] || continue
+    if ! pgrep -f "shuffler/${name}\.js" >/dev/null 2>&1; then
+      logf="$_SV_ROOT/log/hme-${name//_/-}.out"
+      PROJECT_ROOT="$_SV_ROOT" setsid nohup node "$script" >> "$logf" 2>&1 < /dev/null &
+      disown 2>/dev/null || true
+      local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+      echo "[$ts] [shuffler] LIFESAVER ${name} was dead; respawned by proxy-supervisor (auto-heal had stopped)" \
+        >> "$_SV_ERROR_LOG" 2>/dev/null
+      _sv_log "respawned dead shuffler proc ${name}"
+    fi
+  done
+}
+
 _sv_loop() {
   # Singleton check via flock advisory lock + pid-file confirmation.
   # Use a supervisor-owned lock path distinct from historical child-inherited
