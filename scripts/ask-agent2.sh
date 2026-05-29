@@ -25,7 +25,7 @@ fi
 } >> "$CHAT"
 
 # Resume the session; capture clean result text only.
-RESP="$(claude -p --resume "$SID" --output-format json --model sonnet "$MSG" 2>/dev/null \
+RESP="$(claude -p --resume "$SID" --output-format json --effort max --model default "$MSG" 2>/dev/null \
   | jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end')"
 
 {
