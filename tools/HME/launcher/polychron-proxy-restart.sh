@@ -344,4 +344,5 @@ python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
 mkdir -p "$(dirname "$_RESTART_SENTINEL")" 2>/dev/null
 date +%s > "$_RESTART_SENTINEL"
 
+_cycle_pulse_supervisor
 echo "[proxy-restart] proxy-only restart complete -- llama-server untouched" >&2
