@@ -48,6 +48,19 @@ def _pid_from_pid_file(root: Path, spec: dict) -> int | None:
     return pid if _pid_alive(pid) else None
 
 
+def _pid_from_heartbeat(root: Path, spec: dict) -> int | None:
+    # Slots a/b share process_patterns (hme_proxy.js) and are only distinguishable
+    # by their per-slot heartbeat file's authoritative `pid`. Resolve this first.
+    rel = spec.get("heartbeat_file")
+    if not rel:
+        return None
+    try:
+        pid = int(json.loads((root / rel).read_text(encoding="utf-8")).get("pid"))
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+    return pid if _pid_alive(pid) else None
+
+
 def _pid_from_patterns(spec: dict) -> int | None:
     for pat in spec.get("process_patterns", []) or []:
         try:
