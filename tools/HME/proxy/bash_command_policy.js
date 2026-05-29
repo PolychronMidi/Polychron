@@ -25,7 +25,13 @@ function shellWords(text) {
 function shellQuote(s) { return `'${String(s).replace(/'/g, `'\\''`)}'`; }
 function deny(reason, code = 'blocked') { return { decision: 'deny', reason, code }; }
 function allow(input, note = '', changed = false) { return { decision: 'allow', input, reason: note, changed }; }
-function blockedCommand(reason) { return `printf %s\\n ${shellQuote(reason)} >&2; exit 2`; }
+// A blocked model-emitted tool_use can't be turned into a permission-deny
+// mid-stream, so we replace the command with a no-op that surfaces the reason
+// as a <system-reminder> (model-facing feedback) rather than as fake command
+function blockedCommand(reason) {
+  const wrapped = `<system-reminder>${reason}</system-reminder>`;
+  return `printf %s\\n ${shellQuote(wrapped)} >&2; exit 2`;
+}
 
 function normalizeRel(file, root = PROJECT_ROOT) {
   const f = String(file || '');
