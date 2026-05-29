@@ -61,6 +61,8 @@ function _setUserText({ msg, block, isString }, value) {
 
 module.exports = {
   name: 'shortcuts_rewriter',
+  SHORTCUTS,
+  SHORTCUT_RE,
 
   onRequest({ payload, ctx }) {
     const { text, block, msg, isString } = _lastUserText(payload);
