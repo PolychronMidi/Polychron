@@ -235,6 +235,10 @@ async function mutateClaudeRequest({
     emit({ event: 'undefined_user_prompt_corrupted', session: sessionKey(payload) });
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
+  if (isAnthropic && _detectUnparsedToolCallRetry(payload)) {
+    emit({ event: 'unparsed_tool_call_recovered', session: sessionKey(payload) });
+    outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+  }
   if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     let compacted = 0;
     if (passthrough) compacted += shrinkForPassthrough(payload);
