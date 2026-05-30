@@ -159,15 +159,8 @@ function _writeAutocompactLifesaver(root, payload) {
 }
 
 function _lastUserPromptText(payload) {
-  const last = payload && Array.isArray(payload.messages) ? payload.messages[payload.messages.length - 1] : null;
-  if (!last || last.role !== 'user') return '';
-  if (typeof last.content === 'string') return last.content;
-  if (Array.isArray(last.content)) {
-    return last.content
-      .filter((b) => b && b.type === 'text' && typeof b.text === 'string')
-      .map((b) => b.text).join('\n');
-  }
-  return '';
+  const last = _lastUserMessageRaw(payload);
+  return last ? messageText(last) : '';
 }
 
 // Upstream prompt-corruption detector: user reports they never type "undefined"
