@@ -91,6 +91,18 @@ def _tick(cfg, tracker):
         # don't fire alerts; the operator owns the window.
         return 0, 0
 
+    # Drive the standalone TODO engine: store.load() applies due 2_/4f_ timer
+    # flips, and maybe_archive() rolls a fully-resolved set to log/todo. Without
+    try:
+        hme_root = str(PROJECT_ROOT / "tools" / "HME")
+        if hme_root not in sys.path:
+            sys.path.insert(0, hme_root)
+        from todo_engine import store as _todo_store
+        _todo_store.load()            # applies + persists due timer flips
+        _todo_store.maybe_archive()   # archives a resolved set if any
+    except Exception as err:
+        _log_error(f"[universal_pulse] WARN todo-engine tick failed: "
+                   f"{type(err).__name__}: {str(err)[:120]}")
 
     for probe in cfg.get("http_probes", []):
         name = probe["name"]
