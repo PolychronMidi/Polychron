@@ -178,13 +178,15 @@ function validateClaudeStdout(event, stdout, root) {
           : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
           : typeof stopParsed.reason === 'string' ? stopParsed.reason
           : '';
-        const repaired = { ...stopParsed };
-        delete repaired.hookSpecificOutput;
-        if (reason) {
+        if (reason && reason.trim()) {
+          const repaired = { ...stopParsed };
+          delete repaired.hookSpecificOutput;
           repaired.decision = 'block';
           repaired.reason = reason;
+          return JSON.stringify(repaired);
         }
-        return JSON.stringify(repaired);
+        // empty/whitespace reason: fall through to normalize, which downgrades
+        // a reasonless Stop block to a valid no-decision result.
       }
     } catch (_e) { /* normal JSON validation below logs the malformed Stop payload */ }
   }
