@@ -25,6 +25,29 @@ test('request_shape normalizes Claude messages and Codex Responses input', () =>
 });
 
 
+test('isToolResultMessage filters PURE tool-result messages but not prompts bundled with them', () => {
+  const shape = require('../../proxy/request_shape');
+  assert.equal(shape.isToolResultMessage({ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'o' }] }), true);
+  assert.equal(shape.isToolResultMessage({ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'o' }, { type: 'text', text: 'c' }] }), false);
+});
+
+test('shortcuts_rewriter expands a shortcut bundled with tool_results in one user message (tool-turn regression)', async () => {
+  // Catastrophic regression: Claude Code bundles tool_results + the user's new
+  // prompt into ONE user message. isToolResultMessage filtered the whole message,
+  const payload = { messages: [
+    { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: {} }] },
+    { role: 'user', content: [
+      { type: 'tool_result', tool_use_id: 't1', content: 'tool output' },
+      { type: 'text', text: 'c' },
+    ] },
+  ] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  const last = payload.messages[payload.messages.length - 1];
+  assert.equal(last.content.find((b) => b.type === 'text').text, 'continue');
+  assert.ok(last.content.some((b) => b.type === 'tool_result' && b.content === 'tool output'), 'tool_result untouched');
+});
+
 test('shortcuts_rewriter expands bare n string content', async () => {
   const payload = { messages: [{ role: 'user', content: 'n' }] };
   const dirty = await runShortcut(payload);
