@@ -57,6 +57,7 @@ class ExactOutputFilter:
     def __init__(self, patterns):
         self.patterns = sorted([p for p in patterns if p], key=lambda p: p[1], reverse=True)
         self.buf = b""
+        self.pending_banner_eol = False
         self.keep = max((window for _pattern, window in self.patterns), default=1) - 1
 
     def feed(self, data):
