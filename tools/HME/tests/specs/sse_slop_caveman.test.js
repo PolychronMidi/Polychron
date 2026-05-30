@@ -197,3 +197,24 @@ test('signature_delta on held thinking block is preserved (replayed after conten
   assert.ok(JSON.stringify(stop.events).includes('abc'), 'signature preserved');
   assert.equal(stop.events[stop.events.length - 1][0], 'content_block_stop');
 });
+
+test('slop leaves a structured-JSON text block byte-identical (the /goal Stop-hook verdict 400 repro)', () => {
+  // Root cause of "Stop hook error: JSON validation failed": Claude Code's /goal
+  // Stop-hook asks the model for a JSON verdict; caveman compression abbreviated
+  // its keys (continue -> "") and vowel-stripped the reason, so the host parsed
+  // corrupted JSON. A full-block JSON response must pass through untouched.
+  const ctx = (() => { const m = new Map(); return { get: (k) => m.get(k), set: (k, v) => m.set(k, v) }; })();
+  const json = JSON.stringify({
+    continue: false,
+    rsn: 'goal-build out the new todo system in doc/templates/todo.md & use while surveying HME for design-pattern optimizations. Transcript shows completion.',
+  });
+  slopStripRewrite('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text' } }, ctx);
+  slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: json } }, ctx);
+  const res = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 0 }, ctx);
+  let out = '';
+  for (const [name, ev] of res.events) {
+    if (name === 'content_block_delta' && ev.delta && typeof ev.delta.text === 'string') out += ev.delta.text;
+  }
+  assert.equal(out, json, 'JSON verdict must be emitted byte-identical (never caveman-compressed)');
+  assert.doesNotThrow(() => JSON.parse(out), 'emitted JSON must stay parseable');
+});
