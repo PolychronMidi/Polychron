@@ -450,8 +450,9 @@ function _stripCenterVowelsSegment(text) {
 
 function _compactNonAlnumSegment(text) {
   return String(text || '')
-    // Remove whitespace around any non-alphanumeric, non-whitespace char.
-    .replace(/\s*([^A-Za-z0-9\s])\s*/g, '$1')
+    // Remove horizontal whitespace around punctuation/markers, but preserve
+    // newline entries. Using \s here swallowed line breaks around bullets/colons.
+    .replace(/[ \t]*([^A-Za-z0-9\s])[ \t]*/g, '$1')
     // Deduplicate concurrent repeated non-alphanumeric chars: !!! -> !, ... -> .
     .replace(/([^A-Za-z0-9\s])\1+/g, '$1');
 }
