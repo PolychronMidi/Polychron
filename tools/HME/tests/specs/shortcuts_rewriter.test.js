@@ -164,13 +164,13 @@ test('shortcuts_rewriter "1" two-step: rewrites to first message + sets non-enum
   assert.equal(JSON.stringify(payload).includes('__hme_followup'), false);
 });
 
-test('shortcuts_rewriter cc two-step: first message /compact, followup continue, no wire leak', () => {
+test('shortcuts_rewriter leaves cc untouched on the wire (no fake /compact API message)', () => {
+  // `/compact` is a Claude REPL-local command, not an API message. The proxy must
+  // NEVER rewrite `cc` to a wire `/compact` -- that counterfeits compaction.
   const payload = { messages: [{ role: 'user', content: 'cc' }] };
   assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
-  assert.equal(payload.messages[0].content, '/compact');
-  assert.equal(payload.__hme_followup, 'continue');
-  assert.deepEqual(Object.keys(payload), ['messages']);
-  assert.equal(JSON.stringify(payload).includes('__hme_followup'), false);
+  assert.equal(payload.messages[0].content, 'cc');
+  assert.equal('__hme_followup' in payload, false);
 });
 
 test('SHORTCUT_RE matches every two-step key (no drift)', () => {
