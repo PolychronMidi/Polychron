@@ -9,6 +9,135 @@ const { execSync } = require('child_process');
 const { requireEnv } = require('./shared/load_env');
 const { computeRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
 
+const STATE_SCHEMA_VERSION = 1;
+
+function slotStateFile(runtimeDir) {
+  return path.join(runtimeDir, 'proxy-slot-state.json');
+}
+
+function _readJSONSafe(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return null; }
+}
+
+function readSlotState(runtimeDir) {
+  const state = _readJSONSafe(slotStateFile(runtimeDir));
+  if (state && typeof state === 'object' && state.slots && typeof state.slots === 'object') return state;
+  return { schema: STATE_SCHEMA_VERSION, slots: {}, history: [] };
+}
+
+function writeSlotState(runtimeDir, mutator) {
+  const file = slotStateFile(runtimeDir);
+  let state = readSlotState(runtimeDir);
+  state.schema = STATE_SCHEMA_VERSION;
+  state.slots = state.slots && typeof state.slots === 'object' ? state.slots : {};
+  state.history = Array.isArray(state.history) ? state.history : [];
+  state = mutator(state) || state;
+  state.history = Array.isArray(state.history) ? state.history.slice(-100) : [];
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
+    fs.renameSync(tmp, file);
+    return true;
+  } catch (_) { return false; }
+}
+
+function recordSlotEvent(runtimeDir, slot, event, extra = {}) {
+  return writeSlotState(runtimeDir, (state) => {
+    const prior = state.slots[slot] && typeof state.slots[slot] === 'object' ? state.slots[slot] : {};
+    const rec = {
+      ...prior,
+      slot,
+      ...extra,
+      last_event: event,
+      updated_at: new Date().toISOString(),
+    };
+    state.slots[slot] = rec;
+    state.history.push({ slot, event, ...extra, ts: rec.updated_at });
+    return state;
+  });
+}
+
+function latestBrokenFingerprint(runtimeDir) {
+  const state = readSlotState(runtimeDir);
+  const counts = new Map();
+  for (const rec of Object.values(state.slots || {})) {
+    if (!rec || rec.status !== 'broken' || !rec.runtime_fingerprint) continue;
+    counts.set(rec.runtime_fingerprint, (counts.get(rec.runtime_fingerprint) || 0) + 1);
+  }
+  let best = '';
+  let bestCount = 0;
+  for (const [fingerprint, count] of counts) {
+    if (count > bestCount) { best = fingerprint; bestCount = count; }
+  }
+  return best;
+}
+
+function countSlotsWithFingerprint(runtimeDir, fingerprint, opts = {}) {
+  if (!fingerprint) return 0;
+  const slots = opts.slots || ['a', 'b'];
+  const healthFile = (slot) => (opts.healthFile ? opts.healthFile(slot) : path.join(runtimeDir, `proxy-${slot}.health`));
+  const isAlive = opts.isAlive || ((pid) => {
+    if (!pid || typeof pid !== 'number') return false;
+    try { process.kill(pid, 0); return true; } catch (_) { return false; }
+  });
+  const staleMs = Number(opts.staleMs || process.env.HME_PROXY_HEARTBEAT_STALE_MS || 5000);
+  const now = Number(opts.now || Date.now());
+  let count = 0;
+  for (const slot of slots) {
+    const h = _readJSONSafe(healthFile(slot));
+    if (!h || h.runtime_fingerprint !== fingerprint) continue;
+    if (h.draining || !h.ready) continue;
+    if ((now - Number(h.ts || 0)) > staleMs) continue;
+    if (!isAlive(h.pid)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+function canAdmitFingerprint(runtimeDir, fingerprint, opts = {}) {
+  if (!fingerprint) return { ok: true, reason: '' };
+  const broken = latestBrokenFingerprint(runtimeDir);
+  if (broken && broken === fingerprint) {
+    return { ok: false, reason: `runtime fingerprint ${fingerprint} is quarantined from prior failed slot admission` };
+  }
+  const maxSlots = Number(opts.maxSlots || 1);
+  const liveCount = countSlotsWithFingerprint(runtimeDir, fingerprint, opts);
+  if (liveCount >= maxSlots) {
+    return { ok: false, reason: `runtime fingerprint ${fingerprint} already admitted on ${liveCount} live slot(s)` };
+  }
+  return { ok: true, reason: '' };
+}
+
+function markSlotStarting(runtimeDir, slot, fingerprint, extra = {}) {
+  return recordSlotEvent(runtimeDir, slot, 'starting', { status: 'starting', runtime_fingerprint: fingerprint, ...extra });
+}
+
+function markSlotViable(runtimeDir, slot, fingerprint, extra = {}) {
+  return recordSlotEvent(runtimeDir, slot, 'viable', { status: 'viable', runtime_fingerprint: fingerprint, ...extra });
+}
+
+function markSlotBroken(runtimeDir, slot, fingerprint, reason, extra = {}) {
+  return recordSlotEvent(runtimeDir, slot, 'broken', { status: 'broken', runtime_fingerprint: fingerprint, reason: String(reason || 'unknown'), ...extra });
+}
+
+function clearSlotState(runtimeDir, slot, reason = '') {
+  return recordSlotEvent(runtimeDir, slot, 'cleared', { status: 'unknown', reason });
+}
+
+function resetFingerprintState(runtimeDir, fingerprint, reason = '') {
+  if (!fingerprint) return false;
+  return writeSlotState(runtimeDir, (state) => {
+    for (const [slot, rec] of Object.entries(state.slots || {})) {
+      if (rec && rec.runtime_fingerprint === fingerprint) {
+        state.slots[slot] = { ...rec, status: 'unknown', reason, updated_at: new Date().toISOString() };
+      }
+    }
+    state.history.push({ event: 'fingerprint_reset', runtime_fingerprint: fingerprint, reason, ts: new Date().toISOString() });
+    return state;
+  });
+}
+
 let _CACHED_GIT_SHA = '';
 let _CACHED_RUNTIME_FINGERPRINT = '';
 function _resolveGitSha(projectRoot) {

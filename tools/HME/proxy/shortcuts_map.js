@@ -9,6 +9,7 @@ const SHORTCUTS = {
   d: 'do all',
   c: 'continue',
   r: 'restarted. continue',
+  e: 'enough research, begin implementation now'
 };
 
 // Two-step shortcuts submit `first`, then auto-submit `second` as a genuine
