@@ -87,11 +87,17 @@ function runRestart(triggerPath) {
   });
   proc.on('exit', (code) => {
     inFlightRestart = false;
-    if (code !== 0) console.error(`[file-watcher] slot-restart ${slot} exited ${code}; check log/hme-proxy-${slot}.out`);
+    if (code !== 0) {
+      // GUARANTEE 3 (no breakage on >1 slot): the slot we just rolled did NOT
+      // come up viable (preflight/admission/ready-wait failed in slot-restart).
+      console.error(`[file-watcher] slot-restart ${slot} exited ${code}; leaving the other slot on last-viable code (check log/hme-proxy-${slot}.out)`);
+      retriggerQueued = false;
+      return;
+    }
     if (retriggerQueued) {
       retriggerQueued = false;
-      // A change landed mid-restart -> restart the OTHER slot now so both
-      // converge to current code. Zero-downtime: this slot is already back up.
+      // A change landed mid-restart AND this slot proved viable -> restart the
+      // OTHER slot now so both converge to current code. Zero-downtime: this
       runRestart(triggerPath);
     }
   });
