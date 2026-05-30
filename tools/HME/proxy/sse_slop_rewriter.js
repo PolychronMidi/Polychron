@@ -699,6 +699,7 @@ function _cleanupPlainSlopArtifacts(text, trim = false) {
   const out = String(text || '')
     .replace(/(?:[ \t]*[,.;:!?]){2,}/g, '.')
     .replace(/^[ \t]*[,.;:!?]+[ \t]*/g, '')
+    .replace(/\n[ \t]*[,.;:!?]+[ \t]*/g, '\n')
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/[ \t]+([,.;:!?])/g, '$1')
     .replace(/([.!?])[ \t]*([,.;:!?])+/g, '$1')
