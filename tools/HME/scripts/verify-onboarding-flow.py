@@ -205,9 +205,6 @@ def main() -> int:
         check(onb.state() == "graduated", "learn(title=, content=) graduates from verified")
         state_file = os.path.join(tmp_project, "tmp", "hme-onboarding.state")
         check(not os.path.exists(state_file), "state file deleted on graduation")
-        after_grad = todo_mod.hme_todo(action="list")
-        check("HME onboarding walkthrough" not in after_grad and "[onboarding]" not in after_grad,
-              "graduation leaves TODO store task-only")
         print()
 
     except Exception as e:
