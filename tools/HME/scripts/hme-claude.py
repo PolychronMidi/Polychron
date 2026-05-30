@@ -26,22 +26,29 @@ import tty
 import time
 import errno
 import stat
+import json
 
-IDLE_SECS = 3.0          # quiet window after /compact before sending `continue`
-MAX_COMPACT_WAIT = 360.0  # hard cap so a stuck compaction never wedges the queue
-CC_SUCCESS_BANNER_TEXT = (
-    "UserPromptSubmit operation blocked by hook:\n"
-    "  cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge."
-)
+IDLE_SECS = 3.0          # quiet window after a step before sending the next one
+MAX_STEP_WAIT = 360.0    # per-step hard cap so a stuck step never wedges the queue
+
+
+def success_banner_text(key, steps):
+    # MUST match the reason the UserPromptSubmit hook emits (claude_adapter.js
+    # _handleCcShortcut). Claude Code prints a blocked-by-hook reason as
+    return (
+        "UserPromptSubmit operation blocked by hook:\n"
+        "  %s shortcut: dispatched %s to the live session via the PTY bridge."
+        % (key, " -> ".join(steps))
+    )
 
 
 class ExactOutputFilter:
     """Streaming byte filter for exact PTY output markers.
 
-    Claude Code always prints hook block reasons to the terminal. For the `cc`
-    success path that message is pure implementation noise; failures must still
-    remain visible. This filter removes only the exact success banner, including
-    chunk-boundary cases, and passes everything else through unchanged.
+    Claude Code always prints hook block reasons to the terminal. For a multi-step
+    shortcut's success path that message is pure implementation noise; failures
+    must still remain visible. This filter removes only the exact success banners,
+    including chunk-boundary cases, and passes everything else through unchanged.
     """
 
     def __init__(self, patterns):
