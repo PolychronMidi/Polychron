@@ -225,31 +225,22 @@ function _isCcShortcut(body) {
   }
 }
 
-function _runCcShortcut(payload) {
-  const session = payload && payload.session_id;
-  if (!session) return;
-  const errLog = path.join(payload._hme_project_root || process.cwd(), 'log', 'hme-cc-shortcut.err');
-  const script = [
-    'env HME_THREAD_CHILD=1 HME_ADAPTER_NO_NUDGE=1 claude -p --resume "$1" --output-format json --effort max --model default "/compact" >/dev/null 2>>"$2"',
-    'env HME_THREAD_CHILD=1 HME_ADAPTER_NO_NUDGE=1 claude -p --resume "$1" --output-format json --effort max --model default "continue" >/dev/null 2>>"$2"',
-  ].join('\n');
-  const child = spawn('bash', ['-lc', script, 'hme-cc-shortcut', session, errLog], {
-    detached: true,
-    stdio: 'ignore',
-    cwd: payload.cwd || process.cwd(),
-    env: { ...process.env, HME_THREAD_CHILD: '1', HME_ADAPTER_NO_NUDGE: '1' },
-  });
-  child.unref();
-}
-
 function _handleCcShortcut(result, body) {
   const payload = _isCcShortcut(body);
   if (!payload) return result;
+  // `cc` -> run Claude Code's built-in /compact, then continue. /compact is a
+  // local REPL command, not an API message, so the hook injects it into the live
+  try {
+    const { queueCcCompact } = require('./claude_input_peer');
+    queueCcCompact(payload);
+  } catch (err) {
+    logHookError(payload._hme_project_root, 'UserPromptSubmit', `cc shortcut queue failed: ${err.message}`);
+  }
   return {
     ...result,
     stdout: JSON.stringify({
       decision: 'block',
-      reason: 'cc shortcut handled: sent /compact then continue as real Claude prompts.',
+      reason: 'cc shortcut: running /compact then continue in the live session.',
       hookSpecificOutput: { hookEventName: 'UserPromptSubmit', suppressOriginalPrompt: true },
     }),
     exit_code: 0,
