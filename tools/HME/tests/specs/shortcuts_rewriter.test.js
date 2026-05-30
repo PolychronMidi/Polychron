@@ -267,3 +267,29 @@ test('_maybeRunTwoStepFollowup is a no-op without the flag or on non-2xx', async
   Object.defineProperty(withFlag, '__hme_followup', { value: 'continue', enumerable: false, configurable: true, writable: true });
   assert.equal(await resp._maybeRunTwoStepFollowup({ status: 500, headers: {}, fullBody: Buffer.from('err'), payload: withFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
 });
+
+// --- Shared shortcut map + on-screen display rewrite (UserPromptSubmit). ---
+test('shortcuts_map is the single source -- proxy middleware re-exports it (no drift)', () => {
+  const map = require('../../proxy/shortcuts_map');
+  assert.equal(shortcutsRewriter.SHORTCUTS, map.SHORTCUTS);
+  assert.equal(shortcutsRewriter.TWO_STEP_SHORTCUTS, map.TWO_STEP_SHORTCUTS);
+  assert.equal(map.shortcutDisplay('1'), "reply only with 'hi'");
+  assert.equal(map.shortcutDisplay('cc'), '/compact');
+  assert.equal(map.shortcutDisplay('n'), 'next suggestions?');
+  assert.equal(map.shortcutDisplay('hello world'), null);
+});
+
+test('claude adapter sets displayContent for shortcut prompts and leaves others untouched', () => {
+  const adapter = require('../../proxy/../event_kernel/claude_adapter');
+  // bare "1" with empty hook stdout -> fresh displayContent
+  const r1 = adapter._injectShortcutDisplayContent({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: '1' }));
+  assert.deepEqual(JSON.parse(r1.stdout), { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', displayContent: "reply only with 'hi'" } });
+  // merge: existing additionalContext preserved alongside displayContent
+  const r2 = adapter._injectShortcutDisplayContent({ stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: 'ctx' } }), stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'n' }));
+  assert.deepEqual(JSON.parse(r2.stdout).hookSpecificOutput, { hookEventName: 'UserPromptSubmit', additionalContext: 'ctx', displayContent: 'next suggestions?' });
+  // non-shortcut prompt -> result returned untouched
+  const orig = { stdout: '', stderr: ' ', exit_code: 0 };
+  assert.equal(adapter._injectShortcutDisplayContent(orig, JSON.stringify({ prompt: 'hello world' })), orig);
+  // displayContent survives the host-relay JSON canonicalizer
+  assert.equal(adapter.validateClaudeStdout('UserPromptSubmit', r1.stdout, process.env.PROJECT_ROOT).includes('displayContent'), true);
+});
