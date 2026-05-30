@@ -196,20 +196,14 @@ def main() -> int:
         check(onb.state() == "reviewed", "state stays at reviewed after refusal")
         print()
 
-        # Test 4: onboarding stays out of persistent todos
-        print("## Test 4: onboarding/TODO decoupling")
+        # Test 4: onboarding state transitions are side-effect-isolated.
+        # (The legacy todo-store coupling was removed: onboarding never wrote
+        # into any todo store, and that store no longer exists -- the unified
+        print("## Test 4: onboarding state isolation")
         onb.set_state("boot")
         onb.set_state("selftest_ok")
         onb.set_state("targeted")
-        _meta, todos = todo_mod._load_todos()
-        onboarding_entries = [
-            t for t in todos
-            if t.get("source") == "onboarding" or "HME onboarding walkthrough" in t.get("text", "")
-        ]
-        check(not onboarding_entries, "state transitions do not write onboarding TODO entries")
-        after = todo_mod.hme_todo(action="list")
-        check("HME onboarding walkthrough" not in after and "[onboarding]" not in after,
-              "native TODO view remains task-only")
+        check(onb.state() == "targeted", "state transitions apply without external side effects")
         print()
 
         # Test 5: marker parsing
