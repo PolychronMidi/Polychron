@@ -153,10 +153,29 @@ test('shortcuts_rewriter tolerates middleware contexts without markDirty', () =>
   assert.equal(payload.messages[0].content, 'next suggestions?');
 });
 
-test('shortcuts_rewriter tolerates compact shortcut contexts without markDirty', () => {
+test('shortcuts_rewriter "1" two-step: rewrites to first message + sets non-enumerable followup flag', async () => {
+  const payload = { messages: [{ role: 'user', content: '1' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, "reply only with 'hi'");
+  assert.equal(payload.__hme_followup, "reply only with 'high'");
+  // Non-enumerable so it never serializes onto the Anthropic wire (no 400).
+  assert.deepEqual(Object.keys(payload), ['messages']);
+  assert.equal(JSON.stringify(payload).includes('__hme_followup'), false);
+});
+
+test('shortcuts_rewriter cc two-step: first message /compact, followup continue, no wire leak', () => {
   const payload = { messages: [{ role: 'user', content: 'cc' }] };
   assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
-  assert.equal(payload.__shortcut_compact, true);
-  assert.equal(payload.messages[0].content, 'continue');
+  assert.equal(payload.messages[0].content, '/compact');
+  assert.equal(payload.__hme_followup, 'continue');
   assert.deepEqual(Object.keys(payload), ['messages']);
+  assert.equal(JSON.stringify(payload).includes('__hme_followup'), false);
+});
+
+test('SHORTCUT_RE matches every two-step key (no drift)', () => {
+  const { TWO_STEP_SHORTCUTS, SHORTCUT_RE } = shortcutsRewriter;
+  for (const key of Object.keys(TWO_STEP_SHORTCUTS)) {
+    assert.match(key, SHORTCUT_RE, `two-step key ${key} must match SHORTCUT_RE`);
+  }
 });
