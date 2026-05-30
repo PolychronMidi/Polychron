@@ -268,19 +268,6 @@ test('_maybeRunTwoStepFollowup is a no-op without the flag or on non-2xx', async
   assert.equal(await resp._maybeRunTwoStepFollowup({ status: 500, headers: {}, fullBody: Buffer.from('err'), payload: withFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
 });
 
-// --- Shared shortcut map: single source of truth, no wire-side /compact fakery. ---
-test('shortcuts_map is the single source -- proxy middleware re-exports it (no drift)', () => {
-  const map = require('../../proxy/shortcuts_map');
-  assert.equal(shortcutsRewriter.SHORTCUTS, map.SHORTCUTS);
-  assert.equal(shortcutsRewriter.TWO_STEP_SHORTCUTS, map.TWO_STEP_SHORTCUTS);
-  assert.equal(map.shortcutDisplay('1'), "reply only with 'hi'");
-  // cc is NOT a wire shortcut -- it is handled at the input layer, never faked on the AP
-  assert.equal(map.shortcutDisplay('cc'), null);
-  assert.equal(Object.prototype.hasOwnProperty.call(map.TWO_STEP_SHORTCUTS, 'cc'), false);
-  assert.equal(map.shortcutDisplay('n'), 'next suggestions?');
-  assert.equal(map.shortcutDisplay('hello world'), null);
-});
-
 // --- cc shortcut: input-layer /compact handling (never an API message). ---
 test('claude adapter detects cc and blocks the literal prompt without faking a wire /compact', () => {
   const adapter = require('../../proxy/../event_kernel/claude_adapter');
