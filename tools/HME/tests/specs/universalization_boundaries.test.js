@@ -117,6 +117,24 @@ test('Claude adapter converts invalid Stop hookSpecificOutput into valid root bl
   }
 });
 
+test('Claude adapter emits a single JSON document when stdout carries a trailing second document', () => {
+  // Regression: validateClaudeStdout parsed only the FIRST JSON document but
+  // returned the RAW stdout, so a multi-document Stop payload shipped two
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-multidoc-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    const multiDoc = JSON.stringify({ decision: 'block', reason: 'real' })
+      + '\n' + JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: 'second' } });
+    const relayed = validateClaudeStdout('Stop', multiDoc, tmp);
+    // Must be exactly one parseable JSON document (no trailing junk).
+    const out = JSON.parse(relayed);
+    assert.deepEqual(out, { decision: 'block', reason: 'real' });
+    assert.equal(relayed.trim(), JSON.stringify(out));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSON', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-invalid-json-'));
   try {
