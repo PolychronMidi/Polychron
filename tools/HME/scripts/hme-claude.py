@@ -9,10 +9,12 @@ is the session's own input stream. This wrapper owns that stream.
 
 Usage: scripts/hme-claude.py [args passed through to `claude`]
 
-The `cc` shortcut: the UserPromptSubmit hook (claude_adapter.js) writes the token
-`cc` to tmp/hme-cc-control.fifo and blocks the literal prompt. This wrapper reads
-the token, types `/compact<Enter>` into the live session, waits for the REPL to go
-idle, then types `continue<Enter>` -- two real local actions, no API fakery.
+Multi-step shortcuts (config/shortcuts.json `multi-step`, e.g. cc): the
+UserPromptSubmit hook (claude_adapter.js) writes the shortcut KEY to
+tmp/hme-cc-control.fifo and blocks the literal prompt. This wrapper reads the
+key, looks up its `steps` (e.g. ["/compact", "continue"]), and types each step
+into the live session in turn -- typing the next only after the REPL goes idle.
+Real local actions, no API fakery.
 """
 import os
 import sys
