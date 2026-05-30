@@ -832,7 +832,11 @@ function _emitHeldTextEvents(state, index) {
   }
 
   let hits = [];
-  if (assembled) {
+  if (assembled && _isStructuredJson(assembled)) {
+    // Structured-JSON response (e.g. Claude Code's /goal Stop-hook verdict
+    // {"continue":false,"rsn":"..."}). Caveman compression abbreviates keys and
+    for (const d of state.deltas || []) events.push(['content_block_delta', d]);
+  } else if (assembled) {
     const stripped = _stripSlop(assembled);
     hits = stripped.hits;
     if (hits.length === 0) {
