@@ -65,10 +65,15 @@ class ExactOutputFilter:
             self.buf += data
         out = []
         if self.pending_banner_eol and self.buf:
-            if self.buf.startswith(b"\r\n"):
-                self.buf = self.buf[2:]
-            elif self.buf.startswith(b"\n"):
-                self.buf = self.buf[1:]
+            ansi = re.compile(rb"^(?:\x1b\[[0-9;]*m)*")
+            m = ansi.match(self.buf)
+            prefix_end = m.end() if m else 0
+            if self.buf[prefix_end:].startswith(b"\r\n"):
+                self.buf = self.buf[prefix_end + 2:]
+            elif self.buf[prefix_end:].startswith(b"\n"):
+                self.buf = self.buf[prefix_end + 1:]
+            else:
+                self.buf = self.buf[prefix_end:]
             self.pending_banner_eol = False
         while self.patterns:
             best_m = None
