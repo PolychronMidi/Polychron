@@ -1,47 +1,15 @@
-# TODO
+# File Format Rules: 1 todo item per line. Each line must start with one of the following todo status codes:
+0_ default status upon creation,
+1_ in progress,
+2_ revisit (default is in 10 minutes, or whenever all todos in list completed, move to top of list as status 0_). Specify minutes by appending like "2_60",
+3_ major block via architechtural design, scope, or low confidence/high risk needing explicit confirmation,
+4_ nominally complete, but needs a follow-up. Must be followed by the follow-up todo on the next line with the following code,
+4f_ follow up todo, automatically becomes status 0_ in 30 minutes, or specify custom minutes like "4f_60" for 60 minutes. If needs qualifier before becoming status 0_, append _q="qualifier explanation here". Auto-added to new todo sets
+5_ Completed totally, no danglers, nothing missing.
 
-<!-- todo-state:
-  max_id: 6
-  updated_ts: 1779994454.1163542
-  opencode_todo_synced_ts: 1779991676.364
-  entries:
-    1:
-      source: opencode
-      ts: 1779919387.771
-    2:
-      source: opencode
-      ts: 1779908083.966
-    3:
-      source: opencode
-      ts: 1779922878.564
-    4:
-      source: opencode
-      ts: 1779991676.364
-    5:
-      source: opencode
-      ts: 1779991676.364
-    6:
-      source: opencode
-      ts: 1779991676.364
--->
+Example:
+#1 5_ make todo template with rules so agents can simply fill out below. Sets with all items marked code 3_ or above get automatically archived in `log/todo` as `set<number>.md`
 
-> Single source of truth. TodoWrite, codex update_plan, lifesaver, and humans all edit this file.
+### Todo - Set 3
 
-## Now
-
-- [ ] [E3] smoke read  #1
-- [ ] [E3] Fix todo tool completed-entry spam at source  #4
-
-## Next
-
-- [ ] [E3] smoke write-edit  #2
-- [ ] [E3] Verify native TodoWrite output no longer contains old completed items  #5
-- [ ] [E3] Check lifesaver/autocommit state after fix  #6
-
-## Done
-
-- [x] [E3] smoke write edit  #3
-
-## Later
-
-(empty)
+#1 0_ LIFESAVER: smoke: post-swap canary
