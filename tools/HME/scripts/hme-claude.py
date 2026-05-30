@@ -55,32 +55,24 @@ class ExactOutputFilter:
     """
 
     def __init__(self, patterns):
-        self.patterns = sorted([p for p in patterns if p], key=len, reverse=True)
+        self.patterns = sorted([p for p in patterns if p], key=lambda p: len(p.pattern), reverse=True)
         self.buf = b""
-        self.keep = max((len(p) for p in self.patterns), default=1) - 1
+        self.keep = max((len(p.pattern) for p in self.patterns), default=1) - 1
 
     def feed(self, data):
         if data:
             self.buf += data
         out = []
         while self.patterns:
-            best_i = -1
-            best_p = None
+            best_m = None
             for pattern in self.patterns:
-                i = self.buf.find(pattern)
-                if i >= 0 and (best_i < 0 or i < best_i or (i == best_i and len(pattern) > len(best_p))):
-                    best_i = i
-                    best_p = pattern
-            if best_i >= 0:
-                if best_i:
-                    out.append(self.buf[:best_i])
-                self.buf = self.buf[best_i + len(best_p):]
-                # Some render paths style only the banner body and leave the line
-                # break outside the styled span. If a shorter body-only pattern won
-                if self.buf.startswith(b"\r\n"):
-                    self.buf = self.buf[2:]
-                elif self.buf.startswith(b"\n"):
-                    self.buf = self.buf[1:]
+                match = pattern.search(self.buf)
+                if match and (best_m is None or match.start() < best_m.start() or (match.start() == best_m.start() and match.end() > best_m.end())):
+                    best_m = match
+            if best_m is not None:
+                if best_m.start():
+                    out.append(self.buf[:best_m.start()])
+                self.buf = self.buf[best_m.end():]
                 continue
             if len(self.buf) <= self.keep:
                 break
