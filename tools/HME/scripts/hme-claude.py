@@ -55,57 +55,70 @@ class ExactOutputFilter:
     """
 
     def __init__(self, patterns):
-        self.patterns = sorted([p for p in patterns if p], key=lambda p: p[1], reverse=True)
+        self.patterns = sorted([p for p in patterns if p], key=len, reverse=True)
+        self.max_pattern = max((len(p) for p in self.patterns), default=1)
         self.buf = b""
         self.pending_banner_eol = False
-        self.keep = max((window for _pattern, window in self.patterns), default=1) - 1
         self.ansi_prefix_re = re.compile(rb"^(?:\x1b\[[0-9;]*m)*")
-        self.ansi_suffix_re = re.compile(rb"(?:\x1b\[[0-9;]*m)*$")
+
+    def _drop_pending_eol(self):
+        if not self.pending_banner_eol or not self.buf:
+            return
+        m = self.ansi_prefix_re.match(self.buf)
+        prefix_end = m.end() if m else 0
+        rest = self.buf[prefix_end:]
+        if rest.startswith(b"\r\n"):
+            self.buf = rest[2:]
+            self.pending_banner_eol = False
+        elif rest.startswith(b"\n"):
+            self.buf = rest[1:]
+            self.pending_banner_eol = False
+        elif prefix_end == len(self.buf) or rest == b"\r":
+            self.buf = b""
+        else:
+            self.buf = rest
+            self.pending_banner_eol = False
+
+    def _candidate_suffix_len(self):
+        # Keep ONLY bytes that are currently a prefix of a banner pattern. The old
+        # max-window holdback made every small PTY update lag behind; this emits
+        limit = min(len(self.buf), self.max_pattern - 1)
+        for n in range(limit, 0, -1):
+            suffix = self.buf[-n:]
+            for pattern in self.patterns:
+                if pattern.startswith(suffix):
+                    return n
+        return 0
 
     def feed(self, data):
         if data:
             self.buf += data
         out = []
-        if self.pending_banner_eol and self.buf:
-            m = self.ansi_prefix_re.match(self.buf)
-            prefix_end = m.end() if m else 0
-            if self.buf[prefix_end:].startswith(b"\r\n"):
-                self.buf = self.buf[prefix_end + 2:]
-                self.pending_banner_eol = False
-            elif self.buf[prefix_end:].startswith(b"\n"):
-                self.buf = self.buf[prefix_end + 1:]
-                self.pending_banner_eol = False
-            elif prefix_end == len(self.buf):
-                self.buf = b""
-            elif self.buf[prefix_end:] in (b"\r",):
-                self.buf = b""
-            else:
-                self.buf = self.buf[prefix_end:]
-                self.pending_banner_eol = False
-        while self.patterns:
-            best_m = None
-            for pattern, _window in self.patterns:
-                match = pattern.search(self.buf)
-                if match and (best_m is None or match.start() < best_m.start() or (match.start() == best_m.start() and match.end() > best_m.end())):
-                    best_m = match
-            if best_m is not None:
-                if best_m.start():
-                    before = self.buf[:best_m.start()]
-                    out.append(self.ansi_suffix_re.sub(b"", before))
-                self.buf = self.buf[best_m.end():]
-                if self.buf.startswith(b"\r\n"):
-                    self.buf = self.buf[2:]
-                elif self.buf.startswith(b"\n"):
-                    self.buf = self.buf[1:]
+        self._drop_pending_eol()
+        while self.patterns and self.buf:
+            best_i = -1
+            best_p = None
+            for pattern in self.patterns:
+                i = self.buf.find(pattern)
+                if i >= 0 and (best_i < 0 or i < best_i or (i == best_i and len(pattern) > len(best_p))):
+                    best_i = i
+                    best_p = pattern
+            if best_i >= 0:
+                if best_i:
+                    out.append(self.buf[:best_i])
+                self.buf = self.buf[best_i + len(best_p):]
+                if best_p.endswith(b"\r\n") or best_p.endswith(b"\n"):
+                    self.pending_banner_eol = False
                 else:
                     self.pending_banner_eol = True
+                self._drop_pending_eol()
                 continue
-            if len(self.buf) <= self.keep:
+            keep = self._candidate_suffix_len()
+            emit_len = len(self.buf) - keep
+            if emit_len <= 0:
                 break
-            emit_len = len(self.buf) - self.keep
             out.append(self.buf[:emit_len])
             self.buf = self.buf[emit_len:]
-            break
         return b"".join(out)
 
     def flush(self):
