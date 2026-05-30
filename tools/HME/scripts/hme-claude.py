@@ -171,7 +171,7 @@ def decode_control_line(line):
     if len(parts) == 2:
         try:
             prompt = base64.b64decode(parts[1], validate=True).decode("utf-8", "replace")
-        except (ValueError, TypeError):
+        except (binascii.Error, ValueError, TypeError):
             prompt = ""
     return token, prompt
 
