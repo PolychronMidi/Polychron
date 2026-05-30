@@ -42,9 +42,12 @@ test('LANE SEPARATION: cc and c& are local-session only -- never in a wire lane'
   assert.equal(cfg.shortcutDisplay('1'), "reply only with 'hi'");
 });
 
-test('multiStepKey matches multi-step keys case/space-insensitively, nothing else', () => {
+test('multiStepKey matches exact and prefix multi-step keys case/space-insensitively, nothing else', () => {
   assert.equal(cfg.multiStepKey('cc'), 'cc');
   assert.equal(cfg.multiStepKey('  CC '), 'cc');
+  assert.equal(cfg.multiStepKey('c&continue'), 'c&');
+  assert.equal(cfg.multiStepKey('  C&continue please '), 'c&');
+  assert.deepEqual(cfg.multiStepMatch('c&continue'), { key: 'c&', prompt: 'continue', mode: 'prefix' });
   assert.equal(cfg.multiStepKey('ccc'), null);
   assert.equal(cfg.multiStepKey('n'), null);
   assert.equal(cfg.multiStepKey('1'), null);
