@@ -38,7 +38,6 @@
     { "file": "22_lifesaver_inject.js", "phase": "post", "name": "lifesaver_inject" },
     { "file": "23_stop_hook_fp_gate.js", "phase": "post", "name": "stop_hook_fp_gate" },
     { "file": "24_dump_system.js", "phase": "post", "name": "dump_system" },
-    { "file": "25_todo_status_filter.js", "phase": "post", "name": "todo_status_filter" },
     { "file": "25a_trample_gate.js", "phase": "post", "name": "trample_gate" },
     { "file": "26_empty_result_marker.js", "phase": "post", "name": "empty_result_marker" },
     { "file": "27_subagent_clean_gate.js", "phase": "post", "name": "subagent_clean_gate" },
