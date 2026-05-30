@@ -29,6 +29,7 @@ import time
 import errno
 import stat
 import json
+import re
 
 IDLE_SECS = 3.0          # quiet window after a step before sending the next one
 MAX_STEP_WAIT = 360.0    # per-step hard cap so a stuck step never wedges the queue
