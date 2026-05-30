@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -66,16 +67,20 @@ def _line_body(ln: str, marker: str) -> str:
     return ln[1:].lstrip() if ln.startswith(marker) else ln
 
 
-def _count_new_unchecked(diff: str) -> int:
-    """Net new unchecked items: added '- [ ]' lines minus removed '- [ ]' lines. [ ] -> [x] transitions remove an old [ ] and add a new [x], so they net to 0 here (correct -- a transition is not a new item)."""
-    plus = sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and _line_body(ln, "+").startswith("- [ ]"))
-    minus = sum(1 for ln in diff.splitlines() if ln.startswith("-") and not ln.startswith("---") and _line_body(ln, "-").startswith("- [ ]"))
+_NEW_OPEN_RE = re.compile(r"^#\d+\s+0_\s")
+_DONE_RE = re.compile(r"^#\d+\s+5_\s")
+
+
+def _count_new_open(diff: str) -> int:
+    """Net new open items this turn: added '#<id> 0_' lines minus removed ones. 0_ is the default code on creation, so a net increase means the agent enumerated MORE work. A 0_ -> 5_ completion removes a 0_ and adds a 5_, so it nets to 0 here (correct -- completing an item is not enumerating one)."""
+    plus = sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and _NEW_OPEN_RE.match(_line_body(ln, "+")))
+    minus = sum(1 for ln in diff.splitlines() if ln.startswith("-") and not ln.startswith("---") and _NEW_OPEN_RE.match(_line_body(ln, "-")))
     return plus - minus
 
 
-def _count_ticked_transitions(diff: str) -> int:
-    """Count of added '- [x]' lines. Each represents either a [ ] -> [x] transition or a freshly-added already-ticked item; both indicate shipped work."""
-    return sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and _line_body(ln, "+").startswith("- [x]"))
+def _count_completed(diff: str) -> int:
+    """Count of added '#<id> 5_' lines. Each is an item marked done totally this turn -- the shipped-work signal."""
+    return sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and _DONE_RE.match(_line_body(ln, "+")))
 
 
 def _turn_edited_non_spec(events: list) -> int:
@@ -128,12 +133,12 @@ def main() -> int:
         print("ok")
         return 0
     diff = _todo_diff()
-    new_unchecked = _count_new_unchecked(diff)
-    ticked = _count_ticked_transitions(diff)
+    new_open = _count_new_open(diff)
+    completed = _count_completed(diff)
     non_spec_edits = _turn_edited_non_spec(events)
 
-    scope_stacked = new_unchecked > 0 and ticked == 0
-    scope_not_tracked = non_spec_edits > 0 and ticked == 0 and not scope_stacked
+    scope_stacked = new_open > 0 and completed == 0
+    scope_not_tracked = non_spec_edits > 0 and completed == 0 and not scope_stacked
 
     if scope_stacked and scope_not_tracked:
         verdict = "scope-stacked+not-tracked"
@@ -144,7 +149,7 @@ def main() -> int:
     else:
         verdict = "ok"
 
-    detail = f"new_unchecked={new_unchecked} ticked={ticked} non_spec_edits={non_spec_edits}"
+    detail = f"new_open={new_open} completed={completed} non_spec_edits={non_spec_edits}"
     _emit_stats(verdict, detail)
     print(verdict)
     return 0
