@@ -47,6 +47,49 @@ PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
 LAST_VIABLE_FILE="$RUNTIME_DIR/proxy-last-viable.sha"
 RESTART_FAILURE_FILE="$RUNTIME_DIR/proxy-restart-$SLOT.fail"
 
+_current_runtime_fingerprint() {
+  PROJECT_ROOT="$PROJECT_ROOT" node - <<'NODE'
+const { computeRuntimeFingerprint } = require('./tools/HME/proxy/proxy_runtime_fingerprint');
+process.stdout.write(computeRuntimeFingerprint(process.env.PROJECT_ROOT));
+NODE
+}
+
+_RUNTIME_FP="$(_current_runtime_fingerprint 2>/dev/null || printf unknown)"
+_STATE_HELPER="$PROJECT_ROOT/tools/HME/proxy/proxy_slot_lifecycle.js"
+
+_mark_slot_starting() {
+  PROJECT_ROOT="$PROJECT_ROOT" SLOT="$SLOT" RUNTIME_FP="$_RUNTIME_FP" node - <<'NODE' 2>/dev/null || true
+const { markSlotStarting } = require('./tools/HME/proxy/proxy_slot_lifecycle');
+markSlotStarting(process.env.PROJECT_ROOT + '/tools/HME/runtime', process.env.SLOT, process.env.RUNTIME_FP, { source: 'slot-restart' });
+NODE
+}
+
+_mark_slot_viable() {
+  PROJECT_ROOT="$PROJECT_ROOT" SLOT="$SLOT" RUNTIME_FP="$_RUNTIME_FP" node - <<'NODE' 2>/dev/null || true
+const { markSlotViable } = require('./tools/HME/proxy/proxy_slot_lifecycle');
+markSlotViable(process.env.PROJECT_ROOT + '/tools/HME/runtime', process.env.SLOT, process.env.RUNTIME_FP, { source: 'slot-restart' });
+NODE
+}
+
+_mark_slot_broken() {
+  _reason="$1"
+  PROJECT_ROOT="$PROJECT_ROOT" SLOT="$SLOT" RUNTIME_FP="$_RUNTIME_FP" REASON="$_reason" node - <<'NODE' 2>/dev/null || true
+const { markSlotBroken } = require('./tools/HME/proxy/proxy_slot_lifecycle');
+markSlotBroken(process.env.PROJECT_ROOT + '/tools/HME/runtime', process.env.SLOT, process.env.RUNTIME_FP, process.env.REASON, { source: 'slot-restart' });
+NODE
+}
+
+_can_admit_runtime() {
+  PROJECT_ROOT="$PROJECT_ROOT" RUNTIME_FP="$_RUNTIME_FP" node - <<'NODE'
+const { canAdmitFingerprint } = require('./tools/HME/proxy/proxy_slot_lifecycle');
+const verdict = canAdmitFingerprint(process.env.PROJECT_ROOT + '/tools/HME/runtime', process.env.RUNTIME_FP, { maxSlots: 1 });
+if (!verdict.ok) {
+  console.error(verdict.reason);
+  process.exit(1);
+}
+NODE
+}
+
 _THROTTLE_SEC="${HME_PROXY_BACKEND_RESTART_THROTTLE_SEC:?HME_PROXY_BACKEND_RESTART_THROTTLE_SEC not set in .env}"
 _DRAIN_TIMEOUT_SEC="${HME_PROXY_DRAIN_TIMEOUT_SEC:?HME_PROXY_DRAIN_TIMEOUT_SEC not set in .env}"
 _HEARTBEAT_STALE_MS="${HME_PROXY_HEARTBEAT_STALE_MS:?HME_PROXY_HEARTBEAT_STALE_MS not set in .env}"
