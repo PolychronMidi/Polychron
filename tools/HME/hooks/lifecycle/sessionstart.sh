@@ -240,20 +240,18 @@ _CARRY_CACHE="$PROJECT/tmp/hme-carried-over.cache"  #
 export _CARRY_CACHE
 _hme_bg_shell_timeout 20 list-carried-over "$PROJECT/log/hme-bg-list-carried-over.err" '
   tmp="${_CARRY_CACHE}.$$.tmp"
-  PROJECT_ROOT="'"$PROJECT"'" PYTHONPATH="'"$PROJECT/tools/HME/service"'" \
+  PROJECT_ROOT="'"$PROJECT"'" PYTHONPATH="'"$PROJECT/tools/HME"'" \
     python3 -c "
-from server.tools_analysis.todo import list_carried_over
+from todo_engine.lifesaver_bridge import list_carried_over
+from todo_engine import store
+# store.load() applies due 2_/4f_ timer flips; archive any fully-resolved set.
+store.maybe_archive()
 items = list_carried_over()
 if items:
     print(\"\nCarried-over HME todos (\" + str(len(items)) + \" open):\")
-    crit = [i for i in items if i[\"critical\"]]
-    normal = [i for i in items if not i[\"critical\"]]
-    for i in crit:
-        print(\"  !!! #\" + str(i[\"id\"]) + \" \" + i[\"text\"][:120] + \" [\" + i[\"source\"] + \"]\")
-    for i in normal:
-        tag = \" (\" + str(i[\"open_subs\"]) + \" open subs)\" if i[\"open_subs\"] else \"\"
-        src = \" [\" + i[\"source\"] + \"]\" if i[\"source\"] else \"\"
-        print(\"  [ ] #\" + str(i[\"id\"]) + \" \" + i[\"text\"][:100] + tag + src)
+    for i in items:
+        bang = \"!!! \" if i[\"lifesaver\"] else \"\"
+        print(\"  \" + bang + \"#\" + str(i[\"id\"]) + \" [\" + i[\"code\"] + \"_] \" + i[\"text\"][:120])
 " >"$tmp" 2>>"'"$PROJECT/log/hme-bg-list-carried-over.err"'" \
     && mv "$tmp" "$_CARRY_CACHE" || rm -f "$tmp"
 '
