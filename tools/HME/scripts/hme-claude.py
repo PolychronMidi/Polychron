@@ -59,6 +59,8 @@ class ExactOutputFilter:
         self.buf = b""
         self.pending_banner_eol = False
         self.keep = max((window for _pattern, window in self.patterns), default=1) - 1
+        self.ansi_prefix_re = re.compile(rb"^(?:\x1b\[[0-9;]*m)*")
+        self.ansi_suffix_re = re.compile(rb"(?:\x1b\[[0-9;]*m)*$")
 
     def feed(self, data):
         if data:
