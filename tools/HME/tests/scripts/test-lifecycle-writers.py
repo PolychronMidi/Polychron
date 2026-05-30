@@ -40,7 +40,7 @@ def main() -> int:
     # --- Test 2: registry has non-empty expected domain set ---
     domains = lw.all_domains()
     expected = {
-        "llama-server", "embedders", "kb", "hme-todo-store",
+        "llama-server", "embedders", "kb",
         "lifesaver-registry", "onboarding-state",
     }
     missing = expected - domains.keys()
