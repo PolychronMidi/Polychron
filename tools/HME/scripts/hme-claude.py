@@ -55,9 +55,9 @@ class ExactOutputFilter:
     """
 
     def __init__(self, patterns):
-        self.patterns = sorted([p for p in patterns if p], key=lambda p: len(p.pattern), reverse=True)
+        self.patterns = sorted([p for p in patterns if p], key=lambda p: p[1], reverse=True)
         self.buf = b""
-        self.keep = max((len(p.pattern) for p in self.patterns), default=1) - 1
+        self.keep = max((window for _pattern, window in self.patterns), default=1) - 1
 
     def feed(self, data):
         if data:
@@ -65,7 +65,7 @@ class ExactOutputFilter:
         out = []
         while self.patterns:
             best_m = None
-            for pattern in self.patterns:
+            for pattern, _window in self.patterns:
                 match = pattern.search(self.buf)
                 if match and (best_m is None or match.start() < best_m.start() or (match.start() == best_m.start() and match.end() > best_m.end())):
                     best_m = match
