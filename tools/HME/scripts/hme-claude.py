@@ -116,8 +116,6 @@ class ExactOutputFilter:
                     self.pending_banner_eol = True
                 self._drop_pending_eol()
                 continue
-            if any(pattern.startswith(self.buf) for pattern in self.patterns):
-                break
             keep = self._candidate_suffix_len()
             emit_len = len(self.buf) - keep
             if emit_len <= 0:
