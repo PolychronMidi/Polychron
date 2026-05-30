@@ -78,7 +78,16 @@ function sanitizeMessages(payload, placeholder = SUCCESS_EMPTY) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   let changed = 0;
   for (const msg of payload.messages) {
-    if (!msg || !Array.isArray(msg.content)) continue;
+    if (!msg) continue;
+    // Non-array content (string / null / malformed). The upstream rejects any
+    // message whose content is empty -- e.g. "messages.N: system content must
+    if (!Array.isArray(msg.content)) {
+      if (typeof msg.content !== 'string' || msg.content.trim().length === 0) {
+        msg.content = placeholder;
+        changed++;
+      }
+      continue;
+    }
     const before = msg.content.length;
     msg.content = msg.content.filter((b) => {
       if (!b) return false;

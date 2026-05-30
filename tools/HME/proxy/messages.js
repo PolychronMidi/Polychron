@@ -68,16 +68,26 @@ function normalizeICommands(payload) {
 
 const _EMPTY_USER_PLACEHOLDER = '(content stripped by hme-proxy boilerplate filter)';
 
-function _ensureUserMessageNonEmpty(msg) {
-  if (!msg || msg.role !== 'user') return false;
+// Any message shipped upstream must have non-empty content -- the API rejects
+// empty content ("messages.N: ... content must contain at least one text
+// block") and 400s the ENTIRE request. Role-agnostic on purpose: the common
+function _ensureMessageNonEmpty(msg) {
+  if (!msg || typeof msg !== 'object') return false;
   const c = msg.content;
   if (typeof c === 'string') {
     if (c.trim() === '') { msg.content = _EMPTY_USER_PLACEHOLDER; return true; }
     return false;
   }
-  if (!Array.isArray(c)) return false;
+  if (!Array.isArray(c)) {
+    // null / undefined / malformed -> treat as empty and backfill.
+    msg.content = [{ type: 'text', text: _EMPTY_USER_PLACEHOLDER }];
+    return true;
+  }
   const hasSignal = c.some((b) => {
     if (!b || typeof b !== 'object') return false;
+    // Reasoning blocks render no text but ARE valid content -- never clobber a
+    // thinking-only assistant turn.
+    if (b.type === 'thinking' || b.type === 'redacted_thinking') return true;
     if (b.type === 'tool_result' || b.type === 'tool_use' || b.type === 'image' || b.type === 'document') return true;
     if (b.type === 'text' && typeof b.text === 'string' && b.text.trim() !== '') return true;
     return false;
@@ -86,11 +96,11 @@ function _ensureUserMessageNonEmpty(msg) {
   return false;
 }
 
-function _ensureAllUserMessagesNonEmpty(payload) {
+function _ensureAllMessagesNonEmpty(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   let fixed = 0;
   for (const m of payload.messages) {
-    if (_ensureUserMessageNonEmpty(m)) fixed++;
+    if (_ensureMessageNonEmpty(m)) fixed++;
   }
   return fixed;
 }
@@ -189,7 +199,7 @@ function stripBoilerplate(payload) {
       patterns: Object.entries(stripped_samples).map(([k, v]) => `${k}=${v}`).join(','),
     });
   }
-  const emptyFixed = _ensureAllUserMessagesNonEmpty(payload);
+  const emptyFixed = _ensureAllMessagesNonEmpty(payload);
   return strippedCount + emptyFixed;
 }
 
@@ -361,7 +371,7 @@ function stripSemanticRedundancy(payload) {
       patterns: Object.entries(patterns).map(([k, v]) => `${k}=${v}`).join(','),
     });
   }
-  const emptyFixed = _ensureAllUserMessagesNonEmpty(payload);
+  const emptyFixed = _ensureAllMessagesNonEmpty(payload);
   return strippedCount + emptyFixed;
 }
 
