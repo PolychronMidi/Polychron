@@ -226,13 +226,6 @@ function finalRelay(event, result, body = '{}') {
   timeTravel.checkpoint({ root, host: 'claude', event, payload, phase: 'relay:validated', values: { thread_id, relay_stdout: fields.stdout || '', relay_stderr: fields.stderr || '', exit_code: fields.exit_code } });
   if (shouldLogHookStderr(fields.stderr)) logHookError(root, event, fields.stderr.trim());
   recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
-  try {
-    fs.appendFileSync(path.join(root, 'tmp', 'hme-stop-debug.jsonl'),
-      JSON.stringify({ ts: new Date().toISOString(), event, exit: fields.exit_code,
-        raw_stdout: String(result.stdout || ''), relay_stdout: String(fields.stdout || ''),
-        raw_len: String(result.stdout || '').length, relay_len: String(fields.stdout || '').length,
-        stderr: String(fields.stderr || '').slice(0, 500) }) + '\n');
-  } catch (_e) { /* debug capture best-effort */ }
   if (fields.stdout) process.stdout.write(fields.stdout);
   if (fields.stderr && fields.stderr.trim()) process.stderr.write(fields.stderr.endsWith('\n') ? fields.stderr : `${fields.stderr}\n`);
   process.exit(fields.exit_code);
