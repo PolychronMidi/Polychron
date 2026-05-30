@@ -357,6 +357,5 @@ module.exports = {
   retryOmniContextWindowExceeded,
   handleAnthropicResponseComplete,
   _assistantContentFromResponse,
-  _usageFromResponse,
   _maybeRunTwoStepFollowup,
 };
