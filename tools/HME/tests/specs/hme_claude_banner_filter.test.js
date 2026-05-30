@@ -42,3 +42,19 @@ print('ok')
 `);
   assert.equal(out.trim(), 'ok');
 });
+
+test('hme-claude banner filter does not hold back normal PTY echo', () => {
+  const out = runPython(`
+import importlib.util
+spec = importlib.util.spec_from_file_location('hme_claude_bridge', ${JSON.stringify(SCRIPT)})
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+f = mod.ExactOutputFilter(mod.success_banner_patterns({'cc': ['/compact', 'continue']}))
+for ch in b'abcdef':
+    got = f.feed(bytes([ch]))
+    assert got == bytes([ch]), (ch, got)
+assert f.flush() == b''
+print('ok')
+`);
+  assert.equal(out.trim(), 'ok');
+});
