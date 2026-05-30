@@ -245,7 +245,6 @@ function _runCcShortcut(payload) {
 function _handleCcShortcut(result, body) {
   const payload = _isCcShortcut(body);
   if (!payload) return result;
-  _runCcShortcut(payload);
   return {
     ...result,
     stdout: JSON.stringify({
