@@ -9,10 +9,19 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
 const { watchSelfAndReexec } = require('./self_reexec');
-const { extraRuntimeFiles, currentRuntimeFingerprint } = require('../proxy_runtime_fingerprint');
-const { canAdmitFingerprint, resetFingerprintState } = require('../proxy_slot_lifecycle');
+const { extraRuntimeFiles } = require('../proxy_runtime_fingerprint');
+const { createRestartCoordinator } = require('./restart_coordinator');
 
-loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
+const ENV_FILE = path.resolve(__dirname, '..', '..', '..', '..', '.env');
+const FILE_WATCHER_REEXEC_FILES = [
+  path.join(__dirname, 'self_reexec.js'),
+  path.join(__dirname, 'restart_coordinator.js'),
+  path.join(__dirname, '..', 'proxy_runtime_fingerprint.js'),
+  path.join(__dirname, '..', 'shared', 'load_env.js'),
+  ENV_FILE,
+];
+
+loadEnv(ENV_FILE);
 
 const PROJECT_ROOT = requireEnv('PROJECT_ROOT');
 const WATCH_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'proxy');
