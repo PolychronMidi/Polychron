@@ -47,14 +47,20 @@ function _assistantContentFromResponse(fullBody, headers) {
   return [{ type: 'text', text: respStr }];
 }
 
+function _textOfContent(content) {
+  if (!Array.isArray(content)) return '';
+  return content.filter((b) => b && b.type === 'text').map((b) => b.text || '').join('');
+}
+
 // Two-step shortcut round-trip: a request flagged with a non-enumerable
-// `__hme_followup` (set by 00a_shortcuts_rewriter) gets its first response
+// `__hme_followup` (set by 00a_shortcuts_rewriter) sends its first message,
 async function _maybeRunTwoStepFollowup({ status, headers, fullBody, payload, transport, upstreamOpts, upstreamHeaders }) {
   if (!(status >= 200 && status < 300) || !payload || !payload.__hme_followup || !Array.isArray(payload.messages)) return null;
   const followupText = payload.__hme_followup;
   delete payload.__hme_followup;
   try {
-    payload.messages.push({ role: 'assistant', content: _assistantContentFromResponse(fullBody, headers) });
+    const firstContent = _assistantContentFromResponse(fullBody, headers);
+    payload.messages.push({ role: 'assistant', content: firstContent });
     payload.messages.push({ role: 'user', content: [{ type: 'text', text: followupText }] });
     const followBody = Buffer.from(JSON.stringify(payload), 'utf8');
     const followOpts = { ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(followBody.length) } };
@@ -70,7 +76,27 @@ async function _maybeRunTwoStepFollowup({ status, headers, fullBody, payload, tr
       req.end();
     });
     emit({ event: 'shortcut_followup_submitted', followup: followupText, status: retry.status });
-    return { status: retry.status, headers: retry.headers, fullBody: retry.body };
+    // Second call failed -> surface its error untouched.
+    if (!(retry.status >= 200 && retry.status < 300)) return { status: retry.status, headers: retry.headers, fullBody: retry.body };
+    const firstText = _textOfContent(firstContent);
+    const secondText = _textOfContent(_assistantContentFromResponse(retry.body, retry.headers));
+    const merged = [firstText, secondText].filter(Boolean).join('\n\n');
+    const streaming = payload.stream === true || String(headers['content-type'] || '').includes('text/event-stream');
+    const outHeaders = { ...retry.headers };
+    delete outHeaders['content-length'];
+    if (streaming) {
+      const { _anthropicTextSseBuffer } = require('./hme_proxy_core');
+      outHeaders['content-type'] = 'text/event-stream; charset=utf-8';
+      return { status: 200, headers: outHeaders, fullBody: _anthropicTextSseBuffer(payload.model || 'hme-proxy', merged) };
+    }
+    const jsonBody = Buffer.from(JSON.stringify({
+      id: `proxy_${Date.now()}`, type: 'message', role: 'assistant', model: payload.model || 'hme-proxy',
+      content: [{ type: 'text', text: merged }], stop_reason: 'end_turn', stop_sequence: null,
+      usage: { input_tokens: 0, output_tokens: 0 },
+    }), 'utf8');
+    outHeaders['content-type'] = 'application/json';
+    outHeaders['content-length'] = String(jsonBody.length);
+    return { status: 200, headers: outHeaders, fullBody: jsonBody };
   } catch (e) {
     console.error(`[shortcuts] two-step followup failed: ${e.message}`);
     return null;
