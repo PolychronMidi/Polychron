@@ -625,6 +625,10 @@ const _SLOP_PATTERNS = [
   // Examples: can't -> cant, you're -> youre, it's -> its.
   { name: 'caveman_apostrophe_drop', fn: _dropContractionApostrophesSegment },
 
+  // Remove markdown emphasis markers while preserving the emphasized text.
+  // Keep this outside protected code spans so identifiers/flags remain untouched.
+  { name: 'markdown_formatting', fn: _stripMarkdownFormattingSegment },
+
   // For alphabetic words >6 chars, remove center-nearest vowel. For words >8,
   // remove the two center-nearest vowels; later vowels win exact center ties.
   { name: 'caveman_center_vowels', fn: _stripCenterVowelsSegment },
