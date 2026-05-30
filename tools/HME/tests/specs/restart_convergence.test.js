@@ -57,6 +57,18 @@ test('change while restart in-flight is never dropped (the core bug)', () => {
   assert.ok(c.isSettled());
 });
 
+test('failed restart can clear queued work and settle on last-viable fallback', () => {
+  const c = createRestartCoordinator();
+  c.onChange('f.js');
+  const first = c.onDebounceElapsed();
+  assert.ok(first, 'first restart should fire');
+  c.onChange('g.js');
+  assert.equal(c.isSettled(), false);
+  const chained = c.onRestartDone({ failed: true, clearPending: true });
+  assert.equal(chained, null);
+  assert.ok(c.isSettled());
+});
+
 test('exhaustive: all event sequences up to length 7 settle without stranding', () => {
   const alphabet = ['change', 'timer', 'done'];
   function* seqs(n) {
