@@ -250,11 +250,30 @@ function attachSlotLifecycle(server, cfg) {
   });
 
   return {
-    markReady() { ready = true; writeHeartbeat(); },
+    markReady() {
+      ready = true;
+      markSlotViable(cfg.runtimeDir, cfg.slot, cfg.runtimeFingerprint, { pid: process.pid, git_sha: cfg.gitSha, port: cfg.port });
+      writeHeartbeat();
+    },
     isReady() { return ready; },
     isDraining() { return draining; },
     inFlight() { return inFlight; },
   };
 }
 
-module.exports = { slotConfig, attachSlotLifecycle };
+module.exports = {
+  slotConfig,
+  attachSlotLifecycle,
+  slotStateFile,
+  readSlotState,
+  writeSlotState,
+  recordSlotEvent,
+  latestBrokenFingerprint,
+  countSlotsWithFingerprint,
+  canAdmitFingerprint,
+  markSlotStarting,
+  markSlotViable,
+  markSlotBroken,
+  clearSlotState,
+  resetFingerprintState,
+};
