@@ -9,7 +9,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
 const { watchSelfAndReexec } = require('./self_reexec');
-const { extraRuntimeFiles } = require('../proxy_runtime_fingerprint');
+const { extraRuntimeFiles, currentRuntimeFingerprint } = require('../proxy_runtime_fingerprint');
+const { canAdmitFingerprint, resetFingerprintState } = require('../proxy_slot_lifecycle');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
 
