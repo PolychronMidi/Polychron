@@ -40,6 +40,8 @@ const _ABBREVIATION_MAP = Object.freeze({
   'a number of': 'many',
   'right now': 'now',
   'end-to-end': 'full',
+  'step by step': 'steps',
+  'one by one': '1x1',
 
   // Common words / compact forms.
   'executing': 'doing',
@@ -57,6 +59,13 @@ const _ABBREVIATION_MAP = Object.freeze({
   'to': '-',
   'in': 'n',
   'why': 'y',
+  'what': 'wht',
+  'when': 'whn',
+  'where': 'whr',
+  'which': 'wch',
+  'yes': 'y',
+  'no': 'n',
+  'or': '|',
   'you': 'u',
   'your': 'ur',
   'are': 'r',
@@ -104,22 +113,51 @@ const _ABBREVIATION_MAP = Object.freeze({
   'really': 'rly',
   'honest': 'rl',
   'honestly': 'rly',
+  'after': 'aft',
+  'during': 'dur',
+  'around': 'rnd',
+  'never': 'nvr',
+  'always': 'alwys',
 
+  // Number words.
+  'zero': '0',
+  'one': '1',
+  'two': '2',
+  'three': '3',
+  'four': '4',
+  'five': '5',
+  'six': '6',
+  'seven': '7',
+  'eight': '8',
+  'nine': '9',
+  'ten': '10',
+
+  // Ordinal/place words.
+  'first': '1st',
+  'second': '2nd',
+  'third': '3rd',
+  'fourth': '4th',
+  'fifth': '5th',
+  'sixth': '6th',
+  'seventh': '7th',
+  'eighth': '8th',
+  'ninth': '9th',
+  'tenth': '10th',
 
   // Contractions / common modal phrases.
-  'cannot': "can't",
-  'can not': "can't",
-  'could not': "couldn't",
-  'should not': "shouldn't",
-  'would not': "wouldn't",
-  'will not': "won't",
-  'do not': "don't",
-  'does not': "doesn't",
-  'did not': "didn't",
-  'is not': "isn't",
-  'are not': "aren't",
-  'was not': "wasn't",
-  'were not': "weren't",
+  'cannot': 'cant',
+  'can not': 'cant',
+  'could not': 'couldnt',
+  'should not': 'shouldnt',
+  'would not': 'wouldnt',
+  'will not': 'wont',
+  'do not': 'dont',
+  'does not': 'doesnt',
+  'did not': 'didnt',
+  'is not': 'isnt',
+  'are not': 'arent',
+  'was not': 'wasnt',
+  'were not': 'werent',
 
   // Long vocabulary concordance.
   'replacement': 'repl',
@@ -339,24 +377,78 @@ const _SUFFIX_EXCEPTIONS = new Set([
   'spring',
   'thing',
   'bring',
+  'string',
+  'during',
   'fission',
   'mission',
   'passion',
 ]);
 
-function _suffixRule(name, suffix, minStem, replacementSuffix, { minOutput = 5 } = {}) {
+function _suffixRule(name, suffix, minStem, replacementSuffix, { minOutput = 5, plural = true } = {}) {
+  const escapedSuffix = _escapeRegExp(suffix);
+  const pluralPart = plural ? '(s?)' : '()';
   return {
     name,
-    re: new RegExp(`(?<![A-Za-z0-9_/@.-])([a-z]{${minStem},})${_escapeRegExp(suffix)}\\b`, 'gi'),
-    repl: (match, stem) => {
+    re: new RegExp(`(?<![A-Za-z0-9_/@.-])([a-z]{${minStem},})${escapedSuffix}${pluralPart}\\b`, 'gi'),
+    repl: (match, stem, pluralMark = '') => {
       const word = String(match || '');
-      const out = `${stem}${replacementSuffix}`;
-      if (_SUFFIX_EXCEPTIONS.has(word.toLowerCase())) return word;
+      if (_shouldSkipMorphWord(word)) return word;
+      const lower = word.toLowerCase();
+      const singularLower = pluralMark ? lower.slice(0, -1) : lower;
+      const out = `${stem}${replacementSuffix}${pluralMark ? 's' : ''}`;
+      if (_SUFFIX_EXCEPTIONS.has(lower) || _SUFFIX_EXCEPTIONS.has(singularLower)) return word;
       if (out.length < minOutput) return word;
       return out;
     },
   };
 }
+
+function _dropContractionApostrophesSegment(text) {
+  return String(text || '').replace(/\b([A-Za-z]+)['’]([A-Za-z]+)\b/g, '$1$2');
+}
+
+function _shouldSkipMorphWord(word) {
+  // Avoid mangling code-ish/proper-name tokens in prose, such as JavaScript,
+  // ChatGPT, OpenAI, HTTPServer, or ALLCAPS constants. Single leading caps
+  // still compress so sentence-start words do not bypass the rule.
+  return /[a-z][A-Z]|[A-Z]{2,}/.test(word);
+}
+
+function _stripCenterVowelsWord(word) {
+  const value = String(word || '');
+  const removeCount = value.length > 8 ? 2 : value.length > 6 ? 1 : 0;
+  if (!removeCount || _shouldSkipMorphWord(value)) return value;
+
+  const center = (value.length - 1) / 2;
+  const vowels = [];
+  for (let i = 0; i < value.length; i += 1) {
+    if (/[aeiou]/i.test(value[i])) vowels.push(i);
+  }
+  if (vowels.length === 0) return value;
+
+  const toRemove = new Set(vowels
+    .sort((a, b) => Math.abs(a - center) - Math.abs(b - center) || b - a)
+    .slice(0, removeCount));
+
+  let out = '';
+  for (let i = 0; i < value.length; i += 1) {
+    if (!toRemove.has(i)) out += value[i];
+  }
+  return out;
+}
+
+function _stripCenterVowelsSegment(text) {
+  return String(text || '').replace(/\b[A-Za-z]{7,}\b/g, (word) => _stripCenterVowelsWord(word));
+}
+
+function _compactNonAlnumSegment(text) {
+  return String(text || '')
+    // Remove whitespace around any non-alphanumeric, non-whitespace char.
+    .replace(/\s*([^A-Za-z0-9\s])\s*/g, '$1')
+    // Deduplicate concurrent repeated non-alphanumeric chars: !!! -> !, ... -> .
+    .replace(/([^A-Za-z0-9\s])\1+/g, '$1');
+}
+
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
@@ -471,8 +563,8 @@ const _SLOP_PATTERNS = [
     re: _ABBREVIATION_RE,
     repl: _abbreviateMatch },
 
-  // Caveman -ing suffix pass. Only words greater than 5 letters are changed.
-  // Prefix must be at least 3 letters, because 3 + "ing" = 6.
+  // Caveman -ing suffix pass. minOutput blocks short false positives; plural
+  // form also works: meeting(s) -> meetn(s), testing -> testn.
   _suffixRule('caveman_ing_suffix', 'ing', 1, 'n'),
 
   // Caveman compression: delete low-signal glue words/first-person filler.
@@ -482,7 +574,7 @@ const _SLOP_PATTERNS = [
   // sides. The apostrophe guard is critical: without it, bare `i` followed by
   // "'" matches the "i" in "i'm" and deletes ONLY the letter, leaving "'m".
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|i['’]ll|i['’]ve|i['’]d|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|we|i|a|an|as|our|right|okay|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|so|wait|be|the|that|that['’]s|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
+    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|im|i['’]ll|ill|i['’]ve|ive|i['’]d|id|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|youre|you['’]ll|youll|we['’]ll|well|we['’]re|were|we|i|a|an|as|our|right|okay|ok|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|so|wait|be|the|that|that['’]s|thats|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
     repl: '' },
 
   // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
@@ -521,6 +613,14 @@ const _SLOP_PATTERNS = [
   // Examples: behavior -> behavr, superior -> superr, interior -> interr.
   // Non-examples: prior.
   _suffixRule('caveman_ior_suffix', 'ior', 3, 'r'),
+
+  // Remove apostrophes inside contractions/possessive-looking word tokens.
+  // Examples: can't -> cant, you're -> youre, it's -> its.
+  { name: 'caveman_apostrophe_drop', fn: _dropContractionApostrophesSegment },
+
+  // For alphabetic words >6 chars, remove center-nearest vowel. For words >8,
+  // remove the two center-nearest vowels; later vowels win exact center ties.
+  { name: 'caveman_center_vowels', fn: _stripCenterVowelsSegment },
 
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
@@ -612,14 +712,14 @@ function _cleanupSlopArtifacts(text) {
   if (!_hasProtectedSegments(raw)) return _cleanupPlainSlopArtifacts(raw, true);
 
   const out = _segmentByCode(raw)
-    .map((seg) => seg.code ? seg.s : _cleanupPlainSlopArtifacts(seg.s, false))
+    .map((seg) => seg.code ? seg.s : _cleanupPlainSlopArtifacts(seg.s, false));
   const joined = _joinProtectedSegments(out);
 
   return joined.trim();
 }
 
 function _hasProtectedSegments(text) {
-  return /`|https?:\/\/|(?<!\S)(?:\/|--[A-Za-z0-9]|[A-Za-z0-9_-]+\.[A-Za-z0-9_.-]+)(?!\S)/.test(String(text || ''));
+  return /`|https?:\/\/|(?<!\S)(?:\/|--[A-Za-z0-9]|[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+)(?=$|[\s,.;:!?)}\]])/.test(String(text || ''));
 }
 
 // Split text into [{code:bool, s:string}, ...] segments. Protected segments are
@@ -628,7 +728,7 @@ function _hasProtectedSegments(text) {
 // slop patterns are applied only to {code:false} segments.
 function _segmentByCode(text) {
   const out = [];
-  const re = /```[\s\S]*?```|`[^`\n]+`|https?:\/\/[^\s`]+|(?<!\S)(?:\/[^\s`]+|--[A-Za-z0-9][^\s`]*|[A-Za-z0-9_-]+\.[A-Za-z0-9_.-]+)(?!\S)/g;
+  const re = /```[\s\S]*?```|`[^`\n]+`|https?:\/\/[^\s`]+|(?<!\S)(?:\/[^\s`]+|--[A-Za-z0-9][^\s`]*|[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+)(?=$|[\s,.;:!?)}\]])/g;
   let last = 0;
   let m;
   while ((m = re.exec(text)) !== null) {
@@ -649,7 +749,17 @@ function _replaceOutsideCode(text, re, repl) {
   return segs.map((seg) => seg.s).join('');
 }
 
+function _applyTextTransformOutsideCode(text, fn) {
+  if (!_hasProtectedSegments(text)) return fn(text);
+  const segs = _segmentByCode(text);
+  for (const seg of segs) {
+    if (!seg.code) seg.s = fn(seg.s);
+  }
+  return segs.map((seg) => seg.s).join('');
+}
+
 function _applyPatternOutsideCode(text, pattern) {
+  if (typeof pattern.fn === 'function') return _applyTextTransformOutsideCode(text, pattern.fn);
   return _replaceOutsideCode(text, pattern.re, pattern.repl);
 }
 
@@ -659,7 +769,7 @@ function _stripSlop(text) {
   const hits = [];
 
   for (const p of _SLOP_PATTERNS) {
-    if (p.re === null) continue;  // function-style entries (e.g. excessive_bold)
+    if (p.re === null && typeof p.fn !== 'function') continue;  // sentinel entries
     const before = out;
     out = _applyPatternOutsideCode(out, p);
     if (out !== before) hits.push(p.name);
@@ -672,7 +782,13 @@ function _stripSlop(text) {
     hits.push('excessive_bold');
   }
 
-  if (hits.length > 0) out = _capFix(out);
+  const punctProbe = _applyTextTransformOutsideCode(out, _compactNonAlnumSegment);
+  if (hits.length > 0 || punctProbe !== out) out = _capFix(out);
+
+  const beforePunctCompact = out;
+  out = _applyTextTransformOutsideCode(out, _compactNonAlnumSegment);
+  if (out !== beforePunctCompact) hits.push('caveman_non_alnum_compaction');
+
   out = _cleanupSlopArtifacts(out);
   return { out, hits };
 }
@@ -784,4 +900,6 @@ module.exports = {
   _cleanupSlopArtifacts,
   _ABBREVIATION_MAP,
   _ABBREVIATION_RE,
+  _stripCenterVowelsWord,
+  _compactNonAlnumSegment,
 };
