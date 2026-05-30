@@ -259,6 +259,8 @@ async function mutateClaudeRequest({
     if (passthrough) compacted += shrinkForPassthrough(payload);
     compacted += compactLargeInteractiveAnthropicPayload(payload);
 
+    if (applyExplicitOtpmCap(payload)) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+  }
 
   if (payload && Array.isArray(payload.messages) && !passthrough) {
     const session = sessionKey(payload);
