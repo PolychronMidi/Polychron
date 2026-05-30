@@ -84,6 +84,8 @@ class ExactOutputFilter:
                     self.buf = self.buf[2:]
                 elif self.buf.startswith(b"\n"):
                     self.buf = self.buf[1:]
+                else:
+                    self.pending_banner_eol = True
                 continue
             if len(self.buf) <= self.keep:
                 break
