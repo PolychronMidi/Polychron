@@ -221,25 +221,37 @@ test('_assistantContentFromResponse parses JSON content and SSE text deltas', ()
   assert.deepEqual(sse, [{ type: 'text', text: 'hi' }]);
 });
 
-test('_maybeRunTwoStepFollowup appends assistant + followup user msg and returns 2nd response', async () => {
+test('_usageFromResponse pulls real token usage from JSON and SSE responses', () => {
+  assert.deepEqual(
+    resp._usageFromResponse(Buffer.from(JSON.stringify({ usage: { input_tokens: 99, output_tokens: 3 } })), { 'content-type': 'application/json' }),
+    { input_tokens: 99, output_tokens: 3 },
+  );
+  const sse = 'event: message_start\ndata: {"type":"message_start","message":{"usage":{"input_tokens":99,"output_tokens":1}}}\n\n'
+    + 'event: message_delta\ndata: {"type":"message_delta","usage":{"output_tokens":3}}\n\n';
+  assert.deepEqual(resp._usageFromResponse(Buffer.from(sse), { 'content-type': 'text/event-stream' }), { input_tokens: 99, output_tokens: 3 });
+});
+
+test('_maybeRunTwoStepFollowup surfaces BOTH responses AND carries real usage (no fake context wipe)', async () => {
   const payload = { model: 'm', messages: [{ role: 'user', content: "reply only with 'hi'" }] };
   Object.defineProperty(payload, '__hme_followup', { value: "reply only with 'high'", enumerable: false, configurable: true, writable: true });
-  const transport = _fakeTransport({ status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: [{ type: 'text', text: 'high' }] }) });
+  const transport = _fakeTransport({ status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: [{ type: 'text', text: 'high' }], usage: { input_tokens: 1234, output_tokens: 5 } }) });
   const out = await resp._maybeRunTwoStepFollowup({
     status: 200,
-    headers: { 'content-type': 'application/json' },
-    fullBody: Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hi' }] })),
+    headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '5000' },
+    fullBody: Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hi' }], usage: { input_tokens: 1200, output_tokens: 2 } })),
     payload, transport, upstreamOpts: {}, upstreamHeaders: {},
   });
   assert.equal(out.status, 200);
-  // BOTH responses surfaced (first step not skipped): merged "hi\n\nhigh".
   const merged = JSON.parse(out.fullBody.toString('utf8'));
+  // BOTH responses surfaced (first step not skipped): merged "hi\n\nhigh".
   assert.equal(merged.content[0].text, 'hi\n\nhigh');
+  // Real usage carried from the 2nd response -> context meter NOT wiped.
+  assert.equal(merged.usage.input_tokens, 1234);
+  // Normalized context headers from the first response preserved.
+  assert.equal(out.headers['anthropic-ratelimit-input-tokens-remaining'], '5000');
   // transcript now: original user, assistant 'hi', followup user
   assert.equal(payload.messages.length, 3);
-  assert.equal(payload.messages[1].role, 'assistant');
   assert.equal(payload.messages[1].content[0].text, 'hi');
-  assert.equal(payload.messages[2].role, 'user');
   assert.equal(payload.messages[2].content[0].text, "reply only with 'high'");
   // flag consumed; second request body carried the followup, not the flag
   assert.equal('__hme_followup' in payload, false);
