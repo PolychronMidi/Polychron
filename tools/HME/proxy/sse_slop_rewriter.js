@@ -686,13 +686,13 @@ function _stripExcessiveBold(text) {
 
 function _cleanupPlainSlopArtifacts(text, trim = false) {
   const out = String(text || '')
-    .replace(/(?:\s*[,.;:!?]){2,}/g, '.')
-    .replace(/^\s*[,.;:!?]+\s*/g, '')
+    .replace(/(?:[ \t]*[,.;:!?]){2,}/g, '.')
+    .replace(/^[ \t]*[,.;:!?]+[ \t]*/g, '')
     .replace(/[ \t]{2,}/g, ' ')
-    .replace(/\s+([,.;:!?])/g, '$1')
-    .replace(/([.!?])\s*([,.;:!?])+/g, '$1')
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
+    .replace(/[ \t]+([,.;:!?])/g, '$1')
+    .replace(/([.!?])[ \t]*([,.;:!?])+/g, '$1')
+    .replace(/\([ \t]+/g, '(')
+    .replace(/[ \t]+\)/g, ')')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n[ \t]+/g, '\n');
 
