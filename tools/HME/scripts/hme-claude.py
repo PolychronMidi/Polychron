@@ -342,8 +342,9 @@ def main():
                     ctrl_buf += chunk
                     while b"\n" in ctrl_buf:
                         line, ctrl_buf = ctrl_buf.split(b"\n", 1)
-                        token = line.strip().decode("utf-8", "replace").lower()
-                        steps = multistep.get(token)
+                        token, prompt = decode_control_line(line)
+                        steps = resolve_steps(multistep, token, prompt)
+                        steps = [step for step in (steps or []) if step]
                         if steps and not pending_steps:
                             # Type the first step now; queue the rest to drain
                             # one at a time as the REPL goes idle between them.
