@@ -184,7 +184,16 @@ _preflight_candidate() {
   return 1
 }
 
-_preflight_candidate || exit 1
+if ! _can_admit_runtime 2>"$RESTART_FAILURE_FILE.admit"; then
+  _reason="admission_denied runtime_fingerprint=$_RUNTIME_FP $(cat "$RESTART_FAILURE_FILE.admit" 2>/dev/null || true)"
+  echo "[slot-restart:$SLOT] ABORT: $_reason; incumbent slot left running" >&2
+  _record_failure "$_reason"
+  rm -f "$RESTART_FAILURE_FILE.admit" 2>/dev/null || true
+  exit 1
+fi
+rm -f "$RESTART_FAILURE_FILE.admit" 2>/dev/null || true
+
+_preflight_candidate || { _mark_slot_broken "preflight_failed"; exit 1; }
 
 # Step 1: write drain flag only after the replacement build proves it can boot.
 echo "[slot-restart:$SLOT] writing drain flag $DRAIN_FLAG" >&2
