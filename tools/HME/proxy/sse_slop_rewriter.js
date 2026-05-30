@@ -409,9 +409,9 @@ function _dropContractionApostrophesSegment(text) {
 function _stripMarkdownFormattingSegment(text) {
   return String(text || '')
     .replace(/\*\*([^*\n]{1,200})\*\*/g, '$1')
-    .replace(/__([^_\n]{1,200})__/g, '$1')
+    .replace(/(?<![A-Za-z0-9_])__([^_\n]{1,200})__(?![A-Za-z0-9_])/g, '$1')
     .replace(/(?<!\*)\*([^*\n]{1,200})\*(?!\*)/g, '$1')
-    .replace(/(?<!_)_([^_\n]{1,200})_(?!_)/g, '$1');
+    .replace(/(?<![A-Za-z0-9_])_([^_\n]{1,200})_(?![A-Za-z0-9_])/g, '$1');
 }
 
 function _shouldSkipMorphWord(word) {
