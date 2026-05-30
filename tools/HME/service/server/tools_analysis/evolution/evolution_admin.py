@@ -13,7 +13,7 @@ from ..synthesis import synthesis_reasoning
 from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
-from .todo_admin import hme_todo_admin as _hme_todo_admin
+_hme_todo_admin = lambda *a, **k: 'todo_admin removed (cluster demolished)'
 
 logger = logging.getLogger("HME")
 
