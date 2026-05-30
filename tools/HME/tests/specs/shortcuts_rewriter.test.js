@@ -179,3 +179,76 @@ test('SHORTCUT_RE matches every two-step key (no drift)', () => {
     assert.match(key, SHORTCUT_RE, `two-step key ${key} must match SHORTCUT_RE`);
   }
 });
+
+// --- Response-side round-trip: the second half of the two-step shortcut. ---
+const resp = require('../../proxy/hme_proxy_anthropic_response');
+
+function _fakeTransport(secondResponse) {
+  const captured = {};
+  return {
+    captured,
+    request(opts, cb) {
+      const res = {
+        statusCode: secondResponse.status,
+        headers: secondResponse.headers,
+        on(event, h) {
+          if (event === 'data') h(Buffer.from(secondResponse.body, 'utf8'));
+          if (event === 'end') h();
+          return res;
+        },
+      };
+      // invoke the response callback asynchronously like real http.request
+      setImmediate(() => cb(res));
+      return {
+        on() { return this; },
+        write(b) { captured.body = b.toString('utf8'); },
+        end() {},
+      };
+    },
+  };
+}
+
+test('_assistantContentFromResponse parses JSON content and SSE text deltas', () => {
+  const json = resp._assistantContentFromResponse(
+    Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hi' }] })),
+    { 'content-type': 'application/json' },
+  );
+  assert.deepEqual(json, [{ type: 'text', text: 'hi' }]);
+  const sse = resp._assistantContentFromResponse(
+    Buffer.from('event: x\ndata: {"delta":{"text":"hi"}}\n\n'),
+    { 'content-type': 'text/event-stream' },
+  );
+  assert.deepEqual(sse, [{ type: 'text', text: 'hi' }]);
+});
+
+test('_maybeRunTwoStepFollowup appends assistant + followup user msg and returns 2nd response', async () => {
+  const payload = { model: 'm', messages: [{ role: 'user', content: "reply only with 'hi'" }] };
+  Object.defineProperty(payload, '__hme_followup', { value: "reply only with 'high'", enumerable: false, configurable: true, writable: true });
+  const transport = _fakeTransport({ status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: [{ type: 'text', text: 'high' }] }) });
+  const out = await resp._maybeRunTwoStepFollowup({
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+    fullBody: Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hi' }] })),
+    payload, transport, upstreamOpts: {}, upstreamHeaders: {},
+  });
+  assert.equal(out.status, 200);
+  assert.equal(out.fullBody.toString('utf8').includes('high'), true);
+  // transcript now: original user, assistant 'hi', followup user
+  assert.equal(payload.messages.length, 3);
+  assert.equal(payload.messages[1].role, 'assistant');
+  assert.equal(payload.messages[1].content[0].text, 'hi');
+  assert.equal(payload.messages[2].role, 'user');
+  assert.equal(payload.messages[2].content[0].text, "reply only with 'high'");
+  // flag consumed; second request body carried the followup, not the flag
+  assert.equal('__hme_followup' in payload, false);
+  assert.equal(transport.captured.body.includes("reply only with 'high'"), true);
+  assert.equal(transport.captured.body.includes('__hme_followup'), false);
+});
+
+test('_maybeRunTwoStepFollowup is a no-op without the flag or on non-2xx', async () => {
+  const noFlag = { messages: [{ role: 'user', content: 'hello' }] };
+  assert.equal(await resp._maybeRunTwoStepFollowup({ status: 200, headers: {}, fullBody: Buffer.from('{}'), payload: noFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
+  const withFlag = { messages: [{ role: 'user', content: '/compact' }] };
+  Object.defineProperty(withFlag, '__hme_followup', { value: 'continue', enumerable: false, configurable: true, writable: true });
+  assert.equal(await resp._maybeRunTwoStepFollowup({ status: 500, headers: {}, fullBody: Buffer.from('err'), payload: withFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
+});
