@@ -47,10 +47,9 @@ measured evolution loop.
   middleware where appropriate.
 - Codex fallback bridge: when a host lacks native Read/Edit, adapter-owned
   internals may synthesize native events; this is not a public [`i/`](../tools/HME/i/) surface.
-- Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
-  Responses events stream; universal pulse remains the fallback session-log
-  scanner. There is no normal manual sync command; sync failures are repaired
-  in proxy/pulse plumbing.
+- Todos: `doc/templates/TODO.md` is the single source of truth -- a status-code
+  line grammar the agent edits directly; `tools/HME/todo_engine` applies timed
+  status flips and archives fully-resolved sets to `log/todo/`.
 - Proxy middleware: transforms inference and native-tool results.
 - Event kernel: portable routing for lifecycle and tool events.
 - Hooks: host-specific adapters and remaining shell lifecycle stages.
@@ -89,7 +88,6 @@ Codex CLI
   -> tools/HME/proxy/codex_proxy.js
      -> observes prompt/tool shape
      -> applies config-driven request transforms from codex-proxy.json
-     -> syncs streamed update_plan calls into TODO.md
      -> forwards the native Responses stream upstream
 ```
 

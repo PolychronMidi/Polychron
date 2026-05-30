@@ -77,7 +77,7 @@
     {
       "id": "codex_proxy",
       "kind": "http",
-      "description": "OpenAI Responses-compatible Codex proxy and TODO/update_plan bridge",
+      "description": "OpenAI Responses-compatible Codex proxy",
       "env_port": "HME_CODEX_PROXY_PORT",
       "default_port": 9102,
       "host": "127.0.0.1",

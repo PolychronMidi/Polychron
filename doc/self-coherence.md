@@ -45,13 +45,12 @@ commands invocable without a root `i/` directory.
 
 ## Current Command Surface
 
-Use native Read/Edit/Grep/Glob/TodoWrite first; proxy middleware enriches or
-replaces those where HME needs to participate. Claude `TodoWrite` and Codex
-`update_plan` both sync into `doc/templates/TODO.md`; the Codex path runs
-through the `codex_proxy` Responses service when configured, with universal
-pulse as the fallback scanner. There is no manual Codex TODO sync command in
-normal operation; failures belong in proxy/pulse repair, not operator ritual. Use `i/`
-commands for explicit HME workflows:
+Use native Read/Edit/Grep/Glob first; proxy middleware enriches or replaces
+those where HME needs to participate. Todos live in `doc/templates/TODO.md` --
+a single status-code line grammar (see its header) that the agent edits
+directly; `tools/HME/todo_engine` applies timed status flips and archives
+fully-resolved sets to `log/todo/`. Use `i/` commands for explicit HME
+workflows:
 
 ```bash
 i/hme admin action=selftest
