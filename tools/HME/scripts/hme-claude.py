@@ -67,8 +67,7 @@ class ExactOutputFilter:
             self.buf += data
         out = []
         if self.pending_banner_eol and self.buf:
-            ansi = re.compile(rb"^(?:\x1b\[[0-9;]*m)*")
-            m = ansi.match(self.buf)
+            m = self.ansi_prefix_re.match(self.buf)
             prefix_end = m.end() if m else 0
             if self.buf[prefix_end:].startswith(b"\r\n"):
                 self.buf = self.buf[prefix_end + 2:]
