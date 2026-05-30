@@ -225,15 +225,15 @@ function _isCcShortcut(body) {
   }
 }
 
-function _sendClaudeSelfPrompt(payload, prompt, delayMs) {
+function _runCcShortcut(payload) {
   const session = payload && payload.session_id;
-  if (!session || !prompt) return;
-  const script = [
-    `sleep ${Math.max(0, Number(delayMs || 0) / 1000)}`,
-    'env HME_THREAD_CHILD=1 HME_ADAPTER_NO_NUDGE=1 claude -p --resume "$1" --output-format json --effort max --model default "$2" >/dev/null 2>>"$3"',
-  ].join('\n');
+  if (!session) return;
   const errLog = path.join(payload._hme_project_root || process.cwd(), 'log', 'hme-cc-shortcut.err');
-  const child = spawn('bash', ['-lc', script, 'hme-cc-shortcut', session, prompt, errLog], {
+  const script = [
+    'env HME_THREAD_CHILD=1 HME_ADAPTER_NO_NUDGE=1 claude -p --resume "$1" --output-format json --effort max --model default "/compact" >/dev/null 2>>"$2"',
+    'env HME_THREAD_CHILD=1 HME_ADAPTER_NO_NUDGE=1 claude -p --resume "$1" --output-format json --effort max --model default "continue" >/dev/null 2>>"$2"',
+  ].join('\n');
+  const child = spawn('bash', ['-lc', script, 'hme-cc-shortcut', session, errLog], {
     detached: true,
     stdio: 'ignore',
     cwd: payload.cwd || process.cwd(),
@@ -245,8 +245,7 @@ function _sendClaudeSelfPrompt(payload, prompt, delayMs) {
 function _handleCcShortcut(result, body) {
   const payload = _isCcShortcut(body);
   if (!payload) return result;
-  _sendClaudeSelfPrompt(payload, '/compact', 0);
-  _sendClaudeSelfPrompt(payload, 'continue', 8_000);
+  _runCcShortcut(payload);
   return {
     ...result,
     stdout: JSON.stringify({
