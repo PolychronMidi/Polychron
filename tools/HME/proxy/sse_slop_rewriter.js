@@ -406,6 +406,14 @@ function _dropContractionApostrophesSegment(text) {
   return String(text || '').replace(/\b([A-Za-z]+)['’]([A-Za-z]+)\b/g, '$1$2');
 }
 
+function _stripMarkdownFormattingSegment(text) {
+  return String(text || '')
+    .replace(/\*\*([^*\n]{1,200})\*\*/g, '$1')
+    .replace(/__([^_\n]{1,200})__/g, '$1')
+    .replace(/(?<!\*)\*([^*\n]{1,200})\*(?!\*)/g, '$1')
+    .replace(/(?<!_)_([^_\n]{1,200})_(?!_)/g, '$1');
+}
+
 function _shouldSkipMorphWord(word) {
   // Avoid mangling code-ish/proper-name tokens in prose, such as JavaScript,
   // ChatGPT, OpenAI, HTTPServer, or ALLCAPS constants. Single leading caps
