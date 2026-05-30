@@ -2,6 +2,8 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
+const path = require('node:path');
+const { requireEnv } = require('../../proxy/shared/load_env');
 const { performReexec } = require('../../proxy/shuffler/self_reexec');
 
 // performReexec(entryFile, argv, deps) returns a promise resolving to a verdict:
