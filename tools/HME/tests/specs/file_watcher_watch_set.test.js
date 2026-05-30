@@ -41,3 +41,13 @@ test('EXTRA_RUNTIME_FILES is non-empty and includes .env (regression: the gap so
   assert.ok(EXTRA_RUNTIME_FILES.length >= 1);
   assert.ok(EXTRA_RUNTIME_FILES.includes('.env'));
 });
+
+test('file watcher self-reexec watches coordinator and stale-fingerprint dependencies', () => {
+  const rel = (abs) => path.relative(ROOT, abs).replace(/\\/g, '/');
+  const watched = new Set(watcher.FILE_WATCHER_REEXEC_FILES.map(rel));
+  assert.ok(watched.has('tools/HME/proxy/shuffler/self_reexec.js'));
+  assert.ok(watched.has('tools/HME/proxy/shuffler/restart_coordinator.js'));
+  assert.ok(watched.has('tools/HME/proxy/proxy_runtime_fingerprint.js'));
+  assert.ok(watched.has('tools/HME/proxy/shared/load_env.js'));
+  assert.ok(watched.has('.env'));
+});
