@@ -96,6 +96,17 @@ test('slop caveman suffixes avoid code-ish URL path flag and dotted tokens', () 
   assert.match(result.out, /testn relatn/);
 });
 
+test('slop center-vowel stripping preserves first-letter vowels', () => {
+  assert.equal(_stripSlop('Example operation umbrella academy.').out, 'Example operatn umbrella acadmy.');
+  assert.equal(_stripSlop('Overview iteration.').out, 'Overview iteratn.');
+});
+
+test('slop compaction preserves newline entries', () => {
+  const result = _stripSlop('First : one\nSecond : two\nThird : three');
+  assert.ok(result.hits.includes('caveman_non_alnum_compaction'));
+  assert.equal(result.out, 'First:one\nSecond:two\nThird:3');
+});
+
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
