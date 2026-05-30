@@ -92,6 +92,7 @@ function applyShortcutCompact(payload, shrinkForPassthrough) {
   if (!payload || !payload.__shortcut_compact || !Array.isArray(payload.messages)) return 0;
   // `cc` means: run the proxy's `/compact` implementation (passthrough_compact's
   // three gears) and then send `continue`. The shortcuts middleware already
+  // rewrote the visible user text from `cc` to `continue`; this function is the
   const before = serializedBytes(payload);
   const forcedThreshold = Math.max(1, Math.floor(before * 0.75));
   let changed = 0;
