@@ -78,6 +78,7 @@ module.exports = {
   TWO_STEP_SHORTCUTS,
   MULTI_STEP_SHORTCUTS,
   shortcutDisplay,
+  multiStepMatch,
   multiStepKey,
   multiStepSteps,
 };
