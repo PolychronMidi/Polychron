@@ -73,6 +73,10 @@ class ExactOutputFilter:
                 if best_m.start():
                     out.append(self.buf[:best_m.start()])
                 self.buf = self.buf[best_m.end():]
+                if self.buf.startswith(b"\r\n"):
+                    self.buf = self.buf[2:]
+                elif self.buf.startswith(b"\n"):
+                    self.buf = self.buf[1:]
                 continue
             if len(self.buf) <= self.keep:
                 break
