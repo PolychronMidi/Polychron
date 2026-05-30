@@ -78,7 +78,9 @@ module.exports = {
     }
 
     if (key === 'cc') {
-      payload.__shortcut_compact = true;
+      // Non-enumerable so JSON.stringify(payload) NEVER serializes it onto the
+      // wire (Anthropic 400s on unknown top-level fields), while the anthropic
+      Object.defineProperty(payload, '__shortcut_compact', { value: true, enumerable: false, configurable: true, writable: true });
       _setUserText({ msg, block, isString }, '/compact');
       if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: '/compact' });
       if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
