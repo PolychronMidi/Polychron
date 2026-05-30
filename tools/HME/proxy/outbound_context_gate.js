@@ -21,12 +21,12 @@ function estimateInputTokens(payload, env) {
 
 // Reroute helper: from a swap chain, pick the first model whose input budget
 // fits `tokens` and differs from the current model. Returns the model entry or
-function pickLargerRoute(swapChain, tokens, currentModelId) {
+function pickLargerRoute(swapChain, tokens, currentModelId, budgetFor = inputBudgetFor) {
   if (!Array.isArray(swapChain)) return null;
   for (const m of swapChain) {
     const id = m && (m.api_model || m.id);
     if (!id || id === currentModelId) continue;
-    const budget = inputBudgetFor(id);
+    const budget = budgetFor(id);
     if (budget > 0 && tokens <= budget) return m;
   }
   return null;
