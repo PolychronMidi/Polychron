@@ -91,12 +91,37 @@ class ExactOutputFilter:
         return tail
 
 
-def cc_success_banner_patterns():
+DEFAULT_MULTISTEP = {"cc": ["/compact", "continue"]}
+
+
+def load_multistep(root):
+    # Read the multi-step (local-session) shortcuts from the single source of
+    # truth. Resilient: if the config is missing/unreadable, fall back to the
+    cfg_path = os.path.join(root, "tools", "HME", "config", "shortcuts.json")
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return dict(DEFAULT_MULTISTEP)
+    multistep = data.get("multi-step")
+    if not isinstance(multistep, dict):
+        return dict(DEFAULT_MULTISTEP)
+    out = {}
+    for key, spec in multistep.items():
+        steps = spec.get("steps") if isinstance(spec, dict) else None
+        if isinstance(steps, list) and steps:
+            out[str(key).strip().lower()] = [str(s) for s in steps]
+    return out or dict(DEFAULT_MULTISTEP)
+
+
+def success_banner_patterns(multistep):
     patterns = []
-    for newline in ("\r\n", "\n"):
-        body = CC_SUCCESS_BANNER_TEXT.replace("\n", newline).encode("utf-8")
-        patterns.append(body + newline.encode("utf-8"))
-        patterns.append(body)
+    for key, steps in multistep.items():
+        text = success_banner_text(key, steps)
+        for newline in ("\r\n", "\n"):
+            body = text.replace("\n", newline).encode("utf-8")
+            patterns.append(body + newline.encode("utf-8"))
+            patterns.append(body)
     return patterns
 
 
