@@ -232,7 +232,9 @@ test('_maybeRunTwoStepFollowup appends assistant + followup user msg and returns
     payload, transport, upstreamOpts: {}, upstreamHeaders: {},
   });
   assert.equal(out.status, 200);
-  assert.equal(out.fullBody.toString('utf8').includes('high'), true);
+  // BOTH responses surfaced (first step not skipped): merged "hi\n\nhigh".
+  const merged = JSON.parse(out.fullBody.toString('utf8'));
+  assert.equal(merged.content[0].text, 'hi\n\nhigh');
   // transcript now: original user, assistant 'hi', followup user
   assert.equal(payload.messages.length, 3);
   assert.equal(payload.messages[1].role, 'assistant');
