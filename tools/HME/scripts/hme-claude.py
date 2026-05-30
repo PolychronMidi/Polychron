@@ -104,6 +104,8 @@ class ExactOutputFilter:
                 if i >= 0 and (best_i < 0 or i < best_i or (i == best_i and len(pattern) > len(best_p))):
                     best_i = i
                     best_p = pattern
+            if best_i != 0 and any(pattern.startswith(self.buf) for pattern in self.patterns):
+                break
             if best_i >= 0:
                 if best_i:
                     out.append(self.buf[:best_i])
