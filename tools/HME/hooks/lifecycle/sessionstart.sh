@@ -256,17 +256,6 @@ if items:
     && mv "$tmp" "$_CARRY_CACHE" || rm -f "$tmp"
 '
 
-# Surface doc/templates/TODO.md in-flight continuity state.
-_TODO_MD="$PROJECT/doc/templates/TODO.md"
-if [ -f "$_TODO_MD" ]; then
-  IN_FLIGHT=$(sed -n '/^## In flight/,/^## /p' "$_TODO_MD" | grep -E '^\s*-\s+\[' | head -10 || true)
-  if [ -n "$IN_FLIGHT" ]; then
-    echo "" >&2
-    echo "doc/templates/TODO.md In flight:" >&2
-    echo "$IN_FLIGHT" >&2
-  fi
-fi
-
 # Compact large Lance deletion queues in the background.
 _LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
 if [ -d "$_LANCE_DEL" ]; then
@@ -381,8 +370,8 @@ _TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
 _LE_CACHE="$PROJECT/tmp/hme-learning-surface.cache"  #
 [ -s "$_LE_CACHE" ] && cat "$_LE_CACHE" >&2
 if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
-  _TODO_TITLE=$(grep -E "^[[:space:]]*-[[:space:]]+\\[[[:space:]]\\][[:space:]]+\\[(E[1-5]|easy|medium|hard)\\]" "$_TODO_FILE" | head -1 \
-    | sed -E 's/^[[:space:]]*-[[:space:]]+\[[[:space:]]\][[:space:]]+\[(E[1-5]|easy|medium|hard)\][[:space:]]+//' | tr -d '[:cntrl:]' | xargs || true)
+  _TODO_TITLE=$(grep -E "^#[0-9]+[[:space:]]+[012]_" "$_TODO_FILE" | head -1 \
+    | sed -E 's/^#[0-9]+[[:space:]]+[^[:space:]]+[[:space:]]+//' | tr -d '[:cntrl:]' | xargs || true)
   if [ -n "$_TODO_TITLE" ]; then
     _FIRST_KW=$(echo "$_TODO_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
     if [ -n "$_FIRST_KW" ]; then
