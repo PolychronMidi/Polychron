@@ -156,6 +156,25 @@ def load_multistep(root):
     return out or dict(DEFAULT_MULTISTEP)
 
 
+def resolve_steps(multistep, token, prompt=""):
+    steps = multistep.get(str(token or "").strip().lower())
+    if not steps:
+        return None
+    return [str(step).replace("$prompt", str(prompt or "")) for step in steps]
+
+
+def decode_control_line(line):
+    parts = line.strip().split(b"\t", 1)
+    token = parts[0].decode("utf-8", "replace").lower()
+    prompt = ""
+    if len(parts) == 2:
+        try:
+            prompt = base64.b64decode(parts[1], validate=True).decode("utf-8", "replace")
+        except (ValueError, TypeError):
+            prompt = ""
+    return token, prompt
+
+
 def _ansi_variants(text):
     plain_lf = text.encode("utf-8")
     plain_crlf = text.replace("\n", "\r\n").encode("utf-8")
