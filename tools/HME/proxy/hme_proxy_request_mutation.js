@@ -359,6 +359,11 @@ async function mutateClaudeRequest({
       telemetry: requestTelemetry({ host: 'claude', protocol: 'anthropic-messages', provider: upstream.provider, route: upstream.provider, path: clientReq.url || '?', body: payload, stream: payload.stream }),
     });
   }
+  // FINAL GUARANTEE -- runs on EVERY outbound Anthropic path, including
+  // passthrough (which skips the sanitize block above). No request may carry an
+  if (isAnthropic && payload && Array.isArray(payload.messages)) {
+    if (sanitizePayload(payload) > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+  }
   return { outBody, injected, passthrough };
 }
 
