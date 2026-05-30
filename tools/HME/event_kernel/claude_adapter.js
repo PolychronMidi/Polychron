@@ -236,7 +236,7 @@ function _ccControlFifo(root) {
   return path.join(root || process.cwd(), 'tmp', 'hme-cc-control.fifo');
 }
 
-function _writeCcToken(root, key) {
+function _writeCcToken(root, key, prompt = '') {
   const fifo = _ccControlFifo(root);
   // Non-blocking open: if no wrapper is reading, open fails with ENXIO and we
   // skip silently instead of hanging the hook.
@@ -246,7 +246,8 @@ function _writeCcToken(root, key) {
   } catch (_e) {
     return false;
   }
-  try { fs.writeSync(fd, `${key}\n`); return true; }
+  const suffix = prompt ? `\t${Buffer.from(String(prompt), 'utf8').toString('base64')}` : '';
+  try { fs.writeSync(fd, `${key}${suffix}\n`); return true; }
   catch (_e) { return false; }
   finally { try { fs.closeSync(fd); } catch (_e2) { /* best effort */ } }
 }
