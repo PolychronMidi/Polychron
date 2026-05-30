@@ -27,10 +27,40 @@ function itemText(item) {
   return '';
 }
 
-function messageText(message) {
+function blockText(block, opts = {}) {
+  if (typeof block === 'string') return block;
+  if (!block || typeof block !== 'object') return '';
+  if (block.type === 'tool_result' && opts.includeToolResults !== false) {
+    const c = block.content;
+    if (typeof c === 'string') return c;
+    if (Array.isArray(c)) return contentText(c, { ...opts, includeToolResults: false, joiner: opts.toolResultJoiner || '' });
+    return '';
+  }
+  return itemText(block);
+}
+
+function contentTextBlocks(content) {
+  if (typeof content === 'string') return [content];
+  if (!Array.isArray(content)) return [];
+  const out = [];
+  for (const item of content) {
+    const text = itemText(item);
+    if (text || (item && typeof item === 'object' && TEXT_ITEM_TYPES.has(String(item.type || '')) && typeof item.text === 'string')) out.push(text);
+  }
+  return out;
+}
+
+function contentText(content, opts = {}) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  const joiner = Object.prototype.hasOwnProperty.call(opts, 'joiner') ? opts.joiner : '\n';
+  return content.map((item) => blockText(item, opts)).filter(Boolean).join(joiner);
+}
+
+function messageText(message, opts = {}) {
   const content = message && message.content;
   if (typeof content === 'string') return content;
-  return messageContentItems(message).map(itemText).filter(Boolean).join('\n');
+  return contentText(messageContentItems(message), { includeToolResults: false, ...opts });
 }
 
 function isToolResultMessage(message) {
