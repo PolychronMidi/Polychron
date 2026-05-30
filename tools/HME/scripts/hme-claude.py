@@ -116,12 +116,28 @@ def load_multistep(root):
 
 def success_banner_patterns(multistep):
     patterns = []
+    sgr_dim = b"\x1b[2m"
+    sgr_resets = (b"\x1b[22m", b"\x1b[0m")
+
+    def add(pattern, newline_bytes):
+        patterns.append(pattern + newline_bytes)
+        patterns.append(pattern)
+
     for key, steps in multistep.items():
         text = success_banner_text(key, steps)
+        lines = text.split("\n")
         for newline in ("\r\n", "\n"):
+            newline_bytes = newline.encode("utf-8")
             body = text.replace("\n", newline).encode("utf-8")
-            patterns.append(body + newline.encode("utf-8"))
-            patterns.append(body)
+            add(body, newline_bytes)
+            # Claude Code often renders hook banners dimmed per line, e.g.
+            #   ESC[2mline1ESC[22m CRLF ESC[2mline2ESC[22m
+            for reset in sgr_resets:
+                add(sgr_dim + body + reset, newline_bytes)
+                per_line = newline_bytes.join(
+                    sgr_dim + line.encode("utf-8") + reset for line in lines
+                )
+                add(per_line, newline_bytes)
     return patterns
 
 
