@@ -167,9 +167,8 @@ function _lastUserPromptText(payload) {
 // yet that string keeps appearing as the literal user message body. Source is
 const _LITERAL_UNDEF_RE = /^\s*(?:<system-reminder>\s*undefined\s*<\/system-reminder>\s*)?undefined\s*$/i;
 function _detectAndMarkUndefinedUserPrompt(payload) {
-  if (!payload || !Array.isArray(payload.messages)) return false;
-  const last = payload.messages[payload.messages.length - 1];
-  if (!last || last.role !== 'user') return false;
+  const last = _lastUserMessageRaw(payload);
+  if (!last) return false;
   let corrupted = false;
   if (typeof last.content === 'string' && _LITERAL_UNDEF_RE.test(last.content)) {
     corrupted = true;
