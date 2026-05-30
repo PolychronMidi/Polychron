@@ -82,6 +82,7 @@ class ExactOutputFilter:
     def _candidate_suffix_len(self):
         # Keep ONLY bytes that are currently a prefix of a banner pattern. The old
         # max-window holdback made every small PTY update lag behind; this emits
+        # normal keystroke echo immediately while still spanning chunk boundaries.
         limit = min(len(self.buf), self.max_pattern - 1)
         for n in range(limit, 0, -1):
             suffix = self.buf[-n:]
