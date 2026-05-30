@@ -78,3 +78,15 @@ test('module still exports watchSelfAndReexec', () => {
   assert.equal(typeof mod.watchSelfAndReexec, 'function');
   assert.equal(typeof mod.performReexec, 'function');
 });
+
+test('slot watchdog self-reexec watches every stale-fingerprint dependency', () => {
+  const root = requireEnv('PROJECT_ROOT');
+  const watchdog = require('../../proxy/shuffler/slot_watchdog');
+  const rel = (abs) => path.relative(root, abs).replace(/\\/g, '/');
+  const watched = new Set(watchdog.WATCHDOG_REEXEC_FILES.map(rel));
+  assert.ok(watched.has('tools/HME/proxy/shuffler/self_reexec.js'));
+  assert.ok(watched.has('tools/HME/proxy/proxy_runtime_fingerprint.js'));
+  assert.ok(watched.has('tools/HME/proxy/shared/load_env.js'));
+  assert.ok(watched.has('.env'));
+  assert.equal(typeof watchdog.start, 'function');
+});
