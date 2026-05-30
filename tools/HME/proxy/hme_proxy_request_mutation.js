@@ -88,8 +88,8 @@ function compactLargeInteractiveAnthropicPayload(payload) {
   });
 }
 
-function applyShortcutCompact(payload, shrinkForPassthrough) {
-  if (!payload || !payload.__shortcut_compact || !Array.isArray(payload.messages)) return 0;
+function applyShortcutCompact(payload) {
+  if (!payload || !payload.__shortcut_compact || !Array.isArray(payload.messages)) return null;
   // `cc` means: run the proxy's `/compact` implementation (passthrough_compact's
   // three gears) and then send `continue`. The shortcuts middleware already
   // rewrote the visible user text from `cc` to `continue`; this function is the
