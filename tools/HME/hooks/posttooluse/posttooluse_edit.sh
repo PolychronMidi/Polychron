@@ -2,7 +2,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../helpers/_hooks_bootstrap.sh"
 source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
+source "$SCRIPT_DIR/../helpers/_todo_guard.sh"
 INPUT=$(cat)
+_todo_guard_check "$INPUT" || true
 printf '%s' "$INPUT" | node -e '
 const fs = require("fs");
 const path = require("path");
