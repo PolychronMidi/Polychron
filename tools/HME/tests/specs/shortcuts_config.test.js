@@ -60,10 +60,46 @@ test('SINGLE SOURCE: the adapter detects exactly the config multi-step keys', ()
   assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: '1' })), null);
 });
 
-test('adapter block reason matches the bridge success-banner template (suppression stays in sync)', () => {
-  const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc' }));
-  const reason = JSON.parse(out.stdout).reason;
-  // Bridge (hme-claude.py success_banner_text) builds: "<key> shortcut: dispatched
-  // <steps join ' -> '> to the live session via the PTY bridge." -- must match so
-  assert.equal(reason, 'cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge.');
+test('adapter blocks cc, suppresses the prompt, and reports no bridge in an isolated root', () => {
+  // Isolated root with NO fifo -> _writeCcToken hits ENXIO -> "no bridge" reason.
+  // Crucially this does NOT write to the live session's control fifo.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-nobridge-'));
+  try {
+    const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc', _hme_project_root: root }));
+    const parsed = JSON.parse(out.stdout);
+    assert.equal(parsed.decision, 'block');
+    assert.equal(parsed.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.equal(parsed.hookSpecificOutput.suppressOriginalPrompt, true);
+    assert.equal(parsed.reason, 'cc shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.py to enable it).');
+    // non-multistep prompt -> untouched
+    const orig = { stdout: '', stderr: ' ', exit_code: 0 };
+    assert.equal(adapter._handleCcShortcut(orig, JSON.stringify({ prompt: 'hello world', _hme_project_root: root })), orig);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('success path: writes the matched key token and emits the bridge-matching banner', () => {
+  // Isolated fifo with a reader held open so the non-blocking write succeeds and
+  // delivered=true -- still NEVER touches the live session's control fifo.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-bridge-'));
+  const fifo = path.join(root, 'tmp', 'hme-cc-control.fifo');
+  fs.mkdirSync(path.dirname(fifo), { recursive: true });
+  execFileSync('mkfifo', [fifo]);
+  const rfd = fs.openSync(fifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+  try {
+    const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc', _hme_project_root: root }));
+    const parsed = JSON.parse(out.stdout);
+    assert.equal(parsed.decision, 'block');
+    assert.equal(parsed.hookSpecificOutput.suppressOriginalPrompt, true);
+    // Reason MUST equal the bridge's success_banner_text body (hme-claude.py) so
+    // the bridge can strip this success banner while leaving real failures visible.
+    assert.equal(parsed.reason, 'cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge.');
+    // The token on the fifo is the matched key (so the bridge looks up its steps).
+    const tok = fs.readFileSync(rfd, 'utf8');
+    assert.equal(tok, 'cc\n');
+  } finally {
+    fs.closeSync(rfd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
