@@ -215,6 +215,31 @@ function validateClaudeStdout(event, stdout, root) {
   return JSON.stringify(normalized.parsed);
 }
 
+// When a UserPromptSubmit prompt is a bare input shortcut, set
+// hookSpecificOutput.displayContent so Claude Code rewrites the on-screen input
+// bubble to the expanded text (the same text the proxy submits upstream).
+function _injectShortcutDisplayContent(result, body) {
+  try {
+    let prompt = '';
+    try { prompt = String((JSON.parse(body || '{}') || {}).prompt || ''); } catch (_e) { return result; }
+    if (!prompt) return result;
+    const { shortcutDisplay } = require('../proxy/shortcuts_map');
+    const display = shortcutDisplay(prompt);
+    if (!display) return result;
+    let obj = {};
+    const raw = String(result.stdout || '').trim();
+    if (raw) { try { obj = JSON.parse(extractFirstJsonDocument(raw) || raw); } catch (_e) { obj = {}; } }
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) obj = {};
+    const hso = (obj.hookSpecificOutput && typeof obj.hookSpecificOutput === 'object' && !Array.isArray(obj.hookSpecificOutput)) ? obj.hookSpecificOutput : {};
+    hso.hookEventName = 'UserPromptSubmit';
+    hso.displayContent = display;
+    obj.hookSpecificOutput = hso;
+    return { ...result, stdout: JSON.stringify(obj) };
+  } catch (_e) {
+    return result;
+  }
+}
+
 function finalRelay(event, result, body = '{}') {
   const fields = claudeRelayFields(event, result);
   let payload = {};
