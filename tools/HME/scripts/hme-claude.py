@@ -153,27 +153,32 @@ def load_multistep(root):
     return out or dict(DEFAULT_MULTISTEP)
 
 
-def _ansi_tolerant_literal(text):
-    ansi = rb"(?:\x1b\[[0-9;]*m)*"
-    parts = []
-    for b in text.encode("utf-8"):
-        if b == 10:
-            parts.append(ansi + rb"(?:\r\n|\n)" + ansi)
-        else:
-            parts.append(re.escape(bytes([b])) + ansi)
-    return b"".join(parts)
+def _ansi_variants(text):
+    plain_lf = text.encode("utf-8")
+    plain_crlf = text.replace("\n", "\r\n").encode("utf-8")
+    variants = [plain_lf, plain_crlf]
+    for body in (plain_lf, plain_crlf):
+        newline = b"\r\n" if b"\r\n" in body else b"\n"
+        lines = body.split(newline)
+        for start in (b"\x1b[2m", b""):
+            for reset in (b"\x1b[22m", b"\x1b[0m"):
+                variants.append(start + body + reset)
+                variants.append(newline.join(start + line + reset for line in lines))
+    out = []
+    seen = set()
+    for variant in variants:
+        for suffix in (b"", b"\n", b"\r\n"):
+            item = variant + suffix
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
+    return out
 
 
 def success_banner_patterns(multistep):
     patterns = []
-    trailing_newline = rb"(?:\r\n|\n)?"
     for key, steps in multistep.items():
-        body = _ansi_tolerant_literal(success_banner_text(key, steps))
-        # Regex length is unrelated to the literal stream length; use a bounded
-        # window derived from the plain banner length so chunk-boundary matches keep
-        # adjacent SGR reset/newline bytes attached to the suppressed banner.
-        window = len(success_banner_text(key, steps).encode("utf-8")) + 96
-        patterns.append((re.compile(body + trailing_newline), window))
+        patterns.extend(_ansi_variants(success_banner_text(key, steps)))
     return patterns
 
 
