@@ -219,26 +219,46 @@ function validateClaudeStdout(event, stdout, root) {
 // When a UserPromptSubmit prompt is a bare input shortcut, set
 // hookSpecificOutput.displayContent so Claude Code rewrites the on-screen input
 // bubble to the expanded text (the same text the proxy submits upstream).
-function _injectShortcutDisplayContent(result, body) {
+function _isCcShortcut(body) {
   try {
-    let prompt = '';
-    try { prompt = String((JSON.parse(body || '{}') || {}).prompt || ''); } catch (_e) { return result; }
-    if (!prompt) return result;
-    const { shortcutDisplay } = require('../proxy/shortcuts_map');
-    const display = shortcutDisplay(prompt);
-    if (!display) return result;
-    let obj = {};
-    const raw = String(result.stdout || '').trim();
-    if (raw) { try { obj = JSON.parse(extractFirstJsonDocument(raw) || raw); } catch (_e) { obj = {}; } }
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) obj = {};
-    const hso = (obj.hookSpecificOutput && typeof obj.hookSpecificOutput === 'object' && !Array.isArray(obj.hookSpecificOutput)) ? obj.hookSpecificOutput : {};
-    hso.hookEventName = 'UserPromptSubmit';
-    hso.displayContent = display;
-    obj.hookSpecificOutput = hso;
-    return { ...result, stdout: JSON.stringify(obj) };
+    const payload = JSON.parse(body || '{}') || {};
+    return String(payload.prompt || '').trim().toLowerCase() === 'cc' ? payload : null;
   } catch (_e) {
-    return result;
+    return null;
   }
+}
+
+function _sendClaudeSelfPrompt(payload, prompt, delayMs) {
+  const session = payload && payload.session_id;
+  if (!session || !prompt) return;
+  const script = [
+    `sleep ${Math.max(0, Number(delayMs || 0) / 1000)}`,
+    'env HME_THREAD_CHILD=1 HME_ADAPTER_NO_NUDGE=1 claude -p --resume "$1" --output-format json --effort max --model default "$2" >/dev/null 2>>"$3"',
+  ].join('\n');
+  const errLog = path.join(payload._hme_project_root || process.cwd(), 'log', 'hme-cc-shortcut.err');
+  const child = spawn('bash', ['-lc', script, 'hme-cc-shortcut', session, prompt, errLog], {
+    detached: true,
+    stdio: 'ignore',
+    cwd: payload.cwd || process.cwd(),
+    env: { ...process.env, HME_THREAD_CHILD: '1', HME_ADAPTER_NO_NUDGE: '1' },
+  });
+  child.unref();
+}
+
+function _handleCcShortcut(result, body) {
+  const payload = _isCcShortcut(body);
+  if (!payload) return result;
+  _sendClaudeSelfPrompt(payload, '/compact', 0);
+  _sendClaudeSelfPrompt(payload, 'continue', 8_000);
+  return {
+    ...result,
+    stdout: JSON.stringify({
+      decision: 'block',
+      reason: 'cc shortcut handled: sent /compact then continue as real Claude prompts.',
+      hookSpecificOutput: { hookEventName: 'UserPromptSubmit', suppressOriginalPrompt: true },
+    }),
+    exit_code: 0,
+  };
 }
 
 function finalRelay(event, result, body = '{}') {
