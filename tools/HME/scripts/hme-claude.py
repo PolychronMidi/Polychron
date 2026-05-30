@@ -151,7 +151,8 @@ def success_banner_patterns(multistep):
         body = _ansi_tolerant_literal(success_banner_text(key, steps))
         # Regex length is unrelated to the literal stream length; use a bounded
         # window derived from the plain banner length so chunk-boundary matches keep
-        window = len(success_banner_text(key, steps).encode("utf-8")) + 64
+        # adjacent SGR reset/newline bytes attached to the suppressed banner.
+        window = len(success_banner_text(key, steps).encode("utf-8")) + 96
         patterns.append((re.compile(body + trailing_newline), window))
     return patterns
 
