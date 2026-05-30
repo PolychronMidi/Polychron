@@ -64,7 +64,6 @@ const _ABBREVIATION_MAP = Object.freeze({
   'where': 'whr',
   'which': 'wch',
   'yes': 'y',
-  'no': 'n',
   'or': '|',
   'you': 'u',
   'your': 'ur',
