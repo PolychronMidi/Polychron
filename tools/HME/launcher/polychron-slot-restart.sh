@@ -55,8 +55,6 @@ NODE
 }
 
 _RUNTIME_FP="$(_current_runtime_fingerprint 2>/dev/null || printf unknown)"
-_STATE_HELPER="$PROJECT_ROOT/tools/HME/proxy/proxy_slot_lifecycle.js"
-
 _mark_slot_starting() {
   PROJECT_ROOT="$PROJECT_ROOT" SLOT="$SLOT" RUNTIME_FP="$_RUNTIME_FP" node - <<'NODE' 2>/dev/null || true
 const { markSlotStarting } = require('./tools/HME/proxy/proxy_slot_lifecycle');
