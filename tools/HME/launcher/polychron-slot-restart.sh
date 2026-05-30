@@ -231,6 +231,7 @@ done
 rm -f "$DRAIN_FLAG" "$HEALTH_FILE" 2>/dev/null
 
 # Step 3: spawn fresh slot instance.
+_mark_slot_starting
 echo "[slot-restart:$SLOT] spawning new backend on :$_BACKEND_PORT" >&2
 nohup env HME_PROXY_SLOT="$SLOT" HME_PROXY_SUPERVISE=0 node "$PROXY_SCRIPT" >> "$LOG_FILE" 2>&1 < /dev/null &
 _new_pid=$!
