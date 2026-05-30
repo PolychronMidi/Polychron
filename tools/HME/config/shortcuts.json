@@ -1,0 +1,21 @@
+{
+  "_doc": "Single source of truth for input shortcuts. TWO LANES, kept strictly separate. WIRE shortcuts (simple, two-step) are rewritten into the outbound Anthropic request by the proxy middleware (tools/HME/proxy/middleware/00a_shortcuts_rewriter.js) -- they become real API messages to the model. MULTI-STEP shortcuts are LOCAL-SESSION: the UserPromptSubmit hook (tools/HME/event_kernel/claude_adapter.js) blocks the literal prompt and the PTY bridge (tools/HME/scripts/hme-claude.py) replays each step into the LIVE Claude Code REPL. A multi-step step like /compact is a REPL-local slash command that never travels over the API; placing it under simple/two-step would send the literal text to the model and counterfeit the action. RULE: the proxy reads ONLY simple+two-step; the adapter+bridge read ONLY multi-step. Loader: tools/HME/proxy/shortcuts_config.js (Node), tools/HME/scripts/hme-claude.py (Python).",
+  "simple": {
+    "n": "next suggestions?",
+    "m": "what's missing?",
+    "d": "do all",
+    "c": "continue",
+    "r": "restarted. continue",
+    "e": "enough research, begin implementation now"
+  },
+  "two-step": {
+    "1": { "first": "reply only with 'hi'", "second": "reply only with 'high'" }
+  },
+  "multi-step": {
+    "cc": {
+      "lane": "local-session",
+      "steps": ["/compact", "continue"],
+      "description": "Compact the live Claude Code session, then continue. /compact is a REPL-local command, never a wire message; the PTY bridge types each step into the live session with an idle-wait between them."
+    }
+  }
+}
