@@ -297,7 +297,7 @@ async function main() {
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [claude-adapter] proxy recovered on 127.0.0.1:${port} (event=${ev})`);
     },
     beforeFinalRelay: ({ event: ev, result, body, root }) => {
-      if (ev === 'UserPromptSubmit') return _injectShortcutDisplayContent(result, body);
+      if (ev === 'UserPromptSubmit') return _handleCcShortcut(result, body);
       if (ev !== 'Stop') return result;
       const reason = denyReason(result.stdout || '');
       if (reason) stageStopReminder(root, reason);
