@@ -79,10 +79,10 @@ module.exports = {
 
     if (key === 'cc') {
       // Non-enumerable so JSON.stringify(payload) NEVER serializes it onto the
-      // wire (Anthropic 400s on unknown top-level fields), while the anthropic
+      // wire (Anthropic 400s on unknown top-level fields). The request mutation
       Object.defineProperty(payload, '__shortcut_compact', { value: true, enumerable: false, configurable: true, writable: true });
-      _setUserText({ msg, block, isString }, '/compact');
-      if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: '/compact' });
+      _setUserText({ msg, block, isString }, 'continue');
+      if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: '/compact\ncontinue' });
       if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
     }
   },
