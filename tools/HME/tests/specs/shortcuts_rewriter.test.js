@@ -268,28 +268,36 @@ test('_maybeRunTwoStepFollowup is a no-op without the flag or on non-2xx', async
   assert.equal(await resp._maybeRunTwoStepFollowup({ status: 500, headers: {}, fullBody: Buffer.from('err'), payload: withFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
 });
 
-// --- Shared shortcut map + on-screen display rewrite (UserPromptSubmit). ---
+// --- Shared shortcut map: single source of truth, no wire-side /compact fakery. ---
 test('shortcuts_map is the single source -- proxy middleware re-exports it (no drift)', () => {
   const map = require('../../proxy/shortcuts_map');
   assert.equal(shortcutsRewriter.SHORTCUTS, map.SHORTCUTS);
   assert.equal(shortcutsRewriter.TWO_STEP_SHORTCUTS, map.TWO_STEP_SHORTCUTS);
   assert.equal(map.shortcutDisplay('1'), "reply only with 'hi'");
-  assert.equal(map.shortcutDisplay('cc'), '/compact');
+  // cc is NOT a wire shortcut -- it is handled at the input layer, never faked on the AP
+  assert.equal(map.shortcutDisplay('cc'), null);
+  assert.equal(Object.prototype.hasOwnProperty.call(map.TWO_STEP_SHORTCUTS, 'cc'), false);
   assert.equal(map.shortcutDisplay('n'), 'next suggestions?');
   assert.equal(map.shortcutDisplay('hello world'), null);
 });
 
-test('claude adapter sets displayContent for shortcut prompts and leaves others untouched', () => {
+// --- cc shortcut: input-layer /compact handling (never an API message). ---
+test('claude adapter detects cc and blocks the literal prompt without faking a wire /compact', () => {
   const adapter = require('../../proxy/../event_kernel/claude_adapter');
-  // bare "1" with empty hook stdout -> fresh displayContent
-  const r1 = adapter._injectShortcutDisplayContent({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: '1' }));
-  assert.deepEqual(JSON.parse(r1.stdout), { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', displayContent: "reply only with 'hi'" } });
-  // merge: existing additionalContext preserved alongside displayContent
-  const r2 = adapter._injectShortcutDisplayContent({ stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: 'ctx' } }), stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'n' }));
-  assert.deepEqual(JSON.parse(r2.stdout).hookSpecificOutput, { hookEventName: 'UserPromptSubmit', additionalContext: 'ctx', displayContent: 'next suggestions?' });
-  // non-shortcut prompt -> result returned untouched
+  // exact "cc" -> recognized
+  assert.ok(adapter._isCcShortcut(JSON.stringify({ prompt: 'cc' })));
+  assert.ok(adapter._isCcShortcut(JSON.stringify({ prompt: '  CC ' })));
+  // anything else -> not a cc shortcut
+  assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'ccc' })), null);
+  assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'continue' })), null);
+  // handler blocks the literal so `cc` never reaches the model, and suppresses
+  // the original prompt. No PTY bridge here -> reason reports it is unattached.
+  const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc' }));
+  const parsed = JSON.parse(out.stdout);
+  assert.equal(parsed.decision, 'block');
+  assert.equal(parsed.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+  assert.equal(parsed.hookSpecificOutput.suppressOriginalPrompt, true);
+  // non-cc prompt -> result returned untouched
   const orig = { stdout: '', stderr: ' ', exit_code: 0 };
-  assert.equal(adapter._injectShortcutDisplayContent(orig, JSON.stringify({ prompt: 'hello world' })), orig);
-  // displayContent survives the host-relay JSON canonicalizer
-  assert.equal(adapter.validateClaudeStdout('UserPromptSubmit', r1.stdout, process.env.PROJECT_ROOT).includes('displayContent'), true);
+  assert.equal(adapter._handleCcShortcut(orig, JSON.stringify({ prompt: 'hello world' })), orig);
 });
