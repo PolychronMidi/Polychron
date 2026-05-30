@@ -22,6 +22,61 @@ const {
 } = require('./hme_proxy_omni_context_window');
 const { semanticTokenEstimate } = require('./context_token_estimate');
 
+// Pull the assistant turn out of an upstream response so it can be appended to
+// the transcript before a follow-up user message is auto-submitted. Handles
+function _assistantContentFromResponse(fullBody, headers) {
+  const respStr = fullBody.toString('utf8');
+  const ctype = String(headers['content-type'] || '').toLowerCase();
+  if (ctype.includes('text/event-stream')) {
+    const parts = [];
+    for (const line of respStr.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const d = JSON.parse(line.slice(6));
+        if (d && d.delta && typeof d.delta.text === 'string') parts.push(d.delta.text);
+      } catch (_) { /* non-JSON SSE keepalive/comment line */ }
+    }
+    return [{ type: 'text', text: parts.join('') || '(no text returned)' }];
+  }
+  if (respStr.trimStart().startsWith('{')) {
+    try {
+      const json = JSON.parse(respStr);
+      if (Array.isArray(json.content)) return json.content;
+    } catch (_) { /* fall through to raw text */ }
+  }
+  return [{ type: 'text', text: respStr }];
+}
+
+// Two-step shortcut round-trip: a request flagged with a non-enumerable
+// `__hme_followup` (set by 00a_shortcuts_rewriter) gets its first response
+async function _maybeRunTwoStepFollowup({ status, headers, fullBody, payload, transport, upstreamOpts, upstreamHeaders }) {
+  if (!(status >= 200 && status < 300) || !payload || !payload.__hme_followup || !Array.isArray(payload.messages)) return null;
+  const followupText = payload.__hme_followup;
+  delete payload.__hme_followup;
+  try {
+    payload.messages.push({ role: 'assistant', content: _assistantContentFromResponse(fullBody, headers) });
+    payload.messages.push({ role: 'user', content: [{ type: 'text', text: followupText }] });
+    const followBody = Buffer.from(JSON.stringify(payload), 'utf8');
+    const followOpts = { ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(followBody.length) } };
+    const retry = await new Promise((resolve, reject) => {
+      const req = transport.request(followOpts, (r) => {
+        const cs = [];
+        r.on('data', (c) => cs.push(c));
+        r.on('end', () => resolve({ status: r.statusCode || 502, headers: { ...r.headers }, body: Buffer.concat(cs) }));
+        r.on('error', reject);
+      });
+      req.on('error', reject);
+      req.write(followBody);
+      req.end();
+    });
+    emit({ event: 'shortcut_followup_submitted', followup: followupText, status: retry.status });
+    return { status: retry.status, headers: retry.headers, fullBody: retry.body };
+  } catch (e) {
+    console.error(`[shortcuts] two-step followup failed: ${e.message}`);
+    return null;
+  }
+}
+
 async function handleAnthropicResponseComplete({
   chunks,
   upstreamRes,
