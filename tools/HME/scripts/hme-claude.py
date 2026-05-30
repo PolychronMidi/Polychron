@@ -71,11 +71,15 @@ class ExactOutputFilter:
             prefix_end = m.end() if m else 0
             if self.buf[prefix_end:].startswith(b"\r\n"):
                 self.buf = self.buf[prefix_end + 2:]
+                self.pending_banner_eol = False
             elif self.buf[prefix_end:].startswith(b"\n"):
                 self.buf = self.buf[prefix_end + 1:]
+                self.pending_banner_eol = False
+            elif prefix_end == len(self.buf):
+                self.buf = b""
             else:
                 self.buf = self.buf[prefix_end:]
-            self.pending_banner_eol = False
+                self.pending_banner_eol = False
         while self.patterns:
             best_m = None
             for pattern, _window in self.patterns:
