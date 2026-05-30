@@ -15,6 +15,17 @@ test('slop abbreviations are case-insensitive and preserve punctuation', () => {
   assert.equal(result.out, 'K. W/o delay, move 2 tests & - prod.');
 });
 
+test('slop abbreviations do not rewrite no to n', () => {
+  const result = _stripSlop('No, no means no.');
+  assert.equal(result.out, 'No, no means no.');
+});
+
+test('slop formatting stripper removes markdown emphasis outside code', () => {
+  const result = _stripSlop('Use **bold** and *italic* and __strong__ and _emphasis_, not `*code*`.');
+  assert.ok(result.hits.includes('markdown_formatting'));
+  assert.equal(result.out, 'Use bold & italic & strong & emphasis, not `*code*`.');
+});
+
 test('slop caveman contractions are ordered before bare pronouns', () => {
   const result = _stripSlop("You're ready and we’re done; you'll see we’ll pass.");
   assert.ok(result.hits.includes('caveman_compression'));
