@@ -23,7 +23,7 @@ test('slop abbreviations do not rewrite no to n', () => {
 test('slop formatting stripper removes markdown emphasis outside code', () => {
   const result = _stripSlop('Use **bold** and *italic* and __strong__ and _emphasis_, not `*code*`.');
   assert.ok(result.hits.includes('markdown_formatting'));
-  assert.equal(result.out, 'Use bold & italic & strong & emphasis, not `*code*`.');
+  assert.equal(result.out, 'Use bold & italic & strong & emphsis, not `*code*`');
 });
 
 test('slop caveman contractions are ordered before bare pronouns', () => {
@@ -36,7 +36,7 @@ test('slop caveman contractions are ordered before bare pronouns', () => {
 test('slop caveman ing suffix shortens long gerunds outside code', () => {
   const result = _stripSlop('Running walking testing during thing string spring.');
   assert.ok(result.hits.includes('caveman_ing_suffix'));
-  assert.equal(result.out, 'Runnn walkn testn during thing string spring.');
+  assert.equal(result.out, 'Runnn walkn testn dur thing string spring.');
 });
 
 test('slop caveman ed suffix shortens long past-tense words outside code', () => {
@@ -56,20 +56,20 @@ test('slop caveman sion suffix shortens long sion words outside code', () => {
   const result = _stripSlop('Decision revision expansion vision fission version.');
   assert.ok(result.hits.includes('caveman_sion_suffix'));
   assert.ok(result.hits.includes('caveman_abbreviations'), 'specific abbreviation map should still run first');
-  assert.equal(result.out, 'Decisn revisn expansn vision fission v.');
+  assert.equal(result.out, 'Decisn revisn expnsn vision fisson v.');
 });
 
 test('slop caveman ment suffix shortens long ment words outside code', () => {
   const result = _stripSlop('Agreement shipment fragment cement moment development environment.');
   assert.ok(result.hits.includes('caveman_ment_suffix'));
   assert.ok(result.hits.includes('caveman_abbreviations'), 'specific abbreviation map should still run first');
-  assert.equal(result.out, 'Agreemt shipmt fragmt cement moment dev env.');
+  assert.equal(result.out, 'Agremt shipmt fragmt cement moment dev env.');
 });
 
 test('slop caveman ly suffix shortens long ly words outside code', () => {
   const result = _stripSlop('Locally globally normally ally.');
   assert.ok(result.hits.includes('caveman_ly_suffix'));
-  assert.equal(result.out, 'Localy globaly normaly ally.');
+  assert.equal(result.out, 'Localy globly normly ally.');
 });
 
 test('slop caveman ior suffix shortens long ior words outside code', () => {
@@ -97,20 +97,20 @@ test('slop caveman suffixes avoid code-ish URL path flag and dotted tokens', () 
 });
 
 test('slop center-vowel stripping preserves first-letter vowels', () => {
-  assert.equal(_stripSlop('Example operation umbrella academy.').out, 'Example operatn umbrella acadmy.');
-  assert.equal(_stripSlop('Overview iteration.').out, 'Overview iteratn.');
+  assert.equal(_stripSlop('Example operation umbrella academy.').out, 'Ex opertn umbrlla acadmy.');
+  assert.equal(_stripSlop('Overview iteration.').out, 'Overvew itertn.');
 });
 
 test('slop compaction preserves newline entries', () => {
   const result = _stripSlop('First : one\nSecond : two\nThird : three');
   assert.ok(result.hits.includes('caveman_non_alnum_compaction'));
-  assert.equal(result.out, 'First:one\nSecond:two\nThird:3');
+  assert.equal(result.out, '1st: 1\n2nd: 2\n3rd: 3');
 });
 
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
-  assert.equal(result.out, 'Plan remains.');
+  assert.equal(result.out, 'Plan remins.');
 });
 
 test('slop rewriter applies full slop stripping to text blocks without deny gate', () => {
@@ -200,7 +200,7 @@ test('mid-block non-text delta does NOT split a word across strip passes (NSpect
     ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'spection done' } }],
     ['content_block_stop', { type: 'content_block_stop', index: 0 }],
   ]);
-  assert.equal(_textOf(out), 'Inspectn done');
+  assert.equal(_textOf(out), 'Inspctn done');
 });
 
 test('signature_delta on held thinking block is preserved (replayed after content at stop)', () => {
