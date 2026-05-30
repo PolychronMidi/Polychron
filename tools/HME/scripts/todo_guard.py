@@ -56,24 +56,35 @@ def _archived_texts() -> set:
     return out
 
 
+def _sig_words(text: str) -> set:
+    return set(re.findall(r"[a-z0-9]{4,}", _norm(text)))
+
+
 def lost_unfinished(before_text: str, after_text: str) -> list:
-    """Return BEFORE todos with code != 5 whose id AND text both vanished from
-    AFTER and that were not archived. id-survival tolerates status flips and
-    text edits; text-survival tolerates set renumbering."""
+    """Return BEFORE todos (code != 5) that were DELETED, not merely edited.
+
+    A todo survives if any AFTER todo (or archived todo) has its exact text
+    (tolerates status flips 0_->5_ and set renumbering), OR an AFTER todo with
+    the SAME id shares >=1/3 of its significant words (tolerates a reword). It is
+    LOST otherwise -- including the dangerous case where its id was reused for an
+    unrelated todo (id-reuse across sets), which a naive id check would miss."""
     before = _todos(before_text)
     after = _todos(after_text)
-    after_ids = {t.id for t in after}
+    after_by_id = {t.id: t for t in after}
     after_texts = {_norm(t.text) for t in after}
     archived = _archived_texts()
     lost = []
     for t in before:
         if t.code == "5":
             continue
-        if t.id in after_ids:
-            continue
         nt = _norm(t.text)
         if nt in after_texts or nt in archived:
             continue
+        a = after_by_id.get(t.id)
+        if a is not None:
+            bw, aw = _sig_words(t.text), _sig_words(a.text)
+            if bw and aw and len(bw & aw) / len(bw) >= 1 / 3:
+                continue  # same id, overlapping content -> a reword, not a loss
         lost.append(t)
     return lost
 
