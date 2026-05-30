@@ -88,15 +88,6 @@ function compactLargeInteractiveAnthropicPayload(payload) {
   });
 }
 
-function applyShortcutCompact(payload, shrinkForPassthrough) {
-  if (!payload || !payload.__shortcut_compact || !Array.isArray(payload.messages)) return null;
-  const before = serializedBytes(payload);
-  const changed = typeof shrinkForPassthrough === 'function' ? shrinkForPassthrough(payload) : 0;
-  delete payload.__shortcut_compact;
-  emit({ event: 'shortcut_compact_applied', before_bytes: before, after_bytes: serializedBytes(payload), changed });
-  return changed;
-}
-
 function applyExplicitOtpmCap(payload) {
   if (!payload || typeof payload !== 'object') return false;
   const maxTokensCap = _dynamicOutputCap(payload);
