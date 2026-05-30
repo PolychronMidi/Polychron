@@ -77,6 +77,6 @@ test('fail-open: unknown budget (0) never blocks', () => {
 test('pickLargerRoute skips the current model and undersized routes', () => {
   const chain = [{ id: 'cur' }, { id: 'alsosmall' }, { id: 'big' }];
   const budgets = { cur: 1000, alsosmall: 2000, big: 50000 };
-  const pick = pickLargerRoute(chain, 5000, 'cur');
+  const pick = pickLargerRoute(chain, 5000, 'cur', (id) => budgets[id] || 0);
   assert.equal(pick.id, 'big');
 });
