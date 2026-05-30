@@ -5,7 +5,9 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const cfg = require('../../proxy/shortcuts_config');
 const rewriter = require('../../proxy/middleware/00a_shortcuts_rewriter');
