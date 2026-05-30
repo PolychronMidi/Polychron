@@ -216,9 +216,6 @@ function validateClaudeStdout(event, stdout, root) {
   return JSON.stringify(normalized.parsed);
 }
 
-// When a UserPromptSubmit prompt is a bare input shortcut, set
-// hookSpecificOutput.displayContent so Claude Code rewrites the on-screen input
-// bubble to the expanded text (the same text the proxy submits upstream).
 function _isCcShortcut(body) {
   try {
     const payload = JSON.parse(body || '{}') || {};
