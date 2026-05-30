@@ -1,7 +1,31 @@
 'use strict';
 
 const { lastRealUserMessage, messageContentItems, messageText } = require('../request_shape');
-const { SHORTCUTS, TWO_STEP_SHORTCUTS } = require('../shortcuts_map');
+
+const SHORTCUTS = {
+  n: 'next suggestions?',
+  m: "what's missing?",
+  d: 'do all',
+  c: 'continue',
+  r: 'restarted. continue',
+  e: 'enough research, begin implementation now'
+};
+
+// Two-step shortcuts submit `first`, then auto-submit `second` as a genuine
+// follow-up user message (round-trip in hme_proxy_anthropic_response).
+const TWO_STEP_SHORTCUTS = {
+  1: { first: "reply only with 'hi'", second: "reply only with 'high'" },
+};
+
+// Text a typed shortcut expands to for the on-screen input bubble. Two-step
+// shortcuts show their `first` message -- the actual user message submitted this
+function shortcutDisplay(text) {
+  const key = String(text == null ? '' : text).trim().toLowerCase();
+  if (!key) return null;
+  if (Object.prototype.hasOwnProperty.call(SHORTCUTS, key)) return SHORTCUTS[key];
+  if (Object.prototype.hasOwnProperty.call(TWO_STEP_SHORTCUTS, key)) return TWO_STEP_SHORTCUTS[key].first;
+  return null;
+}
 
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
 // Derive the match alternation from both shortcut maps so the regex can never
