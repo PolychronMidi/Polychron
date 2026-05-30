@@ -77,6 +77,8 @@ class ExactOutputFilter:
                 self.pending_banner_eol = False
             elif prefix_end == len(self.buf):
                 self.buf = b""
+            elif self.buf[prefix_end:] in (b"\r",):
+                self.buf = b""
             else:
                 self.buf = self.buf[prefix_end:]
                 self.pending_banner_eol = False
