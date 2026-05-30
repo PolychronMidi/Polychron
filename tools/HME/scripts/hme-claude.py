@@ -74,6 +74,12 @@ class ExactOutputFilter:
                 if best_i:
                     out.append(self.buf[:best_i])
                 self.buf = self.buf[best_i + len(best_p):]
+                # Some render paths style only the banner body and leave the line
+                # break outside the styled span. If a shorter body-only pattern won
+                if self.buf.startswith(b"\r\n"):
+                    self.buf = self.buf[2:]
+                elif self.buf.startswith(b"\n"):
+                    self.buf = self.buf[1:]
                 continue
             if len(self.buf) <= self.keep:
                 break
