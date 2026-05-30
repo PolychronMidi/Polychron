@@ -23,3 +23,15 @@ Example:
 #5 0_ env-fallback pattern sweep: 3 `process.env.PROJECT_ROOT || fallback` sites converted to `requireEnv` this session (proxy_liveness_gate.js, self_reexec.js, file_watcher_watch_set.test.js); audit remaining inline `||`/`os.environ.get(,default)` fallbacks for declared keys against the central resolver [E2]
 
 #6 0_ re-run the design-pattern survey after the top optimizations land, to confirm no new duplication was introduced and the unifications actually removed the cited call-sites
+
+#7 0_ get HCI score to 100
+
+#8 5_ LIFESAVER guard built (per user demand): deleting any unfinished (non-5_) todo from doc/templates/TODO.md now raises a [todo-guard] LIFESAVER — tools/HME/scripts/todo_guard.py (10/10 tests incl id-reuse-across-sets), wired into posttooluse_edit.sh + posttooluse_write.sh
+
+#9 5_ self-origin tag triplication patched (survey finding, partial): hook-output-validation added to all 3 lists (_check_errors_inline.sh, lifesaver.sh, 22_lifesaver_inject.js) so kernel-sanitized validation no longer surfaces as a blocking agent error — #4 tracks the full single-source unification
+
+#10 0_ event_kernel: host-adapter stdout validation divergent across claude/codex/opencode (only Claude hardened) → move per-host check into decision_normalizer host-policy table; extractFirstJsonDocument reimplemented 3x → import shared [E3]
+
+#11 0_ verifiers/detectors: detector name dual-sourced (registry.json + 7 hardcoded _emit_stats); 18 detectors share argv+load+emit boilerplate → @detector(name) base derives name once [E3]
+
+#12 0_ tools_analysis: string-dispatch if/action chains in ~8 "unified" tools (search/learn/trace/read/evolution_admin) → shared dispatch(key, table) like status_unified _STATUS_MODES; fold manual _track(name) (37 sites) into @chained which already knows the name [E3]
