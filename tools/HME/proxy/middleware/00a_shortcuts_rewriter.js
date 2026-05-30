@@ -69,6 +69,7 @@ function _setUserText({ msg, block, isString }, value) {
 module.exports = {
   name: 'shortcuts_rewriter',
   SHORTCUTS,
+  TWO_STEP_SHORTCUTS,
   SHORTCUT_RE,
 
   onRequest({ payload, ctx }) {
@@ -80,6 +81,17 @@ module.exports = {
     if (shortcut) {
       _setUserText({ msg, block, isString }, shortcut);
       if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: shortcut });
+      if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
+      return;
+    }
+
+    const twoStep = TWO_STEP_SHORTCUTS[key];
+    if (twoStep) {
+      _setUserText({ msg, block, isString }, twoStep.first);
+      // Non-enumerable so JSON.stringify(payload) never serializes it onto the
+      // wire (Anthropic 400s on unknown top-level fields); the response handler
+      Object.defineProperty(payload, '__hme_followup', { value: twoStep.second, enumerable: false, configurable: true, writable: true });
+      if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: twoStep.first, followup: twoStep.second });
       if (ctx && typeof ctx.markDirty === 'function') ctx.markDirty();
     }
   },
