@@ -13,10 +13,13 @@ const cfg = require('../../proxy/shortcuts_config');
 const rewriter = require('../../proxy/middleware/00a_shortcuts_rewriter');
 const adapter = require('../../event_kernel/claude_adapter');
 
-test('raw config has cc under the top-level "multi-step" key', () => {
+test('raw config has cc and dynamic c& under the top-level "multi-step" key', () => {
   const raw = JSON.parse(fs.readFileSync(cfg.CONFIG_PATH, 'utf8'));
   assert.ok(raw['multi-step'] && raw['multi-step'].cc, 'cc must live under "multi-step"');
+  assert.ok(raw['multi-step']['c&'], 'c& must live under "multi-step"');
   assert.deepEqual(raw['multi-step'].cc.steps, ['/compact', 'continue']);
+  assert.deepEqual(raw['multi-step']['c&'].steps, ['/compact', '$prompt']);
+  assert.equal(raw['multi-step']['c&'].mode, 'prefix');
   assert.ok(raw.simple && raw['two-step'], 'wire lanes present');
 });
 
