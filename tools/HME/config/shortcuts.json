@@ -16,6 +16,12 @@
       "lane": "local-session",
       "steps": ["/compact", "continue"],
       "description": "Compact the live Claude Code session, then continue. /compact is a REPL-local command, never a wire message; the PTY bridge types each step into the live session with an idle-wait between them."
+    },
+    "c&": {
+      "lane": "local-session",
+      "mode": "prefix",
+      "steps": ["/compact", "$prompt"],
+      "description": "Dynamic compact shortcut. A prompt like c&continue compacts the live Claude Code session, then types the text after c& as the next live prompt. The c& prefix is local-session only and never becomes an API message."
     }
   }
 }
