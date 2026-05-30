@@ -266,6 +266,7 @@ while :; do
 done
 
 # Step 5: bump throttle sentinel on success.
+_mark_slot_viable
 date +%s > "$RESTART_SENTINEL"
 git -C "$PROJECT_ROOT" rev-parse --short=12 HEAD > "$LAST_VIABLE_FILE" 2>/dev/null || true
 rm -f "$RESTART_FAILURE_FILE" 2>/dev/null || true
