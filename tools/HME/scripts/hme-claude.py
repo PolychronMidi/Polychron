@@ -25,6 +25,7 @@ import termios
 import tty
 import time
 import errno
+import stat
 
 IDLE_SECS = 3.0          # quiet window after /compact before sending `continue`
 MAX_COMPACT_WAIT = 180.0  # hard cap so a stuck compaction never wedges the queue
