@@ -173,6 +173,13 @@ async function handleAnthropicResponseComplete({
     fullBody = contextRetry.fullBody;
   }
 
+  const twoStep = await _maybeRunTwoStepFollowup({ status, headers, fullBody, payload, transport, upstreamOpts, upstreamHeaders });
+  if (twoStep) {
+    status = twoStep.status;
+    headers = twoStep.headers;
+    fullBody = twoStep.fullBody;
+  }
+
   if (isOmniRouteSwap && status >= 200 && status < 300 && payload && Array.isArray(payload.messages) && process.env.HME_OMNI_TOOL_LOOP === '1') {
     try {
       const loopResult = await _runOmniToolLoop({
