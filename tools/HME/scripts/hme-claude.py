@@ -174,6 +174,7 @@ def set_winsize(fd):
 def main():
     root = project_root()
     fifo = ensure_fifo(fifo_path(root))
+    multistep = load_multistep(root)
 
     argv = sys.argv[1:]
     claude = os.environ.get("HME_CLAUDE_BIN", "claude")
