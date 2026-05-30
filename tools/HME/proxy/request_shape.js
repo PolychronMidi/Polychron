@@ -27,27 +27,20 @@ function itemText(item) {
   return '';
 }
 
+// Text of a single content block. tool_result blocks contribute their inner
+// text only when opts.toolResults is true (callers walking tool output, e.g.
+// boilerplate strip / sanitize); the default skips them so user-prompt readers
 function blockText(block, opts = {}) {
   if (typeof block === 'string') return block;
   if (!block || typeof block !== 'object') return '';
-  if (block.type === 'tool_result' && opts.includeToolResults !== false) {
+  if (block.type === 'tool_result') {
+    if (!opts.toolResults) return '';
     const c = block.content;
     if (typeof c === 'string') return c;
-    if (Array.isArray(c)) return contentText(c, { ...opts, includeToolResults: false, joiner: opts.toolResultJoiner || '' });
+    if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
     return '';
   }
   return itemText(block);
-}
-
-function contentTextBlocks(content) {
-  if (typeof content === 'string') return [content];
-  if (!Array.isArray(content)) return [];
-  const out = [];
-  for (const item of content) {
-    const text = itemText(item);
-    if (text || (item && typeof item === 'object' && TEXT_ITEM_TYPES.has(String(item.type || '')) && typeof item.text === 'string')) out.push(text);
-  }
-  return out;
 }
 
 function contentText(content, opts = {}) {
@@ -60,7 +53,7 @@ function contentText(content, opts = {}) {
 function messageText(message, opts = {}) {
   const content = message && message.content;
   if (typeof content === 'string') return content;
-  return contentText(messageContentItems(message), { includeToolResults: false, ...opts });
+  return contentText(messageContentItems(message), opts);
 }
 
 function isToolResultMessage(message) {
