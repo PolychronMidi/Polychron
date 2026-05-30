@@ -37,7 +37,12 @@ function isToolResultMessage(message) {
   if (!message || message.role !== 'user') return false;
   const content = message.content;
   if (!Array.isArray(content)) return false;
-  return content.some((item) => item && typeof item === 'object' && item.type === 'tool_result');
+  const hasToolResult = content.some((item) => item && typeof item === 'object' && item.type === 'tool_result');
+  if (!hasToolResult) return false;
+  // A user message that ALSO carries non-empty prose text is a real user prompt
+  // Claude Code bundled alongside the tool_results (every tool-using turn) -- NOT
+  return !content.some((item) => item && typeof item === 'object'
+    && item.type === 'text' && typeof item.text === 'string' && item.text.trim() !== '');
 }
 
 function realUserMessages(body) {
