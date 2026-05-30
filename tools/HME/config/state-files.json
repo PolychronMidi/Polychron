@@ -368,22 +368,6 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "tools/HME/config/todo-archive-index.json",
-      "owner": "tools/HME/service/server/tools_analysis/todo_archive.py",
-      "readers": [
-        "tools/HME/scripts/verify_coherence/todo_tools.py",
-        "humans"
-      ],
-      "writers": [
-        "tools/HME/service/server/tools_analysis/todo_archive.py"
-      ],
-      "retention": "append-only metadata for local TODO archives",
-      "generated": true,
-      "committed": true,
-      "schema": "JSON object with archives[] records: archived, set_name, archive_path, task_count, done_count, todo_count",
-      "repair": "python3 tools/HME/scripts/todo_repair.py --check"
-    },
-    {
       "path": "tools/HME/KB/*.lance",
       "owner": "worker KB indexer",
       "readers": [
@@ -442,27 +426,24 @@
     },
     {
       "path": "doc/templates/TODO.md",
-      "coordination": "canonical single source of truth for HME todos; TodoWrite, codex update_plan, lifesaver, and humans all read+write through todo_store.py; mutate_store holds STORE_LOCK + fcntl.flock",
+      "coordination": "canonical single source of truth for HME todos; lifesaver, universal_pulse, humans, and the agent all read+write through tools/HME/todo_engine/store.py, which serializes writers via an OS flock + atomic rename",
       "writers": [
-        "tools/HME/service/server/tools_analysis/todo_store.py",
-        "tools/HME/service/server/tools_analysis/todo_archive.py",
-        "tools/HME/scripts/todo_repair.py",
-        "tools/HME/scripts/codex_plan_sync.py"
+        "tools/HME/todo_engine/store.py",
+        "tools/HME/todo_engine/lifesaver_bridge.py"
       ],
-      "owner": "HME todo store",
+      "owner": "tools/HME/todo_engine",
       "readers": [
         "humans",
-        "native TodoWrite replacement",
-        "Codex update_plan sync",
-        "scope_vs_shipped.py",
-        "parallel_detect.py",
-        "sessionstart.sh"
+        "tools/HME/todo_engine/store.py",
+        "tools/HME/activity/universal_pulse_tick.py",
+        "tools/HME/hooks/lifecycle/sessionstart.sh",
+        "tools/HME/scripts/parallel_detect.py"
       ],
-      "retention": "current active list only; completed sets archive to tools/HME/KB/devlog",
+      "retention": "current active set only; fully-resolved sets archive to log/todo/set<N>.md",
       "generated": false,
       "committed": true,
-      "schema": "markdown sections (Now, Next, Done, Later); task lines: - [mark] [tier] #id [source] !crit text → on_done <!-- meta -->",
-      "repair": "python3 tools/HME/scripts/todo_repair.py"
+      "schema": "status-code line grammar (one todo per line): #<id> <code>_ <text>[ _q=\"...\"][ <!-- since:EPOCH -->]; codes 0_ created 1_ in-progress 2_ revisit 3_ blocked 4_/4f_ follow-up 5_ done; header carries the File Format Rules + '### Todo - Set N' marker",
+      "repair": "self-healing via tools/HME/todo_engine store.load() timer flips + maybe_archive()"
     },
     {
       "path": "log/hme-errors.log",

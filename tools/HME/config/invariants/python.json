@@ -49,10 +49,10 @@
     },
     {
       "id": "lifesaver-todo-mirror-dedup",
-      "description": "register_todo_from_lifesaver must dedupe by text+source so a monitor loop cannot flood the todo store with zombie entries (116 such entries polluted todos.json before this rule landed).",
+      "description": "register_todo_from_lifesaver must dedupe via _dedup_key so a monitor loop cannot flood doc/templates/TODO.md with duplicate lifesaver items (116 such entries polluted the old store before this rule landed).",
       "type": "pattern_in_file",
-      "path": "tools/HME/service/server/tools_analysis/todo_lifesaver.py",
-      "pattern": "existing.get\\(\"source\"\\) == \"lifesaver\"",
+      "path": "tools/HME/todo_engine/lifesaver_bridge.py",
+      "pattern": "def _dedup_key",
       "severity": "error"
     },
     {
