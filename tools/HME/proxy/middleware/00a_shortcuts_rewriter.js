@@ -78,8 +78,6 @@ module.exports = {
     }
 
     if (key === 'cc') {
-      // Non-enumerable so JSON.stringify(payload) NEVER serializes it onto the
-      // wire (Anthropic 400s on unknown top-level fields). The request mutation
       Object.defineProperty(payload, '__shortcut_compact', { value: true, enumerable: false, configurable: true, writable: true });
       _setUserText({ msg, block, isString }, 'continue');
       if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'shortcut_expanded', shortcut: key, replacement: '/compact\ncontinue' });

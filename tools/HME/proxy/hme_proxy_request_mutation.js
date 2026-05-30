@@ -268,8 +268,8 @@ async function mutateClaudeRequest({
     if (passthrough) compacted += shrinkForPassthrough(payload);
     compacted += compactLargeInteractiveAnthropicPayload(payload);
     const shortcutCompacted = applyShortcutCompact(payload, shrinkForPassthrough);
-    compacted += shortcutCompacted;
-    if (compacted > 0 || shortcutCompacted >= 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+    if (shortcutCompacted !== null) compacted += shortcutCompacted;
+    if (compacted > 0 || shortcutCompacted !== null) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
     if (applyExplicitOtpmCap(payload)) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
 
