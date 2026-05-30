@@ -427,15 +427,22 @@ function _stripCenterVowelsWord(word) {
   if (!removeCount || _shouldSkipMorphWord(value)) return value;
 
   const center = (value.length - 1) / 2;
-  const vowels = [];
-  for (let i = 1; i < value.length; i += 1) {
-    if (/[aeiou]/i.test(value[i])) vowels.push(i);
+  const removableVowels = [];
+  const protectedFirstLetterVowels = [];
+  for (let i = 0; i < value.length; i += 1) {
+    if (!/[aeiou]/i.test(value[i])) continue;
+    if (i === 0) protectedFirstLetterVowels.push(i);
+    else removableVowels.push(i);
   }
-  if (vowels.length === 0) return value;
+  if (removableVowels.length === 0) return value;
 
-  const toRemove = new Set(vowels
-    .sort((a, b) => Math.abs(a - center) - Math.abs(b - center) || b - a)
-    .slice(0, removeCount));
+  // Choose center-nearest vowels as before, but exempt the first letter. When a
+  // first-letter vowel would have been chosen, remove fewer vowels rather than
+  const ranked = removableVowels.concat(protectedFirstLetterVowels)
+    .sort((a, b) => Math.abs(a - center) - Math.abs(b - center) || b - a);
+  const toRemove = new Set(ranked
+    .slice(0, removeCount)
+    .filter((i) => i !== 0));
 
   let out = '';
   for (let i = 0; i < value.length; i += 1) {
