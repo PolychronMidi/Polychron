@@ -25,6 +25,10 @@ function _load() {
     if (!def || !Array.isArray(def.steps) || def.steps.length === 0) {
       throw new Error(`shortcuts.json: multi-step "${k}" must define a non-empty "steps" array.`);
     }
+    const mode = def.mode || 'exact';
+    if (!['exact', 'prefix'].includes(mode)) {
+      throw new Error(`shortcuts.json: multi-step "${k}" has invalid mode ${JSON.stringify(mode)}.`);
+    }
   }
   return { simple, twoStep, multiStep };
 }
