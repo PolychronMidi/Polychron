@@ -57,35 +57,6 @@ def _load_onboarding_chain():
     return mod
 
 
-def _load_todo_module(project_root: str):
-    """Load todo.py standalone so the verifier can inspect the TODO store."""
-    class _FakeMCP:
-        @staticmethod
-        def tool(**_kw):
-            return lambda f: f
-
-    sys.modules.setdefault("server", types.ModuleType("server"))
-    sys.modules["server.context"] = types.SimpleNamespace(
-        mcp=_FakeMCP(), PROJECT_ROOT=project_root,
-    )
-    ta_pkg = types.ModuleType("server.tools_analysis")
-    ta_pkg.__path__ = [os.path.join(project_root, "tools", "HME", "service", "server", "tools_analysis")]
-    ta_pkg._track = lambda *_a, **_kw: None
-    sys.modules["server.tools_analysis"] = ta_pkg
-    ss_pkg = types.ModuleType("server.tools_analysis.synthesis_session")
-    ss_pkg.append_session_narrative = lambda *_a, **_kw: None
-    sys.modules["server.tools_analysis.synthesis_session"] = ss_pkg
-
-    spec = importlib.util.spec_from_file_location(
-        "server.tools_analysis.todo",
-        os.path.join(project_root, "tools", "HME", "service", "server", "tools_analysis", "todo.py"),
-    )
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["server.tools_analysis.todo"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
 def main() -> int:
     real_project = os.environ.get("PROJECT_ROOT") or os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..", "..")
