@@ -204,8 +204,14 @@ function createClaudeHandler(deps) {
           outBody = Buffer.from(JSON.stringify(payload), 'utf8');
           emit({ event: 'outbound_gate_rerouted', session: _sessionForTelemetry, from: gateModel, to: newModel, tokens: verdict.tokens });
         } else if (!verdict.ok) {
+          // Local preflight refusal -- NOT an upstream failure, so do not touch
+          // recordUpstreamFailure (that arms the emergency circuit breaker on
           const reason = `UPSTREAM_PREFLIGHT_OVER_WINDOW: est ${verdict.tokens} input tokens > route budget ${verdict.budget} for ${verdict.model}; compaction and reroute exhausted. Refusing to ship a known-over-window request.`;
-          recordUpstreamFailure(reason, { session: _sessionForTelemetry, model: verdict.model });
+          try {
+            const { PROJECT_ROOT } = require('./shared');
+            require('fs').appendFileSync(require('path').join(PROJECT_ROOT, 'log', 'hme-errors.log'),
+              `[${new Date().toISOString()}] [outbound-gate] ${reason}\n`);
+          } catch (_e) { /* silent-ok: error-log surfacing is best-effort */ }
           emit({ event: 'outbound_gate_over_window', session: _sessionForTelemetry, model: verdict.model, tokens: verdict.tokens, budget: verdict.budget });
           clientRes.writeHead(413, { 'Content-Type': 'application/json' });
           clientRes.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: reason } }));
