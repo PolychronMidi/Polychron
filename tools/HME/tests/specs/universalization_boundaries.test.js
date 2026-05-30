@@ -117,6 +117,24 @@ test('Claude adapter converts invalid Stop hookSpecificOutput into valid root bl
   }
 });
 
+test('Claude adapter downgrades a reasonless Stop block to a valid no-decision result', () => {
+  // Root cause of "Stop hook error: JSON validation failed": the stop chain
+  // emitted decision=block with no/empty reason; the host rejects a block that
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-reasonless-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block' }), tmp), '{}');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: '' }), tmp), '{}');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: '   ' }), tmp), '{}');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: '' } }), tmp), '{}');
+    // a real block with a non-empty reason is preserved unchanged
+    const real = validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: 'do X first' }), tmp);
+    assert.deepEqual(JSON.parse(real), { decision: 'block', reason: 'do X first' });
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('Claude adapter relays whitespace-only Stop stdout as empty (no-decision), not raw whitespace', () => {
   // Regression: validateClaudeStdout returned the raw stdout when its trimmed
   // form was empty, so whitespace-only stdout (' ', '\n') relayed verbatim and
