@@ -550,13 +550,19 @@ function loadAll() {
   if (unprefixed.length > 0) {
     throw new Error(`[middleware] ${unprefixed.length} file(s) without numeric prefix: ${unprefixed.join(', ')}`);
   }
+  const failures = [];
   for (const fname of ordered) {
     try {
       const mod = require(path.join(dir, fname));
       register(mod, fname);
     } catch (err) {
-      console.error(`[middleware] failed to load ${fname}: ${err.message}`);
+      const message = `[middleware] failed to load ${fname}: ${err.message}`;
+      console.error(message);
+      failures.push(message);
     }
+  }
+  if (failures.length) {
+    throw new Error(`mandatory middleware load failed:\n${failures.join('\n')}`);
   }
   return _modules.map((m) => m.name);
 }
