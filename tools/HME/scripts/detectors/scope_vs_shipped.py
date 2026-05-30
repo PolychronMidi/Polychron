@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """Stop-time check: declared TODO scope vs shipped artifacts.
 
-Existing work-avoidance detectors operate on closing text. This detector cross-checks TODO.md ticks against files changed this turn.
+Existing work-avoidance detectors operate on closing text. This detector cross-checks doc/templates/TODO.md completions against files changed this turn, using the todo_engine status-code grammar (0_ = created/open, 5_ = done).
 
 This detector fires two signals from the cross-reference:
 
-  scope-stacked       TODO.md grew unchecked items this turn ([ ] count
-                      increased via real adds, not [ ] -> [x] reversions)
-                      AND zero [ ] -> [x] transitions happened in the same
-                      turn. Translation: agent ENUMERATED MORE WORK than it
-                      DID -- TODO grows faster than artifacts.
+  scope-stacked       TODO.md grew open items this turn (net new '#<id> 0_'
+                      lines, not 0_ -> 5_ completions) AND zero items reached
+                      5_ in the same turn. Translation: agent ENUMERATED MORE
+                      WORK than it DID -- TODO grows faster than artifacts.
 
   scope-not-tracked   Turn made substantive Edit/Write/MultiEdit calls to
-                      non-TODO files AND zero TODO items ticked. Translation:
+                      non-TODO files AND zero TODO items reached 5_. Translation:
                       agent shipped artifacts but didn't update declared
                       scope -- either work was off-list or TODO stale.
 
