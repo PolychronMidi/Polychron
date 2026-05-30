@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Independent-set detection for open TODO.md items.
+"""Independent-set detection for open todo_engine items.
 
-Groups open `- [ ]` TODO items by file-overlap independence. Items that touch
-disjoint file sets can run in parallel; items that share files must run
-sequentially.
+Groups open todos (status codes 0_/1_/2_) by file-overlap independence. Items
+that touch disjoint file sets can run in parallel; items that share files must
+run sequentially.
 
-Heuristic: extract `[file_path](file_path)` markdown link refs from each item's
-text; two items are independent iff their file-ref sets are disjoint.
+Reads the canonical doc/templates/TODO.md through the todo_engine grammar (pure
+parse, no timer flips / no persistence). Heuristic: extract `[path](path)` or
+`` `path.ext` `` file refs from each item's text; two items are independent iff
+their file-ref sets are disjoint.
 
 Output: ranked groups (largest independent set first), human-readable + JSON.
 
@@ -25,27 +27,28 @@ from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parents[3])
-_TODO = _PROJECT / "doc" / "templates" / "TODO.md"
+_HME = _PROJECT / "tools" / "HME"
+if str(_HME) not in sys.path:
+    sys.path.insert(0, str(_HME))
+from todo_engine.grammar import parse_document  # noqa: E402
 
-_OPEN_ITEM_RE = re.compile(r"^\s*-\s+\[\s\]\s+\[(E[1-5]|easy|medium|hard)\]\s+(.+?)\s*$",
-                           re.IGNORECASE)
+_TODO = _PROJECT / "doc" / "templates" / "TODO.md"
+# Open = actionable now: created / in-progress / revisit. Not 3_ (blocked),
+# 4_/4f_ (winding down), or 5_ (done).
+_OPEN_CODES = {"0", "1", "2"}
 _FILE_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)|`([^`]+\.(?:py|js|ts|sh|md|json))`")
 
 
-def _read_phase(n: int | str) -> tuple[int, list[tuple[str, str]]]:
-    """Compatibility name: return open TODO.md items."""
+def _open_items() -> list[tuple[str, str]]:
+    """Return open todos as (code, text) from the canonical TODO.md."""
     if not _TODO.is_file():
-        return (0, [])
-    items = []
-    for ln in _TODO.read_text(encoding="utf-8").splitlines():
-        m = _OPEN_ITEM_RE.match(ln)
-        if m:
-            items.append((m.group(1), m.group(2).strip()))
-    return (0, items)
+        return []
+    _header, todos = parse_document(_TODO.read_text(encoding="utf-8"))
+    return [(t.code, t.text) for t in todos if t.code in _OPEN_CODES]
 
 
 def _file_refs(body: str) -> set[str]:
-    """Extract file references from a Phase item body. Returns normalized
+    """Extract file references from a todo body. Returns normalized
     repo-relative paths; an empty set means 'unknown scope, treat as
     overlapping with everything' (conservative)."""
     refs = set()
@@ -86,10 +89,9 @@ def _independent_groups(items: list[tuple[str, str]]) -> list[list[int]]:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", default="latest", help="ignored compatibility option")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
-    phase_n, items = _read_phase(args.phase)
+    items = _open_items()
     if not items:
         print("parallel-detect: TODO.md has no open items")
         return 0
@@ -97,7 +99,7 @@ def main(argv: list[str]) -> int:
     if args.json:
         print(json.dumps({
             "source": "doc/templates/TODO.md",
-            "items": [{"i": i, "tier": t, "body": b[:120]} for i, (t, b) in enumerate(items)],
+            "items": [{"i": i, "code": c, "body": b[:120]} for i, (c, b) in enumerate(items)],
             "groups": [[i for i in g] for g in groups],
         }, indent=2))
         return 0
@@ -105,9 +107,9 @@ def main(argv: list[str]) -> int:
     for gi, g in enumerate(groups):
         print(f"  Group {gi + 1} ({len(g)} item{'s' if len(g) != 1 else ''} parallel-safe):")
         for i in g:
-            tier, body = items[i]
+            code, body = items[i]
             refs = _file_refs(body) or {"<unknown scope>"}
-            print(f"    [{tier}] {body[:90]}")
+            print(f"    [{code}_] {body[:90]}")
             print(f"          touches: {', '.join(sorted(refs)[:4])}")
     return 0
 
