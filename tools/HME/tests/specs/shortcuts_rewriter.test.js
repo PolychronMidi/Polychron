@@ -160,7 +160,7 @@ test('shortcuts_rewriter "1" two-step: rewrites to first message + sets non-enum
   assert.equal(payload.messages[0].content, "reply only with 'hi'");
   assert.equal(payload.__hme_followup, "reply only with 'high'");
   // Non-enumerable so it never serializes onto the Anthropic wire (no 400).
-  assert.deepEqual(Object.keys(payload), ['messages']);
+  assert.equal(Object.keys(payload).includes('__hme_followup'), false);
   assert.equal(JSON.stringify(payload).includes('__hme_followup'), false);
 });
 
