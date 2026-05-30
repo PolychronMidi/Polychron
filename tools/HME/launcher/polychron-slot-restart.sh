@@ -252,12 +252,14 @@ while :; do
     _reason="spawned pid $_new_pid died before ready; tail $LOG_FILE"
     echo "[slot-restart:$SLOT] ERROR: $_reason" >&2
     _record_failure "$_reason"
+    _mark_slot_broken "$_reason"
     exit 1
   fi
   if [ $(( $(date +%s) - _t0 )) -ge 30 ]; then
     _reason="backend not ready within 30s; tail $LOG_FILE"
     echo "[slot-restart:$SLOT] ERROR: $_reason" >&2
     _record_failure "$_reason"
+    _mark_slot_broken "$_reason"
     exit 1
   fi
   sleep 1
