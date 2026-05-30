@@ -252,7 +252,7 @@ function _handleCcShortcut(result, body) {
   const delivered = _writeCcToken(payload._hme_project_root);
   const reason = delivered
     ? 'cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge.'
-    : 'cc shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.js to enable /compact).';
+    : 'cc shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.py to enable /compact).';
   return {
     ...result,
     stdout: JSON.stringify({
