@@ -29,6 +29,66 @@ import stat
 
 IDLE_SECS = 3.0          # quiet window after /compact before sending `continue`
 MAX_COMPACT_WAIT = 360.0  # hard cap so a stuck compaction never wedges the queue
+CC_SUCCESS_BANNER_TEXT = (
+    "UserPromptSubmit operation blocked by hook:\n"
+    "  cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge."
+)
+
+
+class ExactOutputFilter:
+    """Streaming byte filter for exact PTY output markers.
+
+    Claude Code always prints hook block reasons to the terminal. For the `cc`
+    success path that message is pure implementation noise; failures must still
+    remain visible. This filter removes only the exact success banner, including
+    chunk-boundary cases, and passes everything else through unchanged.
+    """
+
+    def __init__(self, patterns):
+        self.patterns = sorted([p for p in patterns if p], key=len, reverse=True)
+        self.buf = b""
+        self.keep = max((len(p) for p in self.patterns), default=1) - 1
+
+    def feed(self, data):
+        if data:
+            self.buf += data
+        out = []
+        while self.patterns:
+            best_i = -1
+            best_p = None
+            for pattern in self.patterns:
+                i = self.buf.find(pattern)
+                if i >= 0 and (best_i < 0 or i < best_i or (i == best_i and len(pattern) > len(best_p))):
+                    best_i = i
+                    best_p = pattern
+            if best_i >= 0:
+                if best_i:
+                    out.append(self.buf[:best_i])
+                self.buf = self.buf[best_i + len(best_p):]
+                continue
+            if len(self.buf) <= self.keep:
+                break
+            emit_len = len(self.buf) - self.keep
+            out.append(self.buf[:emit_len])
+            self.buf = self.buf[emit_len:]
+            break
+        return b"".join(out)
+
+    def flush(self):
+        tail = self.feed(b"")
+        if self.buf:
+            tail += self.buf
+            self.buf = b""
+        return tail
+
+
+def cc_success_banner_patterns():
+    patterns = []
+    for newline in ("\r\n", "\n"):
+        body = CC_SUCCESS_BANNER_TEXT.replace("\n", newline).encode("utf-8")
+        patterns.append(body + newline.encode("utf-8"))
+        patterns.append(body)
+    return patterns
 
 
 def project_root():
