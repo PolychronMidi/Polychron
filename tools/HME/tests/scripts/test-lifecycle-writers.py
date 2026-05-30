@@ -58,7 +58,6 @@ def main() -> int:
         ("llama-server",        "llamacpp_daemon"),
         ("embedders",           "/path/to/tools/HME/service/rag_engines.py"),
         ("kb",                  "/path/to/server/tools_knowledge.py"),
-        ("hme-todo-store",      "/path/to/server/tools_analysis/todo.py"),
         ("lifesaver-registry",  "/path/to/server/failure_genealogy.py"),
         ("onboarding-state",    "/path/to/server/onboarding_chain.py"),
     ]
