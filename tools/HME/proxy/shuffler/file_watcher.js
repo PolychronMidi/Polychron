@@ -227,6 +227,8 @@ module.exports = {
   shouldRestart,
   _enumerateAllWatchedFiles,
   EXTRA_WATCH_FILES,
+  FILE_WATCHER_REEXEC_FILES,
+  start,
 };
 
 // Only run the live watcher when invoked directly, not when required by tests.
