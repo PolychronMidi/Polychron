@@ -40,7 +40,7 @@ Reference: doc/templates/ONBOARDING.md (not pasted; avoid context bloat)
 Current onboarding step: ${CUR_STEP}
 Use native tools normally; use i/<tool> only when the task actually needs HME.
 If a hook blocks, follow its exact redirect. No retry dance.
-TODO surfaces sync automatically: native todo/update_plan/TODO.md.
+Todos: doc/templates/TODO.md (status-code grammar; tools/HME/todo_engine updates it).
 [agent tier: ${AGENT_TIER}, fingerprint: ${AGENT_FINGERPRINT}]
 === END HME PRIMER ==="
 
