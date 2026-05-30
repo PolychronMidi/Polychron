@@ -166,4 +166,6 @@ function start() {
   setInterval(_tick, POLL_MS);
 }
 
-start();
+module.exports = { ENV_FILE, WATCHDOG_REEXEC_FILES, start };
+
+if (require.main === module) start();
