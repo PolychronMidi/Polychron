@@ -923,5 +923,6 @@ module.exports = {
   _ABBREVIATION_MAP,
   _ABBREVIATION_RE,
   _stripCenterVowelsWord,
+  _stripMarkdownFormattingSegment,
   _compactNonAlnumSegment,
 };
