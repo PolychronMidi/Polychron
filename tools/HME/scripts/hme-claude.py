@@ -97,8 +97,6 @@ class ExactOutputFilter:
         out = []
         self._drop_pending_eol()
         while self.patterns and self.buf:
-            if any(pattern.startswith(self.buf) for pattern in self.patterns):
-                break
             best_i = -1
             best_p = None
             for pattern in self.patterns:
