@@ -77,4 +77,4 @@ function lastRealUserMessage(body) {
   return msgs.length ? msgs[msgs.length - 1] : null;
 }
 
-module.exports = { TEXT_ITEM_TYPES, messagesArray, messageContentItems, itemText, blockText, contentTextBlocks, contentText, messageText, isToolResultMessage, realUserMessages, lastRealUserMessage };
+module.exports = { TEXT_ITEM_TYPES, messagesArray, messageContentItems, itemText, blockText, contentText, messageText, isToolResultMessage, realUserMessages, lastRealUserMessage };
