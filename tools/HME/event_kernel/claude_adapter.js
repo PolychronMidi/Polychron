@@ -160,7 +160,9 @@ function _normalizeClaudeStdoutObject(event, parsed) {
 
 function validateClaudeStdout(event, stdout, root) {
   const text = String(stdout || '').trim();
-  if (!text) return stdout || '';
+  // Whitespace-only stdout (' ', '\n') is "no decision" -- it MUST relay as the
+  // empty string. Returning the raw whitespace makes the host parse ' ' as JSON
+  if (!text) return '';
   if (event === 'Stop') {
     try {
       const stopParsed = JSON.parse(text);
