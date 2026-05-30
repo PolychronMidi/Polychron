@@ -59,3 +59,19 @@ print('ok')
 `);
   assert.equal(out.trim(), 'ok');
 });
+
+test('hme-claude resolves dynamic c& control-line prompt', () => {
+  const out = runPython(`
+import importlib.util
+spec = importlib.util.spec_from_file_location('hme_claude_bridge', ${JSON.stringify(SCRIPT)})
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+token, prompt = mod.decode_control_line(b'c&\\tY29udGludWU=\\n')
+assert token == 'c&', token
+assert prompt == 'continue', prompt
+assert mod.resolve_steps({'c&': ['/compact', '$prompt']}, token, prompt) == ['/compact', 'continue']
+assert mod.resolve_steps({'c&': ['/compact', '$prompt']}, 'c&', '') == ['/compact', '']
+print('ok')
+`);
+  assert.equal(out.trim(), 'ok');
+});
