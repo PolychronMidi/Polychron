@@ -62,6 +62,10 @@ test('SINGLE SOURCE: the adapter detects exactly the config multi-step keys', ()
   // _isCcShortcut now resolves ANY multi-step key from the shared config.
   assert.ok(adapter._isCcShortcut(JSON.stringify({ prompt: 'cc' })));
   assert.ok(adapter._isCcShortcut(JSON.stringify({ prompt: '  CC ' })));
+  assert.deepEqual(
+    adapter._isCcShortcut(JSON.stringify({ prompt: 'c&continue' }))._hme_multistep_prompt,
+    'continue',
+  );
   assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'ccc' })), null);
   // wire-lane keys are NOT intercepted at the hook -- they belong to the proxy.
   assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'n' })), null);
