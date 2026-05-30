@@ -15,7 +15,6 @@ const SHORTCUTS = {
 // follow-up user message (round-trip in hme_proxy_anthropic_response).
 const TWO_STEP_SHORTCUTS = {
   1: { first: "reply only with 'hi'", second: "reply only with 'high'" },
-  cc: { first: '/compact', second: 'continue' },
 };
 
 // Text a typed shortcut expands to for the on-screen input bubble. Two-step
