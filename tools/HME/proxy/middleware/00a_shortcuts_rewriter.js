@@ -1,21 +1,7 @@
 'use strict';
 
 const { lastRealUserMessage, messageContentItems, messageText } = require('../request_shape');
-
-const SHORTCUTS = {
-  'n': 'next suggestions?',
-  'm': "what's missing?",
-  'd': 'do all',
-  'c': 'continue',
-  'r': 'restarted. continue'
-};
-
-// Two-step shortcuts: the proxy sends `first` as the user message this turn,
-// captures the response, then auto-submits `second` as a follow-up user message.
-const TWO_STEP_SHORTCUTS = {
-  '1': { first: "reply only with 'hi'", second: "reply only with 'high'" },
-  'cc': { first: '/compact', second: 'continue' },
-};
+const { SHORTCUTS, TWO_STEP_SHORTCUTS } = require('../shortcuts_map');
 
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
 // Derive the match alternation from both shortcut maps so the regex can never
