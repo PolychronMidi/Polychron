@@ -64,6 +64,12 @@ class ExactOutputFilter:
         if data:
             self.buf += data
         out = []
+        if self.pending_banner_eol and self.buf:
+            if self.buf.startswith(b"\r\n"):
+                self.buf = self.buf[2:]
+            elif self.buf.startswith(b"\n"):
+                self.buf = self.buf[1:]
+            self.pending_banner_eol = False
         while self.patterns:
             best_m = None
             for pattern, _window in self.patterns:
