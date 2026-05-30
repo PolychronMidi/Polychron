@@ -58,21 +58,32 @@ function recordSlotEvent(runtimeDir, slot, event, extra = {}) {
   });
 }
 
-function latestBrokenFingerprint(runtimeDir) {
-  const state = readSlotState(runtimeDir);
-  const counts = new Map();
-  for (const rec of Object.values(state.slots || {})) {
-    if (!rec || rec.status !== 'broken' || !rec.runtime_fingerprint) continue;
-    counts.set(rec.runtime_fingerprint, (counts.get(rec.runtime_fingerprint) || 0) + 1);
-  }
-  let best = '';
-  let bestCount = 0;
-  for (const [fingerprint, count] of counts) {
-    if (count > bestCount) { best = fingerprint; bestCount = count; }
-  }
-  return best;
+// A fingerprint is quarantined when some slot recorded it `broken` and NO slot
+// has since recorded it `viable`. This is the only admission denial -- it is what
+// keeps a KNOWN-BROKEN build off the surviving slot (guarantee #3). It must never
+function isQuarantined(state, fingerprint) {
+  if (!fingerprint) return false;
+  const records = Object.values((state && state.slots) || {});
+  const viableSomewhere = records.some((r) => r && r.status === 'viable' && r.runtime_fingerprint === fingerprint);
+  if (viableSomewhere) return false;
+  return records.some((r) => r && r.status === 'broken' && r.runtime_fingerprint === fingerprint);
 }
 
+function latestBrokenFingerprint(runtimeDir) {
+  const state = readSlotState(runtimeDir);
+  // Most recent broken-and-not-since-viable fingerprint, by history order.
+  const history = Array.isArray(state.history) ? state.history : [];
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const h = history[i];
+    if (h && h.event === 'broken' && h.runtime_fingerprint && isQuarantined(state, h.runtime_fingerprint)) {
+      return h.runtime_fingerprint;
+    }
+  }
+  return '';
+}
+
+// Count slots whose live health file shows them ready + fresh + alive on a given
+// runtime fingerprint. A ready health file is itself proof the build boots and
 function countSlotsWithFingerprint(runtimeDir, fingerprint, opts = {}) {
   if (!fingerprint) return 0;
   const slots = opts.slots || ['a', 'b'];
@@ -95,16 +106,13 @@ function countSlotsWithFingerprint(runtimeDir, fingerprint, opts = {}) {
   return count;
 }
 
-function canAdmitFingerprint(runtimeDir, fingerprint, opts = {}) {
+// Admission control for putting `fingerprint` onto a slot. The ONLY denial is a
+// quarantined (proven-broken) build -- that is what stops a known breakage from
+function canAdmitFingerprint(runtimeDir, fingerprint, _opts = {}) {
   if (!fingerprint) return { ok: true, reason: '' };
-  const broken = latestBrokenFingerprint(runtimeDir);
-  if (broken && broken === fingerprint) {
-    return { ok: false, reason: `runtime fingerprint ${fingerprint} is quarantined from prior failed slot admission` };
-  }
-  const maxSlots = Number(opts.maxSlots || 1);
-  const liveCount = countSlotsWithFingerprint(runtimeDir, fingerprint, opts);
-  if (liveCount >= maxSlots) {
-    return { ok: false, reason: `runtime fingerprint ${fingerprint} already admitted on ${liveCount} live slot(s)` };
+  const state = readSlotState(runtimeDir);
+  if (isQuarantined(state, fingerprint)) {
+    return { ok: false, reason: `runtime fingerprint ${fingerprint} is quarantined: a prior slot restart proved it broken and it has not since served; refusing to admit it to another slot` };
   }
   return { ok: true, reason: '' };
 }
