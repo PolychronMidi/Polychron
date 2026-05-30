@@ -296,4 +296,6 @@ module.exports = {
   normalizeOmniContextWindowSse,
   retryOmniContextWindowExceeded,
   handleAnthropicResponseComplete,
+  _assistantContentFromResponse,
+  _maybeRunTwoStepFollowup,
 };
