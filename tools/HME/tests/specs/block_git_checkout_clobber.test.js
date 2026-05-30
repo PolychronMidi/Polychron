@@ -43,18 +43,18 @@ test('blocks git stash; git checkout HEAD~2', async () => {
   assert.strictEqual(r.allowed, false);
 });
 
-test('blocks git checkout of unified TODO state', async () => {
-  const c = _ctx('git checkout -- doc/templates/TODO.md tools/HME/KB/todos.json');
+test('blocks git checkout of canonical TODO state', async () => {
+  const c = _ctx('git checkout -- doc/templates/TODO.md');
   const r = await policy.fn(c);
   assert.strictEqual(r.allowed, false);
-  assert.match(r.reason, /unified task state/);
+  assert.match(r.reason, /canonical task state/);
 });
 
-test('blocks git restore of unified TODO state', async () => {
-  const c = _ctx('git restore tools/HME/KB/todos.json');
+test('blocks git restore of canonical TODO state', async () => {
+  const c = _ctx('git restore doc/templates/TODO.md');
   const r = await policy.fn(c);
   assert.strictEqual(r.allowed, false);
-  assert.match(r.reason, /unified task state/);
+  assert.match(r.reason, /canonical task state/);
 });
 
 test('allows git checkout <branch> (no -- .)', async () => {

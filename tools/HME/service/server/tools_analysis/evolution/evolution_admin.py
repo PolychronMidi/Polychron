@@ -13,7 +13,6 @@ from ..synthesis import synthesis_reasoning
 from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
-_hme_todo_admin = lambda *a, **k: 'todo_admin removed (cluster demolished)'
 
 logger = logging.getLogger("HME")
 
@@ -36,8 +35,6 @@ def hme_admin(action: str = "selftest", modules: str = "",
     posttooluse_bash, stop, userpromptsubmit).
     action='both': reload then selftest.
     action='index_status': report background index job state and current index counts.
-    action='todo_status'|'todo_validate'|'todo_repair'|'todo_archive': inspect,
-    validate, repair, or force-archive the unified TODO store.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
     from ..synthesis_session import append_session_narrative
@@ -122,10 +119,8 @@ def hme_admin(action: str = "selftest", modules: str = "",
             parts.append(_format_routing_ready(_Path(ctx.bootstrap_project_root_from_env())))
         except Exception as e:
             parts.append(f"routing_ready error: {type(e).__name__}: {e}")
-    if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive"):
-        parts.append(_hme_todo_admin(action, modules))
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'routing_ready', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', 'index_status', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'routing_ready', 'index_status', or 'both'."
     return "\n\n".join(parts)
 
 

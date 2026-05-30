@@ -45,16 +45,11 @@ else
   _fail "tools/HME/KB missing or has no lance tables"
 fi
 
-# todos.json >= 8 entries
-if [ -f tools/HME/KB/todos.json ]; then
-  TODO_COUNT=$(python3 -c 'import json; d=json.load(open("tools/HME/KB/todos.json")); print(len(d) if isinstance(d,list) else len(d.get("todos",[])))' 2>/dev/null || echo 0)
-  if [ "$TODO_COUNT" -ge 8 ]; then
-    _ok "todos.json has >=8 entries ($TODO_COUNT)"
-  else
-    _fail "todos.json has $TODO_COUNT entries (expected >=8)"
-  fi
+# doc/templates/TODO.md is the canonical todo source (status-code grammar)
+if [ -f doc/templates/TODO.md ]; then
+  _ok "doc/templates/TODO.md present (canonical todo source)"
 else
-  _fail "tools/HME/KB/todos.json missing"
+  _fail "doc/templates/TODO.md missing"
 fi
 
 # No non-legacy mcp__HME__ references in hooks/

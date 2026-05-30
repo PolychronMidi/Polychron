@@ -6,12 +6,12 @@
 // Pattern 1: `git checkout <ref> -- .` or `git checkout <ref> -- <broad-glob>`
 const PATTERN_BROAD_CHECKOUT = /\bgit\s+checkout\s+\S+\s+--\s+(?:\.|\*|--all)(?=\s|$|[;&|])/;
 const PATTERN_STASH_THEN_CHECKOUT = /\bgit\s+stash\b[^&;|]*?[&;|]+\s*git\s+checkout\b/;
-const TODO_STATE_PATHS = ['doc/templates/TODO.md', 'tools/HME/KB/todos.json'];
+const TODO_STATE_PATHS = ['doc/templates/TODO.md'];
 
 const REASON =
   'BLOCKED: this `git checkout` pattern can clobber the working tree (including freshly-popped stashes). For prior-state inspection use `git show <ref> -- <path>` (read-only stdout) or `git worktree add <isolated-path> <ref>` (isolated). See doc/self-coherence.md or doc/templates/AGENTS.md.';
 const TODO_REASON =
-  'BLOCKED: TODO.md and todos.json are unified task state; use native plan/update_plan/TODO.md sync surfaces instead.';
+  'BLOCKED: doc/templates/TODO.md is the canonical task state (tools/HME/todo_engine). Edit it directly or let the engine update it -- do not checkout/restore-clobber it.';
 
 function touchesTodoState(cmd) {
   return TODO_STATE_PATHS.some((p) => cmd.includes(p));
