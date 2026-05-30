@@ -115,3 +115,22 @@ test('success path: writes the matched key token and emits the bridge-matching b
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('dynamic c& success path writes key plus encoded next prompt', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'c-amp-bridge-'));
+  const fifo = path.join(root, 'tmp', 'hme-cc-control.fifo');
+  fs.mkdirSync(path.dirname(fifo), { recursive: true });
+  execFileSync('mkfifo', [fifo]);
+  const rfd = fs.openSync(fifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+  try {
+    const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'c&continue', _hme_project_root: root }));
+    const parsed = JSON.parse(out.stdout);
+    assert.equal(parsed.decision, 'block');
+    assert.equal(parsed.reason, 'c& shortcut: dispatched /compact -> continue to the live session via the PTY bridge.');
+    const tok = fs.readFileSync(rfd, 'utf8').trim();
+    assert.equal(tok, `c&\t${Buffer.from('continue').toString('base64')}`);
+  } finally {
+    fs.closeSync(rfd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
