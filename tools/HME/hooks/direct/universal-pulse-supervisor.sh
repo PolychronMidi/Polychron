@@ -62,6 +62,7 @@ _up_kill_child() {
 _up_code_mtime() {
   local newest=0 m
   for f in "$_UP_PYTHON_SCRIPT" \
+           "$_SV_ROOT/tools/HME/activity/universal_pulse_tick.py" \
            "$_SV_ROOT/tools/HME/scripts/refresh_pid_file.py" \
            "$_SV_ROOT/tools/HME/scripts/service_registry.py"; do
     [ -f "$f" ] || continue
