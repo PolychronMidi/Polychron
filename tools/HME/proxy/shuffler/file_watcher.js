@@ -60,6 +60,11 @@ function shouldRestart(filePath) {
 
 const MAX_DEBOUNCE_MS = 12000;   // hard ceiling: continuous churn can't starve a restart
 function scheduleRestart(filePath) {
+  const decision = restartCoordinator.onChange(filePath);
+  if (!decision.schedule) {
+    console.error(`[file-watcher] restart in-flight; queued re-trigger from ${path.relative(PROJECT_ROOT, filePath)}`);
+    return;
+  }
   const now = Date.now();
   if (!firstPendingAt) firstPendingAt = now;
   if (pendingTimer) clearTimeout(pendingTimer);
@@ -70,21 +75,13 @@ function scheduleRestart(filePath) {
   pendingTimer = setTimeout(() => {
     pendingTimer = null;
     firstPendingAt = 0;
-    runRestart(filePath);
+    const restart = restartCoordinator.onDebounceElapsed();
+    if (restart) runRestart(restart);
   }, wait);
 }
 
-function runRestart(triggerPath) {
-  if (inFlightRestart) {
-    // Don't DROP it -- queue a re-trigger so the latest code still gets a
-    // restart once the in-flight one finishes. Dropping here was the root
-    retriggerQueued = true;
-    console.error(`[file-watcher] restart in-flight; queued re-trigger from ${path.relative(PROJECT_ROOT, triggerPath)}`);
-    return;
-  }
-  inFlightRestart = true;
-  const slot = nextSlot;
-  nextSlot = slot === 'a' ? 'b' : 'a';
+function runRestart(restart) {
+  const { slot, path: triggerPath } = restart;
   console.error(`[file-watcher] proxy change detected (${path.relative(PROJECT_ROOT, triggerPath)}); restarting slot ${slot}`);
   // Force: debounce + in-flight serialization already bound code-change churn.
   const proc = spawn('bash', [SLOT_SCRIPT, '--slot', slot, '--force'], {
@@ -93,19 +90,18 @@ function runRestart(triggerPath) {
     stdio: ['ignore', 'inherit', 'inherit'],
   });
   proc.on('exit', (code) => {
-    inFlightRestart = false;
     if (code !== 0) {
       // GUARANTEE 3 (no breakage on >1 slot): the slot we just rolled did NOT
       // come up viable (preflight/admission/ready-wait failed in slot-restart).
       console.error(`[file-watcher] slot-restart ${slot} exited ${code}; leaving the other slot on last-viable code (check log/hme-proxy-${slot}.out)`);
-      retriggerQueued = false;
+      restartCoordinator.onRestartDone({ failed: true, clearPending: true });
       return;
     }
-    if (retriggerQueued) {
-      retriggerQueued = false;
+    const chained = restartCoordinator.onRestartDone();
+    if (chained) {
       // A change landed mid-restart AND this slot proved viable -> restart the
       // OTHER slot now so both converge to current code. Zero-downtime: this
-      runRestart(triggerPath);
+      runRestart(chained);
     }
   });
 }
