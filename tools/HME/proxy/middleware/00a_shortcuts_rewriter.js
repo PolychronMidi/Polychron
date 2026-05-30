@@ -10,10 +10,17 @@ const SHORTCUTS = {
   'r': 'restarted. continue'
 };
 
+// Two-step shortcuts: the proxy sends `first` as the user message this turn,
+// captures the response, then auto-submits `second` as a follow-up user message.
+const TWO_STEP_SHORTCUTS = {
+  '1': { first: "reply only with 'hi'", second: "reply only with 'high'" },
+  'cc': { first: '/compact', second: 'continue' },
+};
+
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
-// Derive the match alternation from the map keys so the regex can never drift
-// out of sync with SHORTCUTS.
-const _SHORTCUT_KEYS = [...Object.keys(SHORTCUTS)].sort((a, b) => b.length - a.length);
+// Derive the match alternation from both shortcut maps so the regex can never
+// drift out of sync with the keys it must match.
+const _SHORTCUT_KEYS = [...Object.keys(SHORTCUTS), ...Object.keys(TWO_STEP_SHORTCUTS)].sort((a, b) => b.length - a.length);
 const _SHORTCUT_ALT = _SHORTCUT_KEYS.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 const SHORTCUT_RE = new RegExp(`^\\s*(${_SHORTCUT_ALT})\\s*$`);
 const _SHORTCUT_TAIL_RE = new RegExp(`(^|\\n)([ \\t]*)(${_SHORTCUT_ALT})([ \\t]*)$`, 'i');
