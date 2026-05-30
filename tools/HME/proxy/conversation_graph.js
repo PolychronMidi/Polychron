@@ -1,16 +1,12 @@
 'use strict';
 
 const { SUCCESS_EMPTY } = require('./tool_result_semantics');
+const { blockText: _sharedBlockText } = require('./request_shape');
 
+// Conversation-graph callers want tool_result text included (they reason over
+// tool output, not just user prose), so default the shared helper's toolResults
 function blockText(block) {
-  if (!block || typeof block !== 'object') return '';
-  if (block.type === 'text') return block.text || '';
-  if (block.type === 'tool_result') {
-    const c = block.content;
-    if (typeof c === 'string') return c;
-    if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  }
-  return '';
+  return _sharedBlockText(block, { toolResults: true });
 }
 
 function stripStaleToolResults(payload, keepTurns = 7) {
