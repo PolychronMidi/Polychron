@@ -117,6 +117,21 @@ test('Claude adapter converts invalid Stop hookSpecificOutput into valid root bl
   }
 });
 
+test('Claude adapter relays whitespace-only Stop stdout as empty (no-decision), not raw whitespace', () => {
+  // Regression: validateClaudeStdout returned the raw stdout when its trimmed
+  // form was empty, so whitespace-only stdout (' ', '\n') relayed verbatim and
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-ws-'));
+  try {
+    const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+    for (const ws of [' ', '\n', ' \n\t ']) {
+      assert.equal(validateClaudeStdout('Stop', ws, tmp), '', `whitespace ${JSON.stringify(ws)} must relay as empty string`);
+    }
+    assert.equal(validateClaudeStdout('Stop', '', tmp), '');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('Claude adapter emits a single JSON document when stdout carries a trailing second document', () => {
   // Regression: validateClaudeStdout parsed only the FIRST JSON document but
   // returned the RAW stdout, so a multi-document Stop payload shipped two
