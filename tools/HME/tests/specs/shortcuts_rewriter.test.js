@@ -221,32 +221,33 @@ test('_assistantContentFromResponse parses JSON content and SSE text deltas', ()
   assert.deepEqual(sse, [{ type: 'text', text: 'hi' }]);
 });
 
-test('_usageFromResponse pulls real token usage from JSON and SSE responses', () => {
-  assert.deepEqual(
-    resp._usageFromResponse(Buffer.from(JSON.stringify({ usage: { input_tokens: 99, output_tokens: 3 } })), { 'content-type': 'application/json' }),
-    { input_tokens: 99, output_tokens: 3 },
-  );
-  const sse = 'event: message_start\ndata: {"type":"message_start","message":{"usage":{"input_tokens":99,"output_tokens":1}}}\n\n'
-    + 'event: message_delta\ndata: {"type":"message_delta","usage":{"output_tokens":3}}\n\n';
-  assert.deepEqual(resp._usageFromResponse(Buffer.from(sse), { 'content-type': 'text/event-stream' }), { input_tokens: 99, output_tokens: 3 });
-});
+const _sseMsg = (text, usage) => 'event: message_start\n'
+  + `data: {"type":"message_start","message":{"usage":${JSON.stringify(usage)}}}\n\n`
+  + 'event: content_block_delta\n'
+  + `data: {"type":"content_block_delta","delta":{"text":${JSON.stringify(text)}}}\n\n`
+  + 'event: message_stop\ndata: {"type":"message_stop"}\n\n';
 
-test('_maybeRunTwoStepFollowup surfaces BOTH responses AND carries real usage (no fake context wipe)', async () => {
-  const payload = { model: 'm', messages: [{ role: 'user', content: "reply only with 'hi'" }] };
+test('_maybeRunTwoStepFollowup delivers TWO genuine responses back-to-back (no synthetic merge)', async () => {
+  const payload = { model: 'm', stream: true, messages: [{ role: 'user', content: "reply only with 'hi'" }] };
   Object.defineProperty(payload, '__hme_followup', { value: "reply only with 'high'", enumerable: false, configurable: true, writable: true });
-  const transport = _fakeTransport({ status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: [{ type: 'text', text: 'high' }], usage: { input_tokens: 1234, output_tokens: 5 } }) });
+  const secondBody = _sseMsg('high', { input_tokens: 1234, output_tokens: 5 });
+  const transport = _fakeTransport({ status: 200, headers: { 'content-type': 'text/event-stream' }, body: secondBody });
+  const firstBody = Buffer.from(_sseMsg('hi', { input_tokens: 1200, output_tokens: 2 }));
   const out = await resp._maybeRunTwoStepFollowup({
     status: 200,
-    headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '5000' },
-    fullBody: Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hi' }], usage: { input_tokens: 1200, output_tokens: 2 } })),
+    headers: { 'content-type': 'text/event-stream', 'anthropic-ratelimit-input-tokens-remaining': '5000' },
+    fullBody: firstBody,
     payload, transport, upstreamOpts: {}, upstreamHeaders: {},
   });
   assert.equal(out.status, 200);
-  const merged = JSON.parse(out.fullBody.toString('utf8'));
-  // BOTH responses surfaced (first step not skipped): merged "hi\n\nhigh".
-  assert.equal(merged.content[0].text, 'hi\n\nhigh');
-  // Real usage carried from the 2nd response -> context meter NOT wiped.
-  assert.equal(merged.usage.input_tokens, 1234);
+  const wire = out.fullBody.toString('utf8');
+  // TWO genuine message cycles on the wire -- real bytes, not a hand-built merge.
+  assert.equal((wire.match(/event: message_start/g) || []).length, 2);
+  assert.equal((wire.match(/event: message_stop/g) || []).length, 2);
+  assert.equal(wire.includes('"text":"hi"'), true);
+  assert.equal(wire.includes('"text":"high"'), true);
+  // Each response keeps its own real usage -> no synthetic zeroed usage.
+  assert.equal(wire.includes('"input_tokens":1234'), true);
   // Normalized context headers from the first response preserved.
   assert.equal(out.headers['anthropic-ratelimit-input-tokens-remaining'], '5000');
   // transcript now: original user, assistant 'hi', followup user
