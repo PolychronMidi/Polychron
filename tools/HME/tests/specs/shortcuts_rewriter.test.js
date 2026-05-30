@@ -278,13 +278,16 @@ test('claude adapter detects cc and blocks the literal prompt without faking a w
   assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'ccc' })), null);
   assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'continue' })), null);
   // handler blocks the literal so `cc` never reaches the model, and suppresses
-  // the original prompt. No PTY bridge here -> reason reports it is unattached.
-  const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc' }));
+  // the original prompt. Use an isolated _hme_project_root so the control-fifo
+  // write CANNOT reach the live session's fifo (which would compact this session).
+  const isoRoot = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'cc-test-'));
+  const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc', _hme_project_root: isoRoot }));
   const parsed = JSON.parse(out.stdout);
   assert.equal(parsed.decision, 'block');
   assert.equal(parsed.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
   assert.equal(parsed.hookSpecificOutput.suppressOriginalPrompt, true);
   // non-cc prompt -> result returned untouched
   const orig = { stdout: '', stderr: ' ', exit_code: 0 };
-  assert.equal(adapter._handleCcShortcut(orig, JSON.stringify({ prompt: 'hello world' })), orig);
+  assert.equal(adapter._handleCcShortcut(orig, JSON.stringify({ prompt: 'hello world', _hme_project_root: isoRoot })), orig);
+  require('node:fs').rmSync(isoRoot, { recursive: true, force: true });
 });
