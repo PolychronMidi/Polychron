@@ -222,9 +222,10 @@ function validateClaudeStdout(event, stdout, root) {
 function _isCcShortcut(body) {
   try {
     const payload = JSON.parse(body || '{}') || {};
-    const key = shortcutsConfig.multiStepKey(payload.prompt);
-    if (!key) return null;
-    payload._hme_multistep_key = key;
+    const match = shortcutsConfig.multiStepMatch(payload.prompt);
+    if (!match) return null;
+    payload._hme_multistep_key = match.key;
+    payload._hme_multistep_prompt = match.prompt || '';
     return payload;
   } catch (_e) {
     return null;
