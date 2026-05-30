@@ -113,30 +113,23 @@ def load_multistep(root):
     return out or dict(DEFAULT_MULTISTEP)
 
 
+def _ansi_tolerant_literal(text):
+    ansi = rb"(?:\x1b\[[0-9;]*m)*"
+    parts = []
+    for b in text.encode("utf-8"):
+        if b == 10:
+            parts.append(ansi + rb"(?:\r\n|\n)" + ansi)
+        else:
+            parts.append(re.escape(bytes([b])) + ansi)
+    return b"".join(parts)
+
+
 def success_banner_patterns(multistep):
     patterns = []
-    sgr_dim = b"\x1b[2m"
-    sgr_resets = (b"\x1b[22m", b"\x1b[0m")
-
-    def add(pattern, newline_bytes):
-        patterns.append(pattern + newline_bytes)
-        patterns.append(pattern)
-
+    trailing_newline = rb"(?:\r\n|\n)?"
     for key, steps in multistep.items():
-        text = success_banner_text(key, steps)
-        lines = text.split("\n")
-        for newline in ("\r\n", "\n"):
-            newline_bytes = newline.encode("utf-8")
-            body = text.replace("\n", newline).encode("utf-8")
-            add(body, newline_bytes)
-            # Claude Code often renders hook banners dimmed per line, e.g.
-            #   ESC[2mline1ESC[22m CRLF ESC[2mline2ESC[22m
-            for reset in sgr_resets:
-                add(sgr_dim + body + reset, newline_bytes)
-                per_line = newline_bytes.join(
-                    sgr_dim + line.encode("utf-8") + reset for line in lines
-                )
-                add(per_line, newline_bytes)
+        body = _ansi_tolerant_literal(success_banner_text(key, steps))
+        patterns.append(re.compile(body + trailing_newline))
     return patterns
 
 
