@@ -87,7 +87,7 @@ class ExactOutputFilter:
         for n in range(limit, 0, -1):
             suffix = self.buf[-n:]
             for pattern in self.patterns:
-                if pattern.startswith(suffix):
+                if pattern.startswith(suffix) or (suffix.startswith(b"\x1b[") and pattern.startswith(suffix[:2])):
                     return n
         return 0
 
