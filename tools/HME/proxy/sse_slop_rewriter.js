@@ -457,9 +457,13 @@ function _stripCenterVowelsSegment(text) {
 
 function _compactNonAlnumSegment(text) {
   return String(text || '')
-    // Remove horizontal whitespace around punctuation/markers, but preserve
-    // newline entries. Using \s here swallowed line breaks around bullets/colons.
-    .replace(/[ \t]*([^A-Za-z0-9\s])[ \t]*/g, '$1')
+    // Preserve newline entries. Only strip spaces/tabs around punctuation that is
+    // safe without padding; keep word separators around operators like &, |, -.
+    .replace(/[ \t]*([,.;:!?])([ \t]*)/g, (m, punct, tail) => {
+      if (/[.!?]/.test(punct)) return punct + (tail ? ' ' : '');
+      return punct;
+    })
+    .replace(/[ \t]*([()\[\]{}])[ \t]*/g, '$1')
     // Deduplicate concurrent repeated non-alphanumeric chars: !!! -> !, ... -> .
     .replace(/([^A-Za-z0-9\s])\1+/g, '$1');
 }
