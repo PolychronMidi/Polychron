@@ -2,13 +2,14 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const path = require('node:path');
+const { requireEnv } = require('../../proxy/shared/load_env');
 
 // The live-live invariant this guards: EVERY file that feeds the runtime
 // fingerprint ("wanted") must also be in the file-watcher's trigger set, or a
 const { extraRuntimeFiles, EXTRA_RUNTIME_FILES } = require('../../proxy/proxy_runtime_fingerprint');
 const watcher = require('../../proxy/shuffler/file_watcher');
 
-const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+const ROOT = requireEnv('PROJECT_ROOT');
 
 test('shouldRestart() fires for every EXTRA fingerprint-input file (.env, launcher, supervisor)', () => {
   for (const abs of extraRuntimeFiles(ROOT)) {

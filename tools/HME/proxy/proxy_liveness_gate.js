@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { requireEnv } = require('./shared/load_env');
 
 function _isAlive(pid) {
   if (!pid || typeof pid !== 'number') return false;
@@ -104,7 +105,7 @@ function runCli(root) {
 module.exports = { evaluateSlots, formatLifesaver, runCli, runCheckOnly, inspectLive };
 
 if (require.main === module) {
-  const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+  const root = requireEnv('PROJECT_ROOT');
   const checkOnly = process.argv.includes('--check-only');
   process.exit(checkOnly ? runCheckOnly(root) : runCli(root));
 }

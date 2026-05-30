@@ -6,6 +6,8 @@ const fs = require('fs');
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 
+const { requireEnv } = require('../shared/load_env');
+
 const ERR_LOG_REL = path.join('log', 'hme-errors.log');
 
 function _defaultCheckSyntax(entryFile) {
@@ -31,7 +33,7 @@ function _defaultIsAlive(child) {
 }
 
 function _defaultAlert(line) {
-  const root = process.env.PROJECT_ROOT || process.cwd();
+  const root = requireEnv('PROJECT_ROOT');
   try {
     const p = path.join(root, ERR_LOG_REL);
     fs.mkdirSync(path.dirname(p), { recursive: true });
