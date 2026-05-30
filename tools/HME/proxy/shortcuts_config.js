@@ -45,15 +45,31 @@ function shortcutDisplay(text) {
   return null;
 }
 
-function multiStepKey(text) {
-  const key = String(text == null ? '' : text).trim().toLowerCase();
-  if (!key) return null;
-  return Object.prototype.hasOwnProperty.call(MULTI_STEP_SHORTCUTS, key) ? key : null;
+function multiStepMatch(text) {
+  const raw = String(text == null ? '' : text).trim();
+  const keyText = raw.toLowerCase();
+  if (!keyText) return null;
+  if (Object.prototype.hasOwnProperty.call(MULTI_STEP_SHORTCUTS, keyText)) {
+    return { key: keyText, prompt: '', mode: MULTI_STEP_SHORTCUTS[keyText].mode || 'exact' };
+  }
+  const prefixKeys = Object.keys(MULTI_STEP_SHORTCUTS)
+    .filter((k) => (MULTI_STEP_SHORTCUTS[k].mode || 'exact') === 'prefix')
+    .sort((a, b) => b.length - a.length || a.localeCompare(b));
+  for (const key of prefixKeys) {
+    if (keyText.startsWith(key)) return { key, prompt: raw.slice(key.length), mode: 'prefix' };
+  }
+  return null;
 }
 
-function multiStepSteps(key) {
+function multiStepKey(text) {
+  const match = multiStepMatch(text);
+  return match ? match.key : null;
+}
+
+function multiStepSteps(key, prompt = '') {
   const def = MULTI_STEP_SHORTCUTS[String(key || '').trim().toLowerCase()];
-  return def && Array.isArray(def.steps) ? def.steps.slice() : null;
+  if (!def || !Array.isArray(def.steps)) return null;
+  return def.steps.map((step) => String(step).replace(/\$prompt/g, String(prompt || '')));
 }
 
 module.exports = {
