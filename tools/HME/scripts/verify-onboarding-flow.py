@@ -2,15 +2,14 @@
 """Onboarding flow dry-run verifier.
 
 Simulates a full HME onboarding walkthrough in an ISOLATED state file,
-verifies each state transition fires, onboarding stays out of the TODO store,
-and graduation clears state. Catches integration bugs in the chain decider
-before real agents hit them.
+verifies each state transition fires, and graduation clears state. Catches
+integration bugs in the chain decider before real agents hit them.
 
 Tests:
     1. Fresh boot state is created.
     2. Each forward transition advances state + updates step label.
     3. Backward transitions are refused.
-    4. Onboarding state does not create persistent TODO entries.
+    4. Onboarding state transitions are side-effect-isolated.
     5. chain_exit correctly parses HME_TARGET and HME_REVIEW_VERDICT markers.
     6. Graduation deletes the state file.
 
