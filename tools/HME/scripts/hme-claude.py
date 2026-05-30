@@ -200,8 +200,13 @@ def main():
                 except OSError:
                     data = b""
                 if not data:
+                    tail = output_filter.flush()
+                    if tail:
+                        os.write(sys.stdout.fileno(), tail)
                     break
-                os.write(sys.stdout.fileno(), data)
+                filtered = output_filter.feed(data)
+                if filtered:
+                    os.write(sys.stdout.fileno(), filtered)
                 last_master_out = time.time()
 
             if stdin_fd in rfds:
