@@ -471,88 +471,6 @@ test('Codex proxy returns 502 after exhausting OmniRoute retries (no silent dire
   }
 });
 
-test('Codex Responses proxy syncs streamed update_plan calls into TODO.md', async () => {
-  const sandbox = withSandbox();
-  const proxyPort = await freePort();
-  const upstream = http.createServer((req, res) => {
-    req.resume();
-    const updateArgs = JSON.stringify({
-      explanation: 'proxy stream test',
-      plan: [
-        { step: 'Proxy captures Codex plan', status: 'in_progress' },
-        { step: 'TODO.md receives Codex plan', status: 'pending' },
-      ],
-    });
-    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
-    res.write(`data: ${JSON.stringify({
-      type: 'response.output_item.done',
-      item: {
-        type: 'function_call',
-        name: 'update_plan',
-        arguments: updateArgs,
-        call_id: 'call_codex_proxy_test',
-      },
-    })}\n\n`);
-    res.write(`data: ${JSON.stringify({ type: 'response.completed', response: { id: 'resp_test', output: [] } })}\n\n`);
-    res.end();
-  });
-  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
-  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
-    cwd: repoRoot,
-    env: {
-      ...process.env,
-      PROJECT_ROOT: sandbox,
-      PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
-      HME_CODEX_PROXY_PORT: String(proxyPort),
-      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
-      HME_CODEX_PLAN_SYNC_SCRIPT: path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_plan_sync.py'),
-      HME_CODEX_PROXY_CONFIG: path.join(repoRoot, 'tools', 'HME', 'config', 'codex-proxy.json'),
-      HME_CODEX_OMNIROUTE: '0',
-      HME_CODEX_PROXY_AUTOCOMMIT: '0',
-    },
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
-  let stderr = '';
-  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
-  try {
-    await waitFor(() => {
-      return new Promise((resolve) => {
-        const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
-          res.resume();
-          resolve(res.statusCode === 200);
-        });
-        req.on('error', () => resolve(false));
-        req.on('timeout', () => { req.destroy(); resolve(false); });
-        req.end();
-      });
-    });
-    const response = await requestJson(proxyPort, '/v1/responses', {
-      model: 'gpt-5.5',
-      instructions: 'test',
-      tools: [{ type: 'function', name: 'update_plan' }],
-      stream: true,
-    });
-    assert.strictEqual(response.status, 200);
-    await waitFor(() => {
-      const todoMd = path.join(sandbox, 'doc', 'templates', 'TODO.md');
-      return fs.existsSync(todoMd) && fs.readFileSync(todoMd, 'utf8').includes('Proxy captures Codex plan');
-    }, 10000);
-    const todoMd = fs.readFileSync(path.join(sandbox, 'doc', 'templates', 'TODO.md'), 'utf8');
-    assert.match(todoMd, /## Now[\s\S]*Proxy captures Codex plan/);
-    assert.match(todoMd, /## Next[\s\S]*TODO\.md receives Codex plan/);
-  } catch (err) {
-    const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
-    const events = fs.existsSync(eventsPath) ? fs.readFileSync(eventsPath, 'utf8') : '(no codex proxy events)';
-    err.message = `${err.message}\nproxy stderr:\n${stderr}\nproxy events:\n${events}`;
-    throw err;
-  } finally {
-    child.kill('SIGTERM');
-    upstream.close();
-    try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
-  }
-  assert.doesNotMatch(stderr, /SyntaxError|TypeError|ReferenceError/);
-});
-
 test('Codex Responses proxy injects autocommit fail flags into instructions', async () => {
   const sandbox = withSandbox();
   const flagDir = path.join(sandbox, 'tools', 'HME', 'runtime');
@@ -581,7 +499,6 @@ test('Codex Responses proxy injects autocommit fail flags into instructions', as
       PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
       HME_CODEX_PROXY_PORT: String(proxyPort),
       HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
-      HME_CODEX_PLAN_SYNC_SCRIPT: path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_plan_sync.py'),
       HME_CODEX_PROXY_CONFIG: path.join(repoRoot, 'tools', 'HME', 'config', 'codex-proxy.json'),
       HME_CODEX_OMNIROUTE: '0',
       HME_CODEX_PROXY_AUTOCOMMIT: '0',

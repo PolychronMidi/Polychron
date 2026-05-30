@@ -171,7 +171,7 @@ function sseFinalResponse(events) {
 }
 
 function createCodexResponseForwarder(deps) {
-  const { record, planScanner, projectRoot, onResponseComplete } = deps;
+  const { record, projectRoot, onResponseComplete } = deps;
 
   return function forwardResponses(req, res, targets, source, visibility) {
     const started = Date.now();
@@ -452,7 +452,6 @@ function createCodexResponseForwarder(deps) {
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [], ...traceFields(target) });
       const finalParsed = rewritten ? rewritten.body : parsed;
       const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
-      if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
       if (sendParsedOverClientSse(target, status, headers, finalParsed, '')) return;
       res.writeHead(status, headers);
       res.end(finalBody);
@@ -485,9 +484,6 @@ function createCodexResponseForwarder(deps) {
       const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();
       if (rewriter.stats.calls) record({ kind: 'codex-sse-native-tool-rewrite', route: target.kind, count: rewriter.stats.calls, ...traceFields(target) });
       if (rewriter.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewriter.stats.unknown_calls, names: rewriter.stats.unknown_names || [], ...traceFields(target) });
-      const scanner = planScanner.createSseScanner(source);
-      scanner.feed(Buffer.from(finalFull));
-      scanner.finish();
       if (sendParsedOverClientSse(target, status, headers, parsed, '')) return;
       res.writeHead(status, headers);
       res.end(finalFull);

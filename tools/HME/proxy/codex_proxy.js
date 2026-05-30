@@ -8,7 +8,6 @@ const { loadJsonc } = require('./config_loader');
 const { runAutocommit, injectLifesaver } = require('./turn_side_effects');
 const { applyRequestTransform } = require('./codex_payload');
 const { targetChain, targetSummary } = require('./codex_omniroute');
-const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 const { requestTelemetry } = require('./request_telemetry');
 const { decisionForTarget } = require('./model_route_resolver');
@@ -23,8 +22,6 @@ const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
 const CONFIG_PATH = process.env.HME_CODEX_PROXY_CONFIG
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'codex-proxy.json');
-const PLAN_SYNC = process.env.HME_CODEX_PLAN_SYNC_SCRIPT
-  || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'codex_plan_sync.py');
 const EVENT_LOG = path.join(RUNTIME_DIR, 'codex-proxy-events.jsonl');
 const DEFAULT_UPSTREAM = 'https://chatgpt.com/backend-api/codex/responses';
 const UPSTREAM_URL = process.env.HME_CODEX_UPSTREAM_URL || DEFAULT_UPSTREAM;
@@ -93,7 +90,7 @@ function loadConfig() {
   try {
     _config = loadJsonc(CONFIG_PATH);
   } catch (err) {
-    _config = { todo_sync: { enabled: true }, request_transform: {}, _load_error: err.message };
+    _config = { request_transform: {}, _load_error: err.message };
   }
   return _config;
 }
@@ -121,10 +118,8 @@ function record(row) {
   appendJsonl(EVENT_LOG, event);
 }
 
-const planScanner = createPlanScanner({ loadConfig, record, nowIso, planSync: PLAN_SYNC, projectRoot: PROJECT_ROOT });
 const forwardResponses = createCodexResponseForwarder({
   record,
-  planScanner,
   projectRoot: PROJECT_ROOT,
   upstreamUrl: UPSTREAM_URL,
   onResponseComplete: _captureResponseOutputItems,
