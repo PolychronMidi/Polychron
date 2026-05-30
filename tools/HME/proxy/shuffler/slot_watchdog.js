@@ -11,7 +11,15 @@ const { loadEnv, requireEnv } = require('../shared/load_env');
 const { currentRuntimeFingerprint } = require('../proxy_runtime_fingerprint');
 const { watchSelfAndReexec } = require('./self_reexec');
 
-loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
+const ENV_FILE = path.resolve(__dirname, '..', '..', '..', '..', '.env');
+const WATCHDOG_REEXEC_FILES = [
+  path.join(__dirname, 'self_reexec.js'),
+  path.join(__dirname, '..', 'proxy_runtime_fingerprint.js'),
+  path.join(__dirname, '..', 'shared', 'load_env.js'),
+  ENV_FILE,
+];
+
+loadEnv(ENV_FILE);
 
 const PROJECT_ROOT = requireEnv('PROJECT_ROOT');
 const HEARTBEAT_SEC = Number(requireEnv('HME_PROXY_HEARTBEAT_SEC'));
