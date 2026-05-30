@@ -314,4 +314,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout, shouldLogHookStderr, _injectShortcutDisplayContent };
+module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout, shouldLogHookStderr, _isCcShortcut, _handleCcShortcut };
