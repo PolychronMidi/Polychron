@@ -106,7 +106,7 @@ function applyShortcutCompact(payload, shrinkForPassthrough) {
       }),
       route: 'shortcut-compact',
       model: payload.model || payload.target_model || payload.original_model || '',
-      keepMin: Number(process.env.HME_PROXY_COMPACT_SHORTCUT_KEEP_MIN || process.env.HME_PROXY_COMPACT_KEEP_MIN || 10),
+      keepMin: 10,
     });
   }
   delete payload.__shortcut_compact;
