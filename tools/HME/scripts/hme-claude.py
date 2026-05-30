@@ -173,6 +173,7 @@ def main():
     ctrl_fd = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
 
     ctrl_buf = b""
+    output_filter = ExactOutputFilter(cc_success_banner_patterns())
     pending_continue = False
     compact_started_at = 0.0
     last_master_out = 0.0
