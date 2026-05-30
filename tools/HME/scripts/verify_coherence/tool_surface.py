@@ -87,29 +87,3 @@ class ToolSurfaceCoverageVerifier(Verifier):
 # Verifiers -- RUNTIME category
 
 
-@register
-class TodoMergeHookConsistencyVerifier(Verifier):
-    """The native TodoWrite hook should merge updatedInput without blocking."""
-    name = "todowrite-hook-nonblock"
-    category = "code"
-    subtag = "structural-integrity"
-    weight = 1.0
-
-    def run(self) -> VerdictResult:
-        hook = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "native_hooks", "todo.js")
-        if not os.path.isfile(hook):
-            return skipped(summary="native TodoWrite hook not found")
-        try:
-            with open(hook) as f:
-                src = f.read()
-        except Exception as e:
-            return errored(summary=f"read error: {e}")
-        m = re.search(r'async function pretoolTodoWrite\(.*?\n}\n\nasync function posttoolTodoWrite', src, re.DOTALL)
-        if not m:
-            return failed(summary="pretoolTodoWrite handler not found")
-        body = m.group(0)
-        if "hookBlock(" in body or '"decision":"block"' in body or "'decision':'block'" in body:
-            return failed(summary="TodoWrite handler has a blocking decision -- native TodoWrite will be frozen", details=["return allow(...updatedInput...) so native TodoWrite proceeds"])
-        if "updatedInput" not in body or "return allow" not in body:
-            return failed(score=0.5, summary="TodoWrite handler does not visibly return allow(...updatedInput...)", details=["preserve native TodoWrite with a merged updatedInput payload"])
-        return passed(summary="TodoWrite hook allows native TodoWrite to proceed")

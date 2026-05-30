@@ -84,13 +84,8 @@ from .onboarding import (  # noqa: F401
     StatesSyncVerifier, OnboardingFlowVerifier,
     OnboardingStateIntegrityVerifier, OnboardingChainImportVerifier,
 )
-from .todo_tools import (  # noqa: F401
-    TodoStoreSchemaVerifier, TodoMarkdownSyncVerifier, TodoArchiveContractVerifier,
-    TodoOnboardingDecoupledVerifier, TodoCodexPlanSyncVerifier,
-    TodoOpencodeSyncVerifier,
-)
 from .tool_surface import (  # noqa: F401
-    ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier,
+    ToolSurfaceCoverageVerifier,
 )
 from .meta_observers import (  # noqa: F401
     MetaObserverCoherenceVerifier,

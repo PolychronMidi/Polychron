@@ -41,8 +41,6 @@ CONFIG_PATH = PROJECT_ROOT / "tools" / "HME" / "config" / "universal_pulse.json"
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 DEFAULT_HEARTBEAT = PROJECT_ROOT / "tmp" / "hme-universal-pulse.heartbeat"
 MAINTENANCE_FLAG = PROJECT_ROOT / "tmp" / "hme-proxy-maintenance.flag"
-_last_codex_plan_sync = {"ts": 0.0}
-_last_opencode_todo_sync = {"ts": 0.0}
 
 _shutdown = False
 
@@ -93,55 +91,6 @@ def _tick(cfg, tracker):
         # don't fire alerts; the operator owns the window.
         return 0, 0
 
-    codex_sync = cfg.get("codex_plan_sync", {})
-    if codex_sync.get("enabled", True):
-        min_interval = float(codex_sync.get("min_interval_sec", cfg.get("interval_sec", 30)))
-        if now - _last_codex_plan_sync["ts"] >= min_interval:
-            _last_codex_plan_sync["ts"] = now
-            try:
-                os.environ.setdefault("PROJECT_ROOT", str(PROJECT_ROOT))
-                scripts_dir = PROJECT_ROOT / "tools" / "HME" / "scripts"
-                if str(scripts_dir) not in sys.path:
-                    sys.path.insert(0, str(scripts_dir))
-                from codex_plan_sync import sync_latest_codex_plan
-                result = sync_latest_codex_plan()
-                if result.get("ok") is False and "no Codex update_plan" not in result.get("message", ""):
-                    raise RuntimeError(result.get("message", "unknown Codex plan sync failure"))
-                tracker.record("codex_plan_sync", True, now)
-                ok_count += 1
-            except Exception as err:
-                alert = tracker.record("codex_plan_sync", False, now)
-                bad_count += 1
-                if alert:
-                    _log_error(
-                        f"[universal_pulse] WARN codex_plan_sync failed: "
-                        f"{type(err).__name__}: {str(err)[:120]}"
-                    )
-
-    opencode_sync = cfg.get("opencode_todo_sync", {})
-    if opencode_sync.get("enabled", True):
-        min_interval = float(opencode_sync.get("min_interval_sec", cfg.get("interval_sec", 30)))
-        if now - _last_opencode_todo_sync["ts"] >= min_interval:
-            _last_opencode_todo_sync["ts"] = now
-            try:
-                os.environ.setdefault("PROJECT_ROOT", str(PROJECT_ROOT))
-                scripts_dir = PROJECT_ROOT / "tools" / "HME" / "scripts"
-                if str(scripts_dir) not in sys.path:
-                    sys.path.insert(0, str(scripts_dir))
-                from opencode_todo_sync import sync_latest_opencode_todos
-                result = sync_latest_opencode_todos()
-                if result.get("ok") is False and "opencode.db not present" not in result.get("message", ""):
-                    raise RuntimeError(result.get("message", "unknown OpenCode todo sync failure"))
-                tracker.record("opencode_todo_sync", True, now)
-                ok_count += 1
-            except Exception as err:
-                alert = tracker.record("opencode_todo_sync", False, now)
-                bad_count += 1
-                if alert:
-                    _log_error(
-                        f"[universal_pulse] WARN opencode_todo_sync failed: "
-                        f"{type(err).__name__}: {str(err)[:120]}"
-                    )
 
     for probe in cfg.get("http_probes", []):
         name = probe["name"]
