@@ -428,7 +428,7 @@ function _stripCenterVowelsWord(word) {
 
   const center = (value.length - 1) / 2;
   const vowels = [];
-  for (let i = 0; i < value.length; i += 1) {
+  for (let i = 1; i < value.length; i += 1) {
     if (/[aeiou]/i.test(value[i])) vowels.push(i);
   }
   if (vowels.length === 0) return value;
