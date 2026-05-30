@@ -22,7 +22,6 @@ Registered domains:
   conductor-state    -> conductor subsystem     (src/conductor/*)
   cross-layer        -> crossLayerEmissionGateway
   adaptive-state     -> adaptive-state writer   (src/scripts/pipeline/*)
-  hme-todo-store     -> server.tools_analysis.todo
   lifesaver-registry -> server.failure_genealogy
 
 Adding a new domain: extend `_OWNERS` here and put `assert_writer(domain,
