@@ -51,7 +51,7 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
     return { ok: true, action: 'compacted', model: modelId, tokens, budget };
   }
   // Tier 2: reroute to a larger-context route in the swap chain.
-  const larger = pickLargerRoute(swapChain, tokens, modelId);
+  const larger = pickLargerRoute(swapChain, tokens, modelId, budgetFor);
   if (larger) {
     const newId = larger.api_model || larger.id;
     return { ok: true, action: 'rerouted', model: newId, reroute: larger, tokens, budget: budgetFor(newId) };
