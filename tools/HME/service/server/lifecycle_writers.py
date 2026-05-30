@@ -42,7 +42,6 @@ _OWNERS: dict[str, str] = {
     "llama-server":        "llamacpp_daemon",
     "embedders":           "rag_engines",
     "kb":                  "tools_knowledge",
-    "hme-todo-store":      "todo",
     "lifesaver-registry":  "failure_genealogy",
     "onboarding-state":    "onboarding_chain",
 }
