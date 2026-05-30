@@ -38,10 +38,6 @@ def todo_file() -> str:
     return os.path.join(templates_dir(), "TODO.md")
 
 
-def todo_store_file() -> str:
-    return os.path.join(project_root(), "tools", "HME", "KB", "todos.json")
-
-
 def onboarding_file() -> str:
     return os.path.join(templates_dir(), "ONBOARDING.md")
 
