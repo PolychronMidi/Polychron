@@ -14,7 +14,9 @@ Example:
 
 #1 5_ HME design-pattern optimization survey: 4 parallel subsystem agents (proxy / event_kernel+hooks / verifiers+detectors / tools_analysis) finding duplication+inconsistent-abstraction to unify; DONE — all 4 returned, findings synthesized into the items below
 
-#2 0_ proxy: unify content-block text extraction — `blockText` (conversation_graph.js), `_extractTextContent` (hme_proxy_core.js), `_lastUserPromptText`/`_lastUserTextBlocks` (hme_proxy_request_mutation.js) each re-walk `content[]` for text; collapse to one shared helper [E2]
+#2 4_ proxy: unify content-block text extraction — canonical `blockText(block,{toolResults})` + `contentText(content)` added to request_shape.js; conversation_graph.blockText now delegates (tool-result-inclusive preserved), request_mutation `_lastUserPromptText`/`_lastUserTextBlocks` collapsed to shared `messageText` + one `_lastUserMessageRaw`; 16/16 shortcuts + 5/5 facade green, behavior asserted [E2]
+
+#13 4f_ migrate the remaining text-rewalk copies onto the shared helper: hme_proxy_core._extractTextContent and the ~20 middleware `_resultText`/`_textOf` tool-result readers → `blockText(b,{toolResults:true})`; then #6 re-survey confirms call-sites removed <!-- since:1780160742.87 -->
 
 #3 0_ rewriters: hoist the structured-JSON bypass just added to `sse_slop_rewriter._emitHeldTextEvents` into a shared guard so `sse_ascii_strip_rewriter` and other response-text rewriters also never corrupt JSON/structured-output (root cause of the /goal-verdict "JSON validation failed") [E2]
 
