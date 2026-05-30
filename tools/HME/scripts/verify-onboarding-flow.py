@@ -137,7 +137,6 @@ def main() -> int:
         print()
 
         onb = _load_onboarding_chain()
-        todo_mod = _load_todo_module(tmp_project)
 
         # Test 1: state machine shape
         print("## Test 1: state machine shape")
