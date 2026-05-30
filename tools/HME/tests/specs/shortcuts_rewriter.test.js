@@ -157,5 +157,6 @@ test('shortcuts_rewriter tolerates compact shortcut contexts without markDirty',
   const payload = { messages: [{ role: 'user', content: 'cc' }] };
   assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
   assert.equal(payload.__shortcut_compact, true);
-  assert.equal(payload.messages[0].content, '/compact');
+  assert.equal(payload.messages[0].content, 'continue');
+  assert.deepEqual(Object.keys(payload), ['messages']);
 });
