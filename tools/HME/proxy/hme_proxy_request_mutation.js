@@ -197,23 +197,12 @@ function _detectAndMarkUndefinedUserPrompt(payload) {
 // literal strings and re-sends. Detected from real request bodies -- this is
 const _PARSE_FAIL_RE = /tool call (?:was malformed and could not|could not) be parsed|retry also failed/i;
 
-function _lastUserTextBlocks(payload) {
-  const last = payload.messages[payload.messages.length - 1];
-  if (!last || last.role !== 'user') return [];
-  if (typeof last.content === 'string') return [last.content];
-  if (Array.isArray(last.content)) {
-    return last.content.filter((b) => b && b.type === 'text' && typeof b.text === 'string').map((b) => b.text);
-  }
-  return [];
-}
-
 function _detectUnparsedToolCallRetry(payload) {
   if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return false;
-  const texts = _lastUserTextBlocks(payload);
-  if (texts.length === 0) return false;
   // Only fire when the parse-error text is essentially the WHOLE last message
   // (the client's stand-in), not when the user merely quoted the phrase.
-  const blob = texts.join('\n');
+  const blob = _lastUserPromptText(payload);
+  if (!blob) return false;
   if (!_PARSE_FAIL_RE.test(blob)) return false;
   if (blob.length > 400) return false;   // a real user message that just mentions it -> skip
   payload.messages.push({ role: 'user', content: 'continue' });
