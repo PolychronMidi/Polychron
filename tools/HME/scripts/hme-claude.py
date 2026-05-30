@@ -129,7 +129,10 @@ def success_banner_patterns(multistep):
     trailing_newline = rb"(?:\r\n|\n)?"
     for key, steps in multistep.items():
         body = _ansi_tolerant_literal(success_banner_text(key, steps))
-        patterns.append(re.compile(body + trailing_newline))
+        # Regex length is unrelated to the literal stream length; use a bounded
+        # window derived from the plain banner length so chunk-boundary matches keep
+        window = len(success_banner_text(key, steps).encode("utf-8")) + 64
+        patterns.append((re.compile(body + trailing_newline), window))
     return patterns
 
 
