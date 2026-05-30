@@ -216,23 +216,26 @@ function validateClaudeStdout(event, stdout, root) {
   return JSON.stringify(normalized.parsed);
 }
 
+// Multi-step (local-session) shortcuts are defined in config/shortcuts.json and
+// loaded via shortcuts_config.js. They are NEVER wire messages: a step like
+// /compact is a Claude Code REPL-local command the proxy cannot run without
 function _isCcShortcut(body) {
   try {
     const payload = JSON.parse(body || '{}') || {};
-    return String(payload.prompt || '').trim().toLowerCase() === 'cc' ? payload : null;
+    const key = shortcutsConfig.multiStepKey(payload.prompt);
+    if (!key) return null;
+    payload._hme_multistep_key = key;
+    return payload;
   } catch (_e) {
     return null;
   }
 }
 
-// `/compact` is a Claude Code REPL-local command, never an API message -- the
-// proxy can't run it without counterfeiting. The only thing that drives the real
-// local /compact is the live session's own input stream. When Claude is launched
 function _ccControlFifo(root) {
   return path.join(root || process.cwd(), 'tmp', 'hme-cc-control.fifo');
 }
 
-function _writeCcToken(root) {
+function _writeCcToken(root, key) {
   const fifo = _ccControlFifo(root);
   // Non-blocking open: if no wrapper is reading, open fails with ENXIO and we
   // skip silently instead of hanging the hook.
@@ -242,7 +245,7 @@ function _writeCcToken(root) {
   } catch (_e) {
     return false;
   }
-  try { fs.writeSync(fd, 'cc\n'); return true; }
+  try { fs.writeSync(fd, `${key}\n`); return true; }
   catch (_e) { return false; }
   finally { try { fs.closeSync(fd); } catch (_e2) { /* best effort */ } }
 }
@@ -250,10 +253,14 @@ function _writeCcToken(root) {
 function _handleCcShortcut(result, body) {
   const payload = _isCcShortcut(body);
   if (!payload) return result;
-  const delivered = _writeCcToken(payload._hme_project_root);
+  const key = payload._hme_multistep_key;
+  const steps = shortcutsConfig.multiStepSteps(key) || [];
+  const delivered = _writeCcToken(payload._hme_project_root, key);
+  // Reason phrasing is shared with the PTY bridge's success-banner filter
+  // (tools/HME/scripts/hme-claude.py); both derive `<key> shortcut: dispatched
   const reason = delivered
-    ? 'cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge.'
-    : 'cc shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.py to enable /compact).';
+    ? `${key} shortcut: dispatched ${steps.join(' -> ')} to the live session via the PTY bridge.`
+    : `${key} shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.py to enable it).`;
   return {
     ...result,
     stdout: JSON.stringify({
