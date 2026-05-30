@@ -34,8 +34,16 @@ def project_root():
     env = os.environ.get("PROJECT_ROOT")
     if env and os.path.isdir(env):
         return env
-    here = os.path.dirname(os.path.abspath(__file__))
-    return os.path.dirname(here)
+    # This script may live at tools/HME/scripts after repository normalization.
+    # Climb to the repository root so the bridge and hook agree on root tmp/.
+    cur = os.path.dirname(os.path.abspath(__file__))
+    while True:
+        if os.path.isdir(os.path.join(cur, ".git")):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            return os.getcwd()
+        cur = parent
 
 
 def fifo_path(root):
