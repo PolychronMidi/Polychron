@@ -84,7 +84,8 @@ class ExactOutputFilter:
                     best_m = match
             if best_m is not None:
                 if best_m.start():
-                    out.append(self.buf[:best_m.start()])
+                    before = self.buf[:best_m.start()]
+                    out.append(self.ansi_suffix_re.sub(b"", before))
                 self.buf = self.buf[best_m.end():]
                 if self.buf.startswith(b"\r\n"):
                     self.buf = self.buf[2:]
