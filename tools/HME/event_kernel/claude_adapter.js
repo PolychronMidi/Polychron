@@ -145,7 +145,13 @@ function _normalizeClaudeStdoutObject(event, parsed) {
         issues.push('Stop hookSpecificOutput is not valid Claude hook JSON; stripped unsupported field');
       }
     }
-    if (out.decision && out.decision !== 'block') {
+    const stopReasonOk = typeof out.reason === 'string' && out.reason.trim() !== '';
+    if (out.decision === 'block' && !stopReasonOk) {
+      // A Stop block with no usable reason is rejected by the host as invalid
+      // hook JSON. Downgrade to a no-decision result -- valid, and the agent is
+      delete out.decision;
+      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
+    } else if (out.decision && out.decision !== 'block') {
       issues.push(`Stop root decision=${JSON.stringify(out.decision)} is not valid Claude hook JSON; stripped decision fields`);
       delete out.decision;
       if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
