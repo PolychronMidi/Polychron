@@ -10,6 +10,9 @@ const EXTRA_RUNTIME_FILES = [
   path.join('tools', 'HME', 'launcher', 'polychron-launch.sh'),
   path.join('tools', 'HME', 'launcher', 'polychron-slot-restart.sh'),
   path.join('tools', 'HME', 'hooks', 'direct', 'proxy-supervisor.sh'),
+  // Shortcut definitions are read at middleware load time; a JSON-only edit must
+  // flip the fingerprint so slots rotate and pick up the new shortcuts (no drift
+  path.join('tools', 'HME', 'config', 'shortcuts.json'),
   // .env governs proxy behavior (HME_PROXY_* flags read at boot); changes
   // must flip runtime_stale so the file-watcher rotates slots automatically.
   '.env',

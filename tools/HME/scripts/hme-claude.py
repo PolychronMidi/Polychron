@@ -208,9 +208,11 @@ def main():
     ctrl_fd = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
 
     ctrl_buf = b""
-    output_filter = ExactOutputFilter(cc_success_banner_patterns())
-    pending_continue = False
-    compact_started_at = 0.0
+    output_filter = ExactOutputFilter(success_banner_patterns(multistep))
+    # Remaining steps of the in-flight multi-step shortcut. The first step is
+    # typed the moment the token arrives; the rest drain one-per-idle-window.
+    pending_steps = []
+    step_started_at = 0.0
     last_master_out = 0.0
 
     def type_into_session(text):
@@ -221,7 +223,7 @@ def main():
 
     try:
         while True:
-            timeout = 1.0 if pending_continue else None
+            timeout = 1.0 if pending_steps else None
             try:
                 rfds, _, _ = select.select([stdin_fd, master, ctrl_fd], [], [], timeout)
             except select.error as e:
@@ -262,19 +264,23 @@ def main():
                     while b"\n" in ctrl_buf:
                         line, ctrl_buf = ctrl_buf.split(b"\n", 1)
                         token = line.strip().decode("utf-8", "replace").lower()
-                        if token == "cc" and not pending_continue:
-                            type_into_session("/compact\r")
-                            pending_continue = True
-                            compact_started_at = time.time()
+                        steps = multistep.get(token)
+                        if steps and not pending_steps:
+                            # Type the first step now; queue the rest to drain
+                            # one at a time as the REPL goes idle between them.
+                            type_into_session(steps[0] + "\r")
+                            pending_steps = list(steps[1:])
+                            step_started_at = time.time()
                             last_master_out = time.time()
 
-            if pending_continue:
+            if pending_steps:
                 now = time.time()
                 idle = now - last_master_out
-                waited = now - compact_started_at
-                if (idle >= IDLE_SECS and waited >= IDLE_SECS) or waited >= MAX_COMPACT_WAIT:
-                    type_into_session("continue\r")
-                    pending_continue = False
+                waited = now - step_started_at
+                if (idle >= IDLE_SECS and waited >= IDLE_SECS) or waited >= MAX_STEP_WAIT:
+                    type_into_session(pending_steps.pop(0) + "\r")
+                    step_started_at = time.time()
+                    last_master_out = time.time()
     finally:
         if old_attr is not None:
             try:
