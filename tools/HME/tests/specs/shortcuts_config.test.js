@@ -26,8 +26,9 @@ test('raw config has cc and dynamic c& under the top-level "multi-step" key', ()
 test('loader exposes the three lanes with the expected keys', () => {
   assert.deepEqual(Object.keys(cfg.SHORTCUTS).sort(), ['c', 'd', 'e', 'm', 'n', 'r']);
   assert.deepEqual(Object.keys(cfg.TWO_STEP_SHORTCUTS), ['1']);
-  assert.deepEqual(Object.keys(cfg.MULTI_STEP_SHORTCUTS), ['cc']);
+  assert.deepEqual(Object.keys(cfg.MULTI_STEP_SHORTCUTS).sort(), ['c&', 'cc']);
   assert.deepEqual(cfg.multiStepSteps('cc'), ['/compact', 'continue']);
+  assert.deepEqual(cfg.multiStepSteps('c&', 'continue'), ['/compact', 'continue']);
 });
 
 test('LANE SEPARATION: cc is local-session only -- never in a wire lane', () => {
