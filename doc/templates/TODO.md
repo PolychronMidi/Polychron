@@ -12,7 +12,7 @@ Example:
 
 ### Todo - Set 4
 
-#1 1_ HME design-pattern optimization survey: 4 parallel subsystem agents (proxy / event_kernel+hooks / verifiers+detectors / tools_analysis) finding duplication+inconsistent-abstraction to unify; synthesize their findings into items below as each returns
+#1 5_ HME design-pattern optimization survey: 4 parallel subsystem agents (proxy / event_kernel+hooks / verifiers+detectors / tools_analysis) finding duplication+inconsistent-abstraction to unify; DONE — all 4 returned, findings synthesized into the items below
 
 #2 0_ proxy: unify content-block text extraction — `blockText` (conversation_graph.js), `_extractTextContent` (hme_proxy_core.js), `_lastUserPromptText`/`_lastUserTextBlocks` (hme_proxy_request_mutation.js) each re-walk `content[]` for text; collapse to one shared helper [E2]
 
