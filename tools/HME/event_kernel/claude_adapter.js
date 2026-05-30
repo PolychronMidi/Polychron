@@ -256,8 +256,9 @@ function _handleCcShortcut(result, body) {
   const payload = _isCcShortcut(body);
   if (!payload) return result;
   const key = payload._hme_multistep_key;
-  const steps = shortcutsConfig.multiStepSteps(key) || [];
-  const delivered = _writeCcToken(payload._hme_project_root, key);
+  const prompt = payload._hme_multistep_prompt || '';
+  const steps = shortcutsConfig.multiStepSteps(key, prompt) || [];
+  const delivered = _writeCcToken(payload._hme_project_root, key, prompt);
   // Reason phrasing is shared with the PTY bridge's success-banner filter
   // (tools/HME/scripts/hme-claude.py); both derive `<key> shortcut: dispatched
   const reason = delivered
