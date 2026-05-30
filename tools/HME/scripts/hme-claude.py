@@ -56,7 +56,7 @@ class ExactOutputFilter:
 
     def __init__(self, patterns):
         self.patterns = sorted([p for p in patterns if p], key=len, reverse=True)
-        self.max_pattern = max((len(p) for p in self.patterns), default=1)
+        self.max_pattern = max((len(p) for p in self.patterns), default=1) + 8
         self.buf = b""
         self.pending_banner_eol = False
         self.ansi_prefix_re = re.compile(rb"^(?:\x1b\[[0-9;]*m)*")
