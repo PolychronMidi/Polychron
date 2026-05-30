@@ -31,11 +31,12 @@ test('loader exposes the three lanes with the expected keys', () => {
   assert.deepEqual(cfg.multiStepSteps('c&', 'continue'), ['/compact', 'continue']);
 });
 
-test('LANE SEPARATION: cc is local-session only -- never in a wire lane', () => {
-  assert.equal(Object.prototype.hasOwnProperty.call(cfg.SHORTCUTS, 'cc'), false);
-  assert.equal(Object.prototype.hasOwnProperty.call(cfg.TWO_STEP_SHORTCUTS, 'cc'), false);
-  // cc has no wire display because it is never a wire substitution.
-  assert.equal(cfg.shortcutDisplay('cc'), null);
+test('LANE SEPARATION: cc and c& are local-session only -- never in a wire lane', () => {
+  for (const key of ['cc', 'c&']) {
+    assert.equal(Object.prototype.hasOwnProperty.call(cfg.SHORTCUTS, key), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(cfg.TWO_STEP_SHORTCUTS, key), false);
+    assert.equal(cfg.shortcutDisplay(key), null);
+  }
   // wire shortcuts still resolve a display.
   assert.equal(cfg.shortcutDisplay('n'), 'next suggestions?');
   assert.equal(cfg.shortcutDisplay('1'), "reply only with 'hi'");
