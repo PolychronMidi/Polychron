@@ -812,6 +812,12 @@ function _logSlopHits(hits, textPreview, blockType) {
   } catch (_e) { /* stat is best-effort */ }
 }
 
+function _isStructuredJson(text) {
+  const t = String(text || '').trim();
+  if (!t || (t[0] !== '{' && t[0] !== '[')) return false;
+  try { JSON.parse(t); return true; } catch (_e) { return false; }
+}
+
 function _emitHeldTextEvents(state, index) {
   const events = [];
   if (state.startData) events.push(['content_block_start', state.startData]);
