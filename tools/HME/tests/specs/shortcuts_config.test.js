@@ -126,7 +126,7 @@ test('dynamic c& success path writes key plus encoded next prompt', () => {
     const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'c&continue', _hme_project_root: root }));
     const parsed = JSON.parse(out.stdout);
     assert.equal(parsed.decision, 'block');
-    assert.equal(parsed.reason, 'c& shortcut: dispatched /compact -> continue to the live session via the PTY bridge.');
+    assert.equal(parsed.reason, 'c& shortcut: dispatched /compact -> $prompt to the live session via the PTY bridge.');
     const tok = fs.readFileSync(rfd, 'utf8').trim();
     assert.equal(tok, `c&\t${Buffer.from('continue').toString('base64')}`);
   } finally {
