@@ -258,11 +258,12 @@ function _handleCcShortcut(result, body) {
   const key = payload._hme_multistep_key;
   const prompt = payload._hme_multistep_prompt || '';
   const steps = shortcutsConfig.multiStepSteps(key, prompt) || [];
+  const reasonSteps = prompt ? (shortcutsConfig.multiStepSteps(key, '$prompt') || steps) : steps;
   const delivered = _writeCcToken(payload._hme_project_root, key, prompt);
   // Reason phrasing is shared with the PTY bridge's success-banner filter
   // (tools/HME/scripts/hme-claude.py); both derive `<key> shortcut: dispatched
   const reason = delivered
-    ? `${key} shortcut: dispatched ${steps.join(' -> ')} to the live session via the PTY bridge.`
+    ? `${key} shortcut: dispatched ${reasonSteps.join(' -> ')} to the live session via the PTY bridge.`
     : `${key} shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.py to enable it).`;
   return {
     ...result,
