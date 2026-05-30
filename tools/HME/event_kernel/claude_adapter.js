@@ -200,7 +200,9 @@ function validateClaudeStdout(event, stdout, root) {
     if (event === 'PreToolUse' || event === 'PermissionRequest') return _lifesaverBlock(event, message);
     return JSON.stringify(normalized.parsed);
   }
-  return stdout;
+  // Emit the canonical single-document serialization, NOT the raw stdout. The
+  // raw stdout can carry a trailing second JSON object or junk after the first
+  return JSON.stringify(normalized.parsed);
 }
 
 function finalRelay(event, result, body = '{}') {
