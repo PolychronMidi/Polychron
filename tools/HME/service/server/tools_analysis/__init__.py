@@ -150,7 +150,7 @@ local_think = _local_think
 # reassesses. These override the legacy todo.py implementations (kept importable
 import os as _os, sys as _sys  # noqa: E402
 _hme_root = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
-                          "..", "..", "..", "..")  # -> tools/HME
+                          "..", "..", "..")  # tools_analysis->server->service->HME
 _hme_root = _os.path.normpath(_hme_root)
 if _hme_root not in _sys.path:
     _sys.path.insert(0, _hme_root)
