@@ -12,4 +12,4 @@ Example:
 
 ### Todo - Set 3
 
-#1 5_ LIFESAVER: smoke: post-swap canary
+#1 0_ get HCI score to 100
