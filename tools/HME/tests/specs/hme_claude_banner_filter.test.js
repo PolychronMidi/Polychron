@@ -26,12 +26,13 @@ variants = {
     + b'\\x1b[2m  cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge.\\x1b[22m\\r\\n',
 }
 for name, data in variants.items():
-    f = mod.ExactOutputFilter(patterns)
-    out = b''
-    for i in range(0, len(data), 5):
-        out += f.feed(data[i:i+5])
-    out += f.flush()
-    assert out == b'', (name, out)
+    for chunk_size in (5, len(data)):
+        f = mod.ExactOutputFilter(patterns)
+        out = b''
+        for i in range(0, len(data), chunk_size):
+            out += f.feed(data[i:i+chunk_size])
+        out += f.flush()
+        assert out == b'', (name, chunk_size, out)
 
 failure = b'\\x1b[2mUserPromptSubmit operation blocked by hook:\\x1b[22m\\r\\n' \\
     + b'\\x1b[2m  cc shortcut: no PTY bridge attached.\\x1b[22m\\r\\n'
