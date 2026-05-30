@@ -185,7 +185,7 @@ function _enumerateAllWatchedFiles() {
 }
 
 function start() {
-  watchSelfAndReexec(__filename, [path.join(__dirname, 'self_reexec.js')]);
+  watchSelfAndReexec(__filename, FILE_WATCHER_REEXEC_FILES);
   if (!fs.existsSync(WATCH_DIR)) {
     console.error(`[file-watcher] watch dir missing: ${WATCH_DIR}`);
     process.exit(1);
