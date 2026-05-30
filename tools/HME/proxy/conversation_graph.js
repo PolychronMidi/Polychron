@@ -74,33 +74,9 @@ function scrubOrphanToolPairs(payload) {
   return scrubbed;
 }
 
-function _allMessageText(content) {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) return content.map(blockText).filter(Boolean).join('\n');
-  return '';
-}
-
-function _hoistToSystem(payload, text) {
-  const t = String(text || '').trim();
-  if (!t) return;
-  if (payload.system == null) payload.system = [];
-  else if (typeof payload.system === 'string') payload.system = payload.system.trim() ? [{ type: 'text', text: payload.system }] : [];
-  if (!Array.isArray(payload.system)) return;
-  payload.system.push({ type: 'text', text: t });
-}
-
 function sanitizeMessages(payload, placeholder = SUCCESS_EMPTY) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   let changed = 0;
-  // Anthropic's messages array accepts ONLY role user/assistant. A role:system
-  // message -- e.g. one whose whole body was a <system-reminder> that provenance
-  const kept = [];
-  for (const msg of payload.messages) {
-    if (msg && (msg.role === 'user' || msg.role === 'assistant')) { kept.push(msg); continue; }
-    _hoistToSystem(payload, msg && _allMessageText(msg.content));
-    changed++;
-  }
-  if (kept.length !== payload.messages.length) payload.messages = kept;
   for (const msg of payload.messages) {
     if (!msg) continue;
     // Non-array content (string / null / malformed). The upstream rejects any
