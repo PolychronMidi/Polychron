@@ -33,9 +33,11 @@ function createRestartCoordinator() {
   }
 
   // A restart finished. If a change landed during it, return the next restart
-  // to run immediately (the OTHER slot); else null.
-  function onRestartDone() {
+  // to run immediately (the OTHER slot); else null. A failed restart may clear
+  // pending work instead of chaining, preserving the last-viable fallback slot.
+  function onRestartDone(opts = {}) {
     state.inFlight = false;
+    if (opts.clearPending) state.pendingPath = null;
     if (state.pendingPath == null) return null;
     const slot = state.nextSlot;
     state.nextSlot = slot === 'a' ? 'b' : 'a';
