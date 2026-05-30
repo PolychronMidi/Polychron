@@ -55,16 +55,17 @@ def ensure_fifo(path):
     d = os.path.dirname(path)
     os.makedirs(d, exist_ok=True)
     if os.path.exists(path):
-        if os.path.exists(path) and not os.path.isfile(path):
-            return path
         try:
+            mode = os.stat(path).st_mode
+            if stat.S_ISFIFO(mode):
+                return path
             os.unlink(path)
         except OSError:
-            pass  # silent-ok: pending review
+            pass  # silent-ok: pending review  # best effort: recreate below if possible
     try:
         os.mkfifo(path, 0o600)
     except FileExistsError:
-        pass  # silent-ok: pending review
+        pass  # silent-ok: pending review  # another bridge may have created it first
     return path
 
 
