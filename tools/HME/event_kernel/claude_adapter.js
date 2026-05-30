@@ -224,22 +224,40 @@ function _isCcShortcut(body) {
   }
 }
 
+// `/compact` is a Claude Code REPL-local command, never an API message -- the
+// proxy can't run it without counterfeiting. The only thing that drives the real
+// local /compact is the live session's own input stream. When Claude is launched
+function _ccControlFifo(root) {
+  return path.join(root || process.cwd(), 'tmp', 'hme-cc-control.fifo');
+}
+
+function _writeCcToken(root) {
+  const fifo = _ccControlFifo(root);
+  // Non-blocking open: if no wrapper is reading, open fails with ENXIO and we
+  // skip silently instead of hanging the hook.
+  let fd;
+  try {
+    fd = fs.openSync(fifo, fs.constants.O_WRONLY | fs.constants.O_NONBLOCK);
+  } catch (_e) {
+    return false;
+  }
+  try { fs.writeSync(fd, 'cc\n'); return true; }
+  catch (_e) { return false; }
+  finally { try { fs.closeSync(fd); } catch (_e2) { /* best effort */ } }
+}
+
 function _handleCcShortcut(result, body) {
   const payload = _isCcShortcut(body);
   if (!payload) return result;
-  // `cc` -> run Claude Code's built-in /compact, then continue. /compact is a
-  // local REPL command, not an API message, so the hook injects it into the live
-  try {
-    const { queueCcCompact } = require('./claude_input_peer');
-    queueCcCompact(payload);
-  } catch (err) {
-    logHookError(payload._hme_project_root, 'UserPromptSubmit', `cc shortcut queue failed: ${err.message}`);
-  }
+  const delivered = _writeCcToken(payload._hme_project_root);
+  const reason = delivered
+    ? 'cc shortcut: dispatched /compact -> continue to the live session via the PTY bridge.'
+    : 'cc shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.js to enable /compact).';
   return {
     ...result,
     stdout: JSON.stringify({
       decision: 'block',
-      reason: 'cc shortcut: running /compact then continue in the live session.',
+      reason,
       hookSpecificOutput: { hookEventName: 'UserPromptSubmit', suppressOriginalPrompt: true },
     }),
     exit_code: 0,
