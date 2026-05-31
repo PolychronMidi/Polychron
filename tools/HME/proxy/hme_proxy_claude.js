@@ -181,7 +181,7 @@ function createClaudeHandler(deps) {
       const _obGate = applyOutboundContextGate({
         payload, isAnthropic, isInteractivePath: _isInteractivePath,
         isOmniRouteSwap: _isOmniRouteSwap, swapModel: _swapModel, swapChain: _swapChain,
-        outBody, sessionForTelemetry: _sessionForTelemetry, clientRes,
+        outBody, sessionForTelemetry: _sessionForTelemetry, clientRes, clientReq,
       });
       if (_obGate.ended) return;
       outBody = _obGate.outBody;
