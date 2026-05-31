@@ -22,10 +22,7 @@ function _ensureDir(p) {
 }
 
 function _textOf(toolResult) {
-  const c = toolResult && toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter(x => x && x.type === 'text').map(x => x.text || '').join('');
-  return '';
+  return blockText(toolResult, { toolResults: true });
 }
 
 module.exports = {
