@@ -399,7 +399,7 @@ def todo_survivor_check() -> None:
     path = "doc/templates/TODO.md"
     if path not in staged_paths():
         return
-    before = tracked_blob(path)
+    before = head_blob(path)
     after = staged_blob(path)
     if before is None or after is None:
         return
