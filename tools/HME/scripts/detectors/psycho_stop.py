@@ -25,10 +25,14 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+from _base import detector, load_turn, transcript_arg  # noqa: E402
 from _transcript import (  # noqa: E402
     iter_tool_uses, load_turn_events, load_full_turn_with_user,
     is_assistant, is_user, event_content,
 )
+
+DETECTOR = detector("psycho_stop")
+_emit_stats = DETECTOR.emit
 
 BG_KEYWORDS = (
     "train", "pip install", "pip3 install", "nohup", "accelerate", "axolotl",
