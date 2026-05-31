@@ -140,7 +140,7 @@ def main() -> int:
     ):
         print("ok")  # silently no-op rather than scan an unauthorized path
         return 0
-    events = load_turn_events(sys.argv[1])
+    events = load_turn(load_turn_events)
     # Strip code-fenced / backticked / quoted spans before phrase-
     from _text_strip import strip_quoted
     final_text = strip_quoted(_last_assistant_text(events)).lower()
