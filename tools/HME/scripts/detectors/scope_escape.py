@@ -158,10 +158,10 @@ def _substantive_work_count(events: list) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    if transcript_arg() is None:
         print("ok")
         return 0
-    events = load_full_turn_with_user(sys.argv[1])
+    events = load_turn(load_full_turn_with_user)
     raw_text = _last_assistant_text(events)
     if not raw_text:
         _emit_stats("ok", "no_final_text")
