@@ -37,7 +37,6 @@ const {
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
-  makeGatedStripStaleToolResults,
   _stripClaudeIdentity,
   _sanitizePayload,
   _injectHmeTools,
@@ -47,7 +46,7 @@ const {
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const { routeOpenAICompatibleThroughHme } = require('./openai_compatible_ingress');
-const { applyOutboundContextGate } = require('./outbound_context_gate');
+const { evaluateOutbound } = require('./outbound_context_gate');
 const {
   captureNoopReminderLeak,
   maybeBlockEarlyClaudeRequest,
