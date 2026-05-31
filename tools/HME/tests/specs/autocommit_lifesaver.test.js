@@ -102,3 +102,9 @@ test('_isBenignRace classifies concurrent-caller lock contention as benign (no L
   assert.equal(_isBenignRace(''), false);
 });
 
+test('proxy autocommit waits 120s before surfacing unresolved failures by default', () => {
+  const middleware = fs.readFileSync(path.join(repoRoot, 'tools/HME/proxy/middleware/21_proxy_autocommit.js'), 'utf8');
+  assert.match(middleware, /HME_AUTOCOMMIT_SURFACE_GRACE_MS/);
+  assert.match(middleware, /: 120_000/);
+});
+
