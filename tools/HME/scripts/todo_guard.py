@@ -54,23 +54,6 @@ def _set_number(header: list[str]) -> int | None:
     return None
 
 
-def _archived_texts(set_no: int | None = None) -> set:
-    d = _root() / "log" / "todo"
-    out: set = set()
-    files = []
-    if set_no is not None:
-        files.append(d / f"set{set_no}.md")
-    if d.is_dir():
-        files.extend(sorted(d.glob("set*.md")))
-    for f in files:
-        try:
-            for t in _todos(f.read_text(encoding="utf-8")):
-                out.add(_norm(t.text))
-        except OSError:
-            pass  # silent-ok: best-effort archive scan
-    return out
-
-
 def _sig_words(text: str) -> set:
     return set(re.findall(r"[a-z0-9]{4,}", _norm(text)))
 
