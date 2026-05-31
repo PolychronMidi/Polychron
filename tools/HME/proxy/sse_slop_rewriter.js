@@ -473,6 +473,18 @@ function _stripLineDashAndTerminalPunctuationSegment(text) {
     .replace(/[ \t]*[\p{P}]+[ \t]*$/u, '')).join('\n');
 }
 
+function _stripLineDashAndTerminalPunctuation(text) {
+  if (!_hasProtectedSegments(text)) return _stripLineDashAndTerminalPunctuationSegment(text);
+  const protectedParts = [];
+  const masked = _segmentByCode(text).map((seg) => {
+    if (!seg.code) return seg.s;
+    protectedParts.push(seg.s);
+    return `${protectedParts.length - 1}`;
+  }).join('');
+  return _stripLineDashAndTerminalPunctuationSegment(masked)
+    .replace(/(\d+)/g, (_m, idx) => protectedParts[Number(idx)] || '');
+}
+
 // Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
   // #1 Narrator setup.
