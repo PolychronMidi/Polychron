@@ -825,7 +825,7 @@ function _stripSlop(text) {
   if (out !== beforePunctCompact) hits.push('caveman_non_alnum_compaction');
 
   const beforeLinePunct = out;
-  out = _applyTextTransformOutsideCode(out, _stripLineDashAndTerminalPunctuationSegment);
+  out = _stripLineDashAndTerminalPunctuation(out);
   if (out !== beforeLinePunct) hits.push('caveman_line_punctuation');
 
   out = _cleanupSlopArtifacts(out);
