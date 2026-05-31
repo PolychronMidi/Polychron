@@ -99,7 +99,7 @@ function todoWriteDecision(payload = {}, root) {
   const lost = carry.filter((t) => !_survives(t, after.todos));
   if (lost.length) {
     const detail = lost.slice(0, 3).map((t) => `#${t.id} ${t.code}_ ${t.text}`).join(' | ');
-    return { permissionDecision: 'deny', reason: `BLOCKED: unfinished TODO deletion from doc/templates/TODO.md: ${detail}. Mark it 5_/3_ with evidence or archive via canonical todo_engine; never drop non-5_ items manually.` };
+    return { permissionDecision: 'deny', reason: `BLOCKED: unfinished TODO deletion from doc/templates/TODO.md: ${detail}. Mark it 5_ with evidence or carry it into the next set via canonical todo_engine; never drop non-5_ items manually.` };
   }
   return null;
 }
