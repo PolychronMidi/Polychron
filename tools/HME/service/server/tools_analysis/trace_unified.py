@@ -69,28 +69,18 @@ def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 
         except Exception as _brief_err:
             logger.debug(f"trace: brief emission failed: {_brief_err}")
 
-    if mode == "snapshot":
-        from .runtime import beat_snapshot as _bs
-        return _bs(target)
-
-    if mode == "round":
-        return _round_trace(target)
-
-    if mode == "cascade":
-        from .coupling import coupling_intel as _ci
-        return _ci(mode=f"cascade:{target}")
-
-    if mode == "impact":
-        from .cascade_analysis import cascade_report as _cr
-        return _cr(target=target, depth=3)
-
-    if mode == "interaction":
-        from .evolution_trace import interaction_map as _im
-        return _im(module_a=target, module_b="")
+    routed = dispatch(mode, {
+        "snapshot": lambda: _snapshot(target),
+        "round": lambda: _round_trace(target),
+        "cascade": lambda: _cascade(target),
+        "impact": lambda: _impact(target),
+        "interaction": lambda: _interaction(target),
+    })
+    if routed is not None:
+        return routed
 
     # Module or causal trace
-    from .evolution_trace import trace_query as _tq
-    return _tq(module=target, section=section, limit=limit, mode=mode if mode not in ("auto", "interaction") else "module")
+    return _trace_query(target, section=section, limit=limit, mode=mode)
 
 
 def _detect_trace_type(target: str) -> str:
