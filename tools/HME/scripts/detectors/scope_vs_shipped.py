@@ -31,11 +31,9 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _base import detector, load_turn, transcript_arg  # noqa: E402
+from _base import emit_stats as _emit_stats, load_turn, transcript_arg  # noqa: E402
 from _transcript import load_turn_events, iter_tool_uses  # noqa: E402
 
-DETECTOR = detector("scope_vs_shipped")
-_emit_stats = DETECTOR.emit
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)

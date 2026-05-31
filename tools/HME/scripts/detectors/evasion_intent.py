@@ -26,11 +26,9 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _base import detector, load_turn, transcript_arg  # noqa: E402
+from _base import emit_stats as _emit_stats, load_turn, transcript_arg  # noqa: E402
 from _transcript import is_assistant, iter_tool_uses, load_full_turn_with_user, event_content  # noqa: E402
 
-DETECTOR = detector("evasion_intent")
-_emit_stats = DETECTOR.emit
 
 
 _SELF_REFERENCE_FILES = frozenset((
@@ -202,7 +200,6 @@ def _extract_output_text(events: list) -> str:
 
 
 
-@DETECTOR
 def main() -> int:
     if transcript_arg() is None:
         print("ok")

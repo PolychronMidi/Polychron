@@ -31,12 +31,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _base import detector, load_turn, transcript_arg  # noqa: E402
+from _base import emit_stats as _emit_stats, load_turn, transcript_arg  # noqa: E402
 from _transcript import is_user, event_content, iter_tool_uses, load_full_turn_with_user  # noqa: E402
 from _rescue_clauses import b_clause_within_window  # noqa: E402
 
-DETECTOR = detector("exhaust_check")
-_emit_stats = DETECTOR.emit
 
 
 # Prompts where enumeration is the deliverable, not a punt.
@@ -287,7 +285,6 @@ def _has_tool_call_after_last_text(events: list) -> bool:
     return False
 
 
-@DETECTOR
 def main() -> int:
     if transcript_arg() is None:
         print("ok")

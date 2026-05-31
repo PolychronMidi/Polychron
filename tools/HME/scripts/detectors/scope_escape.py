@@ -36,12 +36,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _base import detector, load_turn, transcript_arg  # noqa: E402
+from _base import emit_stats as _emit_stats, load_turn, transcript_arg  # noqa: E402
 from _phrase_lists import SCOPE_ESCAPE  # noqa: E402
 from _transcript import load_full_turn_with_user  # noqa: E402
 
-DETECTOR = detector("scope_escape")
-_emit_stats = DETECTOR.emit
 
 
 # Suppress when the agent CLAIMS to have fixed the same problem in the
