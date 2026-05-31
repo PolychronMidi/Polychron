@@ -53,12 +53,7 @@ function _isExplored(absDir) {
 }
 
 function _textOf(toolResult) {
-  const c = toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) {
-    return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  }
-  return '';
+  return blockText(toolResult, { toolResults: true });
 }
 
 // Extract file paths from a tool_result text. Handles:
