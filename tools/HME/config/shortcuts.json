@@ -8,7 +8,7 @@
     "r": "restarted. continue",
     "e": "enough research, begin implementation now",
     "s": "refocus, stop polishing screws on a sinking ship",
-    "t": "lets use the todo system described in the header of TODO.md to do the todos therein"
+    "t": "use the todo system described in the header of TODO.md to do the todos therein"
   },
   "two-step": {
     "1": { "first": "reply only with 'hi'", "second": "reply only with 'high'" }
