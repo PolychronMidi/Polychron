@@ -38,35 +38,6 @@ if str(HERE) not in sys.path:
 from _transcript import load_turn_events  # noqa: E402
 
 
-class DetectorRuntime:
-    def __init__(self, name: str):
-        if not name:
-            raise ValueError("detector name is required")
-        self.name = name
-
-    def __call__(self, fn):
-        fn.detector_name = self.name
-        fn.emit_stats = self.emit
-        return fn
-
-    def transcript_arg(self, argv: list[str] | None = None) -> str | None:
-        return transcript_arg(argv)
-
-    def load_turn(self, loader, argv: list[str] | None = None):
-        path = self.transcript_arg(argv)
-        if path is None:
-            return None
-        return loader(path)
-
-    def emit(self, verdict: str, detail: str = "") -> None:
-        from _detector_stats import emit_stats
-        emit_stats(self.name, verdict, detail)
-
-
-def detector(name: str) -> DetectorRuntime:
-    return DetectorRuntime(name)
-
-
 def transcript_arg(argv: list[str] | None = None) -> str | None:
     args = sys.argv if argv is None else argv
     return args[1] if len(args) >= 2 else None
