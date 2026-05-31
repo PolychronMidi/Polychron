@@ -86,6 +86,10 @@ _sv_log() {
   echo "[$ts] [proxy-supervisor] $*" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 }
 
+_sv_sleep() {
+  sleep "$1" 200>&-
+}
+
 _sv_file_fingerprint() {
   python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$1" 2>/dev/null
 }
