@@ -15,7 +15,7 @@ elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_SV_ROOT" ]; then
-  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
+  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: unresolvable script dir yields empty string -> walk-up loop's -n guard skips it
   while [ -n "$_try" ] && [ "$_try" != "/" ]; do
     [ -f "$_try/.env" ] && [ -d "$_try/.git" ] && { _SV_ROOT="$_try"; break; }
     _try="$(dirname "$_try")"
