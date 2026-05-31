@@ -68,3 +68,69 @@ test('proxy self-quarantines request-path code faults without respawn promotion'
   assert.match(proxy, /process\.on\('uncaughtException'/);
   assert.match(proxy, /do not exit/);
 });
+
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port;
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
+}
+
+function postSmoke(port) {
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/v1/messages',
+      method: 'POST',
+      timeout: 800,
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer hme-preflight',
+        'anthropic-version': '2023-06-01',
+        'x-hme-preflight-smoke': '1',
+      },
+    }, (res) => {
+      res.resume();
+      res.on('end', () => resolve({ ok: true, status: res.statusCode }));
+    });
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+    req.end(JSON.stringify({ model: 'claude-opus-4-8', max_tokens: 16, messages: [{ role: 'user', content: 'word '.repeat(200000) }] }));
+  });
+}
+
+test('functional preflight smoke rejects bootable request-path-crashed candidate', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-preflight-crash-'));
+  const script = path.join(root, 'candidate.js');
+  const health = path.join(root, 'candidate.health');
+  const port = await freePort();
+  fs.writeFileSync(script, `
+'use strict';
+const fs = require('fs');
+const http = require('http');
+const server = http.createServer((req, res) => {
+  if (req.url === '/health') { res.writeHead(200); res.end('ok'); return; }
+  missingRequestPathSymbol();
+  res.end('unreachable');
+});
+server.listen(${port}, '127.0.0.1', () => {
+  fs.writeFileSync(${JSON.stringify(health)}, JSON.stringify({ ready: true, pid: process.pid }));
+});
+`);
+  const child = require('child_process').spawn(process.execPath, [script], { stdio: 'ignore' });
+  try {
+    const deadline = Date.now() + 2000;
+    while (!fs.existsSync(health) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
+    assert.ok(fs.existsSync(health), 'candidate booted and wrote ready health');
+    await assert.rejects(postSmoke(port), /socket hang up|ECONNRESET|timeout/);
+    assert.equal(fs.existsSync(path.join(root, 'incumbent.drain.flag')), false, 'smoke failure happens before any drain flag');
+  } finally {
+    child.kill('SIGKILL');
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
