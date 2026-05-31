@@ -94,6 +94,7 @@ function autocompactLifesaver(root, raw, trueSize) {
     }
     return '';
   } catch (_e) {
+    // silent-ok: optional statusline advisory only; callers fall back to no suffix.
     return '';
   }
 }
