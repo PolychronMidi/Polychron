@@ -15,7 +15,7 @@ _H = "### Todo - Set 3\n"
 
 
 def _run():
-    # Isolate PROJECT_ROOT so archive scan + any log write hit a temp dir.
+    # Isolate PROJECT_ROOT so any log write hits a temp dir.
     d = tempfile.mkdtemp(prefix="todo-guard-test-")
     os.environ["PROJECT_ROOT"] = d
     (Path(d) / "log" / "todo").mkdir(parents=True, exist_ok=True)
