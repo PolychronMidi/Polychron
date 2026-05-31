@@ -94,11 +94,27 @@ function logRuntimeMetadataFailure(err) {
 }
 
 const proxyRouteMetrics = createRouteMetrics();
-const { slotConfig, attachSlotLifecycle } = require('./proxy_slot_lifecycle');
+const { slotConfig, attachSlotLifecycle, markSlotBroken } = require('./proxy_slot_lifecycle');
 const SLOT_CFG = slotConfig();
 const PORT = SLOT_CFG ? SLOT_CFG.port : servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
 const { WORKER_PORT } = require('./contexts/lifecycle_bridge').supervisorChildren;
+
+// Live-live self-quarantine: a request-path CODE fault (ReferenceError/TypeError/
+// SyntaxError -- e.g. an undefined symbol that survived `node --check` and boot)
+function quarantineThisBuildOnCodeFault(err, origin) {
+  try {
+    if (!SLOT_CFG) return; // single-instance mode: no sibling slot to protect
+    if (!(err instanceof ReferenceError || err instanceof TypeError || err instanceof SyntaxError)) return;
+    markSlotBroken(SLOT_CFG.runtimeDir, SLOT_CFG.slot, SLOT_CFG.runtimeFingerprint, `${origin}: ${err && err.message}`);
+    const errLog = path.resolve(__dirname, '..', '..', '..', 'log', 'hme-errors.log');
+    require('fs').appendFileSync(errLog, `[${new Date().toISOString()}] [proxy-self-quarantine] slot ${SLOT_CFG.slot} runtime fingerprint ${SLOT_CFG.runtimeFingerprint} marked BROKEN on ${origin} (${err && err.message}); refusing to promote this build to the other slot.\n`);
+  } catch (_e) { /* never let quarantine bookkeeping throw */ }
+}
+// Keep the process up (do not exit): a single broken request path must not crash
+// the slot into a respawn loop that would re-mark it viable and lift the quarantine.
+process.on('unhandledRejection', (err) => quarantineThisBuildOnCodeFault(err, 'unhandledRejection'));
+process.on('uncaughtException', (err) => quarantineThisBuildOnCodeFault(err, 'uncaughtException'));
 
 const contextBudget = createContextBudget();
 const opusGate = createOpusGate();

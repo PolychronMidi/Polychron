@@ -145,6 +145,31 @@ _wait_ready_file() {
   done
 }
 
+# Functional smoke: a `ready` health file only proves the build BOOTED and bound
+# the port -- it does NOT prove the request path runs. A code fault that survives
+# `node --check` and module load (e.g. an undefined symbol referenced inside the
+_smoke_candidate() {
+  _smoke_port="$1"
+  python3 - "$_smoke_port" <<'PY'
+import json, sys, urllib.request, urllib.error
+port = sys.argv[1]
+big = 'word ' * 700000  # ~3.5MB -> ~1.35M tokens, over claude-opus-4-8's 872k budget
+body = json.dumps({'model': 'claude-opus-4-8', 'max_tokens': 16,
+                   'messages': [{'role': 'user', 'content': big}]}).encode()
+req = urllib.request.Request('http://127.0.0.1:%s/v1/messages' % port, data=body,
+    headers={'content-type': 'application/json',
+             'authorization': 'Bearer hme-preflight',
+             'anthropic-version': '2023-06-01'}, method='POST')
+try:
+    r = urllib.request.urlopen(req, timeout=15)
+    print('smoke status %s' % r.status); sys.exit(0)
+except urllib.error.HTTPError as e:
+    print('smoke status %s' % e.code); sys.exit(0)  # ANY HTTP response == handler ran end-to-end
+except Exception as e:
+    print('smoke NO-RESPONSE: %s' % e, file=sys.stderr); sys.exit(1)
+PY
+}
+
 _preflight_candidate() {
   if [ "${HME_PROXY_PRESTART_PROBE:-1}" = "0" ]; then
     echo "[slot-restart:$SLOT] prestart probe disabled" >&2
@@ -162,17 +187,24 @@ _preflight_candidate() {
       HME_PROXY_DRAIN_FLAG_OVERRIDE="$_probe_drain" \
       HME_PROXY_SUPERVISE=0 \
       HME_PROXY_QUIET_IMPORT=1 \
+      OVERDRIVE_MODE=0 \
       node "$PROXY_SCRIPT" >> "$_probe_log" 2>&1 < /dev/null &
   _probe_pid=$!
   _wait_ready_file "$_probe_health" "$_probe_pid" 20
   _rc=$?
   if [ "$_rc" = "0" ]; then
-    echo "[slot-restart:$SLOT] preflight ready; preserving last viable fallback while replacing incumbent" >&2
-    kill -TERM "$_probe_pid" 2>/dev/null || true
-    sleep 1
-    kill -KILL "$_probe_pid" 2>/dev/null || true
-    rm -f "$_probe_health" "$_probe_drain" 2>/dev/null || true
-    return 0
+    # Ready is necessary but NOT sufficient -- drive one real request through the
+    # full handler before trusting the build, so a runtime-broken-but-bootable
+    if _smoke_candidate "$_probe_port"; then
+      echo "[slot-restart:$SLOT] preflight ready + smoke OK; preserving last viable fallback while replacing incumbent" >&2
+      kill -TERM "$_probe_pid" 2>/dev/null || true
+      sleep 1
+      kill -KILL "$_probe_pid" 2>/dev/null || true
+      rm -f "$_probe_health" "$_probe_drain" 2>/dev/null || true
+      return 0
+    fi
+    _rc="smoke_no_response"
+    echo "[slot-restart:$SLOT] preflight smoke FAILED (booted but request path crashed); NOT draining incumbent" >&2
   fi
   _reason="preflight_failed rc=$_rc port=$_probe_port log=$_probe_log"
   echo "[slot-restart:$SLOT] ABORT: $_reason; incumbent slot left running" >&2

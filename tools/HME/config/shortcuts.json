@@ -6,7 +6,8 @@
     "d": "do all",
     "c": "continue",
     "r": "restarted. continue",
-    "e": "enough research, begin implementation now"
+    "e": "enough research, begin implementation now",
+    "s": "refocus, stop polishing screws on a sinking ship"
   },
   "two-step": {
     "1": { "first": "reply only with 'hi'", "second": "reply only with 'high'" }

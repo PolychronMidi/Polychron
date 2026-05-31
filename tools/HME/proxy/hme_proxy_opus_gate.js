@@ -30,4 +30,14 @@ function createOpusGate({ env = process.env, log = console.error } = {}) {
   return { acquireOpusSlot };
 }
 
-module.exports = { createOpusGate };
+// Acquire an Opus concurrency slot ONLY for interactive Anthropic Opus requests.
+// Always returns a release fn (a no-op for non-Opus paths) so callers invoke the
+async function acquireOpusSlotIfNeeded({ isAnthropic, isInteractivePath, payload, acquireOpusSlot }) {
+  const isOpusReq = isAnthropic && isInteractivePath
+    && payload && typeof payload.model === 'string'
+    && /opus/i.test(payload.model);
+  if (!isOpusReq || typeof acquireOpusSlot !== 'function') return () => {};
+  return acquireOpusSlot();
+}
+
+module.exports = { createOpusGate, acquireOpusSlotIfNeeded };

@@ -144,9 +144,9 @@
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
           "tier_score": 8,
-          "context_length": 400000,
+          "context_length": 500000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 272000
+          "max_input_tokens": 372000
         },
         {
           "id": "gpt-5.5-high",
