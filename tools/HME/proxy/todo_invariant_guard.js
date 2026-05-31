@@ -96,8 +96,7 @@ function todoWriteDecision(payload = {}, root) {
       return { permissionDecision: 'deny', reason: `BLOCKED: TODO archival must carry non-5_ items into the next set: ${detail}. Only 5_ items may disappear.` };
     }
   }
-  const archived = _archiveTexts(root, before.setNumber);
-  const lost = carry.filter((t) => !_survives(t, after.todos, archived));
+  const lost = carry.filter((t) => !_survives(t, after.todos));
   if (lost.length) {
     const detail = lost.slice(0, 3).map((t) => `#${t.id} ${t.code}_ ${t.text}`).join(' | ');
     return { permissionDecision: 'deny', reason: `BLOCKED: unfinished TODO deletion from doc/templates/TODO.md: ${detail}. Mark it 5_/3_ with evidence or archive via canonical todo_engine; never drop non-5_ items manually.` };
