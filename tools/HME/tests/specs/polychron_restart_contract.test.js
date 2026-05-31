@@ -44,3 +44,23 @@ test('proxy runtime fingerprint covers worker supervisor and launcher paths', ()
   assert.match(fingerprint, /polychron-launch\.sh/);
   assert.match(fingerprint, /polychron-slot-restart\.sh/);
 });
+
+test('slot preflight drives request path before draining incumbent', () => {
+  const restart = read('tools/HME/launcher/polychron-slot-restart.sh');
+  assert.match(restart, /_wait_ready_file "\$_probe_health" "\$_probe_pid" 20/);
+  assert.match(restart, /_smoke_candidate "\$_probe_port"/);
+  assert.match(restart, /x-hme-preflight-smoke/);
+  assert.match(restart, /preflight smoke FAILED \(booted but request path crashed\); NOT draining incumbent/);
+  assert.match(restart, /OVERDRIVE_MODE=0/);
+  assert.match(restart, /_preflight_candidate \|\| \{ _mark_slot_broken "preflight_failed"; exit 1; \}/);
+});
+
+test('proxy self-quarantines request-path code faults without respawn promotion', () => {
+  const proxy = read('tools/HME/proxy/hme_proxy.js');
+  assert.match(proxy, /markSlotBroken/);
+  assert.match(proxy, /err instanceof ReferenceError \|\| err instanceof TypeError \|\| err instanceof SyntaxError/);
+  assert.match(proxy, /proxy-self-quarantine/);
+  assert.match(proxy, /process\.on\('unhandledRejection'/);
+  assert.match(proxy, /process\.on\('uncaughtException'/);
+  assert.match(proxy, /do not exit/);
+});
