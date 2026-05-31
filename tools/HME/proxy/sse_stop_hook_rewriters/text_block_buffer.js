@@ -38,6 +38,10 @@ function flushHeldEvents(holds, trailingEvent = null) {
   return events;
 }
 
+function _shouldBypass(state, enableGuard) {
+  return enableGuard !== false && shouldBypassResponseTextRewrite(state && state.text);
+}
+
 function _applyDecision(decision, env) {
   if (!decision) return undefined;
   const { state, stopData, holds, index } = env;
