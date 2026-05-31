@@ -203,10 +203,10 @@ def _extract_output_text(events: list) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    if transcript_arg() is None:
         print("ok")
         return 0
-    events = load_full_turn_with_user(sys.argv[1])
+    events = load_turn(load_full_turn_with_user)
     thinking_blocks = _extract_thinking_text(events)
     output_text = _extract_output_text(events)
     thinking_combined = "\n\n".join(thinking_blocks).lower()
