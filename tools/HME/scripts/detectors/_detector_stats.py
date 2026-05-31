@@ -42,8 +42,9 @@ def _caller_detector_name() -> str:
     return "unknown"
 
 
-def emit_stats(detector: str, verdict: str, detail: str) -> None:
+def emit_stats(detector: str | None, verdict: str, detail: str) -> None:
     """Append one line + LRU-trim to detector-stats.jsonl. Best-effort; failures log to stderr but never raise."""
+    detector = detector or _caller_detector_name()
     root = _resolve_project_root()
     if not root:
         return
