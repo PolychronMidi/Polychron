@@ -356,14 +356,16 @@ def module_intel(target: str, mode: str = "story") -> str:
     _track("module_intel")
     if not target.strip():
         return "Error: target cannot be empty."
-    if mode == "story":
-        return module_story(target)
-    if mode == "impact":
-        from .health import impact_analysis as _impact
-        return _impact(target)
-    if mode == "both":
-        story = module_story(target)
-        from .health import impact_analysis as _impact
-        impact = _impact(target)
-        return f"{story}\n\n\n\n## Impact Analysis\n{impact}"
+    routed = dispatch(mode, {
+        "story": lambda: module_story(target),
+        "impact": lambda: _impact_analysis(target),
+        "both": lambda: f"{module_story(target)}\n\n\n\n## Impact Analysis\n{_impact_analysis(target)}",
+    })
+    if routed is not None:
+        return routed
     return f"Unknown mode '{mode}'. Use 'story', 'impact', or 'both'."
+
+
+def _impact_analysis(target: str) -> str:
+    from .health import impact_analysis as _impact
+    return _impact(target)
