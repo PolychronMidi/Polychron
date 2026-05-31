@@ -27,9 +27,8 @@ function resolveUpstream(req) {
     const hostParts = u.hostname.split('.');
     const provider = hostParts.length >= 2 ? hostParts[hostParts.length - 2] : u.hostname;
     return { host: u.hostname, port, tls, provider, basePath: u.pathname !== '/' ? u.pathname : '' };
-  } catch (_err) {
-    // silent-ok: optional fallback path.
-    return { host: DEFAULT_UPSTREAM_HOST, port: DEFAULT_UPSTREAM_PORT, tls: DEFAULT_UPSTREAM_TLS, provider: 'anthropic' };
+  } catch (err) {
+    throw new Error(`invalid X-HME-Upstream header '${header}': ${err.message}`);
   }
 }
 

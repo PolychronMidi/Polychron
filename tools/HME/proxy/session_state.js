@@ -49,9 +49,9 @@ function normalize(state, sessionId = '') {
 function readState(sessionId = '') {
   try {
     return normalize(JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')), sessionId);
-  } catch (_e) {
-    // silent-ok: optional fallback path.
-    return defaultState(sessionId);
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return defaultState(sessionId);
+    throw new Error(`session state unreadable/corrupt at ${STATE_FILE}: ${err.message}`);
   }
 }
 
