@@ -427,4 +427,4 @@ function createContextBudget() {
   };
 }
 
-module.exports = { createContextBudget, parseProxyContextEnv, inputBudget, modelInputBudget };
+module.exports = { createContextBudget, parseProxyContextEnv, inputBudget, modelInputBudget, contextWindowOverflowAlert };
