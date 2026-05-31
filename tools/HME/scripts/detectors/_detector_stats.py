@@ -4,7 +4,7 @@ Single source of truth for HME detector-stats JSONL appends. Pre-extraction, 7 d
 
 Usage:
     from _detector_stats import emit_stats
-    emit_stats("my_detector", "ok", "no_match")
+    emit_stats(detector_name, "ok", "no_match")
 """
 from __future__ import annotations
 
