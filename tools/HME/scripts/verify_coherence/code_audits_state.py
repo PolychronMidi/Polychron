@@ -299,6 +299,10 @@ class AdapterBoundaryRegistryVerifier(Verifier):
                     if "/tests/" in rel:
                         continue
                     low = fname.lower()
+                    # Test modules (test_*.py / *_test.py / *.test.js) exercise a
+                    # boundary; they are not themselves adapter boundaries.
+                    if low.startswith("test_") or low.endswith(("_test.py", ".test.js", ".test.mjs", ".test.cjs")):
+                        continue
                     if not any(x in low for x in ("bridge", "shim", "wrapper")):
                         continue
                     if fname.endswith((".pyc", ".pyo")):
