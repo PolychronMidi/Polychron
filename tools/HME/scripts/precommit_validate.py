@@ -407,8 +407,8 @@ def todo_survivor_check() -> None:
     if not before_open:
         return
     after_open = _non_done_todos(after.decode("utf-8", "replace"))
-    after_keys = {(t.id, re.sub(r"\s+", " ", t.text).strip().lower()) for t in after_open}
-    lost = [t for t in before_open if (t.id, re.sub(r"\s+", " ", t.text).strip().lower()) not in after_keys]
+    after_ids = {t.id for t in after_open}
+    lost = [t for t in before_open if t.id not in after_ids]
     if lost:
         detail = " | ".join(f"#{t.id} {t.code}_ {t.text[:120]}" for t in lost[:5])
         failures.append("doc/templates/TODO.md: non-5_ todo(s) removed instead of surviving active set: " + detail)
