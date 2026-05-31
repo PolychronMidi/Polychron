@@ -1,8 +1,8 @@
 # Generic PreToolUse mirror for transcript-scope Stop detectors. Iterates
 # registry.json entries with `pre_tool_use_mirror` and applies each predicate.
 
-[ -n "${INPUT:-}" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
-_RPR_INPUT="$INPUT"
+_RPR_INPUT="${INPUT:-}"
+[ -n "$_RPR_INPUT" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 _RPR_ROOT="${PROJECT_ROOT}"
 [ -n "$_RPR_ROOT" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
