@@ -56,16 +56,16 @@ _ac_record_failure() {
   # Channel B: hme-errors.log for LIFESAVER pickup next UserPromptSubmit.
   # log/ may not exist -- silently create before writing.
   mkdir -p "$(dirname "$_AC_ERROR_LOG")" 2>/dev/null || true
-  echo "[$ts] [autocommit] $reason" >> "$_AC_ERROR_LOG" 2>/dev/null || true  # silent-ok: optional fallback path.
+  echo "[$ts] [autocommit] $reason" >> "$_AC_ERROR_LOG" 2>/dev/null || true  # silent-ok: best-effort telemetry write; sticky fail-flag and stderr remain independent failure channels.
 
   # Channel C: stderr. Even when an adapter drops this, local terminals
   # see it. Keep short and marked so search/grep locates it instantly.
-  echo "[autocommit FAIL $ts] $reason" >&2 2>/dev/null || true  # silent-ok: optional fallback path.
+  echo "[autocommit FAIL $ts] $reason" >&2 2>/dev/null || true  # silent-ok: best-effort terminal channel; sticky fail-flag and hme-errors.log remain independent failure channels.
 
   # Channel D: activity bridge. Best-effort; silent-fails if python/env
   # unavailable. The HCI verifier still catches via the counter/flag.
   local emit_script="$_AC_ROOT/tools/HME/activity/emit.py"
-  if [ -x "$emit_script" ] 2>/dev/null; then  # silent-ok: optional fallback path.
+  if [ -x "$emit_script" ] 2>/dev/null; then  # silent-ok: optional activity emitter; counter/fail-flag still enforce autocommit health without it.
     # Horizon VII: caused_by = the autocommit-detected reason; lets
     # `i/why mode=causality coherence_violation` resolve Tier-1.5.
     PROJECT_ROOT="$_AC_ROOT" python3 "$emit_script" \
@@ -86,7 +86,7 @@ _ac_begin() {
   case "$n" in
     ''|*[!0-9]*) n=0 ;;
   esac
-  echo $((n + 1)) > "$_AC_COUNTER" 2>/dev/null || true  # silent-ok: optional fallback path.
+  echo $((n + 1)) > "$_AC_COUNTER" 2>/dev/null || true  # silent-ok: best-effort counter telemetry; commit errors still return nonzero and hit failure channels.
 }
 
 # Helper: record a successful commit. Reset counter, update success
