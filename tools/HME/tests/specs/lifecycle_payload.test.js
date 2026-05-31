@@ -84,24 +84,35 @@ test('addClaudeTranscript is a no-op for non-Stop events', () => {
 });
 
 
-test('addClaudeTranscript fails fast when Stop transcript cannot be resolved', () => {
-  const { root, ccProject } = sandbox();
+test('addClaudeTranscript fails fast when Stop transcript project directory is absent', () => {
+  const { root } = sandbox();
+  const missingProject = path.join(os.tmpdir(), `missing-cc-project-${process.pid}-${Date.now()}`);
   assert.throws(
-    () => withClaudeProjectDir(ccProject, () => addClaudeTranscript({ session_id: 'missing-session' }, root, 'Stop')),
-    /no transcript for session_id missing-session/,
+    () => withClaudeProjectDir(missingProject, () => addClaudeTranscript({ session_id: 'missing-session' }, root, 'Stop')),
+    /Claude transcript project directory missing/,
   );
+});
+
+
+test('addClaudeTranscript falls back to newest transcript when exact session file is absent', () => {
+  const { root, ccDir, ccProject } = sandbox();
+  const fallback = path.join(ccDir, 'aaaaaaaa-1111-1111-1111-111111111111.jsonl');
+  writeJsonl(fallback, [{ type: 'user', message: { content: 'fallback' } }]);
+  const result = withClaudeProjectDir(ccProject, () => addClaudeTranscript({ session_id: 'missing-session' }, root, 'Stop'));
+  assert.equal(result.transcript_path, fallback);
 });
 
 
 test('buildHostPayload encodes transcript failfast for mandatory stop policy', () => {
   const { buildHostPayload } = require('../../event_kernel/lifecycle_payload');
-  const { root, ccProject } = sandbox();
-  const body = withClaudeProjectDir(ccProject, () => buildHostPayload({
+  const { root } = sandbox();
+  const missingProject = path.join(os.tmpdir(), `missing-cc-project-${process.pid}-${Date.now()}`);
+  const body = withClaudeProjectDir(missingProject, () => buildHostPayload({
     host: 'claude', event: 'Stop', root, rawBody: JSON.stringify({ session_id: 'missing-session' }), cwd: root,
   }));
   const payload = JSON.parse(body);
   assert.match(payload._hme_transcript_error, /TRANSCRIPT FAILFAST/);
-  assert.match(payload._hme_transcript_error, /missing-session/);
+  assert.match(payload._hme_transcript_error, /Claude transcript project directory missing/);
 });
 
 test('normalizeLifecyclePayload propagates HME_SUBAGENT=1 to payload._hme_subagent', () => {
