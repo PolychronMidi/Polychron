@@ -23,11 +23,7 @@ def _run():
         sys.modules.pop(m, None)
     import todo_guard as g
 
-    def lost(before, after, archive=None):
-        for f in (Path(d) / "log" / "todo").glob("set*.md"):
-            f.unlink()
-        if archive:
-            (Path(d) / "log" / "todo" / "set1.md").write_text(archive, encoding="utf-8")
+    def lost(before, after):
         return g.lost_unfinished(before, after)
 
     cases = [
