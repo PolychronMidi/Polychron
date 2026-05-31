@@ -45,24 +45,6 @@ function _readTodo(root) {
   catch (_e) { return ''; }
 }
 
-function _archiveTexts(root, preferredSet = null) {
-  const out = new Set();
-  const dir = path.join(root, 'log', 'todo');
-  const files = [];
-  if (preferredSet != null) files.push(path.join(dir, `set${preferredSet}.md`));
-  try {
-    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (ent.isFile() && /^set\d+\.md$/.test(ent.name)) files.push(path.join(dir, ent.name));
-    }
-  } catch (_e) { return out; }
-  for (const file of files) {
-    try {
-      for (const t of _parse(fs.readFileSync(file, 'utf8')).todos) out.add(_norm(t.text));
-    } catch (_e) { /* silent-ok: best-effort archive scan */ }
-  }
-  return out;
-}
-
 function _survives(todo, afterTodos, archived) {
   const nt = _norm(todo.text);
   if (afterTodos.some((t) => _norm(t.text) === nt)) return true;
