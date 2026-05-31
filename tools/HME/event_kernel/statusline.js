@@ -33,12 +33,13 @@ function modelInputBudget(root, modelId) {
       const map = new Map();
       for (const tier of Object.values(cfg.tiers || {})) {
         for (const m of tier.models || []) {
-          const input = Number(m.max_input_tokens);
           const ctx = Number(m.context_length);
+          const input = Number(m.max_input_tokens);
           const output = Number(m.max_output_tokens);
           let budget = 0;
-          if (Number.isFinite(input) && input > 0) budget = input;
-          else if (Number.isFinite(ctx) && ctx > 0) budget = (Number.isFinite(output) && output > 0 && ctx > output) ? ctx - output : ctx;
+          if (Number.isFinite(ctx) && ctx > 0) budget = ctx;
+          else if (Number.isFinite(input) && input > 0 && Number.isFinite(output) && output > 0) budget = input + output;
+          else if (Number.isFinite(input) && input > 0) budget = input;
           if (budget > 0 && m.id) map.set(String(m.id), budget);
           if (budget > 0 && m.api_model) map.set(String(m.api_model), budget);
         }
