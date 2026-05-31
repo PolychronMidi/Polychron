@@ -175,14 +175,18 @@ def tracked_blob(path: str) -> bytes | None:
     try:
         return (ROOT / path).read_bytes()
     except OSError:
-        proc = subprocess.run(
-            ["git", "-C", str(ROOT), "show", f"HEAD:{path}"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        if proc.returncode == 0:
-            return proc.stdout
-        return None
+        return head_blob(path)
+
+
+def head_blob(path: str) -> bytes | None:
+    proc = subprocess.run(
+        ["git", "-C", str(ROOT), "show", f"HEAD:{path}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if proc.returncode == 0:
+        return proc.stdout
+    return None
 
 
 def is_text(data: bytes) -> bool:
