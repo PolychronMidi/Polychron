@@ -271,6 +271,8 @@ async function preWriteCheck(stdinJson) {
   }
   const shapeDecision = _editShapeDecision(payload);
   if (shapeDecision) return _repeatDeny(payload, shapeDecision);
+  const todoDecision = todoWriteDecision(payload, PROJECT_ROOT);
+  if (todoDecision) return _repeatDeny(payload, todoDecision);
 
   try {
     _loadPolicies();
