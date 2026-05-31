@@ -11,13 +11,10 @@
 // Anchor to log-line conventions (start-of-line marker + colon or
 const ERROR_LINE_RE = /^\s*(?:Traceback \(most recent call last\)|ERROR:|FAIL(?:ED)?:|Segmentation fault|core dumped|OutOfMemory(?:Error)?|OOMKilled|fatal:|panic:)/;
 
+const { blockText } = require('../request_shape');
+
 function _textOf(toolResult) {
-  const c = toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) {
-    return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  }
-  return '';
+  return blockText(toolResult, { toolResults: true });
 }
 
 function _firstErrorSnippet(text) {
