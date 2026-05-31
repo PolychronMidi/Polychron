@@ -31,6 +31,17 @@ def _resolve_project_root() -> str | None:
     return None
 
 
+def _caller_detector_name() -> str:
+    for frame in inspect.stack()[1:]:
+        try:
+            path = Path(frame.filename)
+            if path.parent == Path(__file__).parent and not path.name.startswith("_"):
+                return path.stem
+        except OSError:
+            continue
+    return "unknown"
+
+
 def emit_stats(detector: str, verdict: str, detail: str) -> None:
     """Append one line + LRU-trim to detector-stats.jsonl. Best-effort; failures log to stderr but never raise."""
     root = _resolve_project_root()
