@@ -1033,6 +1033,20 @@ test('stale-tool horizon scales from HME_PROXY_STALE_TOOL_KEEP_TURNS per gear', 
   }
 }));
 
+test('context-window overflow alert is a named self-origin LIFESAVER only when over budget', () => {
+  // Within budget -> no alert.
+  assert.equal(contextWindowOverflowAlert({ model: 'cx/gpt-5.5-high', usedTokens: 100, budget: 372000, afterBytes: 1000, ts: 'T' }), '');
+  // Over budget after compaction -> named LIFESAVER naming model, tokens, budget.
+  const line = contextWindowOverflowAlert({ model: 'cx/gpt-5.5-high', usedTokens: 404000, budget: 372000, afterBytes: 1050000, ts: '2026-05-31T00:00:00.000Z' });
+  assert.match(line, /\[hme-proxy\] LIFESAVER -- context budget/);
+  assert.match(line, /cx\/gpt-5\.5-high/);
+  assert.match(line, /404000 tokens/);
+  assert.match(line, /window 372000/);
+  // The [hme-proxy] tag must be classified self-origin (single source: _self_tags.sh).
+  const selfTags = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/hooks/helpers/_self_tags.sh'), 'utf8');
+  assert.match(selfTags, /hme-proxy/, 'hme-proxy must be in the shared self-origin tag regex');
+});
+
 test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
