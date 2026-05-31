@@ -64,6 +64,7 @@ function readRows(root) {
       .map((line) => safeJson(line, null))
       .filter(Boolean);
   } catch (_err) {
+    // silent-ok: missing/corrupt lifecycle history means no prior checkpoints.
     return [];
   }
 }
