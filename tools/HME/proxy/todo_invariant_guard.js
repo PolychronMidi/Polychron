@@ -119,7 +119,7 @@ function todoWriteDecision(payload = {}, root) {
 }
 
 function _commandTouchesTodo(cmd) {
-  return /doc\/templates\/TODO\.md|doc\/templates\/TODO\.md|TODO\.md/.test(String(cmd || ''));
+  return /(?:^|[\s"'])((?:\$PROJECT_ROOT\/)?doc\/templates\/TODO\.md|(?:\/[^\s"']*)?\/doc\/templates\/TODO\.md)(?:$|[\s"'])/.test(String(cmd || ''));
 }
 
 function bashTodoDecision(command = '') {
