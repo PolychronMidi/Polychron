@@ -17,7 +17,17 @@ _ensure_tab() {
 _append_file_to_tab() {
   local file="$1"
   local tab; tab=$(_ensure_tab)
-  grep -qxF "FILE: $file" "$tab" 2>/dev/null || echo "FILE: $file" >> "$tab"  # silent-ok: optional fallback path.
+  if [ ! -r "$tab" ]; then
+    echo "HME fail-fast: tab file is not readable: $tab" >&2
+    return 1
+  fi
+  if grep -qxF "FILE: $file" "$tab"; then
+    return 0
+  fi
+  echo "FILE: $file" >> "$tab" || {
+    echo "HME fail-fast: cannot append to tab file: $tab" >&2
+    return 1
+  }
 }
 
 _extract_bg_output_path() {
@@ -29,5 +39,8 @@ if isinstance(result, list):
     result = ' '.join(str(x.get('text','') if isinstance(x,dict) else x) for x in result)
 m = re.search(r'Output is being written to: (\S+)', str(result))
 print(m.group(1) if m else '')
-" 2>/dev/null  # silent-ok: optional fallback path.
+" || {
+    echo "HME fail-fast: malformed PostToolUse payload while extracting background output path" >&2
+    return 1
+  }
 }
