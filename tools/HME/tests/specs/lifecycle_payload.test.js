@@ -11,9 +11,21 @@ function sandbox() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lifecycle-payload-'));
   fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
   const parentDir = path.dirname(root);
+  const ccProject = path.join(parentDir, 'Polychron');
   const ccDir = path.join(parentDir, '.claude', 'projects', '-home-jah-Polychron');
+  fs.mkdirSync(ccProject, { recursive: true });
   fs.mkdirSync(ccDir, { recursive: true });
-  return { root, ccDir };
+  return { root, ccDir, ccProject };
+}
+
+function withClaudeProjectDir(root, fn) {
+  const prior = process.env.CLAUDE_PROJECT_DIR;
+  process.env.CLAUDE_PROJECT_DIR = root;
+  try { return fn(); }
+  finally {
+    if (prior === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+    else process.env.CLAUDE_PROJECT_DIR = prior;
+  }
 }
 
 function writeJsonl(file, lines = []) {
