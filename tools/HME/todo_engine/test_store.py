@@ -98,6 +98,18 @@ def test_no_archive_when_open_items():
     assert len(todos) == 2
 
 
+def test_recover_orphaned_carryovers_from_latest_archive():
+    d, store = _fresh_root()
+    archive = Path(d) / "log" / "todo"
+    archive.mkdir(parents=True, exist_ok=True)
+    (archive / "set7.md").write_text("### Todo - Set 7\n\n#7 3_ blocked\n#8 5_ done\n#11 4_ follow\n", encoding="utf-8")
+    _write(d, "# rules\n\n### Todo - Set 8\n")
+    assert store.recover_orphaned_carryovers() == 2
+    _, todos = store.load(now=T0)
+    assert [(t.id, t.code, t.text) for t in todos] == [(7, "3", "blocked"), (11, "4", "follow")]
+    assert store.maybe_archive(now=T0) is None
+
+
 if __name__ == "__main__":
     n = 0
     g = dict(globals())
