@@ -213,13 +213,7 @@ const SYSREM_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/g;
 
 function _textOf(block) {
   if (!block || typeof block !== 'object') return '';
-  if (block.type === 'text') return typeof block.text === 'string' ? block.text : '';
-  if (block.type === 'tool_result') {
-    const c = block.content;
-    if (typeof c === 'string') return c;
-    if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  }
-  return '';
+  return _sharedBlockText(block, { toolResults: true });
 }
 
 function _setText(block, newText) {
