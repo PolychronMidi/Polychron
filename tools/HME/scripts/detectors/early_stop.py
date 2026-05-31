@@ -308,10 +308,10 @@ def _has_tool_call_after_last_text(events: list) -> bool:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    if transcript_arg() is None:
         print("ok")
         return 0
-    events = load_full_turn_with_user(sys.argv[1])
+    events = load_turn(load_full_turn_with_user)
 
     user_text = _last_user_text(events)
     if not user_text:
