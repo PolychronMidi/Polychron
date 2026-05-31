@@ -37,7 +37,10 @@ function transcriptForSession(dir, sessionId) {
   try {
     const match = fs.readdirSync(dir).find((f) => f === `${sessionId}.jsonl`);
     return match ? path.join(dir, match) : '';
-  } catch (_err) { return ''; }
+  } catch (_err) {
+    // silent-ok: unreadable transcript directory falls back to no session match.
+    return '';
+  }
 }
 
 function normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole }) {
