@@ -36,7 +36,7 @@ const _SURFACE_AFTER_FAILS = 2;
 // the first failure of the streak, not from when the alert would fire -- before
 const _SURFACE_GRACE_MS = (() => {
   const n = parseInt(process.env.HME_AUTOCOMMIT_SURFACE_GRACE_MS || '', 10);
-  return Number.isFinite(n) && n >= 0 ? n : 90_000;
+  return Number.isFinite(n) && n >= 0 ? n : 120_000;
 })();
 
 // First-failure timestamp of the current unresolved streak. Returns 0 when no
