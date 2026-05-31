@@ -287,6 +287,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
     return False
 
 
+@DETECTOR
 def main() -> int:
     if transcript_arg() is None:
         print("ok")
