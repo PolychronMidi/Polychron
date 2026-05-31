@@ -37,17 +37,32 @@ def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip().lower()
 
 
+def _parsed(text: str):
+    return parse_document(text or "")
+
+
 def _todos(text: str):
-    _header, todos = parse_document(text or "")
+    _header, todos = _parsed(text)
     return todos
 
 
-def _archived_texts() -> set:
+def _set_number(header: list[str]) -> int | None:
+    for raw in header:
+        m = re.match(r"^\s*###\s+Todo\s+-\s+Set\s+(\d+)\s*$", raw, re.I)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def _archived_texts(set_no: int | None = None) -> set:
     d = _root() / "log" / "todo"
     out: set = set()
-    if not d.is_dir():
-        return out
-    for f in d.glob("set*.md"):
+    files = []
+    if set_no is not None:
+        files.append(d / f"set{set_no}.md")
+    if d.is_dir():
+        files.extend(sorted(d.glob("set*.md")))
+    for f in files:
         try:
             for t in _todos(f.read_text(encoding="utf-8")):
                 out.add(_norm(t.text))
