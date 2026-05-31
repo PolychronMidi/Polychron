@@ -231,8 +231,12 @@ _preflight_candidate || { _mark_slot_broken "preflight_failed"; exit 1; }
 _OTHER_SLOT="a"
 [ "$SLOT" = "a" ] && _OTHER_SLOT="b"
 _OTHER_HEALTH="$RUNTIME_DIR/proxy-$_OTHER_SLOT.health"
-if ! python3 - "$_OTHER_HEALTH" "$_HEARTBEAT_STALE_MS" <<'PY'
-import json, os, signal, sys, time
+
+# True (exit 0) iff the slot whose health file is $1 is live + routable right
+# now: heartbeat fresh, ready, not draining, and its pid is alive.
+_slot_routable() {
+  python3 - "$1" "$_HEARTBEAT_STALE_MS" <<'PY'
+import json, os, sys, time
 health_file, stale_ms = sys.argv[1], int(sys.argv[2])
 try:
     h = json.load(open(health_file))
@@ -245,10 +249,18 @@ except Exception:
     pass
 sys.exit(1)
 PY
-then
-  echo "[slot-restart:$SLOT] ABORT: other slot $_OTHER_SLOT is not proven routable; NOT draining incumbent" >&2
-  _record_failure "other_slot_not_routable slot=$_OTHER_SLOT"
-  exit 1
+}
+
+# Require the peer routable ONLY when this slot has a live incumbent to protect;
+# if this slot is already down, cold-start it (else a both-down state deadlocks).
+if _slot_routable "$HEALTH_FILE"; then
+  if ! _slot_routable "$_OTHER_HEALTH"; then
+    echo "[slot-restart:$SLOT] ABORT: other slot $_OTHER_SLOT is not proven routable; NOT draining incumbent" >&2
+    _record_failure "other_slot_not_routable slot=$_OTHER_SLOT"
+    exit 1
+  fi
+else
+  echo "[slot-restart:$SLOT] no routable incumbent on this slot; bypassing peer-routable guard to cold-start (both-down recovery)" >&2
 fi
 
 # Step 1: write drain flag only after the replacement build proves it can boot

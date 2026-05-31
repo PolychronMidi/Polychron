@@ -504,7 +504,7 @@ _sv_ensure_shuffler_procs() {
   _sv_is_maintenance_active && return 0
   local sdir="$_SV_ROOT/tools/HME/proxy/shuffler"
   local name script logf
-  for name in file_watcher slot_watchdog; do
+  for name in shuffler file_watcher slot_watchdog; do
     script="$sdir/${name}.js"
     [ -f "$script" ] || continue
     if ! pgrep -f "shuffler/${name}\.js" >/dev/null 2>&1; then
