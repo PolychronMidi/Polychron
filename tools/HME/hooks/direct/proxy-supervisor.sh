@@ -531,7 +531,11 @@ _sv_loop() {
   # Singleton check via flock advisory lock + pid-file confirmation.
   # Use a supervisor-owned lock path distinct from historical child-inherited
   _SV_LOCK_FILE="$_SV_PID_FILE.supervisor.lock"
-  exec 200>"$_SV_LOCK_FILE" 2>/dev/null || true  # silent-ok: optional fallback path.
+  if ! exec 200>"$_SV_LOCK_FILE"; then
+    _sv_log "cannot open supervisor lock file $_SV_LOCK_FILE; refusing unlocked supervisor loop"
+    echo "[proxy-supervisor] cannot open supervisor lock file $_SV_LOCK_FILE; refusing unlocked supervisor loop" >&2
+    exit 1
+  fi
   if command -v flock >/dev/null 2>&1; then
     if ! flock -n 200 2>/dev/null; then  # silent-ok: optional fallback path.
       _sv_log "another supervisor holds the lock at $_SV_LOCK_FILE; refusing to start (this pid=$$)"
