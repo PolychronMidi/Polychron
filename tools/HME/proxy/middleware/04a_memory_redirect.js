@@ -94,10 +94,7 @@ function _kbSearch(query) {
 }
 
 function _resultText(toolResult) {
-  const c = toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  return '';
+  return blockText(toolResult, { toolResults: true });
 }
 
 function _setResult(toolResult, text) {
