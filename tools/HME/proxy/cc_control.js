@@ -35,4 +35,43 @@ function submitCcShortcut(root, key = 'cc', prompt = '') {
   }
 }
 
-module.exports = { ccControlFifo, submitCcShortcut };
+function _compactInflightFlag(root) {
+  return path.join(root || process.cwd(), 'tmp', 'hme-cc-compact.inflight');
+}
+
+// Cross-slot, cross-process single-flight guard for the auto-compact path.
+// Both proxy slots see the same over-window response stream and each over-window
+function submitCcCompactOnce(root, { ttlMs = 300_000, now = Date.now() } = {}) {
+  const flag = _compactInflightFlag(root);
+  try {
+    const st = fs.statSync(flag);
+    if (now - st.mtimeMs < ttlMs) return { submitted: false, reason: 'inflight' };
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') throw err; // ENOENT = no cycle in flight
+  }
+  const delivered = submitCcShortcut(root, 'cc');
+  if (!delivered) return { submitted: false, reason: 'no_bridge' };
+  try {
+    fs.mkdirSync(path.dirname(flag), { recursive: true });
+    fs.writeFileSync(flag, String(now));
+  } catch (err) {
+    // The token is already delivered; a missing flag only weakens the
+    // single-flight guard for the next overflow. Surface it rather than hide it.
+    throw err;
+  }
+  return { submitted: true, reason: 'submitted' };
+}
+
+// Clear the single-flight guard once a compact cycle has visibly succeeded
+// (a non-over-window interactive response), so a later genuine overflow can
+function clearCcCompactInflight(root) {
+  try {
+    fs.unlinkSync(_compactInflightFlag(root));
+    return true;
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return false; // already clear
+    throw err;
+  }
+}
+
+module.exports = { ccControlFifo, submitCcShortcut, submitCcCompactOnce, clearCcCompactInflight };
