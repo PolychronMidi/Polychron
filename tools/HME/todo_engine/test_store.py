@@ -56,20 +56,25 @@ def test_mutate_roundtrips():
     assert [t.id for t in todos] == [1, 2] and todos[1].code == "1"
 
 
-def test_archive_when_all_resolved_carries_non_done_todos():
+def test_archive_waits_when_non_done_terminal_todos_remain():
     d, store = _fresh_root()
     _write(d, "# rules\n\n### Todo - Set 4\n\n#1 5_ done a\n#2 3_ blocked b\n#3 4f_ follow c\n")
+    assert store.maybe_archive(now=T0) is None
+    _, todos = store.load(now=T0)
+    assert [(t.id, t.code, t.text) for t in todos] == [(1, "5", "done a"), (2, "3", "blocked b"), (3, "4f", "follow c")]
+
+
+def test_archive_when_all_done_advances_to_empty_next_set():
+    d, store = _fresh_root()
+    _write(d, "# rules\n\n### Todo - Set 4\n\n#1 5_ done a\n#2 5_ done b\n")
     path = store.maybe_archive(now=T0)
     assert path is not None and Path(path).name == "set4.md"
-    # archive captured the immutable old set
     archived = Path(path).read_text()
-    assert "done a" in archived and "blocked b" in archived and "follow c" in archived
-    # TODO.md advanced and carried only non-5_ terminal items.
+    assert "done a" in archived and "done b" in archived
     todo_text = (Path(d) / "doc" / "templates" / "TODO.md").read_text(encoding="utf-8")
     assert "### Todo - Set 5" in todo_text
     _, todos = store.load(now=T0)
-    assert [(t.id, t.code, t.text) for t in todos] == [(2, "3", "blocked b"), (3, "4f", "follow c")]
-    assert "done a" not in todo_text
+    assert todos == []
     # next archive honors the active header, not max(log/todo)+1.
     _write(d, "# rules\n\n### Todo - Set 8\n\n#3 5_ done c\n")
     path2 = store.maybe_archive(now=T0)
