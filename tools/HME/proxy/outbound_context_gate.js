@@ -14,6 +14,7 @@ const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./
 function inputBudgetFor(modelId) {
   const info = modelOutputInfo(modelId);
   if (info.context > 0) return info.context;
+  if (info.maxInput > 0 && info.maxOutput > 0) return info.maxInput + info.maxOutput;
   if (info.maxInput > 0) return info.maxInput;
   return 0; // unknown -> no gate (fail open; never block on missing config)
 }
