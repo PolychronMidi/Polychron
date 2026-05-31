@@ -11,7 +11,7 @@ from unittest import mock
 HERE = Path(__file__).resolve()
 sys.path.insert(0, str(HERE.parent.parent.parent / "scripts" / "detectors"))
 
-from _base import BehavioralDetector  # noqa: E402
+from _base import BehavioralDetector, detector, load_turn, transcript_arg  # noqa: E402
 
 
 class _AlwaysFires(BehavioralDetector):
