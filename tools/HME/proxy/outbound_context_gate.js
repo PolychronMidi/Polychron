@@ -8,12 +8,13 @@ const { emit, PROJECT_ROOT } = require('./shared');
 const { semanticTokenEstimate } = require('./context_token_estimate');
 const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./hme_proxy_request_mutation');
 
-// Resolved input budget for a model id: declared max_input_tokens wins;
-// otherwise context_length minus the output reservation. One number -- callers
+// Resolved budget for a model id: the full context window (context_length).
+// Unified on context_length -- gate input against the whole window, not the
+// output-reserved max_input_tokens; the dynamic output cap handles output
 function inputBudgetFor(modelId) {
   const info = modelOutputInfo(modelId);
+  if (info.context > 0) return info.context;
   if (info.maxInput > 0) return info.maxInput;
-  if (info.context > 0) return Math.max(1024, info.context - (info.maxOutput || 0));
   return 0; // unknown -> no gate (fail open; never block on missing config)
 }
 
