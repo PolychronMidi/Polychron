@@ -40,48 +40,20 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
 
     append_session_narrative("find", f"{mode}: {query[:80]}")
 
-    if mode == "think":
-        from .reasoning_think import think as _th
-        return _th(about=query)
-
-    if mode == "diagnose":
-        from .workflow_audit import diagnose_error as _de
-        return _de(query)
-
-    if mode == "blast":
-        from .reasoning_think import blast_radius as _br
-        return _br(query)
-
-    if mode == "coupling":
-        from .coupling import coupling_intel as _ci
-        return _budget_gate(_ci(mode=query or "full"))
-
-    if mode == "symbols":
-        from .symbols import search_symbols as _ss
-        return _ss(query)
-
-    if mode == "lookup":
-        from .symbols import lookup_symbol as _ls
-        return _ls(query)
-
-    if mode == "map":
-        from .symbols import get_module_map as _gmm
-        return _gmm(query or "")
-
-    if mode == "hierarchy":
-        from .symbols import type_hierarchy as _th2
-        return _th2(query)
-
-    if mode == "rename":
-        parts = query.split("->") if "->" in query else query.split("->")
-        if len(parts) == 2:
-            from .symbols import bulk_rename_preview as _brp
-            return _brp(parts[0].strip(), parts[1].strip())
-        return "Error: rename mode needs 'old_name->new_name' format."
-
-    if mode == "xref":
-        from .symbols import cross_language_trace as _clt
-        return _clt(query)
+    routed = dispatch(mode, {
+        "think": lambda: _think(query),
+        "diagnose": lambda: _diagnose(query),
+        "blast": lambda: _blast(query),
+        "coupling": lambda: _coupling(query),
+        "symbols": lambda: _symbols(query),
+        "lookup": lambda: _lookup(query),
+        "map": lambda: _map(query),
+        "hierarchy": lambda: _hierarchy(query),
+        "rename": lambda: _rename(query),
+        "xref": lambda: _xref(query),
+    })
+    if routed is not None:
+        return routed
 
     if mode == "auto":
         mode = _detect_intent(query)
