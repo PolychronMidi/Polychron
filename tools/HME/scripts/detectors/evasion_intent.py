@@ -199,7 +199,7 @@ def _extract_output_text(events: list) -> str:
 
 def _emit_stats(verdict: str, detail: str) -> None:
     from _detector_stats import emit_stats
-    emit_stats("evasion_intent", verdict, detail)
+    emit_stats(None, verdict, detail)
 
 
 
