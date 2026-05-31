@@ -280,6 +280,42 @@ test('OmniRoute context-window overflow submits cc shortcut instead of bailing t
   }
 });
 
+test('cc compact submission is single-flight so /compact -> continue can never overlap/reorder', () => {
+  const { submitCcCompactOnce, clearCcCompactInflight } = require('../../proxy/cc_control');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-cc-single-'));
+  let readFd = null;
+  try {
+    fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
+    const fifo = path.join(dir, 'tmp', 'hme-cc-control.fifo');
+    execFileSync('mkfifo', [fifo]);
+    readFd = fs.openSync(fifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+
+    const first = submitCcCompactOnce(dir);
+    assert.equal(first.submitted, true, 'first overflow submits one compact cycle');
+    const second = submitCcCompactOnce(dir);
+    assert.equal(second.submitted, false, 'a second overflow during the in-flight cycle is suppressed');
+    assert.equal(second.reason, 'inflight');
+
+    // Exactly ONE cc token reached the bridge -- never two overlapping cycles
+    // whose continue/compact steps could interleave into reverse order.
+    let bytes = '';
+    const buf = Buffer.alloc(64);
+    for (let i = 0; i < 5; i++) {
+      try { const n = fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) bytes += buf.slice(0, n).toString('utf8'); }
+      catch (_e) { break; }
+    }
+    assert.equal(bytes, 'cc\n', 'only one /compact -> continue cycle dispatched');
+
+    // Once the cycle visibly lands, the guard clears so a later genuine overflow re-fire
+    assert.equal(clearCcCompactInflight(dir), true);
+    assert.equal(clearCcCompactInflight(dir), false, 'idempotent clear');
+    assert.equal(submitCcCompactOnce(dir).submitted, true, 'fresh overflow after clear re-triggers compact');
+  } finally {
+    if (readFd !== null) { try { fs.closeSync(readFd); } catch (_e) { /* closed */ } }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('model route cooldown marks context-window quarantine and expires by time', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-route-health-'));
   try {
