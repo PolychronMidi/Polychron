@@ -474,6 +474,7 @@ def main() -> int:
     else:
         staged_python_compile_check()
         staged_content_check()
+    todo_survivor_check()
     if failures:
         print("ERROR: pre-commit validation blocked this commit.", file=sys.stderr)
         print("Fix or unstage the following:", file=sys.stderr)
