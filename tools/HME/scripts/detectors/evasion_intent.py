@@ -201,11 +201,6 @@ def _extract_output_text(events: list) -> str:
     return "\n\n".join(parts)
 
 
-def _emit_stats(verdict: str, detail: str) -> None:
-    from _detector_stats import emit_stats
-    emit_stats(None, verdict, detail)
-
-
 
 def main() -> int:
     if len(sys.argv) < 2:
