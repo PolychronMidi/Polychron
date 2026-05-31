@@ -7,7 +7,7 @@ const http = require('http');
 const net = require('net');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 const read = (rel) => fs.readFileSync(path.join(REPO, rel), 'utf8');
