@@ -330,11 +330,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     registry = require('../policies/registry');
     config = require('../policies/config');
   } catch (err) {
-    return {
-      stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: `UNIFIED POLICY LOAD FAILURE: ${err.message}` } }),
-      stderr: `[unified-policies] load failure: ${err.message}\n`,
-      exit_code: 2,
-    };
+    return _failClosedPolicyError(`UNIFIED POLICY LOAD FAILURE: ${err.message}`, eventName);
   }
   try {
     registry.loadBuiltins();
