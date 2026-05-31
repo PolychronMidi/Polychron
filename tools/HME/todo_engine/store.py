@@ -123,9 +123,9 @@ def next_id(todos: list[Todo]) -> int:
 
 
 def maybe_archive(now: float | None = None) -> str | None:
-    """If the active set is fully resolved (all >= 3_), archive it to
-    log/todo/set<N>.md, advance the header, and carry non-5_ items into the
-    next active set. Returns archive path or None."""
+    """If every active item is 5_, archive it to log/todo/set<N>.md and
+    advance to an empty next set. Non-5_ items remain active and block archive.
+    Returns archive path or None."""
     now = time.time() if now is None else now
 
     def _do():
