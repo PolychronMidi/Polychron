@@ -68,7 +68,7 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
 // over-window verdict, writes the 413 refusal to `clientRes`. Returns
 function applyOutboundContextGate({
   payload, isAnthropic, isInteractivePath, isOmniRouteSwap,
-  swapModel, swapChain, outBody, sessionForTelemetry, clientRes,
+  swapModel, swapChain, outBody, sessionForTelemetry, clientRes, clientReq,
 }) {
   let nextOutBody = outBody;
   let nextSwapModel = swapModel;
