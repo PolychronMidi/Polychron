@@ -230,11 +230,6 @@ def _last_assistant_text(events: list) -> str:
     return "\n".join(parts)
 
 
-def _emit_stats(verdict: str, detail: str) -> None:
-    from _detector_stats import emit_stats
-    emit_stats(None, verdict, detail)
-
-
 _LIST_ITEM_RE = re.compile(r"^\s*(?:\d+[.)]\s+\S|[-*]\s+\S)", re.MULTILINE)
 _STRUCTURAL_ENUMERATION_THRESHOLD = 3
 
