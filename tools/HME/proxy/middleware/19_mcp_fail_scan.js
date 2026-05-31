@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { blockText } = require('../request_shape');
 
 const ERR_LOG = 'log/hme-errors.log';
 const FAIL_RE = /\bFAIL(ED)?\b/;
@@ -12,10 +13,7 @@ const FAIL_RE = /\bFAIL(ED)?\b/;
 const FAIL_SKIP_RE = /^\s*PASS\b|\bPASS:\s|\bPASSED\b|fail-fast|fail to|may fail|might fail|could fail/i;
 
 function _resultText(toolResult) {
-  const c = toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  return '';
+  return blockText(toolResult, { toolResults: true });
 }
 
 module.exports = {
