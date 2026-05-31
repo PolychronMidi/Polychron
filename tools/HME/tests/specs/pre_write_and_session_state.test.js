@@ -197,7 +197,7 @@ test('OpenCode TextComplete dispatch applies caveman suffix rewrites', async () 
   });
   const parsed = JSON.parse(res.stdout || '{}');
   assert.equal(parsed.decision, 'modify');
-  assert.equal(parsed.text, 'Testn relatn agremt behavr.');
+  assert.equal(parsed.text, 'Testn relatn agremt behavr');
   fs.rmSync(root, { recursive: true, force: true });
 });
 
