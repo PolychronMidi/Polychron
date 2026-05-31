@@ -40,19 +40,6 @@ def _parsed(text: str):
     return parse_document(text or "")
 
 
-def _todos(text: str):
-    _header, todos = _parsed(text)
-    return todos
-
-
-def _set_number(header: list[str]) -> int | None:
-    for raw in header:
-        m = re.match(r"^\s*###\s+Todo\s+-\s+Set\s+(\d+)\s*$", raw, re.I)
-        if m:
-            return int(m.group(1))
-    return None
-
-
 def _sig_words(text: str) -> set:
     return set(re.findall(r"[a-z0-9]{4,}", _norm(text)))
 
