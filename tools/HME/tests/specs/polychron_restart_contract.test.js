@@ -59,6 +59,14 @@ test('slot preflight drives request path before draining incumbent', () => {
   assert.match(restart, /_preflight_candidate \|\| \{ _mark_slot_broken "preflight_failed"; exit 1; \}/);
 });
 
+test('slot restart proves peer slot routable before draining incumbent', () => {
+  const restart = read('tools/HME/launcher/polychron-slot-restart.sh');
+  assert.match(restart, /_OTHER_SLOT/);
+  assert.match(restart, /other slot \$_OTHER_SLOT is not proven routable; NOT draining incumbent/);
+  assert.match(restart, /touch "\$DRAIN_FLAG"/);
+  assert.ok(restart.indexOf('other slot $_OTHER_SLOT is not proven routable') < restart.indexOf('touch "$DRAIN_FLAG"'));
+});
+
 test('proxy self-quarantines request-path code faults without respawn promotion', () => {
   const proxy = read('tools/HME/proxy/hme_proxy.js');
   assert.match(proxy, /markSlotBroken/);
