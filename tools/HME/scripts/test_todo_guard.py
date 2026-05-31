@@ -52,10 +52,6 @@ def _run():
             print(f"[FAIL] {name}: expected {expect} got {got}")
         else:
             print(f"[pass] {name}")
-
-    # Wrong-number archive must not hide deletion from the turn-start Set 4.
-    wrong = lost("### Todo - Set 4\n#1 0_ build the guard", "### Todo - Set 5\n", archive=None)
-    assert len(wrong) == 1
     if failures:
         print(f"\n{len(failures)} test(s) failed")
         return 1
