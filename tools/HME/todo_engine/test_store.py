@@ -85,7 +85,7 @@ def test_archive_without_header_falls_back_to_next_log_number():
     d, store = _fresh_root()
     (Path(d) / "log" / "todo").mkdir(parents=True, exist_ok=True)
     (Path(d) / "log" / "todo" / "set2.md").write_text("old", encoding="utf-8")
-    _write(d, "# rules\n\n#1 5_ done a\n#2 3_ blocked b\n")
+    _write(d, "# rules\n\n#1 5_ done a\n#2 5_ done b\n")
     path = store.maybe_archive(now=T0)
     assert path is not None and Path(path).name == "set3.md"
 
