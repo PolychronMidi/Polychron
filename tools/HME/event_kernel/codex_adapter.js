@@ -47,12 +47,6 @@ function normalizeCodexHookStdout(event, stdout) {
   return `${JSON.stringify(out)}\n`;
 }
 
-function enforceClaudeJsonStdout(event, stdout) {
-  if (event !== 'UserPromptSubmit' && event !== 'SessionStart') return stdout;
-  const doc = extractFirstJsonDocument(stdout);
-  if (!doc) return '{}';
-  try { return `${JSON.stringify(JSON.parse(doc))}\n`; } catch (_err) { return '{}'; }
-}
 
 async function main() {
   const event = process.argv[2] || 'unknown';
