@@ -34,7 +34,7 @@ _UP_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 _up_log() {
   mkdir -p "$(dirname "$_UP_LIFECYCLE_LOG")" 2>/dev/null
   local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-  echo "[$ts] [universal-pulse-sv] $*" >> "$_UP_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
+  echo "[$ts] [universal-pulse-sv] $*" >> "$_UP_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: advisory lifecycle log; an append failure must not abort the supervisor loop
 }
 
 _up_alive() {
