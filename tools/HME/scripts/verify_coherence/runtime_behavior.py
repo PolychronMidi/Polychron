@@ -227,8 +227,27 @@ class ContextBudgetVerifier(Verifier):
     subtag = "drift-detection"
     weight = 1.5
 
+    def _context_file(self) -> str:
+        env_file = os.environ.get("HME_CTX_FILE")
+        if env_file:
+            return env_file
+        return os.path.join(_PROJECT, "tools", "HME", "runtime", "proxy-context-norm.json")
+
+    def _used_pct(self, ctx: dict) -> float | None:
+        used = ctx.get("used_pct")
+        if used is not None:
+            return used
+        used_tokens = ctx.get("used")
+        size = ctx.get("size")
+        if used_tokens is None or not size:
+            return None
+        try:
+            return round((float(used_tokens) / float(size)) * 100, 2)
+        except (TypeError, ValueError, ZeroDivisionError):
+            return None
+
     def run(self) -> VerdictResult:
-        ctx_file = os.environ["HME_CTX_FILE"]
+        ctx_file = self._context_file()
         if not os.path.isfile(ctx_file):
             return skipped(summary="no statusline data yet")
         try:
@@ -236,9 +255,9 @@ class ContextBudgetVerifier(Verifier):
                 ctx = json.load(f)
         except Exception as e:
             return errored(summary=f"ctx read failed: {e}")
-        used = ctx.get("used_pct")
+        used = self._used_pct(ctx)
         if used is None:
-            return skipped(summary="no used_pct in statusline data")
+            return skipped(summary="no used_pct/used+size in statusline data")
 
         link_latest = os.path.join(METRICS_DIR, "chain-history", "latest.yaml")
         link_age_s = None
