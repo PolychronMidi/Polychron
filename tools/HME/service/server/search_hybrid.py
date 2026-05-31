@@ -77,7 +77,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                 for _f in _matches:
                     _keyword_hits[_f] = _keyword_hits.get(_f, 0) + 1
         except Exception as _e:
-            # silent-ok: optional fallback path.
+            # not silent: grep failure is logged as a warning and the identifier is skipped
             _logger_hybrid.warning(f"hybrid grep failed for '{_ident}': {_e}")
     _logger_hybrid.info(f"search_code hybrid: identifiers={_identifiers}, hits={len(_keyword_hits)} files")
     if _keyword_hits:

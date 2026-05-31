@@ -75,7 +75,7 @@ class RAGKnowledgeMixin:
                 pass  # empty table or read error -- proceed normally
             self.knowledge_table = tbl
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable knowledge table is reset to None to force a rebuild
             self.knowledge_table = None
 
     def add_knowledge(self, title: str, content: str, category: str = "general", tags: list[str] | None = None, related_to: str = "", relation_type: str = "") -> dict:

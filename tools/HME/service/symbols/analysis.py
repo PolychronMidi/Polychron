@@ -98,7 +98,7 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
         try:
             content_bytes = fpath.read_bytes()
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable file is skipped from the caller search
             continue
         if symbol_bytes not in content_bytes:
             continue
@@ -147,7 +147,7 @@ def get_type_hierarchy(project_root: str) -> dict:
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable source file is skipped from the scan
             continue
 
         lang = ext_to_lang(fpath.suffix if fpath.suffix else fpath.name)

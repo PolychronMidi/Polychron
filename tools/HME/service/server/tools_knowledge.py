@@ -77,7 +77,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
                         dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
                         sim = dot / (cand_norm * v_norm)
                     except Exception as _exc:
-                        # silent-ok: optional fallback path.
+                        # silent-ok: a malformed/dim-mismatched vector row is skipped from ranking
                         continue
                     if sim > top[1]:
                         top = (str(row.get("id", "")), sim, str(row.get("title", "")))

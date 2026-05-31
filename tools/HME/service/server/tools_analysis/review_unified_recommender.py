@@ -76,7 +76,7 @@ def _unified_evolution_recommender() -> str:
                         with open(fpath, encoding="utf-8", errors="ignore") as f:
                             content = f.read()
                     except Exception as _exc:
-                        # silent-ok: optional fallback path.
+                        # silent-ok: unreadable candidate file is skipped from the recommender scan
                         continue
                     for p, pat in prod_patterns.items():
                         if p == stem:

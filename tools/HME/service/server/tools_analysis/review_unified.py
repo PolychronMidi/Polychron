@@ -56,7 +56,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             try:
                 result = _pd(evolve=True, critique=critique)
             except Exception as e:
-                # silent-ok: optional fallback path.
+                # not silent: pipeline_digest error is surfaced in the returned result text
                 result = f"pipeline_digest error: {e}"
             # In 'full' mode, truncate verbose blocking messages to a single line
             if mode == "full" and ("BLOCKED" in result or "STOP POLLING" in result or "IN PROGRESS" in result):
@@ -257,7 +257,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                                            system=_PARTNER_SYSTEM)
                     parts.append("# Partner Review\n\n" + (_pr or "(no response)"))
                 except Exception as _pe:
-                    # silent-ok: optional fallback path.
+                    # not silent: partner review error is surfaced in the returned parts
                     parts.append(f"# Partner Review\n\nerror: {type(_pe).__name__}: {_pe}")
         else:
             parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, evolve, partner, full.")

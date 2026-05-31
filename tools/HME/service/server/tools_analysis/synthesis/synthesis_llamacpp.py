@@ -230,7 +230,7 @@ def _set_arbiter_busy(busy: bool) -> None:
         )
         _ur.urlopen(req, timeout=0.3).read()
     except Exception as _e:
-        # silent-ok: optional fallback path.
+        # not silent: arbiter-busy ping failure is debug-logged; routing degrades safely to GPU-only (below)
         # Daemon unreachable is expected during boot / upgrades. Log at
         # debug level only -- the routing degrades safely to GPU-only.
         import logging as _l

@@ -157,7 +157,7 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
         try:
             r = future.result()
         except Exception as e:
-            # silent-ok: optional fallback path.
+            # not silent: per-library probe error is surfaced in the output lines
             lines.append(f"[{lib_name}] Error: {type(e).__name__}: {e}")
             continue
         _, lib_result = r
@@ -218,7 +218,7 @@ def clear_index() -> str:
         from indexing_mode import request_full_reindex
         result = request_full_reindex()
     except Exception as e:
-        # silent-ok: optional fallback path.
+        # not silent: reindex daemon failure is returned to the caller as the result string
         return f"clear_index error: daemon request failed: {e}"
     if result.get("error"):
         # Surface daemon errors explicitly -- do NOT fall back to default device.

@@ -64,7 +64,7 @@ def post_tool(handler, name: str, args: dict, *, tool_call,
         try:
             result_box[0] = tool_call(name, args)
         except Exception as e:
-            # silent-ok: optional fallback path.
+            # not silent: the tool_call error is returned to the caller via result_box[1]
             result_box[1] = e
 
     t = _th.Thread(target=_runner, daemon=True, name=f"tool-{name}")

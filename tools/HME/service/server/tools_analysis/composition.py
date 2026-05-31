@@ -147,7 +147,7 @@ def hotspot_leaderboard() -> str:
     try:
         records = _load_trace(trace_path)
     except Exception as e:
-        # silent-ok: optional fallback path.
+        # not silent: trace read error is returned to the caller as the result string
         return f"Error reading trace: {e}"
 
     hotspot_counts: dict = defaultdict(int)

@@ -198,7 +198,7 @@ def _init_local_models() -> str:
                     )
                     failures += 1
         except Exception as e:
-            # silent-ok: optional fallback path.
+            # not silent: prime failure is recorded per-model and escalated via register_critical_failure below
             results[model] = f"FAILED: {type(e).__name__}: {e}"
             ctx.register_critical_failure(
                 f"model_init({model})",

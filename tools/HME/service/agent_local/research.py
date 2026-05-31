@@ -38,7 +38,7 @@ def _load_learned_stopwords() -> None:
             data = json.load(f)
         _LEARNED_STOPWORDS = set(data.get("candidates", []))
     except Exception:
-        # silent-ok: optional fallback path.
+        # silent-ok: optional learned-stopword cache; a missing/corrupt file just means no learned stopwords this run
         _LEARNED_STOPWORDS = set()
 
 

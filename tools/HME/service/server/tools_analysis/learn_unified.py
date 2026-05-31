@@ -224,7 +224,7 @@ def _suggest_predecessors(title: str, content: str) -> str:
             dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
             sim = dot / (cand_norm * v_norm)
         except Exception as _exc:
-            # silent-ok: optional fallback path.
+            # silent-ok: a malformed/dim-mismatched vector row is skipped from ranking
             continue
         ranked.append((sim, {"id": str(row.get("id", "")), "title": str(row.get("title", ""))}))
     ranked.sort(key=lambda kv: -kv[0])

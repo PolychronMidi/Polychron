@@ -151,7 +151,7 @@ def _reindex_files(files: list[str]) -> dict:
                 _log_error("reindex", f"timeout indexing {filepath} ({per_file_timeout:.0f}s)")
                 skipped.append(filepath)
             except Exception as e:
-                # silent-ok: optional fallback path.
+                # not silent: failure is logged via _log_error below and the file is skipped
                 _log_error("reindex", f"index_file failed for {filepath}: {e}")
                 skipped.append(filepath)
     result = {"indexed": indexed, "count": len(indexed)}

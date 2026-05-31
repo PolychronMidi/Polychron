@@ -153,7 +153,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
             try:
                 result = fut.result(timeout=15)
             except Exception:
-                # silent-ok: optional fallback path.
+                # silent-ok: one grep future timed out/failed; skip it and aggregate the remaining results
                 continue
             if not result.startswith("No matches") and not result.startswith("ERROR"):
                 key = f"{pattern} in {directory}"

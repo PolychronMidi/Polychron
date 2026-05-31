@@ -328,7 +328,7 @@ def status(mode: str = "all") -> str:
         pipeline = _cp()
         parts.append(f"## Pipeline\n  {pipeline}")
     except Exception as e:
-        # silent-ok: optional fallback path.
+        # not silent: pipeline check error is surfaced in the status output
         parts.append(f"## Pipeline\n  Error: {e}")
 
     # System health (selftest)
@@ -337,7 +337,7 @@ def status(mode: str = "all") -> str:
         selftest = _st()
         parts.append(selftest)
     except Exception as e:
-        # silent-ok: optional fallback path.
+        # not silent: self-test error is surfaced in the status output
         parts.append(f"## Self-Test\n  Error: {e}")
 
     # Auto-warm if stale contexts detected
@@ -396,7 +396,7 @@ def status(mode: str = "all") -> str:
             total = sum(t["daily_limit"] for t in g["tiers"])
             lines.append(f"    gemini:     {used:,}/{total:,} tok today across {len(g['tiers'])} tiers")
         except Exception as _qe:
-            # silent-ok: optional fallback path.
+            # silent-ok: gemini quota probe failed; rendered as "quota unavailable"
             lines.append(f"    gemini:     quota unavailable ({type(_qe).__name__})")
         try:
             from ..synthesis.synthesis_groq import get_quota_status as _grs
@@ -405,14 +405,14 @@ def status(mode: str = "all") -> str:
             total = sum(t["rpd_limit"] for t in gr["tiers"])
             lines.append(f"    groq:       {used}/{total} req today across {len(gr['tiers'])} tiers")
         except Exception as _qe:
-            # silent-ok: optional fallback path.
+            # silent-ok: groq quota probe failed; rendered as "quota unavailable"
             lines.append(f"    groq:       quota unavailable ({type(_qe).__name__})")
         try:
             from ..synthesis.synthesis_openrouter import get_quota_status as _ors
             o = _ors()
             lines.append(f"    openrouter: {o['requests_today']}/{o['rpd_limit']} req today (shared)")
         except Exception as _qe:
-            # silent-ok: optional fallback path.
+            # silent-ok: openrouter quota probe failed; rendered as "quota unavailable"
             lines.append(f"    openrouter: quota unavailable ({type(_qe).__name__})")
 
         if not any_up:

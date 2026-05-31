@@ -81,7 +81,7 @@ def _adaptive_cloud_delay() -> float:
         candidate = p50 + 0.5
         return max(_RACE_CLOUD_DELAY_MIN, min(_RACE_CLOUD_DELAY_MAX, candidate))
     except Exception as _exc:
-        # silent-ok: optional fallback path.
+        # silent-ok: latency stats unavailable; fall back to the default cloud-race delay
         return _RACE_CLOUD_DELAY_DEFAULT_SEC
 
 
@@ -192,7 +192,7 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
         try:
             source, result = q.get(timeout=60.0)
         except Exception as _exc:
-            # silent-ok: optional fallback path.
+            # silent-ok: race queue get timed out; stop waiting for further results
             break
         if result:
             winner_source = source

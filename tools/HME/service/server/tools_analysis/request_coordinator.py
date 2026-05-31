@@ -246,7 +246,7 @@ class CoordinatorInstance:
                 with urllib.request.urlopen(http_req, timeout=req.wall_timeout) as resp:
                     result["data"] = json.loads(resp.read())
             except Exception as e:
-                # silent-ok: optional fallback path.
+                # not silent: the error is returned to the caller via result["err"]
                 result["err"] = e
 
         t = threading.Thread(target=_worker, name=f"{self.name}-exec", daemon=True)

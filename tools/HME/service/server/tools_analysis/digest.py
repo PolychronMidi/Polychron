@@ -323,7 +323,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             out.append("## Musical Critique")
             out.append(_compose_critique())
         except Exception as e:
-            # silent-ok: optional fallback path.
+            # silent-ok: optional critique section renders an "unavailable" note when the analyzer errors
             out.append(f"## Musical Critique\n*(unavailable: {e})*")
 
     # Inline evolution suggestions (default on)

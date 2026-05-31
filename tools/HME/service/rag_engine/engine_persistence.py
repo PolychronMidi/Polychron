@@ -15,7 +15,7 @@ class RAGEnginePersistenceMixin:
                 with open(self.hash_cache_path, "r") as f:
                     self._file_hashes = json.load(f)
             except Exception:
-                # silent-ok: optional fallback path.
+                # silent-ok: unreadable hash cache resets to empty, forcing a full re-hash next index pass
                 self._file_hashes = {}
 
     def _save_hashes(self):
@@ -35,7 +35,7 @@ class RAGEnginePersistenceMixin:
                     raw = json.load(f)
                 self._per_file_chunks = {k: set(v) for k, v in raw.items()}
             except Exception:
-                # silent-ok: optional fallback path.
+                # silent-ok: unreadable chunk-map cache resets to empty, forcing a chunk rebuild
                 self._per_file_chunks = {}
         else:
             self._per_file_chunks = {}
@@ -79,5 +79,5 @@ class RAGEnginePersistenceMixin:
             rows = self.table.to_arrow().to_pylist()
             self._chunk_hashes = {_chunk_hash(r["content"]) for r in rows}
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable table resets the chunk-hash set; next index pass repopulates it
             self._chunk_hashes = set()

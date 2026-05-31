@@ -580,7 +580,7 @@ def reload_on_device(target_device: str) -> dict:
                 try:
                     cur = str(getattr(_project_engine.code_model, "device", "cpu"))
                 except Exception:
-                    # silent-ok: optional fallback path.
+                    # silent-ok: device probe failed; assume cpu as the safe migration baseline
                     cur = "cpu"
                 _original_rag_device = cur
             restoring = False
@@ -640,7 +640,7 @@ def reload_on_device(target_device: str) -> dict:
             reloaded.append(f"code:{CODE_MODEL_NAME}")
             logger.info(f"reload_on_device: code embedder -> {target_device} (freed {freed} old refs)")
         except Exception as e:
-            # silent-ok: optional fallback path.
+            # not silent: terminal CUDA corruption is logged + escalated as CRITICAL and hard-exits below
             # CUDA illegal memory access is terminal: torch's allocator pool
             # is corrupted and every subsequent reload/encode will fail the
             # same way. Only a fresh Python process clears it. Hard-exit so

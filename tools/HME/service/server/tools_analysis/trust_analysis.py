@@ -65,7 +65,7 @@ def trust_trajectory(system_name: str) -> str:
     try:
         records = _load_trace(trace_path)
     except Exception as e:
-        # silent-ok: optional fallback path.
+        # not silent: trace read error is returned to the caller as the result string
         return f"Error reading trace: {e}"
 
     # Per-section stats
@@ -175,7 +175,7 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
     try:
         records = _load_trace(trace_path)
     except Exception as e:
-        # silent-ok: optional fallback path.
+        # not silent: trace read error is returned to the caller as the result string
         return f"Error reading trace: {e}"
 
     stats: dict = {system_a: defaultdict(list), system_b: defaultdict(list)}

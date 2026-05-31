@@ -274,7 +274,7 @@ def _check_llamacpp_instances() -> dict:
                     "response_ms": round((time.time() - t0) * 1000, 1),
                 }
         except Exception as e:
-            # silent-ok: optional fallback path.
+            # silent-ok: probe failure is recorded as an unhealthy topology entry below
             result[key] = {
                 "healthy": False,
                 "url": url,

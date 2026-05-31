@@ -276,7 +276,7 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         if arbiter_ctx and _warm_ctx_fresh_p(_ARBITER_MODEL):
             payload["context"] = arbiter_ctx
     except Exception as _wmerr:
-        # silent-ok: optional fallback path.
+        # not silent: warm-ctx lookup failure is debug-logged; payload proceeds without warm context
         logging.getLogger("HME").debug(
             f"extract_diff_symbols: warm-ctx lookup skipped: {type(_wmerr).__name__}: {_wmerr}"
         )

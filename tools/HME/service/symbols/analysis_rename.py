@@ -58,7 +58,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable Rust source is skipped from the trait-method scan
             continue
         in_trait = False
         brace_depth = 0
@@ -80,7 +80,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
         try:
             file_contents[str(fpath)] = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable source file is skipped from the rename collection
             continue
 
     name_pattern_cache: dict[str, re.Pattern] = {}
@@ -155,7 +155,7 @@ def preview_rename(old_name: str, new_name: str, project_root: str, language: st
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
-            # silent-ok: optional fallback path.
+            # silent-ok: unreadable source file is skipped from the rename scan
             continue
 
         fstr = str(fpath)
