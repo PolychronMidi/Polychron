@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Per-slot proxy restart for the active-active backend (proxy_a / proxy_b).
-# Shuffler on HME_PROXY_PORT keeps serving traffic; the inactive slot is
+# Constant-availability invariant: a serving slot is never asked to load new
+# code or drain until the peer is first proven routable by fresh health.
 
 set -u
 set -o pipefail
