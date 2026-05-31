@@ -169,7 +169,7 @@ async function runChain(policies, ctx) {
     try {
       res = await p.fn(ctx);
     } catch (err) {
-      // silent-ok: optional fallback path.
+      // silent-ok: policy runtime errors are returned in the structured `errors` array; 
       errors.push({ policy: p.name, error: err.message });
       continue;
     }
