@@ -79,5 +79,5 @@ class RAGEnginePersistenceMixin:
             rows = self.table.to_arrow().to_pylist()
             self._chunk_hashes = {_chunk_hash(r["content"]) for r in rows}
         except Exception:
-            # silent-ok: unreadable table resets the chunk-hash set; next index pass repopulates it
+            # silent-ok: bad table scan resets chunk hashes; next index repopulates
             self._chunk_hashes = set()
