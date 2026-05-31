@@ -94,7 +94,7 @@ function _kbSearch(query) {
 }
 
 function _resultText(toolResult) {
-  return blockText(toolResult, { toolResults: true });
+  return blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 function _setResult(toolResult, text) {
