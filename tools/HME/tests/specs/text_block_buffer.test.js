@@ -75,6 +75,29 @@ test('text block buffer drops a block when the strategy says drop', () => {
   assert.equal(rw('content_block_stop', blockStop(0), ctx), null);
 });
 
+test('text block buffer bypasses structured JSON before strategy mutation', () => {
+  const ctx = new Map();
+  const json = '{"continue":false,"rsn":"OK."}';
+  let called = false;
+  const rw = makeTextBlockBufferedRewriter({
+    key: 'json-guard',
+    onStop() { called = true; return { action: 'drop' }; },
+  });
+  const start = textStart(0);
+  const delta = textDelta(0, json);
+  const stop = blockStop(0);
+  assert.equal(rw('content_block_start', start, ctx), null);
+  assert.equal(rw('content_block_delta', delta, ctx), null);
+  assert.deepEqual(rw('content_block_stop', stop, ctx), {
+    events: [
+      ['content_block_start', start],
+      ['content_block_delta', delta],
+      ['content_block_stop', stop],
+    ],
+  });
+  assert.equal(called, false, 'strategy must not run on structured JSON');
+});
+
 test('text block buffer flushes held text before unexpected delta types', () => {
   const ctx = new Map();
   const rw = makeTextBlockBufferedRewriter({ key: 'unexpected' });
