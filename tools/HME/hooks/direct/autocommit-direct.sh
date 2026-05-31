@@ -41,7 +41,7 @@ if [ ! -f "$_HELPER" ]; then
   # FAIL-LOUD on alert-sink writes (see claude_adapter.js rationale).
   echo "[$ts] [autocommit-direct] helper missing at $_HELPER" >> "$_DIRECT_ROOT/log/hme-errors.log"
   mkdir -p "$_DIRECT_ROOT/tools/HME/runtime" 2>/dev/null
-  echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/tools/HME/runtime/autocommit.fail" 2>/dev/null  # silent-ok: optional fallback path.
+  echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/tools/HME/runtime/autocommit.fail" 2>/dev/null  # silent-ok: redundant 4th fail channel; stderr + hme-errors.log (just written above) already carry this signal
   exit 0
 fi
 
