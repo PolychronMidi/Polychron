@@ -44,7 +44,7 @@ const _ABBREVIATION_MAP = Object.freeze({
   'one by one': '1x1',
 
   // Common words / compact forms.
-  'executing': 'doing',
+  'executing': 'doin',
   'execute': 'do',
   'sequence': 'seq',
   'without': 'w/o',
@@ -162,7 +162,7 @@ const _ABBREVIATION_MAP = Object.freeze({
   'replacement': 'repl',
   'replace': 'repl',
   'continue': 'go',
-  'continuing': 'doing',
+  'continuing': 'doin',
   'continued': 'did',
   'handle': 'do',
   'handles': 'does',
@@ -579,10 +579,6 @@ const _SLOP_PATTERNS = [
     re: _ABBREVIATION_RE,
     repl: _abbreviateMatch },
 
-  // Caveman -ing suffix pass. minOutput blocks short false positives; plural
-  // form also works: meeting(s) -> meetn(s), testing -> testn.
-  _suffixRule('caveman_ing_suffix', 'ing', 1, 'n'),
-
   // Caveman compression: delete low-signal glue words/first-person filler.
   // Kept after abbreviations so phrase replacements like "as well as" -> "&"
   // happen before small words are removed.
@@ -593,9 +589,12 @@ const _SLOP_PATTERNS = [
     re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|im|i['’]ll|ill|i['’]ve|ive|i['’]d|id|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|youre|you['’]ll|youll|we['’]ll|well|we['’]re|were|we|i|a|an|as|our|right|okay|ok|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|so|wait|be|the|that|that['’]s|thats|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
     repl: '' },
 
+  // Caveman -ing suffix pass. minOutput blocks short false positives; plural
+  // form also works: meeting(s) -> meetn(s), testing -> testn.
+  _suffixRule('caveman_ing_suffix', 'ing', 3, 'n'),
+
   // Caveman -ed suffix pass. Only words greater than 5 letters are changed.
   // Prefix must be at least 4 letters, because 4 + "ed" = 6.
-  // Runs after compression so explicit deletes like "agreed" win first.
   _suffixRule('caveman_ed_suffix', 'ed', 3, 'd'),
 
   _suffixRule('caveman_er_suffix', 'er', 3, 'r'),
@@ -604,10 +603,6 @@ const _SLOP_PATTERNS = [
 
   // Caveman -tion suffix pass. Only words greater than 6 letters are changed.
   // Prefix must be at least 3 letters, because 3 + "tion" = 7.
-  // Runs after explicit abbreviations so map entries like "configuration" ->
-  // "config" and "application" -> "app" win before generic suffix cleanup.
-  // Examples: station -> statn, caution -> cautn, relation -> relatn.
-  // Non-examples: action, option.
   _suffixRule('caveman_tion_suffix', 'tion', 3, 'tn'),
 
   // Caveman -sion suffix pass. Only words greater than 6 letters are changed.
