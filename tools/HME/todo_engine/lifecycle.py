@@ -9,7 +9,8 @@ Rules from TODO_new.md:
        qualifier is set (_q="...") -- a qualifier means "wait for the named
        condition", so the timer does not auto-fire.
   archive: a set whose every item is code >= 3 ({3,4,4f,5}) is fully resolved
-       for this cycle and gets archived to log/todo/set<N>.md.
+       for this cycle and gets archived to log/todo/set<N>.md; non-5_
+       terminal items (3_/4_/4f_) carry into the next active set.
 """
 from __future__ import annotations
 
