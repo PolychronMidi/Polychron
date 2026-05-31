@@ -4,7 +4,7 @@
 
 _todo_guard_check() {
   local input="$1"
-  [ -n "${PROJECT_ROOT:-}" ] || return 0
+  : "${PROJECT_ROOT:?PROJECT_ROOT must be resolved by _hooks_bootstrap before _todo_guard_check}"
   local file
   file=$(_safe_jq "$input" '.tool_input.file_path // .tool_input.path // ""' '' 2>/dev/null)
   case "$file" in

@@ -1,5 +1,10 @@
 'use strict';
 
+function couldBeStructuredJsonText(text) {
+  const t = String(text || '').trimStart();
+  return !t || t[0] === '{' || t[0] === '[';
+}
+
 function isStructuredJsonText(text) {
   const t = String(text || '').trim();
   if (!t || (t[0] !== '{' && t[0] !== '[')) return false;
@@ -11,6 +16,7 @@ function shouldBypassResponseTextRewrite(text) {
 }
 
 module.exports = {
+  couldBeStructuredJsonText,
   isStructuredJsonText,
   shouldBypassResponseTextRewrite,
 };

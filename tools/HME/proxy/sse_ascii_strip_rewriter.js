@@ -3,7 +3,7 @@
 //
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
-const { shouldBypassResponseTextRewrite } = require("./structured_output_guard");
+const { couldBeStructuredJsonText, shouldBypassResponseTextRewrite } = require("./structured_output_guard");
 
 const ENABLED = process.env.HME_PROXY_STRIP_NON_ASCII === "1";
 
@@ -28,11 +28,6 @@ function _ctxGet(ctx, key, make) {
 function _bannerThinkingDelta(index) {
   return ["content_block_delta",
     { type: "content_block_delta", index, delta: { type: "thinking_delta", thinking: BANNER } }];
-}
-
-function _couldBeStructuredJsonText(text) {
-  const t = String(text || '').trimStart();
-  return !t || t[0] === '{' || t[0] === '[';
 }
 
 function _heldText(state) {
@@ -115,7 +110,7 @@ function asciiStripRewrite(eventName, data, ctx) {
       }
       if (!textState.probing) return _rewriteTextDeltaData(data, ctx);
       textState.deltas.push(data);
-      if (_couldBeStructuredJsonText(_heldText(textState))) return null;
+      if (couldBeStructuredJsonText(_heldText(textState))) return null;
       textState.probing = false;
       const events = _rewriteHeldTextEvents(textState, ctx);
       textState.deltas = [];

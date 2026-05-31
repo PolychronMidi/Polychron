@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { requireEnv } = require('./shared/load_env');
+const { requireEnv, requireEnvInt } = require('./shared/load_env');
 const { computeRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
 
 const STATE_SCHEMA_VERSION = 1;
