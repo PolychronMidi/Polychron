@@ -2,7 +2,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { evaluateOutbound, pickLargerRoute } = require('../../proxy/outbound_context_gate');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { evaluateOutbound, pickLargerRoute, applyOutboundContextGate } = require('../../proxy/outbound_context_gate');
 
 // A payload whose estimated input tokens we control via an injected estimate fn,
 // so the test is deterministic and independent of live models.json.
