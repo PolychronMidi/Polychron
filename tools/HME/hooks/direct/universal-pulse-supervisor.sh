@@ -209,11 +209,11 @@ _up_stop() {
   local svp cp
   svp=$(cat "$_UP_PID_FILE" 2>/dev/null || true)
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
-  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -TERM "$svp" 2>/dev/null  # silent-ok: optional fallback path.
-  _up_alive "$cp" "universal_pulse.py" && kill -TERM "$cp"  2>/dev/null  # silent-ok: optional fallback path.
+  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -TERM "$svp" 2>/dev/null  # silent-ok: supervisor may exit between alive-check and signal (ESRCH); KILL pass below + rm finish cleanup
+  _up_alive "$cp" "universal_pulse.py" && kill -TERM "$cp"  2>/dev/null  # silent-ok: child may exit between alive-check and signal (ESRCH); KILL pass below + rm finish cleanup
   sleep 1
-  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -KILL "$svp" 2>/dev/null  # silent-ok: optional fallback path.
-  _up_alive "$cp" "universal_pulse.py" && kill -KILL "$cp"  2>/dev/null  # silent-ok: optional fallback path.
+  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -KILL "$svp" 2>/dev/null  # silent-ok: supervisor already reaped after SIGTERM (ESRCH); nothing left to kill
+  _up_alive "$cp" "universal_pulse.py" && kill -KILL "$cp"  2>/dev/null  # silent-ok: child already reaped after SIGTERM (ESRCH); nothing left to kill
   rm -f "$_UP_PID_FILE" "$_UP_CHILD_PID_FILE" 2>/dev/null
   _up_log "stopped"
 }
