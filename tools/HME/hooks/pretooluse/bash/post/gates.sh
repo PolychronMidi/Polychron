@@ -1,4 +1,6 @@
 # Onboarding gate: npm run main requires 'reviewed' state (edited + reviewed)
+CMD="${CMD:-}"
+[ -n "$CMD" ] || return 0 2>/dev/null || exit 0
 TRIMMED_CHECK=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
 if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
   if _onb_before "reviewed"; then
