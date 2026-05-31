@@ -71,10 +71,10 @@ case "$_action" in
     fi
     _start=$(sed -n '1p' "$_MAINT_FLAG" 2>/dev/null)
     _ttl=$(sed -n '2p' "$_MAINT_FLAG" 2>/dev/null)
-    _start_epoch=$(date -d "$_start" +%s 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
+    _start_epoch=$(date -d "$_start" +%s 2>/dev/null || echo 0)  # silent-ok: corrupt/missing start stamp -> epoch 0 -> huge age -> reported expired (never falsely "active")
     _now=$(date +%s)
     _age=$((_now - _start_epoch))
-    if [ "$_age" -lt "$_ttl" ] 2>/dev/null; then  # silent-ok: optional fallback path.
+    if [ "$_age" -lt "$_ttl" ] 2>/dev/null; then  # silent-ok: non-numeric ttl errors the -lt test, which then takes the expired branch (same fail-safe direction)
       echo "active  (started=$_start, ttl=${_ttl}s, age=${_age}s)"
     else
       echo "expired (started=$_start, ttl=${_ttl}s, age=${_age}s)"
