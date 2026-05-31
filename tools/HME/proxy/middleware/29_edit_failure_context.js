@@ -22,11 +22,9 @@ const FAIL_RE = new RegExp([
   'not.*read.*yet',
 ].join('|'), 'i');
 
+const { blockText: _blockText } = require('../request_shape');
 function textOf(toolResult) {
-  const c = toolResult && toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  return '';
+  return _blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 function relPath(file, root) {
