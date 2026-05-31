@@ -97,7 +97,7 @@ _ANY_HANDOFF_MARKER = re.compile(
 
 def _emit_stats(verdict: str, detail: str) -> None:
     from _detector_stats import emit_stats
-    emit_stats("scope_escape", verdict, detail)
+    emit_stats(None, verdict, detail)
 
 
 
