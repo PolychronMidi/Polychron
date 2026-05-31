@@ -2,6 +2,7 @@
 
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { requireEnvInt } = require('./shared/load_env');
+const { contentText } = require('./request_shape');
 const hmeDispatcher = require('./hme_dispatcher');
 
 const HME_PREFIX = /^mcp__HME__/;
@@ -140,14 +141,7 @@ function _stopReminderPending(file = STOP_REMINDER_FILE) {
 }
 
 function _extractTextContent(content) {
-  if (typeof content === 'string') return content;
-  if (!Array.isArray(content)) return '';
-  return content.map((b) => {
-    if (!b) return '';
-    if (typeof b === 'string') return b;
-    if (typeof b.text === 'string') return b.text;
-    return '';
-  }).filter(Boolean).join('\n');
+  return contentText(content, { toolResults: true });
 }
 
 function _appendTextContent(content, text) {
