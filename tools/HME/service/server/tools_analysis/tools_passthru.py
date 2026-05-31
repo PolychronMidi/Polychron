@@ -255,32 +255,16 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
 
     append_session_narrative("glob", f"{mode}: {pattern[:80]}")
 
-    if mode == "map":
-        from .symbols import get_module_map as _gmm
-        return _gmm(pattern or "")
-
-    if mode == "hierarchy":
-        from .symbols import type_hierarchy as _th
-        return _th(pattern)
-
-    if mode == "symbols":
-        from .symbols import search_symbols as _ss
-        return _ss(pattern)
-
-    if mode == "lookup":
-        from .symbols import lookup_symbol as _ls
-        return _ls(pattern)
-
-    if mode == "rename":
-        parts = pattern.split("->") if "->" in pattern else pattern.split("->")
-        if len(parts) == 2:
-            from .symbols import bulk_rename_preview as _brp
-            return _brp(parts[0].strip(), parts[1].strip())
-        return "Error: rename needs 'old_name->new_name' format."
-
-    if mode == "xref":
-        from .symbols import cross_language_trace as _clt
-        return _clt(pattern)
+    routed = dispatch(mode, {
+        "map": lambda: _structural_map(pattern),
+        "hierarchy": lambda: _structural_hierarchy(pattern),
+        "symbols": lambda: _structural_symbols(pattern),
+        "lookup": lambda: _structural_lookup(pattern),
+        "rename": lambda: _structural_rename(pattern),
+        "xref": lambda: _structural_xref(pattern),
+    })
+    if routed is not None:
+        return routed
 
     # Default: filesystem glob
     import glob as _gl
