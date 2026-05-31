@@ -49,9 +49,9 @@ _up_kill_child() {
   local cp
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
   if _up_alive "$cp" "universal_pulse.py"; then
-    kill -TERM "$cp" 2>/dev/null  # silent-ok: optional fallback path.
+    kill -TERM "$cp" 2>/dev/null  # silent-ok: child may exit on its own between the alive-check and this signal (ESRCH); KILL+rm below finish cleanup
     sleep 2
-    _up_alive "$cp" && kill -KILL "$cp" 2>/dev/null  # silent-ok: optional fallback path.
+    _up_alive "$cp" && kill -KILL "$cp" 2>/dev/null  # silent-ok: child already reaped after SIGTERM (ESRCH); nothing left to kill
   fi
   rm -f "$_UP_CHILD_PID_FILE" 2>/dev/null
 }
