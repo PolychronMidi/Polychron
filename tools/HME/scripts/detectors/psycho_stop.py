@@ -259,7 +259,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
 
 def _emit_stats(pattern: str, detail: str) -> None:
     from _detector_stats import emit_stats
-    emit_stats("psycho_stop", pattern, detail)
+    emit_stats(None, pattern, detail)
 
 
 
