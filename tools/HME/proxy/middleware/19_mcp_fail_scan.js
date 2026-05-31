@@ -13,7 +13,7 @@ const FAIL_RE = /\bFAIL(ED)?\b/;
 const FAIL_SKIP_RE = /^\s*PASS\b|\bPASS:\s|\bPASSED\b|fail-fast|fail to|may fail|might fail|could fail/i;
 
 function _resultText(toolResult) {
-  return blockText(toolResult, { toolResults: true });
+  return blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 module.exports = {
