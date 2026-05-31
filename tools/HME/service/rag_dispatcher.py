@@ -107,7 +107,7 @@ class _RagDispatcher:
             ratio = ENV.optional_int("HME_RAG_GPU_CPU_RATIO", self._GPU_CPU_OVERFLOW_THRESHOLD)
             self._overflow_threshold = max(1, ratio)
         except Exception:
-            # silent-ok: malformed HME_RAG_GPU_CPU_RATIO falls back to the default overflow threshold
+            # silent-ok: malformed HME_RAG_GPU_CPU_RATIO uses default threshold
             self._overflow_threshold = self._GPU_CPU_OVERFLOW_THRESHOLD
 
     def _current_gpu(self):

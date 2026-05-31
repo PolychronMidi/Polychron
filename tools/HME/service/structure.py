@@ -82,7 +82,7 @@ def module_map(directory: str, max_depth: int = 3) -> dict:
             try:
                 line_count = f.read_text(encoding="utf-8", errors="ignore").count("\n") + 1
             except Exception:
-                # silent-ok: unreadable file renders with a line_count of 0 in the structure tree
+                # silent-ok: unreadable file gets line_count=0 in the structure tree
                 line_count = 0
             node[f.name] = {
                 "_type": "file",

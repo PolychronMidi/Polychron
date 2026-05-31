@@ -15,7 +15,7 @@ class RAGEnginePersistenceMixin:
                 with open(self.hash_cache_path, "r") as f:
                     self._file_hashes = json.load(f)
             except Exception:
-                # silent-ok: unreadable hash cache resets to empty, forcing a full re-hash next index pass
+                # silent-ok: bad hash cache forces full re-hash next index pass
                 self._file_hashes = {}
 
     def _save_hashes(self):
