@@ -970,16 +970,20 @@ test('context budget compaction gears start near context high-water and escalate
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 1);
     assert.equal(plan.threshold, 800);
+    // STALE_TOOL_KEEP_TURNS unset -> stale horizon falls back to keepMin (4) * gear mult
+    assert.equal(plan.maxToolResultAge, 12);
 
     payload = { messages: [{ role: 'user', content: 'x'.repeat(880) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 2);
     assert.equal(plan.threshold, 900);
+    assert.equal(plan.maxToolResultAge, 8);
 
     payload = { messages: [{ role: 'user', content: 'x'.repeat(990) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 3);
     assert.equal(plan.threshold, 970);
+    assert.equal(plan.maxToolResultAge, 4);
   } finally {
     process.env = oldEnv;
     if (prevStatusline == null) {
