@@ -9,6 +9,30 @@ const { loadEnv } = require('./shared/load_env');
 const crossSlot = require('./shared/cross_slot_state');
 const { semanticTokenEstimate, serializedBytes } = require('./context_token_estimate');
 
+// Named self-origin LIFESAVER for "compaction ran but payload still exceeds the
+// routed model's context window". Pure builder so it is testable without fs/clock;
+function contextWindowOverflowAlert({ model, usedTokens, budget, afterBytes, ts }) {
+  if (!budget || !(usedTokens > budget)) return '';
+  return `[${ts}] [hme-proxy] LIFESAVER -- context budget: assembled payload ~${usedTokens} tokens (${afterBytes}B) still exceeds model window ${budget} for ${model || 'unknown'} AFTER emergency compaction; this turn will hit the upstream context window. Run /compact or start a fresh turn; pin interactive routing to a larger-window model.\n`;
+}
+
+const _CTX_OVERFLOW_ALERT_MIN_INTERVAL_MS = 60_000;
+let _lastCtxOverflowAlertMs = 0;
+
+function _writeContextWindowOverflowAlert({ model, usedTokens, budget, afterBytes }) {
+  const now = Date.now();
+  if (now - _lastCtxOverflowAlertMs < _CTX_OVERFLOW_ALERT_MIN_INTERVAL_MS) return false;
+  const line = contextWindowOverflowAlert({ model, usedTokens, budget, afterBytes, ts: new Date().toISOString() });
+  if (!line) return false;
+  _lastCtxOverflowAlertMs = now;
+  try {
+    const log = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    fs.appendFileSync(log, line);
+  } catch (_e) { /* best effort: an alert sink must never break the request path */ }
+  return true;
+}
+
 // Lazy-loaded model context budget registry.
 // Reloads when the source file mtime changes (no daemon restart needed after sync).
 let _modelCtxRegistry = { mtimeMs: 0, map: new Map() };
