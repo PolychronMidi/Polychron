@@ -93,6 +93,7 @@ function makeTextBlockBufferedRewriter({ key, shouldBuffer, onDelta, onStop, str
       if (!state) return data;
       holds.delete(data.index);
       if (state.dropping) return null;
+      if (_shouldBypass(state, structuredJsonGuard)) return { events: replayBufferedEvents(state, data) };
       const decision = onStop ? onStop({ state, data, ctx }) : undefined;
       const out = _applyDecision(decision || { action: 'replay' }, {
         state,
