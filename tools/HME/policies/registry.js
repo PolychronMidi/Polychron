@@ -111,6 +111,7 @@ function loadCustom(customPath) {
     return;
   }
   if (!stat.isDirectory()) throw new Error(`[policies] custom policy path is neither file nor directory: ${customPath}`);
+  const errors = [];
   for (const f of fs.readdirSync(customPath).sort()) {
     if (!f.endsWith('.js') || f.startsWith('_')) continue;
     const full = path.join(customPath, f);
@@ -118,9 +119,10 @@ function loadCustom(customPath) {
       const mod = require(full);
       register(mod, full);
     } catch (err) {
-      console.error(`[policies] failed to load ${full}: ${err.message}`);
+      errors.push(`[policies] failed to load ${full}: ${err.message}`);
     }
   }
+  if (errors.length) throw new Error(errors.join('\n'));
 }
 
 function list() {
