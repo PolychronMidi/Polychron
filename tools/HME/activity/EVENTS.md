@@ -82,6 +82,7 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`context_compaction`** [activity] -- Proxy compacted the request payload to fit upstream context limits.
 - **`context_token_usage`** [activity] -- Proxy recorded token usage delta for a completed upstream request.
 - **`context_window_retry`** [activity] -- Proxy retried after the upstream signaled context-window exhaustion.
+- **`context_window_compact_requested`** [activity] -- Proxy requested a live-session compact cycle after upstream context-window exhaustion.
 - **`model_route_quarantine`** [activity] -- Proxy marked an OmniRoute model route as cooldown after a credential or limit failure.
 - **`omniroute_credential_failover`** [activity] -- Proxy failed over to the next OmniRoute chain target after a credential failure on the primary.
 - **`request`** [activity] -- Generic upstream request envelope emitted by the proxy.
