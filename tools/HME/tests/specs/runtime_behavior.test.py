@@ -2,12 +2,15 @@
 """Smoke + class-shape tests for verify_coherence.runtime_behavior."""
 from __future__ import annotations
 
+import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
-from helpers import assert_class_shape, smoke_run
+from helpers import assert_class_shape, smoke_run, with_project_root
 
 
 def _classes():
