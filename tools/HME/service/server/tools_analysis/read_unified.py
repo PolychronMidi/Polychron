@@ -110,9 +110,9 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
     except Exception as _brief_err:
         logger.debug(f"read: brief emission failed: {_brief_err}")
 
-    if mode == "before":
-        from .workflow import before_editing as _be
-        return _be(target)
+    routed = dispatch(mode, {"before": lambda: _before_editing(target)})
+    if routed is not None:
+        return routed
 
     if mode != "auto":
         return _route_explicit(target, mode)
