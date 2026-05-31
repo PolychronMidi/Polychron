@@ -24,6 +24,7 @@
 const http = require('http');
 const path = require('path');
 const { WORKER_PORT } = require('../contexts/lifecycle_bridge').supervisorChildren;
+const { blockText } = require('../request_shape');
 
 const MEMORY_PATH_RE = /\/\.claude\/projects\/[^/]+\/memory\//;
 const BANNER = 'Memories feature is deprecated, replaced by HME KB.';
