@@ -290,7 +290,7 @@ function createClaudeHandler(deps) {
             });
           } catch (fatalErr) {
             console.error(`[hme-proxy] FATAL in handleAnthropicResponseComplete: ${fatalErr.message} ${fatalErr.stack}`);
-            try { require('./middleware/_middleware_throw_lifesaver').recordProxyFailure(require('./shared').PROJECT_ROOT, 'response-complete-handler', fatalErr); } catch (_e) { /* never let alerting throw */ }
+            try { require('./contexts/request_mutation').recordProxyFailure(require('./shared').PROJECT_ROOT, 'response-complete-handler', fatalErr); } catch (_e) { /* never let alerting throw */ }
             if (!clientRes.headersSent) {
               clientRes.writeHead(502, { 'Content-Type': 'application/json' });
               clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_internal', message: fatalErr.message } }));
