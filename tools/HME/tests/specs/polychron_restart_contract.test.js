@@ -3,6 +3,9 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const http = require('http');
+const net = require('net');
+const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
