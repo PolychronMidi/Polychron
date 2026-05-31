@@ -6,6 +6,9 @@ source "$_HME_HELP_DIR/_hooks_bootstrap.sh"
 source "$_HME_HELP_DIR/_check_errors_inline.sh"
 source "$_HME_HELP_DIR/_todo_guard.sh"
 INPUT=$(cat)
-_todo_guard_check "$INPUT" || true
+if ! _todo_guard_check "$INPUT"; then
+  _hme_check_errors_inline || true
+  exit 2
+fi
 _hme_check_errors_inline || true
 exit 0
