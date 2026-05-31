@@ -45,10 +45,9 @@ function _readTodo(root) {
   catch (_e) { return ''; }
 }
 
-function _survives(todo, afterTodos, archived) {
+function _survives(todo, afterTodos) {
   const nt = _norm(todo.text);
   if (afterTodos.some((t) => _norm(t.text) === nt)) return true;
-  if (archived.has(nt)) return true;
   const same = afterTodos.find((t) => t.id === todo.id);
   if (!same) return false;
   const bw = _sigWords(todo.text);
