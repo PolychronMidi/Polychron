@@ -8,14 +8,12 @@ const path = require('node:path');
 const { addClaudeTranscript } = require('../../event_kernel/lifecycle_payload');
 
 function sandbox() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lifecycle-payload-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'lifecycle-home-'));
+  const root = path.join(home, 'Polychron');
   fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
-  const parentDir = path.dirname(root);
-  const ccProject = path.join(parentDir, 'Polychron');
-  const ccDir = path.join(parentDir, '.claude', 'projects', '-home-jah-Polychron');
-  fs.mkdirSync(ccProject, { recursive: true });
+  const ccDir = path.join(home, '.claude', 'projects', '-home-jah-Polychron');
   fs.mkdirSync(ccDir, { recursive: true });
-  return { root, ccDir, ccProject };
+  return { root, ccDir, ccProject: root, home };
 }
 
 function withClaudeProjectDir(root, fn) {
