@@ -31,21 +31,23 @@ const hmeDispatcher = require('../../proxy/hme_dispatcher');
 
 // Invariant: if a circular dependency causes any import to resolve as undefined,
 // fail fast before any test logic runs. Each entry is [name, value, expectedType].
-test('detector stats derive detector identity from caller when omitted', () => {
-  const source = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_detector_stats.py'), 'utf8');
-  assert.match(source, /def _caller_detector_name\(\)/);
-  assert.match(source, /detector = detector or _caller_detector_name\(\)/);
-  for (const rel of [
-    'tools/HME/scripts/detectors/early_stop.py',
-    'tools/HME/scripts/detectors/exhaust_check.py',
-    'tools/HME/scripts/detectors/scope_escape.py',
-    'tools/HME/scripts/detectors/scope_vs_shipped.py',
-    'tools/HME/scripts/detectors/evasion_intent.py',
-    'tools/HME/scripts/detectors/fabrication_check.py',
-    'tools/HME/scripts/detectors/psycho_stop.py',
+test('detector stats use declared detector runtime identity', () => {
+  const source = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_base.py'), 'utf8');
+  assert.match(source, /def detector\(name: str\) -> DetectorRuntime:/);
+  assert.match(source, /emit_stats\(self\.name, verdict, detail\)/);
+  for (const [rel, name] of [
+    ['tools/HME/scripts/detectors/early_stop.py', 'early_stop'],
+    ['tools/HME/scripts/detectors/exhaust_check.py', 'exhaust_check'],
+    ['tools/HME/scripts/detectors/scope_escape.py', 'scope_escape'],
+    ['tools/HME/scripts/detectors/scope_vs_shipped.py', 'scope_vs_shipped'],
+    ['tools/HME/scripts/detectors/evasion_intent.py', 'evasion_intent'],
+    ['tools/HME/scripts/detectors/fabrication_check.py', 'fabrication_check'],
+    ['tools/HME/scripts/detectors/psycho_stop.py', 'psycho_stop'],
   ]) {
     const text = fs.readFileSync(path.join(PROJECT_ROOT, rel), 'utf8');
-    assert.match(text, /emit_stats\(None,/, `${rel} should not hardcode its detector name in stats wrapper`);
+    assert.match(text, new RegExp(`DETECTOR = detector\\("${name}"\\)`));
+    assert.doesNotMatch(text, /def _emit_stats/);
+    assert.doesNotMatch(text, /emit_stats\(None,/);
   }
 });
 
