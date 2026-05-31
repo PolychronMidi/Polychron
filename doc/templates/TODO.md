@@ -18,7 +18,7 @@ Example:
 
 #13 5_ migrated every text-rewalk copy onto the shared request_shape helper: hme_proxy_core._extractTextContent, messages._textOf + inline stripBoilerplate walk, file_unchanged_swap._textOf, middleware index._toolResultText, tool_result_semantics.textOfToolResult, 29_edit_failure_context.textOf, and 04a/06/10/12/13/14/17/19/27 `_textOf`/`_resultText` all delegate to blockText/contentText (added toolResultJoiner for the two '\n'-joining scanners); behavior-preserving (reads .content even when toolResult lacks type, the bare-object test shape); secret_sanitizer 19/19 + extracted-modules 68/68 + tool-result suites green
 
-#3 0_ rewriters: hoist the structured-JSON bypass just added to `sse_slop_rewriter._emitHeldTextEvents` into a shared guard so `sse_ascii_strip_rewriter` and other response-text rewriters also never corrupt JSON/structured-output (root cause of the /goal-verdict "JSON validation failed") [E2]
+#3 1_ rewriters: hoist the structured-JSON bypass just added to `sse_slop_rewriter._emitHeldTextEvents` into a shared guard so `sse_ascii_strip_rewriter` and other response-text rewriters also never corrupt JSON/structured-output (root cause of the /goal-verdict "JSON validation failed") [E2]
 
 #4 0_ hooks: ONE source of truth for self-origin `_SELF_TAG_RE` — it is duplicated AND drifting between `hooks/lifecycle/stop/lifesaver.sh` and `hooks/helpers/_check_errors_inline.sh` (`hook-output-validation` present in one, absent in the other → kernel self-health surfaces as agent-origin); extract to one shared file both source [E2]
 
