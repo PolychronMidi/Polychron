@@ -96,7 +96,9 @@ def lost_unfinished(before_text: str, after_text: str) -> list:
         if t.code == "5":
             continue
         nt = _norm(t.text)
-        if nt in after_texts or nt in archived:
+        if nt in after_texts:
+            continue
+        if nt in archived and not is_archival_advance:
             continue
         a = after_by_id.get(t.id)
         if a is not None:
