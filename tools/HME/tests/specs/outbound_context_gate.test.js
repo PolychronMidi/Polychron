@@ -3,8 +3,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 const { evaluateOutbound, pickLargerRoute, applyOutboundContextGate } = require('../../proxy/outbound_context_gate');
 
 // A payload whose estimated input tokens we control via an injected estimate fn,
