@@ -145,16 +145,7 @@ function stripBoilerplate(payload) {
     const keepBlocks = [];
     for (const block of msg.content) {
       if (!block || typeof block !== 'object') { keepBlocks.push(block); continue; }
-      let blockText = '';
-      if (block.type === 'text') {
-        blockText = typeof block.text === 'string' ? block.text : '';
-      } else if (block.type === 'tool_result') {
-        const c = block.content;
-        if (typeof c === 'string') blockText = c;
-        else if (Array.isArray(c)) {
-          blockText = c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-        }
-      }
+      const blockText = _sharedBlockText(block, { toolResults: true });
       const hit = _isBoilerplateText(blockText);
       if (hit.match) {
         strippedCount++;
