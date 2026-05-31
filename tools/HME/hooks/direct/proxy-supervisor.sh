@@ -159,7 +159,7 @@ _sv_child_health_issue() {
       echo "${child_id} unreachable at ${child_url}"
       return 0
     fi
-  done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
+  done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)  # silent-ok: registry helper absent -> empty child-URL list -> loop body never runs -> falls through to worker-drift check (no false "child unreachable")
   # Worker stale-code drift: alive but serving old code. Recovers via the
   # "worker *" case in _sv_recover_health_issue -> _sv_restart_worker.
   _sv_worker_drift_issue
