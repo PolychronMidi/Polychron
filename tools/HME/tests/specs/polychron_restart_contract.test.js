@@ -122,7 +122,7 @@ server.listen(${port}, '127.0.0.1', () => {
   fs.writeFileSync(${JSON.stringify(health)}, JSON.stringify({ ready: true, pid: process.pid }));
 });
 `);
-  const child = require('child_process').spawn(process.execPath, [script], { stdio: 'ignore' });
+  const child = spawn(process.execPath, [script], { stdio: 'ignore' });
   try {
     const deadline = Date.now() + 2000;
     while (!fs.existsSync(health) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
