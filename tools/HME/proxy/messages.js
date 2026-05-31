@@ -4,6 +4,7 @@
 const { emit } = require('./shared');
 const { isJurisdictionFile } = require('./context');
 const { normalizeICommandsInValue } = require('./i_command_text');
+const { blockText: _sharedBlockText } = require('./request_shape');
 
 const WRITE_INTENT_TOOLS = new Set([
   'Edit',
