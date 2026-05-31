@@ -45,34 +45,30 @@ function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, ou
   return { outHeaders: headers, outBuf: _anthropicErrorSseBuffer('context_window_exceeded', msg) };
 }
 
-function _cloneWithTailMessages(payload, keep = 80) {
-  const retryPayload = JSON.parse(JSON.stringify(payload || {}));
-  if (Array.isArray(retryPayload.messages) && retryPayload.messages.length > keep) {
-    retryPayload.messages = retryPayload.messages.slice(-keep);
+// On upstream context-window overflow we do NOT bail to a different chain
+// model -- a smaller-window sibling fails identically and a weaker model
+// degrades the turn. Instead we submit the local-session 'cc' shortcut
+function _requestLiveCompact({ routeKey, projectRoot, log }) {
+  const now = Date.now();
+  if (now - _lastCcCompactMs < _CC_COMPACT_COOLDOWN_MS) {
+    log(`[hme-proxy] context-window overflow on ${routeKey}; compact already requested ${(now - _lastCcCompactMs)}ms ago, skipping duplicate`);
+    return false;
   }
-  retryPayload.stream = false;
-  if (typeof retryPayload.max_tokens !== 'number' || retryPayload.max_tokens > 2048) retryPayload.max_tokens = 2048;
-  delete retryPayload.thinking;
-  return retryPayload;
+  let delivered = false;
+  try {
+    delivered = submitCcShortcut(projectRoot, 'cc');
+  } catch (err) {
+    log(`[hme-proxy] context-window cc-shortcut submit failed: ${err.message}`);
+    emit({ event: 'context_window_compact_requested', route: routeKey, delivered: false, error: err.message });
+    return false;
+  }
+  if (delivered) _lastCcCompactMs = now;
+  emit({ event: 'context_window_compact_requested', route: routeKey, delivered });
+  log(`[hme-proxy] context-window overflow on ${routeKey}; cc shortcut ${delivered ? 'submitted to live session (/compact -> continue)' : 'unavailable (no PTY bridge attached)'}`);
+  return delivered;
 }
 
-function _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload }) {
-  const retryBody = Buffer.from(JSON.stringify(payload), 'utf8');
-  const retryOpts = { ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(retryBody.length) } };
-  return new Promise((resolve, reject) => {
-    const req = transport.request(retryOpts, (res) => {
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, fullBody: Buffer.concat(chunks) }));
-      res.on('error', reject);
-    });
-    req.on('error', reject);
-    req.write(retryBody);
-    req.end();
-  });
-}
-
-async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, swapChain, omniProvider, swapModel: _swapModel, transport, upstreamOpts, upstreamHeaders, projectRoot = PROJECT_ROOT, log = console.error }) {
+async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, omniProvider, projectRoot = PROJECT_ROOT, log = console.error }) {
   if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) return null;
   const routeKey = _omniRouteKeyFromModel(payload && payload.model, omniProvider);
   try {
@@ -81,33 +77,9 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
   } catch (err) {
     log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
   }
-  if (!Array.isArray(swapChain) || swapChain.length <= 1 || !payload) return null;
-  const startIdx = swapStore.peek(projectRoot).idx || 0;
-  for (let ri = 1; ri < swapChain.length; ri++) {
-    const retryIdx = (startIdx + ri) % swapChain.length;
-    const candidate = swapChain[retryIdx];
-    const provider = omniProviderForConfigProvider(candidate.provider || '');
-    const model = upstreamModelId(candidate);
-    const retryPayload = _cloneWithTailMessages(payload, 80);
-    retryPayload.model = `${provider}/${model}`;
-    log(`[hme-proxy] context-window retry ${ri}/${swapChain.length - 1}: ${retryPayload.model} tail_msgs=${Array.isArray(retryPayload.messages) ? retryPayload.messages.length : 0}`);
-    try {
-      const retry = await _retryHttpMessage({ transport, upstreamOpts, upstreamHeaders, payload: retryPayload });
-      if (retry.status >= 200 && retry.status < 300
-          && !_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
-        swapStore.recordSuccess(swapChain, retryIdx, projectRoot);
-        emit({ event: 'context_window_retry', outcome: 'success', route: retryPayload.model, prior_route: routeKey });
-        return retry;
-      }
-      if (_isContextWindowExceededSse({ isOmniRouteSwap: true, status: retry.status, outHeaders: retry.headers, outBuf: retry.fullBody })) {
-        try { markRouteCooldown(retryPayload.model, 'context_window_exceeded', { ttlMs: 300_000, projectRoot }); } catch (_e) { /* best effort */ }
-      }
-      emit({ event: 'context_window_retry', outcome: 'failed', status: retry.status, route: retryPayload.model, prior_route: routeKey });
-    } catch (err) {
-      log(`[hme-proxy] context-window retry failed: ${err.message}`);
-      emit({ event: 'context_window_retry', outcome: 'error', route: retryPayload.model, message: err.message });
-    }
-  }
+  // Trigger the live-session compact instead of rerouting to another model.
+  // Always return null: the caller normalizes this turn into a clean
+  _requestLiveCompact({ routeKey, projectRoot, log });
   return null;
 }
 
