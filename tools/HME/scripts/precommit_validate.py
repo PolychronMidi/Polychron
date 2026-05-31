@@ -23,6 +23,7 @@ HME_PATH = ROOT / "tools" / "HME"
 if str(HME_PATH) not in sys.path:
     sys.path.insert(0, str(HME_PATH))
 from todo_engine.grammar import parse_document  # noqa: E402
+from todo_guard import lost_unfinished  # noqa: E402
 
 _CHECK_ENV_FAILFAST_PATH = SCRIPT_DIR / "check-env-failfast.py"
 _CHECK_ENV_FAILFAST_SPEC = importlib.util.spec_from_file_location("check_env_failfast", _CHECK_ENV_FAILFAST_PATH)
@@ -403,12 +404,10 @@ def todo_survivor_check() -> None:
     after = staged_blob(path)
     if before is None or after is None:
         return
-    before_open = _non_done_todos(before.decode("utf-8", "replace"))
-    if not before_open:
-        return
-    after_open = _non_done_todos(after.decode("utf-8", "replace"))
-    after_ids = {t.id for t in after_open}
-    lost = [t for t in before_open if t.id not in after_ids]
+    lost = lost_unfinished(
+        before.decode("utf-8", "replace"),
+        after.decode("utf-8", "replace"),
+    )
     if lost:
         detail = " | ".join(f"#{t.id} {t.code}_ {t.text[:120]}" for t in lost[:5])
         failures.append("doc/templates/TODO.md: non-5_ todo(s) removed instead of surviving active set: " + detail)
