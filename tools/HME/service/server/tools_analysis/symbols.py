@@ -5,6 +5,7 @@ import logging
 from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, fmt_sim_score, BUDGET_LIMITS
 from . import _track
+from ._dispatch import dispatch
 from lang_registry import ext_to_lang
 from symbols import collect_all_symbols, get_type_hierarchy as _get_type_hierarchy, preview_rename as _preview_rename
 from structure import file_summary as _file_summary, module_map as _module_map, format_module_map as _format_module_map
