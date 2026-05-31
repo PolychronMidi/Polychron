@@ -66,33 +66,13 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
                 del _recent_finds[k]
         return result
 
-    if mode == "callers":
-        symbol = re.sub(r'^(callers? of|who calls|find callers)\s+', '', query, flags=re.IGNORECASE).strip()
-        from server.tools_search import find_callers as _fc
-        return _cache_and_return(_fc(symbol, path=path))
-
-    if mode == "boundary":
-        m = re.match(r'(\S+)\s+(?:should use|not|instead of|vs)\s+(\S+)', query, re.IGNORECASE)
-        if m:
-            from server.tools_search import find_anti_pattern as _fap
-            return _cache_and_return(_fap(wrong_symbol=m.group(1), right_symbol=m.group(2), path=path))
-        # Natural language fallback: extract symbol-like tokens and grep for the pattern
-        tokens = re.findall(r'[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*', query)
-        symbols = [t for t in tokens if len(t) > 3 and t.lower() not in
-                   {'should', 'using', 'instead', 'hardcoded', 'names', 'strings', 'not'}]
-        if len(symbols) >= 2:
-            from server.tools_search import find_anti_pattern as _fap
-            return _cache_and_return(_fap(wrong_symbol=symbols[0], right_symbol=symbols[1], path=path))
-        if len(symbols) == 1:
-            from server.tools_search import grep as _grep
-            return _cache_and_return(_grep(symbols[0], path=path or "src/", regex=False))
-        return ("Error: could not extract symbols from query. Use either:\n"
-                "  - 'wrong_symbol should use right_symbol' format\n"
-                "  - Natural language with at least one identifiable symbol")
-
-    if mode == "grep":
-        from server.tools_search import grep as _grep
-        return _cache_and_return(_grep(query, path=path, regex=True))
+    routed = dispatch(mode, {
+        "callers": lambda: _callers(query, path),
+        "boundary": lambda: _boundary(query, path),
+        "grep": lambda: _grep(query, path, regex=True),
+    })
+    if routed is not None:
+        return _cache_and_return(routed)
 
     # Default: semantic search -- prepend session thread for investigation continuity
     from server.tools_search import search_code as _sc
