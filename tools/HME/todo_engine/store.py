@@ -54,7 +54,10 @@ def _atomic_write(text: str) -> None:
             pass  # silent-ok: tmp already renamed away
 
 
-def _next_set_number() -> int:
+def _next_set_number(header: list[str] | None = None) -> int:
+    current = set_number(header or [])
+    if current is not None:
+        return current
     d = archive_dir()
     if not d.is_dir():
         return 1
