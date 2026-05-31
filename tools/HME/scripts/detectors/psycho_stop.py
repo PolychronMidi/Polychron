@@ -43,7 +43,6 @@ BG_KEYWORDS = (
     "snapshot_download", "hf_hub_download", "huggingface_hub",
 )
 
-
 # Pattern B "admit-and-stop": final text enumerates pending/remaining work
 # without a follow-up tool call. ADMIT_PHRASES sourced from _phrase_lists
 # (shared with exhaust_check/early_stop to prevent drift).
@@ -63,7 +62,6 @@ ADMIT_PHRASES = (
     + FORWARD_ACTION_PUNT_PHRASES
 )
 
-
 # Pattern C "survey-and-ask": agent identifies violations then asks permission
 # instead of fixing (covert defer). Phrases: SURVEY_PERMISSION_ASK union with
 # the survey-shape subsets of DEFERRAL_ACK_NO_FIX + DEFERRAL_FLAG_FOR_LATER.
@@ -76,7 +74,6 @@ PERMISSION_ASK_PHRASES = (
 
 def _is_assistant_event(event: dict) -> bool:
     return is_assistant(event)
-
 
 # Ideation markers: when user asks for ideas/opinions/explanations,
 # Pattern C survey-and-ask is legitimate brainstorming, not deferral.
@@ -158,7 +155,6 @@ def _is_ideation_prompt(user_text: str) -> bool:
         if marker in low:
             return True
     return False
-
 
 # Completion-claim markers -- when the AGENT'S prior turn made one of these
 # claims, the next user prompt is FOLLOW-UP context, not pure ideation.
@@ -257,7 +253,6 @@ def _has_tool_call_after_last_text(events: list) -> bool:
             if tu.get("name"):
                 return True
     return False
-
 
 
 def main() -> int:

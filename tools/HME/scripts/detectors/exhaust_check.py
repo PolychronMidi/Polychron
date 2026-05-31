@@ -36,7 +36,6 @@ from _transcript import is_user, event_content, iter_tool_uses, load_full_turn_w
 from _rescue_clauses import b_clause_within_window  # noqa: E402
 
 
-
 # Prompts where enumeration is the deliverable, not a punt.
 RESEARCH_INVITATION_PATTERNS = (
     re.compile(r"\bwhat\s+(does|do|might)\b[^?\n]{0,80}\b(have\s+to\s+offer|offer)\b", re.IGNORECASE),
@@ -61,7 +60,6 @@ RESEARCH_INVITATION_PATTERNS = (
     re.compile(r"\b(did|are)\s+we\s+(get|cover|catch)\s+(everything|all|the\s+full)\b", re.IGNORECASE),
     re.compile(r"\bwhat'?s\s+(left|missing)\s+(from|after|in)\s+(the|that|this)\s+(sweep|review|integration|audit)\b", re.IGNORECASE),
 )
-
 
 # Agent-initiated permission asks always fire, even on research turns.
 ALWAYS_FIRE_PHRASES = (
@@ -140,7 +138,6 @@ def _is_research_evaluation_request(user_text: str) -> bool:
         if pat.search(user_text):
             return True
     return False
-
 
 # Import phrase tables from sibling.
 from exhaust_check_phrases import DEFERRAL_PHRASES, DEFERRAL_REGEXES  # noqa: E402
@@ -283,7 +280,6 @@ def _has_tool_call_after_last_text(events: list) -> bool:
             if tu.get("name"):
                 return True
     return False
-
 
 def main() -> int:
     if transcript_arg() is None:

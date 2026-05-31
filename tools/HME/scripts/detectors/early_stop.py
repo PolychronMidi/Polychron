@@ -40,7 +40,6 @@ from _transcript import (  # noqa: E402
 )
 
 
-
 # --- Signal 1: user prompt signals open-ended continuation ---
 
 OPEN_ENDED_PROMPTS = (
@@ -116,7 +115,6 @@ NARROW_SCOPE_OVERRIDES = (
     "nothing else",
     "and nothing else",
 )
-
 
 # --- Signal 2: final text shows "enumerated-but-didn't-execute" shape ---
 
@@ -218,7 +216,6 @@ ENUMERATION_PHRASES = (
 def _is_assistant(event: dict) -> bool:
     return is_assistant(event)
 
-
 # Stop-hook deny payloads ride into the transcript as user-shaped events.
 _HOOK_DENY_MARKERS = (
     "Stop hook feedback:",
@@ -302,7 +299,6 @@ def _has_tool_call_after_last_text(events: list) -> bool:
             if tu.get("name"):
                 return True
     return False
-
 
 
 def main() -> int:

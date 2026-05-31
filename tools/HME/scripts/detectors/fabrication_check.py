@@ -37,7 +37,6 @@ from _transcript import (  # noqa: E402
     load_turn_events, is_assistant, event_content,
 )
 
-
 # Lowercased substring matches. Extend when new verbal forms surface; the
 # detector is a floor, not a ceiling.
 FABRICATION_PHRASES = (
@@ -115,7 +114,6 @@ def _last_assistant_text(events: list) -> str:
             if isinstance(t, str):
                 parts.append(t)
     return "\n".join(parts)
-
 
 
 def main() -> int:

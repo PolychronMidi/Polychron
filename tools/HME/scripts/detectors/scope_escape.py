@@ -41,7 +41,6 @@ from _phrase_lists import SCOPE_ESCAPE  # noqa: E402
 from _transcript import load_full_turn_with_user  # noqa: E402
 
 
-
 # Suppress when the agent CLAIMS to have fixed the same problem in the
 RESCUE_RES = (
     re.compile(r"\b(and|but)\s+(i\s+)?(fixed|resolved|patched|repaired|addressed|cleaned\s+(it\s+)?up|handled\s+it)\b", re.IGNORECASE),
@@ -153,7 +152,6 @@ def _substantive_work_count(events: list) -> int:
                 if _BASH_WORK_RE.search(cmd):
                     n += 1
     return n
-
 
 def main() -> int:
     if transcript_arg() is None:

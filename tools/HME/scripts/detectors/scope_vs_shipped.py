@@ -118,7 +118,6 @@ def _turn_invoked_todo_archive(events: list) -> bool:
                 return True
     return False
 
-
 def main() -> int:
     if transcript_arg() is None:
         print("ok")

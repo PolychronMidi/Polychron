@@ -199,7 +199,6 @@ def _extract_output_text(events: list) -> str:
     return "\n\n".join(parts)
 
 
-
 def main() -> int:
     if transcript_arg() is None:
         print("ok")
