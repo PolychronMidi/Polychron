@@ -595,6 +595,69 @@
       "summary": "Proxy recovered from a mid-response upstream error without surfacing it to the client."
     },
     {
+      "name": "fingerprint_reset",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "routing"
+      ],
+      "summary": "Proxy reset the request fingerprint or session routing state on demand."
+    },
+    {
+      "name": "outbound_gate_compacted",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context",
+        "compaction"
+      ],
+      "summary": "Outbound context gate compacted an interactive payload before upstream dispatch."
+    },
+    {
+      "name": "outbound_gate_over_window",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context",
+        "routing"
+      ],
+      "summary": "Outbound context gate refused a known-over-window payload after compaction and reroute were exhausted."
+    },
+    {
+      "name": "outbound_gate_rerouted",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context",
+        "routing"
+      ],
+      "summary": "Outbound context gate moved a payload to a larger-context route before dispatch."
+    },
+    {
+      "name": "shortcut_followup_submitted",
+      "category": "Interactive / shortcut",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "shortcut"
+      ],
+      "summary": "Shortcut follow-up middleware submitted a queued continuation prompt."
+    },
+    {
       "name": "autocompact_fired_despite_disable",
       "category": "Proxy request mutation",
       "streams": [
