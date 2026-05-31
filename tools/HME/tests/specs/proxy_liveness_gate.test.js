@@ -42,10 +42,10 @@ test('a lone stale slot is BENIGN while the other serves current code', () => {
   assert.equal(r.ok, true);
 });
 
-test('a slot on OLD code (drift) ALWAYS alarms even if the other is current', () => {
-  const r = evaluateSlots({ a: health(), b: health({ runtime_fingerprint: 'OLD' }) }, 'GOOD', NOW, aliveAll);
+test('all slots down or unroutable alarms', () => {
+  const r = evaluateSlots({ a: health({ ready: false }), b: health({ draining: true }) }, 'GOOD', NOW, aliveAll);
   assert.equal(r.ok, false);
-  assert.equal(r.problems[0].kind, 'drift');
+  assert.equal(r.problems.map((p) => p.kind).sort().join(','), 'draining,not-ready');
 });
 
 test('BOTH slots down -> total outage alarms (no routable-current slot)', () => {
