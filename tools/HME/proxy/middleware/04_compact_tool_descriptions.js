@@ -41,6 +41,7 @@ const COMPACT = {
   Bash: `Run a bash command and return output. Prefer Read/Edit/Write for file ops. Quote paths with spaces. Use absolute paths; avoid cd unless requested. Use timeout for long commands. Use run_in_background only when notification is enough. Never run destructive git/gh or bypass hooks unless explicitly requested.`,
   WebFetch: `Fetch and summarize a public URL with a prompt. URL must be valid; redirects require a follow-up request. Avoid private/authenticated URLs; use authenticated MCP or gh for GitHub when available. Read-only, cached briefly, may summarize large pages.`,
   WebSearch: `Search the web for current or post-cutoff info. Use 2026 in recent/current queries. Supports allowed/blocked domain filters. If used, final answer must include a Sources section with relevant result links.`,
+  TodoWrite: `Maintain a session task list. Use for multi-step work: mark one item in_progress at a time, update as work completes, and keep entries concrete/actionable.`,
 };
 
 function sameJson(a, b) {
