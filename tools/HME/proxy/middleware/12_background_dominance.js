@@ -52,10 +52,7 @@ const STABLE_READS_REQUIRED = 3;
 const MTIME_QUIESCENT_MS = 2_500;
 
 function _textOf(toolResult) {
-  const c = toolResult && toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  return '';
+  return blockText(toolResult, { toolResults: true });
 }
 
 function _findTaskOutput(taskId) {
