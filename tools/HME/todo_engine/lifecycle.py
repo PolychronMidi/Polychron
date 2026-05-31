@@ -76,7 +76,7 @@ def _all_other_complete_map(todos: list[Todo]) -> dict[int, bool]:
 
 
 def set_is_archivable(todos: list[Todo]) -> bool:
-    """True when the set is non-empty and every item is code >= 3."""
+    """True when the set is non-empty and every item is 5_ complete."""
     if not todos:
         return False
-    return all(_CODE_RANK.get(t.code, 0) >= _ARCHIVE_MIN_RANK for t in todos)
+    return all(t.code == _COMPLETE for t in todos)
