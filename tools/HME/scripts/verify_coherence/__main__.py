@@ -166,7 +166,7 @@ def _persist_snapshot(report: dict) -> None:
         with open(snap_path, "w", encoding="utf-8") as _f:
             json.dump(snapshot, _f, indent=2)
     except Exception as _snap_err:
-        # silent-ok: optional fallback path.
+        # silent-ok: snapshot persistence is diagnostic history; current verifier output 
         sys.stderr.write(f"snapshot persist failed: {_snap_err}\n")
 
 

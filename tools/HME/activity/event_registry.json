@@ -548,6 +548,19 @@
       "summary": "Proxy retried after the upstream signaled context-window exhaustion."
     },
     {
+      "name": "context_window_compact_requested",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context",
+        "compaction"
+      ],
+      "summary": "Proxy requested a live-session compact cycle after upstream context-window exhaustion."
+    },
+    {
       "name": "model_route_quarantine",
       "category": "Proxy / routing",
       "streams": [

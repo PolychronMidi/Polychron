@@ -234,12 +234,14 @@ def ensure_fifo(path):
             if stat.S_ISFIFO(mode):
                 return path
             os.unlink(path)
-        except OSError:
-            pass  # silent-ok: pending review  # best effort: recreate below if possible
+        except OSError as exc:
+            raise RuntimeError("hme-claude: cannot replace non-FIFO control path %s: %s" % (path, exc))
     try:
         os.mkfifo(path, 0o600)
     except FileExistsError:
-        pass  # silent-ok: pending review  # another bridge may have created it first
+        mode = os.stat(path).st_mode
+        if not stat.S_ISFIFO(mode):
+            raise RuntimeError("hme-claude: control path exists but is not a FIFO: %s" % path)
     return path
 
 
@@ -298,8 +300,10 @@ def main():
     def type_into_session(text):
         try:
             os.write(master, text.encode("utf-8"))
-        except OSError:
-            pass  # silent-ok: pending review
+            return True
+        except OSError as exc:
+            sys.stderr.write("hme-claude: PTY write failed: %s\n" % exc)
+            return False
 
     try:
         while True:
