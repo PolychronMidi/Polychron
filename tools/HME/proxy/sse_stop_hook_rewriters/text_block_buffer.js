@@ -1,3 +1,5 @@
+const { shouldBypassResponseTextRewrite } = require('../structured_output_guard');
+
 function _holdsFor(ctx, key) {
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
