@@ -35,7 +35,7 @@ class RAGEnginePersistenceMixin:
                     raw = json.load(f)
                 self._per_file_chunks = {k: set(v) for k, v in raw.items()}
             except Exception:
-                # silent-ok: unreadable chunk-map cache resets to empty, forcing a chunk rebuild
+                # silent-ok: bad chunk-map cache forces chunk rebuild
                 self._per_file_chunks = {}
         else:
             self._per_file_chunks = {}
