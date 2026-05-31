@@ -3,14 +3,12 @@
 // Cooperative rewrite for Claude Code's `file_unchanged` short-circuit.
 // When the CLI emits `Wasted call — file unchanged since your last Read` (or
 
+const { contentText } = require('./request_shape');
+
 const WASTED_RE = /Wasted call .{0,4}file unchanged since your last Read|File unchanged since last read[\s\S]*refer to that instead/i;
 
 function _textOf(content) {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content.filter((b) => b && b.type === 'text').map((b) => b.text || '').join('');
-  }
-  return '';
+  return contentText(content, { joiner: '' });
 }
 
 function _setText(block, text) {
