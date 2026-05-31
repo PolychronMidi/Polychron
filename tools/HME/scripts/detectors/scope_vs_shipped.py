@@ -122,10 +122,10 @@ def _turn_invoked_todo_archive(events: list) -> bool:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    if transcript_arg() is None:
         print("ok")
         return 0
-    events = load_turn_events(sys.argv[1])
+    events = load_turn(load_turn_events)
     if _turn_invoked_todo_archive(events):
         _emit_stats("ok", "todo archive invoked -- sanctioned completion event")
         print("ok")
