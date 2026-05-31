@@ -386,6 +386,30 @@ def tracked_mode(path: str) -> str:
     return out.split(None, 1)[0]
 
 
+def _non_done_todos(text: str):
+    _header, todos = parse_document(text or "")
+    return [t for t in todos if t.code != "5"]
+
+
+def todo_survivor_check() -> None:
+    path = "doc/templates/TODO.md"
+    if path not in staged_paths():
+        return
+    before = tracked_blob(path)
+    after = staged_blob(path)
+    if before is None or after is None:
+        return
+    before_open = _non_done_todos(before.decode("utf-8", "replace"))
+    if not before_open:
+        return
+    after_open = _non_done_todos(after.decode("utf-8", "replace"))
+    after_keys = {(t.id, re.sub(r"\s+", " ", t.text).strip().lower()) for t in after_open}
+    lost = [t for t in before_open if (t.id, re.sub(r"\s+", " ", t.text).strip().lower()) not in after_keys]
+    if lost:
+        detail = " | ".join(f"#{t.id} {t.code}_ {t.text[:120]}" for t in lost[:5])
+        failures.append("doc/templates/TODO.md: non-5_ todo(s) removed instead of surviving active set: " + detail)
+
+
 def staged_content_check() -> None:
     for path in staged_paths():
         mode = staged_mode(path)
