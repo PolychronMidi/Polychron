@@ -58,18 +58,29 @@ def test_mutate_roundtrips():
 
 def test_archive_when_all_resolved_resets_todo():
     d, store = _fresh_root()
-    _write(d, "# rules\n\n#1 5_ done a\n#2 3_ blocked b\n")
+    _write(d, "# rules\n\n### Todo - Set 4\n\n#1 5_ done a\n#2 3_ blocked b\n")
     path = store.maybe_archive(now=T0)
-    assert path is not None and Path(path).name == "set1.md"
+    assert path is not None and Path(path).name == "set4.md"
     # archive captured the set
     assert "done a" in Path(path).read_text()
-    # TODO.md reset to header-only (no todo lines)
+    # TODO.md reset to the next header (no todo lines)
+    todo_text = (Path(d) / "doc" / "templates" / "TODO.md").read_text(encoding="utf-8")
+    assert "### Todo - Set 5" in todo_text
     _, todos = store.load(now=T0)
     assert todos == []
-    # next archive bumps the number
-    _write(d, "#3 5_ done c\n")
+    # next archive honors the active header, not max(log/todo)+1.
+    _write(d, "# rules\n\n### Todo - Set 8\n\n#3 5_ done c\n")
     path2 = store.maybe_archive(now=T0)
-    assert Path(path2).name == "set2.md"
+    assert Path(path2).name == "set8.md"
+
+
+def test_archive_without_header_falls_back_to_next_log_number():
+    d, store = _fresh_root()
+    (Path(d) / "log" / "todo").mkdir(parents=True, exist_ok=True)
+    (Path(d) / "log" / "todo" / "set2.md").write_text("old", encoding="utf-8")
+    _write(d, "# rules\n\n#1 5_ done a\n#2 3_ blocked b\n")
+    path = store.maybe_archive(now=T0)
+    assert path is not None and Path(path).name == "set3.md"
 
 
 def test_no_archive_when_open_items():
