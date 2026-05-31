@@ -658,6 +658,19 @@
       "summary": "Shortcut follow-up middleware submitted a queued continuation prompt."
     },
     {
+      "name": "unparsed_tool_call_recovered",
+      "category": "Proxy request mutation",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "request_mutation",
+        "tool_call_recovery"
+      ],
+      "summary": "Request recovery guard rewrote an unparsed tool-call retry into a recoverable prompt."
+    },
+    {
       "name": "autocompact_fired_despite_disable",
       "category": "Proxy request mutation",
       "streams": [
