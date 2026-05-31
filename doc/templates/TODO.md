@@ -16,7 +16,7 @@ Example:
 
 #2 4_ proxy: unify content-block text extraction — canonical `blockText(block,{toolResults})` + `contentText(content)` added to request_shape.js; conversation_graph.blockText now delegates (tool-result-inclusive preserved), request_mutation `_lastUserPromptText`/`_lastUserTextBlocks` collapsed to shared `messageText` + one `_lastUserMessageRaw`; 16/16 shortcuts + 5/5 facade green, behavior asserted [E2]
 
-#13 1_ migrate the remaining text-rewalk copies onto the shared helper: hme_proxy_core._extractTextContent and the ~20 middleware `_resultText`/`_textOf` tool-result readers → `blockText(b,{toolResults:true})`; then #6 re-survey confirms call-sites removed
+#13 5_ migrated every text-rewalk copy onto the shared request_shape helper: hme_proxy_core._extractTextContent, messages._textOf + inline stripBoilerplate walk, file_unchanged_swap._textOf, middleware index._toolResultText, tool_result_semantics.textOfToolResult, 29_edit_failure_context.textOf, and 04a/06/10/12/13/14/17/19/27 `_textOf`/`_resultText` all delegate to blockText/contentText (added toolResultJoiner for the two '\n'-joining scanners); behavior-preserving (reads .content even when toolResult lacks type, the bare-object test shape); secret_sanitizer 19/19 + extracted-modules 68/68 + tool-result suites green
 
 #3 0_ rewriters: hoist the structured-JSON bypass just added to `sse_slop_rewriter._emitHeldTextEvents` into a shared guard so `sse_ascii_strip_rewriter` and other response-text rewriters also never corrupt JSON/structured-output (root cause of the /goal-verdict "JSON validation failed") [E2]
 
