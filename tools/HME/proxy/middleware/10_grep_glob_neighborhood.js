@@ -53,7 +53,7 @@ function _isExplored(absDir) {
 }
 
 function _textOf(toolResult) {
-  return blockText(toolResult, { toolResults: true });
+  return blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 // Extract file paths from a tool_result text. Handles:
