@@ -134,7 +134,7 @@ _sv_is_maintenance_active() {
     ''|*[!0-9]*) return 1 ;;
   esac
   local start_epoch now
-  start_epoch=$(date -d "$start" +%s 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
+  start_epoch=$(date -d "$start" +%s 2>/dev/null || echo 0)  # silent-ok: corrupt start stamp -> epoch 0 -> the -gt 0 guard below reads maintenance as inactive (never suppresses supervision on a bad flag)
   now=$(date +%s)
   [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
 }
