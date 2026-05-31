@@ -812,6 +812,10 @@ function _stripSlop(text) {
   out = _applyTextTransformOutsideCode(out, _compactNonAlnumSegment);
   if (out !== beforePunctCompact) hits.push('caveman_non_alnum_compaction');
 
+  const beforeLinePunct = out;
+  out = _applyTextTransformOutsideCode(out, _stripLineDashAndTerminalPunctuationSegment);
+  if (out !== beforeLinePunct) hits.push('caveman_line_punctuation');
+
   out = _cleanupSlopArtifacts(out);
   return { out, hits };
 }
