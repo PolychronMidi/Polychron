@@ -120,6 +120,37 @@ def next_id(todos: list[Todo]) -> int:
     return (max((t.id for t in todos), default=0)) + 1
 
 
+def _archive_number(p: Path) -> int:
+    stem = p.stem[3:]
+    return int(stem) if stem.isdigit() else -1
+
+
+def recover_orphaned_carryovers() -> int:
+    """If the active set is empty but the newest archive still contains non-5_
+    items, restore those items into the active set. This repairs legacy archives
+    made before non-5_ items were defined as non-archivable."""
+
+    def _do():
+        header, todos = parse_document(_read_text())
+        if todos:
+            return 0
+        d = archive_dir()
+        if not d.is_dir():
+            return 0
+        for f in sorted(d.glob("set*.md"), key=_archive_number, reverse=True):
+            try:
+                _arch_header, archived = parse_document(f.read_text(encoding="utf-8"))
+            except OSError:
+                continue
+            carry = [t for t in archived if t.code != "5"]
+            if carry:
+                _atomic_write(render_document(header, carry))
+                return len(carry)
+        return 0
+
+    return _with_lock(_do)
+
+
 def maybe_archive(now: float | None = None) -> str | None:
     """If every active item is 5_, archive it to log/todo/set<N>.md and
     advance to an empty next set. Non-5_ items remain active and block archive.
