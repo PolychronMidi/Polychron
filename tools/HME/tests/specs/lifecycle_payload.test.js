@@ -77,10 +77,31 @@ test('addClaudeTranscript falls back to newest only when neither path nor sessio
 });
 
 test('addClaudeTranscript is a no-op for non-Stop events', () => {
-  const { root } = sandbox();
+  const { root, ccProject } = sandbox();
   const payload = { transcript_path: '/should/stay' };
-  const result = withClaudeProjectDir(ccProject || root, () => addClaudeTranscript(payload, root, 'PreToolUse'));
+  const result = withClaudeProjectDir(ccProject, () => addClaudeTranscript(payload, root, 'PreToolUse'));
   assert.equal(result.transcript_path, '/should/stay');
+});
+
+
+test('addClaudeTranscript fails fast when Stop transcript cannot be resolved', () => {
+  const { root, ccProject } = sandbox();
+  assert.throws(
+    () => withClaudeProjectDir(ccProject, () => addClaudeTranscript({ session_id: 'missing-session' }, root, 'Stop')),
+    /no transcript for session_id missing-session/,
+  );
+});
+
+
+test('buildHostPayload encodes transcript failfast for mandatory stop policy', () => {
+  const { buildHostPayload } = require('../../event_kernel/lifecycle_payload');
+  const { root, ccProject } = sandbox();
+  const body = withClaudeProjectDir(ccProject, () => buildHostPayload({
+    host: 'claude', event: 'Stop', root, rawBody: JSON.stringify({ session_id: 'missing-session' }), cwd: root,
+  }));
+  const payload = JSON.parse(body);
+  assert.match(payload._hme_transcript_error, /TRANSCRIPT FAILFAST/);
+  assert.match(payload._hme_transcript_error, /missing-session/);
 });
 
 test('normalizeLifecyclePayload propagates HME_SUBAGENT=1 to payload._hme_subagent', () => {
