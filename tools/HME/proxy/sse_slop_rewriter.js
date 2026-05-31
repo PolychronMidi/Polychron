@@ -465,6 +465,13 @@ function _compactNonAlnumSegment(text) {
     .replace(/([^A-Za-z0-9\s])\1+/g, '$1');
 }
 
+function _stripLineDashAndTerminalPunctuationSegment(text) {
+  return String(text || '').split('\n').map((line) => String(line || '')
+    .replace(/^([ \t]*)-[ \t]*/g, '$1')
+    .replace(/([\p{P}])[ \t]*-[ \t]*/gu, '$1 ')
+    .replace(/[ \t]*-[ \t]*([\p{P}])/gu, '$1')
+    .replace(/[ \t]*[\p{P}]+[ \t]*$/u, '')).join('\n');
+}
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
