@@ -27,24 +27,22 @@ def _run():
         return g.lost_unfinished(before, after)
 
     cases = [
-        # name, before, after, archive, expect_lost_count
+        # name, before, after, expect_lost_count
         ("drop unfinished 0_ (THE failure)", _H + "#1 0_ get HCI score to 100",
-         "### Todo - Set 4\n#1 0_ different", None, 1),
-        ("status flip 0_->5_ (id survives)", _H + "#1 0_ ship", _H + "#1 5_ ship", None, 0),
-        ("completed 5_ pruned (ok)", _H + "#1 5_ done", "### Todo - Set 4\n", None, 0),
-        ("archival (text under log/todo)", _H + "#1 0_ build the guard",
-         "### Todo - Set 4\n", "#1 0_ build the guard", 0),
-        ("completed by archival (5_ text under log/todo)", _H + "#1 0_ build the guard",
-         "### Todo - Set 4\n", "#1 5_ build the guard", 0),
-        ("correct set archive is honored", "### Todo - Set 4\n#1 0_ build the guard",
-         "### Todo - Set 5\n", "### Todo - Set 4\n#1 5_ build the guard", 0),
-        ("text edit, id survives", _H + "#1 0_ old wording", _H + "#1 0_ new wording", None, 0),
-        ("renumber, text survives", _H + "#1 0_ kept body", _H + "#9 0_ kept body", None, 0),
-        ("drop in-progress 1_", _H + "#1 1_ wip\n#2 0_ keep", _H + "#2 0_ keep", None, 1),
-        ("drop blocked 3_", _H + "#3 3_ blocked", "### Todo - Set 4\n", None, 1),
+         "### Todo - Set 4\n#1 0_ different", 1),
+        ("status flip 0_->5_ (id survives)", _H + "#1 0_ ship", _H + "#1 5_ ship", 0),
+        ("completed 5_ pruned (ok)", _H + "#1 5_ done", "### Todo - Set 4\n", 0),
+        ("canonical archive carries non-5_", "### Todo - Set 4\n#1 0_ build the guard",
+         "### Todo - Set 5\n#1 0_ build the guard", 0),
+        ("archive without carry loses non-5_", "### Todo - Set 4\n#1 0_ build the guard",
+         "### Todo - Set 5\n", 1),
+        ("text edit, id survives", _H + "#1 0_ old wording", _H + "#1 0_ new wording", 0),
+        ("renumber, text survives", _H + "#1 0_ kept body", _H + "#9 0_ kept body", 0),
+        ("drop in-progress 1_", _H + "#1 1_ wip\n#2 0_ keep", _H + "#2 0_ keep", 1),
+        ("drop blocked 3_", _H + "#3 3_ blocked", "### Todo - Set 4\n", 1),
         ("drop two unfinished", _H + "#1 0_ a\n#2 1_ b\n#3 5_ c",
-         "### Todo - Set 4\n#3 5_ c", None, 2),
-        ("no before -> no fire", "", _H + "#1 0_ x", None, 0),
+         "### Todo - Set 4\n#3 5_ c", 2),
+        ("no before -> no fire", "", _H + "#1 0_ x", 0),
     ]
     failures = []
     for name, before, after, archive, expect in cases:
