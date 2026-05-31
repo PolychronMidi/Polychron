@@ -68,7 +68,7 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
   fi
   # Auto-fire of `i/review mode=forget` after every commit was burning
   if [ "${HME_AUTOCOMMIT_REVIEW:-0}" = "1" ] && [ -x "$_DIRECT_ROOT/tools/HME/i/review" ]; then
-# silent-ok: optional fallback path.
+    # silent-ok: diff failure on the next line yields empty output -> grep matches nothin
     if git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null \
          | /usr/bin/grep -qE '^(src|tools/HME|scripts|lab)/'; then
       (
