@@ -19,7 +19,7 @@ _kill_orphans_on_abort() {
   if [ -n "${_LAUNCH_OK:-}" ]; then return 0; fi
   for _p in $_orphan_pids; do
     if [ -n "$_p" ] && kill -0 "$_p" 2>/dev/null; then
-      kill "$_p" 2>/dev/null || true  # silent-ok: optional fallback path.
+      kill "$_p" 2>/dev/null || true  # silent-ok: abort cleanup races child exit; launch failure remains visible.
     fi
   done
 }
@@ -40,7 +40,7 @@ else
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT}"
-source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: registry helper optional in legacy launch; required env/static defaults below preserve explicit ports/labels.
 PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
 PROXY_PID_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
