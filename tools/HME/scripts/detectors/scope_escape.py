@@ -99,11 +99,6 @@ _ANY_HANDOFF_MARKER = re.compile(
 )
 
 
-def _emit_stats(verdict: str, detail: str) -> None:
-    from _detector_stats import emit_stats
-    emit_stats(None, verdict, detail)
-
-
 
 def _rescue_within_window(text: str, start: int, window: int = 120) -> bool:
     end = min(len(text), start + window)
