@@ -16,7 +16,10 @@ function denyReason(stdout) {
   try {
     const obj = JSON.parse(stdout || '{}');
     return obj && obj.decision === 'block' && typeof obj.reason === 'string' ? obj.reason : '';
-  } catch (_err) { return ''; }
+  } catch (_err) {
+    // silent-ok: malformed stdout has no machine-readable deny reason.
+    return '';
+  }
 }
 
 function summarizeStopBlockReason(reason) {
