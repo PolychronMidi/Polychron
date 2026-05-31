@@ -45,8 +45,8 @@ def _run():
         ("no before -> no fire", "", _H + "#1 0_ x", 0),
     ]
     failures = []
-    for name, before, after, archive, expect in cases:
-        got = len(lost(before, after, archive))
+    for name, before, after, expect in cases:
+        got = len(lost(before, after))
         if got != expect:
             failures.append(f"{name}: expected {expect} lost, got {got}")
             print(f"[FAIL] {name}: expected {expect} got {got}")
