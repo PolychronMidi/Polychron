@@ -10,6 +10,7 @@ from __future__ import annotations
 import fcntl
 import os
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from .grammar import Todo, advance_set_header, parse_document, render_document, set_number
@@ -142,7 +143,7 @@ def recover_orphaned_carryovers() -> int:
                 _arch_header, archived = parse_document(f.read_text(encoding="utf-8"))
             except OSError:
                 continue
-            carry = [t for t in archived if t.code != "5"]
+            carry = [replace(t, code="0", minutes=None, since=None) for t in archived if t.code != "5"]
             if carry:
                 _atomic_write(render_document(header, carry))
                 return len(carry)
