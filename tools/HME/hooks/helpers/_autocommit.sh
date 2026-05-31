@@ -178,10 +178,24 @@ _ac_do_commit() {
   # is non-fatal -- `commit -a` handles tracked-file modifications below.
   git -C "$_AC_ROOT" add -A >"$_ac_err_buf" 2>&1 || true
 
-  local _empty_tree _index_tree
+  local _empty_tree _index_tree _write_tree_rc
   _empty_tree="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-  _index_tree=$(git -C "$_AC_ROOT" write-tree 2>/dev/null || echo "")
-  if [ -z "$_index_tree" ] || [ "$_index_tree" = "$_empty_tree" ]; then
+  _index_tree=$(git -C "$_AC_ROOT" write-tree 2>/dev/null)
+  _write_tree_rc=$?
+  if [ "$_write_tree_rc" != 0 ] || [ -z "$_index_tree" ]; then
+    if git -C "$_AC_ROOT" diff --quiet 2>/dev/null \
+      && git -C "$_AC_ROOT" diff --cached --quiet 2>/dev/null; then
+      _ac_success
+      rm -f "$_ac_err_buf" 2>/dev/null
+      exec 9>&-
+      return 0
+    fi
+    _ac_record_failure "[$caller] git write-tree failed before autocommit; refusing unknown index state"
+    rm -f "$_ac_err_buf" 2>/dev/null
+    exec 9>&-
+    return 1
+  fi
+  if [ "$_index_tree" = "$_empty_tree" ]; then
     _ac_record_failure "[$caller] autocommit refused empty index tree (would nuke HEAD)"
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
