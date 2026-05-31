@@ -244,7 +244,8 @@ _hme_bg_shell_timeout 20 list-carried-over "$PROJECT/log/hme-bg-list-carried-ove
     python3 -c "
 from todo_engine.lifesaver_bridge import list_carried_over
 from todo_engine import store
-# store.load() applies due 2_/4f_ timer flips; archive any fully-resolved set.
+store.recover_orphaned_carryovers()
+# store.load() applies due 2_/4f_ timer flips; archive only all-5_ sets.
 store.maybe_archive()
 items = list_carried_over()
 if items:
