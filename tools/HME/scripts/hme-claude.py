@@ -363,9 +363,12 @@ def main():
                 idle = now - last_master_out
                 waited = now - step_started_at
                 if (idle >= IDLE_SECS and waited >= IDLE_SECS) or waited >= MAX_STEP_WAIT:
-                    type_into_session(pending_steps.pop(0) + "\r")
-                    step_started_at = time.time()
-                    last_master_out = time.time()
+                    next_step = pending_steps.pop(0)
+                    if type_into_session(next_step + "\r"):
+                        step_started_at = time.time()
+                        last_master_out = time.time()
+                    else:
+                        pending_steps = []
     finally:
         if old_attr is not None:
             try:
