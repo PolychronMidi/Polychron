@@ -6,7 +6,7 @@ _RPR_INPUT="$INPUT"
 _RPR_ROOT="${PROJECT_ROOT}"
 [ -n "$_RPR_ROOT" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
-_RPR_PAYLOAD=$(printf '%s' "$INPUT" | jq -c '{transcript_path, tool_name, tool_input}' 2>/dev/null)
+_RPR_PAYLOAD=$(printf '%s' "$_RPR_INPUT" | jq -c '{transcript_path, tool_name, tool_input}' 2>/dev/null)
 [ -n "$_RPR_PAYLOAD" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
 _RPR_OUT=$(printf '%s' "$_RPR_PAYLOAD" | python3 "${_RPR_ROOT}/tools/HME/scripts/detectors/pre_tool_use_mirror.py" 2>/dev/null || true)
