@@ -290,25 +290,19 @@ def coupling_intel(mode: str = "full") -> str:
     mode='ledger': bridge completion ledger -- confirmed KB bridges vs proposed, per pair."""
     ctx.ensure_ready_sync()
     _track("coupling_intel")
-    if mode == "full":
-        parts = [coupling_network(clusters=True), antagonist_map(), cluster_personality(), dimension_gap_finder()]
-        return "\n\n\n\n".join(parts)
-    if mode == "network":
-        return coupling_network(clusters=True)
-    if mode == "clusters":
-        return cluster_finder()
-    if mode == "antagonists":
-        return antagonist_map()
-    if mode == "personalities":
-        return cluster_personality()
-    if mode == "gaps":
-        return dimension_gap_finder()
-    if mode == "leverage":
-        return antagonism_leverage()
-    if mode == "channels":
-        return channel_topology()
     if mode.startswith("cascade:"):
         return channel_topology(mode[len("cascade:"):])
-    if mode == "ledger":
-        return bridge_ledger()
+    routed = dispatch(mode, {
+        "full": lambda: "\n\n\n\n".join([coupling_network(clusters=True), antagonist_map(), cluster_personality(), dimension_gap_finder()]),
+        "network": lambda: coupling_network(clusters=True),
+        "clusters": lambda: cluster_finder(),
+        "antagonists": lambda: antagonist_map(),
+        "personalities": lambda: cluster_personality(),
+        "gaps": lambda: dimension_gap_finder(),
+        "leverage": lambda: antagonism_leverage(),
+        "channels": lambda: channel_topology(),
+        "ledger": lambda: bridge_ledger(),
+    })
+    if routed is not None:
+        return routed
     return f"Unknown mode '{mode}'. Use 'full', 'network', 'clusters', 'antagonists', 'personalities', 'gaps', 'leverage', 'channels', 'cascade:channelName', or 'ledger'."
