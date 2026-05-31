@@ -243,7 +243,7 @@ function _appendHookFailure(eventName, scriptPath, code, result) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.appendFileSync(file, `${msg}\n`);
   } catch (_e) {
-    // Hook failure mirroring must never cause a second hook failure.
+    // silent-ok: hook failure mirroring must never cause a second hook failure.
   }
 }
 
