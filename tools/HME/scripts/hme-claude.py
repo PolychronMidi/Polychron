@@ -353,10 +353,10 @@ def main():
                         if steps and not pending_steps:
                             # Type the first step now; queue the rest to drain
                             # one at a time as the REPL goes idle between them.
-                            type_into_session(steps[0] + "\r")
-                            pending_steps = list(steps[1:])
-                            step_started_at = time.time()
-                            last_master_out = time.time()
+                            if type_into_session(steps[0] + "\r"):
+                                pending_steps = list(steps[1:])
+                                step_started_at = time.time()
+                                last_master_out = time.time()
 
             if pending_steps:
                 now = time.time()
