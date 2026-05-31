@@ -40,31 +40,38 @@ function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, ou
   return { outHeaders: headers, outBuf: _anthropicErrorSseBuffer('context_window_exceeded', msg) };
 }
 
-// On upstream context-window overflow we do NOT bail to a different chain
-// model -- a smaller-window sibling fails identically and a weaker model
-// degrades the turn. Instead we submit the local-session 'cc' shortcut
+// On upstream context-window overflow we do NOT bail to a different chain model
+// (a smaller-window sibling fails identically and a weaker model degrades the
+// turn). We trigger the local-session 'cc' shortcut (/compact then continue) so
 function _requestLiveCompact({ routeKey, projectRoot, log }) {
-  const now = Date.now();
-  if (now - _lastCcCompactMs < _CC_COMPACT_COOLDOWN_MS) {
-    log(`[hme-proxy] context-window overflow on ${routeKey}; compact already requested ${(now - _lastCcCompactMs)}ms ago, skipping duplicate`);
-    return false;
-  }
-  let delivered = false;
+  let result;
   try {
-    delivered = submitCcShortcut(projectRoot, 'cc');
+    result = submitCcCompactOnce(projectRoot);
   } catch (err) {
     log(`[hme-proxy] context-window cc-shortcut submit failed: ${err.message}`);
     emit({ event: 'context_window_compact_requested', route: routeKey, delivered: false, error: err.message });
     return false;
   }
-  if (delivered) _lastCcCompactMs = now;
-  emit({ event: 'context_window_compact_requested', route: routeKey, delivered });
-  log(`[hme-proxy] context-window overflow on ${routeKey}; cc shortcut ${delivered ? 'submitted to live session (/compact -> continue)' : 'unavailable (no PTY bridge attached)'}`);
-  return delivered;
+  emit({ event: 'context_window_compact_requested', route: routeKey, delivered: result.submitted, reason: result.reason });
+  if (result.reason === 'inflight') {
+    log(`[hme-proxy] context-window overflow on ${routeKey}; a compact cycle is already in flight, not re-submitting (prevents step reorder)`);
+  } else if (result.submitted) {
+    log(`[hme-proxy] context-window overflow on ${routeKey}; cc shortcut submitted to live session (/compact -> continue)`);
+  } else {
+    log(`[hme-proxy] context-window overflow on ${routeKey}; cc shortcut unavailable (no PTY bridge attached)`);
+  }
+  return result.submitted;
 }
 
 async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers, fullBody, payload, omniProvider, projectRoot = PROJECT_ROOT, log = console.error }) {
-  if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) return null;
+  if (!_isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders: headers, outBuf: fullBody })) {
+    // A clean (non-over-window) interactive response means any prior compact
+    // cycle has landed -- clear the single-flight guard so a later genuine
+    if (isOmniRouteSwap && status >= 200 && status < 300) {
+      try { clearCcCompactInflight(projectRoot); } catch (err) { log(`[hme-proxy] cc-compact inflight clear failed: ${err.message}`); }
+    }
+    return null;
+  }
   const routeKey = _omniRouteKeyFromModel(payload && payload.model, omniProvider);
   try {
     markRouteCooldown(routeKey, 'context_window_exceeded', { ttlMs: 300_000, projectRoot });
@@ -72,8 +79,8 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
   } catch (err) {
     log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
   }
-  // Trigger the live-session compact instead of rerouting to another model.
-  // Always return null: the caller normalizes this turn into a clean
+  // Trigger the live-session compact (single-flight) instead of rerouting to
+  // another model. Always return null: the caller normalizes this turn into a
   _requestLiveCompact({ routeKey, projectRoot, log });
   return null;
 }
