@@ -12,7 +12,7 @@ import os
 import time
 from pathlib import Path
 
-from .grammar import Todo, advance_set_header, parse_document, render_document
+from .grammar import Todo, advance_set_header, parse_document, render_document, set_number
 from .lifecycle import apply_timers, set_is_archivable
 
 
