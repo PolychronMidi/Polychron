@@ -110,7 +110,13 @@ test('slop compaction preserves newline entries', () => {
 test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
-  assert.equal(result.out, 'Plan remins.');
+  assert.equal(result.out, 'Plan remins');
+});
+
+test('slop line punctuation strips leading dash, punctuation-adjacent dash, and trailing punctuation', () => {
+  const result = _stripSlop('- First item.\nKeep ( - ) dash, and comma-\nPlain tail!');
+  assert.ok(result.hits.includes('caveman_line_punctuation'));
+  assert.equal(result.out, '1st item\nKeep ()dash, & comma\nPlain tail');
 });
 
 test('slop rewriter applies full slop stripping to text blocks without deny gate', () => {
