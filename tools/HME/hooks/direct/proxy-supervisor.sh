@@ -255,7 +255,7 @@ _sv_wait_bundle_healthy() {
   local waited=0
   while [ "$waited" -lt "$_SV_BUNDLE_HEALTH_TIMEOUT" ]; do
     _sv_bundle_healthy && return 0
-    sleep 1
+    _sv_sleep 1
     waited=$((waited + 1))
   done
   return 1
@@ -336,7 +336,7 @@ _sv_wait_worker_healthy() {
     if _sv_worker_healthy; then
       return 0
     fi
-    sleep 1
+    _sv_sleep 1
     waited=$((waited + 1))
   done
   return 1
@@ -356,7 +356,7 @@ _sv_stop_worker() {
       [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && alive=1
     done
     [ "$alive" = "0" ] && return 0
-    sleep 1
+    _sv_sleep 1
     waited=$((waited + 1))
   done
   for pid in "${pids[@]}"; do
@@ -428,7 +428,7 @@ _sv_spawn_and_verify() {
           local _or_waited=0
           while [ "$_or_waited" -lt 20 ]; do
             curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1 && break
-            sleep 1
+            _sv_sleep 1
             _or_waited=$((_or_waited + 1))
           done
           if curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
@@ -575,7 +575,7 @@ _sv_loop() {
     _sv_ensure_shuffler_procs
     # Exponential backoff after crash loop: skip health polling during
     if [ "$backoff_secs" -gt 0 ]; then
-      sleep "$backoff_secs"
+      _sv_sleep "$backoff_secs"
       # After the backoff, give the spawn one more shot. If it STILL
       # fails, the fails counter grows and backoff doubles (capped).
       if _sv_spawn_and_verify; then
@@ -651,7 +651,7 @@ _sv_loop() {
         misses=0
       fi
     fi
-    sleep "$_SV_POLL_INTERVAL"
+    _sv_sleep "$_SV_POLL_INTERVAL"
   done
 }
 
@@ -670,7 +670,7 @@ case "$_action" in
           kill "$existing" 2>/dev/null || true
           waited=0
           while [ "$waited" -lt 5 ] && kill -0 "$existing" 2>/dev/null; do
-            sleep 1
+            _sv_sleep 1
             waited=$((waited + 1))
           done
           if kill -0 "$existing" 2>/dev/null; then
@@ -691,7 +691,7 @@ case "$_action" in
     setsid nohup bash -c "source '$_SV_SELF' _loop" \
       >> "$_SV_LIFECYCLE_LOG" 2>&1 < /dev/null &
     disown 2>/dev/null
-    sleep 1
+    _sv_sleep 1
     if [ -f "$_SV_PID_FILE" ]; then
       echo "proxy-supervisor: started (pid=$(cat "$_SV_PID_FILE"))" >&2
     else
