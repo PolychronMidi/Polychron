@@ -14,7 +14,7 @@ if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROO
 elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _WD_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _wd_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
+  _wd_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: unresolvable script dir yields empty string -> walk-up loop skipped -> exit-0 guard below fires
   while [ -n "$_wd_try" ] && [ "$_wd_try" != "/" ]; do
     if [ -d "$_wd_try/.git" ] && [ -d "$_wd_try/src" ]; then
       _WD_ROOT="$_wd_try"
