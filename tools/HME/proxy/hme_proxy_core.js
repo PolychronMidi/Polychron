@@ -71,6 +71,20 @@ function _stripStaleToolResults(payload) {
   return stripStaleToolResults(payload, _STALE_TOOL_KEEP_TURNS);
 }
 
+// Build a stale-tool-result stripper gated by the effective compact threshold:
+// when the budget plan resolves to no compaction tier, stripping is skipped so
+function makeGatedStripStaleToolResults(effectiveCompactThreshold, stripFn = _stripStaleToolResults) {
+  return (payloadArg) => {
+    if (typeof effectiveCompactThreshold === 'function') {
+      try {
+        const plan = effectiveCompactThreshold(payloadArg);
+        if (!plan || (plan.maxTier || 0) <= 0) return 0;
+      } catch (_e) { /* silent-ok: budget-resolve failure must not strip */ return 0; }
+    }
+    return stripFn(payloadArg);
+  };
+}
+
 // Strip the Claude Code identity sentence from the system prompt array
 // when routing to non-Anthropic models.
 function _stripClaudeIdentity(payload) {
