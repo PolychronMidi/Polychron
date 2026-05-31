@@ -61,7 +61,7 @@ def _sig_words(text: str) -> set:
 def lost_unfinished(before_text: str, after_text: str) -> list:
     """Return BEFORE todos (code != 5) that were DELETED, not merely edited.
 
-    A todo survives if any AFTER todo (or archived todo) has its exact text
+    A todo survives if any AFTER todo has its exact text
     (tolerates status flips 0_->5_ and set renumbering), OR an AFTER todo with
     the SAME id shares >=1/3 of its significant words (tolerates a reword). It is
     LOST otherwise -- including the dangerous case where its id was reused for an
