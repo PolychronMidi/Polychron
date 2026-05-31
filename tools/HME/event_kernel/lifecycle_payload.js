@@ -50,13 +50,18 @@ function writeTranscriptMarker(root, transcript) {
   writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${transcript}\n`);
 }
 
+function _isLiveProjectRoot(root) {
+  try { return path.resolve(root || '') === path.resolve(requireEnv('PROJECT_ROOT')); }
+  catch (_e) { return false; }
+}
+
 function recordTranscriptFailfast(root, host, err) {
   const msg = `TRANSCRIPT FAILFAST: ${host} Stop transcript resolution failed: ${err.message}`;
+  if (!_isLiveProjectRoot(root)) return msg;
   try {
     append(path.join(root, 'log', 'hme-errors.log'), `[${new Date().toISOString()}] [transcript-failfast] ${msg}`);
-  } catch (_e) {
-    // Last-ditch stderr is not a replacement for fail-fast; the thrown error still block
-    try { process.stderr.write(`[transcript-failfast] ${msg}\n`); } catch (_) {}
+  } catch (logErr) {
+    console.error(`[transcript-failfast] log write failed: ${logErr.message}; ${msg}`);
   }
   return msg;
 }
