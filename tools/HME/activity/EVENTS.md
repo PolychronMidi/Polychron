@@ -40,6 +40,7 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 ## Interactive / shortcut
 
 - **`shortcut_expanded`** [activity] -- Proxy expanded an interactive shortcut command before forwarding.
+- **`shortcut_followup_submitted`** [activity] -- Shortcut follow-up middleware submitted a queued continuation prompt.
 
 ## KB / context
 
@@ -85,6 +86,10 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`omniroute_credential_failover`** [activity] -- Proxy failed over to the next OmniRoute chain target after a credential failure on the primary.
 - **`request`** [activity] -- Generic upstream request envelope emitted by the proxy.
 - **`upstream_midresponse_recovered`** [activity] -- Proxy recovered from a mid-response upstream error without surfacing it to the client.
+- **`fingerprint_reset`** [activity] -- Proxy reset the request fingerprint or session routing state on demand.
+- **`outbound_gate_compacted`** [activity] -- Outbound context gate compacted an interactive payload before upstream dispatch.
+- **`outbound_gate_over_window`** [activity] -- Outbound context gate refused a known-over-window payload after compaction and reroute were exhausted.
+- **`outbound_gate_rerouted`** [activity] -- Outbound context gate moved a payload to a larger-context route before dispatch.
 
 ## Proxy request mutation
 

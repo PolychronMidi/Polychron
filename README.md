@@ -257,6 +257,7 @@ flowchart LR
     tools__HME__systemd["HME/systemd/<br/><i>systemd unit files for running HME service components as user/system services.</i>"]
     tools__HME__telemetry["HME/telemetry/<br/><i>Telemetry collectors and rotators for HME runtime metrics.</i>"]
     tools__HME__tests["HME/tests/<br/><i>HME meta-substrate test suite: verifier specs, hook tests, proxy</i>"]
+    tools__HME__todo_engine["HME/todo_engine/<br/><i>Unified TODO engine: parse, render, and lifecycle the status-code TODO.md for...</i>"]
     tools__csv_maestro___github["csv_maestro/.github/"]
     tools__csv_maestro__doc["csv_maestro/doc/<br/><i>csv_maestro reference documentation: file-format spec and notes.</i>"]
     tools__csv_maestro__py_midicsv["csv_maestro/py_midicsv/<br/><i>Python midicsv port used by csv_maestro for MIDI<->CSV roundtrips.</i>"]
@@ -317,7 +318,6 @@ flowchart LR
     tools__HME__tests__fixtures__generic_project["HME/tests/fixtures/generic-project/<br/><i>Minimal generic project layout used as a HME fixture.</i>"]
     tools__HME__tests__fixtures__swapped_project["HME/tests/fixtures/swapped-project/<br/><i>Variant project fixture exercising adapter-swap paths.</i>"]
     tools__HME__tests__fixtures__universal_hooks["HME/tests/fixtures/universal_hooks/<br/><i>Golden fixtures for the universal hook ABI. Keep examples small and determini...</i>"]
-    tools__HME__hooks__pretooluse__bash___disabled["HME/hooks/pretooluse/bash/_disabled/<br/><i>Bash-policy hooks currently disabled; kept for reference.</i>"]
     tools__HME__hooks__pretooluse__bash__post["HME/hooks/pretooluse/bash/post/<br/><i>Bash-policy post-evaluation hooks (run after the primary policy decision).</i>"]
     tools__HME__hooks__pretooluse__bash__pre["HME/hooks/pretooluse/bash/pre/<br/><i>Bash-policy pre-evaluation hooks (early-exit checks before main policy).</i>"]
     tools__HME__proxy__stop_chain__policies__work_checks["HME/proxy/stop_chain/policies/work_checks/<br/><i>Focused helpers for the ordered work-check Strategy pipeline.</i>"]
@@ -359,6 +359,7 @@ flowchart LR
     tools__HME --> tools__HME__systemd
     tools__HME --> tools__HME__telemetry
     tools__HME --> tools__HME__tests
+    tools__HME --> tools__HME__todo_engine
     tools__csv_maestro --> tools__csv_maestro___github
     tools__csv_maestro --> tools__csv_maestro__doc
     tools__csv_maestro --> tools__csv_maestro__py_midicsv
@@ -419,7 +420,6 @@ flowchart LR
     tools__HME__tests__fixtures --> tools__HME__tests__fixtures__generic_project
     tools__HME__tests__fixtures --> tools__HME__tests__fixtures__swapped_project
     tools__HME__tests__fixtures --> tools__HME__tests__fixtures__universal_hooks
-    tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash___disabled
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash__post
     tools__HME__hooks__pretooluse__bash --> tools__HME__hooks__pretooluse__bash__pre
     tools__HME__proxy__stop_chain__policies --> tools__HME__proxy__stop_chain__policies__work_checks
