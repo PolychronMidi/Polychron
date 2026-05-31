@@ -11,7 +11,7 @@ const { handleLegacySwapResponse } = require('./contexts/response_transform');
 function handleAnthropicResponseComplete(...args) {
   // LAZY: avoids loading response/failure-policy stack while upstream_dispatch
   // is still initializing hme_proxy_claude.
-  return require('./hme_proxy_anthropic_response').handleAnthropicResponseComplete(...args);
+  return require('./contexts/response_transform').handleAnthropicResponseComplete(...args);
 }
 const middleware = require('./contexts/request_mutation').middleware;
 function mutateClaudeRequest(...args) {
