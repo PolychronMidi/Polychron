@@ -196,7 +196,7 @@ function createContextBudget() {
     // staleToolKeepTurns is env-failfast-guaranteed positive (requireEnvInt); gear tight
     const staleBase = Number(staleToolKeepTurns);
     const staleHorizon = gear === 1 ? staleBase * 3 : (gear === 2 ? staleBase * 2 : staleBase);
-    const floor = gear === 1 ? 30000 : (gear === 2 ? 25000 : 20000);
+    const floor = gear === 1 ? 30000 : (gear === 2 ? 20000 : 15000);
     return { threshold, maxTier: gear, maxToolResultAge: staleHorizon, toolResultByteFloor: floor };
   }
 
