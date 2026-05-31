@@ -115,6 +115,14 @@ def parse_document(text: str) -> tuple[list[str], list[Todo]]:
     return header, todos
 
 
+def set_number(header: list[str]) -> int | None:
+    for raw in header:
+        m = _SET_RE.match(raw)
+        if m:
+            return int(m.group(1))
+    return None
+
+
 def advance_set_header(header: list[str], next_number: int) -> list[str]:
     out = []
     changed = False
