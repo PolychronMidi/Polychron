@@ -32,6 +32,8 @@
  *     middleware).
  */
 
+const { blockText } = require('../request_shape');
+
 // Pre-compiled patterns. Each entry: [regex, redacted-marker, friendly-tag].
 // anti-fork-begin: secret-sanitizer-patterns min=12
 const PATTERNS = [
