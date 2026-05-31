@@ -10,6 +10,9 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT / "tools" / "HME" / "scripts"))
+from _env_loader import load_env
+load_env(str(ROOT / ".env"))
 os.environ.setdefault("PROJECT_ROOT", str(ROOT))
 os.environ.setdefault("HME_METRICS_DIR", str(ROOT / "metrics"))
 os.environ.setdefault("METRICS_DIR", str(ROOT / "metrics"))
