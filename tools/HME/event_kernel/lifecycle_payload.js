@@ -17,32 +17,54 @@ function writeJsonAtomic(file, value) {
   fs.renameSync(tmp, file);
 }
 
+function failfast(message) {
+  const err = new Error(message);
+  err.code = 'HME_TRANSCRIPT_FAILFAST';
+  throw err;
+}
+
 function newestJsonl(dir) {
-  try {
-    const rows = fs.readdirSync(dir)
-      .filter((f) => f.endsWith('.jsonl'))
-      .map((f) => path.join(dir, f))
-      .map((f) => {
-        const stat = fs.statSync(f);
-        return { f, c: stat.ctimeMs, m: stat.mtimeMs };
-      })
-      .sort((a, b) => (b.m - a.m) || (b.c - a.c) || b.f.localeCompare(a.f));
-    return rows[0] ? rows[0].f : '';
-  } catch (err) {
-    // ddoc subversion: unreadable transcript directory falls back to no transcript.
-    return '';
-  }
+  const rows = fs.readdirSync(dir)
+    .filter((f) => f.endsWith('.jsonl'))
+    .map((f) => path.join(dir, f))
+    .map((f) => {
+      const stat = fs.statSync(f);
+      return { f, c: stat.ctimeMs, m: stat.mtimeMs };
+    })
+    .sort((a, b) => (b.m - a.m) || (b.c - a.c) || b.f.localeCompare(a.f));
+  return rows[0] ? rows[0].f : '';
 }
 
 function transcriptForSession(dir, sessionId) {
   if (!sessionId) return '';
+  const match = fs.readdirSync(dir).find((f) => f === `${sessionId}.jsonl`);
+  return match ? path.join(dir, match) : '';
+}
+
+function claudeProjectsDir(root) {
+  const projectDir = requireEnv('CLAUDE_PROJECT_DIR');
+  return path.join(path.dirname(projectDir), '.claude', 'projects', '-home-jah-Polychron');
+}
+
+function writeTranscriptMarker(root, transcript) {
+  writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${transcript}\n`);
+}
+
+function recordTranscriptFailfast(root, host, err) {
+  const msg = `TRANSCRIPT FAILFAST: ${host} Stop transcript resolution failed: ${err.message}`;
   try {
-    const match = fs.readdirSync(dir).find((f) => f === `${sessionId}.jsonl`);
-    return match ? path.join(dir, match) : '';
-  } catch (_err) {
-    // ddoc subversion: unreadable transcript directory falls back to no session match.
-    return '';
+    append(path.join(root, 'log', 'hme-errors.log'), `[${new Date().toISOString()}] [transcript-failfast] ${msg}`);
+  } catch (_e) {
+    // Last-ditch stderr is not a replacement for fail-fast; the thrown error still block
+    try { process.stderr.write(`[transcript-failfast] ${msg}\n`); } catch (_) {}
   }
+  return msg;
+}
+
+function attachTranscriptFailure(payload, root, host, err) {
+  const msg = recordTranscriptFailfast(root, host, err);
+  payload._hme_transcript_error = msg;
+  return payload;
 }
 
 function normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole }) {
