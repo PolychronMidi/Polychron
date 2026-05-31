@@ -479,7 +479,7 @@ _sv_tail_proxy_log() {
     echo "(no proxy log at $proxy_log)"
     return 0
   fi
-  tail -n "$n" "$proxy_log" 2>/dev/null | sed 's/^/  /' || echo "(proxy log unreadable)"  # silent-ok: optional fallback path.
+  tail -n "$n" "$proxy_log" 2>/dev/null | sed 's/^/  /' || echo "(proxy log unreadable)"  # silent-ok: tail failure on an unreadable log emits the explicit "(proxy log unreadable)" placeholder into the crash report
 }
 
 _sv_fire_crashloop_lifesaver() {
