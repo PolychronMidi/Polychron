@@ -97,7 +97,7 @@ def _turn_edited_non_spec(events: list) -> int:
 
 def _emit_stats(verdict: str, detail: str) -> None:
     from _detector_stats import emit_stats
-    emit_stats("scope_vs_shipped", verdict, detail)
+    emit_stats(None, verdict, detail)
 
 
 
