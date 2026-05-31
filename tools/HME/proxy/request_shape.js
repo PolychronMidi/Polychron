@@ -37,7 +37,10 @@ function blockText(block, opts = {}) {
     if (!opts.toolResults) return '';
     const c = block.content;
     if (typeof c === 'string') return c;
-    if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
+    // toolResultJoiner: secret/path scanners join inner text blocks with '\n'
+    // to keep \b word boundaries and path separators intact; default '' matches
+    const joiner = typeof opts.toolResultJoiner === 'string' ? opts.toolResultJoiner : '';
+    if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join(joiner);
     return '';
   }
   return itemText(block);
