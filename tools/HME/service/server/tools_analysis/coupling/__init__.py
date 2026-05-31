@@ -14,6 +14,7 @@ from collections import Counter, defaultdict
 
 from server import context as ctx
 from .. import _track
+from .._dispatch import dispatch
 
 logger = logging.getLogger("HME")
 
