@@ -38,70 +38,20 @@ function finalRelay(event, result, body = '{}') {
 }
 
 
-function firstJsonDocument(text) {
-  const src = String(text || '');
-  const start = src.search(/[\[{]/);
-  if (start < 0) return null;
-  const stack = [];
-  let quoted = false;
-  let escaped = false;
-  for (let i = start; i < src.length; i += 1) {
-    const ch = src[i];
-    if (quoted) {
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === '"') quoted = false;
-      continue;
-    }
-    if (ch === '"') { quoted = true; continue; }
-    if (ch === '{' || ch === '[') { stack.push(ch); continue; }
-    if (ch !== '}' && ch !== ']') continue;
-    const open = stack.pop();
-    if ((open !== '{' || ch !== '}') && (open !== '[' || ch !== ']')) return null;
-    if (stack.length === 0) {
-      try { return JSON.parse(src.slice(start, i + 1)); }
-      catch (_) { return null; }
-    }
-  }
-  return null;
-}
-
 function normalizeCodexHookStdout(event, stdout) {
   if (event !== 'UserPromptSubmit') return stdout;
-  const parsed = firstJsonDocument(stdout);
-  const doc = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  return `${JSON.stringify(doc)}\n`;
-}
-
-
-function adapterExtractFirstJson(text) {
-  const src = String(text || '').trim();
-  const start = src.search(/[\[{]/);
-  if (start < 0) return '{}';
-  let depth = 0, inString = false, escape = false;
-  const open = src[start];
-  const close = open === '{' ? '}' : ']';
-  for (let i = start; i < src.length; i += 1) {
-    const ch = src[i];
-    if (inString) {
-      if (escape) escape = false;
-      else if (ch === '\\') escape = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') { inString = true; continue; }
-    if (ch === open) depth += 1;
-    else if (ch === close && --depth === 0) {
-      try { return `${JSON.stringify(JSON.parse(src.slice(start, i + 1)))}\n`; }
-      catch (_) { return '{}'; }
-    }
-  }
-  return '{}';
+  const doc = extractFirstJsonDocument(stdout);
+  let parsed = {};
+  try { parsed = doc ? JSON.parse(doc) : {}; } catch (_err) { parsed = {}; }
+  const out = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  return `${JSON.stringify(out)}\n`;
 }
 
 function enforceClaudeJsonStdout(event, stdout) {
   if (event !== 'UserPromptSubmit' && event !== 'SessionStart') return stdout;
-  return adapterExtractFirstJson(stdout);
+  const doc = extractFirstJsonDocument(stdout);
+  if (!doc) return '{}';
+  try { return `${JSON.stringify(JSON.parse(doc))}\n`; } catch (_err) { return '{}'; }
 }
 
 async function main() {
