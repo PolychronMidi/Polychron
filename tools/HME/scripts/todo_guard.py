@@ -84,7 +84,10 @@ def lost_unfinished(before_text: str, after_text: str) -> list:
     LOST otherwise -- including the dangerous case where its id was reused for an
     unrelated todo (id-reuse across sets), which a naive id check would miss."""
     before_header, before = _parsed(before_text)
-    _after_header, after = _parsed(after_text)
+    after_header, after = _parsed(after_text)
+    before_set = _set_number(before_header)
+    after_set = _set_number(after_header)
+    is_archival_advance = before_set is not None and after_set == before_set + 1
     after_by_id = {t.id: t for t in after}
     after_texts = {_norm(t.text) for t in after}
     archived = _archived_texts(_set_number(before_header))
