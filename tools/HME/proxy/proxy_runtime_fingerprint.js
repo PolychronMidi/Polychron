@@ -10,6 +10,9 @@ const EXTRA_RUNTIME_FILES = [
   path.join('tools', 'HME', 'launcher', 'polychron-launch.sh'),
   path.join('tools', 'HME', 'launcher', 'polychron-slot-restart.sh'),
   path.join('tools', 'HME', 'hooks', 'direct', 'proxy-supervisor.sh'),
+  path.join('tools', 'HME', 'hooks', 'helpers', '_self_tags.sh'),
+  path.join('tools', 'HME', 'hooks', 'pretooluse', 'bash', 'post', 'gates.sh'),
+  path.join('tools', 'HME', 'hooks', 'pretooluse', 'bash', 'pre', 'registry_mirror.sh'),
   // Shortcut definitions are read at middleware load time; a JSON-only edit must
   // flip the fingerprint so slots rotate and pick up the new shortcuts (no drift
   path.join('tools', 'HME', 'config', 'shortcuts.json'),
