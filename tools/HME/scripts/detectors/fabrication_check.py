@@ -120,6 +120,7 @@ def _last_assistant_text(events: list) -> str:
 
 
 
+@DETECTOR
 def main() -> int:
     transcript_path = transcript_arg()
     if transcript_path is None:
