@@ -20,7 +20,7 @@ Example:
 
 #3 1_ rewriters: hoist the structured-JSON bypass just added to `sse_slop_rewriter._emitHeldTextEvents` into a shared guard so `sse_ascii_strip_rewriter` and other response-text rewriters also never corrupt JSON/structured-output (root cause of the /goal-verdict "JSON validation failed") [E2]
 
-#4 0_ hooks: ONE source of truth for self-origin `_SELF_TAG_RE` — it is duplicated AND drifting between `hooks/lifecycle/stop/lifesaver.sh` and `hooks/helpers/_check_errors_inline.sh` (`hook-output-validation` present in one, absent in the other → kernel self-health surfaces as agent-origin); extract to one shared file both source [E2]
+#4 1_ hooks: ONE source of truth for self-origin `_SELF_TAG_RE` — it is duplicated AND drifting between `hooks/lifecycle/stop/lifesaver.sh` and `hooks/helpers/_check_errors_inline.sh` (`hook-output-validation` present in one, absent in the other → kernel self-health surfaces as agent-origin); extract to one shared file both source [E2]
 
 #5 0_ env-fallback pattern sweep: 3 `process.env.PROJECT_ROOT || fallback` sites converted to `requireEnv` this session (proxy_liveness_gate.js, self_reexec.js, file_watcher_watch_set.test.js); audit remaining inline `||`/`os.environ.get(,default)` fallbacks for declared keys against the central resolver [E2]
 
