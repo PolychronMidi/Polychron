@@ -46,8 +46,8 @@ if [ -f "$_SV_ROOT/.env" ]; then
   set +a
 fi
 
-_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
-_SV_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_PORT")"  # silent-ok: optional fallback path.
+_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: service_registry.sh sourced conditionally (line 33); when absent the helper is undefined and we fall back to the HME_PROXY_PORT env var
+_SV_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_PORT")"  # silent-ok: registry helper absent -> construct the canonical localhost health URL from the resolved port
 _SV_PID_FILE="$_SV_ROOT/tools/HME/runtime/proxy-supervisor.pid"
 _SV_STATE_FILE="$_SV_ROOT/tools/HME/runtime/proxy-supervisor-state.json"
 _SV_MAINT_FLAG="$_SV_ROOT/tools/HME/runtime/hme-proxy-maintenance.flag"
