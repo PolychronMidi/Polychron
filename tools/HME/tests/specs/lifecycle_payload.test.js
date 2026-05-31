@@ -83,10 +83,11 @@ test('addClaudeTranscript is a no-op for non-Stop events', () => {
 
 
 test('addClaudeTranscript fails fast when Stop transcript project directory is absent', () => {
-  const { root } = sandbox();
-  const missingProject = path.join(os.tmpdir(), `missing-cc-project-${process.pid}-${Date.now()}`);
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'missing-home-'));
+  const root = path.join(home, 'Polychron');
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
   assert.throws(
-    () => withClaudeProjectDir(missingProject, () => addClaudeTranscript({ session_id: 'missing-session' }, root, 'Stop')),
+    () => withClaudeProjectDir(root, () => addClaudeTranscript({ session_id: 'missing-session' }, root, 'Stop')),
     /Claude transcript project directory missing/,
   );
 });
