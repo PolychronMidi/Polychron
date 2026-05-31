@@ -201,11 +201,9 @@ function _middlewareAllowed(mod, hookName) {
   return true;
 }
 
+const { blockText: _sharedBlockText } = require('../request_shape');
 function _toolResultText(toolResult) {
-  const c = toolResult && toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  return '';
+  return _sharedBlockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 const ctx = {
