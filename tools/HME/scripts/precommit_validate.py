@@ -17,6 +17,12 @@ if str(SCRIPT_DIR) not in sys.path:
 from path_policy import blocked_path_reason, load_policy, skip_syntax  # noqa: E402
 from precommit_self_protect import self_protect_failures  # noqa: E402
 import importlib.util  # noqa: E402
+ROOT = Path(os.environ.get("PROJECT_ROOT") or subprocess.check_output(
+    ["git", "rev-parse", "--show-toplevel"], text=True).strip())
+HME_PATH = ROOT / "tools" / "HME"
+if str(HME_PATH) not in sys.path:
+    sys.path.insert(0, str(HME_PATH))
+from todo_engine.grammar import parse_document  # noqa: E402
 
 _CHECK_ENV_FAILFAST_PATH = SCRIPT_DIR / "check-env-failfast.py"
 _CHECK_ENV_FAILFAST_SPEC = importlib.util.spec_from_file_location("check_env_failfast", _CHECK_ENV_FAILFAST_PATH)
