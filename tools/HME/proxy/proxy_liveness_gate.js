@@ -19,7 +19,7 @@ function evaluateSlots(slots, wantedFingerprint, now, deps) {
   // Per-slot classification. A single slot being missing/dead/stale is NORMAL
   // during zero-downtime rotation (the watcher restarts one slot while the
   // other serves), so it is NOT alarm-worthy on its own. Two states ARE always
-  let routableCurrent = 0;
+  let routable = 0;
   const drift = [];
   const down = [];
   for (const slot of ['a', 'b']) {
@@ -30,18 +30,16 @@ function evaluateSlots(slots, wantedFingerprint, now, deps) {
       down.push({ slot, kind: 'stale', detail: `heartbeat ${Math.round((now - Number(h.ts || 0)) / 1000)}s stale` });
       continue;
     }
+    if (h.draining || !h.ready) { down.push({ slot, kind: h.draining ? 'draining' : 'not-ready', detail: 'slot not routable' }); continue; }
+    routable += 1;
     const have = String(h.runtime_fingerprint || '');
     if (wantedFingerprint && have && have !== wantedFingerprint) {
       drift.push({ slot, kind: 'drift', detail: `live=${have.slice(0, 12)} wanted=${wantedFingerprint.slice(0, 12)}` });
-      continue;
     }
-    routableCurrent += 1; // alive, fresh, current code
   }
-  // Drift is only actionable if no other slot is already serving current code.
-  // During a normal edit rollout the old slot remains routable while the other
-  // converges; alerting on that transient state creates false liveness spam.
-  const problems = routableCurrent > 0 ? [] : [...drift, ...down];
-  if (routableCurrent === 0 && problems.length === 0) problems.push(...down);
+  // This gate is availability-only. A routable old-code slot during rolling edit
+  // convergence is availability, not outage; delayed drift belongs to watchdog.
+  const problems = routable > 0 ? [] : [...down, ...drift];
   return { ok: problems.length === 0, problems };
 }
 
