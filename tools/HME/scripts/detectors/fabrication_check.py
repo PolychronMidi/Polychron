@@ -32,9 +32,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+from _base import detector, load_turn, transcript_arg  # noqa: E402
 from _transcript import (  # noqa: E402
     load_turn_events, is_assistant, event_content,
 )
+
+DETECTOR = detector("fabrication_check")
+_emit_stats = DETECTOR.emit
 
 # Lowercased substring matches. Extend when new verbal forms surface; the
 # detector is a floor, not a ceiling.
