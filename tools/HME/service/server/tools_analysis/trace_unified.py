@@ -9,6 +9,7 @@ from server import context as ctx
 from paths import hme_metric
 from server.onboarding_chain import chained
 from . import _track, _load_trace, _budget_gate, _git_run, BUDGET_TOOL
+from ._dispatch import dispatch
 from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
