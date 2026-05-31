@@ -25,7 +25,7 @@ else
 fi
 if [ -z "$_AC_ROOT" ]; then
   echo "[_autocommit] cannot resolve project root (PROJECT_ROOT/CLAUDE_PROJECT_DIR/walk-up all failed); autocommit disabled this turn" >&2
-  return 1 2>/dev/null || exit 1  # silent-ok: optional fallback path.
+  return 1 2>/dev/null || exit 1
 fi
 
 _AC_STATE_DIR="$_AC_ROOT/tools/HME/runtime"
