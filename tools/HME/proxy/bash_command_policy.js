@@ -347,6 +347,8 @@ const BASH_POLICIES = [
 function evaluateBashInput(input = {}, opts = {}) {
   const ctx = createBashPolicyContext(input, opts);
   if (!ctx.cmd) return allow(ctx.next);
+  const todoDecision = bashTodoDecision(ctx.cmd);
+  if (todoDecision) return todoDecision;
   for (const policy of BASH_POLICIES) {
     const result = policy.evaluate(ctx);
     if (result) return result;
