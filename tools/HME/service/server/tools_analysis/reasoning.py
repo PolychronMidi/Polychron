@@ -10,6 +10,7 @@ from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import _local_think, _reasoning_think, _THINK_SYSTEM
 from . import _get_compositional_context, _track
+from ._dispatch import dispatch
 
 logger = logging.getLogger("HME")
 
