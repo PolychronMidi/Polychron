@@ -352,12 +352,11 @@ def file_intel(file_path: str, mode: str = "both") -> str:
     _track("file_intel")
     if not file_path.strip():
         return "Error: file_path cannot be empty."
-    if mode == "summary":
-        return get_file_summary(file_path)
-    if mode == "deps":
-        return get_dependency_graph(file_path)
-    if mode == "both":
-        summary = get_file_summary(file_path)
-        deps = get_dependency_graph(file_path)
-        return f"{summary}\n\n\n\n{deps}"
+    routed = dispatch(mode, {
+        "summary": lambda: get_file_summary(file_path),
+        "deps": lambda: get_dependency_graph(file_path),
+        "both": lambda: f"{get_file_summary(file_path)}\n\n\n\n{get_dependency_graph(file_path)}",
+    })
+    if routed is not None:
+        return routed
     return f"Unknown mode '{mode}'. Use 'both', 'summary', or 'deps'."
