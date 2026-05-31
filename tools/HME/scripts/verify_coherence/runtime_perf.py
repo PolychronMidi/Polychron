@@ -341,11 +341,24 @@ class ToolResponseLatencyVerifier(Verifier):
             # Unwritable tmp/ (OSError) or unserializable entry
             pass
 
-        # Score based on history
-        if len(history) < 3:
-            return passed(summary=f"tool response EMA {ema_ms:.0f}ms (baseline forming: {len(history)}/3 samples)", details=[f"no FAIL until baseline established -- {3 - len(history)} more samples needed"])
+        # Score based on history. Ignore sub-100ms samples: those are admin/
+        # probe/cache artifacts, not interactive tool-response baselines.
+        usable_history = []
+        for h in history:
+            try:
+                value = float(h.get("ema_ms", 0.0) or 0.0)
+            except (AttributeError, TypeError, ValueError):
+                continue
+            if value >= 100.0:
+                usable_history.append(value)
+        if len(usable_history) < 3:
+            ignored = len(history) - len(usable_history)
+            return passed(
+                summary=f"tool response EMA {ema_ms:.0f}ms (baseline repairing: {len(usable_history)}/3 usable samples)",
+                details=[f"ignored {ignored} sub-100ms maintenance/probe latency sample(s)"],
+            )
 
-        prior_values = sorted(h["ema_ms"] for h in history)
+        prior_values = sorted(usable_history)
         median = prior_values[len(prior_values) // 2]
         p75 = prior_values[int(len(prior_values) * 0.75)]
 
