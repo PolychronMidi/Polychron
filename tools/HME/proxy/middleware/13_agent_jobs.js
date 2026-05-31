@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
+const { blockText } = require('../request_shape');
 
 const QUEUE_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-queue');
 const RESULTS_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-results');
