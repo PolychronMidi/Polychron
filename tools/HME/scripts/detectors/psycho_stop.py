@@ -263,12 +263,12 @@ def _has_tool_call_after_last_text(events: list) -> bool:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    if transcript_arg() is None:
         print("ok")
         return 0
     # Read transcript once into both views (avoids race where mid-load appends
     # cause Pattern-C and Pattern-B to inspect divergent snapshots).
-    events_with_user = load_full_turn_with_user(sys.argv[1])
+    events_with_user = load_turn(load_full_turn_with_user)
     # Derive the post-last-user slice from the same snapshot.
     _user_idx = -1
     for i, _ev in enumerate(events_with_user):
