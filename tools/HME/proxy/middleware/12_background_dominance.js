@@ -37,6 +37,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { blockText } = require('../request_shape');
 
 const BG_STUB_RE = /Command running in background with ID:\s*([a-zA-Z0-9]+)/;
 
