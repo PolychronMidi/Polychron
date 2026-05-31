@@ -99,11 +99,6 @@ def _turn_edited_non_spec(events: list) -> int:
     return n
 
 
-def _emit_stats(verdict: str, detail: str) -> None:
-    from _detector_stats import emit_stats
-    emit_stats(None, verdict, detail)
-
-
 
 def _turn_invoked_todo_archive(events: list) -> bool:
     """True if this turn invoked the HME todo archive/clear maintenance path.
