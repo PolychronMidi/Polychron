@@ -20,6 +20,7 @@ const {
   blockStructuredOutputsProbe,
   blockNoopSystemReminderTurn,
 } = require('../../prompt_spam_guard');
+const { recordProxyFailure } = require('../../middleware/_middleware_throw_lifesaver');
 
 module.exports = {
   mutateClaudeRequest,
