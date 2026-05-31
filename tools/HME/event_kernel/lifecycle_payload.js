@@ -189,9 +189,14 @@ function addOpencodeTranscript(payload, root, event) {
 
 function buildHostPayload({ host, event, root, rawBody, cwd, teamRole }) {
   const payload = normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole });
-  if (host === 'claude') addClaudeTranscript(payload, root, event);
-  else if (host === 'codex') addCodexTranscript(payload, root, event);
-  else if (host === 'opencode') addOpencodeTranscript(payload, root, event);
+  try {
+    if (host === 'claude') addClaudeTranscript(payload, root, event);
+    else if (host === 'codex') addCodexTranscript(payload, root, event);
+    else if (host === 'opencode') addOpencodeTranscript(payload, root, event);
+  } catch (err) {
+    if (event !== 'Stop' || err.code !== 'HME_TRANSCRIPT_FAILFAST') throw err;
+    attachTranscriptFailure(payload, root, host, err);
+  }
   return JSON.stringify(payload);
 }
 
