@@ -36,6 +36,12 @@
       "kind": "adapter-boundary",
       "owner": "omo",
       "reason": "OMO SDK-compatible read-only client shim that mediates session data into the OMO plugin."
+    },
+    {
+      "path": "tools/HME/todo_engine/lifesaver_bridge.py",
+      "kind": "adapter-boundary",
+      "owner": "todo-engine",
+      "reason": "LIFESAVER runtime alerts enter the unified TODO engine as status-0 todos here."
     }
   ]
 }
