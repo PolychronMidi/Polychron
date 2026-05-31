@@ -22,7 +22,7 @@ Example:
 
 #4 5_ hooks: ONE source of truth for self-origin `_SELF_TAG_RE` — extracted shared `hooks/helpers/_self_tags.sh` and sourced it from both `hooks/lifecycle/stop/lifesaver.sh` and `hooks/helpers/_check_errors_inline.sh`; removed duplicated shell regex drift (incl `worker_client`/`HCI trajectory`/`hook-output-validation` mismatch). Verified no shell `_SELF_TAG_RE='...'` copies remain outside the shared file, lifesaver_canary 9/9 + hook lifecycle 24/24 green [E2]
 
-#5 0_ env-fallback pattern sweep: 3 `process.env.PROJECT_ROOT || fallback` sites converted to `requireEnv` this session (proxy_liveness_gate.js, self_reexec.js, file_watcher_watch_set.test.js); audit remaining inline `||`/`os.environ.get(,default)` fallbacks for declared keys against the central resolver [E2]
+#5 5_ env-fallback pattern sweep: central checker `tools/HME/scripts/check-env-failfast.py` run against declared env keys; current result `env fail-fast ok: central references clean; root .env complete; 0 inline fallbacks`. Prior converted sites (`proxy_liveness_gate.js`, `self_reexec.js`, `file_watcher_watch_set.test.js`) stayed clean; no remaining declared-key `process.env.* ||` / `os.environ.get(..., default)` fallbacks found [E2]
 
 #6 0_ re-run the design-pattern survey after the top optimizations land, to confirm no new duplication was introduced and the unifications actually removed the cited call-sites
 
