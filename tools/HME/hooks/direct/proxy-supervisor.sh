@@ -74,8 +74,8 @@ _SV_SPAWN_MIN_INTERVAL_S=30
 _SV_LAST_SPAWN_FILE="$_SV_ROOT/tools/HME/runtime/proxy-supervisor-last-spawn.ts"
 
 # Active-active slots share worker.py; recover it directly here.
-_SV_WORKER_PORT="$(_hme_service_port worker 2>/dev/null || printf '%s' "${HME_WORKER_PORT:-9098}")"  # silent-ok: optional fallback path.
-_SV_WORKER_URL="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_WORKER_PORT")"  # silent-ok: optional fallback path.
+_SV_WORKER_PORT="$(_hme_service_port worker 2>/dev/null || printf '%s' "${HME_WORKER_PORT:-9098}")"  # silent-ok: registry helper absent -> fall back to HME_WORKER_PORT env var (default 9098)
+_SV_WORKER_URL="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_WORKER_PORT")"  # silent-ok: registry helper absent -> construct the canonical localhost worker health URL from the resolved port
 _SV_WORKER_SCRIPT="$_SV_ROOT/tools/HME/service/worker.py"
 _SV_WORKER_LOG="$_SV_ROOT/log/hme-worker.out"
 _SV_PID_LOG="$_SV_ROOT/log/hme-pids"
