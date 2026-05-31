@@ -171,6 +171,77 @@ except Exception as e:
 PY
 }
 
+_OTHER_SLOT="a"
+[ "$SLOT" = "a" ] && _OTHER_SLOT="b"
+_OTHER_HEALTH="$RUNTIME_DIR/proxy-$_OTHER_SLOT.health"
+
+# True (exit 0) iff the slot whose health file is $1 is live + routable right
+# now: heartbeat fresh, ready, not draining, and its pid is alive.
+_slot_routable() {
+  python3 - "$1" "$_HEARTBEAT_STALE_MS" <<'PY'
+import json, os, sys, time
+health_file, stale_ms = sys.argv[1], int(sys.argv[2])
+try:
+    h = json.load(open(health_file))
+    pid = int(h.get('pid') or 0)
+    ok = bool(h.get('ready')) and not bool(h.get('draining')) and (time.time() * 1000 - float(h.get('ts') or 0)) <= stale_ms
+    if ok and pid > 0:
+        os.kill(pid, 0)
+        sys.exit(0)
+except Exception:
+    pass
+sys.exit(1)
+PY
+}
+
+_mark_health_draining() {
+  _draining_value="$1"
+  python3 - "$HEALTH_FILE" "$_draining_value" <<'PY'
+import json, os, sys, time
+health_file, draining_raw = sys.argv[1], sys.argv[2]
+draining = draining_raw == '1'
+try:
+    with open(health_file) as f:
+        h = json.load(f)
+except Exception:
+    sys.exit(1)
+h['draining'] = draining
+h['ts'] = time.time() * 1000
+tmp = f"{health_file}.{os.getpid()}.drain.tmp"
+with open(tmp, 'w') as f:
+    json.dump(h, f)
+os.replace(tmp, health_file)
+PY
+}
+
+_wait_shuffler_withdrawn() {
+  python3 - "${HME_PROXY_PORT:?HME_PROXY_PORT not set in .env}" "$SLOT" <<'PY'
+import json, sys, time, urllib.request
+port, slot = sys.argv[1], sys.argv[2]
+url = f'http://127.0.0.1:{port}/shuffler/health'
+for _ in range(40):
+    try:
+        with urllib.request.urlopen(url, timeout=0.5) as r:
+            data = json.loads(r.read().decode() or '{}')
+        if not data.get('backends', {}).get(slot, {}).get('routable'):
+            sys.exit(0)
+    except Exception:
+        pass
+    time.sleep(0.25)
+sys.exit(1)
+PY
+}
+
+_require_peer_before_loading_new_code() {
+  # Constant availability invariant: if this slot is currently serving, do not
+  # even preflight/load replacement code until the peer is proven active.
+  if _slot_routable "$HEALTH_FILE" && ! _slot_routable "$_OTHER_HEALTH"; then
+    echo "[slot-restart:$SLOT] ABORT: other slot $_OTHER_SLOT is not proven routable; NOT loading replacement code or draining incumbent" >&2
+    _record_failure "other_slot_not_routable_before_load slot=$_OTHER_SLOT"
+    exit 1
+  fi
+}
+
 _preflight_candidate() {
   if [ "${HME_PROXY_PRESTART_PROBE:-1}" = "0" ]; then
     echo "[slot-restart:$SLOT] prestart probe disabled" >&2
