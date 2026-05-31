@@ -159,7 +159,8 @@ body = json.dumps({'model': 'claude-opus-4-8', 'max_tokens': 16,
 req = urllib.request.Request('http://127.0.0.1:%s/v1/messages' % port, data=body,
     headers={'content-type': 'application/json',
              'authorization': 'Bearer hme-preflight',
-             'anthropic-version': '2023-06-01'}, method='POST')
+             'anthropic-version': '2023-06-01',
+             'x-hme-preflight-smoke': '1'}, method='POST')
 try:
     r = urllib.request.urlopen(req, timeout=15)
     print('smoke status %s' % r.status); sys.exit(0)
