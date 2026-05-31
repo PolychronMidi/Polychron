@@ -202,6 +202,7 @@ def _extract_output_text(events: list) -> str:
 
 
 
+@DETECTOR
 def main() -> int:
     if transcript_arg() is None:
         print("ok")
