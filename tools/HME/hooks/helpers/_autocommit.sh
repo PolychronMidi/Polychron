@@ -11,7 +11,10 @@ if [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROO
 elif [ -n "${CLAUDE_PROJECT_DIR}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _AC_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _AC_TRY="$(cd "$(dirname "$_AC_SELF")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
+  if ! _AC_TRY="$(cd "$(dirname "$_AC_SELF")" && pwd)"; then
+    echo "[_autocommit] cannot resolve helper directory from $_AC_SELF; autocommit disabled this turn" >&2
+    return 1 2>/dev/null || exit 1
+  fi
   while [ -n "$_AC_TRY" ] && [ "$_AC_TRY" != "/" ]; do
     if [ -d "$_AC_TRY/.git" ] && [ -d "$_AC_TRY/src" ]; then
       _AC_ROOT="$_AC_TRY"

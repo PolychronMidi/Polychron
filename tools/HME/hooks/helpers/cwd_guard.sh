@@ -27,7 +27,10 @@ _hme_should_skip_for_nested_hooks() {
   local event="${1:-}"
   local payload="${2:-{}}"
   local cwd
-  cwd=$(printf '%s' "$payload" | jq -r '.cwd // empty' 2>/dev/null || true)  # silent-ok: optional fallback path.
+  if ! cwd=$(printf '%s' "$payload" | jq -r '.cwd // empty'); then
+    echo "HME fail-fast: malformed hook payload while reading cwd for nested-hook guard" >&2
+    return 2
+  fi
   [ -n "$cwd" ] || cwd="${PWD:-}"
   _hme_project_has_own_hooks "$event" "$cwd"
 }

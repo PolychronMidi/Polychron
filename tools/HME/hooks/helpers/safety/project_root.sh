@@ -2,12 +2,18 @@
 # No host-specific hardcoded fallback (removed for portability).
 _HME_PROJECT_ROOT=""
 if [ "${PROJECT_ROOT+x}" = "x" ] && [ -n "$PROJECT_ROOT" ] && [ -d "$PROJECT_ROOT/src" ]; then
-  _HME_PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
+  if ! _HME_PROJECT_ROOT="$(cd "$PROJECT_ROOT" && pwd)"; then
+    echo "HME fail-fast: PROJECT_ROOT is not traversable: $PROJECT_ROOT" >&2
+    return 1 2>/dev/null || exit 1
+  fi
 elif [ "${CLAUDE_PROJECT_DIR+x}" = "x" ] && [ -n "$CLAUDE_PROJECT_DIR" ] && [ -f "$CLAUDE_PROJECT_DIR/.env" ]; then
   _HME_PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_HME_PROJECT_ROOT" ]; then
-  _HME_TRY="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
+  if ! _HME_TRY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; then
+    echo "HME fail-fast: cannot resolve HME helper directory from ${BASH_SOURCE[0]}" >&2
+    return 1 2>/dev/null || exit 1
+  fi
   while [ -n "$_HME_TRY" ] && [ "$_HME_TRY" != "/" ]; do
     if [ -f "$_HME_TRY/.env" ] && [ -d "$_HME_TRY/.git" ] && [ -d "$_HME_TRY/src" ]; then
       _HME_PROJECT_ROOT="$_HME_TRY"

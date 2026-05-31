@@ -18,7 +18,13 @@ _ONB_PY="${_ONB_PROJECT}/tools/HME/service/server/onboarding_chain.py"
 _ONB_STATES=()
 _ONB_STATES_JSON="${_ONB_PROJECT}/tools/HME/config/onboarding_states.json"
 if [ -f "$_ONB_STATES_JSON" ] && command -v python3 >/dev/null 2>&1; then
-  _ONB_STATES=($(python3 -c "import json; print(' '.join(json.load(open('$_ONB_STATES_JSON'))['states']))" 2>/dev/null))  # silent-ok: optional fallback path.
+  _ONB_STATES_RAW=""
+  if ! _ONB_STATES_RAW=$(python3 -c "import json; print(' '.join(json.load(open('$_ONB_STATES_JSON'))['states']))" 2>&1); then
+    echo "HME fail-fast: unreadable onboarding states config $_ONB_STATES_JSON: $_ONB_STATES_RAW" >&2
+    return 1 2>/dev/null || exit 1
+  fi
+  # shellcheck disable=SC2206
+  _ONB_STATES=($_ONB_STATES_RAW)
 fi
 if [ "${#_ONB_STATES[@]}" -eq 0 ]; then
   _ONB_STATES=(boot selftest_ok targeted edited reviewed piped verified graduated)
