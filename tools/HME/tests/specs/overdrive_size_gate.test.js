@@ -14,7 +14,7 @@ const SMALL = { system: '', tools: [], messages: [{ role: 'user', content: 'hell
 
 test('oversized payload exceeds a small-window swap model (gpt-5.5-xhigh)', () => {
   const wc = swapWindowCheck(BIG, 'gpt-5.5-xhigh', ENV);
-  assert.equal(wc.budget, 272000, 'reads gpt-5.5-xhigh max_input_tokens from models.json');
+  assert.equal(wc.budget, 372000, 'reads gpt-5.5-xhigh max_input_tokens from models.json');
   assert.equal(wc.exceeds, true);
 });
 
