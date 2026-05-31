@@ -9,6 +9,7 @@ import logging
 
 from server import context as ctx
 from . import _track, _budget_gate, BUDGET_TOOL
+from ._dispatch import dispatch
 from .synthesis_session import append_session_narrative, get_session_narrative
 
 logger = logging.getLogger("HME")
