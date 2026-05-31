@@ -113,7 +113,7 @@ PY
 _up_heartbeat_age() {
   [ -f "$_UP_HEARTBEAT" ] || { echo 0; return; }
   local mt now
-  mt=$(stat -c %Y "$_UP_HEARTBEAT" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
+  mt=$(stat -c %Y "$_UP_HEARTBEAT" 2>/dev/null || echo 0)  # silent-ok: unreadable heartbeat -> mtime 0 -> huge age -> triggers respawn (fail-safe toward liveness, never falsely fresh)
   now=$(date +%s)
   echo $((now - mt))
 }
