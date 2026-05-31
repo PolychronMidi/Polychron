@@ -7,9 +7,9 @@ const { swapWindowCheck } = require('../../proxy/overdrive_route');
 // Deterministic estimator env: 4 bytes/token, 0.95 fit fraction.
 const ENV = { HME_OMNI_SWAP_FIT_FRACTION: '0.95', HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' };
 
-// ~300K input tokens (1.2M chars / 4): over cx/gpt-5.5-xhigh's 272K input cap,
+// ~400K input tokens (1.6M chars / 4): over cx/gpt-5.5-xhigh's input cap,
 // well under Opus-4-8's 872K input cap.
-const BIG = { system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(1_200_000) }] };
+const BIG = { system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(1_600_000) }] };
 const SMALL = { system: '', tools: [], messages: [{ role: 'user', content: 'hello world' }] };
 
 test('oversized payload exceeds a small-window swap model (gpt-5.5-xhigh)', () => {
