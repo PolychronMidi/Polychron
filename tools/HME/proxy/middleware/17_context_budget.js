@@ -155,7 +155,7 @@ function _recordFire(hits) {
 }
 
 function _textOf(toolResult) {
-  return blockText(toolResult, { toolResults: true });
+  return blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 function _scanInputForIdentifiers(toolUseInput, identifiers) {
