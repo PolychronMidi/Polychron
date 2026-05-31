@@ -114,6 +114,9 @@ _sv_reexec_if_self_changed() {
   [ -n "${_SV_SELF_FINGERPRINT:-}" ] || _SV_SELF_FINGERPRINT="$current"
   if [ "$current" != "$_SV_SELF_FINGERPRINT" ]; then
     _sv_log "supervisor source changed; re-execing fresh supervisor loop"
+    # Drop the singleton flock before execing the fresh loop; the new loop
+    # reacquires it. Otherwise a source-change re-exec can see its own lock
+    exec 200>&-
     exec bash -c "source '$_SV_SELF' _loop"
   fi
 }
