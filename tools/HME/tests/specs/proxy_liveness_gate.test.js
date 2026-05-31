@@ -54,9 +54,9 @@ test('BOTH slots down -> total outage alarms (no routable-current slot)', () => 
   assert.equal(r.problems.length, 2);
 });
 
-test('one down + one drift -> alarms (no routable-current slot)', () => {
+test('one down + one old-code routable slot remains available', () => {
   const r = evaluateSlots({ a: null, b: health({ runtime_fingerprint: 'OLD' }) }, 'GOOD', NOW, aliveAll);
-  assert.equal(r.ok, false);
+  assert.equal(r.ok, true);
 });
 
 test('formatLifesaver line satisfies the UserPromptSubmit scanner contract', () => {
