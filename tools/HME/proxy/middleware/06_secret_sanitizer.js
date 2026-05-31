@@ -79,14 +79,10 @@ const PATTERNS = [
 // across proxy restarts where tool_results re-enter the pipeline.
 const REDACTED_MARKER_RE = /<REDACTED:[a-z-]+>/;
 
+// Join inner text blocks with '\n' (not '') so \b word boundaries survive
+// across blocks -- shared blockText takes toolResultJoiner for exactly this.
 function _textOf(toolResult) {
-  const c = toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) {
-    // Join with '\n' (not '') so \b word boundaries survive across blocks.
-    return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('\n');
-  }
-  return '';
+  return blockText(toolResult, { toolResults: true, toolResultJoiner: '\n' });
 }
 
 function _scrub(text) {
