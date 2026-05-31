@@ -1,14 +1,13 @@
 'use strict';
 
+const { blockText: _blockText } = require('./request_shape');
+
 const SUCCESS_EMPTY = '[SUCCESS]';
 const FAIL_EMPTY = '[FAIL] tool errored with no error message body';
 const EDIT_SUCCESS = '[SUCCESS] edit applied';
 
 function textOfToolResult(toolResult) {
-  const c = toolResult && toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
-  return '';
+  return _blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
 }
 
 function appendText(toolResult, text) {
