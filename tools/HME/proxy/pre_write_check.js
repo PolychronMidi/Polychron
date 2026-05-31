@@ -18,6 +18,7 @@ const {
 } = require('./path_policy');
 const { isEditFamilyTool } = require('./edit_validation');
 const { applyPatchDecision } = require('./apply_patch_gate');
+const { todoWriteDecision } = require('./todo_invariant_guard');
 
 function _permission(decision, reason = '', context = '') {
   return { permissionDecision: decision, reason, contextualRules: context ? [context] : [] };
