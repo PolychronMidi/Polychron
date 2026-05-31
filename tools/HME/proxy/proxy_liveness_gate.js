@@ -37,10 +37,11 @@ function evaluateSlots(slots, wantedFingerprint, now, deps) {
     }
     routableCurrent += 1; // alive, fresh, current code
   }
-  // Drift always alarms. Total outage (no routable-current slot) alarms.
-  // A lone down slot while the other is routable-current is benign rotation.
-  const problems = [...drift];
-  if (routableCurrent === 0) problems.push(...down);
+  // Drift is only actionable if no other slot is already serving current code.
+  // During a normal edit rollout the old slot remains routable while the other
+  // converges; alerting on that transient state creates false liveness spam.
+  const problems = routableCurrent > 0 ? [] : [...drift, ...down];
+  if (routableCurrent === 0 && problems.length === 0) problems.push(...down);
   return { ok: problems.length === 0, problems };
 }
 
