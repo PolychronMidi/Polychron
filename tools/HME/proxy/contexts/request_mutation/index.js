@@ -36,4 +36,5 @@ module.exports = {
   blockTodoWriteOnlyProbe,
   blockStructuredOutputsProbe,
   blockNoopSystemReminderTurn,
+  recordProxyFailure,
 };
