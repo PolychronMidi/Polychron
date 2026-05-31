@@ -85,16 +85,13 @@ test('pickLargerRoute skips the current model and undersized routes', () => {
 });
 
 test('preflight smoke over-window returns local 413 without lifesaver noise', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-gate-smoke-'));
-  const oldRoot = process.env.PROJECT_ROOT;
   const oldBytesPerTok = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
   const oldMaxBytes = process.env.HME_PROXY_INTERACTIVE_MAX_BYTES;
+  const originalAppend = fs.appendFileSync;
+  const writes = [];
   try {
-    process.env.PROJECT_ROOT = root;
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_INTERACTIVE_MAX_BYTES = '100000000';
-    fs.mkdirSync(path.join(root, 'log'), { recursive: true });
-    const writes = [];
     const clientRes = {
       statusCode: 0,
       headers: null,
@@ -102,7 +99,6 @@ test('preflight smoke over-window returns local 413 without lifesaver noise', ()
       writeHead(code, headers) { this.statusCode = code; this.headers = headers; },
       end(body) { this.body = String(body || ''); },
     };
-    const originalAppend = fs.appendFileSync;
     fs.appendFileSync = (file, data, ...args) => { writes.push([String(file), String(data)]); return originalAppend(file, data, ...args); };
     const verdict = applyOutboundContextGate({
       payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'x'.repeat(40000) }] },
@@ -116,16 +112,13 @@ test('preflight smoke over-window returns local 413 without lifesaver noise', ()
       clientRes,
       clientReq: { headers: { 'x-hme-preflight-smoke': '1' } },
     });
-    fs.appendFileSync = originalAppend;
     assert.equal(verdict.ended, true);
     assert.equal(clientRes.statusCode, 413);
     assert.match(clientRes.body, /UPSTREAM_PREFLIGHT_OVER_WINDOW/);
     assert.equal(writes.some(([, data]) => data.includes('[outbound-gate]')), false);
   } finally {
-    fs.appendFileSync = fs.appendFileSync.__original || fs.appendFileSync;
-    if (oldRoot == null) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = oldRoot;
+    fs.appendFileSync = originalAppend;
     if (oldBytesPerTok == null) delete process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST; else process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = oldBytesPerTok;
     if (oldMaxBytes == null) delete process.env.HME_PROXY_INTERACTIVE_MAX_BYTES; else process.env.HME_PROXY_INTERACTIVE_MAX_BYTES = oldMaxBytes;
-    fs.rmSync(root, { recursive: true, force: true });
   }
 });
