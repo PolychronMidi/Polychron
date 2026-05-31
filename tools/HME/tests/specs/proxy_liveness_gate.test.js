@@ -19,11 +19,10 @@ test('both slots fresh, alive, current fingerprint -> ok', () => {
   assert.equal(r.problems.length, 0);
 });
 
-test('a slot running a stale fingerprint is flagged drift (serves old code)', () => {
+test('drift is benign while at least one slot is routable during edit rollout', () => {
   const r = evaluateSlots({ a: health(), b: health({ runtime_fingerprint: 'OLD' }) }, 'GOOD', NOW, aliveAll);
-  assert.equal(r.ok, false);
-  assert.equal(r.problems[0].slot, 'b');
-  assert.equal(r.problems[0].kind, 'drift');
+  assert.equal(r.ok, true);
+  assert.equal(r.problems.length, 0);
 });
 
 test('a lone missing slot is BENIGN while the other serves current code (zero-downtime rotation)', () => {
