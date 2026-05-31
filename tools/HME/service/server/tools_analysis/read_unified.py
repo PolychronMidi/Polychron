@@ -10,6 +10,7 @@ import logging
 from server import context as ctx
 from server.onboarding_chain import chained
 from . import _track
+from ._dispatch import dispatch
 from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
