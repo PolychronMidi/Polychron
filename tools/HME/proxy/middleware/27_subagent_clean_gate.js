@@ -12,7 +12,7 @@ const FILE_RE = /(?:^|\s)(\/?[\w.-][\w./-]*\.(?:js|mjs|cjs|py|sh|json))(?:\b|$)/
 // '\n' join keeps the FILE_RE `(?:^|\s)` boundary between filenames from
 // adjacent text blocks -- shared blockText takes toolResultJoiner for that.
 function _textOf(toolResult) {
-  return blockText(toolResult, { toolResults: true, toolResultJoiner: '\n' });
+  return blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true, toolResultJoiner: '\n' });
 }
 
 function _files(text) {
