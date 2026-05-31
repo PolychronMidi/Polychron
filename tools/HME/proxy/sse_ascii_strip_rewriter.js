@@ -1,21 +1,9 @@
 "use strict";
 // DDoC non-ASCII scrubber.
 //
-// THINKING is buffered whole (start..stop) and judged at stop on the FULL
-// block text -- not per-delta. Per-delta decisions leak: a thinking block
-// streams as many tiny deltas, and an early delta with only 1-2 foreign chars
-// takes the "sparse strip" path and is emitted as a mangled skeleton BEFORE a
-// later delta trips the banner threshold. You cannot retract an emitted delta.
-// Buffering fixes that: nothing is emitted until the block is whole, so if ANY
-// part is foreign the entire block becomes ONE banner delta. The
-// signature_delta is KEPT (request-history evidence shows banner-text +
-// original signature round-trips 200 OK; DROPPING the signature is what caused
-// "tool call could not be parsed").
-//
-// TEXT (visible answer) streams inline: typography folded to ASCII, sparse
-// stray non-ASCII stripped, dense foreign -> banner once per block.
 
 const { normalizeToAscii } = require("../../../src/scripts/pipeline/non-ascii-replacements");
+const { shouldBypassResponseTextRewrite } = require("./structured_output_guard");
 
 const ENABLED = process.env.HME_PROXY_STRIP_NON_ASCII === "1";
 
@@ -42,12 +30,104 @@ function _bannerThinkingDelta(index) {
     { type: "content_block_delta", index, delta: { type: "thinking_delta", thinking: BANNER } }];
 }
 
+function _couldBeStructuredJsonText(text) {
+  const t = String(text || '').trimStart();
+  return !t || t[0] === '{' || t[0] === '[';
+}
+
+function _heldText(state) {
+  return (state.deltas || []).map((d) => (d && d.delta && typeof d.delta.text === 'string') ? d.delta.text : '').join('');
+}
+
+function _rewriteTextDeltaData(data, ctx) {
+  const bannered = _ctxGet(ctx, "ascii_text_bannered", () => new Set());
+  if (bannered.has(data.index)) {
+    // once bannered, drop the rest of the block's text (no skeleton leak)
+    const folded = normalizeToAscii(data.delta.text);
+    if (_countNonAscii(folded) > 0) return null;
+    return folded === data.delta.text ? data : { ...data, delta: { ...data.delta, text: folded } };
+  }
+  const folded = normalizeToAscii(data.delta.text);
+  const n = _countNonAscii(folded);
+  if (n === 0) return folded === data.delta.text ? data : { ...data, delta: { ...data.delta, text: folded } };
+  if (n < FOREIGN_ABS) return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
+  bannered.add(data.index);
+  return { ...data, delta: { ...data.delta, text: BANNER } };
+}
+
+function _rewriteHeldTextEvents(state, ctx) {
+  const events = [];
+  for (const d of state.deltas || []) {
+    const rewritten = _rewriteTextDeltaData(d, ctx);
+    if (rewritten) events.push(['content_block_delta', rewritten]);
+  }
+  return events;
+}
+
+function _replayHeldTextEvents(state) {
+  return (state.deltas || []).map((d) => ['content_block_delta', d]);
+}
+
+function _flushHeldTextForStop(state, stopData, ctx) {
+  const assembled = _heldText(state);
+  const events = assembled && shouldBypassResponseTextRewrite(assembled)
+    ? _replayHeldTextEvents(state)
+    : _rewriteHeldTextEvents(state, ctx);
+  events.push(['content_block_stop', stopData]);
+  return { events };
+}
+
+function _flushAllHeldTextBefore(eventName, data, holds, ctx) {
+  const events = [];
+  for (const [index, state] of Array.from(holds.entries())) {
+    holds.delete(index);
+    events.push(...(_heldText(state) && shouldBypassResponseTextRewrite(_heldText(state))
+      ? _replayHeldTextEvents(state)
+      : _rewriteHeldTextEvents(state, ctx)));
+  }
+  events.push([eventName, data]);
+  return { events };
+}
+
 function asciiStripRewrite(eventName, data, ctx) {
   if (!ENABLED) return data;
   if (!data) return data;
+  const textHolds = _ctxGet(ctx, "ascii_text_holds", () => new Map());
   const bufs = _ctxGet(ctx, "ascii_think_bufs", () => new Map());
 
-  // ---- THINKING: buffer the whole block, judge at stop ----
+  //  TEXT: stream inline unless it might be structured JSON 
+  if (eventName === "content_block_start" && data.content_block
+      && data.content_block.type === "text") {
+    textHolds.set(data.index, { deltas: [], probing: true });
+    return data;
+  }
+  if (eventName === "message_stop" && textHolds.size > 0) {
+    return _flushAllHeldTextBefore(eventName, data, textHolds, ctx);
+  }
+  const textState = (typeof data.index === "number") ? textHolds.get(data.index) : null;
+  if (textState) {
+    if (eventName === "content_block_delta") {
+      if (!data.delta || data.delta.type !== "text_delta" || typeof data.delta.text !== "string") {
+        textHolds.delete(data.index);
+        const events = _rewriteHeldTextEvents(textState, ctx);
+        events.push([eventName, data]);
+        return { events };
+      }
+      if (!textState.probing) return _rewriteTextDeltaData(data, ctx);
+      textState.deltas.push(data);
+      if (_couldBeStructuredJsonText(_heldText(textState))) return null;
+      textState.probing = false;
+      const events = _rewriteHeldTextEvents(textState, ctx);
+      textState.deltas = [];
+      return { events };
+    }
+    if (eventName === "content_block_stop") {
+      textHolds.delete(data.index);
+      return _flushHeldTextForStop(textState, data, ctx);
+    }
+  }
+
+  //  THINKING: buffer the whole block, judge at stop 
   if (eventName === "content_block_start" && data.content_block
       && data.content_block.type === "thinking") {
     bufs.set(data.index, { start: data, deltas: [], sig: null, foreign: false });
@@ -81,22 +161,10 @@ function asciiStripRewrite(eventName, data, ctx) {
     return null;
   }
 
-  // ---- TEXT: stream inline ----
+  //  TEXT delta without a start event: legacy inline path 
   if (eventName === "content_block_delta" && data.delta
       && data.delta.type === "text_delta" && typeof data.delta.text === "string") {
-    const bannered = _ctxGet(ctx, "ascii_text_bannered", () => new Set());
-    if (bannered.has(data.index)) {
-      // once bannered, drop the rest of the block's text (no skeleton leak)
-      const folded = normalizeToAscii(data.delta.text);
-      if (_countNonAscii(folded) > 0) return null;
-      return folded === data.delta.text ? data : { ...data, delta: { ...data.delta, text: folded } };
-    }
-    const folded = normalizeToAscii(data.delta.text);
-    const n = _countNonAscii(folded);
-    if (n === 0) return folded === data.delta.text ? data : { ...data, delta: { ...data.delta, text: folded } };
-    if (n < FOREIGN_ABS) return { ...data, delta: { ...data.delta, text: folded.replace(NON_ASCII_RE, "") } };
-    bannered.add(data.index);
-    return { ...data, delta: { ...data.delta, text: BANNER } };
+    return _rewriteTextDeltaData(data, ctx);
   }
 
   return data;
