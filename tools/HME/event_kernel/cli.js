@@ -23,7 +23,7 @@ function _denyReason(stdout) {
       || ''
     );
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: malformed hook stdout has no machine-readable deny reason; caller prese
     return '';
   }
 }

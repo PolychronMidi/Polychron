@@ -36,8 +36,7 @@ function _readJson(file) {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (err) {
-    console.error(`[policies/config] ${file} not valid JSON: ${err.message}`);
-    return null;
+    throw new Error(`[policies/config] ${file} not valid JSON: ${err.message}`);
   }
 }
 

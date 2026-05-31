@@ -84,18 +84,21 @@ function loadBuiltins() {
   const files = fs.readdirSync(BUILTIN_DIR)
     .filter((f) => f.endsWith('.js') && !f.startsWith('_'))
     .sort();
+  const errors = [];
   for (const f of files) {
     try {
       const mod = require(path.join(BUILTIN_DIR, f));
       register(mod, `builtin/${f}`);
     } catch (err) {
-      console.error(`[policies] failed to load builtin/${f}: ${err.message}`);
+      errors.push(`[policies] failed to load builtin/${f}: ${err.message}`);
     }
   }
+  if (errors.length) throw new Error(errors.join('\n'));
 }
 
 function loadCustom(customPath) {
-  if (!customPath || !fs.existsSync(customPath)) return;
+  if (!customPath) return;
+  if (!fs.existsSync(customPath)) throw new Error(`[policies] custom policy path missing: ${customPath}`);
   // Custom policies can be a single file (exporting one policy) or a
   const stat = fs.statSync(customPath);
   if (stat.isFile()) {
@@ -103,11 +106,11 @@ function loadCustom(customPath) {
       const mod = require(customPath);
       register(mod, customPath);
     } catch (err) {
-      console.error(`[policies] failed to load custom ${customPath}: ${err.message}`);
+      throw new Error(`[policies] failed to load custom ${customPath}: ${err.message}`);
     }
     return;
   }
-  if (!stat.isDirectory()) return;
+  if (!stat.isDirectory()) throw new Error(`[policies] custom policy path is neither file nor directory: ${customPath}`);
   for (const f of fs.readdirSync(customPath).sort()) {
     if (!f.endsWith('.js') || f.startsWith('_')) continue;
     const full = path.join(customPath, f);
