@@ -121,12 +121,13 @@ def _last_assistant_text(events: list) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    transcript_path = transcript_arg()
+    if transcript_path is None:
         print("ok")
         return 0
     # Path containment: transcript_path is supplied via Claude Code's hook
     import os.path as _osp
-    _tp_abs = _osp.abspath(sys.argv[1])
+    _tp_abs = _osp.abspath(transcript_path)
     _allowed_roots = []
     _home = os.environ['HOME']
     if _home:
