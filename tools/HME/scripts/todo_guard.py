@@ -87,7 +87,7 @@ def lost_unfinished(before_text: str, after_text: str) -> list:
     _after_header, after = _parsed(after_text)
     after_by_id = {t.id: t for t in after}
     after_texts = {_norm(t.text) for t in after}
-    archived = _archived_texts()
+    archived = _archived_texts(_set_number(before_header))
     lost = []
     for t in before:
         if t.code == "5":
