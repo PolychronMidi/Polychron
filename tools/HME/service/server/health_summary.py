@@ -147,7 +147,7 @@ def _probe_versions(project_root: str) -> tuple[str, list[str]]:
             with urllib.request.urlopen(url, timeout=2) as r:
                 live[name] = json.loads(r.read()).get("version", "?")
         except Exception as e:
-            # silent-ok: version probe failed; the service is reported as "unreachable" below
+            # silent-ok: failed version probe reports service as unreachable below
             _ = e
             live[name] = "unreachable"
     mismatches = [
@@ -206,7 +206,7 @@ def health() -> str:
                 alias = cmd.split("--alias", 1)[1].split()[0]
             lines.append(f"  llama:   PID {pid}  alias={alias}  up {_fmt_uptime(_proc_start_time(pid))}")
         except Exception as exc:
-            # silent-ok: unreadable /proc cmdline; the line renders with a "(cmdline unreadable)" note
+            # silent-ok: unreadable /proc cmdline renders cmdline-unreadable note
             lines.append(f"  llama:   PID {pid} (cmdline unreadable)")
     if len(ls_pids) > 2:
         lines.append(f"  ** {len(ls_pids)} llama-server processes -- topology declares 2 (arbiter + coder)")
