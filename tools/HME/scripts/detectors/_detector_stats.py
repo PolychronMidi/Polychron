@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import fcntl
+import inspect
 import json
 import os
 import sys
