@@ -6,6 +6,7 @@ const { PROJECT_ROOT } = require('./shared');
 const { mkdirHasMisplacedRootOnlyDir, mkdirHasMisplacedMetrics, rootOnlyDirMessage, metricsMessage } = require('./path_policy');
 const { rawCommandRewrite } = require('./raw_command_rewrites');
 const { noopAfterFailureDecision, isNoopCommand, clearFailure } = require('./turn_failure_state');
+const { bashTodoDecision } = require('./todo_invariant_guard');
 
 const LOCK_NAME = 'run.lock';
 const I_TOOLS = '(review|learn|trace|evolve|status|hme|audit|why|policies)';
