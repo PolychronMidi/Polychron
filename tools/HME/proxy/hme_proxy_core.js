@@ -210,6 +210,7 @@ module.exports = {
   _stripHmePrefixOutgoing,
   _anthropicTextSseBuffer,
   _stripStaleToolResults,
+  makeGatedStripStaleToolResults,
   _stripClaudeIdentity,
   _sanitizePayload,
   _injectHmeTools,
