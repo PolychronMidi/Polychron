@@ -239,52 +239,43 @@ test('responseHasErrorEvent detects SSE and JSON errors', () => {
   assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))), false);
 });
 
-test('OmniRoute context-window retry quarantines failing route and tries next model with tail payload', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-context-retry-'));
+test('OmniRoute context-window overflow submits cc shortcut instead of bailing to another model', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-context-cc-'));
+  let readFd = null;
   try {
-    const attempts = [];
-    const successBody = Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }));
-    const transport = {
-      request(opts, cb) {
-        const { EventEmitter } = require('node:events');
-        const req = new EventEmitter();
-        req.write = (buf) => { attempts.push({ opts, body: JSON.parse(buf.toString('utf8')) }); };
-        req.end = () => {
-          const res = new EventEmitter();
-          res.statusCode = 200;
-          res.headers = { 'content-type': 'application/json' };
-          cb(res);
-          process.nextTick(() => { res.emit('data', successBody); res.emit('end'); });
-        };
-        return req;
-      },
-    };
+    fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
+    const fifo = path.join(dir, 'tmp', 'hme-cc-control.fifo');
+    execFileSync('mkfifo', [fifo]);
+    // Open a non-blocking reader first so the proxy's O_WRONLY|O_NONBLOCK open
+    // succeeds (without a reader a non-blocking write-open returns ENXIO).
+    readFd = fs.openSync(fifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+    let transportCalled = false;
+    const transport = { request() { transportCalled = true; throw new Error('must NOT retry on another model'); } };
     const fullBody = Buffer.from('event: error\ndata: {"error":{"message":"input exceeds the context window"}}\n\n');
     const result = await retryOmniContextWindowExceeded({
       isOmniRouteSwap: true,
       status: 200,
       headers: { 'content-type': 'text/event-stream' },
       fullBody,
-      payload: { model: 'cx/gpt-a', stream: true, max_tokens: 9000, thinking: { budget_tokens: 1 }, messages: Array.from({ length: 100 }, (_, i) => ({ role: 'user', content: String(i) })) },
-      swapChain: [{ id: 'gpt-a', provider: 'opencode' }, { id: 'gpt-b', provider: 'opencode' }],
+      payload: { model: 'cx/gpt-a', stream: true, messages: [{ role: 'user', content: 'x' }] },
       omniProvider: 'cx',
-      swapModel: 'gpt-a',
       transport,
-      upstreamOpts: { hostname: '127.0.0.1', port: 1, path: '/v1/messages', method: 'POST', headers: {} },
-      upstreamHeaders: { 'content-type': 'application/json' },
       projectRoot: dir,
       log() {},
     });
-    assert.equal(result.status, 200);
-    assert.equal(attempts.length, 1);
-    assert.equal(attempts[0].body.stream, false);
-    assert.equal(attempts[0].body.max_tokens, 2048);
-    assert.equal(attempts[0].body.thinking, undefined);
-    assert.equal(attempts[0].body.messages.length, 80);
-    assert.match(attempts[0].body.model, /gpt-b/);
+    assert.equal(result, null, 'returns null so the caller normalizes a clean context_window error');
+    assert.equal(transportCalled, false, 'must NOT issue an upstream retry to a different model');
+    let token = '';
+    const buf = Buffer.alloc(64);
+    for (let i = 0; i < 5 && !token; i++) {
+      try { const n = fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) token = buf.slice(0, n).toString('utf8'); }
+      catch (_e) { /* EAGAIN on the non-blocking pipe; retry */ }
+    }
+    assert.match(token, /^cc\n/, 'submits the cc shortcut (/compact -> continue) to the live-session FIFO');
     const state = loadModelRouteHealth(dir);
-    assert.equal(state['cx/gpt-a'].reason, 'context_window_exceeded');
+    assert.equal(state['cx/gpt-a'].reason, 'context_window_exceeded', 'still quarantines the overflowed route');
   } finally {
+    if (readFd !== null) { try { fs.closeSync(readFd); } catch (_e) { /* already closed */ } }
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
