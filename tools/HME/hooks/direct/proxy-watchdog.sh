@@ -30,12 +30,12 @@ fi
 PROJECT_ROOT="$_WD_ROOT"
 [ -f "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" ] && source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh"
 
-_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: optional fallback path.
-_WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"  # silent-ok: optional fallback path.
+_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT}")"  # silent-ok: service_registry.sh sourced conditionally (line 31); when absent the helper is undefined and we fall back to the HME_PROXY_PORT env var
+_WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"  # silent-ok: registry helper absent -> construct the canonical localhost health URL from the resolved port
 
 # -- OmniRoute health-check + respawn (OVERDRIVE_MODE=1 translator) --
-_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: optional fallback path.
-_OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"  # silent-ok: optional fallback path.
+_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT}")"  # silent-ok: registry helper absent -> fall back to the HME_OMNIROUTE_PORT env var
+_OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"  # silent-ok: registry helper absent -> construct the canonical localhost models URL from the resolved port
 _OR_DIR="$_WD_ROOT/tools/omniroute"
 if [ "${OVERDRIVE_MODE}" = "1" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
