@@ -8,10 +8,8 @@ Rules from TODO_new.md:
   4f_  follow-up: after effective_minutes (default 30), flip -> 0_, UNLESS a
        qualifier is set (_q="...") -- a qualifier means "wait for the named
        condition", so the timer does not auto-fire.
-  archive: a set whose every item is code >= 3 ({3,4,4f,5}) is fully resolved
-       for this cycle only if no non-5_ terminal items remain. Non-5_
-       terminal items (3_/4_/4f_) stay active in the next set instead of
-       being archived again.
+  archive: a set archives only when every item is 5_ complete. Non-5_
+       terminal items (3_/4_/4f_) stay active; they are not archivable.
 """
 from __future__ import annotations
 
