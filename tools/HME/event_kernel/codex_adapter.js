@@ -6,6 +6,7 @@ const path = require('path');
 const { runHostAdapter, append } = require('./host_adapter_common');
 const { buildHostPayload } = require('./lifecycle_payload');
 const decisions = require('./decision_normalizer');
+const { extractFirstJsonDocument } = decisions;
 const decisionLog = require('./hook_decision_log');
 const timeTravel = require('./lifecycle_time_travel');
 
