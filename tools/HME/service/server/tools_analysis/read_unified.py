@@ -160,28 +160,52 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
     return _sc(target, response_format="concise", top_k=5)
 
 
+def _before_editing(target: str) -> str:
+    from .workflow import before_editing as _be
+    return _be(target)
+
+
+def _lines(target: str) -> str:
+    m = re.match(r'^(.+?):(\d+)-(\d+)$', target)
+    if m:
+        from server.tools_search import file_lines as _fl
+        return _fl(m.group(1), start=int(m.group(2)), end=int(m.group(3)))
+    from server.tools_search import file_lines as _fl
+    return _fl(target)
+
+
 def _route_explicit(target: str, mode: str) -> str:
     """Explicit mode routing."""
-    if mode in ("story", "impact", "both"):
-        from .reasoning import module_intel as _mi
-        return _mi(target, mode=mode)
-    if mode == "lines":
-        m = re.match(r'^(.+?):(\d+)-(\d+)$', target)
-        if m:
-            from server.tools_search import file_lines as _fl
-            return _fl(m.group(1), start=int(m.group(2)), end=int(m.group(3)))
-        from server.tools_search import file_lines as _fl
-        return _fl(target)
-    if mode == "function":
-        from .symbols import get_function_body as _gfb
-        return _gfb(target)
-    if mode == "structure":
-        from .symbols import file_intel as _fi
-        return _fi(target)
-    if mode == "callers":
-        from server.tools_search import find_callers as _fc
-        return _fc(target)
-    if mode == "deps":
-        from .symbols import file_intel as _fi
-        return _fi(target, mode="deps")
+    routed = dispatch(mode, {
+        "story": lambda: _module_intel(target, mode),
+        "impact": lambda: _module_intel(target, mode),
+        "both": lambda: _module_intel(target, mode),
+        "lines": lambda: _lines(target),
+        "function": lambda: _function_body(target),
+        "structure": lambda: _file_intel(target),
+        "callers": lambda: _callers(target),
+        "deps": lambda: _file_intel(target, mode="deps"),
+    })
+    if routed is not None:
+        return routed
     return f"Unknown mode '{mode}'. Use: auto, before, story, impact, both, lines, function, structure, callers, deps."
+
+
+def _module_intel(target: str, mode: str) -> str:
+    from .reasoning import module_intel as _mi
+    return _mi(target, mode=mode)
+
+
+def _function_body(target: str) -> str:
+    from .symbols import get_function_body as _gfb
+    return _gfb(target)
+
+
+def _file_intel(target: str, mode: str = "both") -> str:
+    from .symbols import file_intel as _fi
+    return _fi(target, mode=mode)
+
+
+def _callers(target: str) -> str:
+    from server.tools_search import find_callers as _fc
+    return _fc(target)
