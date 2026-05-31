@@ -10,7 +10,7 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. Sets with all items marked code 3_ or above get automatically archived in `log/todo` as `set<number>.md`
 
-### Todo - Set 11
+### Todo - Set 12
 
 #7 3_ get HCI score to 100 — banked concrete static gains this session 94.0→95.1: env-no-fallback (#5), adapter-boundary-registry (declared todo_engine/lifesaver_bridge.py + verifier now skips test_*.py), markdown-invariant (added todo_engine/README.md dir-intent). Remaining to reach exactly 100 is NOT one-turn static work: silent-failure-class (234 unmarked catch sites across 88 files — annotation sweep), cross-context-isolation (11 proxy façade-bypass edges — architectural refactor), runtime-telemetry verifiers (tool-response-latency/context-budget/trajectory-trend/hook-latency — reflect live behavior, not code), and host-local state (env-tamper .env baseline, opencode-host ~/.config machine config). Needs explicit scoping decision per sub-area before bulldozing proxy/hook churn.
 
