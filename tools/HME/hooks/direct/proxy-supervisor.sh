@@ -16,7 +16,7 @@ if [ "${PROJECT_ROOT+x}" = x ] && [ -n "$PROJECT_ROOT" ] && [ -d "$PROJECT_ROOT/
 elif [ "${CLAUDE_PROJECT_DIR+x}" = x ] && [ -n "$CLAUDE_PROJECT_DIR" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _sv_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
+  _sv_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: unresolvable script dir yields empty string -> walk-up loop skipped -> exit-0 guard below fires
   while [ -n "$_sv_try" ] && [ "$_sv_try" != "/" ]; do
     if [ -d "$_sv_try/.git" ] && [ -d "$_sv_try/src" ]; then
       _SV_ROOT="$_sv_try"
