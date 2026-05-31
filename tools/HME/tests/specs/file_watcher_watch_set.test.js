@@ -37,9 +37,12 @@ test('shuffler-own files never self-trigger (avoids restart loop)', () => {
   assert.equal(watcher.shouldRestart(path.join(ROOT, 'tools', 'HME', 'proxy', 'shuffler', 'file_watcher.js')), false);
 });
 
-test('EXTRA_RUNTIME_FILES is non-empty and includes .env (regression: the gap source)', () => {
+test('EXTRA_RUNTIME_FILES includes proxy-adjacent shell gates loaded at runtime', () => {
   assert.ok(EXTRA_RUNTIME_FILES.length >= 1);
   assert.ok(EXTRA_RUNTIME_FILES.includes('.env'));
+  assert.ok(EXTRA_RUNTIME_FILES.includes(path.join('tools', 'HME', 'hooks', 'helpers', '_self_tags.sh')));
+  assert.ok(EXTRA_RUNTIME_FILES.includes(path.join('tools', 'HME', 'hooks', 'pretooluse', 'bash', 'post', 'gates.sh')));
+  assert.ok(EXTRA_RUNTIME_FILES.includes(path.join('tools', 'HME', 'hooks', 'pretooluse', 'bash', 'pre', 'registry_mirror.sh')));
 });
 
 test('file watcher self-reexec watches coordinator and stale-fingerprint dependencies', () => {
