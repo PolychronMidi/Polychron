@@ -1,5 +1,7 @@
 'use strict';
 
+const { shouldBypassResponseTextRewrite } = require('./structured_output_guard');
+
 function _escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
