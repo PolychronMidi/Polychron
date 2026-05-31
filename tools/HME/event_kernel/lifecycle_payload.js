@@ -81,19 +81,21 @@ function normalizeLifecyclePayload({ host, event, root, rawBody, cwd, teamRole }
 
 function addClaudeTranscript(payload, root, event) {
   if (event !== 'Stop') return payload;
-  if (payload && payload.transcript_path && fs.existsSync(payload.transcript_path)) {
-    try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${payload.transcript_path}\n`); }
-    catch (err) { /* best-effort marker only */ }
+  if (payload && payload.transcript_path) {
+    if (!fs.existsSync(payload.transcript_path)) failfast(`provided transcript_path does not exist: ${payload.transcript_path}`);
+    writeTranscriptMarker(root, payload.transcript_path);
     return payload;
   }
-  const ccDir = path.join(path.dirname(root), '.claude', 'projects', '-home-jah-Polychron');
-  const transcript = transcriptForSession(ccDir, payload && payload.session_id)
-    || newestJsonl(ccDir)
-    || path.join(root, 'log', 'session-transcript.jsonl');
-  if (!fs.existsSync(transcript)) return payload;
+  const ccDir = claudeProjectsDir(root);
+  if (!fs.existsSync(ccDir)) failfast(`Claude transcript project directory missing: ${ccDir}`);
+  const sessionId = payload && payload.session_id;
+  const transcript = transcriptForSession(ccDir, sessionId) || (!sessionId ? newestJsonl(ccDir) : '');
+  if (!transcript) failfast(sessionId
+    ? `no transcript for session_id ${sessionId} under ${ccDir}`
+    : `no Claude transcripts under ${ccDir}`);
+  if (!fs.existsSync(transcript)) failfast(`resolved transcript missing: ${transcript}`);
   payload.transcript_path = transcript;
-  try { writeJsonAtomic(path.join(root, 'tmp', 'hme-transcript-path.txt'), `${transcript}\n`); }
-  catch (err) { /* best-effort marker only */ }
+  writeTranscriptMarker(root, transcript);
   return payload;
 }
 
