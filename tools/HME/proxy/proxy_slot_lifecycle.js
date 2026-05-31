@@ -92,7 +92,7 @@ function countSlotsWithFingerprint(runtimeDir, fingerprint, opts = {}) {
     if (!pid || typeof pid !== 'number') return false;
     try { process.kill(pid, 0); return true; } catch (_) { return false; }
   });
-  const staleMs = Number(opts.staleMs || process.env.HME_PROXY_HEARTBEAT_STALE_MS || 5000);
+  const staleMs = Number(opts.staleMs !== undefined ? opts.staleMs : requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS'));
   const now = Number(opts.now || Date.now());
   let count = 0;
   for (const slot of slots) {
