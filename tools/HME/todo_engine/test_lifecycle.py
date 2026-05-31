@@ -48,10 +48,10 @@ def test_followup_with_qualifier_never_auto_flips():
     assert todos[0].code == "4f"
 
 
-def test_archivable_requires_all_ge_3():
+def test_archivable_requires_all_done():
     assert not set_is_archivable([])
     assert not set_is_archivable([Todo(1, "5", "a"), Todo(2, "1", "b")])
-    assert set_is_archivable([Todo(1, "3", "a"), Todo(2, "5", "b"), Todo(3, "4f", "c")])
+    assert not set_is_archivable([Todo(1, "3", "a"), Todo(2, "5", "b"), Todo(3, "4f", "c")])
     assert set_is_archivable([Todo(1, "5", "a"), Todo(2, "5", "b")])
     assert not set_is_archivable([Todo(1, "2", "a"), Todo(2, "5", "b")])
 
