@@ -93,22 +93,10 @@ class BaseDetectorTests(unittest.TestCase):
             sys.stdin = old_in
             os.unlink(path)
 
-    def test_detector_runtime_emits_declared_name(self):
-        with mock.patch("_detector_stats.emit_stats") as emit_stats:
-            detector("sample_detector").emit("ok", "detail")
-        emit_stats.assert_called_once_with("sample_detector", "ok", "detail")
-
-    def test_detector_runtime_decorator_attaches_helpers(self):
-        runtime = detector("decorated_detector")
-
-        @runtime
-        def main():
-            return 0
-
-        self.assertEqual(main.detector_name, "decorated_detector")
-        with mock.patch("_detector_stats.emit_stats") as emit_stats:
-            main.emit_stats("verdict", "detail")
-        emit_stats.assert_called_once_with("decorated_detector", "verdict", "detail")
+    def test_emit_stats_delegates_to_path_derived_identity(self):
+        with mock.patch("_detector_stats.emit_stats") as raw_emit_stats:
+            emit_stats("ok", "detail")
+        raw_emit_stats.assert_called_once_with(None, "ok", "detail")
 
     def test_transcript_arg_and_load_turn_helpers(self):
         self.assertIsNone(transcript_arg(["detector.py"]))
