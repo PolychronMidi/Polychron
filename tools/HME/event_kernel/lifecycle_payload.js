@@ -2,6 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { requireEnv } = require('../proxy/shared/load_env');
+const { append } = require('./host_adapter_common');
 
 function parseJson(raw) {
   try { return JSON.parse(raw || '{}'); }
