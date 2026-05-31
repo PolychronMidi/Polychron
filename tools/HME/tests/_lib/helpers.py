@@ -48,9 +48,12 @@ def purge_modules() -> None:
 def with_project_root(tmpdir, fn):
     """Run fn() with PROJECT_ROOT pointed at tmpdir; restore env on exit."""
     prior_pr = os.environ.get("PROJECT_ROOT")
-    prior_m = os.environ.get("HME_METRICS_DIR")
+    prior_hme_m = os.environ.get("HME_METRICS_DIR")
+    prior_m = os.environ.get("METRICS_DIR")
+    metrics = str(Path(tmpdir) / "metrics")
     os.environ["PROJECT_ROOT"] = str(tmpdir)
-    os.environ["HME_METRICS_DIR"] = str(Path(tmpdir) / "metrics")
+    os.environ["HME_METRICS_DIR"] = metrics
+    os.environ["METRICS_DIR"] = metrics
     purge_modules()
     try:
         return fn()
@@ -59,10 +62,14 @@ def with_project_root(tmpdir, fn):
             os.environ.pop("PROJECT_ROOT", None)
         else:
             os.environ["PROJECT_ROOT"] = prior_pr
-        if prior_m is None:
+        if prior_hme_m is None:
             os.environ.pop("HME_METRICS_DIR", None)
         else:
-            os.environ["HME_METRICS_DIR"] = prior_m
+            os.environ["HME_METRICS_DIR"] = prior_hme_m
+        if prior_m is None:
+            os.environ.pop("METRICS_DIR", None)
+        else:
+            os.environ["METRICS_DIR"] = prior_m
         purge_modules()
 
 
