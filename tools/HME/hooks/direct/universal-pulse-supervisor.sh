@@ -42,7 +42,7 @@ _up_alive() {
   local pattern="${2:-}"
   [ -n "$p" ] && [ -d "/proc/$p" ] || return 1
   [ -z "$pattern" ] && return 0
-  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qE "$pattern"  # silent-ok: optional fallback path.
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qE "$pattern"  # silent-ok: pid may exit between the /proc dir check and this cmdline read -> read fails -> treated as not-alive (correct)
 }
 
 _up_kill_child() {
