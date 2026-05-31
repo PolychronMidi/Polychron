@@ -138,7 +138,8 @@ def maybe_archive(now: float | None = None) -> str | None:
         dest = d / f"set{n}.md"
         dest.write_text(render_document(header, todos), encoding="utf-8")
         next_header = advance_set_header(header, n + 1)
-        _atomic_write(render_document(next_header, []))
+        carry = [t for t in todos if t.code in CARRYOVER_CODES]
+        _atomic_write(render_document(next_header, carry))
         return str(dest)
 
     return _with_lock(_do)
