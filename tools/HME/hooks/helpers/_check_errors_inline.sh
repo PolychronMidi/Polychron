@@ -5,6 +5,9 @@
 # additionalContext. Closes the gap between mid-turn fire and end-of-turn
 # Stop lifesaver scan.
 
+# shellcheck disable=SC1091
+source "${PROJECT_ROOT:?PROJECT_ROOT must be set before _check_errors_inline.sh}/tools/HME/hooks/helpers/_self_tags.sh"
+
 # Returns:
 _hme_check_errors_inline() {
   local PROJECT="${PROJECT_ROOT}"
