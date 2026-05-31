@@ -2,6 +2,7 @@
 
 const { emit, PROJECT_ROOT } = require('./shared');
 const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
+const { submitCcCompactOnce, clearCcCompactInflight } = require('./cc_control');
 
 function _anthropicErrorSseBuffer(type, message) {
   const data = { type: 'error', error: { type, message } };
