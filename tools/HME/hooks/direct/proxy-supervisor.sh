@@ -372,7 +372,7 @@ _sv_start_worker() {
   local pythonpath="$_SV_ROOT/tools/HME/service"
   PROJECT_ROOT="$_SV_ROOT" HME_WORKER_PORT="$_SV_WORKER_PORT" PYTHONPATH="$pythonpath" \
     setsid nohup python3 "$_SV_WORKER_SCRIPT" --port "$_SV_WORKER_PORT" \
-      >> "$_SV_WORKER_LOG" 2>&1 < /dev/null &
+      >> "$_SV_WORKER_LOG" 2>&1 < /dev/null 200>&- &
   local pid=$!
   disown 2>/dev/null || true
   _sv_record_bundle_pid worker "$pid"
@@ -415,7 +415,7 @@ _sv_spawn_and_verify() {
         _sv_log "OmniRoute down, starting on :${_or_port}..."
         if [ -x "$_or_dir/start.sh" ]; then
           HME_OMNIROUTE_PORT="$_or_port" \
-            bash "$_or_dir/start.sh" > "$_SV_ROOT/log/omniroute.out" 2>&1 &
+            bash "$_or_dir/start.sh" > "$_SV_ROOT/log/omniroute.out" 2>&1 200>&- &
           local _or_pid=$!
           disown 2>/dev/null || true
           local _or_waited=0
@@ -509,7 +509,7 @@ _sv_ensure_shuffler_procs() {
     [ -f "$script" ] || continue
     if ! pgrep -f "shuffler/${name}\.js" >/dev/null 2>&1; then
       logf="$_SV_ROOT/log/hme-${name//_/-}.out"
-      PROJECT_ROOT="$_SV_ROOT" setsid nohup node "$script" >> "$logf" 2>&1 < /dev/null &
+      PROJECT_ROOT="$_SV_ROOT" setsid nohup node "$script" >> "$logf" 2>&1 < /dev/null 200>&- &
       disown 2>/dev/null || true
       local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
       echo "[$ts] [shuffler] LIFESAVER ${name} was dead; respawned by proxy-supervisor (auto-heal had stopped)" \
