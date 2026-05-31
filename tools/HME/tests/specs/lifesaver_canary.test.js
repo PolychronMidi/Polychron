@@ -254,19 +254,24 @@ test('lifesaver: NEW-ERRORS branch BLOCKS on agent-origin error', () => {
   }
 });
 
-test('lifesaver: hook-output JSON validation failure is a blocking red alert', () => {
+test('lifesaver: hook-output JSON validation failure is self-health only', () => {
   const r = _withLifesaverSandbox(
     ['[2026-04-26T07:00:00Z] [hook-output-validation] JSON validation failed for Claude Stop hook stdout: Unexpected token x'],
     { branch: 'new' },
   );
   try {
+    assert.doesNotMatch(
+      r.stdout,
+      /"decision"\s*:\s*"block"/,
+      `hook-output validation is HME self-health, not agent-origin. stdout: ${r.stdout}`,
+    );
     assert.ok(
-      /"decision"\s*:\s*"block"/.test(r.stdout),
-      `JSON validation failure must block. stdout: ${r.stdout}`,
+      r.stdout.includes('observability only -- supervisor/operator concern'),
+      'self-health reason must stay non-blocking observability',
     );
     assert.ok(
       r.stdout.includes('JSON validation failed for Claude Stop hook stdout'),
-      'block reason must include hook-output validation failure',
+      'self-health context must include hook-output validation failure',
     );
   } finally {
     r.cleanup();
