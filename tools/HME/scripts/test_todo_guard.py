@@ -38,6 +38,8 @@ def _run():
         ("completed 5_ pruned (ok)", _H + "#1 5_ done", "### Todo - Set 4\n", None, 0),
         ("archival (text under log/todo)", _H + "#1 0_ build the guard",
          "### Todo - Set 4\n", "#1 0_ build the guard", 0),
+        ("completed by archival (5_ text under log/todo)", _H + "#1 0_ build the guard",
+         "### Todo - Set 4\n", "#1 5_ build the guard", 0),
         ("text edit, id survives", _H + "#1 0_ old wording", _H + "#1 0_ new wording", None, 0),
         ("renumber, text survives", _H + "#1 0_ kept body", _H + "#9 0_ kept body", None, 0),
         ("drop in-progress 1_", _H + "#1 1_ wip\n#2 0_ keep", _H + "#2 0_ keep", None, 1),
