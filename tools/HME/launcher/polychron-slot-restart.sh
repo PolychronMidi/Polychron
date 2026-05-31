@@ -313,10 +313,19 @@ else
   echo "[slot-restart:$SLOT] no routable incumbent on this slot; bypassing peer-routable guard to cold-start (both-down recovery)" >&2
 fi
 
-# Step 1: write drain flag only after the replacement build proves it can boot
-# AND the other slot is proven routable.
+# Step 1: withdraw this slot from shuffler routing before process termination.
+# Merely touching the drain flag is not enough: the backend observes it on its
+# heartbeat cadence, then the shuffler observes the health file on its own poll.
 echo "[slot-restart:$SLOT] writing drain flag $DRAIN_FLAG" >&2
 touch "$DRAIN_FLAG"
+_mark_health_draining 1 || true
+if ! _wait_shuffler_withdrawn; then
+  echo "[slot-restart:$SLOT] ABORT: shuffler still routes slot $SLOT after drain flag; NOT terminating incumbent" >&2
+  rm -f "$DRAIN_FLAG" 2>/dev/null || true
+  _mark_health_draining 0 || true
+  _record_failure "shuffler_drain_withdraw_timeout slot=$SLOT"
+  exit 1
+fi
 
 # Step 2: poll heartbeat for in_flight==0 OR pid gone OR drain timeout.
 _t0="$(date +%s)"
