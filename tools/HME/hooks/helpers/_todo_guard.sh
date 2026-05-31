@@ -14,8 +14,13 @@ _todo_guard_check() {
   local before="${PROJECT_ROOT}/tmp/todo-turn-start.md"
   local after="${PROJECT_ROOT}/doc/templates/TODO.md"
   [ -f "$before" ] || return 0
-  PROJECT_ROOT="${PROJECT_ROOT}" python3 \
-    "${PROJECT_ROOT}/tools/HME/scripts/todo_guard.py" "$before" "$after" \
-    >/dev/null 2>&1 || true
+  local _err
+  _err=$(PROJECT_ROOT="${PROJECT_ROOT}" python3 \
+    "${PROJECT_ROOT}/tools/HME/scripts/todo_guard.py" "$before" "$after" 2>&1 >/dev/null)
+  local _rc=$?
+  if [ "$_rc" -ne 0 ]; then
+    printf '%s\n' "$_err" >&2
+    return "$_rc"
+  fi
   return 0
 }
