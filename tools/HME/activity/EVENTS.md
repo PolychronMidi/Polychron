@@ -93,6 +93,7 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 
 ## Proxy request mutation
 
+- **`unparsed_tool_call_recovered`** [activity] -- Request recovery guard rewrote an unparsed tool-call retry into a recoverable prompt.
 - **`autocompact_fired_despite_disable`** [activity] -- The proxy observed an autocompact marker even though compaction disablement was expected.
 - **`undefined_user_prompt_corrupted`** [activity] -- The proxy detected an undefined/corrupted final user prompt during request mutation.
 
