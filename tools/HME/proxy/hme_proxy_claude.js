@@ -116,15 +116,7 @@ function createClaudeHandler(deps) {
       let _swapModel = 'deepseek-v4-pro';
       let _omniProvider = 'opencode-go';
 
-      const _gatedStripStaleToolResults = (payloadArg) => {
-        if (typeof _effectiveCompactThreshold === 'function') {
-          try {
-            const plan = _effectiveCompactThreshold(payloadArg);
-            if (!plan || (plan.maxTier || 0) <= 0) return 0;
-          } catch (_e) { /* silent-ok: budget-resolve failure must not strip */ return 0; }
-        }
-        return _stripStaleToolResults(payloadArg);
-      };
+      const _gatedStripStaleToolResults = makeGatedStripStaleToolResults(_effectiveCompactThreshold, _stripStaleToolResults);
       const overdriveRoute = applyOverdriveRoute({
         payload,
         clientReq,
