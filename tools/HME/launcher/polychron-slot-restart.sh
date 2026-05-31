@@ -228,7 +228,31 @@ rm -f "$RESTART_FAILURE_FILE.admit" 2>/dev/null || true
 
 _preflight_candidate || { _mark_slot_broken "preflight_failed"; exit 1; }
 
-# Step 1: write drain flag only after the replacement build proves it can boot.
+_OTHER_SLOT="a"
+[ "$SLOT" = "a" ] && _OTHER_SLOT="b"
+_OTHER_HEALTH="$RUNTIME_DIR/proxy-$_OTHER_SLOT.health"
+if ! python3 - "$_OTHER_HEALTH" "$_HEARTBEAT_STALE_MS" <<'PY'
+import json, os, signal, sys, time
+health_file, stale_ms = sys.argv[1], int(sys.argv[2])
+try:
+    h = json.load(open(health_file))
+    pid = int(h.get('pid') or 0)
+    ok = bool(h.get('ready')) and not bool(h.get('draining')) and (time.time() * 1000 - float(h.get('ts') or 0)) <= stale_ms
+    if ok and pid > 0:
+        os.kill(pid, 0)
+        sys.exit(0)
+except Exception:
+    pass
+sys.exit(1)
+PY
+then
+  echo "[slot-restart:$SLOT] ABORT: other slot $_OTHER_SLOT is not proven routable; NOT draining incumbent" >&2
+  _record_failure "other_slot_not_routable slot=$_OTHER_SLOT"
+  exit 1
+fi
+
+# Step 1: write drain flag only after the replacement build proves it can boot
+# AND the other slot is proven routable.
 echo "[slot-restart:$SLOT] writing drain flag $DRAIN_FLAG" >&2
 touch "$DRAIN_FLAG"
 
