@@ -36,8 +36,6 @@ def try_except_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[d
     return _check_env_failfast._try_except_fallback_rows(path, text.splitlines(), keys)
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or subprocess.check_output(
-    ["git", "rev-parse", "--show-toplevel"], text=True).strip())
 POLICY = load_policy(ROOT)
 HOOK_PATH = Path(os.environ.get("HOOK_PATH") or ROOT / ".git" / "hooks" / "pre-commit")
 POST_COMMIT_HOOK_PATH = Path(os.environ.get("POST_COMMIT_HOOK_PATH") or ROOT / ".git" / "hooks" / "post-commit")
