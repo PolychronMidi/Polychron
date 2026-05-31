@@ -133,7 +133,7 @@ def maybe_archive(now: float | None = None) -> str | None:
             return None
         d = archive_dir()
         d.mkdir(parents=True, exist_ok=True)
-        n = _next_set_number()
+        n = _next_set_number(header)
         dest = d / f"set{n}.md"
         dest.write_text(render_document(header, todos), encoding="utf-8")
         next_header = advance_set_header(header, n + 1)
