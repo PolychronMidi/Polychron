@@ -104,9 +104,11 @@ test('addClaudeTranscript falls back to newest transcript when exact session fil
 
 test('buildHostPayload encodes transcript failfast for mandatory stop policy', () => {
   const { buildHostPayload } = require('../../event_kernel/lifecycle_payload');
-  const { root } = sandbox();
-  const missingProject = path.join(os.tmpdir(), `missing-cc-project-${process.pid}-${Date.now()}`);
-  const body = withClaudeProjectDir(missingProject, () => buildHostPayload({
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'missing-home-'));
+  const root = path.join(home, 'Polychron');
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'log'), { recursive: true });
+  const body = withClaudeProjectDir(root, () => buildHostPayload({
     host: 'claude', event: 'Stop', root, rawBody: JSON.stringify({ session_id: 'missing-session' }), cwd: root,
   }));
   const payload = JSON.parse(body);
