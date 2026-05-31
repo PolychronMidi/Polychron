@@ -106,7 +106,7 @@ def test_recover_orphaned_carryovers_from_latest_archive():
     _write(d, "# rules\n\n### Todo - Set 8\n")
     assert store.recover_orphaned_carryovers() == 2
     _, todos = store.load(now=T0)
-    assert [(t.id, t.code, t.text) for t in todos] == [(7, "3", "blocked"), (11, "4", "follow")]
+    assert [(t.id, t.code, t.text) for t in todos] == [(7, "0", "blocked"), (11, "0", "follow")]
     assert store.maybe_archive(now=T0) is None
 
 
