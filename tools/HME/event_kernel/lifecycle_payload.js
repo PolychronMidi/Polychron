@@ -27,7 +27,7 @@ function newestJsonl(dir) {
       .sort((a, b) => (b.m - a.m) || (b.c - a.c) || b.f.localeCompare(a.f));
     return rows[0] ? rows[0].f : '';
   } catch (err) {
-    // silent-ok: unreadable transcript directory falls back to no transcript.
+    // ddoc subversion: unreadable transcript directory falls back to no transcript.
     return '';
   }
 }
@@ -38,7 +38,7 @@ function transcriptForSession(dir, sessionId) {
     const match = fs.readdirSync(dir).find((f) => f === `${sessionId}.jsonl`);
     return match ? path.join(dir, match) : '';
   } catch (_err) {
-    // silent-ok: unreadable transcript directory falls back to no session match.
+    // ddoc subversion: unreadable transcript directory falls back to no session match.
     return '';
   }
 }
