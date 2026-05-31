@@ -236,6 +236,39 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
 # glob_search -- absorbs find's structural modes (map, hierarchy, symbols, etc.)
 
 
+def _structural_map(pattern: str) -> str:
+    from .symbols import get_module_map as _gmm
+    return _gmm(pattern or "")
+
+
+def _structural_hierarchy(pattern: str) -> str:
+    from .symbols import type_hierarchy as _th
+    return _th(pattern)
+
+
+def _structural_symbols(pattern: str) -> str:
+    from .symbols import search_symbols as _ss
+    return _ss(pattern)
+
+
+def _structural_lookup(pattern: str) -> str:
+    from .symbols import lookup_symbol as _ls
+    return _ls(pattern)
+
+
+def _structural_rename(pattern: str) -> str:
+    parts = pattern.split("->") if "->" in pattern else pattern.split("->")
+    if len(parts) == 2:
+        from .symbols import bulk_rename_preview as _brp
+        return _brp(parts[0].strip(), parts[1].strip())
+    return "Error: rename needs 'old_name->new_name' format."
+
+
+def _structural_xref(pattern: str) -> str:
+    from .symbols import cross_language_trace as _clt
+    return _clt(pattern)
+
+
 @ctx.mcp.tool(meta={"hidden": True})
 def glob_search(pattern: str, path: str = "", mode: str = "auto",
                 enrich: str = "light") -> str:
