@@ -90,7 +90,7 @@ function todoWriteDecision(payload = {}, root) {
     if (before.setNumber == null || after.setNumber !== before.setNumber + 1) {
       return { permissionDecision: 'deny', reason: `BLOCKED: TODO archival must use canonical todo_engine.maybe_archive(): Set ${before.setNumber || '?'} should advance to Set ${(before.setNumber || 0) + 1}, not manual header/delete edits.` };
     }
-    const missingCarry = carry.filter((t) => !_survives(t, after.todos, new Set()));
+    const missingCarry = carry.filter((t) => !_survives(t, after.todos));
     if (missingCarry.length) {
       const detail = missingCarry.slice(0, 3).map((t) => `#${t.id} ${t.code}_ ${t.text}`).join(' | ');
       return { permissionDecision: 'deny', reason: `BLOCKED: TODO archival must carry non-5_ items into the next set: ${detail}. Only 5_ items may disappear.` };
