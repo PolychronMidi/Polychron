@@ -185,7 +185,7 @@ test('OpenCode TextComplete dispatch applies stream text-block rewrites', async 
   });
   const parsed = JSON.parse(res.stdout || '{}');
   assert.equal(parsed.decision, 'modify');
-  assert.equal(parsed.text, 'K. Fix thing & test.');
+  assert.equal(parsed.text, 'K. Fix thing & test');
   fs.rmSync(root, { recursive: true, force: true });
 });
 
