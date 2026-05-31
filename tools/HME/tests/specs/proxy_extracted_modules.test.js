@@ -994,7 +994,7 @@ test('context budget compaction gears start near context high-water and escalate
   }
 });
 
-test('stale-tool horizon scales from HME_PROXY_STALE_TOOL_KEEP_TURNS per gear', () => {
+test('stale-tool horizon scales from HME_PROXY_STALE_TOOL_KEEP_TURNS per gear', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
@@ -1030,7 +1030,7 @@ test('stale-tool horizon scales from HME_PROXY_STALE_TOOL_KEEP_TURNS per gear', 
   } finally {
     process.env = oldEnv;
   }
-});
+}));
 
 test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
