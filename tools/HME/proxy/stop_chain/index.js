@@ -38,9 +38,8 @@ function _loadUnifiedConfig() {
   if (_unifiedConfig !== null) return _unifiedConfig;
   try {
     _unifiedConfig = require(path.resolve(PROJECT_ROOT, 'tools/HME/policies/config'));
-  } catch (_e) {
-    // silent-ok: optional fallback path.
-    _unifiedConfig = false; // sentinel: registry not available
+  } catch (err) {
+    throw new Error(`unified policy config load failed: ${err.message}`);
   }
   return _unifiedConfig;
 }

@@ -309,14 +309,32 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000, eventName = 'hoo
  * First-deny-wins: aggregated decision is whichever JS policy fired first.
  * Subsequent policies still run for side effects (matches stop_chain).
  */
+function _failClosedPolicyError(message, eventName) {
+  if (eventName === 'PreToolUse') {
+    return {
+      stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: message } }),
+      stderr: `[unified-policies] ${message}\n`,
+      exit_code: 0,
+    };
+  }
+  return {
+    stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: message } }),
+    stderr: `[unified-policies] ${message}\n`,
+    exit_code: 2,
+  };
+}
+
 async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
   let registry, config;
   try {
     registry = require('../policies/registry');
     config = require('../policies/config');
-  } catch (_e) {
-    // silent-ok: optional fallback path.
-    return null; // policies/ missing or broken -- skip silently, bash gates still run
+  } catch (err) {
+    return {
+      stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: `UNIFIED POLICY LOAD FAILURE: ${err.message}` } }),
+      stderr: `[unified-policies] load failure: ${err.message}\n`,
+      exit_code: 2,
+    };
   }
   try {
     registry.loadBuiltins();
@@ -387,8 +405,11 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     }
     return null;
   } catch (err) {
-    // silent-ok: optional fallback path.
-    return { stdout: '', stderr: `[unified-policies] crash: ${err.message}\n`, exit_code: 0 };
+    return {
+      stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: `UNIFIED POLICY RUNTIME FAILURE: ${err.message}` } }),
+      stderr: `[unified-policies] crash: ${err.message}\n`,
+      exit_code: 2,
+    };
   }
 }
 
