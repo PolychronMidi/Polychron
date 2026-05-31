@@ -50,6 +50,11 @@ def load_turn(loader, argv: list[str] | None = None):
     return loader(path)
 
 
+def emit_stats(verdict: str, detail: str = "") -> None:
+    from _detector_stats import emit_stats as _emit_stats
+    _emit_stats(None, verdict, detail)
+
+
 class BehavioralDetector:
     name: str = ""
     phases: list[str] = ["stop"]
