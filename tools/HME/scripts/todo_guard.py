@@ -90,7 +90,7 @@ def lost_unfinished(before_text: str, after_text: str) -> list:
     is_archival_advance = before_set is not None and after_set == before_set + 1
     after_by_id = {t.id: t for t in after}
     after_texts = {_norm(t.text) for t in after}
-    archived = _archived_texts(_set_number(before_header))
+    archived = _archived_texts(before_set)
     lost = []
     for t in before:
         if t.code == "5":
