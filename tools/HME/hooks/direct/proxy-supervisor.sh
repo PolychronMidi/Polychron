@@ -343,7 +343,8 @@ _sv_wait_worker_healthy() {
 }
 
 _sv_stop_worker() {
-  local pids pid waited alive
+  local pid waited alive
+  local -a pids=()
   mapfile -t pids < <(_sv_worker_pids)
   [ "${#pids[@]}" -gt 0 ] || return 0
   for pid in "${pids[@]}"; do
