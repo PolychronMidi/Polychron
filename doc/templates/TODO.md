@@ -34,6 +34,6 @@ Example:
 
 #10 5_ event_kernel: removed Codex-local `firstJsonDocument` / `adapterExtractFirstJson` reimplementations; Codex now imports shared `decision_normalizer.extractFirstJsonDocument`, Claude already imports the same helper, and OpenCode uses `sanitizeOpencodeStdout` through decision_normalizer. Added regression for shared extraction with nested JSON; universalization + shortcut adapter suites green 34/34 [E3]
 
-#11 0_ verifiers/detectors: detector name dual-sourced (registry.json + 7 hardcoded _emit_stats); 18 detectors share argv+load+emit boilerplate → @detector(name) base derives name once [E3]
+#11 4_ verifiers/detectors: eliminated the concrete dual-sourced detector-name stats drift by teaching `_detector_stats.emit_stats(None, verdict, detail)` to derive caller module name and converting all 7 local `_emit_stats` wrappers to pass `None`; added regression in extracted-module suite. Full `@detector(name)` argv/load/emit base remains broader refactor, but no hardcoded `_emit_stats` detector-name literals remain; proxy_extracted_modules 56/56 green [E3]
 
 #12 0_ tools_analysis: string-dispatch if/action chains in ~8 "unified" tools (search/learn/trace/read/evolution_admin) → shared dispatch(key, table) like status_unified _STATUS_MODES; fold manual _track(name) (37 sites) into @chained which already knows the name [E3]
