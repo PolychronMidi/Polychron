@@ -488,7 +488,7 @@ _sv_fire_crashloop_lifesaver() {
   local msg="[$ts] [proxy-supervisor] CRASH LOOP DETECTED -- proxy failed to start $fails times in a row. Respawn backing off. Root cause is likely in hme_proxy.js or its environment (.env, context.js, node modules). Fix the proxy startup before expecting recovery."
   # Channel 1: error log for LIFESAVER pickup.
   mkdir -p "$(dirname "$_SV_ERROR_LOG")" 2>/dev/null
-  echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null  # silent-ok: optional fallback path.
+  echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null  # silent-ok: best-effort alert channel; same crash-loop message is also emitted to lifecycle log and stderr.
   # Channel 2: lifecycle log for operator audit trail, plus a tail of the
   # proxy log so the crash trace lives alongside the "I gave up" marker.
   _sv_log "CRASH LOOP: $fails consecutive spawn failures -- backing off"
@@ -496,7 +496,7 @@ _sv_fire_crashloop_lifesaver() {
   {
     local line
     _sv_tail_proxy_log 20 | while IFS= read -r line; do
-      echo "[$ts] [proxy-supervisor]   $line" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
+      echo "[$ts] [proxy-supervisor]   $line" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: diagnostic log tail; stderr crash report already carries the actionable failure.
     done
   }
   # Channel 3: stderr for local terminal visibility.
@@ -707,7 +707,7 @@ case "$_action" in
     if [ -f "$_SV_PID_FILE" ]; then
       pid=$(cat "$_SV_PID_FILE")
       if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-        kill "$pid" 2>/dev/null  # silent-ok: optional fallback path.
+        kill "$pid" 2>/dev/null  # silent-ok: stop races live process exit; subsequent pid-file cleanup is authoritative.
         _sv_log "supervisor stopped via proxy-supervisor.sh stop (pid=$pid)"
         rm -f "$_SV_PID_FILE"
         echo "proxy-supervisor: stopped (pid=$pid)" >&2
