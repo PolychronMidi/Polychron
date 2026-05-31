@@ -131,9 +131,6 @@ def maybe_archive(now: float | None = None) -> str | None:
     def _do():
         text = _read_text()
         header, todos = parse_document(text)
-        carry = [t for t in todos if t.code in CARRYOVER_CODES]
-        if carry:
-            return None
         if not set_is_archivable(todos):
             return None
         d = archive_dir()
