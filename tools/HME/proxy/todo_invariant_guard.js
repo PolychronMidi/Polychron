@@ -104,13 +104,19 @@ function todoWriteDecision(payload = {}, root) {
   if (afterText == null) return null;
   const before = _parse(beforeText);
   const after = _parse(afterText);
-  if (before.todos.length && before.todos.every((t) => _rank(t.code) >= 3) && after.todos.length === 0) {
+  const carry = before.todos.filter((t) => t.code !== '5');
+  if (before.todos.length && before.todos.every((t) => _rank(t.code) >= 3) && after.setNumber !== before.setNumber) {
     if (before.setNumber == null || after.setNumber !== before.setNumber + 1) {
       return { permissionDecision: 'deny', reason: `BLOCKED: TODO archival must use canonical todo_engine.maybe_archive(): Set ${before.setNumber || '?'} should advance to Set ${(before.setNumber || 0) + 1}, not manual header/delete edits.` };
     }
+    const missingCarry = carry.filter((t) => !_survives(t, after.todos, new Set()));
+    if (missingCarry.length) {
+      const detail = missingCarry.slice(0, 3).map((t) => `#${t.id} ${t.code}_ ${t.text}`).join(' | ');
+      return { permissionDecision: 'deny', reason: `BLOCKED: TODO archival must carry non-5_ items into the next set: ${detail}. Only 5_ items may disappear.` };
+    }
   }
   const archived = _archiveTexts(root, before.setNumber);
-  const lost = before.todos.filter((t) => t.code !== '5' && !_survives(t, after.todos, archived));
+  const lost = carry.filter((t) => !_survives(t, after.todos, archived));
   if (lost.length) {
     const detail = lost.slice(0, 3).map((t) => `#${t.id} ${t.code}_ ${t.text}`).join(' | ');
     return { permissionDecision: 'deny', reason: `BLOCKED: unfinished TODO deletion from doc/templates/TODO.md: ${detail}. Mark it 5_/3_ with evidence or archive via canonical todo_engine; never drop non-5_ items manually.` };
