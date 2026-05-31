@@ -56,10 +56,10 @@ _AC_HEAD_BEFORE=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "") 
 _ac_do_commit "direct-${1:-unknown}" || true
 
 # Auto-fire i/review on any NEW commit touching code/tooling. Previously
-_AC_HEAD_AFTER=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")  # silent-ok: optional fallback path.
+_AC_HEAD_AFTER=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")  # silent-ok: empty post-commit HEAD fails the -n guard below, skipping new-commit detection rather than misreporting
 if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE" != "$_AC_HEAD_AFTER" ]; then
   # TODO same-commit invariant (soft-warning form):
-  _AC_DIFF=$(git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null)  # silent-ok: optional fallback path.
+  _AC_DIFF=$(git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null)  # silent-ok: diff failure yields empty list -> grep matches nothing -> the advisory todo-drift warning simply does not fire
   if echo "$_AC_DIFF" | /usr/bin/grep -qE '^src/' \
      && ! echo "$_AC_DIFF" | /usr/bin/grep -qE '^doc/templates/TODO\.md$'; then
     _AC_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
