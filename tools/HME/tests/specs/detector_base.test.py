@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
+from unittest import mock
 
 HERE = Path(__file__).resolve()
 sys.path.insert(0, str(HERE.parent.parent.parent / "scripts" / "detectors"))
