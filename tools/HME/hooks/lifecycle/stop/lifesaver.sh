@@ -3,8 +3,9 @@
 # Block stopping -- errors that appeared while you worked MUST be fixed before return.
 # Acknowledging without fixing is the violation this system exists to prevent.
 PROJECT="$PROJECT_ROOT"
+_LIFESAVER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
-source "$PROJECT/tools/HME/hooks/helpers/_self_tags.sh"
+source "$_LIFESAVER_DIR/../../helpers/_self_tags.sh"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
 TURNSTART="$PROJECT/tools/HME/runtime/errors-turnstart"
 WATERMARK="$PROJECT/tools/HME/runtime/errors-lastread"
