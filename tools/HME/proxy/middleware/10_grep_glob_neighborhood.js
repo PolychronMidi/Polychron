@@ -20,6 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const { enrich } = require('../worker_client');
+const { blockText } = require('../request_shape');
 
 const MIN_HITS_PER_DIR = 3;
 const MAX_TOTAL_ENRICHMENT_BYTES = 800;
