@@ -4,7 +4,10 @@ source "$SCRIPT_DIR/../helpers/_hooks_bootstrap.sh"
 source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
 source "$SCRIPT_DIR/../helpers/_todo_guard.sh"
 INPUT=$(cat)
-_todo_guard_check "$INPUT" || true
+if ! _todo_guard_check "$INPUT"; then
+  _hme_check_errors_inline || true
+  exit 2
+fi
 printf '%s' "$INPUT" | node -e '
 const fs = require("fs");
 const path = require("path");
