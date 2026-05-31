@@ -89,10 +89,8 @@ function addClaudeTranscript(payload, root, event) {
   const ccDir = claudeProjectsDir(root);
   if (!fs.existsSync(ccDir)) failfast(`Claude transcript project directory missing: ${ccDir}`);
   const sessionId = payload && payload.session_id;
-  const transcript = transcriptForSession(ccDir, sessionId) || (!sessionId ? newestJsonl(ccDir) : '');
-  if (!transcript) failfast(sessionId
-    ? `no transcript for session_id ${sessionId} under ${ccDir}`
-    : `no Claude transcripts under ${ccDir}`);
+  const transcript = transcriptForSession(ccDir, sessionId) || newestJsonl(ccDir);
+  if (!transcript) failfast(`no Claude transcripts under ${ccDir}`);
   if (!fs.existsSync(transcript)) failfast(`resolved transcript missing: ${transcript}`);
   payload.transcript_path = transcript;
   writeTranscriptMarker(root, transcript);
