@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for todo_guard.lost_unfinished -- the unfinished-todo-deletion LIFESAVER.
 
-Pure over (before_text, after_text[, archive]); no real TODO.md / log touched.
+Pure over (before_text, after_text); no real TODO.md / log touched.
 Run: python3 tools/HME/scripts/test_todo_guard.py
 """
 import os
