@@ -84,7 +84,7 @@ const REDACTED_MARKER_RE = /<REDACTED:[a-z-]+>/;
 // Join inner text blocks with '\n' (not '') so \b word boundaries survive
 // across blocks -- shared blockText takes toolResultJoiner for exactly this.
 function _textOf(toolResult) {
-  return blockText(toolResult, { toolResults: true, toolResultJoiner: '\n' });
+  return blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true, toolResultJoiner: '\n' });
 }
 
 function _scrub(text) {
