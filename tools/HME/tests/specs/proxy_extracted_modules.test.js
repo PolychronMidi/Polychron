@@ -163,6 +163,22 @@ test('detectors policy has 15s timeout and shell policies keep stage defaults', 
 });
 
 
+test('detectors policy fails closed when Stop transcript_path is missing', async () => {
+  const detectors = require('../../proxy/stop_chain/policies/detectors');
+  const verdict = await detectors.run({ stdinJson: '{}', deny: (reason) => ({ decision: 'deny', reason }), allow: () => ({ decision: 'allow' }) });
+  assert.equal(verdict.decision, 'deny');
+  assert.match(verdict.reason, /missing Stop transcript_path/);
+});
+
+
+test('detectors policy propagates transcript failfast payload', async () => {
+  const detectors = require('../../proxy/stop_chain/policies/detectors');
+  const verdict = await detectors.run({ stdinJson: JSON.stringify({ _hme_transcript_error: 'TRANSCRIPT FAILFAST: missing transcript' }), deny: (reason) => ({ decision: 'deny', reason }), allow: () => ({ decision: 'allow' }) });
+  assert.equal(verdict.decision, 'deny');
+  assert.match(verdict.reason, /TRANSCRIPT FAILFAST/);
+});
+
+
 test('env loader reads root env only and invalid typed reads fail fast', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-env-contract-'));
   const prior = { A: process.env.A, PORT: process.env.PORT };
