@@ -2,11 +2,12 @@
 
 const { emit, PROJECT_ROOT } = require('./shared');
 const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
-const {
-  omniProviderForConfigProvider,
-  swapStore,
-  upstreamModelId,
-} = require('./contexts/upstream_dispatch');
+const { submitCcShortcut } = require('./cc_control');
+
+// Cooldown so a burst of over-window responses (e.g. both slots, retries)
+// triggers at most one live-session compact per window instead of spamming
+const _CC_COMPACT_COOLDOWN_MS = 30_000;
+let _lastCcCompactMs = 0;
 
 function _anthropicErrorSseBuffer(type, message) {
   const data = { type: 'error', error: { type, message } };
