@@ -4,15 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 const { PROJECT_ROOT } = require('../shared');
+const { blockText } = require('../request_shape');
 
 const OUT_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-audits');
 const FILE_RE = /(?:^|\s)(\/?[\w.-][\w./-]*\.(?:js|mjs|cjs|py|sh|json))(?:\b|$)/g;
 
+// '\n' join keeps the FILE_RE `(?:^|\s)` boundary between filenames from
+// adjacent text blocks -- shared blockText takes toolResultJoiner for that.
 function _textOf(toolResult) {
-  const c = toolResult && toolResult.content;
-  if (typeof c === 'string') return c;
-  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('\n');
-  return '';
+  return blockText(toolResult, { toolResults: true, toolResultJoiner: '\n' });
 }
 
 function _files(text) {
