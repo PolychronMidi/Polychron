@@ -228,6 +228,7 @@ function _isCcShortcut(body) {
     payload._hme_multistep_prompt = match.prompt || '';
     return payload;
   } catch (_e) {
+    // silent-ok: malformed shortcut payload simply is not a shortcut.
     return null;
   }
 }
