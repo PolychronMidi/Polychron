@@ -13,16 +13,13 @@ const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { requestTelemetry } = require('./request_telemetry');
 const { shrinkForPassthrough: compactAnthropicPayload } = require('./passthrough_compact');
 const { semanticTokenEstimate, serializedBytes } = require('./context_token_estimate');
-const { messageText } = require('./request_shape');
-
-// Last message IFF it is a user turn (autocompact/undefined/parse-fail detectors
-// all inspect the literal trailing user message, not the last *real* user
-function _lastUserMessageRaw(payload) {
-  const msgs = payload && Array.isArray(payload.messages) ? payload.messages : null;
-  if (!msgs || !msgs.length) return null;
-  const last = msgs[msgs.length - 1];
-  return last && last.role === 'user' ? last : null;
-}
+const {
+  detectAutocompactRequest,
+  writeAutocompactLifesaver,
+  detectAndMarkUndefinedUserPrompt,
+  detectUnparsedToolCallRetry,
+  lastUserPromptText,
+} = require('./request_recovery_guards');
 
 let _outputRegistry = { mtimeMs: 0, map: new Map() };
 function _positiveNumber(value) {
