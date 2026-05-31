@@ -3,11 +3,10 @@
 
 Compares a BEFORE snapshot of TODO.md against the current/AFTER file. Any todo
 that was unfinished (status code != 5_) in BEFORE and is now GONE from AFTER --
-its text absent and no same-id todo with overlapping content -- without having
-been archived to log/todo/ raises a LIFESAVER (agent-origin line in
-log/hme-errors.log) so the deletion
-cannot pass silently. Completed (5_) todos may be pruned; set-archival is allowed
-(an archived todo's text is found under log/todo/set<N>.md).
+its text absent and no same-id todo with overlapping content -- raises a
+LIFESAVER (agent-origin line in log/hme-errors.log) so deletion cannot pass
+silently. Completed (5_) todos may be pruned; set-archival must carry all
+non-5_ items into the next active set.
 
 Uses the canonical todo_engine grammar -- one parser, no format drift.
 
