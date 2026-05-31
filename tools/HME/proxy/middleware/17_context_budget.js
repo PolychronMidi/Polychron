@@ -28,6 +28,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
+const { blockText } = require('../request_shape');
 const hmePaths = require('../infra/hme_paths');
 
 const METRICS = hmePaths.hmeMetric('hme-enricher-efficacy.jsonl');
