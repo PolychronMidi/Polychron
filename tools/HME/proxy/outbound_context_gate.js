@@ -2,6 +2,9 @@
 // Final outbound context-budget gate. The single invariant that holds no matter
 // WHY a payload is over-window (OmniRoute swap to a smaller-context target,
 
+const fs = require('fs');
+const path = require('path');
+const { emit, PROJECT_ROOT } = require('./shared');
 const { semanticTokenEstimate } = require('./context_token_estimate');
 const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./hme_proxy_request_mutation');
 
