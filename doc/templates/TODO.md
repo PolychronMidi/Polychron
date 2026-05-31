@@ -32,7 +32,7 @@ Example:
 
 #9 5_ self-origin tag triplication patched (survey finding, partial): hook-output-validation added to all 3 lists (_check_errors_inline.sh, lifesaver.sh, 22_lifesaver_inject.js) so kernel-sanitized validation no longer surfaces as a blocking agent error — #4 tracks the full single-source unification
 
-#10 0_ event_kernel: host-adapter stdout validation divergent across claude/codex/opencode (only Claude hardened) → move per-host check into decision_normalizer host-policy table; extractFirstJsonDocument reimplemented 3x → import shared [E3]
+#10 5_ event_kernel: removed Codex-local `firstJsonDocument` / `adapterExtractFirstJson` reimplementations; Codex now imports shared `decision_normalizer.extractFirstJsonDocument`, Claude already imports the same helper, and OpenCode uses `sanitizeOpencodeStdout` through decision_normalizer. Added regression for shared extraction with nested JSON; universalization + shortcut adapter suites green 34/34 [E3]
 
 #11 0_ verifiers/detectors: detector name dual-sourced (registry.json + 7 hardcoded _emit_stats); 18 detectors share argv+load+emit boilerplate → @detector(name) base derives name once [E3]
 
