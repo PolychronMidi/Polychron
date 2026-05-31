@@ -83,6 +83,7 @@ function makeTextBlockBufferedRewriter({ key, shouldBuffer, onDelta, onStop, str
       if (state.dropping) return null;
       state.deltas.push(data);
       state.text += data.delta.text || '';
+      if (_shouldBypass(state, structuredJsonGuard)) return null;
       const decision = onDelta ? onDelta({ state, data, ctx }) : undefined;
       const out = _applyDecision(decision, { state, data, ctx, holds, index: data.index });
       return out === undefined ? null : out;
