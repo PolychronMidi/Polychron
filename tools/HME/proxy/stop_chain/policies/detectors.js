@@ -74,18 +74,24 @@ function writeVerdictsFile(verdicts) {
   } catch (_e) { /* verdicts-file write failure is never fatal */ }
 }
 
-function extractTranscriptPath(stdinJson) {
+function transcriptPayload(stdinJson) {
   try {
-    const payload = JSON.parse(stdinJson || '{}');
-    return payload && payload.transcript_path || '';
-  } catch (_e) { return ''; }
+    return JSON.parse(stdinJson || '{}') || {};
+  } catch (_e) { return {}; }
 }
 
 module.exports = {
   name: 'detectors',
   async run(ctx) {
-    const transcript = extractTranscriptPath(ctx.stdinJson);
-    if (!transcript) return ctx.allow(); // no transcript => nothing to detect
+    const payload = transcriptPayload(ctx.stdinJson);
+    if (payload._hme_transcript_error) return ctx.deny(payload._hme_transcript_error);
+    const transcript = payload.transcript_path || '';
+    if (!transcript) return ctx.deny(
+      'STOP-CHAIN INTEGRITY FAILURE: missing Stop transcript_path; detectors cannot run. Fix transcript resolution before stopping.'
+    );
+    if (!fs.existsSync(transcript)) return ctx.deny(
+      `STOP-CHAIN INTEGRITY FAILURE: Stop transcript_path does not exist: ${transcript}`
+    );
 
     const result = await runAllDetectors(transcript);
 
