@@ -49,7 +49,7 @@ fi
 source "$_HELPER"
 
 # Track HEAD before the commit so we can detect whether a NEW commit
-_AC_HEAD_BEFORE=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")  # silent-ok: optional fallback path.
+_AC_HEAD_BEFORE=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")  # silent-ok: empty pre-commit HEAD (no repo/no commits) fails the -n guard below, which disables new-commit detection rather than misreporting
 
 # The helper owns everything: counter, fail flag, log, retries. We just
 # call it with a caller name and let it do its thing.
