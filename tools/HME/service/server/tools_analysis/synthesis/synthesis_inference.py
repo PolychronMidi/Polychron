@@ -271,7 +271,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             return (text, result.get("context", []))
         return text
     except Exception as e:
-        # not silent: failure feeds the circuit breaker, escalates CRITICAL cases, logs, and returns None
+        # not silent: failure hits circuit breaker, logs, and returns None
         if priority == "interactive":
             _interactive_event.clear()
         _err_str = str(e).lower()

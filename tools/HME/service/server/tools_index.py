@@ -218,7 +218,7 @@ def clear_index() -> str:
         from indexing_mode import request_full_reindex
         result = request_full_reindex()
     except Exception as e:
-        # not silent: reindex daemon failure is returned to the caller as the result string
+        # not silent: caller receives daemon failure in result string
         return f"clear_index error: daemon request failed: {e}"
     if result.get("error"):
         # Surface daemon errors explicitly -- do NOT fall back to default device.

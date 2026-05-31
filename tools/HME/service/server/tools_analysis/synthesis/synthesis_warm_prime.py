@@ -198,7 +198,7 @@ def _init_local_models() -> str:
                     )
                     failures += 1
         except Exception as e:
-            # not silent: prime failure is recorded per-model and escalated via register_critical_failure below
+            # not silent: per-model result and register_critical_failure record prime fai
             results[model] = f"FAILED: {type(e).__name__}: {e}"
             ctx.register_critical_failure(
                 f"model_init({model})",

@@ -56,7 +56,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             try:
                 result = _pd(evolve=True, critique=critique)
             except Exception as e:
-                # not silent: pipeline_digest error is surfaced in the returned result text
+                # not silent: returned text includes pipeline_digest error
                 result = f"pipeline_digest error: {e}"
             # In 'full' mode, truncate verbose blocking messages to a single line
             if mode == "full" and ("BLOCKED" in result or "STOP POLLING" in result or "IN PROGRESS" in result):
