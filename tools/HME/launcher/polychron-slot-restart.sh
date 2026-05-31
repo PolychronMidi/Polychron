@@ -297,30 +297,8 @@ if ! _can_admit_runtime 2>"$RESTART_FAILURE_FILE.admit"; then
 fi
 rm -f "$RESTART_FAILURE_FILE.admit" 2>/dev/null || true
 
+_require_peer_before_loading_new_code
 _preflight_candidate || { _mark_slot_broken "preflight_failed"; exit 1; }
-
-_OTHER_SLOT="a"
-[ "$SLOT" = "a" ] && _OTHER_SLOT="b"
-_OTHER_HEALTH="$RUNTIME_DIR/proxy-$_OTHER_SLOT.health"
-
-# True (exit 0) iff the slot whose health file is $1 is live + routable right
-# now: heartbeat fresh, ready, not draining, and its pid is alive.
-_slot_routable() {
-  python3 - "$1" "$_HEARTBEAT_STALE_MS" <<'PY'
-import json, os, sys, time
-health_file, stale_ms = sys.argv[1], int(sys.argv[2])
-try:
-    h = json.load(open(health_file))
-    pid = int(h.get('pid') or 0)
-    ok = bool(h.get('ready')) and not bool(h.get('draining')) and (time.time() * 1000 - float(h.get('ts') or 0)) <= stale_ms
-    if ok and pid > 0:
-        os.kill(pid, 0)
-        sys.exit(0)
-except Exception:
-    pass
-sys.exit(1)
-PY
-}
 
 # Require the peer routable ONLY when this slot has a live incumbent to protect;
 # if this slot is already down, cold-start it (else a both-down state deadlocks).
