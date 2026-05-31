@@ -21,20 +21,20 @@ if [ -f "$_ENV_FILE" ]; then
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT}"
-source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: shutdown keeps static fallback patterns when registry helpers are unavailable.
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 
 _term_pid() {
   local pid="$1" label="$2"
   if kill -0 "$pid" 2>/dev/null; then
-    kill -TERM "$pid" 2>/dev/null && echo "[shutdown] SIGTERM -> ${label} (${pid})" >&2  # silent-ok: optional fallback path.
+    kill -TERM "$pid" 2>/dev/null && echo "[shutdown] SIGTERM -> ${label} (${pid})" >&2  # silent-ok: shutdown race; pid may exit after liveness probe and pattern sweep follows.
   fi
 }
 
 _kill_pid() {
   local pid="$1" label="$2"
   if kill -0 "$pid" 2>/dev/null; then
-    kill -KILL "$pid" 2>/dev/null && echo "[shutdown] SIGKILL -> ${label} (${pid})" >&2  # silent-ok: optional fallback path.
+    kill -KILL "$pid" 2>/dev/null && echo "[shutdown] SIGKILL -> ${label} (${pid})" >&2  # silent-ok: shutdown race; already-exited pid is acceptable and pattern sweep follows.
   fi
 }
 
@@ -53,7 +53,7 @@ fi
 
 _CODEX_PROXY_SUPERVISOR="$PROJECT_ROOT/tools/HME/hooks/direct/codex-proxy-supervisor.sh"
 if [ -x "$_CODEX_PROXY_SUPERVISOR" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" "$_CODEX_PROXY_SUPERVISOR" stop >/dev/null 2>&1 || true  # silent-ok: optional fallback path.
+  PROJECT_ROOT="$PROJECT_ROOT" "$_CODEX_PROXY_SUPERVISOR" stop >/dev/null 2>&1 || true  # silent-ok: optional Codex bridge stop; pid/pattern sweeps below still enforce full shutdown.
 fi
 
 # 3. Pattern-based SIGTERM sweep (catches anything not in PID file)
