@@ -115,103 +115,6 @@ function applyExplicitOtpmCap(payload) {
   return changed;
 }
 
-// Claude Code autocompact prompt signature (extracted from cli binary strings).
-// If a request carries this prompt, autocompact has fired despite our env-level
-const _AUTOCOMPACT_SIG_RE = /Your task is to create a detailed summary of (?:this conversation|the conversation so far)/;
-
-function _detectAutocompactRequest(payload) {
-  if (!payload || !Array.isArray(payload.messages)) return false;
-  const inspect = (txt) => typeof txt === 'string' && _AUTOCOMPACT_SIG_RE.test(txt);
-  if (typeof payload.system === 'string' && inspect(payload.system)) return true;
-  if (Array.isArray(payload.system)) {
-    for (const b of payload.system) if (b && inspect(b.text)) return true;
-  }
-  for (const msg of payload.messages) {
-    if (!msg) continue;
-    if (typeof msg.content === 'string' && inspect(msg.content)) return true;
-    if (Array.isArray(msg.content)) {
-      for (const b of msg.content) if (b && b.type === 'text' && inspect(b.text)) return true;
-    }
-  }
-  return false;
-}
-
-function _writeAutocompactLifesaver(root, payload) {
-  try {
-    const logDir = path.join(root, 'log');
-    fs.mkdirSync(logDir, { recursive: true });
-    const ts = new Date().toISOString();
-    let normLine = '';
-    try {
-      const sink = path.join(root, 'tools', 'HME', 'runtime', 'proxy-context-norm.json');
-      normLine = ' norm=' + fs.readFileSync(sink, 'utf8').trim();
-    } catch (_e) { /* best effort */ }
-    const model = (payload && payload.model) || 'unknown';
-    const msgCount = (payload && Array.isArray(payload.messages)) ? payload.messages.length : 0;
-    const line = `[${ts}] [autocompact-fired-DESPITE-DISABLE] model=${model} messages=${msgCount}${normLine}\n`;
-    fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'), line);
-    process.stderr.write(`LIFESAVER! autocompact fired despite DISABLE_AUTO_COMPACT=1 -- see log/hme-lifesaver.log\n`);
-    process.stderr.write(`LIFESAVER! ${line}`);
-  } catch (_e) { /* best effort */ }
-}
-
-function _lastUserPromptText(payload) {
-  const last = _lastUserMessageRaw(payload);
-  return last ? messageText(last) : '';
-}
-
-// Upstream prompt-corruption detector: user reports they never type "undefined"
-// yet that string keeps appearing as the literal user message body. Source is
-const _LITERAL_UNDEF_RE = /^\s*(?:<system-reminder>\s*undefined\s*<\/system-reminder>\s*)?undefined\s*$/i;
-function _detectAndMarkUndefinedUserPrompt(payload) {
-  const last = _lastUserMessageRaw(payload);
-  if (!last) return false;
-  let corrupted = false;
-  if (typeof last.content === 'string' && _LITERAL_UNDEF_RE.test(last.content)) {
-    corrupted = true;
-    last.content = '[HME LIFESAVER: upstream Claude Code corrupted user prompt to literal "undefined"; original user input lost. Do NOT treat this as user intent. Report the corruption and wait for the user to retry.]';
-  } else if (Array.isArray(last.content)) {
-    for (const b of last.content) {
-      if (b && b.type === 'text' && typeof b.text === 'string' && _LITERAL_UNDEF_RE.test(b.text)) {
-        corrupted = true;
-        b.text = '[HME LIFESAVER: upstream Claude Code corrupted user prompt to literal "undefined"; original user input lost. Do NOT treat this as user intent. Report the corruption and wait for the user to retry.]';
-      }
-    }
-  }
-  if (corrupted) {
-    try {
-      const logDir = path.join(PROJECT_ROOT, 'log');
-      fs.mkdirSync(logDir, { recursive: true });
-      fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'),
-        `[${new Date().toISOString()}] [undefined-user-prompt] last user message body was literal "undefined"; injected marker. session=${sessionKey(payload)}\n`);
-    } catch (_) { /* lifesaver log best-effort */ }
-  }
-  return corrupted;
-}
-
-// Unparsed-tool-call recovery (the user's "continue" fix). When a tool call
-// fails to parse, Claude Code injects a user-role text block with one of these
-// literal strings and re-sends. Detected from real request bodies -- this is
-const _PARSE_FAIL_RE = /tool call (?:was malformed and could not|could not) be parsed|retry also failed/i;
-
-function _detectUnparsedToolCallRetry(payload) {
-  if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return false;
-  // Only fire when the parse-error text is essentially the WHOLE last message
-  // (the client's stand-in), not when the user merely quoted the phrase.
-  const blob = _lastUserPromptText(payload);
-  if (!blob) return false;
-  if (!_PARSE_FAIL_RE.test(blob)) return false;
-  if (blob.length > 400) return false;   // a real user message that just mentions it -> skip
-  payload.messages.push({ role: 'user', content: 'continue' });
-  try {
-    const logDir = path.join(PROJECT_ROOT, 'log');
-    fs.mkdirSync(logDir, { recursive: true });
-    fs.appendFileSync(path.join(logDir, 'hme-lifesaver.log'),
-      `[${new Date().toISOString()}] [unparsed-tool-call] parse-failure text detected as last user message; injected user "continue". session=${sessionKey(payload)}\n`);
-  } catch (_) { /* best-effort */ }
-  return true;
-}
-
 async function mutateClaudeRequest({
   payload,
   outBody,
@@ -230,15 +133,15 @@ async function mutateClaudeRequest({
   middleware,
 }) {
   const passthrough = isPassthroughMode();
-  if (isAnthropic && _detectAutocompactRequest(payload)) {
-    _writeAutocompactLifesaver(PROJECT_ROOT, payload);
+  if (isAnthropic && detectAutocompactRequest(payload)) {
+    writeAutocompactLifesaver(PROJECT_ROOT, payload);
     emit({ event: 'autocompact_fired_despite_disable', session: sessionKey(payload), model: payload && payload.model });
   }
-  if (isAnthropic && _detectAndMarkUndefinedUserPrompt(payload)) {
+  if (isAnthropic && detectAndMarkUndefinedUserPrompt(payload, PROJECT_ROOT)) {
     emit({ event: 'undefined_user_prompt_corrupted', session: sessionKey(payload) });
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
-  if (isAnthropic && _detectUnparsedToolCallRetry(payload)) {
+  if (isAnthropic && detectUnparsedToolCallRetry(payload, PROJECT_ROOT)) {
     emit({ event: 'unparsed_tool_call_recovered', session: sessionKey(payload) });
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
@@ -285,7 +188,7 @@ async function mutateClaudeRequest({
 
     if (isAnthropic) {
       const scan = scanMessages(payload);
-      const promptText = _lastUserPromptText(payload);
+      const promptText = lastUserPromptText(payload);
       const directSmoke = Boolean(
         (clientReq && clientReq.headers && clientReq.headers['x-hme-smoke-direct'] === '1')
         || /^You are running an automated HME CLI smoke test\./.test(promptText)
