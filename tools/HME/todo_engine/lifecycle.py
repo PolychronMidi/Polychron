@@ -19,6 +19,7 @@ from .grammar import Todo, TIMED_CODES
 _CODE_RANK = {"0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "4f": 5, "5": 6}
 _ARCHIVE_MIN_RANK = _CODE_RANK["3"]
 _COMPLETE = "5"
+CARRYOVER_CODES = ("3", "4", "4f")
 
 
 def _is_complete(todo: Todo) -> bool:
