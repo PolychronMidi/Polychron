@@ -40,6 +40,8 @@ def _run():
          "### Todo - Set 4\n", "#1 0_ build the guard", 0),
         ("completed by archival (5_ text under log/todo)", _H + "#1 0_ build the guard",
          "### Todo - Set 4\n", "#1 5_ build the guard", 0),
+        ("correct set archive is honored", "### Todo - Set 4\n#1 0_ build the guard",
+         "### Todo - Set 5\n", "### Todo - Set 4\n#1 5_ build the guard", 0),
         ("text edit, id survives", _H + "#1 0_ old wording", _H + "#1 0_ new wording", None, 0),
         ("renumber, text survives", _H + "#1 0_ kept body", _H + "#9 0_ kept body", None, 0),
         ("drop in-progress 1_", _H + "#1 1_ wip\n#2 0_ keep", _H + "#2 0_ keep", None, 1),
@@ -56,6 +58,10 @@ def _run():
             print(f"[FAIL] {name}: expected {expect} got {got}")
         else:
             print(f"[pass] {name}")
+
+    # Wrong-number archive must not hide deletion from the turn-start Set 4.
+    wrong = lost("### Todo - Set 4\n#1 0_ build the guard", "### Todo - Set 5\n", archive=None)
+    assert len(wrong) == 1
     if failures:
         print(f"\n{len(failures)} test(s) failed")
         return 1
