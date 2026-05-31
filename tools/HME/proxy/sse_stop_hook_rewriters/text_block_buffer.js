@@ -65,7 +65,7 @@ function _flushBeforeUnexpectedDelta(eventName, data, holds) {
   return { events: [...replayBufferedEvents(state), [eventName, data]] };
 }
 
-function makeTextBlockBufferedRewriter({ key, shouldBuffer, onDelta, onStop }) {
+function makeTextBlockBufferedRewriter({ key, shouldBuffer, onDelta, onStop, structuredJsonGuard = true }) {
   return function textBlockBufferedRewrite(eventName, data, ctx) {
     const holds = _holdsFor(ctx, key);
     if (eventName === 'message_stop' && data && holds.size > 0) {
