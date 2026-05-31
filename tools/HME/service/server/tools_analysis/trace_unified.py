@@ -83,6 +83,31 @@ def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 
     return _trace_query(target, section=section, limit=limit, mode=mode)
 
 
+def _snapshot(target: str) -> str:
+    from .runtime import beat_snapshot as _bs
+    return _bs(target)
+
+
+def _cascade(target: str) -> str:
+    from .coupling import coupling_intel as _ci
+    return _ci(mode=f"cascade:{target}")
+
+
+def _impact(target: str) -> str:
+    from .cascade_analysis import cascade_report as _cr
+    return _cr(target=target, depth=3)
+
+
+def _interaction(target: str) -> str:
+    from .evolution_trace import interaction_map as _im
+    return _im(module_a=target, module_b="")
+
+
+def _trace_query(target: str, *, section: int, limit: int, mode: str) -> str:
+    from .evolution_trace import trace_query as _tq
+    return _tq(module=target, section=section, limit=limit, mode=mode if mode != "auto" else "module")
+
+
 def _detect_trace_type(target: str) -> str:
     """Detect whether target is a beat key, L0 channel name, module name,
     or round id (r_<sha>_<seq>)."""
