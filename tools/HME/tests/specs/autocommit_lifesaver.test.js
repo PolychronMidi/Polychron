@@ -29,6 +29,11 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
     fs.mkdirSync(path.join(sandbox, 'src'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'hooks'), { recursive: true });
+    fs.symlinkSync(
+      path.join(repoRoot, 'tools', 'HME', 'hooks', 'helpers'),
+      path.join(sandbox, 'tools', 'HME', 'hooks', 'helpers'),
+    );
     fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'KB'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'scripts'), { recursive: true });
