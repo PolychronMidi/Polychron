@@ -26,7 +26,7 @@ function reconstitute(skel) {
       if (b.t === 'tool_use') { content.push({ type: 'tool_use', id: `tu_${useId++}`, name: b.name || 'Tool', input: { q: 'x'.repeat(Math.max(0, (b.in || 2) - 8)) } }); }
       else if (b.t === 'tool_result') { content.push({ type: 'tool_result', tool_use_id: `tr_${useId}`, content: 'x'.repeat(b.n || 0) }); }
       else if (b.t === 'text') { content.push({ type: 'text', text: 'x'.repeat(b.n || 0) }); }
-      else if (b.t === 'thinking') { content.push({ type: 'thinking', thinking: 'x'.repeat(b.n || 0), signature: 's'.repeat(64) }); }
+      else if (b.t === 'thinking') { content.push({ type: 'thinking', thinking: 'x'.repeat(b.n || 0), signature: 's'.repeat(b.sig || 64) }); }
       else if (b.t === 'str') { content.push({ type: 'text', text: 'x'.repeat(b.n || 0) }); }
       else { content.push({ type: 'text', text: 'x'.repeat(b.n || 0) }); }
     }
