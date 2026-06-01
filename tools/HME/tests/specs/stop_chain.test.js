@@ -22,6 +22,7 @@ async function _withMockedStopPolicies(overrides, fn) {
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'), { recursive: true });
+  fs.symlinkSync(path.resolve(__dirname, '..', '..', 'policies'), path.join(sandbox, 'tools', 'HME', 'policies'));
   process.env.PROJECT_ROOT = sandbox;
   process.env.strict_mode = '1';
   const proxyDir = path.resolve(__dirname, '..', '..', 'proxy');
