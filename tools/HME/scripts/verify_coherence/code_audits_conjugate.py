@@ -239,7 +239,7 @@ class ConjugateChannelVerifier(Verifier):
         else:
             quad = "lucky chaos"
         return passed(summary=f"latest round: '{quad}' "
-                       f"(HCI={cur_h:.2f}, perc={cur_p:.2f}; medians {h_thr:.2f}/{p_thr:.2f})")
+                       f"(HME={cur_h:.2f}, perc={cur_p:.2f}; medians {h_thr:.2f}/{p_thr:.2f}; signal={source_note})")
 
 
 
