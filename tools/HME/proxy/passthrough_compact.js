@@ -191,7 +191,24 @@ function shrinkForPassthrough(payload, opts = {}) {
   serialized = JSON.stringify(payload);
   const afterBytes = _serializedBytes(payload);
   log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks, emergency-elided ${tailElided} tail tool_result blocks (now ${msgs.length} msgs, body=${afterBytes}B)`);
-  _emitCompaction({ route, model, stage: 'message_drop', tier: maxTier, before_bytes: beforeBytes, after_bytes: afterBytes, threshold_bytes: Number.isFinite(threshold) ? threshold : 0, before_messages: beforeMessages, after_messages: msgs.length, messages_dropped: dropped, stale_tool_results_elided: elided, orphan_tool_blocks_scrubbed: orphans, emergency_tail_elided: tailElided, keep_min: keepMin }, telemetry);
+  _emitCompaction({
+    route,
+    model,
+    stage: 'message_drop',
+    tier: maxTier,
+    before_bytes: beforeBytes,
+    after_bytes: afterBytes,
+    threshold_bytes: Number.isFinite(threshold) ? threshold : 0,
+    before_messages: beforeMessages,
+    after_messages: msgs.length,
+    messages_dropped: dropped,
+    stale_tool_results_elided: elided,
+    orphan_tool_blocks_scrubbed: orphans,
+    emergency_tail_elided: tailElided,
+    keep_min: keepMin,
+    max_tool_result_age: maxToolResultAge,
+    tool_result_byte_floor: toolResultByteFloor,
+  }, telemetry);
   return dropped + tailElided + elided;
 }
 
