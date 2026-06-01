@@ -356,8 +356,9 @@ function createContextBudget() {
     });
     return shrinkForPassthrough(payload, {
       effectiveThreshold: () => plan,
-      keepMin,
-      maxToolResultAge: staleToolKeepTurns,
+      keepMin: plan.keepMin,
+      maxToolResultAge: plan.maxToolResultAge,
+      toolResultByteFloor: plan.toolResultByteFloor,
       route: 'proxy-passthrough',
       model: payload && (payload.model || payload.target_model || payload.original_model) || '',
       projectRoot: PROJECT_ROOT,
