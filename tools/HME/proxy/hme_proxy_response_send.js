@@ -252,7 +252,7 @@ function maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive,
   if (!isAnthropic || responseHasToolUse(outBuf) || responseHasErrorEvent(outBuf) || !lifecycleInactive('Stop')) return;
   try {
     const stopSession = payload ? sessionKey(payload) : 'unknown';
-    const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });
+    const stdin = JSON.stringify({ session_id: stopSession });
     runInlineFallback('Stop', stdin);
   } catch (err) {
     console.error('inline Stop threw:', err.message);
