@@ -57,7 +57,7 @@ function _requestLiveCompact({ routeKey, projectRoot, log }) {
   if (result.reason === 'inflight') {
     log(`[hme-proxy] context-window overflow on ${routeKey}; a compact cycle is already in flight, not re-submitting (prevents step reorder)`);
   } else if (result.submitted) {
-    log(`[hme-proxy] context-window overflow on ${routeKey}; cc shortcut submitted to live session (/compact -> continue)`);
+    log(`[hme-proxy] context-window overflow on ${routeKey}; interrupting cc shortcut submitted to live session (Ctrl-C -> /compact -> continue)`);
   } else {
     log(`[hme-proxy] context-window overflow on ${routeKey}; cc shortcut unavailable (no PTY bridge attached)`);
   }
