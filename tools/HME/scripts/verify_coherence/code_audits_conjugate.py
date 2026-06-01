@@ -56,6 +56,26 @@ def _count_legendary_streak(project_root: str) -> int:
     return streak
 
 
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _conjugate_hme_signal(row: dict) -> tuple[float | None, str]:
+    """Return the HME-side scalar for V-coupling.
+
+    Historical rows used `hme_coherence`; current pipelines may lack that legacy
+    score when read-coverage is under min-N but still carry HCI. The verifier is
+    explicitly HCI<=>perceptual, so fall back to normalized HCI instead of SKIP.
+    """
+    if _is_number(row.get("hme_coherence")):
+        return float(row["hme_coherence"]), "hme_coherence"
+    if _is_number(row.get("hci_normalized")):
+        return float(row["hci_normalized"]), "hci_normalized"
+    if _is_number(row.get("hci")):
+        return float(row["hci"]) / 100.0, "hci"
+    return None, ""
+
+
 @register
 class ConjugateChannelVerifier(Verifier):
     """Horizon V expansion -- composition<=>HME conjugate-channel feedback.
