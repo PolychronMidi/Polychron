@@ -170,8 +170,8 @@ class ConjugateChannelVerifier(Verifier):
             except OSError:
                 pass  # silent-ok: best-effort fs op
             return failed(summary=f"latest round in 'lost' quadrant "
-                           f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
-                           f"perc={cur_p:.2f} < {p_thr:.2f})", details=["wrote tmp/hme-band-tightening.json (V->IX bidirectional coupling)",
+                           f"(HME={cur_h:.2f} < {h_thr:.2f} AND "
+                           f"perc={cur_p:.2f} < {p_thr:.2f}; signal={source_note})", details=["wrote tmp/hme-band-tightening.json (V->IX bidirectional coupling)",
                             "consider: i/status mode=conjugate for full quadrant view",
                             "consider: i/why mode=hci-drop to identify regressed axes",
                             "consider: i/why mode=conscience for ground-truth context"])
