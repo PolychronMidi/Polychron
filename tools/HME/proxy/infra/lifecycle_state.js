@@ -16,7 +16,7 @@ function readJson(rel, fallback = null) {
     return JSON.parse(raw);
   } catch (err) {
     if (err && err.code === 'ENOENT') return fallback;
-    return fallback;
+    throw new Error(`lifecycle state JSON unreadable/corrupt at ${file}: ${err.message}`);
   }
 }
 
@@ -25,7 +25,7 @@ function readText(rel, fallback = '') {
   try { return fs.readFileSync(file, 'utf8'); }
   catch (err) {
     if (err && err.code === 'ENOENT') return fallback;
-    return fallback;
+    throw new Error(`lifecycle state text unreadable at ${file}: ${err.message}`);
   }
 }
 
