@@ -13,8 +13,9 @@ function readAutocommitFailure(root) {
   let body = '';
   try {
     body = fs.readFileSync(flagPath, 'utf8').trim();
-  } catch (_e) {
-    return null;
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return null;
+    body = `Autocommit fail flag exists but is unreadable: ${err.message}`;
   }
   const banner = `[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
 
