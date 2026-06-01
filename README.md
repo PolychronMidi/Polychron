@@ -64,6 +64,8 @@ flowchart LR
     root --> config
     doc["doc/"]
     root --> doc
+    log["log/"]
+    root --> log
     src["src/<br/><i>Polychron composition engine source: composers, conductor, cross-layer, fx, w...</i>"]
     root --> src
     tools["tools/<br/><i>Project tooling: HME (hierarchical meta-evolution), csv_maestro, bin/.</i>"]
@@ -94,6 +96,15 @@ flowchart LR
     doc --> doc__infra
     doc --> doc__templates
     doc --> doc__theory
+```
+
+### `log/`
+
+```mermaid
+flowchart LR
+    log["log/"]
+    log__todo["todo/"]
+    log --> log__todo
 ```
 
 ### `src/`
