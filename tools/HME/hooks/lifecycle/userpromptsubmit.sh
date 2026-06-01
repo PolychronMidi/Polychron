@@ -130,8 +130,11 @@ if [ -f "$ERROR_LOG" ]; then
       echo "$TOTAL" > "$WATERMARK" 2>/dev/null || true
     else
       # Stop hook is the ONLY gate that advances watermark for real errors.
+      _NEW_ERRORS_SNIP=$(printf '%s' "$NEW_ERRORS" | head -c 8000)
+      [ "$_NEW_ERRORS_SNIP" != "$NEW_ERRORS" ] && _NEW_ERRORS_SNIP="${_NEW_ERRORS_SNIP}
+... [truncated; see log/hme-errors.log]"
       BANNER="LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:
-${NEW_ERRORS}"
+${_NEW_ERRORS_SNIP}"
     # Block ONLY if the supervisor-abandoned sentinel currently exists
     export BLOCK="false"
     if [ -f "$PROJECT/tools/HME/runtime/supervisor-abandoned" ]; then
