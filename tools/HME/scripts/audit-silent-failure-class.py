@@ -99,8 +99,7 @@ def _scan_js(path: Path) -> list[tuple[int, str]]:
             continue
         body = lines[i:i + 5]
         body_text = "\n".join(body)
-        if ("throw" in body_text or "ctx.warn" in body_text or
-                "console.error" in body_text or "console.warn" in body_text):
+        if JS_SURFACED.search(body_text):
             continue
         context = "\n".join(lines[max(0, i - 3):i + 5])
         if SILENT_OK.search(context):
