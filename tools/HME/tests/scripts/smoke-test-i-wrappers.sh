@@ -53,6 +53,7 @@ else
 fi
 
 # No non-legacy mcp__HME__ references in hooks/
+# silent-ok: grep rc=1 means no mcp__HME__ references; rc>1 is failed below.
 _MCP_RAW=$(grep -rn "mcp__HME__" tools/HME/hooks/ 2>/dev/null)
 _MCP_GREP_RC=$?
 if [ "$_MCP_GREP_RC" -gt 1 ]; then
