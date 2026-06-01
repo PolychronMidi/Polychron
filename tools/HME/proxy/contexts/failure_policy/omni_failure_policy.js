@@ -65,5 +65,7 @@ module.exports = {
   classifyFailure,
   policyFor,
   actionsFor,
+  isContextWindowMessage,
+  CONTEXT_WINDOW_RE,
   POLICY_TABLE,
 };
