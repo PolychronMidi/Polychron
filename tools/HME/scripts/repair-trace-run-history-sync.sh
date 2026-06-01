@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="${PROJECT_ROOT}"
+cd "$ROOT"
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+: "${METRICS_DIR:=${ROOT}/src/output/metrics}"
+export PROJECT_ROOT="$ROOT" METRICS_DIR
+node src/scripts/pipeline/trace-summary.js
+node src/scripts/pipeline/snapshot-run.js
+trace_file="$METRICS_DIR/trace.jsonl"
+latest_snapshot="$(ls -t "$METRICS_DIR"/run-history/*.json 2>/dev/null | head -1 || true)"
+if [ -n "$latest_snapshot" ] && [ -f "$trace_file" ]; then
+  touch -r "$trace_file" "$latest_snapshot" "$METRICS_DIR/current-run.json"
+fi
+

@@ -1,0 +1,14 @@
+{
+  "_doc": "Declared routing contract for event_kernel/dispatcher.js. Source of truth for the NON-DERIVABLE facts of each event route: which policy context an event evaluates (policyContext) and a human-readable handler summary. dispatcher.js reads policyContext from here at dispatch time, so a route's policy context cannot drift from this file. The verify_coherence DispatcherRouteContractVerifier diffs this against the switch cases in dispatcher.js (every case must appear here; every entry must have a case). Adding/removing an event case REQUIRES editing this file or the verifier fails.",
+  "routes": [
+    { "event": "SessionStart", "policyContext": null, "handler": "lifecycle/sessionstart.sh (strict-mode only)" },
+    { "event": "UserPromptSubmit", "policyContext": null, "handler": "lifecycle/userpromptsubmit.sh" },
+    { "event": "Stop", "policyContext": null, "handler": "proxy/stop_chain" },
+    { "event": "PreCompact", "policyContext": null, "handler": "lifecycle/precompact.sh (strict-mode only)" },
+    { "event": "PostCompact", "policyContext": null, "handler": "lifecycle/postcompact.sh (strict-mode only)" },
+    { "event": "PreToolUse", "policyContext": "PreToolUse", "handler": "retry guard, pre-write check, unified policies, native pretool, pretooluse shell chain" },
+    { "event": "PermissionRequest", "policyContext": "PreToolUse", "handler": "unified policies under the PreToolUse context (Codex approval prompts reuse PreToolUse policies)" },
+    { "event": "PostToolUse", "policyContext": "PostToolUse", "handler": "post-tool evidence, unified policies, native posttool, posttooluse shell chain" }
+  ],
+  "observation_events": ["ChatHeaders", "ChatMessagesTransform", "ChatParams", "ChatSystemTransform", "ShellEnv", "TextComplete"]
+}

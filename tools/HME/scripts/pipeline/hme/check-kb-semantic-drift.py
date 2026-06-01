@@ -1,0 +1,1 @@
+../../../../../src/scripts/pipeline/validators/check-kb-semantic-drift.py
