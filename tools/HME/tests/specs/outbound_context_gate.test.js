@@ -3,6 +3,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { evaluateOutbound, pickLargerRoute, applyOutboundContextGate } = require('../../proxy/outbound_context_gate');
 
 // A payload whose estimated input tokens we control via an injected estimate fn,
@@ -87,6 +89,7 @@ test('preflight smoke over-window returns local 413 without lifesaver noise', ()
   const oldMaxBytes = process.env.HME_PROXY_INTERACTIVE_MAX_BYTES;
   const originalAppend = fs.appendFileSync;
   const writes = [];
+  let compactCalls = 0;
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_INTERACTIVE_MAX_BYTES = '100000000';
@@ -109,14 +112,60 @@ test('preflight smoke over-window returns local 413 without lifesaver noise', ()
       sessionForTelemetry: 'smoke-test',
       clientRes,
       clientReq: { headers: { 'x-hme-preflight-smoke': '1' } },
+      compactSubmitter: () => { compactCalls += 1; return { submitted: true, reason: 'submitted' }; },
     });
     assert.equal(verdict.ended, true);
     assert.equal(clientRes.statusCode, 413);
     assert.match(clientRes.body, /UPSTREAM_PREFLIGHT_OVER_WINDOW/);
     assert.equal(writes.some(([, data]) => data.includes('[outbound-gate]')), false);
+    assert.equal(compactCalls, 0, 'preflight smoke must not drive live cc shortcut');
   } finally {
     fs.appendFileSync = originalAppend;
     if (oldBytesPerTok == null) delete process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST; else process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = oldBytesPerTok;
     if (oldMaxBytes == null) delete process.env.HME_PROXY_INTERACTIVE_MAX_BYTES; else process.env.HME_PROXY_INTERACTIVE_MAX_BYTES = oldMaxBytes;
+  }
+});
+
+test('interactive over-window refusal triggers live cc compact once', () => {
+  const oldBytesPerTok = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
+  const originalAppend = fs.appendFileSync;
+  const writes = [];
+  let compactCalls = 0;
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    const clientRes = {
+      statusCode: 0,
+      headers: null,
+      body: '',
+      writeHead(code, headers) { this.statusCode = code; this.headers = headers; },
+      end(body) { this.body = String(body || ''); },
+    };
+    const fixtureRoot = path.join(os.tmpdir(), 'hme-outbound-gate-test');
+    fs.appendFileSync = (_file, data, ..._args) => { writes.push(String(data)); };
+    const verdict = applyOutboundContextGate({
+      payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'x'.repeat(40000) }] },
+      isAnthropic: true,
+      isInteractivePath: true,
+      isOmniRouteSwap: false,
+      swapModel: 'lfm-2.5-1.2b-instruct-openrouter-free',
+      swapChain: [{ id: 'lfm-2.5-1.2b-instruct-openrouter-free' }],
+      outBody: Buffer.from('{}'),
+      sessionForTelemetry: 'live-test',
+      clientRes,
+      clientReq: { headers: {} },
+      projectRoot: fixtureRoot,
+      compactSubmitter: (root) => {
+        compactCalls += 1;
+        assert.equal(root, fixtureRoot);
+        return { submitted: true, reason: 'submitted' };
+      },
+    });
+    assert.equal(verdict.ended, true);
+    assert.equal(clientRes.statusCode, 413);
+    assert.equal(compactCalls, 1, 'real interactive over-window must deploy the cc shortcut');
+    assert.ok(writes.some((line) => line.includes('cc_compact=submitted')));
+  } finally {
+    fs.appendFileSync = originalAppend;
+    if (oldBytesPerTok == null) delete process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST; else process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = oldBytesPerTok;
   }
 });
