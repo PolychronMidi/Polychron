@@ -120,6 +120,7 @@ function parseProxyContextEnv(env = process.env) {
     passthroughCompactBytes: _envPositiveInt(env, 'HME_PROXY_COMPACT_BYTES'),
     keepMin: _envPositiveInt(env, 'HME_PROXY_COMPACT_KEEP_MIN'),
     staleToolKeepTurns: _envPositiveInt(env, 'HME_PROXY_STALE_TOOL_KEEP_TURNS'),
+    toolResultByteFloor: _envPositiveInt(env, 'HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR'),
     contextPreflightFraction: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_PREFLIGHT_FRACTION'),
     contextSignalRemainingFraction: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION'),
     contextBytesPerTokenEst: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST'),
