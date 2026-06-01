@@ -1020,20 +1020,31 @@ test('context budget compaction gears start near context high-water and escalate
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 1);
     assert.equal(plan.threshold, 800);
-    // stale horizon = STALE_TOOL_KEEP_TURNS (4) * gear mult (3/2/1)
-    assert.equal(plan.maxToolResultAge, 12);
+    // Env baselines trim by gear; never derive from prior effective values.
+    assert.equal(plan.maxToolResultAge, 30);
+    assert.equal(plan.keepMin, 30);
+    assert.equal(plan.toolResultByteFloor, 28000);
 
     payload = { messages: [{ role: 'user', content: 'x'.repeat(880) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 2);
     assert.equal(plan.threshold, 900);
-    assert.equal(plan.maxToolResultAge, 8);
+    assert.equal(plan.maxToolResultAge, 20);
+    assert.equal(plan.keepMin, 20);
+    assert.equal(plan.toolResultByteFloor, 18000);
 
     payload = { messages: [{ role: 'user', content: 'x'.repeat(990) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 3);
     assert.equal(plan.threshold, 970);
-    assert.equal(plan.maxToolResultAge, 4);
+    assert.equal(plan.maxToolResultAge, 10);
+    assert.equal(plan.keepMin, 12);
+    assert.equal(plan.toolResultByteFloor, 10000);
+    assert.deepEqual(plan.compactionKnobBaselines, {
+      keepMin: 40,
+      staleToolKeepTurns: 40,
+      toolResultByteFloor: 40000,
+    });
   } finally {
     process.env = oldEnv;
     if (prevStatusline == null) {
