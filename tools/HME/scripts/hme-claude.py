@@ -359,7 +359,7 @@ def main():
                         steps = [step for step in (steps or []) if step]
                         if steps and (interrupt or not pending_steps):
                             if interrupt:
-                                # Ctrl-C aborts the active request; defer /compact until 
+                                # Ctrl-C aborts active request; defer /compact until idle
                                 pending_steps = list(steps)
                                 if type_into_session("\x03"):
                                     step_started_at = time.time()
