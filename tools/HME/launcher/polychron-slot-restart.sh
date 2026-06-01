@@ -55,7 +55,7 @@ process.stdout.write(computeRuntimeFingerprint(process.env.PROJECT_ROOT));
 NODE
 }
 
-# silent-ok: advisory state/log write; failure cannot certify success.
+# silent-ok: fingerprint failure becomes literal "unknown", preventing a false claim that
 _RUNTIME_FP="$(_current_runtime_fingerprint 2>/dev/null || printf unknown)"
 _mark_slot_starting() {
   # silent-ok: helper failure falls through to blocked/unready probe path.

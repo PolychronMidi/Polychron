@@ -53,8 +53,15 @@ else
 fi
 
 # No non-legacy mcp__HME__ references in hooks/
-# silent-ok: probe/decoration only; absent result is handled by caller.
-MCP_REFS=$(grep -rn "mcp__HME__" tools/HME/hooks/ 2>/dev/null | grep -v -E '(^[^:]+:[0-9]+:#|legacy|historical transcripts|mcp__HME__\* )' || true)
+_MCP_RAW=$(grep -rn "mcp__HME__" tools/HME/hooks/ 2>/dev/null)
+_MCP_GREP_RC=$?
+if [ "$_MCP_GREP_RC" -gt 1 ]; then
+  _fail "mcp__HME__ grep failed with rc=$_MCP_GREP_RC"
+  MCP_REFS=""
+else
+  # silent-ok: grep rc=1 means no mcp__HME__ references; rc>1 is failed above.
+  MCP_REFS=$(printf '%s\n' "$_MCP_RAW" | grep -v -E '(^[^:]+:[0-9]+:#|legacy|historical transcripts|mcp__HME__\* )' || true)
+fi
 if [ -z "$MCP_REFS" ]; then
   _ok "no non-legacy mcp__HME__ references in tools/HME/hooks/"
 else
@@ -87,7 +94,7 @@ else
 fi
 
 # log/tmp are root-only; metrics has project and HME roots
-# silent-ok: noncritical probe; caller consumes missing/failed result explicitly.
+# silent-ok: find stderr is EACCES noise in smoke env; accessible misplaced dirs still po
 ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp \) \
   -not -path "./log*" -not -path "./tmp*" \
   -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null; \
@@ -95,7 +102,7 @@ ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp \) \
   -not -path "./src/output/metrics*" \
   -not -path "./tools/HME/runtime/metrics*" \
   -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null)
-# silent-ok: find 2>/dev/null suppresses EACCES noise from untraversable dirs in smoke en
+# silent-ok: find stderr is EACCES noise in smoke env; accessible misplaced dirs still po
 if [ -z "$ORPHAN_DIRS" ]; then
   _ok "no misplaced log/tmp/metrics directories"  #
 else

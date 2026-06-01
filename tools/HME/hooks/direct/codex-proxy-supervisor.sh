@@ -30,9 +30,9 @@ if [ -f "$_SV_ROOT/.env" ]; then
   set +a
 fi
 
-# silent-ok: advisory state/log write; failure cannot certify success.
+# silent-ok: service_registry.sh may be absent; fallback uses HME_CODEX_PROXY_PORT/defaul
 _CP_PORT="$(_hme_service_port codex_proxy 2>/dev/null || printf '%s' "${HME_CODEX_PROXY_PORT:-9102}")"
-# silent-ok: advisory state/log write; failure cannot certify success.
+# silent-ok: service_registry.sh may be absent; fallback builds localhost /health URL fro
 _CP_URL="$(_hme_service_url codex_proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_CP_PORT")"
 _CP_PID_FILE="$_SV_ROOT/tools/HME/runtime/codex-proxy.pid"
 _CP_SCRIPT="$_SV_ROOT/tools/HME/proxy/codex_proxy.js"

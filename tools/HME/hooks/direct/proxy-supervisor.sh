@@ -560,7 +560,7 @@ _sv_loop() {
     exit 1
   fi
   if command -v flock >/dev/null 2>&1; then
-    if ! flock -n 200 2>/dev/null; then  # silent-ok: optional fallback path.
+    if ! flock -n 200 2>/dev/null; then  # silent-ok: lock denial is the singleton signal; branch logs and exits without starting a duplicate supervisor.
       _sv_log "another supervisor holds the lock at $_SV_LOCK_FILE; refusing to start (this pid=$$)"
       exit 0
     fi
