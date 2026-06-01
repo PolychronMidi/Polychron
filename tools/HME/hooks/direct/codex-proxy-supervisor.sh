@@ -16,7 +16,7 @@ done
 
 if [ -z "$_SV_ROOT" ]; then
   echo "[codex-proxy-supervisor] cannot resolve project root" >&2
-  exit 0
+  exit 1
 fi
 
 PROJECT_ROOT="$_SV_ROOT"
