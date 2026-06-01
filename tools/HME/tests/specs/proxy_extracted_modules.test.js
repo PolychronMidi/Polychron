@@ -1122,6 +1122,42 @@ test('compaction knobs scale from env baselines per gear without ratcheting', ()
   }
 }));
 
+test('live-style overflow payload compacts below gpt-5.5-xhigh context budget', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '2.6';
+    process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.85';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '20';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '15';
+    process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '15000';
+    process.env.HME_PROXY_COMPACT_BYTES = '4000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.85';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.95';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.85';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.95';
+    process.env.HME_PROXY_OMNI_LOCAL_SUMMARY = '0';
+    process.env.HME_OMO_PRUNING_BRIDGE = '0';
+    const budget = createContextBudget();
+    const payload = { model: 'cx/gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 80; i += 1) {
+      const id = `overflow-fixture-${i}`;
+      payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+      payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(25000) }] });
+    }
+    const beforeTokens = semanticTokenEstimate(payload, process.env);
+    assert.ok(beforeTokens > 480000, `fixture must start over-window, got ${beforeTokens}`);
+    const changed = budget.shrinkForContext(payload, 'gpt-5.5-xhigh');
+    const afterTokens = semanticTokenEstimate(payload, process.env);
+    assert.ok(changed > 0);
+    assert.ok(afterTokens < 480000, `post-compact estimate ${afterTokens} must fit gpt-5.5-xhigh`);
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+
 test('context-window overflow alert is a named self-origin LIFESAVER only when over budget', () => {
   // Within budget -> no alert.
   assert.equal(contextWindowOverflowAlert({ model: 'cx/gpt-5.5-high', usedTokens: 100, budget: 372000, afterBytes: 1000, ts: 'T' }), '');
