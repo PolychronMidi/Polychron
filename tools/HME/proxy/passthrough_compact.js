@@ -73,7 +73,7 @@ function shrinkForPassthrough(payload, opts = {}) {
     log(`precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${afterBytes}B`);
     if (afterBytes <= threshold) {
       log('precompact: tier-1 sufficient, no message drops needed');
-      _emitCompaction({ route, model, stage: 'microcompact', tier: maxTier, before_bytes: beforeBytes, after_bytes: afterBytes, threshold_bytes: Number.isFinite(threshold) ? threshold : 0, before_messages: beforeMessages, after_messages: msgs.length, messages_dropped: 0, stale_tool_results_elided: elided, orphan_tool_blocks_scrubbed: 0, emergency_tail_elided: 0, keep_min: keepMin }, telemetry);
+      _emitCompaction({ route, model, stage: 'microcompact', tier: maxTier, before_bytes: beforeBytes, after_bytes: afterBytes, threshold_bytes: Number.isFinite(threshold) ? threshold : 0, before_messages: beforeMessages, after_messages: msgs.length, messages_dropped: 0, stale_tool_results_elided: elided, orphan_tool_blocks_scrubbed: 0, emergency_tail_elided: 0, keep_min: keepMin, max_tool_result_age: maxToolResultAge, tool_result_byte_floor: toolResultByteFloor }, telemetry);
       return elided;
     }
   }
