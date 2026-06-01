@@ -4,16 +4,25 @@ _hme_bg() {
   local name="$1" log_file="$2"
   shift 2
   [ "$#" -gt 0 ] || return 0
-  mkdir -p "$(dirname "$log_file")" 2>/dev/null || true
+  if ! mkdir -p "$(dirname "$log_file")" 2>/dev/null; then
+    printf '[hme-bg] log directory unavailable for %s: %s\n' "$name" "$log_file" >&2
+    return 1
+  fi
   local runtime_root="${PROJECT_ROOT}"
   local runtime_dir="$runtime_root/tools/HME/runtime"
-  mkdir -p "$runtime_dir" 2>/dev/null || return 0
+  if ! mkdir -p "$runtime_dir" 2>/dev/null; then
+    printf '[hme-bg] runtime directory unavailable for %s: %s\n' "$name" "$runtime_dir" >&2
+    return 1
+  fi
   local lock_name
   lock_name=$(printf '%s' "$name" | tr -c 'A-Za-z0-9_.-' '_')
   local lock_file="$runtime_dir/bg-${lock_name}.lock"
   (
     if command -v flock >/dev/null 2>&1; then
-      exec 199>"$lock_file" || exit 0
+      if ! exec 199>"$lock_file"; then
+        printf '[%s] fail %s lock-unavailable: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$name" "$lock_file"
+        exit 1
+      fi
       if ! flock -n 199 2>/dev/null; then
         printf '[%s] skip %s already-running\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$name"
         exit 0
