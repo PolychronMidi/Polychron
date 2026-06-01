@@ -49,12 +49,14 @@ function formatProxyFailureLine(site, err) {
 }
 
 function recordProxyFailure(root, site, err) {
+  const line = formatProxyFailureLine(site, err);
   try {
     const logPath = path.join(root, ERROR_LOG_REL);
     fs.mkdirSync(path.dirname(logPath), { recursive: true });
-    fs.appendFileSync(logPath, formatProxyFailureLine(site, err) + '\n');
+    fs.appendFileSync(logPath, line + '\n');
     return true;
-  } catch (_e) {
+  } catch (logErr) {
+    console.error(`${line} (hme-errors append failed: ${logErr.message})`);
     return false;
   }
 }
