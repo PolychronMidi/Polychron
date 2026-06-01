@@ -166,14 +166,16 @@ def resolve_steps(multistep, token, prompt=""):
 
 def decode_control_line(line):
     parts = line.strip().split(b"\t", 1)
-    token = parts[0].decode("utf-8", "replace").lower()
+    raw_token = parts[0].decode("utf-8", "replace").lower()
+    interrupt = raw_token.endswith("!")
+    token = raw_token[:-1] if interrupt else raw_token
     prompt = ""
     if len(parts) == 2:
         try:
             prompt = base64.b64decode(parts[1], validate=True).decode("utf-8", "replace")
         except (binascii.Error, ValueError, TypeError):
             prompt = ""
-    return token, prompt
+    return token, prompt, interrupt
 
 
 def _ansi_variants(text):
