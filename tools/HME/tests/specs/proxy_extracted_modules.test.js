@@ -271,7 +271,7 @@ test('OmniRoute context-window overflow submits cc shortcut instead of bailing t
       try { const n = fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) token = buf.slice(0, n).toString('utf8'); }
       catch (_e) { /* EAGAIN on the non-blocking pipe; retry */ }
     }
-    assert.match(token, /^cc\n/, 'submits the cc shortcut (/compact -> continue) to the live-session FIFO');
+    assert.match(token, /^cc!\n/, 'submits the interrupting cc shortcut so /compact does not queue behind generation');
     const state = loadModelRouteHealth(dir);
     assert.equal(state['cx/gpt-a'].reason, 'context_window_exceeded', 'still quarantines the overflowed route');
   } finally {
