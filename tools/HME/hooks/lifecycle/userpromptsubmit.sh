@@ -29,7 +29,7 @@ fi
 
 if [ -n "$PROJECT_ROOT" ] && [ -f "${PROJECT_ROOT}/doc/templates/TODO.md" ]; then
   mkdir -p "${_HME_PROJECT_TMP}" 2>/dev/null
-  cp "${PROJECT_ROOT}/doc/templates/TODO.md" "${_HME_PROJECT_TMP}/todo-turn-start.md" 2>/dev/null || true  # silent-ok: optional fallback path.
+  cp "${PROJECT_ROOT}/doc/templates/TODO.md" "${_HME_PROJECT_TMP}/todo-turn-start.md" 2>/dev/null || true  # silent-ok: todo survivor preimage cache is advisory; precommit has canonical HEAD diff.
 fi
 
 _signal_emit turn_start userpromptsubmit turn '{}'

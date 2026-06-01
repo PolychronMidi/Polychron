@@ -32,12 +32,11 @@ function readJsonFile(file) {
 }
 
 async function main() {
-  const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
-  loadDotEnv(root);
-  const shufflerPort = Number(process.env.HME_PROXY_PORT || 9099);
+  const root = requireEnv('PROJECT_ROOT');
+  const shufflerPort = requireEnvInt('HME_PROXY_PORT');
   const slotPorts = {
-    a: Number(process.env.HME_PROXY_BACKEND_A_PORT || 9100),
-    b: Number(process.env.HME_PROXY_BACKEND_B_PORT || 9101),
+    a: requireEnvInt('HME_PROXY_BACKEND_A_PORT'),
+    b: requireEnvInt('HME_PROXY_BACKEND_B_PORT'),
   };
   const runtimeDir = path.join(root, 'tools', 'HME', 'runtime');
   const healthFiles = {
