@@ -305,7 +305,7 @@ set -u
 source "${REPO}/tools/HME/hooks/helpers/bg.sh"
 script=$(python3 - <<'PY'
 print('pad="' + ('x' * 300000) + '"')
-print('printf shell-ok >"${OUT}"')
+print('printf shell-ok >"\\${OUT}"')
 PY
 )
 OUT="${out}" _hme_bg_shell_timeout 5 shell-big "${root}/log/hme-bg-shell-big.err" "$script"
