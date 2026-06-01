@@ -998,8 +998,9 @@ test('context budget compaction gears start near context high-water and escalate
   try {
     try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
-    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
-    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '4';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '40';
+    process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '40000';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
     process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
