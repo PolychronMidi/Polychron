@@ -12,7 +12,7 @@ function ccControlFifo(root) {
 
 // Write a shortcut token to the cc-control FIFO. Non-blocking O_WRONLY: when no
 // PTY bridge is attached the open fails with ENXIO (no reader) or ENOENT (no
-function submitCcShortcut(root, key = 'cc', prompt = '') {
+function submitCcShortcut(root, key = 'cc', prompt = '', { interrupt = false } = {}) {
   const fifo = ccControlFifo(root);
   let fd;
   try {
@@ -23,9 +23,10 @@ function submitCcShortcut(root, key = 'cc', prompt = '') {
     // caller's log rather than masquerade as "bridge absent".
     throw err;
   }
+  const token = interrupt ? `${key}!` : key;
   const suffix = prompt ? `\t${Buffer.from(String(prompt), 'utf8').toString('base64')}` : '';
   try {
-    fs.writeSync(fd, `${key}${suffix}\n`);
+    fs.writeSync(fd, `${token}${suffix}\n`);
     return true;
   } catch (err) {
     if (err && err.code === 'EPIPE') return false; // reader vanished mid-write
