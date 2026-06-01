@@ -164,6 +164,7 @@ function createContextBudget() {
     passthroughCompactBytes,
     keepMin,
     staleToolKeepTurns,
+    toolResultByteFloor,
     contextPreflightFraction,
     contextSignalRemainingFraction,
     contextBytesPerTokenEst,
