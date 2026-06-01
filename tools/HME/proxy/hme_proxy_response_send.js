@@ -125,7 +125,8 @@ function maybeStripNonSseHookUiEcho({ outBuf, projectRoot = PROJECT_ROOT }) {
     if (!changed) return null;
     parsed.content = nextContent;
     return Buffer.from(JSON.stringify(parsed), 'utf8');
-  } catch (_e) {
+  } catch (err) {
+    recordProxyFailure(projectRoot, 'response-json-hook-ui-echo-strip', err);
     return null;
   }
 }
