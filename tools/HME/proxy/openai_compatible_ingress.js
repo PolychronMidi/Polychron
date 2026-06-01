@@ -78,9 +78,12 @@ function loadTemplate(root = PROJECT_ROOT, name) {
     const entry = { mtimeMs: stat.mtimeMs, content: content.trim() ? content : null };
     templateCache.set(file, entry);
     return entry.content;
-  } catch (_err) {
-    templateCache.set(file, { mtimeMs: 0, content: null });
-    return null;
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      templateCache.set(file, { mtimeMs: 0, content: null });
+      return null;
+    }
+    throw new Error(`OpenAI-compatible prompt template unreadable at ${file}: ${err.message}`);
   }
 }
 
