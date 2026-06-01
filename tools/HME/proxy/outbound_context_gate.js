@@ -72,6 +72,8 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
 function applyOutboundContextGate({
   payload, isAnthropic, isInteractivePath, isOmniRouteSwap,
   swapModel, swapChain, outBody, sessionForTelemetry, clientRes, clientReq,
+  projectRoot = PROJECT_ROOT,
+  compactSubmitter = submitCcCompactOnce,
 }) {
   let nextOutBody = outBody;
   let nextSwapModel = swapModel;
