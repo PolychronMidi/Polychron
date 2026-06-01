@@ -96,13 +96,21 @@ class ConjugateChannelVerifier(Verifier):
             return errored(summary=f"could not read: {e}")
         latest = d.get("latest") or {}
         history = d.get("history") or []
-        all_rounds = [r for r in (history + [latest])
-                      if isinstance(r.get("hme_coherence"), (int, float))
-                      and isinstance(r.get("perceptual_complexity_avg"), (int, float))]
+        all_rounds = []
+        signal_sources = set()
+        for r in history + [latest]:
+            if not isinstance(r, dict) or not _is_number(r.get("perceptual_complexity_avg")):
+                continue
+            signal, source = _conjugate_hme_signal(r)
+            if signal is None:
+                continue
+            all_rounds.append({**r, "_conjugate_hme_signal": signal})
+            if source:
+                signal_sources.add(source)
         if not all_rounds:
             return skipped(summary="no rounds carry both signals")
-        if not isinstance(latest.get("hme_coherence"), (int, float)) or \
-           not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
+        latest_signal, latest_source = _conjugate_hme_signal(latest)
+        if latest_signal is None or not _is_number(latest.get("perceptual_complexity_avg")):
             # SKIP path -- but DON'T let the streak-aware license signal go
             try:
                 _streak = _count_legendary_streak(_PROJECT)
