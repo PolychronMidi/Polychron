@@ -216,11 +216,13 @@ function createContextBudget() {
     if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
     const targetFraction = gear === 1 ? compactGear1Target : (gear === 2 ? compactGear2Target : compactGear3Target);
     const threshold = Math.max(1, Math.floor(budgetTokens * targetFraction * contextBytesPerTokenEst));
-    // staleToolKeepTurns is env-failfast-guaranteed positive (requireEnvInt); gear tight
-    const staleBase = Number(staleToolKeepTurns);
-    const staleHorizon = gear === 1 ? staleBase * 3 : (gear === 2 ? staleBase * 2 : staleBase);
-    const floor = gear === 1 ? 30000 : (gear === 2 ? 20000 : 15000);
-    return { threshold, maxTier: gear, maxToolResultAge: staleHorizon, toolResultByteFloor: floor };
+    // All gear knobs derive ONLY from the env baseline loaded for this request.
+    // Never ratchet from a previously compacted/effective value.
+    return {
+      threshold,
+      maxTier: gear,
+      ..._gearScaledCompactionKnobs({ gear, keepMin, staleToolKeepTurns, toolResultByteFloor }),
+    };
   }
 
   function resolveModelCtx(modelId) {
