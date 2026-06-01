@@ -103,11 +103,18 @@ function applyOutboundContextGate({
     const reason = `UPSTREAM_PREFLIGHT_OVER_WINDOW: est ${verdict.tokens} input tokens > route budget ${verdict.budget} for ${verdict.model}; compaction and reroute exhausted. Refusing to ship a known-over-window request.`;
     const isPreflightSmoke = clientReq && clientReq.headers && clientReq.headers['x-hme-preflight-smoke'] === '1';
     if (!isPreflightSmoke) {
+      let compactResult = null;
       try {
-        fs.appendFileSync(path.join(PROJECT_ROOT, 'log', 'hme-errors.log'),
-          `[${new Date().toISOString()}] [outbound-gate] ${reason}\n`);
+        compactResult = compactSubmitter(projectRoot);
+      } catch (err) {
+        compactResult = { submitted: false, reason: 'error', error: err && err.message ? err.message : String(err) };
+      }
+      try {
+        fs.appendFileSync(path.join(projectRoot, 'log', 'hme-errors.log'),
+          `[${new Date().toISOString()}] [outbound-gate] ${reason} cc_compact=${compactResult && compactResult.submitted ? 'submitted' : (compactResult && compactResult.reason) || 'unavailable'}\n`);
       } catch (_e) { /* silent-ok: error-log surfacing is best-effort */ }
       emit({ event: 'outbound_gate_over_window', session: sessionForTelemetry, model: verdict.model, tokens: verdict.tokens, budget: verdict.budget });
+      emit({ event: 'outbound_gate_compact_requested', session: sessionForTelemetry, model: verdict.model, delivered: Boolean(compactResult && compactResult.submitted), reason: compactResult && compactResult.reason, error: compactResult && compactResult.error });
     }
     clientRes.writeHead(413, { 'Content-Type': 'application/json' });
     clientRes.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: reason } }));

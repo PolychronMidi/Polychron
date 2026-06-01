@@ -19,6 +19,8 @@ test('OmniRoute 200 api_error terminated -> stream_timeout', () => {
 
 test('SSE context-window message -> context_window', () => {
   assert.equal(classifyFailure(200, { message: 'input exceeds the context window' }), 'context_window');
+  assert.equal(classifyFailure(200, { type: 'api_error', message: 'Your input exceeds the context window of this model. Please adjust your input and try again.' }), 'context_window');
+  assert.equal(classifyFailure(400, { type: 'invalid_request_error', message: 'maximum context length exceeded' }), 'context_window');
 });
 
 test('400/401/403 with credential keywords -> credential_failure', () => {
