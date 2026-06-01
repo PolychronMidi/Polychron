@@ -138,6 +138,20 @@ test('buildHostPayload encodes transcript failfast for mandatory stop policy', (
   assert.match(payload._hme_transcript_error, /Claude transcript project directory missing/);
 });
 
+
+test('inline Stop fallback normalizes transcript_path before dispatch', () => {
+  const { root, ccDir, ccProject } = sandbox();
+  const session = '22222222-eeee-eeee-eeee-eeeeeeeeeeee';
+  const transcript = path.join(ccDir, `${session}.jsonl`);
+  writeJsonl(transcript, [{ type: 'user', message: { content: 'parent' } }]);
+  withClaudeProjectDir(ccProject, () => withProxyRootEnv(root, () => {
+    const { _normalizeInlinePayload } = require('../../proxy/lifecycle_bridge');
+    const payload = JSON.parse(_normalizeInlinePayload('Stop', JSON.stringify({ session_id: session }), { root, cwd: root }));
+    assert.equal(payload.transcript_path, transcript);
+    assert.equal(fs.readFileSync(path.join(root, 'tmp/hme-transcript-path.txt'), 'utf8').trim(), transcript);
+  }));
+});
+
 test('normalizeLifecyclePayload propagates HME_SUBAGENT=1 to payload._hme_subagent', () => {
   const { normalizeLifecyclePayload } = require('../../event_kernel/lifecycle_payload');
   const prior = process.env.HME_SUBAGENT;
