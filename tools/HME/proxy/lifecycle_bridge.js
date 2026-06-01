@@ -177,4 +177,5 @@ module.exports = {
   lifecycleInactive,
   runInlineFallback,
   handleLifecycleRoute,
+  _normalizeInlinePayload,
 };
