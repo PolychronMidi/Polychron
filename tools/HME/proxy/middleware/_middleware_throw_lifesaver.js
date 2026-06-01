@@ -28,12 +28,14 @@ function formatMiddlewareThrowLine(modName, err) {
 }
 
 function recordMiddlewareThrow(root, modName, err) {
+  const line = formatMiddlewareThrowLine(modName, err);
   try {
     const logPath = path.join(root, ERROR_LOG_REL);
     fs.mkdirSync(path.dirname(logPath), { recursive: true });
-    fs.appendFileSync(logPath, formatMiddlewareThrowLine(modName, err) + '\n');
+    fs.appendFileSync(logPath, line + '\n');
     return true;
-  } catch (_e) {
+  } catch (logErr) {
+    console.error(`${line} (hme-errors append failed: ${logErr.message})`);
     return false;
   }
 }
