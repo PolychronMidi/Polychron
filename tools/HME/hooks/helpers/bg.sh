@@ -90,5 +90,30 @@ _hme_bg_stdin_timeout() {
 
 _hme_bg_shell_timeout() {
   local seconds="$1" name="$2" log_file="$3" script="$4"
-  _hme_bg_timeout "$seconds" "$name" "$log_file" bash -c "$script"
+  local runtime_root="${PROJECT_ROOT}"
+  local runtime_dir="$runtime_root/tools/HME/runtime/bg-scripts"
+  local lock_name script_file
+  lock_name=$(printf '%s' "$name" | tr -c 'A-Za-z0-9_.-' '_')
+  if ! mkdir -p "$runtime_dir"; then
+    printf '[%s] skip %s: bg script dir unavailable: %s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$name" "$runtime_dir" >>"$log_file" 2>/dev/null || true  # silent-ok: bg telemetry channel; hook safety state is independent
+    return 0
+  fi
+  script_file=$(mktemp "$runtime_dir/${lock_name}.XXXXXX.sh") || {
+    printf '[%s] skip %s: mktemp failed in %s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$name" "$runtime_dir" >>"$log_file" 2>/dev/null || true  # silent-ok: bg telemetry channel; hook safety state is independent
+    return 0
+  }
+  if ! {
+    printf '%s\n' '#!/usr/bin/env bash'
+    printf '%s\n' 'trap '\''rm -f "$0"'\'' EXIT'
+    printf '%s\n' "$script"
+  } >"$script_file"; then
+    rm -f "$script_file" 2>/dev/null || true  # silent-ok: best-effort cleanup after temp-script write failure
+    printf '[%s] skip %s: failed to write temp bg script: %s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$name" "$script_file" >>"$log_file" 2>/dev/null || true  # silent-ok: bg telemetry channel; hook safety state is independent
+    return 0
+  fi
+  chmod 700 "$script_file" 2>/dev/null || true  # silent-ok: bash reads the file directly; executable bit is diagnostic-only
+  _hme_bg_timeout "$seconds" "$name" "$log_file" bash "$script_file"
 }
