@@ -239,6 +239,20 @@ test('responseHasErrorEvent detects SSE and JSON errors', () => {
   assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))), false);
 });
 
+test('Stop fallback omits blank transcript_path so lifecycle resolver can fill it', () => {
+  let captured = null;
+  maybeRunStopFallback({
+    isAnthropic: true,
+    payload: { metadata: { user_id: JSON.stringify({ session_id: 'stop-fallback-session' }) }, messages: [{ role: 'user', content: 'hi' }] },
+    outBuf: Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'done' }] })),
+    lifecycleInactive: (event) => event === 'Stop',
+    runInlineFallback: (event, stdin) => { captured = { event, payload: JSON.parse(stdin) }; },
+  });
+  assert.equal(captured.event, 'Stop');
+  assert.equal(captured.payload.session_id, 'stop-fallback-session');
+  assert.equal(Object.prototype.hasOwnProperty.call(captured.payload, 'transcript_path'), false);
+});
+
 test('OmniRoute context-window overflow submits cc shortcut instead of bailing to another model', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-context-cc-'));
   let readFd = null;
