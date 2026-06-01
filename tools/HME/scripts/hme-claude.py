@@ -359,14 +359,13 @@ def main():
                         steps = [step for step in (steps or []) if step]
                         if steps and (interrupt or not pending_steps):
                             if interrupt:
-                                pending_steps = []
-                                # Ctrl-C first: abort the active request so /compact is
-                                # typed into the REPL, not queued behind generation.
-                                type_into_session("\x03")
-                                time.sleep(0.05)
-                            # Type the first step now; queue the rest to drain
-                            # one at a time as the REPL goes idle between them.
-                            if type_into_session(steps[0] + "\r"):
+                                # Ctrl-C aborts the active request; defer /compact until 
+                                pending_steps = list(steps)
+                                if type_into_session("\x03"):
+                                    step_started_at = time.time()
+                                    last_master_out = time.time()
+                            elif type_into_session(steps[0] + "\r"):
+                                # Queue the rest one-at-a-time as the REPL goes idle.
                                 pending_steps = list(steps[1:])
                                 step_started_at = time.time()
                                 last_master_out = time.time()
