@@ -1,6 +1,10 @@
 'use strict';
 
 const CREDENTIAL_KEYWORDS = /auth|credential|api[_ -]?key|invalid[_ -]?key|no credentials|forbidden|unauthorized/i;
+const CONTEXT_WINDOW_RE = /(?:input|context)\s+(?:exceeds|exceeded|too\s+large|over)\s+(?:the\s+)?(?:model\s+)?context\s+window|context\s+window\s+of\s+this\s+model|maximum\s+context\s+length/i;
+function isContextWindowMessage(message) {
+  return CONTEXT_WINDOW_RE.test(String(message || ''));
+}
 
 function classifyFailure(status, errInfo) {
   const type = String(errInfo && errInfo.type || '').toLowerCase();
