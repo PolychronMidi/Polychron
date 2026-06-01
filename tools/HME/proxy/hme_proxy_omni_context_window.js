@@ -22,7 +22,7 @@ function _isContextWindowExceededSse({ isOmniRouteSwap, status, outHeaders, outB
     return false;
   }
   const text = outBuf.toString('utf8');
-  return !text.includes('event: message_start') && /input exceeds the context window/i.test(text);
+  return !text.includes('event: message_start') && isContextWindowMessage(text);
 }
 
 function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel: _swapModel, anthropicTextSseBuffer: _anthropicTextSseBuffer, log = console.error }) {
