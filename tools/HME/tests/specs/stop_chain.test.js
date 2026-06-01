@@ -154,6 +154,23 @@ test('stop_chain: optional post_hooks exception still fails open', async () => {
   });
 });
 
+test('stop_chain: detectors receive resolved transcript_path from normalized Stop payload', async () => {
+  let seenTranscript = '';
+  await _withMockedStopPolicies({
+    detectors: { name: 'detectors', run: async (ctx) => {
+      seenTranscript = JSON.parse(ctx.stdinJson).transcript_path || '';
+      return ctx.allow();
+    } },
+  }, async (chain, sandbox) => {
+    const transcript = path.join(sandbox, 'tmp', 'stop-session.jsonl');
+    fs.writeFileSync(transcript, JSON.stringify({ type: 'user', message: { content: 'hi' } }) + '\n');
+    const body = JSON.stringify({ session_id: 'stop-session', transcript_path: transcript });
+    const result = await chain.runStopChain(body);
+    assert.strictEqual(result.stdout, '');
+    assert.strictEqual(seenTranscript, transcript);
+  });
+});
+
 test('stop_chain: runStopChain with empty payload returns shape {stdout, stderr, exit_code}',
   _withChainSandbox(async (chain) => {
     const result = await chain.runStopChain('{}');
