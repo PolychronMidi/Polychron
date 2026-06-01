@@ -58,8 +58,9 @@ PY_SURFACED = re.compile(
 )
 
 JS_SURFACED = re.compile(
-    r"throw\b|ctx\.warn\b|console\.(?:error|warn)\b"
+    r"throw\b|ctx\.warn\b|console\.(?:error|warn)\b|process\.stderr\.write\s*\("
     r"|_lifesaverBlock\s*\(|_failClosedPolicyError\s*\(|logHookError\s*\("
+    r"|recordProxyFailure\s*\(|reportFailure\s*\(|record\s*\(\s*\{\s*kind\s*:"
     r"|\bexit_code\s*:\s*[1-9]"
     r"|return\s+[^;\n]*(?:error|failure|failed|denied|blocked|unavailable)"
 )
