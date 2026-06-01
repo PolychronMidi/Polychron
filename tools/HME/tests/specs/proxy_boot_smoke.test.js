@@ -73,6 +73,9 @@ test('hme_proxy.js boots, binds the smoke port, answers /health, and exits clean
     const parsed = JSON.parse(res.body);
     assert.strictEqual(parsed.ok, true, `/health body should report ok=true (body=${res.body.slice(0, 200)})`);
     assert.strictEqual(parsed.port, port, `/health body should echo bound port`);
+    const runtime = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/runtime/proxy-runtime.json'), 'utf8'));
+    assert.ok(runtime.runtime_fingerprint, 'proxy runtime metadata must include fingerprint');
+    assert.doesNotMatch(Buffer.concat(stderrChunks).toString('utf8'), /failed to write runtime metadata/);
   } finally {
     if (!child.killed) child.kill('SIGTERM');
     await new Promise((resolve) => {
