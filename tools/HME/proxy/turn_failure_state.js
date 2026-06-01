@@ -26,8 +26,13 @@ function readFailure(root = PROJECT_ROOT) {
     const age = Date.now() - Date.parse(data.ts || '');
     if (!Number.isFinite(age) || age > TTL_MS) { clearFailure(root); return null; }
     return data;
-  } catch (_err) {
-    return null;
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return null;
+    return {
+      ts: new Date().toISOString(),
+      tool: 'turn-failure-state',
+      reason: `state unreadable/corrupt: ${err.message}`,
+    };
   }
 }
 
