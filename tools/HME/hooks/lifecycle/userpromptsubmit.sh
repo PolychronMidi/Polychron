@@ -104,7 +104,7 @@ python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
 mkdir -p "$_HME_PROJECT_TMP"
 
 if [ -f "$ERROR_LOG" ]; then
-  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
+  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)  # silent-ok: unreadable error log rechecks next turn; watermark is not advanced.
   LAST=0
   [ -f "$WATERMARK" ] && LAST=$(cat "$WATERMARK" 2>/dev/null || echo 0)
 

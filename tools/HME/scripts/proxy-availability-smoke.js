@@ -17,7 +17,7 @@ function requestJson(port, route, timeoutMs = 2000) {
       res.on('end', () => {
         const body = Buffer.concat(chunks).toString('utf8');
         let json = null;
-        try { json = JSON.parse(body); } catch (_e) { json = null; }
+        try { json = JSON.parse(body); } catch (_e) { json = null; } // silent-ok: malformed health JSON is surfaced as json=null in the smoke result
         resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, json, body });
       });
     });
