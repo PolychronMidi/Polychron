@@ -238,3 +238,91 @@ test('CLI smoke UserPromptSubmit bypasses lifecycle watchdog without muting norm
   assert.match(fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8'), /hook-watchdog/);
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+function writeFakeSetsid(root) {
+  const fakeSetsid = path.join(root, 'bin', 'setsid');
+  fs.writeFileSync(fakeSetsid, `#!/usr/bin/env bash
+for arg in "$@"; do
+  if [ "${'${#arg}'}" -gt 1000 ]; then
+    echo "fake-setsid: oversized argv leaked to exec" >&2
+    exit 99
+  fi
+done
+exec "$@"
+`);
+  fs.chmodSync(fakeSetsid, 0o755);
+}
+
+function waitForLogEnd(root, name, timeoutMs = 5000) {
+  const logPath = path.join(root, 'log', `hme-bg-${name}.err`);
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (fs.existsSync(logPath)) {
+      const log = fs.readFileSync(logPath, 'utf8');
+      if (new RegExp(`end ${name} exit=\\d+`).test(log)) return log;
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+  }
+  return fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';
+}
+
+test('bg stdin timeout keeps large prompt payload out of setsid argv', () => {
+  const root = sandbox('hme-bg-stdin-');
+  writeFakeSetsid(root);
+  const driver = path.join(root, 'tmp', 'bg-stdin-driver.sh');
+  const out = path.join(root, 'tmp', 'stdin-len.txt');
+  fs.writeFileSync(driver, `#!/usr/bin/env bash
+set -u
+source "${REPO}/tools/HME/hooks/helpers/bg.sh"
+payload=$(python3 - <<'PY'
+print('x' * 300000)
+PY
+)
+OUT="${out}" _hme_bg_stdin_timeout 5 stdin-big "${root}/log/hme-bg-stdin-big.err" "$payload" \
+  env OUT="${out}" python3 -c 'import os, sys; open(os.environ["OUT"], "w").write(str(len(sys.stdin.read())))'
+`);
+  fs.chmodSync(driver, 0o755);
+  const res = spawnSync('bash', [driver], {
+    cwd: REPO,
+    encoding: 'utf8',
+    env: { ...process.env, PROJECT_ROOT: root, PATH: path.join(root, 'bin') + path.delimiter + ORIGINAL_PATH },
+  });
+  assert.strictEqual(res.status, 0, res.stderr);
+  const log = waitForLogEnd(root, 'stdin-big');
+  assert.match(log, /end stdin-big exit=0/, log);
+  assert.strictEqual(fs.readFileSync(out, 'utf8'), '300001');
+  assert.doesNotMatch(log, /oversized argv leaked/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('bg shell timeout materializes large scripts before setsid exec', () => {
+  const root = sandbox('hme-bg-shell-');
+  writeFakeSetsid(root);
+  const driver = path.join(root, 'tmp', 'bg-shell-driver.sh');
+  const out = path.join(root, 'tmp', 'shell-out.txt');
+  fs.writeFileSync(driver, `#!/usr/bin/env bash
+set -u
+source "${REPO}/tools/HME/hooks/helpers/bg.sh"
+script=$(python3 - <<'PY'
+print('pad="' + ('x' * 300000) + '"')
+print('printf shell-ok >"${OUT}"')
+PY
+)
+OUT="${out}" _hme_bg_shell_timeout 5 shell-big "${root}/log/hme-bg-shell-big.err" "$script"
+`);
+  fs.chmodSync(driver, 0o755);
+  const res = spawnSync('bash', [driver], {
+    cwd: REPO,
+    encoding: 'utf8',
+    env: { ...process.env, PROJECT_ROOT: root, PATH: path.join(root, 'bin') + path.delimiter + ORIGINAL_PATH },
+  });
+  assert.strictEqual(res.status, 0, res.stderr);
+  const log = waitForLogEnd(root, 'shell-big');
+  assert.match(log, /end shell-big exit=0/, log);
+  assert.strictEqual(fs.readFileSync(out, 'utf8'), 'shell-ok');
+  assert.doesNotMatch(log, /oversized argv leaked/);
+  const tempDir = path.join(root, 'tools/HME/runtime/bg-scripts');
+  const leftovers = fs.existsSync(tempDir) ? fs.readdirSync(tempDir).filter((f) => f.endsWith('.sh')) : [];
+  assert.deepStrictEqual(leftovers, []);
+  fs.rmSync(root, { recursive: true, force: true });
+});
