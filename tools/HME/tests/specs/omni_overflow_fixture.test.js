@@ -32,6 +32,22 @@ function reconstitute(skel) {
     }
     payload.messages.push({ role: m.role || 'user', content: m.blocks.length === 1 && m.blocks[0].t === 'str' ? 'x'.repeat(m.blocks[0].n || 0) : content });
   }
+  // Close the residual key-overhead gap so the reconstituted payload matches the
+  // real serialized footprint (real ids/keys are longer than placeholders). Extend
+  const target = Number(skel.real_serialized_bytes || 0);
+  if (target > 0) {
+    const deficit = target - serializedBytes(payload);
+    if (deficit > 0) {
+      const oldest = payload.messages.find((m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'text'))
+        || payload.messages.find((m) => typeof m.content === 'string');
+      if (oldest && Array.isArray(oldest.content)) {
+        const tb = oldest.content.find((b) => b.type === 'text');
+        tb.text += 'x'.repeat(deficit);
+      } else if (oldest) {
+        oldest.content += 'x'.repeat(deficit);
+      }
+    }
+  }
   return payload;
 }
 
