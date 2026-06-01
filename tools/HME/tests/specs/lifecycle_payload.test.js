@@ -26,6 +26,28 @@ function withClaudeProjectDir(root, fn) {
   }
 }
 
+function withProxyRootEnv(root, fn) {
+  const priorRoot = process.env.PROJECT_ROOT;
+  const priorQuiet = process.env.HME_PROXY_QUIET_IMPORT;
+  process.env.PROJECT_ROOT = root;
+  process.env.HME_PROXY_QUIET_IMPORT = '1';
+  const reset = () => {
+    for (const key of Object.keys(require.cache)) {
+      if (key.includes('/tools/HME/proxy/lifecycle_bridge.js')
+          || key.includes('/tools/HME/proxy/shared')
+          || key.includes('/tools/HME/proxy/infra/hme_paths.js')
+          || key.includes('/tools/HME/event_kernel/')) delete require.cache[key];
+    }
+  };
+  reset();
+  try { return fn(); }
+  finally {
+    if (priorRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = priorRoot;
+    if (priorQuiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = priorQuiet;
+    reset();
+  }
+}
+
 function writeJsonl(file, lines = []) {
   fs.writeFileSync(file, lines.map(JSON.stringify).join('\n') + '\n');
 }
