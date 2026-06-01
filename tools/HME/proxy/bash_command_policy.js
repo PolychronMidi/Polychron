@@ -221,8 +221,8 @@ function createBashPolicyContext(input = {}, opts = {}) {
 }
 
 // Manual proxy/worker restart is banned from Bash: zero-downtime auto-restart
-// liveness is already tested and guaranteed (file_watcher + slot_watchdog
-// converge slots to current code, routable_count never < 1). Match only
+// liveness must own normal convergence. If it fails, fix admission/preflight
+// state instead of force-running restart scripts by hand. Match only
 const _RESTART_TARGET = '(?:polychron-(?:proxy-restart|slot-restart|launch|shutdown)\\.sh|proxy-supervisor\\.sh|codex-proxy-supervisor\\.sh|universal-pulse-supervisor\\.sh|proxy-watchdog\\.sh|slot_watchdog\\.js|file_watcher\\.js|shuffler\\.js)';
 const _RESTART_SCRIPT_RE = new RegExp(
   // exec verb (bash/sh/node/setsid/nohup/source/./exec) immediately preceding a restart 
