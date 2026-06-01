@@ -47,12 +47,12 @@ _hme_timeout_runner() {
   local pid=$! waited=0
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$waited" -ge "$seconds" ]; then
-      kill -TERM "-$pid" 2>/dev/null || true
-      kill -TERM "$pid" 2>/dev/null || true
+      kill -TERM "-$pid" 2>/dev/null || true  # silent-ok: child may already have exited while timeout fired
+      kill -TERM "$pid" 2>/dev/null || true  # silent-ok: child may already have exited while timeout fired
       sleep 1
-      kill -KILL "-$pid" 2>/dev/null || true
-      kill -KILL "$pid" 2>/dev/null || true
-      wait "$pid" 2>/dev/null || true
+      kill -KILL "-$pid" 2>/dev/null || true  # silent-ok: child may already have exited after TERM
+      kill -KILL "$pid" 2>/dev/null || true  # silent-ok: child may already have exited after TERM
+      wait "$pid" 2>/dev/null || true  # silent-ok: timeout path already reports 124
       return 124
     fi
     sleep 1
@@ -65,6 +65,17 @@ _hme_bg_timeout() {
   local seconds="$1" name="$2" log_file="$3"
   shift 3
   _hme_bg "$name" "$log_file" _hme_timeout_runner "$seconds" "$@"
+}
+
+_hme_bg_stdin_timeout() {
+  local seconds="$1" name="$2" log_file="$3" stdin_payload="$4"
+  shift 4
+  _hme_bg "$name" "$log_file" bash -c '
+    payload_file=$(mktemp "${TMPDIR:-/tmp}/hme-bg-stdin.XXXXXX") || exit 1
+    trap '\''rm -f "$payload_file"'\'' EXIT
+    cat >"$payload_file"
+    _hme_timeout_runner "$@" <"$payload_file"
+  ' bash "$stdin_payload" _hme_timeout_runner "$seconds" "$@"
 }
 
 _hme_bg_shell_timeout() {
