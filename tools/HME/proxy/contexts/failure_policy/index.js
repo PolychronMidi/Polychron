@@ -6,6 +6,7 @@ function from(modulePath, name) {
 
 module.exports = {
   classifyFailure: from('./omni_failure_policy', 'classifyFailure'),
+  isContextWindowMessage: from('./omni_failure_policy', 'isContextWindowMessage'),
   policyFor: from('./omni_failure_policy', 'policyFor'),
   actionsFor: from('./omni_failure_policy', 'actionsFor'),
   get POLICY_TABLE() { return require('./omni_failure_policy').POLICY_TABLE; },
