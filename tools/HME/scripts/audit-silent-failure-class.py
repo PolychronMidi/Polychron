@@ -43,7 +43,7 @@ PYTHON_SWALLOW = re.compile(
     r")?\s*:\s*$"
 )
 JS_SWALLOW = re.compile(r"^\s*(?:}\s*)?catch\s*(?:\(\s*\w*\s*\))?\s*\{\s*$")
-SH_SWALLOW = re.compile(r"\|\|\s*(?:true|:)\b|2\s*>\s*/dev/null|2>&1")
+SH_SWALLOW = re.compile(r"\|\|\s*(?:true|:)\b|2\s*>\s*/dev/null\s*(?:[;)]|$)")
 HEREDOC_START = re.compile(r"<<-?\s*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?")
 
 # Tokens that mark a catch as intentionally silent.
