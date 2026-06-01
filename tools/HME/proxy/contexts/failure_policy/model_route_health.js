@@ -13,8 +13,9 @@ function loadModelRouteHealth(projectRoot = PROJECT_ROOT) {
   try {
     const data = JSON.parse(fs.readFileSync(file, 'utf8'));
     return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-  } catch (_err) {
-    return {};
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return {};
+    throw new Error(`model route health unreadable/corrupt at ${file}: ${err.message}`);
   }
 }
 
