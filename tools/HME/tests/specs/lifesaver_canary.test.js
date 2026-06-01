@@ -184,6 +184,7 @@ test('lifesaver: source-tag self-origin overrides CRITICAL severity', () => {
     '[2026-04-26T07:00:02Z] [_safe_curl] ERROR http://127.0.0.1:9098/transcript failed (rc=7, streak=5)',
     '[2026-04-26T07:00:03Z] [_safe_jq] jq parse failed: malformed input',
     '[2026-04-26T07:00:04Z] [hook-watchdog] [ALERT] UserPromptSubmit fired before successful SessionStart.',
+    '[2026-04-26T07:00:05Z] [proxy-runtime] ERROR failed to write runtime metadata after listen',
   ]);
   try {
     assert.ok(
