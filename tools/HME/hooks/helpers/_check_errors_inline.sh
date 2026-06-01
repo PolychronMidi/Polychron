@@ -12,7 +12,7 @@ source "${PROJECT_ROOT:?PROJECT_ROOT must be set before _check_errors_inline.sh}
 _hme_check_errors_inline() {
   local PROJECT="${PROJECT_ROOT}"
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
-  local INLINE_WATERMARK="$PROJECT/tools/HME/runtime/hme-errors.inline-watermark"
+  local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
   local ESC_STATE="$PROJECT/tools/HME/runtime/lifesaver-escalation-since.ts"
   # Heartbeat -- proves this helper actually ran.
   date +%s > "$PROJECT/tools/HME/runtime/heartbeat-inline-check.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
