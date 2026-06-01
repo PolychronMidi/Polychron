@@ -25,6 +25,7 @@ const { responseHasErrorEvent, maybeRunStopFallback } = require('../../proxy/hme
 const { markRouteCooldown, loadModelRouteHealth, routeSkipReason } = require('../../proxy/contexts/failure_policy/model_route_health');
 const codexFallback = require('../../proxy/contexts/failure_policy/hme_proxy_codex');
 const { shellPolicy } = require('../../proxy/stop_chain/shell_policy');
+const { semanticTokenEstimate } = require('../../proxy/context_token_estimate');
 const { isPassthroughMode } = require('../../proxy/upstream');
 const { routeDecision } = require('../../proxy/model_route_resolver');
 const hmeDispatcher = require('../../proxy/hme_dispatcher');
