@@ -52,6 +52,16 @@ PY_SURFACED = re.compile(
     r"\b(?:logger|logging)\.(?:debug|info|warning|error|exception|critical)\b"
     r"|print\s*\("
     r"|\b(?:results|checks|issues|violations|failures|warnings|errors|details)\.append\s*\("
+    r"|ctx\.register_critical_failure\s*\("
+    r"|return\s+(?:errored|failed|warned|passed)\s*\("
+    r"|return\s+f?[\"'][^\"']*(?:error|failed|failure|unavailable|unreadable)[^\"']*[\"']"
+)
+
+JS_SURFACED = re.compile(
+    r"throw\b|ctx\.warn\b|console\.(?:error|warn)\b"
+    r"|_lifesaverBlock\s*\(|_failClosedPolicyError\s*\(|logHookError\s*\("
+    r"|\bexit_code\s*:\s*[1-9]"
+    r"|return\s+[^;\n]*(?:error|failure|failed|denied|blocked|unavailable)"
 )
 
 
