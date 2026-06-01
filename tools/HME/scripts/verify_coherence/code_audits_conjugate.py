@@ -140,13 +140,14 @@ class ConjugateChannelVerifier(Verifier):
                 # regardless.
                 pass
             return skipped(summary="latest round missing one of the two signals")
-        # Data-driven thresholds -- medians across history
-        sorted_h = sorted(r["hme_coherence"] for r in all_rounds)
+        # Data-driven thresholds -- medians across history.
+        sorted_h = sorted(r["_conjugate_hme_signal"] for r in all_rounds)
         sorted_p = sorted(r["perceptual_complexity_avg"] for r in all_rounds)
         h_thr = sorted_h[len(sorted_h) // 2]
         p_thr = sorted_p[len(sorted_p) // 2]
-        cur_h = float(latest["hme_coherence"])
+        cur_h = float(latest_signal)
         cur_p = float(latest["perceptual_complexity_avg"])
+        source_note = "+".join(sorted(signal_sources)) or latest_source
         if cur_h < h_thr and cur_p < p_thr:
             # Bidirectional V-coupling (Horizon V asymptote): on lost-
             try:
