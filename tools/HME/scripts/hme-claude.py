@@ -178,6 +178,11 @@ def decode_control_line(line):
     return token, prompt, interrupt
 
 
+def decode_control_line_legacy(line):
+    token, prompt, _interrupt = decode_control_line(line)
+    return token, prompt
+
+
 def _ansi_variants(text):
     plain_lf = text.encode("utf-8")
     plain_crlf = text.replace("\n", "\r\n").encode("utf-8")
