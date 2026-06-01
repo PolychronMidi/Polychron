@@ -67,15 +67,25 @@ _hme_bg_timeout() {
   _hme_bg "$name" "$log_file" _hme_timeout_runner "$seconds" "$@"
 }
 
+_hme_stdin_timeout_runner() {
+  local stdin_payload="$1" seconds="$2" payload_file rc
+  shift 2
+  payload_file=$(mktemp "${TMPDIR:-/tmp}/hme-bg-stdin.XXXXXX") || return 1
+  printf '%s' "$stdin_payload" >"$payload_file" || {
+    rc=$?
+    rm -f "$payload_file" 2>/dev/null || true  # silent-ok: temp cleanup after write failure
+    return "$rc"
+  }
+  _hme_timeout_runner "$seconds" "$@" <"$payload_file"
+  rc=$?
+  rm -f "$payload_file" 2>/dev/null || true  # silent-ok: temp cleanup after child exit
+  return "$rc"
+}
+
 _hme_bg_stdin_timeout() {
   local seconds="$1" name="$2" log_file="$3" stdin_payload="$4"
   shift 4
-  _hme_bg "$name" "$log_file" bash -c '
-    payload_file=$(mktemp "${TMPDIR:-/tmp}/hme-bg-stdin.XXXXXX") || exit 1
-    trap '\''rm -f "$payload_file"'\'' EXIT
-    cat >"$payload_file"
-    _hme_timeout_runner "$@" <"$payload_file"
-  ' bash "$stdin_payload" _hme_timeout_runner "$seconds" "$@"
+  _hme_bg "$name" "$log_file" _hme_stdin_timeout_runner "$stdin_payload" "$seconds" "$@"
 }
 
 _hme_bg_shell_timeout() {
