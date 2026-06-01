@@ -58,9 +58,28 @@ function lifecycleInactive(event) {
  * that limit vanished for inline fires while remaining visible for
  * /hme/lifecycle fires.
  */
+function _normalizeInlinePayload(event, stdinJson, opts = {}) {
+  const root = opts.root || PROJECT_ROOT;
+  try {
+    const { buildHostPayload } = require('../event_kernel/lifecycle_payload');
+    return buildHostPayload({
+      host: 'claude',
+      event,
+      root,
+      rawBody: stdinJson || '{}',
+      cwd: opts.cwd || root,
+      teamRole: process.env.HME_TEAM_ROLE,
+    });
+  } catch (err) {
+    console.error(`inline ${event} payload normalization failed: ${err.message}`);
+    return stdinJson || '{}';
+  }
+}
+
 async function runInlineFallback(event, stdinJson) {
   try {
-    const r = await eventKernel.dispatchEvent(event, stdinJson);
+    const normalized = _normalizeInlinePayload(event, stdinJson);
+    const r = await eventKernel.dispatchEvent(event, normalized);
     if (r.stderr && r.stderr.length > 0) {
       process.stderr.write(`inline ${event} stderr:\n${r.stderr}\n`);
     }
