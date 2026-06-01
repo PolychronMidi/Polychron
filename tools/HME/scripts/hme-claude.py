@@ -354,10 +354,16 @@ def main():
                     ctrl_buf += chunk
                     while b"\n" in ctrl_buf:
                         line, ctrl_buf = ctrl_buf.split(b"\n", 1)
-                        token, prompt = decode_control_line(line)
+                        token, prompt, interrupt = decode_control_line(line)
                         steps = resolve_steps(multistep, token, prompt)
                         steps = [step for step in (steps or []) if step]
-                        if steps and not pending_steps:
+                        if steps and (interrupt or not pending_steps):
+                            if interrupt:
+                                pending_steps = []
+                                # Ctrl-C first: abort the active request so /compact is
+                                # typed into the REPL, not queued behind generation.
+                                type_into_session("\x03")
+                                time.sleep(0.05)
                             # Type the first step now; queue the rest to drain
                             # one at a time as the REPL goes idle between them.
                             if type_into_session(steps[0] + "\r"):
