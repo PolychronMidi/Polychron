@@ -35,6 +35,17 @@ test('generic 4xx -> client_4xx', () => {
   assert.equal(classifyFailure(404, { type: 'not_found', message: 'no such model' }), 'client_4xx');
 });
 
+test('context_window must NOT advance the chain (cc shortcut owns recovery on same model)', () => {
+  const actions = actionsFor(200, { type: 'api_error', message: 'input exceeds the context window' });
+  assert.equal(actions.includes('advance_chain'), false,
+    'advancing to a different (often smaller-window) model is the bail the cc shortcut prevents');
+  assert.ok(actions.includes('quarantine_route'));
+  // Contrast: genuine model failures DO advance the chain.
+  assert.ok(actionsFor(429, { type: 'rate_limit_error' }).includes('advance_chain'));
+  assert.ok(actionsFor(502, { type: 'stream_timeout' }).includes('advance_chain'));
+  assert.ok(actionsFor(503, { type: 'service_unavailable' }).includes('advance_chain'));
+});
+
 test('policyFor returns kind, description, actions', () => {
   const p = policyFor(429, { type: 'rate_limit_error' });
   assert.equal(p.kind, 'rate_limit');
