@@ -11,6 +11,7 @@
 "Read",
 "TodoWrite"
 ],
+"real_serialized_bytes": 1217137,
 "messages": [
 {
 "role": "user",
@@ -26,7 +27,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 372
+"n": 372,
+"sig": 916
 },
 {
 "t": "tool_use",
@@ -4562,7 +4564,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1472
+"n": 1472,
+"sig": 5160
 },
 {
 "t": "text",
@@ -4607,7 +4610,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1208
+"n": 1208,
+"sig": 6960
 },
 {
 "t": "text",
@@ -4634,7 +4638,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 2977
+"n": 2977,
+"sig": 20008
 },
 {
 "t": "text",
@@ -4661,7 +4666,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1213
+"n": 1213,
+"sig": 5536
 },
 {
 "t": "text",
@@ -4697,7 +4703,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 263
+"n": 263,
+"sig": 1608
 },
 {
 "t": "tool_use",
@@ -4739,7 +4746,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 270
+"n": 270,
+"sig": 1132
 },
 {
 "t": "tool_use",
@@ -4762,7 +4770,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1064
+"n": 1064,
+"sig": 2236
 },
 {
 "t": "text",
@@ -4793,7 +4802,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1780
+"n": 1780,
+"sig": 6280
 },
 {
 "t": "text",
@@ -4824,7 +4834,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1154
+"n": 1154,
+"sig": 7100
 },
 {
 "t": "text",
@@ -4851,7 +4862,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1241
+"n": 1241,
+"sig": 5404
 },
 {
 "t": "text",
@@ -4878,7 +4890,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 1535
+"n": 1535,
+"sig": 10208
 },
 {
 "t": "text",
@@ -4905,7 +4918,8 @@
 "blocks": [
 {
 "t": "thinking",
-"n": 3211
+"n": 3211,
+"sig": 18380
 },
 {
 "t": "text",
