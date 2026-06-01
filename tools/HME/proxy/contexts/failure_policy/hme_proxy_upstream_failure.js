@@ -115,16 +115,21 @@ async function handleUpstreamFailureOrSuccess({
     return { status: credentialFailover.status, headers: credentialFailover.headers, fullBody: credentialFailover.fullBody };
   }
 
-  recordOmniRouteFailureAdvance({
-    isOmniRouteSwap,
-    swapChain,
-    odMode,
-    omniProvider,
-    swapModel,
-    status,
-    isRateLimit,
-    projectRoot: PROJECT_ROOT,
-  });
+  // Context-window overflow is NOT a model-health failure: advancing the chain
+  // would route to a different (often smaller-window) model and make it worse.
+  // POLICY_TABLE.context_window owns recovery via quarantine_route + the live cc
+  if (failureKind !== 'context_window') {
+    recordOmniRouteFailureAdvance({
+      isOmniRouteSwap,
+      swapChain,
+      odMode,
+      omniProvider,
+      swapModel,
+      status,
+      isRateLimit,
+      projectRoot: PROJECT_ROOT,
+    });
+  }
 
   if (isRateLimit && !shouldRetry) {
     incConsecutive429s();
