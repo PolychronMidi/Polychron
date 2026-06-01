@@ -1055,12 +1055,13 @@ test('context budget compaction gears start near context high-water and escalate
   }
 });
 
-test('stale-tool horizon scales from HME_PROXY_STALE_TOOL_KEEP_TURNS per gear', () => withStatuslineUnavailable(() => {
+test('compaction knobs scale from env baselines per gear without ratcheting', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
-    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
-    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '10';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '100';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '20';
+    process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '8000';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
     process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
@@ -1071,23 +1072,36 @@ test('stale-tool horizon scales from HME_PROXY_STALE_TOOL_KEEP_TURNS per gear', 
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
 
-    // Below gear 1: no plan, horizon never consulted.
+    // Below gear 1: no plan, knobs never consulted.
     let plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(750) }] });
     assert.equal(plan.maxTier, 0);
     assert.equal(plan.maxToolResultAge, undefined);
+    assert.equal(plan.keepMin, undefined);
+    assert.equal(plan.toolResultByteFloor, undefined);
 
-    // Env base (10) drives the horizon, gear multiplies it ×3/×2/×1 -- not keepMin.
     plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(830) }] });
     assert.equal(plan.maxTier, 1);
-    assert.equal(plan.maxToolResultAge, 30);
+    assert.equal(plan.maxToolResultAge, 15);
+    assert.equal(plan.keepMin, 75);
+    assert.equal(plan.toolResultByteFloor, 5600);
 
     plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(880) }] });
     assert.equal(plan.maxTier, 2);
-    assert.equal(plan.maxToolResultAge, 20);
+    assert.equal(plan.maxToolResultAge, 10);
+    assert.equal(plan.keepMin, 50);
+    assert.equal(plan.toolResultByteFloor, 3600);
 
     plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
     assert.equal(plan.maxTier, 3);
-    assert.equal(plan.maxToolResultAge, 10);
+    assert.equal(plan.maxToolResultAge, 5);
+    assert.equal(plan.keepMin, 30);
+    assert.equal(plan.toolResultByteFloor, 2000);
+
+    // Re-querying gear 3 returns the same env-derived values, not 30% of 30, etc.
+    const again = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
+    assert.equal(again.keepMin, 30);
+    assert.equal(again.maxToolResultAge, 5);
+    assert.equal(again.toolResultByteFloor, 2000);
   } finally {
     process.env = oldEnv;
   }
