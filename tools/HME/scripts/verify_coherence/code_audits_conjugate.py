@@ -9,21 +9,8 @@ import sys
 import time
 
 from ._base import (
-    ERROR,
-    FAIL,
-    METRICS_DIR,
-    PASS,
-    SKIP,
-    VerdictResult,
     Verifier,
-    WARN,
-    _DOC_DIRS,
-    _HOOKS_DIR,
     _PROJECT,
-    _SCRIPTS_DIR,
-    _SERVER_DIR,
-    _run_subprocess,
-    errored,
     failed,
     passed,
     register,
