@@ -114,6 +114,27 @@ function _envBool(env, key) {
   throw new Error(`invalid boolean environment key ${key}=${JSON.stringify(env[key])}`);
 }
 
+function _scaledInt(base, ratio, floor) {
+  return Math.max(floor, Math.floor(Number(base) * ratio));
+}
+
+function _gearScaledCompactionKnobs({ gear, keepMin, staleToolKeepTurns, toolResultByteFloor }) {
+  if (gear <= 0) return {};
+  const staleRatios = [1, 0.75, 0.50, 0.25];
+  const keepRatios = [1, 0.75, 0.50, 0.30];
+  const floorRatios = [1, 0.70, 0.45, 0.25];
+  return {
+    keepMin: _scaledInt(keepMin, keepRatios[gear], 4),
+    maxToolResultAge: _scaledInt(staleToolKeepTurns, staleRatios[gear], 1),
+    toolResultByteFloor: _scaledInt(toolResultByteFloor, floorRatios[gear], 512),
+    compactionKnobBaselines: {
+      keepMin,
+      staleToolKeepTurns,
+      toolResultByteFloor,
+    },
+  };
+}
+
 function parseProxyContextEnv(env = process.env) {
   if (env === process.env) _ensureProcessEnvLoaded();
   return {
