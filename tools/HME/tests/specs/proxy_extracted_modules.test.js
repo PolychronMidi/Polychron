@@ -304,7 +304,7 @@ test('cc compact submission is single-flight so /compact -> continue can never o
       try { const n = fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) bytes += buf.slice(0, n).toString('utf8'); }
       catch (_e) { break; }
     }
-    assert.equal(bytes, 'cc\n', 'only one /compact -> continue cycle dispatched');
+    assert.equal(bytes, 'cc!\n', 'only one interrupting /compact -> continue cycle dispatched');
 
     // Once the cycle visibly lands, the guard clears so a later genuine overflow re-fire
     assert.equal(clearCcCompactInflight(dir), true);
