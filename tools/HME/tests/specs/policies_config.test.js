@@ -89,13 +89,16 @@ test('config: params merge with defaults', _withSandbox(async (sandbox, cfg) => 
   assert.strictEqual(p.override, 'set');
 }));
 
-test('config: malformed JSON in one file does not crash; other scopes still merge', _withSandbox(async (sandbox, cfg) => {
+test('config: malformed JSON fails fast instead of silently skipping a policy scope', _withSandbox(async (sandbox, cfg) => {
   fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'config', 'policies.json'), '{ not valid json');
   _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { enabled: ['foo'] });
   cfg.reset();
-  // Malformed file is logged and skipped; local scope still applies.
-  assert.strictEqual(cfg.isEnabled('foo', false), true);
+  assert.throws(
+    () => cfg.isEnabled('foo', false),
+    /\[policies\/config\].*policies\.json not valid JSON/,
+    'policy config syntax errors must surface instead of silently weakening policy coverage',
+  );
 }));
 
 test('config: customPoliciesPath first-defined-wins', _withSandbox(async (sandbox, cfg) => {
