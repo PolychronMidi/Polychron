@@ -37,10 +37,13 @@ HME_ROOTS = [
 
 # Patterns that swallow exceptions broadly without re-raising.
 PYTHON_SWALLOW = re.compile(
-    r"^\s*(?:except(?:\s+(?:Exception|BaseException))?(?:\s+as\s+\w+)?\s*:\s*$)"
+    r"^\s*except\*?\s*(?:"
+    r"(?:(?:Exception|BaseException)(?:\s+as\s+\w+)?)"
+    r"|(?:\([^)]*\b(?:Exception|BaseException)\b[^)]*\)(?:\s+as\s+\w+)?)"
+    r")?\s*:\s*$"
 )
-JS_SWALLOW = re.compile(r"^\s*}\s*catch\s*\(\s*\w+\s*\)\s*\{\s*$")
-SH_SWALLOW = re.compile(r"\|\|\s*true\b|\|\|\s*:\b|2>/dev/null\s*$")
+JS_SWALLOW = re.compile(r"^\s*(?:}\s*)?catch\s*(?:\(\s*\w*\s*\))?\s*\{\s*$")
+SH_SWALLOW = re.compile(r"\|\|\s*(?:true|:)\b|2\s*>\s*/dev/null|2>&1")
 HEREDOC_START = re.compile(r"<<-?\s*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?")
 
 # Tokens that mark a catch as intentionally silent.
@@ -76,10 +79,11 @@ def _scan_python(path: Path) -> list[tuple[int, str]]:
         if not PYTHON_SWALLOW.match(line):
             continue
         # Look ahead for handled bodies; otherwise require a nearby silent-ok.
-        body = lines[i:i + 5]
+        body = lines[i:i + 6]
         body_text = "\n".join(body)
-        if "raise" in body_text or "return" in body_text and "default" not in body_text.lower():
-            continue  # explicit re-raise / explicit return = handled
+        executable = [b for b in body if b.strip() and not b.lstrip().startswith('#')]
+        if any(re.match(r"^\s*raise\b", b) for b in executable):
+            continue  # explicit re-raise = handled
         if PY_SURFACED.search(body_text):
             continue
         context = "\n".join(lines[max(0, i - 3):i + 5])
@@ -121,6 +125,8 @@ def _sh_control_flow_consumes_status(line: str) -> bool:
         return False
     if stripped.startswith(("'", '"')):
         return True  # quoted embedded script/string, not executable shell here
+    if re.search(r"\|\|\s*(?:true|:)\b", stripped):
+        return False
     if re.match(r"^(if|elif|while|until)\b", stripped):
         return True
     if re.match(r"^\[\[?.*\]\]?\s+2>/dev/null\s*\|\|\s*(?:return|exit)\b", stripped):
@@ -145,17 +151,17 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
         match = HEREDOC_START.search(raw)
         if match:
             delimiter = match.group(1)
-    # Keep BENIGN narrow; `|| echo` defaults still need site-specific silent-ok.
+    # Keep BENIGN narrow; `|| true` and `|| echo` defaults still need site-specific silent-ok.
     BENIGN = re.compile(
         r"\b(mkdir\s+-p|kill\s+-0|rm\s+-f|sed\s+-n|disown|source\s+|cat\s+\"\$"
-        r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log|\|\|\s*true)\b"
+        r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log)\b"
     )
     for i, line in enumerate(lines, 1):
         if i in blocked:
             continue
         if line.lstrip().startswith("#"):
             continue
-        if "2>/dev/null" not in line:
+        if not SH_SWALLOW.search(line):
             continue
         if BENIGN.search(line):
             continue
