@@ -64,6 +64,7 @@ function _withChainSandbox(fn) {
     fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'), { recursive: true });
+    fs.symlinkSync(path.resolve(__dirname, '..', '..', 'policies'), path.join(sandbox, 'tools', 'HME', 'policies'));
     const original = process.env.PROJECT_ROOT;
     const originalStrict = process.env.strict_mode;
     process.env.PROJECT_ROOT = sandbox;
