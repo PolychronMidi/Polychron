@@ -108,6 +108,25 @@ def _scan_js(path: Path) -> list[tuple[int, str]]:
     return issues
 
 
+def _sh_control_flow_consumes_status(line: str) -> bool:
+    """Return True when stderr is hidden but the exit status is the signal.
+
+    These are not silent swallows: shell predicates intentionally suppress noisy
+    stderr while `if`/`while`/`until` or an explicit return/exit branch consumes
+    the command result. Assignments with `|| echo default` still get audited.
+    """
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if stripped.startswith(("'", '"')):
+        return True  # quoted embedded script/string, not executable shell here
+    if re.match(r"^(if|elif|while|until)\b", stripped):
+        return True
+    if re.match(r"^\[\[?.*\]\]?\s+2>/dev/null\s*\|\|\s*(?:return|exit)\b", stripped):
+        return True
+    return False
+
+
 def _scan_sh(path: Path) -> list[tuple[int, str]]:
     issues = []
     try:
