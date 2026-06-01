@@ -158,6 +158,8 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
             continue
         if BENIGN.search(line):
             continue
+        if _sh_control_flow_consumes_status(line):
+            continue
         # Allow if the same line or surrounding has silent-ok or _safe_*
         # helpers (which are themselves audited).
         context = "\n".join(lines[max(0, i - 4):i + 3])
