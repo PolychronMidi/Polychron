@@ -40,9 +40,13 @@ function _compactInflightFlag(root) {
   return path.join(root || process.cwd(), 'tmp', 'hme-cc-compact.inflight');
 }
 
+// Single-flight window: long enough to cover ONE /compact -> continue round-trip
+// in the live REPL (so the two steps never interleave/reorder), but SHORT enough
+const CC_COMPACT_INFLIGHT_MS = 120_000;
+
 // Cross-slot, cross-process single-flight guard for the auto-compact path.
 // Both proxy slots see the same over-window response stream and each over-window
-function submitCcCompactOnce(root, { ttlMs = 300_000, now = Date.now() } = {}) {
+function submitCcCompactOnce(root, { ttlMs = CC_COMPACT_INFLIGHT_MS, now = Date.now() } = {}) {
   const flag = _compactInflightFlag(root);
   try {
     const st = fs.statSync(flag);
