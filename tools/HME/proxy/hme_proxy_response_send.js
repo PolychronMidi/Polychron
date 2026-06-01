@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { sessionKey, PROJECT_ROOT } = require('./shared');
+const { recordProxyFailure } = require('./middleware/_middleware_throw_lifesaver');
 
 const DENY_MARKERS = [
   'Stop hook feedback:',
