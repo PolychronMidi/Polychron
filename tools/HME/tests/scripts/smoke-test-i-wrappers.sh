@@ -95,6 +95,7 @@ ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp \) \
   -not -path "./src/output/metrics*" \
   -not -path "./tools/HME/runtime/metrics*" \
   -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null)
+# silent-ok: find 2>/dev/null suppresses EACCES noise from untraversable dirs in smoke en
 if [ -z "$ORPHAN_DIRS" ]; then
   _ok "no misplaced log/tmp/metrics directories"  #
 else

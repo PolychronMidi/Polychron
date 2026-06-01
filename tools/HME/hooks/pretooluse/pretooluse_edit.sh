@@ -219,7 +219,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
         --caused_by="unbriefed_edit:$FILE" \
         --session="$(whoami 2>/dev/null || echo shell)" \
         >/dev/null 2>&1 &
-    fi
+    fi  # silent-ok L220: whoami 2>/dev/null has '|| echo shell' fallback; background emit best-effort
     # Per-turn dedup tracker (cleared at turn start by userpromptsubmit.sh).
     _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/${_TMP_SUBDIR}/hme-turn-briefs.txt"
     # silent-ok: probe/decoration only; absent result is handled by caller.
