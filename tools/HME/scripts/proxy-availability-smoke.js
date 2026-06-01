@@ -7,24 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-
-function loadDotEnv(root) {
-  const envPath = path.join(root, '.env');
-  if (!fs.existsSync(envPath)) return;
-  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-    if (!m) continue;
-    if (Object.prototype.hasOwnProperty.call(process.env, m[1])) continue;
-    let value = m[2].trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    process.env[m[1]] = value;
-  }
-}
+const { requireEnv, requireEnvInt } = require('../proxy/shared/load_env');
 
 function requestJson(port, route, timeoutMs = 2000) {
   return new Promise((resolve) => {

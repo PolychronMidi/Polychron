@@ -19,7 +19,7 @@ fi
 # Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
 if [ -n "$PROJECT_ROOT" ]; then
   rm -f "${_HME_PROJECT_TMP}/hme-turn-edits.txt" \
-        "${_HME_PROJECT_TMP}/hme-turn-briefs.txt" 2>/dev/null || true  # silent-ok: optional fallback path.
+        "${_HME_PROJECT_TMP}/hme-turn-briefs.txt" 2>/dev/null || true  # silent-ok: stale per-turn caches may already be absent.
 fi
 
 # Petulance attempts reset: each new user prompt is a fresh "initial request".
