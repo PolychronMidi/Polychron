@@ -50,7 +50,7 @@ function submitCcCompactOnce(root, { ttlMs = 300_000, now = Date.now() } = {}) {
   } catch (err) {
     if (err && err.code !== 'ENOENT') throw err; // ENOENT = no cycle in flight
   }
-  const delivered = submitCcShortcut(root, 'cc');
+  const delivered = submitCcShortcut(root, 'cc', '', { interrupt: true });
   if (!delivered) return { submitted: false, reason: 'no_bridge' };
   try {
     fs.mkdirSync(path.dirname(flag), { recursive: true });
