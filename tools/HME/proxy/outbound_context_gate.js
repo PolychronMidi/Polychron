@@ -7,6 +7,7 @@ const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
 const { semanticTokenEstimate } = require('./context_token_estimate');
 const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./hme_proxy_request_mutation');
+const { submitCcCompactOnce } = require('./cc_control');
 
 // Resolved budget for a model id: the full context window (context_length).
 // Unified on context_length -- gate input against the whole window, not the
