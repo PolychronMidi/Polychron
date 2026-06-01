@@ -151,7 +151,7 @@ module.exports = {
       // Async read so the proxy event loop yields. Synchronous readFileSync
       realOutput = await fs.promises.readFile(filePath, 'utf8');
     } catch (err) {
-      // silent-ok: optional fallback path.
+      // silent-ok: bg output read failure is appended into tool result and marks middleware output dirty.
       ctx.appendToResult(toolResult, `\n[hme bg-dominance] read failed: ${err.message}`);
       ctx.markDirty();
       return;

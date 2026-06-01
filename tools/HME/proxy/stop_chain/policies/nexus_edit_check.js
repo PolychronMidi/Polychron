@@ -40,7 +40,7 @@ function pruneCleanEdits() {
           // exit 0 -> no diff against HEAD -> drop the entry.
           continue;
         } catch (_e) {
-          // silent-ok: optional fallback path.
+          // silent-ok: git diff nonzero means file differs from HEAD, so pending nexus entry is kept.
           // exit !=0 -> diff present, keep the entry. Fall through.
         }
       }
@@ -78,7 +78,7 @@ async function fetchKbHints(timeoutMs = 10_000) {
     }
     return lines.join('\n');
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: KB enrichment failure suppresses optional review-context footer only.
     return '';
   } finally {
     clearTimeout(t);

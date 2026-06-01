@@ -40,7 +40,7 @@ function loadBiasManifest() {
       }
     }
   } catch (_err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: absent/malformed bias manifest only disables bias overlays; zone matching still applies.
     // manifest absent or malformed -- zone-match only
   }
   _biasLoadedAt = now;

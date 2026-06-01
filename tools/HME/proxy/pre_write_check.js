@@ -119,7 +119,7 @@ function _editCurrentFileDecision(payload) {
       }
       return _permission('deny', 'BLOCKED: Edit old_string is absent from current file. Re-read current file text, then retry with an exact old_string.');
     }
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: target read failure is converted into explicit Edit deny reason below.
   } catch (err) {
     return _permission('deny', `BLOCKED: Edit preflight could not read target: ${err.message}`);
   }
@@ -328,7 +328,7 @@ async function preWriteCheck(stdinJson) {
       return { ...shellDecision, updatedInput: ctx.toolInput, contextualRules: (shellDecision.contextualRules || []).concat(_rewriteMessages) };
     }
     return shellDecision;
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: policy/state-client outage degrades to allow with visible contextual warning after hard-deny checks already ran.
   } catch (err) {
     // Hook reliability must fail open: policy framework/state telemetry outages
     // should not break basic editing. Hard-deny checks above already ran.

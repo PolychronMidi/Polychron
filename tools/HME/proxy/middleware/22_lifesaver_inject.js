@@ -31,7 +31,7 @@ function _sessionstartProxyDownResolved(projectRoot) {
     if (ageS > 60) return false;
     const status = fs.readFileSync(probePath, 'utf8').trim();
     return status === 'ok';
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: absent/stale/unreadable sessionstart probe means SessionStart is not proven successful.
   } catch (_e) {
     return false;
   }
@@ -54,7 +54,7 @@ function _staleRuntimeResolvedOrGrace(projectRoot) {
     const grace = Number.parseInt(process.env.HME_POST_COMMIT_STALE_GRACE_SEC || '120', 10);
     const graceSec = Number.isFinite(grace) && grace >= 0 ? grace : 120;
     return ((Date.now() / 1000) - first) < graceSec;
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: stale-runtime marker read failure disables grace; alert injection remains eligible.
   } catch (_e) {
     return false;
   }
@@ -90,7 +90,7 @@ function _rotateIfNeeded(errLogPath, wmPath, totalLines, lines) {
     const wmAdjust = -dropped;
     return { lines: kept, totalLines: KEEP_LINES, lastSeenAdjust: wmAdjust };
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: error-log rotation failure leaves original log intact and proceeds with unrotated lines.
     // Rotation is best-effort; if it fails we leave the file alone and
     // proceed with the unrotated view rather than blocking the inject.
     return { lines, totalLines, lastSeenAdjust: 0 };
@@ -184,7 +184,7 @@ module.exports = {
     try {
       content = fs.readFileSync(errLogPath, 'utf8');
     } catch (_e) {
-      // silent-ok: optional fallback path.
+      // silent-ok: missing hme-errors.log means no new lifesaver errors to inject.
       return; // no error log yet, nothing to alert
     }
     let lines = content.split('\n').filter(Boolean);
@@ -231,7 +231,7 @@ module.exports = {
     // otherwise re-inject the same banner forever.
     try {
       fs.writeFileSync(wmPath, String(totalLines));
-    // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+    // silent-ok: watermark write failure emits lifesaver_watermark_failed and aborts injection to avoid duplicate banners.
     } catch (err) {
       ctx.emit({ event: 'lifesaver_watermark_failed', message: err.message });
       return;

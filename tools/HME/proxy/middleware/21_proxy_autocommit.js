@@ -251,7 +251,7 @@ function _attemptCommit(root, caller) {
     dirty = execSync('git status --porcelain',
       { cwd: root, encoding: 'utf8', timeout: 3000 });
   } catch (err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: git status failure is recorded through autocommit failure flag/log and aborts this autocommit pass.
     _recordFailure(root, caller,
       `git status failed: ${String(err.message || err).slice(0, 300)}`);
     return;
@@ -306,7 +306,7 @@ function _attemptCommit(root, caller) {
     try {
       const after = execSync('git status --porcelain', { cwd: root, encoding: 'utf8', timeout: 3000 });
       if (!after.trim()) { _recordSuccess(root); return; }
-    // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+    // silent-ok: post-commit git-status probe can race index.lock; benign races are treated as inconclusive, not success.
     } catch (probeErr) {
       // The probe itself can collide with a concurrent caller's index.lock --
       // that is benign, not a commit failure. Concede.

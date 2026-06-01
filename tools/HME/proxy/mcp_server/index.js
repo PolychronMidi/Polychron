@@ -102,7 +102,7 @@ async function _handleRpc(sessionId, msg) {
       try {
         result = await dispatcher.callTool(name, args || {}, timeoutMs);
       } catch (err) {
-        // silent-ok: optional fallback path.
+        // silent-ok: dispatcher call failure is converted to JSON-RPC error or worker kill path below.
         const elapsed = Date.now() - t0;
         if (/timeout/i.test(err.message) && elapsed >= timeoutMs - 500) {
           // Hang detected: worker didn't respond within the declared window.
@@ -125,7 +125,7 @@ async function _handleRpc(sessionId, msg) {
     if (method === 'prompts/list')   return jsonrpcResult(id, { prompts: [] });
     return jsonrpcError(id, -32601, `Method not found: ${method}`);
   } catch (err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: RPC handler exception is logged and returned as JSON-RPC -32603.
     logger.error(`RPC ${method} failed: ${err.message}`);
     return jsonrpcError(id, -32603, `Internal error: ${err.message}`);
   }
@@ -136,7 +136,7 @@ async function handleMessagesPost(req, res, sessionId) {
   try {
     msg = await _parseBody(req);
   } catch (_err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: bad request JSON is returned as HTTP 400 bad JSON body.
     res.writeHead(400, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: 'bad JSON body' }));
     return;

@@ -106,7 +106,7 @@ async function executeHmeTool(name, input, timeoutMs = 120_000) {
     const err = (json && json.error) || `worker returned status ${status}`;
     return `[HME tool error: ${err}]`;
   } catch (err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: worker transport exception is returned as visible HME tool error text.
     return `[HME transport error: ${err.message}]`;
   }
 }
@@ -291,7 +291,7 @@ function parseJsonResponse(text) {
     const contentBlocks = Array.isArray(d.content) ? d.content : [];
     return { contentBlocks, usage: d.usage, stopReason: d.stop_reason };
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: malformed JSON response yields empty parsed content while raw response path remains separate.
     return { contentBlocks: [], usage: null, stopReason: null };
   }
 }

@@ -143,7 +143,7 @@ function nexusCount(type) {
     const lines = fs.readFileSync(NEXUS_FILE, 'utf8').split('\n');
     return lines.filter((l) => l.startsWith(`${type}:`)).length;
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: unreadable nexus state counts as zero pending entries for display-only counters.
     return 0;
   }
 }
@@ -168,7 +168,7 @@ function nexusHas(type, payload) {
     }
     return lines.some((l) => l.startsWith(`${type}:`));
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: unreadable nexus state means this optional duplicate check cannot prove an existing entry.
     return false;
   }
 }

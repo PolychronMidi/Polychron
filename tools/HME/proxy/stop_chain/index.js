@@ -289,7 +289,7 @@ async function runStopChain(stdinJson) {
     let policyMod;
     try {
       policyMod = loadPolicy(name);
-    // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+    // silent-ok: policy load failure is appended to stderr/error log; mandatory policies become deny results below.
     } catch (err) {
       const msg = `failed to load: ${err.message}`;
       combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
@@ -305,7 +305,7 @@ async function runStopChain(stdinJson) {
     if (!result) {
       try {
         result = await policyMod.run(ctx);
-      // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+      // silent-ok: policy throw is appended to stderr/error log; mandatory policies fail closed and optional policies allow.
       } catch (err) {
         const msg = `threw: ${err.stack || err.message}`;
         combinedStderr += `[stop_chain] ${name}: ${msg}\n`;

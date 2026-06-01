@@ -23,7 +23,7 @@ function emit(fields) {
     p.on('error', () => {});
     p.unref();
   } catch (_err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: async telemetry emit spawn failure must not block proxy request handling.
     // ignore
   }
 }

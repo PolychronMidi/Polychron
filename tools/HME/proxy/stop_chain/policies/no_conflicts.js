@@ -37,7 +37,7 @@ function unmergedFiles() {
     );
     return out.split('\n').map((s) => s.trim()).filter(Boolean);
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: conflict probe failure returns null so policy can fail closed or defer explicitly.
     return null;
   }
 }

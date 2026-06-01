@@ -76,7 +76,7 @@ module.exports = {
           ? ctx.omoUniversalDecision
           : pluginResultsToUniversalDecision(results),
       });
-    // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+    // silent-ok: shadow bridge is telemetry-only; bridge errors emit omo_bridge_error and never alter the primary request decision.
     } catch (err) {
       if (telemetry) telemetry({ event: 'omo_bridge_error', bridge: 'shadow_middleware', error: err.message });
     }

@@ -47,7 +47,7 @@ function _requestLiveCompact({ routeKey, projectRoot, log }) {
   let result;
   try {
     result = submitCcCompactOnce(projectRoot);
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: cc shortcut failure is logged and emitted as context_window_compact_requested delivered=false below.
   } catch (err) {
     log(`[hme-proxy] context-window cc-shortcut submit failed: ${err.message}`);
     emit({ event: 'context_window_compact_requested', route: routeKey, delivered: false, error: err.message });
@@ -77,7 +77,7 @@ async function retryOmniContextWindowExceeded({ isOmniRouteSwap, status, headers
   try {
     markRouteCooldown(routeKey, 'context_window_exceeded', { ttlMs: 300_000, projectRoot });
     emit({ event: 'model_route_quarantine', route: routeKey, reason: 'context_window_exceeded' });
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: route quarantine write failure is logged; caller still triggers cc compaction and normalizes this turn locally.
   } catch (err) {
     log(`[hme-proxy] context-window route quarantine failed: ${err.message}`);
   }

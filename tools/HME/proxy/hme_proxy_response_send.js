@@ -52,7 +52,7 @@ function responseHasToolUse(outBuf) {
     const parsed = JSON.parse(outStr);
     if (!parsed || !Array.isArray(parsed.content)) return false;
     return parsed.content.some((b) => b && b.type === 'tool_use');
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: malformed non-SSE JSON cannot contain parsed tool_use; raw response is left unchanged for normal downstream handling.
   } catch (_) {
     return false;
   }
@@ -66,7 +66,7 @@ function responseHasErrorEvent(outBuf) {
     if (!outStr.trimStart().startsWith('{')) return false;
     const parsed = JSON.parse(outStr);
     return Boolean(parsed && (parsed.type === 'error' || parsed.error));
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: malformed response JSON cannot prove an error envelope; raw response/status is preserved for caller.
   } catch (_) {
     return false;
   }
@@ -101,7 +101,7 @@ function maybeStripNonSseBareAck({ payload, outBuf }) {
       return !_isBareAck(b.text);
     });
     return Buffer.from(JSON.stringify(parsed), 'utf8');
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: bare-ack stripping is post-response hygiene; parse/strip failure preserves original upstream body.
   } catch (_e) {
     return null;
   }

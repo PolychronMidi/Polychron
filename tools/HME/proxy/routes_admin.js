@@ -35,7 +35,7 @@ function handleSpawnRoute(clientReq, clientRes) {
         const result = supervisor.adhocSpawn(spec);
         return json(200, result);
       } catch (err) {
-        // silent-ok: optional fallback path.
+        // silent-ok: supervisor spawn failure is returned as HTTP 500 JSON error.
         return json(500, { error: err.message });
       }
     });

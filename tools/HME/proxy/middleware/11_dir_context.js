@@ -44,7 +44,7 @@ function _loadIndex(_projectRoot) {
       return { index, empty: Object.keys(index).length === 0 };
     });
   } catch (_loadErr) {
-    // silent-ok: optional fallback path.
+    // silent-ok: transient dir-index load failure serves last-known in-memory index or empty state without poisoning cache.
     // Transient IO/parse failure: serve last-known state if we have
     // any, otherwise empty. Do not poison-cache.
     indexPair = _trackedPathsBuiltFrom || { index: {}, empty: true };

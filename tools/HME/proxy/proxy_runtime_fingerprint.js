@@ -50,7 +50,7 @@ function computeRuntimeFingerprint(projectRoot) {
     hash.update('\0');
     try {
       hash.update(fs.readFileSync(abs));
-    // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+    // silent-ok: fingerprinting records unreadable dependency as literal "missing", causing hash drift rather than false freshness.
     } catch (_e) {
       hash.update('missing');
     }

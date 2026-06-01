@@ -251,7 +251,7 @@ function killChild(name, signal = 'SIGTERM') {
     console.log(`[supervisor] sent ${signal} to ${name} (pid ${state.proc.pid})`);
     return true;
   } catch (_e) {
-    // silent-ok: optional fallback path.
+    // silent-ok: process.kill failure returns false so caller knows no signal was delivered.
     return false;
   }
 }

@@ -13,7 +13,7 @@ function readAutocommitFailure(root) {
   let body = '';
   try {
     body = fs.readFileSync(flagPath, 'utf8').trim();
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: missing autocommit.fail means no autocommit alert; unreadable flag is converted into a visible LIFESAVER banner below.
   } catch (err) {
     if (err && err.code === 'ENOENT') return null;
     body = `Autocommit fail flag exists but is unreadable: ${err.message}`;
@@ -43,7 +43,7 @@ function recordLifesaverInjection(root, source, banner, meta = {}) {
       ...meta,
     }) + '\n');
     return true;
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: injection ledger write is dedupe telemetry only; banner heartbeat and model-visible alert already occurred.
   } catch (_e) {
     return false;
   }
@@ -62,7 +62,7 @@ function touchLifesaverHeartbeat(root) {
     fs.mkdirSync(path.dirname(heartbeat), { recursive: true });
     fs.writeFileSync(heartbeat, String(Math.floor(Date.now() / 1000)));
     return true;
-  // silent-ok: proxy path logs or preserves raw response; caller keeps explicit status.
+  // silent-ok: heartbeat write is advisory evidence for injection; recordLifesaverInjection still decides success/failure.
   } catch (_e) {
     return false;
   }

@@ -73,7 +73,7 @@ function _waitForResult(jobId, timeoutMs) {
         try { return resolve(JSON.parse(text)); }
         catch (_e) { return resolve({ _parseError: true, raw: text }); }
       } catch (_e) {
-        // silent-ok: optional fallback path.
+        // silent-ok: result file may be mid-write; poll loop retries until timeout.
         // not yet -- continue
       }
       const elapsed = Date.now() - start;
@@ -130,7 +130,7 @@ async function workerRequest(method, reqPath, body, timeoutMs = 30_000) {
   try {
     _atomicWrite(queuePath, JSON.stringify(job));
   } catch (err) {
-    // silent-ok: optional fallback path.
+    // silent-ok: queue write failure is returned as transport error object to caller.
     return { status: 0, json: null, raw: '', error: err };
   }
   const result = await _waitForResult(jobId, timeoutMs);
