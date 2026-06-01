@@ -204,6 +204,10 @@ test('lifesaver: source-tag self-origin overrides CRITICAL severity', () => {
         r.stdout.includes('hook-watchdog'),
         'hook-watchdog alert must surface as self-origin observation',
       );
+      assert.ok(
+        r.stdout.includes('proxy-runtime'),
+        'proxy-runtime line must surface as self-origin observation',
+      );
     }
   } finally {
     r.cleanup();
