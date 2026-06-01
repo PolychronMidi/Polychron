@@ -154,8 +154,9 @@ class ConjugateChannelVerifier(Verifier):
                 tightening = {
                     "ts": time.time(),
                     "trigger": "conjugate-channel-lost-quadrant",
-                    "reason": (f"HCI={cur_h:.2f} < {h_thr:.2f} AND "
+                    "reason": (f"HME={cur_h:.2f} < {h_thr:.2f} AND "
                                f"perc={cur_p:.2f} < {p_thr:.2f}"),
+                    "signal_source": source_note,
                     "recommended_action": "narrow_band",
                     "band_delta": -0.05,  # advisory: contract by 5pp
                     "expires_after_rounds": 1,
