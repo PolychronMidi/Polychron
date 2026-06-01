@@ -2,6 +2,7 @@
 
 const { emit, PROJECT_ROOT } = require('./shared');
 const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
+const { isContextWindowMessage } = require('./contexts/failure_policy/omni_failure_policy');
 const { submitCcCompactOnce, clearCcCompactInflight } = require('./cc_control');
 
 function _anthropicErrorSseBuffer(type, message) {
