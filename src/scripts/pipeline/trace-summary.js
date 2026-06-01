@@ -1,0 +1,1992 @@
+// src/scripts/pipeline/trace-summary.js
+// Summarize metrics/trace.jsonl into metrics/trace-summary.json for quick diagnostics.
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { requireMetricsDir } = require('../utils/metrics-dir');
+
+function parseLine(line, index) {
+  try {
+    return JSON.parse(line);
+  } catch (err) {
+    console.warn(`Acceptable warning: trace-summary: skipping invalid JSON at line ${index + 1}: ${err && err.message ? err.message : err}`);
+    return null;
+  }
+}
+
+function toNum(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function clamp(value, lo, hi) {
+  return Math.max(lo, Math.min(hi, value));
+}
+
+function updateMinMax(stat, value) {
+  stat.min = value < stat.min ? value : stat.min;
+  stat.max = value > stat.max ? value : stat.max;
+  stat.sum += value;
+  stat.count++;
+}
+
+function finalizeMinMax(stat) {
+  return {
+    min: stat.count > 0 ? stat.min : null,
+    max: stat.count > 0 ? stat.max : null,
+    avg: stat.count > 0 ? Number((stat.sum / stat.count).toFixed(4)) : null,
+    count: stat.count
+  };
+}
+
+function percentile(sortedValues, p) {
+  if (!Array.isArray(sortedValues) || sortedValues.length === 0) return null;
+  const pos = (sortedValues.length - 1) * p;
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  if (lo === hi) return sortedValues[lo];
+  const frac = pos - lo;
+  return sortedValues[lo] * (1 - frac) + sortedValues[hi] * frac;
+}
+
+function compareProgress(left, right) {
+  if (left.section !== right.section) return left.section - right.section;
+  if (left.phrase !== right.phrase) return left.phrase - right.phrase;
+  if (left.measure !== right.measure) return left.measure - right.measure;
+  return left.beat - right.beat;
+}
+
+function summarizeTail(values, thresholds) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return { p90: null, p95: null, exceedanceRate: {} };
+  }
+  const sorted = values.slice().sort((a, b) => a - b);
+  const exceedanceRate = {};
+  for (let i = 0; i < thresholds.length; i++) {
+    const t = thresholds[i];
+    let count = 0;
+    for (let j = 0; j < values.length; j++) {
+      if (values[j] >= t) count++;
+    }
+    exceedanceRate[t.toFixed(2)] = Number((count / values.length).toFixed(4));
+  }
+  return {
+    p90: Number(percentile(sorted, 0.90).toFixed(4)),
+    p95: Number(percentile(sorted, 0.95).toFixed(4)),
+    exceedanceRate
+  };
+}
+
+function summarizeTrace(entries, manifest) {
+  const byLayer = { L1: 0, L2: 0, other: 0 };
+  const regimeCounts = {};
+  const playProb = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const stutterProb = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const density = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const tension = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const flicker = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const couplingAbs = {};
+  const couplingSeries = {};
+  let lastCouplingLabels = {};
+  const trustScoreAbs = {};
+  const trustWeightAbs = {};
+  const trustHotspotPressureAbs = {};
+  const trustDominantPairsBySystem = {};
+  const stageTimingAgg = {}; // per-stage min/max/avg across all beats
+  const BEAT_SETUP_BUDGET_MS = 200; // R9 Evo 5: flag beats where beat-setup exceeds this
+  let beatSetupExceeded = 0;
+  const beatSetupSpikeIndices = []; // R10 Evo 3: record which beats exceeded the budget
+  const beatSetupSpikeStageAgg = {};
+  let worstBeatSetupSpike = null;
+  const couplingRawSeries = {}; // R10 Evo 6: signed coupling values for Pearson correlation
+
+  // R17 Evo 6: Regime transition depth tracking
+  let lastRegime = null;
+  let currentCoherentStreak = 0;
+  let maxConsecutiveCoherent = 0;
+  let regimeTransitionCount = 0;
+
+  let firstBeatKey = null;
+  let lastBeatKey = null;
+  let firstTimeMs = null;
+  let lastTimeMs = null;
+  const uniqueBeatKeys = new Set();
+  const sectionEntryCounts = {};
+  const sectionBeatKeys = {};
+  // R26 E1: Per-section stats for automatic section-level awareness
+  const sectionRegimeCounts = {};
+  const sectionTensionSums = {};
+  const sectionDensitySums = {};
+  const sectionPlayProbSums = {};
+  const sectionBeatCounts = {};
+  const uniqueProfilerAnalysisTicks = new Set();
+  const uniqueProfilerRegimeTicks = new Set();
+  let profilerCadence = '';
+  let profilerSnapshotReuseEntries = 0;
+  let profilerWarmupEntries = 0;
+  let lastProfilerAnalysisTick = null;
+  let profilerTelemetryBeatSpanSum = 0;
+  let profilerTelemetryBeatSpanCount = 0;
+  let profilerTelemetryBeatSpanMax = 0;
+  let phaseTelemetryEntries = 0;
+  let phaseTelemetryValidEntries = 0;
+  let phaseTelemetryChangedEntries = 0;
+  let phaseSignalInvalidEntries = 0;
+  let phaseTelemetryMaxStaleBeats = 0;
+  let phaseStaleEntries = 0;
+  let phaseCouplingCoverageSum = 0;
+  let phaseCouplingCoverageCount = 0;
+  let phaseZeroCoverageEntries = 0;
+  let phaseCouplingAvailablePairsMax = 0;
+  let phaseCouplingMissingPairsMax = 0;
+  const phasePairStateCounts = {};
+  let phaseVarianceGatedEntries = 0;
+  const phasePairStateDetailCounts = {};
+  const layerBeatKeySets = { L1: new Set(), L2: new Set() };
+  const beatKeyCounts = {};
+  let duplicateLayerBeatKeys = 0;
+  let l1ProgressRegressions = 0;
+  let l1TimeRegressions = 0;
+  let lastL1Progress = null;
+  let lastL1TimeMs = null;
+  let profilerEscalatedEntries = 0;
+  const profilerAnalysisSources = {};
+  const outputLoadGuardScale = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const outputLoadGuardRecentRate = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const outputLoadGuardBeatScheduled = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  let outputLoadGuardedEntries = 0;
+  let outputLoadHardEntries = 0;
+  const forcedTransitionEventIds = new Set();
+  const forcedTransitionEvents = [];
+  // R34 E6: Transition readiness accumulators (per-beat gap + velocity tracking)
+  let readinessGapSum = 0;
+  let readinessGapMin = Infinity;
+  let readinessGapMax = -Infinity;
+  let readinessVelocityBlockedBeats = 0;
+  let readinessBeats = 0;
+  let readinessLastScale = null;
+  let evolvingBeats = 0;
+  let coherentBeats = 0;
+  let runCoherentBeats = 0;
+  let maxCoherentBeats = 0;
+  let runBeatCount = 0;
+  let runCoherentShare = 0;
+  let runTransitionCount = 0;
+  let forcedBreakCount = 0;
+  let forcedRegime = '';
+  let forcedRegimeBeatsRemaining = 0;
+  let forcedOverrideBeats = 0;
+  let lastForcedTriggerStreak = 0;
+  let lastForcedTriggerBeat = 0;
+  let lastForcedReason = '';
+  let cadenceMonopolyPressure = 0;
+  let cadenceMonopolyActive = false;
+  let cadenceMonopolyReason = '';
+  let rawExploringShare = 0;
+  let rawEvolvingShare = 0;
+  let rawNonCoherentOpportunityShare = 0;
+  let resolvedNonCoherentShare = 0;
+  let opportunityGap = 0;
+  // R35 E5: Exploring-block diagnostic accumulators
+  const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
+  const coherentBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
+  // R79 E6: Per-pair attribution for coherent-block coupling beats
+  const coherentBlockPairs = {};
+  // R35 E6: Per-pair exceedance beat tracking (beats above 0.90)
+  const pairExceedanceBeats = {};
+  let uniqueExceedanceBeats = 0;
+  // R78 E6: Collect beat keys with exceedance for trust velocity correlation
+  const exceedanceBeatKeys = new Set();
+  // R80 E5: Per-section exceedance beat counts
+  const sectionExceedanceCounts = {};
+  // R85 E4: Per-section per-pair exceedance for targeted follow-up
+  const sectionPairExceedance = {};
+  // R6 E4: S0 warmup vs post-warmup exceedance beat counters
+  let s0WarmupExceedance = 0;
+  let s0PostWarmupExceedance = 0;
+  // R8 E6: Per-section coupling values for dominant exceedance pair p95 computation
+  const sectionCouplingSeries = {};
+  // R58 E6: Guard/coupling interaction diagnostic. Partition coupling stats
+  // by guarded (scale < 0.999) vs unguarded beats to reveal whether the
+  // output-load guard inflates or dampens coupling through uniform suppression.
+  const guardedCouplingAbs = {};
+  const unguardedCouplingAbs = {};
+  let guardedExceedanceBeats = 0;
+  let unguardedExceedanceBeats = 0;
+  let guardedBeatCount = 0;
+  let unguardedBeatCount = 0;
+  // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
+  let rawRegimeCounts = null;
+  let runRawRegimeCounts = null;
+  let runResolvedRegimeCounts = null;
+  // R37 E6: Raw regime max streak (cumulative, grab last beat)
+  // R38 E6: Track max rawRollingAbsCorr across the run
+  const rawEmaMaxSeries = {};
+  let rawRegimeMaxStreak = null;
+  // R37 E5: effectiveDim histogram -- collect all values for percentile computation
+  const effectiveDimValues = [];
+
+  // R66 E6: Mid-run diagnostic snapshots -- accumulated separately from beat entries
+  const diagnosticArc = [];
+
+  // R82 E4: Per-beat tailRecoveryHandshake saturation diagnostic
+  let handshakeSatBeats = 0;
+  let handshakeBeatToSat = -1;
+  let handshakeMin = 1;
+  let handshakeMax = 0;
+  let handshakeBeatCount = 0;
+
+  // R99 E2: Coupling gate engagement tracking
+  let gateEngagedBeats = 0;
+  let gateTrackingBeats = 0;
+  const gateEngagedCounts = { gateD: 0, gateT: 0, gateF: 0 };
+  let gateMinObserved = { gateD: 1, gateT: 1, gateF: 1 };
+
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+
+    // R66 E6: Snapshot records are diagnostic, not beat entries. Accumulate
+    // them into diagnosticArc and skip normal beat processing.
+    if (e.recordType === 'snapshot') {
+      diagnosticArc.push({
+        snapshotIndex: e.snapshotIndex,
+        beatKey: e.beatKey,
+        section: parseInt(e.beatKey.split(':')[0], 10),
+        timeMs: e.timeMs,
+        effectiveDim: e.effectiveDim,
+        globalGainMultiplier: e.globalGainMultiplier,
+        regime: e.regime,
+        couplingStrength: e.couplingStrength,
+        phaseIntegrity: e.phaseIntegrity,
+        trust: e.trust,
+        trustVelocity: e.trustVelocity || null,
+        activeProfile: e.activeProfile || null,
+        couplingMeans: e.couplingMeans,
+        // R7 E6: Section-level phase share for cross-run phase recovery tracking
+        phaseShare: e.axisEnergyShare && e.axisEnergyShare.shares ? e.axisEnergyShare.shares.phase : null,
+        // R12 E4: Per-section axis Gini for balance tracking
+        axisGini: e.axisEnergyShare && typeof e.axisEnergyShare.axisGini === 'number' ? e.axisEnergyShare.axisGini : null,
+        // R12 E1: Section harmonic context
+        sectionKey: e.sectionKey || null,
+        sectionMode: e.sectionMode || null,
+      });
+      continue;
+    }
+
+    const layer = typeof e.layer === 'string' ? e.layer : 'other';
+    if (layer === 'L1' || layer === 'L2') byLayer[layer]++;
+    else byLayer.other++;
+
+    // R82 E4: Per-beat handshake saturation tracking
+    if (e.couplingHomeostasis && typeof e.couplingHomeostasis === 'object') {
+      const hs = toNum(e.couplingHomeostasis.tailRecoveryHandshake, -1);
+      if (hs >= 0) {
+        handshakeBeatCount++;
+        if (hs < handshakeMin) handshakeMin = hs;
+        if (hs > handshakeMax) handshakeMax = hs;
+        if (hs > 0.98) {
+          handshakeSatBeats++;
+          if (handshakeBeatToSat < 0) handshakeBeatToSat = handshakeBeatCount;
+        }
+      }
+    }
+
+    // R99 E2: Per-beat coupling gate engagement tracking
+    if (e.couplingGates && typeof e.couplingGates === 'object') {
+      gateTrackingBeats++;
+      const gD = toNum(e.couplingGates.gateD, 1);
+      const gT = toNum(e.couplingGates.gateT, 1);
+      const gF = toNum(e.couplingGates.gateF, 1);
+      if (gD < 0.999) gateEngagedCounts.gateD++;
+      if (gT < 0.999) gateEngagedCounts.gateT++;
+      if (gF < 0.999) gateEngagedCounts.gateF++;
+      if (gD < 0.999 || gT < 0.999 || gF < 0.999) gateEngagedBeats++;
+      if (gD < gateMinObserved.gateD) gateMinObserved.gateD = gD;
+      if (gT < gateMinObserved.gateT) gateMinObserved.gateT = gT;
+      if (gF < gateMinObserved.gateF) gateMinObserved.gateF = gF;
+    }
+
+    if (firstBeatKey === null && typeof e.beatKey === 'string') firstBeatKey = e.beatKey;
+    if (typeof e.beatKey === 'string') lastBeatKey = e.beatKey;
+    if (typeof e.beatKey === 'string') uniqueBeatKeys.add(e.beatKey);
+    if (typeof e.beatKey === 'string' && e.beatKey) {
+      beatKeyCounts[e.beatKey] = (beatKeyCounts[e.beatKey] || 0) + 1;
+      if (layer === 'L1' || layer === 'L2') {
+        if (layerBeatKeySets[layer].has(e.beatKey)) duplicateLayerBeatKeys++;
+        else layerBeatKeySets[layer].add(e.beatKey);
+      }
+    }
+    if (typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
+      const parsedSection = parseInt(e.beatKey.split(':')[0], 10);
+      if (Number.isFinite(parsedSection)) {
+        sectionEntryCounts[parsedSection] = (sectionEntryCounts[parsedSection] || 0) + 1;
+        if (!sectionBeatKeys[parsedSection]) sectionBeatKeys[parsedSection] = new Set();
+        sectionBeatKeys[parsedSection].add(e.beatKey);
+      }
+    }
+
+    const timeMs = toNum(e.timeMs, NaN);
+    if (Number.isFinite(timeMs)) {
+      if (firstTimeMs === null || timeMs < firstTimeMs) firstTimeMs = timeMs;
+      if (lastTimeMs === null || timeMs > lastTimeMs) lastTimeMs = timeMs;
+      if (layer === 'L1') {
+        if (lastL1TimeMs !== null && timeMs + 0.001 < lastL1TimeMs) l1TimeRegressions++;
+        lastL1TimeMs = timeMs;
+      }
+    }
+    if (layer === 'L1' && typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
+      const parts = e.beatKey.split(':').map(function(part) { return parseInt(part, 10); });
+      if (parts.length >= 4 && parts.every(function(value) { return Number.isFinite(value); })) {
+        const progress = { section: parts[0], phrase: parts[1], measure: parts[2], beat: parts[3] };
+        if (lastL1Progress && compareProgress(progress, lastL1Progress) <= 0) l1ProgressRegressions++;
+        lastL1Progress = progress;
+      }
+    }
+
+    const snap = e.snap && typeof e.snap === 'object' ? e.snap : {};
+    const regime = typeof e.regime === 'string' ? e.regime : 'unknown';
+    regimeCounts[regime] = (regimeCounts[regime] || 0) + 1;
+
+    if (e.profilerTelemetry && typeof e.profilerTelemetry === 'object') {
+      const pt = e.profilerTelemetry;
+      if (typeof pt.cadence === 'string' && pt.cadence) profilerCadence = pt.cadence;
+      if (pt.cadenceEscalated) profilerEscalatedEntries++;
+      if (typeof pt.analysisSource === 'string' && pt.analysisSource) {
+        profilerAnalysisSources[pt.analysisSource] = (profilerAnalysisSources[pt.analysisSource] || 0) + 1;
+      }
+      if (typeof pt.analysisTick === 'number' && Number.isFinite(pt.analysisTick) && pt.analysisTick > 0) {
+        uniqueProfilerAnalysisTicks.add(pt.analysisTick);
+        if (lastProfilerAnalysisTick !== null && pt.analysisTick === lastProfilerAnalysisTick) {
+          profilerSnapshotReuseEntries++;
+        }
+        lastProfilerAnalysisTick = pt.analysisTick;
+      }
+      if (typeof pt.regimeTick === 'number' && Number.isFinite(pt.regimeTick) && pt.regimeTick > 0) {
+        uniqueProfilerRegimeTicks.add(pt.regimeTick);
+      }
+      if (typeof pt.warmupTicksRemaining === 'number' && pt.warmupTicksRemaining > 0) {
+        profilerWarmupEntries++;
+      }
+      if (typeof pt.telemetryBeatSpan === 'number' && Number.isFinite(pt.telemetryBeatSpan) && pt.telemetryBeatSpan > 0) {
+        profilerTelemetryBeatSpanSum += pt.telemetryBeatSpan;
+        profilerTelemetryBeatSpanCount++;
+        if (pt.telemetryBeatSpan > profilerTelemetryBeatSpanMax) profilerTelemetryBeatSpanMax = pt.telemetryBeatSpan;
+      }
+    }
+    if (e.phaseTelemetry && typeof e.phaseTelemetry === 'object') {
+      const phaseTelemetry = e.phaseTelemetry;
+      let varianceGated = false;
+      let stalePairObserved = false;
+      phaseTelemetryEntries++;
+      if (phaseTelemetry.phaseSignalValid) phaseTelemetryValidEntries++;
+      else phaseSignalInvalidEntries++;
+      if (phaseTelemetry.phaseChanged) phaseTelemetryChangedEntries++;
+      if (typeof phaseTelemetry.phaseStaleBeats === 'number') {
+        phaseTelemetryMaxStaleBeats = Math.max(phaseTelemetryMaxStaleBeats, phaseTelemetry.phaseStaleBeats);
+        if (phaseTelemetry.phaseStaleBeats > 0) phaseStaleEntries++;
+      }
+      if (typeof phaseTelemetry.phaseCouplingCoverage === 'number') {
+        phaseCouplingCoverageSum += phaseTelemetry.phaseCouplingCoverage;
+        phaseCouplingCoverageCount++;
+        if (phaseTelemetry.phaseCouplingCoverage <= 0.01) phaseZeroCoverageEntries++;
+      }
+      if (typeof phaseTelemetry.phaseCouplingAvailablePairs === 'number') {
+        phaseCouplingAvailablePairsMax = Math.max(phaseCouplingAvailablePairsMax, phaseTelemetry.phaseCouplingAvailablePairs);
+      }
+      if (typeof phaseTelemetry.phaseCouplingMissingPairs === 'number') {
+        phaseCouplingMissingPairsMax = Math.max(phaseCouplingMissingPairsMax, phaseTelemetry.phaseCouplingMissingPairs);
+      }
+      if (phaseTelemetry.pairStates && typeof phaseTelemetry.pairStates === 'object') {
+        const pairStateKeys = Object.keys(phaseTelemetry.pairStates);
+        for (let pairIndex = 0; pairIndex < pairStateKeys.length; pairIndex++) {
+          const pairKey = pairStateKeys[pairIndex];
+          const state = phaseTelemetry.pairStates[pairKey];
+          if (typeof state !== 'string' || !state) continue;
+          phasePairStateCounts[state] = (phasePairStateCounts[state] || 0) + 1;
+          if (!phasePairStateDetailCounts[pairKey]) phasePairStateDetailCounts[pairKey] = {};
+          phasePairStateDetailCounts[pairKey][state] = (phasePairStateDetailCounts[pairKey][state] || 0) + 1;
+          if (state === 'variance-gated') varianceGated = true;
+          if (state === 'stale' || state === 'stale-gated') stalePairObserved = true;
+        }
+      }
+      if (varianceGated) phaseVarianceGatedEntries++;
+      else if (stalePairObserved) phaseStaleEntries++;
+    }
+
+    if (e.outputLoadGuard && typeof e.outputLoadGuard === 'object') {
+      const guard = e.outputLoadGuard;
+      const scale = toNum(guard.scale, NaN);
+      const recentRate = toNum(guard.recentPrimaryNotesPerSecond, NaN);
+      const beatScheduledNotes = toNum(guard.beatScheduledNotes, NaN);
+      if (Number.isFinite(scale)) {
+        updateMinMax(outputLoadGuardScale, scale);
+        if (scale < 0.999) outputLoadGuardedEntries++;
+      }
+      if (Number.isFinite(recentRate)) updateMinMax(outputLoadGuardRecentRate, recentRate);
+      if (Number.isFinite(beatScheduledNotes)) updateMinMax(outputLoadGuardBeatScheduled, beatScheduledNotes);
+      if (guard.severity === 'hard') outputLoadHardEntries++;
+    }
+
+    if (e.forcedTransitionEvent && typeof e.forcedTransitionEvent === 'object') {
+      const fte = e.forcedTransitionEvent;
+      const eventId = typeof fte.eventId === 'number' && Number.isFinite(fte.eventId)
+        ? fte.eventId
+        : forcedTransitionEvents.length + 1;
+      if (!forcedTransitionEventIds.has(eventId)) {
+        forcedTransitionEventIds.add(eventId);
+        forcedTransitionEvents.push({
+          eventId,
+          from: typeof fte.from === 'string' ? fte.from : '',
+          to: typeof fte.to === 'string' ? fte.to : '',
+          reason: typeof fte.reason === 'string' ? fte.reason : '',
+          triggerTick: typeof fte.triggerTick === 'number' ? fte.triggerTick : null,
+          triggerStreak: typeof fte.triggerStreak === 'number' ? fte.triggerStreak : null,
+          runTickCount: typeof fte.runTickCount === 'number' ? fte.runTickCount : null,
+          runTransitionCount: typeof fte.runTransitionCount === 'number' ? fte.runTransitionCount : null,
+          runCoherentBeats: typeof fte.runCoherentBeats === 'number' ? fte.runCoherentBeats : null,
+          runCoherentShare: typeof fte.runCoherentShare === 'number' ? fte.runCoherentShare : null,
+          forcedBeatsRemaining: typeof fte.forcedBeatsRemaining === 'number' ? fte.forcedBeatsRemaining : null
+        });
+      }
+    }
+
+    // R17 Evo 6: Track consecutive coherent streaks and regime transitions
+    if (lastRegime !== null && regime !== lastRegime) regimeTransitionCount++;
+    // R34 E6: Accumulate transition readiness metrics from per-beat data
+    if (e.transitionReadiness && typeof e.transitionReadiness === 'object') {
+      const tr = e.transitionReadiness;
+      if (typeof tr.gap === 'number' && Number.isFinite(tr.gap)) {
+        readinessGapSum += tr.gap;
+        if (tr.gap < readinessGapMin) readinessGapMin = tr.gap;
+        if (tr.gap > readinessGapMax) readinessGapMax = tr.gap;
+        readinessBeats++;
+        if (tr.velocityBlocked) readinessVelocityBlockedBeats++;
+        if (typeof tr.thresholdScale === 'number') readinessLastScale = tr.thresholdScale;
+        if (typeof tr.evolvingBeats === 'number') evolvingBeats = tr.evolvingBeats;
+        if (typeof tr.coherentBeats === 'number') coherentBeats = Math.max(coherentBeats, tr.coherentBeats);
+        if (typeof tr.runCoherentBeats === 'number') runCoherentBeats = Math.max(runCoherentBeats, tr.runCoherentBeats);
+        if (typeof tr.maxCoherentBeats === 'number' && tr.maxCoherentBeats > maxCoherentBeats) maxCoherentBeats = tr.maxCoherentBeats;
+        if (typeof tr.runBeatCount === 'number') runBeatCount = Math.max(runBeatCount, tr.runBeatCount);
+        if (typeof tr.runCoherentShare === 'number') runCoherentShare = tr.runCoherentShare;
+        if (typeof tr.runTransitionCount === 'number') runTransitionCount = Math.max(runTransitionCount, tr.runTransitionCount);
+        if (typeof tr.forcedBreakCount === 'number') forcedBreakCount = Math.max(forcedBreakCount, tr.forcedBreakCount);
+        if (typeof tr.forcedRegime === 'string') forcedRegime = tr.forcedRegime;
+        if (typeof tr.forcedRegimeBeatsRemaining === 'number') forcedRegimeBeatsRemaining = tr.forcedRegimeBeatsRemaining;
+        if (typeof tr.forcedOverrideBeats === 'number') {
+          if (tr.forcedOverrideBeats > forcedOverrideBeats) forcedOverrideBeats = tr.forcedOverrideBeats;
+        } else if (tr.forcedOverrideActive) {
+          forcedOverrideBeats++;
+        }
+        if (typeof tr.lastForcedTriggerStreak === 'number') lastForcedTriggerStreak = tr.lastForcedTriggerStreak;
+        if (typeof tr.lastForcedTriggerBeat === 'number') lastForcedTriggerBeat = tr.lastForcedTriggerBeat;
+        if (typeof tr.lastForcedReason === 'string') lastForcedReason = tr.lastForcedReason;
+        if (typeof tr.cadenceMonopolyPressure === 'number') cadenceMonopolyPressure = tr.cadenceMonopolyPressure;
+        if (typeof tr.cadenceMonopolyActive === 'boolean') cadenceMonopolyActive = tr.cadenceMonopolyActive;
+        if (typeof tr.cadenceMonopolyReason === 'string') cadenceMonopolyReason = tr.cadenceMonopolyReason;
+        if (typeof tr.rawExploringShare === 'number') rawExploringShare = tr.rawExploringShare;
+        if (typeof tr.rawEvolvingShare === 'number') rawEvolvingShare = tr.rawEvolvingShare;
+        if (typeof tr.rawNonCoherentOpportunityShare === 'number') rawNonCoherentOpportunityShare = tr.rawNonCoherentOpportunityShare;
+        if (typeof tr.resolvedNonCoherentShare === 'number') resolvedNonCoherentShare = tr.resolvedNonCoherentShare;
+        if (typeof tr.opportunityGap === 'number') opportunityGap = tr.opportunityGap;
+      }
+      // R35 E5: Accumulate exploring-block diagnostic
+      if (typeof tr.exploringBlock === 'string' && exploringBlockCounts[tr.exploringBlock] !== undefined) {
+        exploringBlockCounts[tr.exploringBlock]++;
+      }
+      if (typeof tr.coherentBlock === 'string' && coherentBlockCounts[tr.coherentBlock] !== undefined) {
+        coherentBlockCounts[tr.coherentBlock]++;
+      }
+      // R36 E4: Grab cumulative raw regime counts (last beat wins)
+      if (tr.rawRegimeCounts && typeof tr.rawRegimeCounts === 'object') {
+        rawRegimeCounts = tr.rawRegimeCounts;
+      }
+      if (tr.runRawRegimeCounts && typeof tr.runRawRegimeCounts === 'object') {
+        runRawRegimeCounts = tr.runRawRegimeCounts;
+      }
+      if (tr.runResolvedRegimeCounts && typeof tr.runResolvedRegimeCounts === 'object') {
+        runResolvedRegimeCounts = tr.runResolvedRegimeCounts;
+      }
+      // R37 E6: Grab cumulative raw regime max streaks (last beat wins)
+      if (tr.rawRegimeMaxStreak && typeof tr.rawRegimeMaxStreak === 'object') {
+        rawRegimeMaxStreak = tr.rawRegimeMaxStreak;
+      }
+      // R37 E5: Collect effectiveDim for histogram
+      if (typeof tr.effectiveDim === 'number' && Number.isFinite(tr.effectiveDim)) {
+        effectiveDimValues.push(tr.effectiveDim);
+      }
+    }
+    if (regime === 'coherent') {
+      currentCoherentStreak++;
+      if (currentCoherentStreak > maxConsecutiveCoherent) maxConsecutiveCoherent = currentCoherentStreak;
+    } else {
+      currentCoherentStreak = 0;
+    }
+    lastRegime = regime;
+
+    const entryPlayProb = toNum(snap.playProb, 0);
+    const entryDensity = toNum(snap.compositeIntensity !== undefined ? snap.compositeIntensity : snap.currentDensity, 0);
+    const entryTension = toNum(snap.tension, 0);
+    updateMinMax(playProb, entryPlayProb);
+    updateMinMax(stutterProb, toNum(snap.stutterProb, 0));
+    updateMinMax(density, entryDensity);
+    updateMinMax(tension, entryTension);
+    updateMinMax(flicker, toNum(snap.flicker, 0));
+
+    // R26 E1: per-section accumulation
+    if (typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
+      const sec = parseInt(e.beatKey.split(':')[0], 10);
+      if (Number.isFinite(sec)) {
+        if (!sectionRegimeCounts[sec]) sectionRegimeCounts[sec] = {};
+        sectionRegimeCounts[sec][regime] = (sectionRegimeCounts[sec][regime] || 0) + 1;
+        sectionTensionSums[sec] = (sectionTensionSums[sec] || 0) + entryTension;
+        sectionDensitySums[sec] = (sectionDensitySums[sec] || 0) + entryDensity;
+        sectionPlayProbSums[sec] = (sectionPlayProbSums[sec] || 0) + entryPlayProb;
+        sectionBeatCounts[sec] = (sectionBeatCounts[sec] || 0) + 1;
+      }
+    }
+
+    if (e.couplingLabels && typeof e.couplingLabels === 'object' && Object.keys(e.couplingLabels).length > 0) lastCouplingLabels = e.couplingLabels;
+    const cm = e.coupling && typeof e.coupling === 'object' ? e.coupling : {};
+    const couplingKeys = Object.keys(cm);
+    let beatHadExceedance = false;
+    for (let j = 0; j < couplingKeys.length; j++) {
+      const key = couplingKeys[j];
+      const raw = toNum(cm[key], 0);
+      const value = Math.abs(raw);
+      if (!couplingAbs[key]) couplingAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+      if (!couplingSeries[key]) couplingSeries[key] = [];
+      if (!couplingRawSeries[key]) couplingRawSeries[key] = [];
+      // R8 E6: Accumulate per-section coupling values for section p95
+      if (typeof e.beatKey === 'string') {
+        const coupSec = parseInt(e.beatKey.split(':')[0], 10);
+        if (Number.isFinite(coupSec)) {
+          if (!sectionCouplingSeries[coupSec]) sectionCouplingSeries[coupSec] = {};
+          if (!sectionCouplingSeries[coupSec][key]) sectionCouplingSeries[coupSec][key] = [];
+          sectionCouplingSeries[coupSec][key].push(value);
+        }
+      }
+      updateMinMax(couplingAbs[key], value);
+      couplingSeries[key].push(value);
+      couplingRawSeries[key].push(raw);
+      // R81 E5 + R86 E2: Warmup-aware exceedance threshold. First 10%
+      // of beats use 0.95 to filter initialization transients that inflate
+      // S0 exceedance counts. R86: raised from 0.92 after S0 accounted
+      // for 76% of exceedance beats (25/33) in R85.
+      const exceedThresh = i < entries.length * 0.10 ? 0.95 : 0.90;
+      if (value > exceedThresh) {
+        pairExceedanceBeats[key] = (pairExceedanceBeats[key] || 0) + 1;
+        beatHadExceedance = true;
+        // R85 E4: Track per-section per-pair exceedance
+        if (typeof e.beatKey === 'string') {
+          const pairSec = parseInt(e.beatKey.split(':')[0], 10);
+          if (Number.isFinite(pairSec)) {
+            if (!sectionPairExceedance[pairSec]) sectionPairExceedance[pairSec] = {};
+            sectionPairExceedance[pairSec][key] = (sectionPairExceedance[pairSec][key] || 0) + 1;
+          }
+        }
+      }
+    }
+    if (beatHadExceedance) uniqueExceedanceBeats++;
+    if (beatHadExceedance && typeof e.beatKey === 'string') {
+      exceedanceBeatKeys.add(e.beatKey);
+      // R80 E5: Track per-section exceedance
+      const sec = parseInt(e.beatKey.split(':')[0], 10);
+      if (Number.isFinite(sec)) sectionExceedanceCounts[sec] = (sectionExceedanceCounts[sec] || 0) + 1;
+      // R6 E4: Track S0 warmup vs post-warmup exceedance
+      if (sec === 0) {
+        if (i < entries.length * 0.10) s0WarmupExceedance++;
+        else s0PostWarmupExceedance++;
+      }
+    }
+    // R79 E6 + R80 E4: Attribute coupling pairs on coherent-blocked beats.
+    // R80 E4: Use adaptive target from couplingTargets when available,
+    // threshold at target * 1.5. Fall back to 0.50 when no target exists.
+    // R79's 0.80 was too high -- 90 blocked beats had zero pairs above it.
+    if (e.transitionReadiness && e.transitionReadiness.coherentBlock === 'coupling') {
+      const ct = e.couplingTargets && typeof e.couplingTargets === 'object' ? e.couplingTargets : null;
+      for (let j = 0; j < couplingKeys.length; j++) {
+        const pairKey = couplingKeys[j];
+        const absVal = Math.abs(toNum(cm[pairKey], 0));
+        const pairTarget = ct && ct[pairKey] && typeof ct[pairKey].target === 'number' ? ct[pairKey].target : null;
+        const threshold = pairTarget !== null ? pairTarget * 1.5 : 0.50;
+        // R81 E6: Dual-threshold. Adaptive threshold (target * 1.5)
+        // missed all pairs when adaptive targets are high. Absolute
+        // floor at 0.40 ensures attribution even during coherent blocking.
+        if (absVal > threshold || absVal > 0.40) {
+          coherentBlockPairs[pairKey] = (coherentBlockPairs[pairKey] || 0) + 1;
+        }
+      }
+    }
+
+    // R58 E6: Partition coupling stats by guarded vs unguarded beat
+    const guardObj = e.outputLoadGuard && typeof e.outputLoadGuard === 'object' ? e.outputLoadGuard : null;
+    const guardScale = guardObj ? toNum(guardObj.scale, 1) : 1;
+    const beatIsGuarded = guardScale < 0.999;
+    if (beatIsGuarded) guardedBeatCount++;
+    else unguardedBeatCount++;
+    if (beatHadExceedance) {
+      if (beatIsGuarded) guardedExceedanceBeats++;
+      else unguardedExceedanceBeats++;
+    }
+    for (let j = 0; j < couplingKeys.length; j++) {
+      const key = couplingKeys[j];
+      const value = Math.abs(toNum(cm[key], 0));
+      const bucket = beatIsGuarded ? guardedCouplingAbs : unguardedCouplingAbs;
+      if (!bucket[key]) bucket[key] = { sum: 0, count: 0 };
+      bucket[key].sum += value;
+      bucket[key].count++;
+    }
+
+    // R38 E6: Populate rawEmaMaxSeries from couplingTargets
+    if (e.couplingTargets && typeof e.couplingTargets === 'object') {
+      const ctKeys = Object.keys(e.couplingTargets);
+      for (let j = 0; j < ctKeys.length; j++) {
+        const pair = ctKeys[j];
+        const ct = e.couplingTargets[pair];
+        if (ct && typeof ct === 'object' && typeof ct.rawRollingAbsCorr === 'number') {
+          if (!rawEmaMaxSeries[pair]) rawEmaMaxSeries[pair] = { max: -Infinity, count: 0 };
+          if (ct.rawRollingAbsCorr > rawEmaMaxSeries[pair].max) rawEmaMaxSeries[pair].max = ct.rawRollingAbsCorr;
+          rawEmaMaxSeries[pair].count++;
+        }
+      }
+    }
+
+    const trust = e.trust && typeof e.trust === 'object' ? e.trust : {};
+    const trustKeys = Object.keys(trust);
+    for (let j = 0; j < trustKeys.length; j++) {
+      const key = trustKeys[j];
+      const entry = trust[key];
+
+      if (entry && typeof entry === 'object') {
+        const score = Math.abs(toNum(entry.score, NaN));
+        if (Number.isFinite(score)) {
+          if (!trustScoreAbs[key]) trustScoreAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustScoreAbs[key], score);
+        }
+
+        const weight = Math.abs(toNum(entry.weight, NaN));
+        if (Number.isFinite(weight)) {
+          if (!trustWeightAbs[key]) trustWeightAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustWeightAbs[key], weight);
+        }
+
+        const hotspotPressure = Math.abs(toNum(entry.hotspotPressure, NaN));
+        if (Number.isFinite(hotspotPressure)) {
+          if (!trustHotspotPressureAbs[key]) trustHotspotPressureAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustHotspotPressureAbs[key], hotspotPressure);
+        }
+
+        if (typeof entry.dominantPair === 'string' && entry.dominantPair) {
+          if (!trustDominantPairsBySystem[key]) trustDominantPairsBySystem[key] = {};
+          trustDominantPairsBySystem[key][entry.dominantPair] = (trustDominantPairsBySystem[key][entry.dominantPair] || 0) + 1;
+        }
+      } else {
+        const scalar = Math.abs(toNum(entry, NaN));
+        if (Number.isFinite(scalar)) {
+          if (!trustScoreAbs[key]) trustScoreAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustScoreAbs[key], scalar);
+        }
+      }
+    }
+
+    // Accumulate per-stage timing (processBeat hot-path profile)
+    const st = e.stageTiming;
+    if (st && typeof st === 'object') {
+      const stKeys = Object.keys(st);
+      for (let j = 0; j < stKeys.length; j++) {
+        const stage = stKeys[j];
+        const ms = toNum(st[stage], NaN);
+        if (!Number.isFinite(ms)) continue;
+        if (!stageTimingAgg[stage]) stageTimingAgg[stage] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+        updateMinMax(stageTimingAgg[stage], ms);
+      }
+      // R9 Evo 5: count beats where beat-setup exceeds the budget
+      const setupMs = toNum(st['beat-setup'], NaN);
+      if (Number.isFinite(setupMs) && setupMs > BEAT_SETUP_BUDGET_MS) {
+        beatSetupExceeded++;
+        // R10 Evo 3: record index and timing of spike beats
+        // R16 Evo 6: include per-stage timing breakdown for spike diagnosis
+        const stages = {};
+        let dominantSubstage = 'beat-setup';
+        let dominantSubstageMs = setupMs;
+        for (let k = 0; k < stKeys.length; k++) {
+          const stageMs = toNum(st[stKeys[k]], NaN);
+          if (!Number.isFinite(stageMs)) continue;
+          stages[stKeys[k]] = Number(stageMs.toFixed(4));
+          if (stKeys[k] !== 'beat-setup' && stageMs > dominantSubstageMs) {
+            dominantSubstage = stKeys[k];
+            dominantSubstageMs = stageMs;
+          }
+        }
+        if (dominantSubstage === 'beat-setup') dominantSubstageMs = setupMs;
+        if (!beatSetupSpikeStageAgg[dominantSubstage]) {
+          beatSetupSpikeStageAgg[dominantSubstage] = { count: 0, totalMs: 0, maxMs: 0 };
+        }
+        beatSetupSpikeStageAgg[dominantSubstage].count++;
+        beatSetupSpikeStageAgg[dominantSubstage].totalMs += dominantSubstageMs;
+        beatSetupSpikeStageAgg[dominantSubstage].maxMs = Math.max(beatSetupSpikeStageAgg[dominantSubstage].maxMs, dominantSubstageMs);
+        const spike = {
+          index: i,
+          ms: Number(setupMs.toFixed(4)),
+          dominantSubstage,
+          dominantSubstageMs: Number(dominantSubstageMs.toFixed(4)),
+          stages
+        };
+        beatSetupSpikeIndices.push(spike);
+        if (!worstBeatSetupSpike || spike.ms > worstBeatSetupSpike.ms) worstBeatSetupSpike = spike;
+      }
+    }
+  }
+
+  if (uniqueProfilerRegimeTicks.size > 0 && runBeatCount < uniqueProfilerRegimeTicks.size) {
+    runBeatCount = uniqueProfilerRegimeTicks.size;
+  }
+  if (forcedTransitionEvents.length > forcedBreakCount) {
+    forcedBreakCount = forcedTransitionEvents.length;
+  }
+
+  const couplingSummary = {};
+  const couplingKeys = Object.keys(couplingAbs).sort();
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    couplingSummary[key] = finalizeMinMax(couplingAbs[key]);
+  }
+
+  const couplingTail = {};
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    couplingTail[key] = summarizeTail(couplingSeries[key], [0.50, 0.70, 0.85]);
+  }
+
+  // R10 Evo 4: coupling hotspot detection (pairs with p95 > 0.70)
+  const couplingHotspots = [];
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    const tail = couplingTail[key];
+    if (tail && tail.p95 !== null && tail.p95 > 0.70) {
+      couplingHotspots.push({ pair: key, p95: tail.p95, avg: couplingSummary[key].avg });
+    }
+  }
+
+  const exceedancePairsSorted = Object.entries(pairExceedanceBeats)
+    .map(function(entry) { return { pair: entry[0], beats: entry[1] }; })
+    .sort(function(a, b) { return b.beats - a.beats; });
+
+  // R10 Evo 6: Pearson correlation direction for each coupling pair
+  const couplingCorrelation = {};
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    const raw = couplingRawSeries[key];
+    if (!raw || raw.length < 2) continue;
+    const n = raw.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    // Correlate coupling value against beat index (temporal trend)
+    for (let j = 0; j < n; j++) {
+      sumX += j;
+      sumY += raw[j];
+      sumXY += j * raw[j];
+      sumX2 += j * j;
+      sumY2 += raw[j] * raw[j];
+    }
+    const denom = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    const r = denom > 0 ? (n * sumXY - sumX * sumY) / denom : 0;
+    const meanVal = sumY / n;
+    // R33: temporal coupling trajectory -- first-half vs second-half mean detects building/dissolving
+    var halfN = Math.floor(n / 2);
+    var firstHalfMean = 0, secondHalfMean = 0;
+    for (var ti = 0; ti < halfN; ti++) firstHalfMean += raw[ti];
+    for (var ti2 = halfN; ti2 < n; ti2++) secondHalfMean += raw[ti2];
+    firstHalfMean = halfN > 0 ? firstHalfMean / halfN : 0;
+    secondHalfMean = (n - halfN) > 0 ? secondHalfMean / (n - halfN) : 0;
+    var trajectoryDelta = secondHalfMean - firstHalfMean;
+    var trajectory = Math.abs(trajectoryDelta) < 0.05 ? 'sustained'
+      : trajectoryDelta > 0.15 ? 'building' : trajectoryDelta < -0.15 ? 'dissolving'
+      : trajectoryDelta > 0 ? 'strengthening' : 'weakening';
+    couplingCorrelation[key] = {
+      pearsonR: Number(r.toFixed(4)),
+      meanSigned: Number(meanVal.toFixed(4)),
+      direction: r > 0.3 ? 'increasing' : r < -0.3 ? 'decreasing' : 'stable',
+      trajectory: trajectory,
+      trajectoryDelta: Number(trajectoryDelta.toFixed(4))
+    };
+  }
+
+  const trustScoreSummary = {};
+  const trustScoreKeys = Object.keys(trustScoreAbs).sort();
+  for (let i = 0; i < trustScoreKeys.length; i++) {
+    const key = trustScoreKeys[i];
+    trustScoreSummary[key] = finalizeMinMax(trustScoreAbs[key]);
+  }
+
+  const trustWeightSummary = {};
+  const trustWeightKeys = Object.keys(trustWeightAbs).sort();
+  for (let i = 0; i < trustWeightKeys.length; i++) {
+    const key = trustWeightKeys[i];
+    trustWeightSummary[key] = finalizeMinMax(trustWeightAbs[key]);
+  }
+
+  const trustHotspotPressureSummary = {};
+  const trustHotspotKeys = Object.keys(trustHotspotPressureAbs).sort();
+  for (let i = 0; i < trustHotspotKeys.length; i++) {
+    const key = trustHotspotKeys[i];
+    trustHotspotPressureSummary[key] = finalizeMinMax(trustHotspotPressureAbs[key]);
+  }
+
+  const trustSummary = {};
+  const trustKeys = Object.keys(trustScoreSummary).sort();
+  for (let i = 0; i < trustKeys.length; i++) {
+    const key = trustKeys[i];
+    trustSummary[key] = trustScoreSummary[key];
+  }
+
+  // R18 E5: Extract adaptive coupling target drift from the last trace entry.
+  // pipelineCouplingManager writes couplingTargets per beat; we only need the
+  // final state to diagnose whether coupling surges are target-drift-driven.
+  // R19 E2: Also extract rawRollingAbsCorr for regime-transparent comparison.
+  let adaptiveTargets = null;
+  let axisCouplingTotals = null;
+  let couplingHomeostasisState = null;
+  // R27 E4: Per-axis energy share for axis-level redistribution detection
+  let axisEnergyShare = null;
+  // R27 E2: Coherence gate + floor dampening state for anti-redistribution analysis
+  let couplingGates = null;
+  // R32 E5: Axis energy equilibrator per-regime telemetry
+  let axisEnergyEquilibratorState = null;
+  // R28 E1: Enhanced extraction - prefer the last entry where ALL monitored
+  // axes have non-zero values. Phase pairs may have null correlations on the
+  // very last beat (producing phase=0 in axisCouplingTotals and axisEnergyShare).
+  // Fall back to any last-available entry if no fully-populated entry exists.
+  let axisCouplingTotalsBest = null;
+  let axisEnergyShareBest = null;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].couplingTargets && typeof entries[i].couplingTargets === 'object') {
+      const raw = entries[i].couplingTargets;
+      const result = {};
+      const ctKeys = Object.keys(raw);
+      for (let j = 0; j < ctKeys.length; j++) {
+        const ct = raw[ctKeys[j]];
+        if (ct && typeof ct === 'object' && typeof ct.baseline === 'number') {
+          result[ctKeys[j]] = {
+            baseline: ct.baseline,
+            current: ct.current,
+            drift: Number((ct.current - ct.baseline).toFixed(4)),
+            driftRatio: ct.baseline > 0 ? Number((ct.current / ct.baseline).toFixed(2)) : null,
+            rollingAbsCorr: ct.rollingAbsCorr,
+            rawRollingAbsCorr: ct.rawRollingAbsCorr != null ? ct.rawRollingAbsCorr : null,
+            gain: ct.gain,
+            effectiveGain: ct.effectiveGain != null ? ct.effectiveGain : null,
+            nudgeable: ct.nudgeable !== false,
+            p95AbsCorr: ct.p95AbsCorr != null ? ct.p95AbsCorr : null,
+            hotspotRate: ct.hotspotRate != null ? ct.hotspotRate : null,
+            severeRate: ct.severeRate != null ? ct.severeRate : null,
+            recentP95AbsCorr: ct.recentP95AbsCorr != null ? ct.recentP95AbsCorr : null,
+            recentHotspotRate: ct.recentHotspotRate != null ? ct.recentHotspotRate : null,
+            recentSevereRate: ct.recentSevereRate != null ? ct.recentSevereRate : null,
+            telemetryWindowBeats: ct.telemetryWindowBeats != null ? ct.telemetryWindowBeats : null,
+            residualPressure: ct.residualPressure != null ? ct.residualPressure : null,
+            budgetScore: ct.budgetScore != null ? ct.budgetScore : 0,
+            budgetBoost: ct.budgetBoost != null ? ct.budgetBoost : 1,
+            budgetRank: ct.budgetRank != null ? ct.budgetRank : null,
+            heatPenalty: ct.heatPenalty,
+            effectivenessEma: ct.effectivenessEma != null ? ct.effectivenessEma : null,
+            // R34 E3: Per-pair effectiveness temporal tracking
+            effMin: ct.effMin != null ? ct.effMin : null,
+            effMax: ct.effMax != null ? ct.effMax : null,
+            effActiveBeats: ct.effActiveBeats != null ? ct.effActiveBeats : null
+          };
+        }
+      }
+      if (Object.keys(result).length > 0) adaptiveTargets = result;
+    }
+    // R28 E1: Prefer fully-populated axisCouplingTotals (all axes > 0).
+    // On the last beat, phase pairs may have null correlations giving phase=0.
+    // Take the first entry (from end) where all axes are non-zero; fall back
+    // to first available if no fully-populated entry exists.
+    if (entries[i].axisCouplingTotals && typeof entries[i].axisCouplingTotals === 'object') {
+      if (!axisCouplingTotals) {
+        axisCouplingTotals = entries[i].axisCouplingTotals;
+      }
+      if (!axisCouplingTotalsBest) {
+        const vals = Object.values(entries[i].axisCouplingTotals);
+        const allNonZero = vals.length >= 6 && vals.every(function(v) { return typeof v === 'number' && v > 0; });
+        if (allNonZero) axisCouplingTotalsBest = entries[i].axisCouplingTotals;
+      }
+    }
+    // R20 E6: Extract couplingHomeostasis state from final beat
+    if (!couplingHomeostasisState && entries[i].couplingHomeostasis && typeof entries[i].couplingHomeostasis === 'object') {
+      couplingHomeostasisState = entries[i].couplingHomeostasis;
+    }
+    // R28 E1: Prefer fully-populated axisEnergyShare (all shares > 0).
+    if (entries[i].axisEnergyShare && typeof entries[i].axisEnergyShare === 'object') {
+      if (!axisEnergyShare) {
+        axisEnergyShare = entries[i].axisEnergyShare;
+      }
+      if (!axisEnergyShareBest) {
+        const shares = entries[i].axisEnergyShare.shares || entries[i].axisEnergyShare;
+        const sVals = typeof shares === 'object' ? Object.values(shares) : [];
+        const allSharesNonZero = sVals.length >= 6 && sVals.every(function(v) { return typeof v === 'number' && v > 0; });
+        if (allSharesNonZero) axisEnergyShareBest = entries[i].axisEnergyShare;
+      }
+    }
+    // R27 E2: Extract coupling gates from final beat
+    if (!couplingGates && entries[i].couplingGates && typeof entries[i].couplingGates === 'object') {
+      couplingGates = entries[i].couplingGates;
+    }
+    // R33 E4: axisEnergyEquilibrator is now a top-level trace field
+    // (conductorState.updateFromConductor silently drops state-provider fields,
+    //  so the snap path never worked -- this is the direct bypass fix).
+    if (!axisEnergyEquilibratorState && entries[i].axisEnergyEquilibrator &&
+        typeof entries[i].axisEnergyEquilibrator === 'object') {
+      axisEnergyEquilibratorState = entries[i].axisEnergyEquilibrator;
+    }
+    if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState && axisEnergyShare && couplingGates && axisEnergyEquilibratorState) break;
+  }
+  // R28 E1: Use fully-populated entries when available
+  if (axisCouplingTotalsBest) axisCouplingTotals = axisCouplingTotalsBest;
+  if (axisEnergyShareBest) axisEnergyShare = axisEnergyShareBest;
+
+  // R38 E6: Inject rawEmaMax into adaptiveTargets
+  if (adaptiveTargets) {
+    const rawKeys = Object.keys(rawEmaMaxSeries);
+    for (let c = 0; c < rawKeys.length; c++) {
+      const pair = rawKeys[c];
+      if (adaptiveTargets[pair] && rawEmaMaxSeries[pair].count > 0) {
+        adaptiveTargets[pair].rawEmaMax = Number(rawEmaMaxSeries[pair].max.toFixed(4));
+      }
+    }
+  }
+
+  let nonNudgeableGains = null;
+  if (adaptiveTargets) {
+    const nonNudgeablePairs = Object.entries(adaptiveTargets)
+      .filter(function(entry) { return entry[1] && entry[1].nudgeable === false; })
+      .map(function(entry) {
+        return {
+          pair: entry[0],
+          gain: entry[1].gain,
+          effectiveGain: entry[1].effectiveGain,
+          rawRollingAbsCorr: entry[1].rawRollingAbsCorr,
+          rawEmaMax: entry[1].rawEmaMax != null ? entry[1].rawEmaMax : null
+        };
+      });
+    if (nonNudgeablePairs.length > 0) {
+      nonNudgeableGains = {
+        pairCount: nonNudgeablePairs.length,
+        nonZeroGainPairs: nonNudgeablePairs.filter(function(pair) { return toNum(pair.gain, 0) > 0.0001; }).length,
+        nonZeroEffectiveGainPairs: nonNudgeablePairs.filter(function(pair) { return toNum(pair.effectiveGain, 0) > 0.0001; }).length,
+        pairs: nonNudgeablePairs
+      };
+    }
+  }
+
+  const tailRecovery = couplingHomeostasisState && couplingHomeostasisState.tailPressureByPair && typeof couplingHomeostasisState.tailPressureByPair === 'object'
+    ? {
+      stickyTailPressure: toNum(couplingHomeostasisState.stickyTailPressure, 0),
+      densityFlickerTailPressure: toNum(couplingHomeostasisState.densityFlickerTailPressure, 0),
+      tailRecoveryDrive: toNum(couplingHomeostasisState.tailRecoveryDrive, 0),
+      tailRecoveryTrigger: toNum(couplingHomeostasisState.tailRecoveryTrigger, 0),
+      tailRecoveryHandshake: toNum(couplingHomeostasisState.tailRecoveryHandshake, 0),
+      // R82 E4: Handshake saturation diagnostic -- tracks how quickly the
+      // handshake reaches 0.98+ and how much of the run it stays saturated.
+      handshakeSaturationBeats: handshakeSatBeats,
+      handshakeBeatToSaturation: handshakeBeatToSat,
+      handshakeEffectiveRange: Number((handshakeMax - handshakeMin).toFixed(4)),
+      tailRecoveryCap: toNum(couplingHomeostasisState.tailRecoveryCap, 1),
+      tailRecoveryCeilingPressure: toNum(couplingHomeostasisState.tailRecoveryCeilingPressure, 0),
+      dominantTailPair: typeof couplingHomeostasisState.dominantTailPair === 'string' ? couplingHomeostasisState.dominantTailPair : '',
+      tailHotspotCount: toNum(couplingHomeostasisState.tailHotspotCount, 0),
+      floorRecoveryActive: Boolean(couplingHomeostasisState.floorRecoveryActive),
+      floorRecoveryTicksRemaining: toNum(couplingHomeostasisState.floorRecoveryTicksRemaining, 0),
+      floorContactBeats: toNum(couplingHomeostasisState.floorContactBeats, 0),
+      persistentPairCount: Object.values(couplingHomeostasisState.tailPressureByPair).filter(function(value) { return toNum(value, 0) > 0.03; }).length,
+      activePairCount: Object.values(couplingHomeostasisState.tailPressureByPair).filter(function(value) { return toNum(value, 0) > 0.08; }).length,
+      topPairs: Object.entries(couplingHomeostasisState.tailPressureByPair)
+        .map(function(entry) { return { pair: entry[0], pressure: Number(toNum(entry[1], 0).toFixed(4)) }; })
+        .sort(function(a, b) { return b.pressure - a.pressure; })
+        .slice(0, 5)
+    }
+    : null;
+
+  const trustDominance = (() => {
+    const dominantSystems = trustKeys
+      .map(function(key) {
+        return {
+          system: key,
+          score: Number(toNum(trustScoreSummary[key] && trustScoreSummary[key].avg, 0).toFixed(4)),
+          weight: Number(toNum(trustWeightSummary[key] && trustWeightSummary[key].avg, 0).toFixed(4))
+        };
+      })
+      .sort(function(a, b) { return b.score - a.score; })
+      .slice(0, 5);
+    const trustHotspotPairs = Object.entries(pairExceedanceBeats)
+      .filter(function(entry) { return entry[0].indexOf('trust') !== -1; })
+      .map(function(entry) { return { pair: entry[0], beats: entry[1] }; })
+      .sort(function(a, b) { return b.beats - a.beats; });
+    const trustAxisShare = axisEnergyShare && axisEnergyShare.shares && typeof axisEnergyShare.shares.trust === 'number'
+      ? Number(axisEnergyShare.shares.trust.toFixed(4))
+      : null;
+    const coherenceMonitor = dominantSystems.find(function(entry) { return entry.system === 'coherenceMonitor'; }) || null;
+    const pairAwareSystems = Object.keys(trustHotspotPressureSummary)
+      .map(function(system) {
+        const dominantPairs = trustDominantPairsBySystem[system] || {};
+        const sortedPairs = Object.entries(dominantPairs).sort(function(a, b) { return b[1] - a[1]; });
+        return {
+          system,
+          hotspotPressure: Number(toNum(trustHotspotPressureSummary[system] && trustHotspotPressureSummary[system].avg, 0).toFixed(4)),
+          dominantPair: sortedPairs.length > 0 ? sortedPairs[0][0] : '',
+          dominantPairCount: sortedPairs.length > 0 ? sortedPairs[0][1] : 0
+        };
+      })
+      .sort(function(a, b) { return b.hotspotPressure - a.hotspotPressure; })
+      .slice(0, 5);
+    return {
+      dominantSystems: dominantSystems.slice(0, 3),
+      dominantCountAbove06: dominantSystems.filter(function(entry) { return entry.score > 0.60; }).length,
+      dominanceSpread: dominantSystems.length > 1 ? Number((dominantSystems[0].score - dominantSystems[1].score).toFixed(4)) : 0,
+      dominantWeightSpread: dominantSystems.length > 1 ? Number((dominantSystems[0].weight - dominantSystems[1].weight).toFixed(4)) : 0,
+      dominantSystem: dominantSystems.length > 0 ? dominantSystems[0].system : '',
+      dominantScore: dominantSystems.length > 0 ? dominantSystems[0].score : 0,
+      dominantWeight: dominantSystems.length > 0 ? dominantSystems[0].weight : 0,
+      coherenceMonitor,
+      pairAwareSystems,
+      trustAxisShare,
+      trustPairExceedanceBeats: trustHotspotPairs.reduce(function(sum, entry) { return sum + entry.beats; }, 0),
+      trustHotspotPairs: trustHotspotPairs.slice(0, 5),
+      // R6 E6: Track trust systems that never activated (score stayed 0)
+      missingTrustSystems: (() => {
+        const expected = ['stutterContagion', 'cadenceAlignment', 'phaseLock', 'convergence', 'feedbackOscillator', 'coherenceMonitor', 'entropyRegulator', 'restSynchronizer', 'roleSwap'];
+        const missing = expected.filter(function(sys) { return trustKeys.indexOf(sys) === -1 || (trustScoreSummary[sys] && trustScoreSummary[sys].avg === 0); });
+        return missing.length > 0 ? missing : null;
+      })()
+    };
+  })();
+
+  const adaptiveTelemetryReconciliation = adaptiveTargets
+    ? (() => {
+      const mismatchedPairs = Object.keys(adaptiveTargets)
+        .map(function(pair) {
+          const controller = adaptiveTargets[pair];
+          const traceTail = couplingTail[pair];
+          const traceP95 = traceTail && typeof traceTail.p95 === 'number' ? traceTail.p95 : null;
+          if (traceP95 === null) return null;
+          const controllerP95 = toNum(controller.p95AbsCorr, 0);
+          const recentP95 = toNum(controller.recentP95AbsCorr, controllerP95);
+          const gap = Number((traceP95 - controllerP95).toFixed(4));
+          const recentGap = Number((traceP95 - recentP95).toFixed(4));
+          const controllerLagIndex = Number(Math.max(0, recentP95 - controllerP95).toFixed(4));
+          return {
+            pair,
+            traceP95: Number(traceP95.toFixed(4)),
+            controllerP95: Number(controllerP95.toFixed(4)),
+            recentP95: Number(recentP95.toFixed(4)),
+            gap,
+            recentGap,
+            controllerLagIndex,
+            telemetryWindowBeats: controller.telemetryWindowBeats != null ? controller.telemetryWindowBeats : null
+          };
+        })
+        .filter(function(entry) { return entry && entry.gap > 0.08; })
+        .sort(function(a, b) { return b.gap - a.gap; });
+      return {
+        underSeenPairCount: mismatchedPairs.length,
+        activelyUnderseenCount: mismatchedPairs.filter(function(e) { return e.controllerLagIndex > 0.08; }).length,
+        maxGap: mismatchedPairs.length > 0 ? mismatchedPairs[0].gap : 0,
+        pairs: mismatchedPairs.slice(0, 5)
+      };
+    })()
+    : null;
+
+  const cadenceMonopoly = readinessBeats > 0 ? {
+    pressure: Number(cadenceMonopolyPressure.toFixed(4)),
+    active: cadenceMonopolyActive,
+    reason: cadenceMonopolyReason,
+    rawExploringShare: Number(rawExploringShare.toFixed(4)),
+    rawEvolvingShare: Number(rawEvolvingShare.toFixed(4)),
+    rawNonCoherentOpportunityShare: Number(rawNonCoherentOpportunityShare.toFixed(4)),
+    resolvedNonCoherentShare: Number(resolvedNonCoherentShare.toFixed(4)),
+    opportunityGap: Number(opportunityGap.toFixed(4))
+  } : null;
+
+  const overfullBeatKeys = Object.keys(beatKeyCounts).filter(function(key) { return beatKeyCounts[key] > 2; }).length;
+  const pairedBeatKeys = Object.keys(beatKeyCounts).filter(function(key) { return beatKeyCounts[key] === 2; }).length;
+  const progressIntegrity = {
+    duplicateLayerBeatKeys,
+    overfullBeatKeys,
+    l1ProgressRegressions,
+    l1TimeRegressions,
+    pairedBeatKeys,
+    pairedBeatKeyRatio: uniqueBeatKeys.size > 0 ? Number((pairedBeatKeys / uniqueBeatKeys.size).toFixed(4)) : null,
+    integrity: duplicateLayerBeatKeys > 0 || overfullBeatKeys > 0 || l1ProgressRegressions > 0 || l1TimeRegressions > 0
+      ? 'critical'
+      : (uniqueBeatKeys.size > 0 && pairedBeatKeys < uniqueBeatKeys.size * 0.75 ? 'warning' : 'healthy')
+  };
+  const outputLoadGuard = outputLoadGuardScale.count > 0
+    ? {
+      guardedEntries: outputLoadGuardedEntries,
+      guardedRate: entries.length > 0 ? Number((outputLoadGuardedEntries / entries.length).toFixed(4)) : 0,
+      hardGuardEntries: outputLoadHardEntries,
+      hardGuardRate: entries.length > 0 ? Number((outputLoadHardEntries / entries.length).toFixed(4)) : 0,
+      scale: finalizeMinMax(outputLoadGuardScale),
+      recentPrimaryNotesPerSecond: finalizeMinMax(outputLoadGuardRecentRate),
+      beatScheduledNotes: finalizeMinMax(outputLoadGuardBeatScheduled)
+    }
+    : null;
+  const phaseTelemetry = phaseTelemetryEntries > 0
+    ? {
+      entries: phaseTelemetryEntries,
+      validEntries: phaseTelemetryValidEntries,
+      invalidEntries: phaseSignalInvalidEntries,
+      validRate: Number((phaseTelemetryValidEntries / phaseTelemetryEntries).toFixed(4)),
+      changedEntries: phaseTelemetryChangedEntries,
+      changedRate: Number((phaseTelemetryChangedEntries / phaseTelemetryEntries).toFixed(4)),
+      maxStaleBeats: phaseTelemetryMaxStaleBeats,
+      staleEntries: phaseStaleEntries,
+      staleRate: Number((phaseStaleEntries / phaseTelemetryEntries).toFixed(4)),
+      avgCouplingCoverage: phaseCouplingCoverageCount > 0 ? Number((phaseCouplingCoverageSum / phaseCouplingCoverageCount).toFixed(4)) : 0,
+      zeroCouplingCoverageEntries: phaseZeroCoverageEntries,
+      maxAvailablePairs: phaseCouplingAvailablePairsMax,
+      maxMissingPairs: phaseCouplingMissingPairsMax,
+      varianceGatedEntries: phaseVarianceGatedEntries,
+      varianceGatedRate: Number((phaseVarianceGatedEntries / phaseTelemetryEntries).toFixed(4)),
+      pairStateCounts: Object.keys(phasePairStateCounts).length > 0 ? phasePairStateCounts : null,
+      pairStateDetailCounts: Object.keys(phasePairStateDetailCounts).length > 0 ? phasePairStateDetailCounts : null,
+      integrity: phaseSignalInvalidEntries > 0 || phaseZeroCoverageEntries === phaseTelemetryEntries
+        ? 'critical'
+        : (phaseTelemetryMaxStaleBeats > 32 || phaseStaleEntries > 0 || phaseZeroCoverageEntries > 0 || phaseVarianceGatedEntries > 0 ? 'warning' : 'healthy')
+    }
+    : null;
+  const telemetryHealth = (() => {
+    const phaseTelemetryPresent = phaseTelemetry !== null;
+    const phaseIntegrity = phaseTelemetryPresent ? phaseTelemetry.integrity : 'critical';
+    const underSeenPairCount = adaptiveTelemetryReconciliation ? adaptiveTelemetryReconciliation.underSeenPairCount : 0;
+    const maxGap = adaptiveTelemetryReconciliation ? adaptiveTelemetryReconciliation.maxGap : 0;
+    const progressPenalty = progressIntegrity.integrity === 'critical' ? 0.12 : progressIntegrity.integrity === 'warning' ? 0.05 : 0;
+    const phaseAvailabilityPenalty = phaseTelemetry && typeof phaseTelemetry.varianceGatedRate === 'number'
+      ? clamp(phaseTelemetry.varianceGatedRate / 0.85, 0, 1) * 0.04
+      : 0;
+    const phaseStalePenalty = phaseTelemetry && typeof phaseTelemetry.staleRate === 'number'
+      ? clamp(phaseTelemetry.staleRate / 0.35, 0, 1) * 0.05
+      : 0;
+    const score = clamp(
+      (phaseTelemetryPresent ? 0 : 0.45) +
+      (phaseIntegrity === 'critical' ? 0.25 : phaseIntegrity === 'warning' ? 0.12 : 0) +
+      clamp(underSeenPairCount / 4, 0, 1) * 0.20 +
+      clamp(maxGap / 0.5, 0, 1) * 0.08 +
+      progressPenalty +
+      phaseAvailabilityPenalty +
+      phaseStalePenalty,
+      0,
+      1
+    );
+    return {
+      score: Number(score.toFixed(4)),
+      phaseTelemetryPresent,
+      phaseIntegrity,
+      underSeenPairCount,
+      maxGap: Number(toNum(maxGap, 0).toFixed(4)),
+      progressIntegrity: progressIntegrity.integrity,
+      phaseStaleRate: phaseTelemetry && typeof phaseTelemetry.staleRate === 'number' ? phaseTelemetry.staleRate : null,
+      varianceGatedRate: phaseTelemetry && typeof phaseTelemetry.varianceGatedRate === 'number' ? phaseTelemetry.varianceGatedRate : null,
+      profilerBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
+      profilerBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
+    };
+  })();
+
+  return {
+    generatedAt: new Date().toISOString(),
+    beats: {
+      totalEntries: entries.length - diagnosticArc.length,
+      uniqueBeatKeys: uniqueBeatKeys.size,
+      byLayer,
+      firstBeatKey,
+      lastBeatKey,
+      firstTimeMs,
+      lastTimeMs,
+      spanMs: firstTimeMs !== null && lastTimeMs !== null ? Number((lastTimeMs - firstTimeMs).toFixed(3)) : null
+    },
+    regimes: regimeCounts,
+    regimeDepth: {
+      maxConsecutiveCoherent,
+      transitionCount: regimeTransitionCount
+    },
+    conductor: {
+      playProb: finalizeMinMax(playProb),
+      stutterProb: finalizeMinMax(stutterProb),
+      density: finalizeMinMax(density),
+      tension: finalizeMinMax(tension),
+      flicker: finalizeMinMax(flicker)
+    },
+    // R26 E1: Per-section stats for automatic section-level awareness
+    sectionStats: (() => {
+      const secs = Object.keys(sectionBeatCounts).map(Number).sort(function(a, b) { return a - b; });
+      return secs.map(function(sec) {
+        var n = sectionBeatCounts[sec] || 1;
+        var regimes = sectionRegimeCounts[sec] || {};
+        var dominant = Object.entries(regimes).sort(function(a, b) { return b[1] - a[1]; })[0];
+        return {
+          section: sec,
+          beats: n,
+          avgTension: Number(((sectionTensionSums[sec] || 0) / n).toFixed(3)),
+          avgDensity: Number(((sectionDensitySums[sec] || 0) / n).toFixed(3)),
+          avgPlayProb: Number(((sectionPlayProbSums[sec] || 0) / n).toFixed(3)),
+          dominantRegime: dominant ? dominant[0] : 'unknown',
+          regimeDistribution: regimes
+        };
+      });
+    })(),
+    couplingAbs: couplingSummary,
+    couplingLabels: lastCouplingLabels,
+    // R26 E2: Aggregate coupling labels from whole-run correlation, not terminal snapshot
+    aggregateCouplingLabels: (() => {
+      var LABEL_MAP = {
+        'density-tension': ['+', 'tension-drives-density', '-', 'tension-suppresses-density'],
+        'density-flicker': ['+', 'rhythmic-shimmer', '-', 'stability-amid-density'],
+        'density-entropy': ['+', 'chaotic-proliferation', '-', 'ordered-density'],
+        'tension-flicker': ['+', 'agitated-tension', '-', 'smooth-tension'],
+        'tension-entropy': ['+', 'entropy-amplifies-tension', '-', 'entropy-dampens-tension'],
+        'flicker-entropy': ['+', 'rhythmic-chaos', '-', 'rhythmic-order'],
+        'density-phase': ['+', 'phase-aligned-density', '-', 'phase-opposed-density'],
+        'tension-phase': ['+', 'phase-aligned-tension', '-', 'phase-opposed-tension'],
+        'flicker-phase': ['+', 'phase-aligned-flicker', '-', 'phase-opposed-flicker']
+      };
+      var AGG_THRESHOLD = 0.20;
+      var labels = {};
+      var corrKeys = Object.keys(couplingCorrelation);
+      for (var ci = 0; ci < corrKeys.length; ci++) {
+        var k = corrKeys[ci];
+        var corr = couplingCorrelation[k];
+        if (!corr || !LABEL_MAP[k]) continue;
+        if (Math.abs(corr.meanSigned) >= AGG_THRESHOLD) {
+          labels[k] = corr.meanSigned > 0 ? LABEL_MAP[k][1] : LABEL_MAP[k][3];
+        }
+      }
+      return labels;
+    })(),
+    couplingTail,
+    couplingHotspots,
+    couplingCorrelation,
+    trustScoreAbs: trustScoreSummary,
+    trustWeightAbs: trustWeightSummary,
+    trustAbs: trustSummary,
+    stageTiming: (() => {
+      const stKeys = Object.keys(stageTimingAgg);
+      if (stKeys.length === 0) return null;
+      const result = {};
+      for (let i = 0; i < stKeys.length; i++) result[stKeys[i]] = finalizeMinMax(stageTimingAgg[stKeys[i]]);
+      return result;
+    })(),
+    beatSetupBudget: {
+      thresholdMs: BEAT_SETUP_BUDGET_MS,
+      exceededCount: beatSetupExceeded,
+      totalBeats: entries.length,
+      exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0,
+      spikeIndices: beatSetupSpikeIndices,
+      worstSpike: worstBeatSetupSpike,
+      topSubstages: Object.entries(beatSetupSpikeStageAgg)
+        .map(function(entry) {
+          return {
+            stage: entry[0],
+            count: entry[1].count,
+            avgMs: Number((entry[1].totalMs / entry[1].count).toFixed(4)),
+            maxMs: Number(entry[1].maxMs.toFixed(4)),
+            share: beatSetupExceeded > 0 ? Number((entry[1].count / beatSetupExceeded).toFixed(4)) : 0
+          };
+        })
+        .sort(function(a, b) {
+          if (b.count !== a.count) return b.count - a.count;
+          return b.maxMs - a.maxMs;
+        })
+        .slice(0, 5)
+    },
+    adaptiveTargets,
+    axisCouplingTotals,
+    axisEnergyShare,
+    // R5 E6: Axis share floor monitoring -- flag axes with share < 0.10 and track trend
+    axisShareFloor: (() => {
+      if (!axisEnergyShare || !axisEnergyShare.shares) return null;
+      const shares = axisEnergyShare.shares;
+      const axisNames = Object.keys(shares);
+      const belowFloorAxes = [];
+      for (let i = 0; i < axisNames.length; i++) {
+        if (typeof shares[axisNames[i]] === 'number' && shares[axisNames[i]] < 0.10) {
+          belowFloorAxes.push({ axis: axisNames[i], share: Number(shares[axisNames[i]].toFixed(4)) });
+        }
+      }
+      // Compute per-axis share trend from per-beat coupling data
+      const shareTrend = {};
+      const axisTotals = {};
+      const axisCounts = {};
+      for (let b = 0; b < entries.length; b++) {
+        const coupling = entries[b].couplingAbs || entries[b].coupling;
+        if (!coupling) continue;
+        const cKeys = Object.keys(coupling);
+        let beatTotal = 0;
+        const beatAxisSums = {};
+        for (let k = 0; k < cKeys.length; k++) {
+          const val = Math.abs(typeof coupling[cKeys[k]] === 'number' ? coupling[cKeys[k]] : 0);
+          beatTotal += val;
+          const axes = cKeys[k].split('-');
+          for (let a = 0; a < axes.length; a++) {
+            beatAxisSums[axes[a]] = (beatAxisSums[axes[a]] || 0) + val;
+          }
+        }
+        if (beatTotal > 0) {
+          const bAxes = Object.keys(beatAxisSums);
+          for (let a = 0; a < bAxes.length; a++) {
+            if (!axisTotals[bAxes[a]]) { axisTotals[bAxes[a]] = []; axisCounts[bAxes[a]] = 0; }
+            axisTotals[bAxes[a]].push(beatAxisSums[bAxes[a]] / beatTotal);
+            axisCounts[bAxes[a]]++;
+          }
+        }
+      }
+      const trendAxes = Object.keys(axisTotals);
+      for (let a = 0; a < trendAxes.length; a++) {
+        const series = axisTotals[trendAxes[a]];
+        if (series.length < 4) { shareTrend[trendAxes[a]] = 'insufficient'; continue; }
+        const half = Math.floor(series.length / 2);
+        let firstHalf = 0, secondHalf = 0;
+        for (let j = 0; j < half; j++) firstHalf += series[j];
+        for (let j = half; j < series.length; j++) secondHalf += series[j];
+        firstHalf /= half;
+        secondHalf /= (series.length - half);
+        const delta = secondHalf - firstHalf;
+        shareTrend[trendAxes[a]] = delta > 0.03 ? 'rising' : delta < -0.03 ? 'falling' : 'stable';
+      }
+      return {
+        belowFloorAxes: belowFloorAxes.length > 0 ? belowFloorAxes : null,
+        shareTrend: Object.keys(shareTrend).length > 0 ? shareTrend : null
+      };
+    })(),
+    couplingGates,
+    // R99 E2: Coupling gate engagement diagnostic
+    couplingGateEngagement: gateTrackingBeats > 0 ? {
+      trackedBeats: gateTrackingBeats,
+      engagedBeats: gateEngagedBeats,
+      engagementRate: Number((gateEngagedBeats / gateTrackingBeats).toFixed(4)),
+      perGate: {
+        gateD: { engaged: gateEngagedCounts.gateD, rate: Number((gateEngagedCounts.gateD / gateTrackingBeats).toFixed(4)), min: Number(gateMinObserved.gateD.toFixed(4)) },
+        gateT: { engaged: gateEngagedCounts.gateT, rate: Number((gateEngagedCounts.gateT / gateTrackingBeats).toFixed(4)), min: Number(gateMinObserved.gateT.toFixed(4)) },
+        gateF: { engaged: gateEngagedCounts.gateF, rate: Number((gateEngagedCounts.gateF / gateTrackingBeats).toFixed(4)), min: Number(gateMinObserved.gateF.toFixed(4)) }
+      }
+    } : null,
+    couplingHomeostasis: couplingHomeostasisState,
+    // R32 E5: Axis energy equilibrator per-regime telemetry
+    axisEnergyEquilibrator: axisEnergyEquilibratorState,
+    outputLoadGuard,
+    profilerCadence: {
+      cadence: profilerCadence || 'unknown',
+      analysisTicks: uniqueProfilerAnalysisTicks.size,
+      regimeTicks: uniqueProfilerRegimeTicks.size,
+      snapshotReuseEntries: profilerSnapshotReuseEntries,
+      warmupEntries: profilerWarmupEntries,
+      escalatedEntries: profilerEscalatedEntries,
+      analysisSources: Object.keys(profilerAnalysisSources).length > 0 ? profilerAnalysisSources : null,
+      telemetryBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
+      telemetryBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
+    },
+    regimeCadence: {
+      traceEntries: entries.length,
+      profilerTicks: uniqueProfilerAnalysisTicks.size,
+      traceEntriesPerProfilerTick: uniqueProfilerAnalysisTicks.size > 0
+        ? Number((entries.length / uniqueProfilerAnalysisTicks.size).toFixed(2))
+        : null,
+      traceEntryCounts: regimeCounts,
+      profilerTickResolvedCounts: runResolvedRegimeCounts,
+      profilerTickRawCounts: runRawRegimeCounts,
+      snapshotReuseEntries: profilerSnapshotReuseEntries,
+      warmupEntries: profilerWarmupEntries
+    },
+    forcedTransitionEvents,
+    // R34 E6: Regime transition readiness diagnostic
+    transitionReadiness: readinessBeats > 0 ? {
+      gapMin: Number(readinessGapMin.toFixed(4)),
+      gapMax: Number(readinessGapMax.toFixed(4)),
+      gapAvg: Number((readinessGapSum / readinessBeats).toFixed(4)),
+      velocityBlockedBeats: readinessVelocityBlockedBeats,
+      totalBeats: readinessBeats,
+      velocityBlockedRate: Number((readinessVelocityBlockedBeats / readinessBeats).toFixed(4)),
+      finalThresholdScale: readinessLastScale,
+      evolvingBeats,
+      coherentBeats,
+      runCoherentBeats,
+      maxCoherentBeats,
+      runBeatCount,
+      runTickCount: runBeatCount,
+      runCoherentShare: Number(runCoherentShare.toFixed(4)),
+      runTransitionCount,
+      forcedBreakCount,
+      forcedRegime,
+      forcedRegimeBeatsRemaining,
+      forcedOverrideBeats,
+      lastForcedReason,
+      lastForcedTriggerStreak,
+      lastForcedTriggerBeat,
+      cadenceMonopolyPressure: Number(cadenceMonopolyPressure.toFixed(4)),
+      cadenceMonopolyActive,
+      cadenceMonopolyReason,
+      rawExploringShare: Number(rawExploringShare.toFixed(4)),
+      rawEvolvingShare: Number(rawEvolvingShare.toFixed(4)),
+      rawNonCoherentOpportunityShare: Number(rawNonCoherentOpportunityShare.toFixed(4)),
+      resolvedNonCoherentShare: Number(resolvedNonCoherentShare.toFixed(4)),
+      opportunityGap: Number(opportunityGap.toFixed(4)),
+      tickSource: 'profiler-recorder',
+      // R35 E5: Exploring-block diagnostic breakdown
+      exploringBlock: exploringBlockCounts,
+      coherentBlock: coherentBlockCounts,
+      // R79 E6: Per-pair attribution for coupling-blocked coherent beats
+      coherentBlockPairs: Object.keys(coherentBlockPairs).length > 0 ? coherentBlockPairs : null,
+      // R36 E4: Raw regime counts before hysteresis
+      rawRegimeCounts,
+      runRawRegimeCounts,
+      runResolvedRegimeCounts,
+      // R37 E6: Max consecutive streak per raw regime
+      rawRegimeMaxStreak,
+      // R37 E5: effectiveDim histogram (percentiles)
+      effectiveDimHistogram: effectiveDimValues.length > 0 ? (() => {
+        const sorted = effectiveDimValues.slice().sort((a, b) => a - b);
+        const pctl = (p) => {
+          const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * p)));
+          return Number(sorted[idx].toFixed(4));
+        };
+        return { p10: pctl(0.10), p25: pctl(0.25), p50: pctl(0.50), p75: pctl(0.75), p90: pctl(0.90), min: pctl(0), max: pctl(1), count: sorted.length };
+      })() : null
+    } : null,
+    // R35 E6: Per-pair exceedance beat counts
+    pairExceedanceBeats: Object.fromEntries(
+      Object.entries(pairExceedanceBeats).map(([pair, count]) => [pair, count])
+    ),
+    exceedanceComposite: {
+      uniqueBeats: uniqueExceedanceBeats,
+      uniqueRate: entries.length > 0 ? Number((uniqueExceedanceBeats / entries.length).toFixed(4)) : 0,
+      totalPairExceedanceBeats: Object.values(pairExceedanceBeats).reduce((sum, value) => sum + value, 0),
+      topPairs: exceedancePairsSorted.slice(0, 3),
+      // R80 E5: Per-section exceedance beat counts
+      bySection: Object.keys(sectionExceedanceCounts).length > 0 ? sectionExceedanceCounts : null,
+      // R85 E4: Per-section per-pair exceedance breakdown
+      bySectionPair: Object.keys(sectionPairExceedance).length > 0 ? sectionPairExceedance : null,
+      // R100 E3: Section-shift metric -- detect S0->S1 exceedance displacement
+      sectionShift: (() => {
+        const s0 = sectionExceedanceCounts[0] || 0;
+        const s1 = sectionExceedanceCounts[1] || 0;
+        if (s0 + s1 === 0) return null;
+        return {
+          s0, s1,
+          s1Ratio: Number((s1 / (s0 + s1)).toFixed(3)),
+          displacement: s1 >= s0 ? 'S1-dominant' : s0 > s1 * 2 ? 'S0-concentrated' : 'balanced'
+        };
+      })(),
+      // R5 E3: Displacement indicator -- flag pairs whose exceedance sections differ from the dominant pair
+      displacementIndicator: (() => {
+        const topPair = exceedancePairsSorted.length > 0 ? exceedancePairsSorted[0].pair : null;
+        if (!topPair || Object.keys(sectionPairExceedance).length === 0) return null;
+        // Find dominant section for top pair
+        let topDominantSection = null;
+        let topMax = 0;
+        const secKeys = Object.keys(sectionPairExceedance);
+        for (let s = 0; s < secKeys.length; s++) {
+          const count = sectionPairExceedance[secKeys[s]][topPair] || 0;
+          if (count > topMax) { topMax = count; topDominantSection = secKeys[s]; }
+        }
+        // Check other pairs for displacement (exceedance in different sections)
+        const displaced = [];
+        for (let p = 1; p < exceedancePairsSorted.length; p++) {
+          const pair = exceedancePairsSorted[p].pair;
+          let pairDomSection = null;
+          let pairMax = 0;
+          for (let s = 0; s < secKeys.length; s++) {
+            const count = sectionPairExceedance[secKeys[s]][pair] || 0;
+            if (count > pairMax) { pairMax = count; pairDomSection = secKeys[s]; }
+          }
+          if (pairDomSection !== null && pairDomSection !== topDominantSection) {
+            displaced.push({ pair, dominantSection: Number(pairDomSection), beats: exceedancePairsSorted[p].beats });
+          }
+        }
+        return displaced.length > 0
+          ? { topPair, topDominantSection: Number(topDominantSection), displacedPairs: displaced }
+          : null;
+      })(),
+      // R6 E4: S0 exceedance timing -- warmup vs post-warmup beat breakdown
+      s0Timing: (() => {
+        const total = s0WarmupExceedance + s0PostWarmupExceedance;
+        if (total === 0) return null;
+        return {
+          warmupBeats: s0WarmupExceedance,
+          postWarmupBeats: s0PostWarmupExceedance,
+          warmupShare: Number((s0WarmupExceedance / total).toFixed(3)),
+          concentration: s0WarmupExceedance > s0PostWarmupExceedance * 2 ? 'warmup-concentrated' : (s0PostWarmupExceedance > s0WarmupExceedance * 2 ? 'post-warmup-concentrated' : 'distributed')
+        };
+      })(),
+      // R8 E6: Per-section p95 for top exceedance pairs. Reveals whether section
+      // concentration reflects structurally elevated coupling or transient spikes.
+      sectionP95: (() => {
+        if (exceedancePairsSorted.length === 0 || Object.keys(sectionCouplingSeries).length === 0) return null;
+        const topPairs = exceedancePairsSorted.slice(0, 3).map(function(p) { return p.pair; });
+        const result = {};
+        const secKeys = Object.keys(sectionCouplingSeries);
+        for (let s = 0; s < secKeys.length; s++) {
+          const secData = sectionCouplingSeries[secKeys[s]];
+          const secResult = {};
+          for (let p = 0; p < topPairs.length; p++) {
+            const pair = topPairs[p];
+            const vals = secData[pair];
+            if (vals && vals.length >= 3) {
+              const sorted = vals.slice().sort(function(a, b) { return a - b; });
+              const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95)));
+              secResult[pair] = Number(sorted[idx].toFixed(4));
+            }
+          }
+          if (Object.keys(secResult).length > 0) result[secKeys[s]] = secResult;
+        }
+        return Object.keys(result).length > 0 ? result : null;
+      })()
+    },
+    // R99 E6: Axis exceedance concentration diagnostic
+    axisExceedanceConcentration: (() => {
+      const axisCounts = {};
+      const pairKeys = Object.keys(pairExceedanceBeats);
+      for (let k = 0; k < pairKeys.length; k++) {
+        const axes = pairKeys[k].split('-');
+        for (let a = 0; a < axes.length; a++) {
+          axisCounts[axes[a]] = (axisCounts[axes[a]] || 0) + pairExceedanceBeats[pairKeys[k]];
+        }
+      }
+      const axisNames = Object.keys(axisCounts);
+      let total = 0;
+      let maxCount = 0;
+      let dominantAxis = 'none';
+      for (let a = 0; a < axisNames.length; a++) {
+        total += axisCounts[axisNames[a]];
+        if (axisCounts[axisNames[a]] > maxCount) {
+          maxCount = axisCounts[axisNames[a]];
+          dominantAxis = axisNames[a];
+        }
+      }
+      return {
+        axisCounts,
+        concentration: total > 0 ? Number((maxCount / total).toFixed(4)) : 0,
+        dominantAxis
+      };
+    })(),
+    // R58 E6: Guard/coupling interaction diagnostic
+    guardCouplingInteraction: (() => {
+      const gExcRate = guardedBeatCount > 0 ? guardedExceedanceBeats / guardedBeatCount : 0;
+      const uExcRate = unguardedBeatCount > 0 ? unguardedExceedanceBeats / unguardedBeatCount : 0;
+      const allPairKeys = [...new Set([...Object.keys(guardedCouplingAbs), ...Object.keys(unguardedCouplingAbs)])];
+      const perPair = {};
+      for (let k = 0; k < allPairKeys.length; k++) {
+        const pk = allPairKeys[k];
+        const g = guardedCouplingAbs[pk];
+        const u = unguardedCouplingAbs[pk];
+        const gAvg = g && g.count > 0 ? g.sum / g.count : 0;
+        const uAvg = u && u.count > 0 ? u.sum / u.count : 0;
+        perPair[pk] = {
+          guardedAvg: Number(gAvg.toFixed(4)),
+          unguardedAvg: Number(uAvg.toFixed(4)),
+          delta: Number((gAvg - uAvg).toFixed(4))
+        };
+      }
+      return {
+        guardedBeats: guardedBeatCount,
+        unguardedBeats: unguardedBeatCount,
+        guardedExceedanceRate: Number(gExcRate.toFixed(4)),
+        unguardedExceedanceRate: Number(uExcRate.toFixed(4)),
+        exceedanceDelta: Number((gExcRate - uExcRate).toFixed(4)),
+        perPair
+      };
+    })(),
+    tailRecovery,
+    cadenceMonopoly,
+    phaseTelemetry,
+    telemetryHealth,
+    progressIntegrity,
+    adaptiveTelemetryReconciliation,
+    nonNudgeableGains,
+    trustDominance,
+    // R32 E6: Intra-axis pair energy distribution diagnostic
+    intraAxisDistribution: (() => {
+      // Compute per-axis Gini coefficient and dominant pair from coupling data
+      const ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
+      const result = {};
+      for (let a = 0; a < ALL_AXES.length; a++) {
+        const axis = ALL_AXES[a];
+        const pairAvgs = [];
+        for (let k = 0; k < couplingKeys.length; k++) {
+          const pair = couplingKeys[k];
+          if (pair.indexOf(axis) !== -1 && couplingSummary[pair] && couplingSummary[pair].avg !== null) {
+            pairAvgs.push({ pair, avg: couplingSummary[pair].avg });
+          }
+        }
+        if (pairAvgs.length < 2) continue;
+        // Sort by avg for Gini computation
+        pairAvgs.sort((x, y) => x.avg - y.avg);
+        const n = pairAvgs.length;
+        let rankSum = 0;
+        let total = 0;
+        for (let j = 0; j < n; j++) {
+          rankSum += (j + 1) * pairAvgs[j].avg;
+          total += pairAvgs[j].avg;
+        }
+        const gini = total > 0 && n > 1
+          ? Number(((2 * rankSum) / (n * total) - (n + 1) / n).toFixed(4))
+          : 0;
+        const dominant = pairAvgs[n - 1];
+        result[axis] = {
+          gini: Math.max(0, gini),
+          pairCount: n,
+          dominant: dominant.pair,
+          dominantAvg: dominant.avg,
+          pairs: pairAvgs.map(function(p) { return { pair: p.pair, avg: p.avg }; })
+        };
+      }
+      return Object.keys(result).length > 0 ? result : null;
+    })(),
+    // R66 E6: Mid-run diagnostic snapshots (section-boundary state arc)
+    diagnosticArc: diagnosticArc.length > 0 ? diagnosticArc : null,
+    // R9 E2: Per-section phase share arc for cross-run phase stability tracking
+    phaseShareArc: diagnosticArc.length > 0 ? (() => {
+      const arc = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null) {
+          arc[snap.section] = snap.phaseShare;
+        }
+      }
+      return Object.keys(arc).length > 0 ? arc : null;
+    })() : null,
+    // R10 E3: Record which profile was active (for cross-profile stability tracking)
+    profileUsed: diagnosticArc.length > 0 ? (() => {
+      for (let di = diagnosticArc.length - 1; di >= 0; di--) {
+        if (diagnosticArc[di].activeProfile) return diagnosticArc[di].activeProfile;
+      }
+      return null;
+    })() : null,
+    // R10 E5: Per-section phase context for S2 dip investigation
+    phaseShareContext: diagnosticArc.length > 0 ? (() => {
+      const ctx = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const snap = diagnosticArc[di];
+        if (typeof snap.section !== 'number') continue;
+        ctx[snap.section] = {
+          phase: snap.phaseShare,
+          regime: snap.regime || null,
+          coupling: snap.couplingStrength || null,
+          gain: snap.globalGainMultiplier || null
+        };
+      }
+      return Object.keys(ctx).length > 0 ? ctx : null;
+    })() : null,
+    // R11 E1: Phase-regime correlation -- confirms coherent suppresses phase share
+    phaseRegimeCorrelation: diagnosticArc.length > 0 ? (() => {
+      var coherentPhase = [], exploringPhase = [];
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (snap.phaseShare === null || typeof snap.phaseShare !== 'number') continue;
+        if (snap.regime === 'coherent') coherentPhase.push(snap.phaseShare);
+        else if (snap.regime === 'exploring') exploringPhase.push(snap.phaseShare);
+      }
+      var avgC = coherentPhase.length > 0 ? coherentPhase.reduce(function(a, b) { return a + b; }, 0) / coherentPhase.length : null;
+      var avgE = exploringPhase.length > 0 ? exploringPhase.reduce(function(a, b) { return a + b; }, 0) / exploringPhase.length : null;
+      return {
+        coherentAvgPhase: avgC !== null ? Number(avgC.toFixed(4)) : null,
+        exploringAvgPhase: avgE !== null ? Number(avgE.toFixed(4)) : null,
+        coherentSections: coherentPhase.length,
+        exploringSections: exploringPhase.length,
+        suppressionRatio: avgC !== null && avgE !== null && avgE > 0 ? Number((avgC / avgE).toFixed(3)) : null
+      };
+    })() : null,
+    // R11 E3: Regime distribution by profile for cross-run divergence tracking
+    regimeByProfile: diagnosticArc.length > 0 ? (() => {
+      var prof = null;
+      for (var di = diagnosticArc.length - 1; di >= 0; di--) {
+        if (diagnosticArc[di].activeProfile) { prof = diagnosticArc[di].activeProfile; break; }
+      }
+      if (!prof) return null;
+      var regC = 0, regE = 0, regOther = 0;
+      for (var ri = 0; ri < diagnosticArc.length; ri++) {
+        var r = diagnosticArc[ri].regime;
+        if (r === 'coherent') regC++;
+        else if (r === 'exploring') regE++;
+        else regOther++;
+      }
+      var total = regC + regE + regOther;
+      return total > 0 ? {
+        profile: prof,
+        coherentShare: Number((regC / total).toFixed(4)),
+        exploringShare: Number((regE / total).toFixed(4)),
+        otherShare: Number((regOther / total).toFixed(4)),
+        snapshotCount: total
+      } : null;
+    })() : null,
+    // R12 E4: Per-section axis Gini for coupling balance trend tracking
+    axisGiniArc: diagnosticArc.length > 0 ? (() => {
+      var gArc = {};
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.axisGini !== null) {
+          gArc[snap.section] = snap.axisGini;
+        }
+      }
+      return Object.keys(gArc).length > 0 ? gArc : null;
+    })() : null,
+    // R12 E1: Per-section harmonic context for phase-composition correlation
+    harmonicArc: diagnosticArc.length > 0 ? (() => {
+      var hArc = {};
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && (snap.sectionKey || snap.sectionMode)) {
+          hArc[snap.section] = { key: snap.sectionKey, mode: snap.sectionMode };
+        }
+      }
+      return Object.keys(hArc).length > 0 ? hArc : null;
+    })() : null,
+    // R13 E1: Phase share velocity -- delta between consecutive sections
+    phaseShareVelocity: diagnosticArc.length > 0 ? (() => {
+      var psvArc = {};
+      var prevPhase = null;
+      var prevSec = null;
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null) {
+          if (prevPhase !== null && prevSec !== null) {
+            psvArc[snap.section] = Number((snap.phaseShare - prevPhase).toFixed(4));
+          }
+          prevPhase = snap.phaseShare;
+          prevSec = snap.section;
+        }
+      }
+      return Object.keys(psvArc).length > 0 ? psvArc : null;
+    })() : null,
+    // R17 E1: Phase peak position -- which section has highest phase share
+    // normalized to [0,1] by total sections for cross-run comparison
+    phasePeakPosition: diagnosticArc.length > 0 ? (() => {
+      var maxPhase = -1;
+      var peakSec = -1;
+      var totalSections = 0;
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null) {
+          if (snap.section + 1 > totalSections) totalSections = snap.section + 1;
+          if (snap.phaseShare > maxPhase) { maxPhase = snap.phaseShare; peakSec = snap.section; }
+        }
+      }
+      if (peakSec < 0 || totalSections < 2) return null;
+      return { section: peakSec, totalSections: totalSections, normalized: Number((peakSec / (totalSections - 1)).toFixed(3)), peakPhaseShare: maxPhase };
+    })() : null,
+    // R13 E3: Beats per section for cross-run normalization
+    beatsPerSection: (() => {
+      var bps = {};
+      var secKeys = Object.keys(sectionBeatKeys);
+      for (var si = 0; si < secKeys.length; si++) {
+        bps[secKeys[si]] = sectionBeatKeys[secKeys[si]].size;
+      }
+      return Object.keys(bps).length > 0 ? bps : null;
+    })(),
+    // R14 E4: Harmonic distance -- semitone distance between consecutive section keys
+    harmonicDistance: diagnosticArc.length > 0 ? (() => {
+      var noteMap = { 'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'Fb': 4, 'F': 5, 'E#': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11 };
+      var keys = [];
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.sectionKey) {
+          keys.push({ section: snap.section, note: noteMap[snap.sectionKey] });
+        }
+      }
+      if (keys.length < 2) return null;
+      var dists = {};
+      for (var ki = 1; ki < keys.length; ki++) {
+        var raw = Math.abs(keys[ki].note - keys[ki - 1].note);
+        dists[keys[ki].section] = Math.min(raw, 12 - raw);
+      }
+      return Object.keys(dists).length > 0 ? dists : null;
+    })() : null,
+    // R14 E2: Per-section exceedance rate (exceedance beats / total beats)
+    sectionExceedanceRate: (() => {
+      var rates = {};
+      var secKeys = Object.keys(sectionBeatKeys);
+      for (var si = 0; si < secKeys.length; si++) {
+        var sk = secKeys[si];
+        var total = sectionBeatKeys[sk].size;
+        var exc = sectionExceedanceCounts[sk] || 0;
+        if (total > 0) rates[sk] = Number((exc / total).toFixed(4));
+      }
+      return Object.keys(rates).length > 0 ? rates : null;
+    })(),
+    // R15 E1: Phase-Gini correlation -- per-section pairing of phase share and axis Gini
+    phaseGiniCorrelation: diagnosticArc.length > 0 ? (() => {
+      var pairs = [];
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null && snap.axisGini !== null) {
+          pairs.push({ section: snap.section, phase: snap.phaseShare, gini: snap.axisGini });
+        }
+      }
+      if (pairs.length < 2) return null;
+      // Pearson correlation between phase and gini
+      var n = pairs.length;
+      var sumP = 0, sumG = 0, sumPG = 0, sumP2 = 0, sumG2 = 0;
+      for (var pi = 0; pi < n; pi++) {
+        sumP += pairs[pi].phase; sumG += pairs[pi].gini;
+        sumPG += pairs[pi].phase * pairs[pi].gini;
+        sumP2 += pairs[pi].phase * pairs[pi].phase;
+        sumG2 += pairs[pi].gini * pairs[pi].gini;
+      }
+      var denom = Math.sqrt((n * sumP2 - sumP * sumP) * (n * sumG2 - sumG * sumG));
+      var r = denom > 0 ? (n * sumPG - sumP * sumG) / denom : 0;
+      return { r: Number(r.toFixed(4)), n: n, pairs: pairs };
+    })() : null,
+    // R71 E5: Trust turbulence events -- snapshots where any trust system
+    // velocity exceeded +/-0.10 per snapshot interval.
+    trustTurbulenceEvents: (() => {
+      const events = [];
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const arc = diagnosticArc[di];
+        if (!arc.trustVelocity) continue;
+        const velKeys = Object.keys(arc.trustVelocity);
+        for (let vi = 0; vi < velKeys.length; vi++) {
+          const vel = arc.trustVelocity[velKeys[vi]];
+          if (typeof vel === 'number' && (vel > 0.10 || vel < -0.10)) {
+            events.push({
+              snapshotIndex: arc.snapshotIndex,
+              beatKey: arc.beatKey,
+              system: velKeys[vi],
+              velocity: vel
+            });
+          }
+        }
+      }
+      return events.length > 0 ? events : null;
+    })(),
+    // R76 E6: Trust velocity range per system across all diagnosticArc snapshots.
+    // Compact overview of trust dynamics without reading full diagnosticArc.
+    // First snapshot has empty velocity (cold-start: no prior snapshot to diff).
+    trustVelocityRange: (() => {
+      const ranges = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const arc = diagnosticArc[di];
+        if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+        const velKeys = Object.keys(arc.trustVelocity);
+        for (let vi = 0; vi < velKeys.length; vi++) {
+          const sys = velKeys[vi];
+          const vel = arc.trustVelocity[sys];
+          if (typeof vel !== 'number') continue;
+          if (!ranges[sys]) ranges[sys] = { min: vel, max: vel, snapshots: 1 };
+          else {
+            if (vel < ranges[sys].min) ranges[sys].min = vel;
+            if (vel > ranges[sys].max) ranges[sys].max = vel;
+            ranges[sys].snapshots++;
+          }
+        }
+      }
+      return Object.keys(ranges).length > 0 ? ranges : null;
+    })(),
+    // R78 E6 + R79 E5: Trust velocity at exceedance beats. Filters
+    // diagnosticArc snapshots to sections with coupling exceedance
+    // (|r| > 0.90) and reports per-system velocity range at those beats.
+    // R79 E5: Section-bracket matching. Snapshot beatKeys use N:end or
+    // N:periodic:M format while beat entries use S:P:M:B, so exact match
+    // fails. Extract section index from both and match by section.
+    trustVelocityAtExceedance: (() => {
+      if (exceedanceBeatKeys.size === 0) return null;
+      const exceedanceSections = {};
+      const bkArr = Array.from(exceedanceBeatKeys);
+      for (let bi = 0; bi < bkArr.length; bi++) {
+        const sec = parseInt(bkArr[bi].split(':')[0], 10);
+        if (Number.isFinite(sec)) exceedanceSections[sec] = true;
+      }
+      if (Object.keys(exceedanceSections).length === 0) return null;
+      const ranges = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const arc = diagnosticArc[di];
+        if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+        const arcSec = typeof arc.beatKey === 'string' ? parseInt(arc.beatKey.split(':')[0], 10) : -1;
+        if (!Number.isFinite(arcSec) || !exceedanceSections[arcSec]) continue;
+        const velKeys = Object.keys(arc.trustVelocity);
+        for (let vi = 0; vi < velKeys.length; vi++) {
+          const sys = velKeys[vi];
+          const vel = arc.trustVelocity[sys];
+          if (typeof vel !== 'number') continue;
+          if (!ranges[sys]) ranges[sys] = { min: vel, max: vel, snapshots: 1 };
+          else {
+            if (vel < ranges[sys].min) ranges[sys].min = vel;
+            if (vel > ranges[sys].max) ranges[sys].max = vel;
+            ranges[sys].snapshots++;
+          }
+        }
+      }
+      // R80 E3: Nearest-snapshot fallback. When all exceedance is in S0
+      // whose diagnosticArc snapshots have empty trustVelocity, fall back
+      // to the nearest snapshot from any section with populated velocity.
+      if (Object.keys(ranges).length === 0) {
+        for (let di = 0; di < diagnosticArc.length; di++) {
+          const arc = diagnosticArc[di];
+          if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+          const velKeys = Object.keys(arc.trustVelocity);
+          if (velKeys.length === 0) continue;
+          for (let vi = 0; vi < velKeys.length; vi++) {
+            const sys = velKeys[vi];
+            const vel = arc.trustVelocity[sys];
+            if (typeof vel !== 'number') continue;
+            if (!ranges[sys]) ranges[sys] = { min: vel, max: vel, snapshots: 1, fallback: true };
+            else {
+              if (vel < ranges[sys].min) ranges[sys].min = vel;
+              if (vel > ranges[sys].max) ranges[sys].max = vel;
+              ranges[sys].snapshots++;
+            }
+          }
+          break;
+        }
+      }
+      return Object.keys(ranges).length > 0 ? ranges : null;
+    })()
+  };
+}
+
+function main() {
+  const metricsDir = requireMetricsDir();
+  const tracePath = path.join(metricsDir, 'trace.jsonl');
+  const summaryPath = path.join(metricsDir, 'trace-summary.json');
+  const manifestPath = path.join(metricsDir, 'system-manifest.json');
+
+  function clearStaleSummary(reason) {
+    if (!fs.existsSync(summaryPath)) return;
+    fs.unlinkSync(summaryPath);
+    console.warn('Acceptable warning: trace-summary: ' + reason + ', removed stale trace-summary.json.');
+  }
+
+  if (!fs.existsSync(tracePath)) {
+    clearStaleSummary('trace file missing');
+    console.log('trace-summary: trace file not found, skipping (run with --trace to generate trace.jsonl).');
+    return;
+  }
+
+  const raw = fs.readFileSync(tracePath, 'utf8');
+  const lines = raw.split(/\r?\n/).filter(Boolean);
+  if (lines.length === 0) {
+    clearStaleSummary('trace.jsonl is empty');
+    console.warn('Acceptable warning: trace-summary: trace.jsonl is empty, skipping.');
+    return;
+  }
+
+  const entries = [];
+  for (let i = 0; i < lines.length; i++) {
+    const entry = parseLine(lines[i], i);
+    if (entry !== null) entries.push(entry);
+  }
+
+  if (entries.length === 0) {
+    clearStaleSummary('trace.jsonl has no valid entries');
+    console.warn('Acceptable warning: trace-summary: no valid entries in trace.jsonl, skipping.');
+    return;
+  }
+
+  const manifest = fs.existsSync(manifestPath)
+    ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    : null;
+  const summary = summarizeTrace(entries, manifest);
+  fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n');
+  console.log(`trace-summary: ${entries.length} entries -> trace-summary.json`);
+}
+
+main();

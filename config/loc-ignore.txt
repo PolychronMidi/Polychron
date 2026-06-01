@@ -1,0 +1,209 @@
+# Files / glob patterns exempt from the LOC target declared in
+# AGENTS.md `Universal Principles`. Syntax: gitignore-style — one pattern
+# per line, comments start with `#`, leading `!` negates a prior match,
+# trailing `/` means directory.
+#
+# Consumers:
+#   - tools/HME/scripts/audit-core-principles.py (P5 audit)
+#   - tools/HME/service/.../evolution_evolve.py (i/evolve focus=loc)
+#   - tools/HME/scripts/report-src-loc.js (LOC report)
+
+# Architecturally required single-file modules.
+src/play/fullBootstrap.js
+src/conductor/config.js
+
+# Bulk data files — constants, lookup tables, prior distributions.
+*PriorsData.js
+*Pairs.js
+*Table.js
+*Tables.js
+*Constants.js
+*Manifest.js
+
+# TypeScript declaration aggregator — one source of truth for global types.
+*.d.ts
+
+# Test specs — inherently fixture-heavy; co-locating cases for one
+# subject is the design.
+tools/HME/tests/specs/*.test.js
+tools/HME/scripts/detectors/test_*.py
+
+# Pipeline phase scripts — single-phase orchestrators end-to-end.
+src/scripts/pipeline/*.js
+src/scripts/pipeline/validators/*.js
+
+# Vendored third-party (py_midicsv) — not project code, do not split.
+tools/csv_maestro/
+tools/bin/
+
+# Single-coherent-unit modules where further splitting creates artificial
+# boundaries. Each is bottlenecked by ONE coherent function or tight
+# cluster — the natural split granularity has already been reached.
+# Reducing further would require refactoring single function bodies into
+# helper-function chains, which is a different class of work than
+# splitting modules and trades cohesion for compliance.
+
+# Rationale tokens (machine-parsed by tools/HME/scripts/loc_ignore.py):
+#   rationale: intent=<class>; revisit-when=<condition>; decided=<YYYY-MM-DD>
+# `intent` values:
+#   mega-function-dispatcher  one entry-point with N branches; helpers add
+#                             signature overhead without clarifying intent
+#   coupled-state             tight bidirectional state coupling; extraction
+#                             would split a single coherent surface
+#   already-balanced          extraction already done; remaining is one
+#                             coherent unit
+#   mega-function             single function body needing helper-function
+#                             decomposition (different class than module split)
+#   lifecycle-wrapped-data    giant data inside moduleLifecycle.declare();
+#                             can't move without restructuring the wrapper
+#   closure-coupled           extensive shared closure state; can't safely
+#                             module-split
+
+# todo.py: hme_todo dispatcher is one entry point with 11 action branches.
+# Splitting actions into helpers adds signature overhead without
+# clarifying the dispatcher itself.
+# rationale: intent=mega-function-dispatcher; revisit-when=branches>15; decided=2026-04-30
+tools/HME/service/server/tools_analysis/todo.py
+
+# todo_spec_archive.py: archive_set + reset_to_fresh_slate cluster has
+# tight bidirectional state coupling (verified: extraction attempt broke
+# the clear flow due to shared phase-detection helpers).
+# rationale: intent=coupled-state; revisit-when=phase-detection-decoupled; decided=2026-04-30
+tools/HME/service/server/tools_analysis/todo_spec_archive.py
+
+# code_audits_state.py: 7 independent state/lifecycle Verifier classes,
+# already balanced (~50 lines each); further split is arbitrary grouping.
+# rationale: intent=already-balanced; revisit-when=verifier-count>10; decided=2026-04-30
+tools/HME/scripts/verify_coherence/code_audits_state.py
+
+# buddy_dispatcher.py + buddy_dispatch_lifecycle.py: <50 lines over
+# target after the 7-way split; remaining bulk is `_dispatch_to_buddy`
+# (187L) and CLI scaffolding that's intrinsically single-unit.
+# rationale: intent=already-balanced; revisit-when=growth>50loc; decided=2026-04-30
+tools/HME/scripts/buddy_dispatcher.py
+tools/HME/scripts/buddy_dispatch_lifecycle.py
+
+# Single mega-functions that resist module-level splitting. Each is one
+# coherent function whose body would need helper-function decomposition
+# (different class of work than module split).
+
+# selftest.py: `hme_selftest` is one ~1000-line sequential probe pipeline.
+# rationale: intent=mega-function; revisit-when=probe-restructure; decided=2026-04-30
+tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py
+
+# what_did_i_forget is one ~460-line analysis function.
+# rationale: intent=mega-function; revisit-when=analysis-restructure; decided=2026-04-30
+tools/HME/service/server/tools_analysis/workflow_audit.py
+
+# _adversarial_stress is one ~430-line probe function.
+# rationale: intent=mega-function; revisit-when=stress-probe-restructure; decided=2026-04-30
+tools/HME/service/server/tools_analysis/evolution/evolution_stress.py
+
+# JS module-lifecycle wrapped giant data structures. These can't move
+# without restructuring the lifecycle.declare() pattern that anchors them
+# — different class of work than module split.
+# rationale: intent=lifecycle-wrapped-data; revisit-when=lifecycle-pattern-changes; decided=2026-04-30
+src/conductor/metaProfileDefinitions.js
+src/conductor/metaProfiles.js
+src/utils/moduleLifecycle.js
+
+# Complex proxy with intricate closure state coupling. The HTTP listener,
+# routing, supervisor, middleware orchestration, and request lifecycle
+# share extensive closure state — can't safely module-split.
+tools/HME/proxy/hme_proxy.js
+tools/HME/proxy/middleware/index.js
+
+# sse_rewriters.js: SSE rewriter chain with five text-block strippers
+# (ackStrip / slopStrip / hallucinatedTurnPrefixStrip / stopHookCeremonyStrip /
+# fpGateMarker) plus two Bash rewriters (runInBackground / longLeadingSleep).
+# All strippers share the buffer-then-replay-on-content_block_stop pattern;
+# the _isBareAck umbrella dispatches to _isHallucinatedTurnPrefix +
+# _isCeremonyDodge, so helper composition would fragment across files. The
+# bulk is _SLOP_PATTERNS (19 regex+replacement entries with inline
+# rationale comments) -- moving to JSON config would lose the rationale.
+# rationale: intent=coupled-state; revisit-when=growth>700-or-new-stripper-class; decided=2026-05-03
+tools/HME/proxy/sse_rewriters.js
+
+# rag_engines.py: _load_engines (~340L) and reload_on_device (~190L) share
+# 8+ globals (_shared_*, _*_engine, _*_router, _lib_engines, _engine_ready,
+# _reload_lock) plus closures for VRAM-managed model factories. Module-level
+# split would require funneling every shared mutation through getters/setters
+# — inverts the pattern that anchors it.
+tools/HME/service/rag_engines.py
+
+# Per-beat tick mega-functions: each is one coherent function emitting
+# 30+ inter-dependent trust outcomes / channel emissions per beat,
+# sharing dozens of locals (clDensity, clTension, clCadResult, channelHarmonic,
+# ...). Splitting requires either passing 20+ params through helper signatures
+# or refactoring to a beat-context object — different class of work than
+# module-level split (helper-function decomposition of a single function).
+src/play/crossLayerBeatRecord.js
+src/play/playNotesEmitPick.js
+
+# moduleLifecycle.declare wrapping one giant init closure with 200+ LOC of
+# state-coupled signal computations across refresh()/densityBias()/tensionBias()
+# /flickerMod()/reset(). Same pattern as the already-exempted lifecycle
+# wrappers (moduleLifecycle.js, metaProfiles.js).
+src/conductor/signal/profiling/regimeReactiveDamping.js
+
+# Markdown LOC exemptions. .md files joined the LOC discipline 2026-05-03;
+# below are docs whose length is structurally warranted (not rot).
+
+# Vendored model-card READMEs from third-party repos. Not project code;
+# upstream maintains them. Trimming would diverge from upstream.
+# rationale: intent=vendored-third-party; revisit-when=model-replaced; decided=2026-05-03
+tools/models/*/README.md
+
+# Long-form theoretical essays. Each is one coherent argument that loses
+# coherence if split across files. The essays are read end-to-end as
+# whole arguments, not as reference-lookup material -- different document
+# class than the operational reference docs the LOC discipline targets.
+# rationale: intent=long-form-essay; revisit-when=structure-changes; decided=2026-05-03
+doc/theory/
+
+# Multi-pattern detector with shared event scan + ideation gate. Patterns
+# A/B/C share state; per-pattern split would duplicate the gate logic 3x.
+# rationale: intent=multi-pattern-detector; revisit-when=patterns-stabilize; decided=2026-05-04
+tools/HME/scripts/detectors/psycho_stop.py
+
+# exhaust_check.py: structural-enumeration + rescue-gate + phrase-scan + research-exemption + b-clause + UNDONE_HEADER + WHATS_NEXT_MULTI all share the raw_text + events scan. Per-stage split would re-walk the transcript 5x and duplicate the implicit-solo-work rescue logic across files. Air-tight enumeration check landed 2026-05-10 inside main(); structural cohesion is the design.
+# rationale: intent=multi-stage-detector; revisit-when=stages>=8; decided=2026-05-10
+tools/HME/scripts/detectors/exhaust_check.py
+
+# runtime_behavior.py: 4 coherent runtime-state verifiers (TransientErrorFilter, ContextBudget, WarmContextFreshness, PlanOutputValidity, BuddyPrimaryHealth) sharing the _base import block and env-read helpers. Splitting per-verifier would duplicate the _env_truthy + _read_env_var helpers and fragment the runtime-state category.
+# rationale: intent=already-balanced; revisit-when=verifier-count>=7; decided=2026-05-10
+tools/HME/scripts/verify_coherence/runtime_behavior.py
+
+# supervisor/index.js: top-level process supervisor for all HME child processes (proxy, MCP, shim, daemon, etc.). Single-fate model: lifecycle, health-check loop, abandonment sentinel, restart throttle all share state via the same `_children` Map. Splitting would smear that Map across modules or duplicate state in N managers. Children.js already extracts the spec catalog. The 430 LOC reflect coherent lifecycle ownership, not bloat.
+# rationale: intent=lifecycle-cohesion; revisit-when=children-managed>=20; decided=2026-05-11
+tools/HME/proxy/supervisor/index.js
+
+# invariants.json: declarative config catalogue (169 invariant entries × ~9 lines each). Pure data, not code. Splitting moves entries across files without architectural benefit since the runner iterates the single list.
+# rationale: intent=declarative-config; revisit-when=invariants>=300; decided=2026-05-11
+tools/HME/config/invariants.json
+
+# state-files.json: declarative ownership registry; splitting would hide the
+# single-writer/multi-writer map that audits consume as one catalogue.
+# rationale: intent=declarative-config; revisit-when=registry>=100; decided=2026-05-15
+tools/HME/config/state-files.json
+
+# watcher.py: single-watchdog Observer + filter cascade + debounce timer + reindex dispatch share `_changed_files`, `_timer`, `_last_reindex`, `_consecutive_failures` lock-guarded state. Splitting filter from dispatch from reindex requires either funneling shared state through 3+ module boundaries or refactoring to a class. Module-level state-coupled lifecycle.
+# rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
+tools/HME/service/watcher.py
+
+# synthesis_overdrive.py: Anthropic OVERDRIVE path + per-model HTTP request build + chain walker + circuit breaker + subagent dispatcher share `_circuit` state.
+# rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
+tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py
+
+# synthesis_reasoning.py: tier-aware dispatcher with OVERDRIVE_MODE=0/1 dispatcher path + provider cascade walker + offline-mode + last-source telemetry. Shared _last_source / _RANKINGS / env-refresh; splitting would reimplement routing.
+# rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
+tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py
+# Full operational reference docs intentionally aggregate complete section maps.
+# The generated one-link-per-line navigation indexes are required for scanability
+# and would make arbitrary file splits less coherent.
+# rationale: intent=reference-catalog; revisit-when=full-docs-split; decided=2026-05-15
+doc/*_full.md
+
+# sse_slop_rewriter.js: single ordered slop-rule catalog plus stream hold/replay state.
+# rationale: intent=ordered-regex-catalog; revisit-when=rule-modules-split; decided=2026-05-24
+tools/HME/proxy/sse_slop_rewriter.js

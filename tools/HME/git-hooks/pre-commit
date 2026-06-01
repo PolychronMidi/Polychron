@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+HOOK_PATH="$ROOT/.git/hooks/pre-commit"
+
+# Existing root artifact guard.
+PROJECT_ROOT="$ROOT" node "$ROOT/src/scripts/pipeline/validators/check-root-only-dirs.js" >/dev/null
+
+# .env line 13 contract:
+#   SECRETS ABOVE THIS LINE - precommit hook ensures the values above can never be committed to git
+PROJECT_ROOT="$ROOT" HOOK_PATH="$HOOK_PATH" python3 "$ROOT/tools/HME/scripts/precommit_validate.py"

@@ -1,0 +1,9 @@
+{
+  "$comment": "Fix commits exempt from the git-commit-test-coverage verifier. Each entry matches by sha_prefix or subject_contains.",
+  "waivers": [
+    {
+      "sha_prefix": "5e6a7f3f",
+      "reason": "proxy facade + context budget fix already covered by proxy_extracted_modules + codex_proxy test suites"
+    }
+  ]
+}

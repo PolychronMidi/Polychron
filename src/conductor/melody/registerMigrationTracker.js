@@ -1,0 +1,83 @@
+// registerMigrationTracker.js - directional pitch-center drift.
+// Detects ascending, descending, or static register migration over time.
+// Pure query API - nudges pitch gravity toward underexplored registers.
+
+moduleLifecycle.declare({
+  name: 'registerMigrationTracker',
+  subsystem: 'conductor',
+  deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
+  provides: ['registerMigrationTracker'],
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
+  const V = deps.validator.create('registerMigrationTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
+
+  /**
+   * Measure the average pitch center across time slices and detect drift direction.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @param {number} [opts.windowSeconds]
+   * @returns {{ avgPitch: number, slope: number, direction: string, static: boolean }}
+   */
+  function getMigrationProfile(opts = {}) {
+    const notes = query(opts);
+    if (!notes) return { avgPitch: 60, slope: 0, direction: 'insufficient', static: true };
+
+    // Extract MIDI pitches and use shared half-split slope
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
+    const { slope, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(midis);
+    const avgPitch = (avgFirst + avgSecond) / 2;
+
+    let direction = 'static';
+    if (slope > 2) direction = 'ascending';
+    else if (slope < -2) direction = 'descending';
+
+    return {
+      avgPitch,
+      slope,
+      direction,
+      static: m.abs(slope) < 1.5
+    };
+  }
+
+  /**
+   * Suggest a register correction to counteract drift or monotony.
+   * Ascending - bias downward; descending - bias upward; static - encourage movement.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @returns {{ registerBias: number, suggestion: string }}
+   */
+  function getRegisterBias(opts) {
+    const profile = getMigrationProfile(opts);
+    if (profile.direction === 'ascending') {
+      return { registerBias: -3, suggestion: 'lower-register' };
+    }
+    if (profile.direction === 'descending') {
+      return { registerBias: 3, suggestion: 'higher-register' };
+    }
+    if (profile.static) {
+      // Static: suggest exploring opposite of current center
+      const bias = profile.avgPitch > 66 ? -4 : 4;
+      return { registerBias: bias, suggestion: 'explore-range' };
+    }
+    return { registerBias: 0, suggestion: 'maintain' };
+  }
+
+  conductorIntelligence.registerStateProvider('registerMigrationTracker', () => {
+    const b = registerMigrationTracker.getRegisterBias();
+    return {
+      registerMigrationBias: b ? b.registerBias : 0,
+      registerSuggestion: b ? b.suggestion : 'maintain'
+    };
+  });
+
+  function reset() {}
+  conductorIntelligence.registerModule('registerMigrationTracker', { reset }, ['section']);
+
+  return {
+    getMigrationProfile,
+    getRegisterBias
+  };
+  },
+});

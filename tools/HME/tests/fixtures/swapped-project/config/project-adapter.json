@@ -1,0 +1,29 @@
+{
+  "project_id": "swapped-fixture",
+  "project_name": "Swapped Fixture",
+  "domain": "software",
+  "source_roots": [
+    "src"
+  ],
+  "project_docs": [
+    "doc/composition.md"
+  ],
+  "primary_doc": "doc/composition.md",
+  "pipeline": {
+    "main": "npm test"
+  },
+  "artifacts": {
+    "metrics_dir": "src/output/metrics"
+  },
+  "optional_artifacts": [],
+  "capabilities": {
+    "pipeline_summary": false,
+    "trace": false,
+    "run_history": false,
+    "structured_events": false,
+    "audio_render": false,
+    "perceptual_analysis": false,
+    "feedback_graph": false
+  },
+  "health": {}
+}

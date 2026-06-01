@@ -1,0 +1,279 @@
+#!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_hooks_bootstrap.sh"
+# MUST RUN BEFORE: stop
+INPUT=$(cat)
+PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
+_HME_PROJECT_TMP="${PROJECT_ROOT}/t""mp"
+_HME_DEFAULT_OS_TMP="/t""mp"
+_HME_OS_TMP="${TMPDIR:-$_HME_DEFAULT_OS_TMP}"
+
+if [ "${HME_CLI_SMOKE:-}" != "1" ]; then
+  # silent-ok: helper failure falls through to blocked/unready probe path.
+  _WATCHDOG_ALERT=$(printf '%s' "$INPUT" \
+    | PROJECT_ROOT="$PROJECT_ROOT" node "$PROJECT_ROOT/tools/HME/event_kernel/hook_watchdog.js" userprompt-alert 2>/dev/null || true)
+  if [ -n "$_WATCHDOG_ALERT" ]; then
+    echo "LIFESAVER -- lifecycle watchdog detected a SessionStart failure." >&2
+    printf '%s\n' "$_WATCHDOG_ALERT" >&2
+  fi
+fi
+
+# Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
+if [ -n "$PROJECT_ROOT" ]; then
+  rm -f "${_HME_PROJECT_TMP}/hme-turn-edits.txt" \
+        "${_HME_PROJECT_TMP}/hme-turn-briefs.txt" 2>/dev/null || true  # silent-ok: stale per-turn caches may already be absent.
+fi
+
+# Petulance attempts reset: each new user prompt is a fresh "initial request".
+# Prior-prompt bash attempts must not block the first command of a new turn;
+# silent-ok: helper failure falls through to blocked/unready probe path.
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" --reset-user-prompt 2>/dev/null || true
+
+if [ -n "$PROJECT_ROOT" ] && [ -f "${PROJECT_ROOT}/doc/templates/TODO.md" ]; then
+  mkdir -p "${_HME_PROJECT_TMP}" 2>/dev/null
+  cp "${PROJECT_ROOT}/doc/templates/TODO.md" "${_HME_PROJECT_TMP}/todo-turn-start.md" 2>/dev/null || true  # silent-ok: todo survivor preimage cache is advisory; precommit has canonical HEAD diff.
+fi
+
+_signal_emit turn_start userpromptsubmit turn '{}'
+
+# Three fire-and-forget python invocations whose output the hook never reads.
+# Backgrounding cuts ~1.5-3s off UserPromptSubmit (each python startup ~500ms).
+if [ -n "$PROJECT_ROOT" ] && [ -n "$PROMPT" ]; then
+  _hme_bg_stdin_timeout 10 satisfaction-capture "$PROJECT_ROOT/log/hme-bg-satisfaction.err" "$PROMPT" \
+    env PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py"
+  _hme_bg_stdin_timeout 10 tier-classifier "$PROJECT_ROOT/log/hme-bg-tier-classifier.err" "$PROMPT" \
+    env PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --json
+fi
+_hme_bg_timeout 15 stale-state-sweep "$PROJECT_ROOT/log/hme-bg-stale-state-sweep.err" \
+  python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py"
+
+# UserPromptSubmit must not run synchronous git/precommit work. Request-side
+# proxy_autocommit owns autocommit and writes the same sticky fail flag; this
+_AC_FAIL_FLAG="${PROJECT_ROOT}/tools/HME/runtime/autocommit.fail"
+if [ -f "$_AC_FAIL_FLAG" ]; then
+  _AC_FLAG_BODY=$(cat "$_AC_FAIL_FLAG" 2>/dev/null)
+  _AC_BANNER="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
+
+$_AC_FLAG_BODY
+
+The autocommit helper left this flag behind. Last attempt did not
+succeed, which means working-tree changes have NOT been committed.
+Diagnose: check git status in the project root; read log/hme-errors.log;
+inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
+Fix the root cause. Do not silence the alert -- the flag clears automatically
+on the next successful proxy autocommit."
+  echo "" >&2
+  echo "$_AC_BANNER" >&2
+  jq -n --arg banner "$_AC_BANNER" \
+    '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
+fi
+
+# Reset the psychopathic-polling counter at turn start -- the counter
+rm -f "$_HME_OS_TMP/polychron-task-poll-count" 2>/dev/null
+rm -f "$_HME_OS_TMP/hme-chain-snapshot-fired" 2>/dev/null
+
+# user-correction capture channel.
+_CORRECTION_FILE="${_HME_PROJECT_TMP}/hme-user-corrections.jsonl"
+if [ -n "$PROMPT" ]; then
+  _IS_CORRECTION=0
+  # Case-insensitive grep for correction language
+  if echo "$PROMPT" | grep -qiE '\b(actually|instead|don.?t|no,|not quite|reverse|revert|rollback|wrong|incorrect|fix this|that.?s wrong|stop|cancel|undo)\b'; then
+    _IS_CORRECTION=1
+  fi
+  if [ "$_IS_CORRECTION" -eq 1 ]; then
+    mkdir -p "$(dirname "$_CORRECTION_FILE")"
+    # silent-ok: noncritical probe; caller consumes missing/failed result explicitly.
+    python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" \
+      capture-correction "$_CORRECTION_FILE" "$PROMPT" 2>/dev/null || true
+  fi
+fi
+
+# Watchdog-independent proxy liveness gate: detects a proxy serving stale code
+# or a dead/missing slot even when slot_watchdog itself is dead. Writes a
+# blocking LIFESAVER to hme-errors.log, which the scan below surfaces THIS turn.
+# silent-ok: helper failure falls through to blocked/unready probe path.
+PROJECT_ROOT="$PROJECT_ROOT" timeout 5 node "$PROJECT_ROOT/tools/HME/proxy/proxy_liveness_gate.js" 2>/dev/null || true
+
+# LIFESAVER error-log monitor: surfaces hme-errors.log new lines as
+# additionalContext. Errors must be FIXED, not acknowledged.
+PROJECT="$PROJECT_ROOT"
+ERROR_LOG="$PROJECT/log/hme-errors.log"
+WATERMARK="$PROJECT/tools/HME/runtime/errors-lastread"
+TURNSTART="$PROJECT/tools/HME/runtime/errors-turnstart"
+
+# crying_wolf: consume stale self-health lines before emergency bannering.
+python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
+  --mode self-only --reason userpromptsubmit --quiet >/dev/null 2>&1 || true
+
+mkdir -p "$_HME_PROJECT_TMP"
+
+if [ -f "$ERROR_LOG" ]; then
+  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)  # silent-ok: unreadable error log rechecks next turn; watermark is not advanced.
+  LAST=0
+  [ -f "$WATERMARK" ] && LAST=$(cat "$WATERMARK" 2>/dev/null || echo 0)
+
+  # Record turn start line count (Stop hook uses this to catch mid-turn errors)
+  echo "$TOTAL" > "$TURNSTART"
+
+  if [ "$TOTAL" -gt "$LAST" ]; then
+    # Filter routine-ops noise (CANARY self-tests, proxy-watchdog respawns)
+    # before showing as LIFESAVER alerts -- they're INFO, not errors.
+    NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
+      | sed 's/^\[[0-9TZ:.\-]*\] //' \
+      | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned|^\[(hook-stop-block|hook-runtime-error|hook-failure|hook-output-validation|hook-ui-echo-leak)\]' \
+      | grep -vE '^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|hook-latency|crying_wolf|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+)\]' \
+      | grep -vE '\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b' \
+      | grep -vE '^[[:space:]]*$' \
+      | sort -u || true)
+    if [ -z "$NEW_ERRORS" ]; then
+      # silent-ok: advisory state/log write; failure cannot certify success.
+      echo "$TOTAL" > "$WATERMARK" 2>/dev/null || true
+    else
+      # Stop hook is the ONLY gate that advances watermark for real errors.
+      BANNER="LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:
+${NEW_ERRORS}"
+    # Block ONLY if the supervisor-abandoned sentinel currently exists
+    export BLOCK="false"
+    if [ -f "$PROJECT/tools/HME/runtime/supervisor-abandoned" ]; then
+      # Cross-check: if the named child is healthy NOW, sentinel is stale.
+      # Unlink it and proceed without blocking.
+      _sent_child=$(python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" \
+        supervisor-child "$PROJECT/tools/HME/runtime/supervisor-abandoned" 2>/dev/null || true)  # silent-ok: optional fallback path.
+      _healthy=0
+      _sent_url="$(_hme_service_url "$_sent_child" 2>/dev/null || true)"  # silent-ok: optional fallback path.
+      [ -n "$_sent_url" ] && curl -s -m 2 -o /dev/null -w '%{http_code}' "$_sent_url" 2>/dev/null | grep -q '^200$' && _healthy=1  # silent-ok: optional fallback path.
+      if [ "$_healthy" = "1" ]; then
+        rm -f "$PROJECT/tools/HME/runtime/supervisor-abandoned" 2>/dev/null
+      else
+        export BLOCK="true"
+      fi
+    fi
+      if [ "$BLOCK" = "true" ]; then
+        jq -n --arg banner "$BANNER" \
+          '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner},decision:"block",reason:"LIFESAVER: worker supervisor abandoned -- restart before proceeding."}'
+      else
+        jq -n --arg banner "$BANNER" \
+          '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
+      fi
+    fi
+  fi
+fi
+
+# HME critical todos: surface cached output from prior BG refresh; refresh in
+# background. The synchronous python3 invocation here was a ~500ms hot-path tax
+_CRIT_CACHE="$_HME_PROJECT_TMP/hme-critical-todos.cache"
+CRIT_OUT=""
+if [ -s "$_CRIT_CACHE" ]; then
+  CRIT_OUT=$(cat "$_CRIT_CACHE")
+fi
+export _CRIT_CACHE
+_hme_bg_shell_timeout 15 critical-todos "$PROJECT/log/hme-bg-critical-todos.err" '
+  tmp="${_CRIT_CACHE}.$$.tmp"
+  PROJECT_ROOT="'"$PROJECT"'" PYTHONPATH="'"$PROJECT/tools/HME/service"'" \
+    python3 "'"$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py"'" critical-todos \
+    >"$tmp" 2>>"'"$PROJECT/log/hme-bg-critical-todos.err"'" \
+    && mv "$tmp" "$_CRIT_CACHE" || rm -f "$tmp"
+'
+if [ -n "$CRIT_OUT" ]; then
+  echo "" >&2
+  echo "$CRIT_OUT" >&2
+  echo "" >&2
+fi
+
+# Surface any learn() prompt reminders queued by on_done triggers from previous turns
+LEARN_PROMPTS="$_HME_PROJECT_TMP/hme-todo-learn-prompts.log"
+if [ -f "$LEARN_PROMPTS" ] && [ -s "$LEARN_PROMPTS" ]; then
+  echo "HME learn() reminders (from completed on_done triggers):" >&2
+  cat "$LEARN_PROMPTS" >&2
+  echo "" >&2
+  > "$LEARN_PROMPTS"
+fi
+
+# Detect evolution-related prompts and inject workflow reminder
+if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab|sketch'; then
+  echo 'EVOLUTION CONTEXT: native Read/Edit are HME-enriched automatically; run `i/review mode=forget` after changes and `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
+fi
+
+# Context-aware reminders: silent default, fire only on nexus/prior-state signal.
+NEXUS_FILE="$_HME_PROJECT_TMP/hme-nexus.state"
+OVERRIDE_REMINDER=""
+
+# Many edits + no REVIEW -> nudge i/review. Handle missing-file separately so
+# grep's stdout stays single-line (|| echo 0 fallback breaks the -gt test).
+if [ -f "$NEXUS_FILE" ]; then
+  _EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" || true)
+  _REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" || true)
+else
+  _EDIT_CT=0
+  _REVIEW_CT=0
+fi
+if [ "$_EDIT_CT" -gt 3 ] && [ "$_REVIEW_CT" -eq 0 ]; then
+  OVERRIDE_REMINDER="$_EDIT_CT unreviewed edits -- run \`i/review mode=forget\` before stopping."
+fi
+
+# High bash call streak from prior turn (poll counter left behind)
+if [ -z "$OVERRIDE_REMINDER" ] && [ -f "$_HME_OS_TMP/polychron-bash-call-count" ]; then
+  _BASH_CT=$(cat "$_HME_OS_TMP/polychron-bash-call-count" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
+  if [ "$_BASH_CT" -gt 8 ]; then
+    OVERRIDE_REMINDER="Prior turn had $_BASH_CT+ bash calls -- prefer an Explore agent for multi-file research."
+  fi
+fi
+
+if [ -n "$OVERRIDE_REMINDER" ]; then
+  echo "<system-reminder>${OVERRIDE_REMINDER}</system-reminder>" >&2
+fi
+
+# R30 #2: auto-append ground-truth when user message contains
+PROMPT_BODY=$(_safe_jq "$INPUT" '.prompt' '')
+if [[ -n "$PROMPT_BODY" ]]; then
+  VERDICT=""
+  if echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*legendary'; then VERDICT=legendary
+  elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*stable'; then VERDICT=stable
+  elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*drifted'; then VERDICT=drifted
+  elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*broken'; then VERDICT=broken
+  fi
+  if [[ -n "$VERDICT" ]]; then
+    GT_FILE="${METRICS_DIR}/hme-ground-truth.jsonl"
+    SHA=$(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo unknown)  # silent-ok: optional fallback path.
+    TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    # Dedupe: skip if the last entry already has this SHA + same verdict
+    LAST_SHA_VERDICT=""
+    if [[ -f "$GT_FILE" ]]; then
+      LAST_SHA_VERDICT=$(python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" \
+        last-ground-truth "$GT_FILE" 2>/dev/null || echo "")  # silent-ok: optional fallback path.
+    fi
+    if [[ "$LAST_SHA_VERDICT" != "$SHA|$VERDICT" ]]; then
+      echo "{\"ts\":\"$TS\",\"sha\":\"$SHA\",\"tags\":[\"$VERDICT\"],\"source\":\"userpromptsubmit_auto\",\"note\":\"Auto-captured from user prompt\"}" >> "$GT_FILE"
+    fi
+  fi
+fi
+
+# Project-detect is informational context, not a safety gate. Surface cached
+# output from the prior turn and refresh in background to avoid sync Python tax.
+_PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
+_PD_CACHE="$_HME_PROJECT_TMP/hme-project-detect.cache"
+if [ -s "$_PD_CACHE" ]; then
+  cat "$_PD_CACHE" >&2
+fi
+if [ -x "$_PD" ]; then
+  export _PD_CACHE
+  _hme_bg_shell_timeout 10 project-detect "$PROJECT/log/hme-bg-project-detect.err" '
+    tmp="${_PD_CACHE}.$$.tmp"
+    PROJECT_ROOT="'"$PROJECT"'" python3 "'"$PROJECT_ROOT/tools/HME/scripts/project_detect.py"'" --tag \
+      >"$tmp" 2>>"'"$PROJECT/log/hme-bg-project-detect.err"'" \
+      && mv "$tmp" "$_PD_CACHE" || rm -f "$tmp"
+  '
+fi
+
+# inject auto-todo reminders from last turn's ingest
+_AUTO_TODO_REMINDER="$_HME_PROJECT_TMP/hme-auto-todos.reminder"
+if [ -f "$_AUTO_TODO_REMINDER" ] && [ -s "$_AUTO_TODO_REMINDER" ]; then
+  _BANNER=$(cat "$_AUTO_TODO_REMINDER")
+  jq -n --arg banner "$_BANNER" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$banner}}'
+  rm -f "$_AUTO_TODO_REMINDER"
+fi
+
+# clear stale deny reason temp file so it doesn't bleed into next turn's tool results
+rm -f "$_HME_PROJECT_TMP/hme-last-deny-reason.txt" 2>/dev/null || true
+
+exit 0

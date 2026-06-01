@@ -1,0 +1,293 @@
+'use strict';
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const middleware = require('../../proxy/middleware');
+const shortcutsRewriter = require('../../proxy/middleware/00a_shortcuts_rewriter');
+
+let loaded = false;
+async function runShortcut(payload) {
+  if (!loaded) {
+    middleware.loadAll();
+    loaded = true;
+  }
+  return middleware.runPipeline(payload, {}, 'shortcut-test');
+}
+
+test('request_shape normalizes Claude messages and Codex Responses input', () => {
+  const shape = require('../../proxy/request_shape');
+  const claude = { messages: [
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu', content: 'tool output' }] },
+    { role: 'user', content: [{ type: 'text', text: 'n' }] },
+  ] };
+  const codex = { input: [{ role: 'user', content: [{ type: 'input_text', text: 'm' }] }] };
+  assert.equal(shape.messageText(shape.lastRealUserMessage(claude)), 'n');
+  assert.equal(shape.messageText(shape.lastRealUserMessage(codex)), 'm');
+});
+
+
+test('isToolResultMessage filters PURE tool-result messages but not prompts bundled with them', () => {
+  const shape = require('../../proxy/request_shape');
+  assert.equal(shape.isToolResultMessage({ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'o' }] }), true);
+  assert.equal(shape.isToolResultMessage({ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'o' }, { type: 'text', text: 'c' }] }), false);
+});
+
+test('shortcuts_rewriter expands a shortcut bundled with tool_results in one user message (tool-turn regression)', async () => {
+  // Catastrophic regression: Claude Code bundles tool_results + the user's new
+  // prompt into ONE user message. isToolResultMessage filtered the whole message,
+  const payload = { messages: [
+    { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: {} }] },
+    { role: 'user', content: [
+      { type: 'tool_result', tool_use_id: 't1', content: 'tool output' },
+      { type: 'text', text: 'c' },
+    ] },
+  ] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  const last = payload.messages[payload.messages.length - 1];
+  assert.equal(last.content.find((b) => b.type === 'text').text, 'continue');
+  assert.ok(last.content.some((b) => b.type === 'tool_result' && b.content === 'tool output'), 'tool_result untouched');
+});
+
+test('shortcuts_rewriter expands bare n string content', async () => {
+  const payload = { messages: [{ role: 'user', content: 'n' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, 'next suggestions?');
+});
+
+test('shortcuts_rewriter expands n after system reminder in string content', async () => {
+  const reminder = '<system-reminder>noise</system-reminder>';
+  const payload = { messages: [{ role: 'user', content: `${reminder}\nn` }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, `${reminder}\nnext suggestions?`);
+});
+
+test('shortcuts_rewriter expands shortcut on last real user message before tool results', async () => {
+  const payload = {
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: '<system-reminder>noise</system-reminder>' }, { type: 'text', text: 'n' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 'tu_shortcut_probe', name: 'Bash', input: { command: 'printf probe' } }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu_shortcut_probe', content: 'probe output' }] },
+    ],
+  };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content[1].text, 'next suggestions?');
+  assert.equal(payload.messages[2].content[0].content, 'probe output');
+});
+
+
+test('shortcuts_rewriter expands Codex input_text shortcuts through shared request shape', () => {
+  const payload = { input: [{ role: 'user', content: [{ type: 'input_text', text: 'm' }] }] };
+  assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
+  assert.equal(payload.input[0].content[0].text, "what's missing?");
+});
+
+
+test('shortcuts_rewriter expands last non-reminder text block', async () => {
+  const payload = {
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: '<system-reminder>noise</system-reminder>' },
+        { type: 'text', text: 'n' },
+      ],
+    }],
+  };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content[1].text, 'next suggestions?');
+});
+
+test('shortcuts_rewriter expands n when reminder follows shortcut in string content', async () => {
+  const reminder = '<system-reminder>noise</system-reminder>';
+  const payload = { messages: [{ role: 'user', content: `n\n${reminder}` }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, `${reminder}\nnext suggestions?`);
+  assert.doesNotMatch(payload.messages[0].content, /(^|\n)\s*n\s*(\n|$)/i);
+});
+
+test('shortcuts_rewriter expands uppercase shortcut before upstream', async () => {
+  const payload = { messages: [{ role: 'user', content: 'N' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, 'next suggestions?');
+});
+
+test('shortcuts_rewriter expands r restart-continuation shortcut', async () => {
+  const payload = { messages: [{ role: 'user', content: 'r' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, 'restarted. continue');
+});
+
+test('shortcuts_rewriter expands c at end of system-reminder string', async () => {
+  const reminder = '<system-reminder>noise</system-reminder>';
+  const payload = { messages: [{ role: 'user', content: `${reminder}\nc` }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, `${reminder}\ncontinue`);
+});
+
+test('SHORTCUT_RE is derived from SHORTCUTS -- no drift (every map key matches)', () => {
+  const { SHORTCUTS, SHORTCUT_RE } = shortcutsRewriter;
+  for (const key of Object.keys(SHORTCUTS)) {
+    assert.match(key, SHORTCUT_RE, `map key ${key} must match SHORTCUT_RE`);
+  }
+});
+
+test('r shortcut with a trailing system-reminder preserves the reminder (drift regression)', async () => {
+  const reminder = '<system-reminder>noise</system-reminder>';
+  const payload = { messages: [{ role: 'user', content: `${reminder}\nr` }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  // Before the fix, r fell through to "return value" and nuked the reminder.
+  assert.equal(payload.messages[0].content, `${reminder}\nrestarted. continue`);
+});
+
+test('shortcuts_rewriter tolerates middleware contexts without markDirty', () => {
+  const payload = { messages: [{ role: 'user', content: 'n' }] };
+  assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
+  assert.equal(payload.messages[0].content, 'next suggestions?');
+});
+
+test('shortcuts_rewriter "1" two-step: rewrites to first message + sets non-enumerable followup flag', async () => {
+  const payload = { messages: [{ role: 'user', content: '1' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, "reply only with 'hi'");
+  assert.equal(payload.__hme_followup, "reply only with 'high'");
+  // Non-enumerable so it never serializes onto the Anthropic wire (no 400).
+  assert.equal(Object.keys(payload).includes('__hme_followup'), false);
+  assert.equal(JSON.stringify(payload).includes('__hme_followup'), false);
+});
+
+test('shortcuts_rewriter leaves cc untouched on the wire (no fake /compact API message)', () => {
+  // `/compact` is a Claude REPL-local command, not an API message. The proxy must
+  // NEVER rewrite `cc` to a wire `/compact` -- that counterfeits compaction.
+  const payload = { messages: [{ role: 'user', content: 'cc' }] };
+  assert.doesNotThrow(() => shortcutsRewriter.onRequest({ payload, ctx: {} }));
+  assert.equal(payload.messages[0].content, 'cc');
+  assert.equal('__hme_followup' in payload, false);
+});
+
+test('SHORTCUT_RE matches every two-step key (no drift)', () => {
+  const { TWO_STEP_SHORTCUTS, SHORTCUT_RE } = shortcutsRewriter;
+  for (const key of Object.keys(TWO_STEP_SHORTCUTS)) {
+    assert.match(key, SHORTCUT_RE, `two-step key ${key} must match SHORTCUT_RE`);
+  }
+});
+
+// --- Response-side round-trip: the second half of the two-step shortcut. ---
+const resp = require('../../proxy/hme_proxy_anthropic_response');
+
+function _fakeTransport(secondResponse) {
+  const captured = {};
+  return {
+    captured,
+    request(opts, cb) {
+      const res = {
+        statusCode: secondResponse.status,
+        headers: secondResponse.headers,
+        on(event, h) {
+          if (event === 'data') h(Buffer.from(secondResponse.body, 'utf8'));
+          if (event === 'end') h();
+          return res;
+        },
+      };
+      // invoke the response callback asynchronously like real http.request
+      setImmediate(() => cb(res));
+      return {
+        on() { return this; },
+        write(b) { captured.body = b.toString('utf8'); },
+        end() {},
+      };
+    },
+  };
+}
+
+test('_assistantContentFromResponse parses JSON content and SSE text deltas', () => {
+  const json = resp._assistantContentFromResponse(
+    Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hi' }] })),
+    { 'content-type': 'application/json' },
+  );
+  assert.deepEqual(json, [{ type: 'text', text: 'hi' }]);
+  const sse = resp._assistantContentFromResponse(
+    Buffer.from('event: x\ndata: {"delta":{"text":"hi"}}\n\n'),
+    { 'content-type': 'text/event-stream' },
+  );
+  assert.deepEqual(sse, [{ type: 'text', text: 'hi' }]);
+});
+
+const _sseMsg = (text, usage) => 'event: message_start\n'
+  + `data: {"type":"message_start","message":{"usage":${JSON.stringify(usage)}}}\n\n`
+  + 'event: content_block_delta\n'
+  + `data: {"type":"content_block_delta","delta":{"text":${JSON.stringify(text)}}}\n\n`
+  + 'event: message_stop\ndata: {"type":"message_stop"}\n\n';
+
+test('_maybeRunTwoStepFollowup delivers TWO genuine responses back-to-back (no synthetic merge)', async () => {
+  const payload = { model: 'm', stream: true, messages: [{ role: 'user', content: "reply only with 'hi'" }] };
+  Object.defineProperty(payload, '__hme_followup', { value: "reply only with 'high'", enumerable: false, configurable: true, writable: true });
+  const secondBody = _sseMsg('high', { input_tokens: 1234, output_tokens: 5 });
+  const transport = _fakeTransport({ status: 200, headers: { 'content-type': 'text/event-stream' }, body: secondBody });
+  const firstBody = Buffer.from(_sseMsg('hi', { input_tokens: 1200, output_tokens: 2 }));
+  const out = await resp._maybeRunTwoStepFollowup({
+    status: 200,
+    headers: { 'content-type': 'text/event-stream', 'anthropic-ratelimit-input-tokens-remaining': '5000' },
+    fullBody: firstBody,
+    payload, transport, upstreamOpts: {}, upstreamHeaders: {},
+  });
+  assert.equal(out.status, 200);
+  const wire = out.fullBody.toString('utf8');
+  // TWO genuine message cycles on the wire -- real bytes, not a hand-built merge.
+  assert.equal((wire.match(/event: message_start/g) || []).length, 2);
+  assert.equal((wire.match(/event: message_stop/g) || []).length, 2);
+  assert.equal(wire.includes('"text":"hi"'), true);
+  assert.equal(wire.includes('"text":"high"'), true);
+  // Each response keeps its own real usage -> no synthetic zeroed usage.
+  assert.equal(wire.includes('"input_tokens":1234'), true);
+  // Normalized context headers from the first response preserved.
+  assert.equal(out.headers['anthropic-ratelimit-input-tokens-remaining'], '5000');
+  // transcript now: original user, assistant 'hi', followup user
+  assert.equal(payload.messages.length, 3);
+  assert.equal(payload.messages[1].content[0].text, 'hi');
+  assert.equal(payload.messages[2].content[0].text, "reply only with 'high'");
+  // flag consumed; second request body carried the followup, not the flag
+  assert.equal('__hme_followup' in payload, false);
+  assert.equal(transport.captured.body.includes("reply only with 'high'"), true);
+  assert.equal(transport.captured.body.includes('__hme_followup'), false);
+});
+
+test('_maybeRunTwoStepFollowup is a no-op without the flag or on non-2xx', async () => {
+  const noFlag = { messages: [{ role: 'user', content: 'hello' }] };
+  assert.equal(await resp._maybeRunTwoStepFollowup({ status: 200, headers: {}, fullBody: Buffer.from('{}'), payload: noFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
+  const withFlag = { messages: [{ role: 'user', content: '/compact' }] };
+  Object.defineProperty(withFlag, '__hme_followup', { value: 'continue', enumerable: false, configurable: true, writable: true });
+  assert.equal(await resp._maybeRunTwoStepFollowup({ status: 500, headers: {}, fullBody: Buffer.from('err'), payload: withFlag, transport: _fakeTransport({ status: 200, headers: {}, body: '{}' }), upstreamOpts: {}, upstreamHeaders: {} }), null);
+});
+
+// --- cc shortcut: input-layer /compact handling (never an API message). ---
+test('claude adapter detects cc and blocks the literal prompt without faking a wire /compact', () => {
+  const adapter = require('../../proxy/../event_kernel/claude_adapter');
+  // exact "cc" -> recognized
+  assert.ok(adapter._isCcShortcut(JSON.stringify({ prompt: 'cc' })));
+  assert.ok(adapter._isCcShortcut(JSON.stringify({ prompt: '  CC ' })));
+  // anything else -> not a cc shortcut
+  assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'ccc' })), null);
+  assert.equal(adapter._isCcShortcut(JSON.stringify({ prompt: 'continue' })), null);
+  // handler blocks the literal so `cc` never reaches the model, and suppresses
+  // the original prompt. Use an isolated _hme_project_root so the control-fifo
+  // write CANNOT reach the live session's fifo (which would compact this session).
+  const isoRoot = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'cc-test-'));
+  const out = adapter._handleCcShortcut({ stdout: '', stderr: ' ', exit_code: 0 }, JSON.stringify({ prompt: 'cc', _hme_project_root: isoRoot }));
+  const parsed = JSON.parse(out.stdout);
+  assert.equal(parsed.decision, 'block');
+  assert.equal(parsed.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+  assert.equal(parsed.hookSpecificOutput.suppressOriginalPrompt, true);
+  // non-cc prompt -> result returned untouched
+  const orig = { stdout: '', stderr: ' ', exit_code: 0 };
+  assert.equal(adapter._handleCcShortcut(orig, JSON.stringify({ prompt: 'hello world', _hme_project_root: isoRoot })), orig);
+  require('node:fs').rmSync(isoRoot, { recursive: true, force: true });
+});

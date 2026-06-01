@@ -1,0 +1,50 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
+const { PROJECT_ROOT } = require('../shared');
+
+function reportFailure(ctx, toolResult, message) {
+  const text = `[HME] post-write side effect failed: ${message}`;
+  if (ctx && typeof ctx.warn === 'function') ctx.warn(text);
+  if (ctx && typeof ctx.emit === 'function') ctx.emit({ event: 'post_write_side_effect_failed', message });
+  if (ctx && typeof ctx.appendToResult === 'function' && toolResult) ctx.appendToResult(toolResult, `\n${text}`);
+}
+
+function bg(cmd, args, ctx, toolResult, opts = {}) {
+  try {
+    const child = spawn(cmd, args, { cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT }, stdio: 'ignore', detached: true, ...opts });
+    child.on('error', (err) => reportFailure(ctx, toolResult, `${cmd} ${args.join(' ')}: ${err.message}`));
+    child.unref();
+    // silent-ok: post-write side-effect spawn failure is appended to tool result via reportFailure.
+  } catch (err) {
+    reportFailure(ctx, toolResult, `${cmd} ${args.join(' ')}: ${err.message}`);
+  }
+}
+function fp(input) { return (input && (input.file_path || input.path)) || ''; }
+function isWriteTool(name) { return ['Edit', 'Write', 'MultiEdit', 'NotebookEdit'].includes(name); }
+
+module.exports = {
+  name: 'post_write_side_effects',
+  onToolResult({ toolUse, toolResult, ctx }) {
+    const name = toolUse.name || '';
+    if (!isWriteTool(name)) return;
+    const input = toolUse.input || {};
+    const file = fp(input);
+    if (!file) return;
+    if (/\/README\.md$/.test(file)) bg('python3', ['tools/HME/scripts/pipeline/hme/build-dir-intent-index.py'], ctx, toolResult);
+    const content = String(input.new_string ?? input.content ?? '');
+    if (/\/Polychron\/src\/conductor\//.test(file) && /conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b/.test(content)) {
+      bg('node', ['src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js', '--snapshot-bias-bounds'], ctx, toolResult);
+      ctx.emit({ event: 'bias_bounds_snapshot_queued', file });
+    }
+    if (/\.(md|txt)$/.test(file) && !/\/tmp\//.test(file)) {
+      try {
+        const tab = path.join(PROJECT_ROOT, 'tmp/hme-note-tabs.txt');
+        fs.mkdirSync(path.dirname(tab), { recursive: true });
+        fs.appendFileSync(tab, `${file}\n`);
+      } catch (err) { reportFailure(ctx, toolResult, `note tab tracking: ${err.message}`); }
+    }
+  },
+};

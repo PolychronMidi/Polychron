@@ -1,0 +1,279 @@
+"""Shared server state -- engines, model, config, MCP app instance.
+
+Initialized by main.py at startup. Tool modules import from here.
+
+Self-coherence stack wired here:
+  Layer 0 -- system_phase: lifecycle state machine
+  Layer 2 -- operational_state: persistent operational memory
+  Layer 4 -- failure_genealogy: causal failure trees (replaces flat _critical_failures list)
+  Layer 6 -- self_narration: rich status narrative prepended to tool responses
+  Layer 10 -- resonance_detector: cascade detection (called from register_critical_failure)
+"""
+import os
+import time
+import uuid
+import logging
+import threading
+import functools
+from mcp.server.fastmcp import FastMCP
+from hme_env import ENV
+
+logger = logging.getLogger("HME")
+
+# Cross-component session identity (Layer 1)
+SESSION_ID: str = str(uuid.uuid4())[:12]
+
+
+# LIFESAVER: register_critical_failure -> failure_genealogy (Layer 4)
+
+def register_critical_failure(
+    source: str,
+    error: str,
+    severity: str = "CRITICAL",
+    caused_by: str | None = None,
+) -> str:
+    """Register a failure that MUST surface in the next tool response.
+
+    Returns the failure_id so callers can link downstream failures with caused_by.
+    Calls resonance_detector to detect cascade patterns (Layer 10).
+    Also appends to the HME todo list.
+    """
+    try:
+        from server import failure_genealogy as fg
+        fid, is_new = fg.record_failure(source, error, severity, caused_by)
+    except Exception as _fge:
+        fid, is_new = "?", True
+        logger.error(f"LIFESAVER failure_genealogy.record_failure failed -- failure may be lost: {_fge}")
+    # Only log the first occurrence of a dedup group. The count is tracked
+    if is_new:
+        logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
+    # Layer 10: notify resonance detector
+    try:
+        from server import resonance_detector as rd
+        rd.record_failure_event(source)
+    except Exception as _rde:
+        logger.warning(f"LIFESAVER resonance_detector.record_failure_event failed: {_rde}")
+    # Layer 2: update operational state on shim crash
+    if "shim" in source.lower() and severity == "CRITICAL":
+        try:
+            from server import operational_state as ops
+            ops.record_shim_crash()
+        except Exception as _opse:
+            logger.warning(f"LIFESAVER ops.record_shim_crash failed: {_opse}")
+    try:
+        from server.tools_analysis import register_todo_from_lifesaver
+        register_todo_from_lifesaver(source, error, severity)
+    except Exception as _te:
+        logger.error(f"LIFESAVER todo append failed (failure still queued): {_te}")
+
+    # CRITICAL bridge: write to hme-errors.log so the canonical Stop/PostToolUse
+    if is_new:
+        try:
+            project_root = ENV.optional("PROJECT_ROOT", "") or ENV.optional("CLAUDE_PROJECT_DIR", "")
+            err_log = os.path.join(project_root, "log", "hme-errors.log")
+            ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            line = f"[{ts}] [worker:{source}] [{severity}] {error}\n"
+            with open(err_log, "a", encoding="utf-8") as fh:
+                fh.write(line)
+        except Exception as _le:
+            # Don't suppress silently -- log to worker stderr at least so the
+            # bridge failure surfaces in the proxy log.
+            logger.error(f"LIFESAVER errors.log bridge write failed: {_le}")
+    return fid
+
+
+def drain_critical_failures() -> str:
+    """Drain all queued failures into a LIFESAVER banner string (causal tree format).
+
+    Returns empty string if no failures. Called by _LoggingMCP on every tool response.
+    Failures are grouped into causal trees (Layer 4) and deduplicated (*N counts).
+    """
+    try:
+        from server import failure_genealogy as fg
+        trees = fg.drain_as_causal_trees()
+        return fg.format_tree_as_banner(trees)
+    except Exception as e:
+        logger.error(f"LIFESAVER drain failed -- queued failures may be lost: {e}")
+        return f"\n[LIFESAVER DRAIN FAILED: {e} -- check hme.log for queued failures]\n"
+
+
+def is_degraded() -> bool:
+    """Return True if system phase is degraded or worse (Layer 0)."""
+    try:
+        from server import system_phase as sp
+        return sp.is_degraded_or_worse()
+    except Exception as e:
+        logger.warning(f"is_degraded: system_phase check failed: {e}")
+    return True
+
+
+class _LoggingMCP:
+    """Wraps FastMCP to add request/response logging and self-coherence banners on every tool call."""
+
+    def __init__(self, inner: FastMCP):
+        self._inner = inner
+
+    def tool(self, **kwargs):
+        """Decorator that wraps the tool function with logging."""
+        original_decorator = self._inner.tool(**kwargs)
+
+        def wrapper(fn):
+            @functools.wraps(fn)
+            def logged(*args, **kwargs):
+                name = fn.__name__
+                t0 = time.time()
+                try:
+                    result = fn(*args, **kwargs)
+                    elapsed = time.time() - t0
+                    if result is None:
+                        logger.error(f"ERR  {name} returned None -- tool must return a string")
+                        result = f"Error: {name} returned None (bug in tool implementation)"
+                    try:
+                        from server import operational_state as ops
+                        ops.record_tool_response(name, elapsed * 1000)
+                    except (ImportError, AttributeError) as _ema_err:
+                        logger.debug(f"operational_state EMA update unavailable: {_ema_err}")
+                    # Log immediately -- post-processing must not delay this timestamp
+                    logger.info(f"RESP {name} [{elapsed:.1f}s] {str(result)[:200]}")
+                    # Layer 4: LIFESAVER drain with causal tree format
+                    lifesaver_banner = drain_critical_failures()
+                    if lifesaver_banner:
+                        result = lifesaver_banner + str(result)
+                    try:
+                        from server import self_narration as sn
+                        narration = sn.build_status_narrative()
+                        if narration:
+                            result = narration + str(result)
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except context.py:152: {type(_err).__name__}: {_err}")
+                        # Fallback: bare degraded flag if narration fails
+                        if is_degraded():
+                            result = "[DEGRADED] RAG proxy unhealthy -- shim may be restarting.\n" + str(result)
+                    return result
+                except Exception as e:
+                    import traceback as _tb
+                    elapsed = time.time() - t0
+                    logger.error(f"ERR  {name} [{elapsed:.1f}s] {e}\n{_tb.format_exc()}")
+                    raise
+            return original_decorator(logged)
+        return wrapper
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+
+class _NullMCP:
+    """No-op stand-in for `mcp` in processes that import tool modules but
+    aren't MCP workers (the llamacpp_daemon imports `tools_analysis.todo`
+    to mirror LIFESAVER alerts into the todo store).
+
+    Every `@ctx.mcp.tool(...)` in a tool module evaluates at import time.
+    Before this stand-in, `mcp` was `None`, so daemon-side imports crashed
+    with `'NoneType' object has no attribute 'tool'` -- fatal for the
+    LIFESAVER->todo bridge (logged on every CRITICAL alert). A _NullMCP
+    lets the decorator resolve as a no-op while the plain Python function
+    (the bridge actually uses) stays callable.
+    """
+    def tool(self, *args, **kwargs):
+        def _decorator(fn):
+            return fn
+        return _decorator
+
+    def __getattr__(self, name):
+        raise AttributeError(
+            f"_NullMCP has no attribute {name!r} -- this process is not a full "
+            f"MCP worker. Only the @ctx.mcp.tool(...) decorator is stubbed."
+        )
+
+
+# Populated by main.py before tool modules load. Default is a no-op mcp so
+PROJECT_ROOT: str = ""
+PROJECT_DB: str = ""
+mcp = _NullMCP()
+project_engine = None  # RAGEngine
+global_engine = None   # RAGEngine
+shared_model = None    # SentenceTransformer
+lib_engines: dict = {}
+
+# Pre-edit brief cache -- callers and KB hits are expensive; cache them per file+mtime.
+_kb_version: int = 0
+# _caller_cache: (abs_path, mtime) -> list[caller dicts]
+
+# Background startup synchronization -- set by main.py after background load completes
+_startup_done: threading.Event | None = None
+_startup_error: Exception | None = None
+
+
+def bootstrap_project_root_from_env() -> str:
+    """Populate PROJECT_ROOT/PROJECT_DB for direct-script imports."""
+    global PROJECT_ROOT, PROJECT_DB
+    if PROJECT_ROOT:
+        return PROJECT_ROOT
+    root = ENV.optional("PROJECT_ROOT", "") or ENV.optional("CLAUDE_PROJECT_DIR", "")
+    if not root:
+        root = ENV.require("PROJECT_ROOT")
+    if root:
+        PROJECT_ROOT = root
+        PROJECT_DB = PROJECT_DB or os.path.join(root, "tools", "HME", "KB")
+    return PROJECT_ROOT
+
+
+def _fmt_startup_error(err: Exception) -> str:
+    """Format startup error with type, message, and traceback origin."""
+    import traceback
+    msg = str(err)
+    etype = type(err).__name__
+    tb_info = ""
+    if err.__traceback__:
+        tb_lines = traceback.format_tb(err.__traceback__)
+        if tb_lines:
+            tb_info = f" | origin: {tb_lines[-1].strip()}"
+    if not msg:
+        msg = "(empty exception message)"
+    return f"{etype}: {msg}{tb_info}"
+
+
+
+def startup_status_snapshot() -> dict[str, object]:
+    """Return HME startup state without blocking hook-visible callers."""
+    try:
+        failed = _startup_error is not None
+        loading = _startup_done is not None and not _startup_done.is_set()
+        engines_ready = (project_engine is not None
+                         and global_engine is not None
+                         and shared_model is not None)
+        ready = engines_ready and not failed and not loading
+        err = None
+        if _startup_error is not None:
+            err = _fmt_startup_error(_startup_error)
+        return {"ready": ready, "loading": loading, "failed": failed, "error": err}
+    except Exception as exc:
+        return {"ready": False, "loading": False, "failed": True, "error": str(exc)}
+
+def ensure_ready_sync(timeout: float = 5.0) -> None:
+    if os.environ.get("HME_ALLOW_LONG_READY_WAIT") != "1":
+        timeout = min(timeout, 5.0)
+    """Block until background model/engine initialization completes.
+
+    FastMCP runs sync tools via asyncio.to_thread(), so this blocking wait
+    is safe -- it never blocks the async event loop. Zero-cost after first call.
+    """
+    if _startup_done is None or _startup_done.is_set():
+        if _startup_error:
+            raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
+        if project_engine is None or global_engine is None or shared_model is None:
+            raise RuntimeError(
+                "HME startup completed but engines are not initialized "
+                f"(project_engine={project_engine!r}, global_engine={global_engine!r}, "
+                f"shared_model={shared_model!r})"
+            )
+        return
+    if not _startup_done.wait(timeout=timeout):
+        raise RuntimeError(f"HME: model loading timed out after {timeout}s")
+    if _startup_error:
+        raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
+    if project_engine is None or global_engine is None or shared_model is None:
+        raise RuntimeError(
+            "HME startup completed but engines are not initialized -- "
+            "check hme.log for background thread errors"
+        )

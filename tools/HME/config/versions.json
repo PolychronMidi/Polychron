@@ -1,0 +1,7 @@
+{
+  "_comment": "Single source of truth for HME component wire versions. All four components (cli, proxy, worker, daemon) read from here. Bump this file when the wire protocol between them changes. Runtime consistency is asserted by (1) selftest's version-consistency probe, (2) health summary banner, (3) `hme-cli --version`.",
+  "cli": "1.1.0",
+  "proxy": "1.1.0",
+  "worker": "1.1.0",
+  "daemon": "1.1.0"
+}

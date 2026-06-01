@@ -1,0 +1,46 @@
+{
+  "type": "commonjs",
+  "dependencies": {
+    "@tonaljs/rhythm-pattern": "^1.0.0",
+    "oh-my-openagent": "^4.2.3",
+    "omniroute": "^3.7.9",
+    "tonal": "^6.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "chokidar": "^5.0.0",
+    "cross-env": "^7.0.3",
+    "depcheck": "^1.4.7",
+    "eslint": "^9.0.0",
+    "madge": "^8.0.0",
+    "ts-morph": "^27.0.2",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "main": "node src/scripts/utils/run-with-log.js pipeline.log node src/scripts/pipeline/main-pipeline.js",
+    "render": "bash src/scripts/render.sh",
+    "render-lite": "bash src/scripts/render-lite.sh",
+    "lab": "node src/scripts/utils/run-with-log.js lab.log node src/lab/run.js",
+    "dashboard": "node src/scripts/live-dashboard.js",
+    "replay": "node src/scripts/trace-replay.js",
+    "snapshot": "node src/scripts/pipeline/compare-runs.js --snapshot",
+    "baseline": "node src/scripts/pipeline/compare-runs.js --snapshot baseline",
+    "compare": "node src/scripts/pipeline/compare-runs.js --against",
+    "diff": "node src/scripts/pipeline/diff-compositions.js --against",
+    "music21-data": "node src/scripts/utils/run-with-log.js music21.log python src/scripts/music21/run_music21_data.py",
+    "lint:raw": "eslint . --ext .js --fix",
+    "lint": "node src/scripts/utils/run-with-log.js lint.log npm run lint:raw",
+    "tc": "node src/scripts/utils/run-with-log.js tc.log tsc -p . --noEmit",
+    "test": "node src/tests/regimeReactiveDampingCore.test.js",
+    "test:hme": "node tools/HME/tests/run.js",
+    "audit": "npm audit",
+    "deps:check": "depcheck",
+    "deps:audit": "npm audit && depcheck",
+    "test:hme:core": "node --test tools/HME/tests/specs/project_adapter_portability.test.js",
+    "hme:project-health": "node tools/HME/scripts/project-health.js",
+    "hme:portable": "python3 tools/HME/scripts/hme-doctor.py --portable",
+    "hme:swap-contract": "node --test tools/HME/tests/specs/project_adapter_portability.test.js tools/HME/tests/specs/root_dir_contract.test.js tools/HME/tests/specs/routing_ready_contract.test.js tools/HME/tests/specs/state_panel_freshness_contract.test.js tools/HME/tests/specs/structured_tool_contract.test.js && python3 tools/HME/scripts/hme-doctor.py --portable && python3 tools/HME/scripts/audit-portability.py && node src/scripts/pipeline/validators/check-root-only-dirs.js && python3 tools/HME/scripts/audit-hme-metric-paths.py && python3 tools/HME/scripts/audit-runtime-metric-orphans.py --strict",
+    "hme:circular": "node tools/HME/tests/scripts/check-circular-deps.js",
+    "lint:proxy": "eslint --no-ignore 'tools/HME/proxy/**/*.js'"
+  }
+}

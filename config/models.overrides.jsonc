@@ -1,0 +1,55 @@
+// Per-model overrides applied AFTER catalog sync.
+//
+// Reasons to add an override here (each entry MUST cite one):
+//   1. Upstream catalog reports a default sentinel value that's wrong.
+//   2. A provider-specific catalog row better matches the route we use.
+//
+// Keep max_input_tokens, but cap it to context_length - max_output_tokens.
+//
+// Override keys recognized:
+//   context_length, max_input_tokens, max_output_tokens
+//
+// Match precedence (first hit wins):
+//   1. by_id[<model.id>]
+//   2. by_api_model[<model.api_model>]
+//
+// Sync script always applies catalog values first, then folds these in.
+{
+  "by_id": {
+    // OmniRoute's bundled codex catalog emits an 8K output fallback for some
+    // GPT-5.* rows. Preserve catalog context; correct the output cap.
+    "gpt-5.2":             { "max_output_tokens": 128000 },
+    "gpt-5.3-codex":       { "max_output_tokens": 128000 },
+    "gpt-5.3-codex-spark": { "max_output_tokens": 128000 },
+    "gpt-5.4":             { "max_output_tokens": 128000 },
+    "gpt-5.4-mini":        { "max_output_tokens": 128000 },
+    "gpt-5.4-nano":        { "max_output_tokens": 128000 },
+
+    // Route reality: GPT-5.5 practical context is 400K, not 1M.
+    "gpt-5.5-xhigh":       { "context_length": 400000, "max_input_tokens": 272000 },
+    "gpt-5.5-high":        { "context_length": 400000, "max_input_tokens": 272000 },
+    "gpt-5.5-medium":      { "context_length": 400000, "max_input_tokens": 272000 },
+    "gpt-5.5-low":         { "context_length": 400000, "max_input_tokens": 272000 },
+
+    // Anthropic Opus advertises 1M, but plan on context minus output.
+    "claude-opus-4-7-max-e5":    { "context_length": 1000000 },
+    "claude-opus-4-7-xhigh-e4":  { "context_length": 1000000 },
+    "claude-opus-4-7-high-e4":   { "context_length": 1000000 },
+    "claude-opus-4-7-medium-e3": { "context_length": 1000000 },
+    "claude-opus-4-7-low-e3":    { "context_length": 1000000 },
+
+    // Replace aggregator sentinel 1M rows with route-credible catalog caps.
+    "gpt-4o-mini":               { "context_length": 128000, "max_output_tokens": 16384 },
+    "llama-4-maverick":          { "context_length": 131072 },
+    "gemini-3-flash":            { "context_length": 131072, "max_output_tokens": 32768 },
+    "nemotron-3-super":          { "context_length": 262144, "max_output_tokens": 32768 },
+    "big-pickle":                { "context_length": 200000, "max_output_tokens": 128000 },
+    "ring-2.6-1t":               { "context_length": 262000, "max_output_tokens": 66000 },
+    "gemini-2.5-pro":            { "context_length": 1048576, "max_output_tokens": 65536 },
+    "gemini-2.5-flash":          { "context_length": 1048576, "max_output_tokens": 65536 },
+    "gemini-2.0-flash":          { "context_length": 1048576, "max_output_tokens": 65536 },
+    "gemini-2.5-flash-lite":     { "context_length": 1048576, "max_output_tokens": 65536 }
+  },
+  "by_api_model": {
+  }
+}
