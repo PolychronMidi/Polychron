@@ -66,11 +66,16 @@ import importlib.util
 spec = importlib.util.spec_from_file_location('hme_claude_bridge', ${JSON.stringify(SCRIPT)})
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
-token, prompt = mod.decode_control_line(b'c&\\tY29udGludWU=\\n')
+token, prompt, interrupt = mod.decode_control_line(b'c&\tY29udGludWU=\n')
 assert token == 'c&', token
 assert prompt == 'continue', prompt
+assert interrupt is False, interrupt
 assert mod.resolve_steps({'c&': ['/compact', '$prompt']}, token, prompt) == ['/compact', 'continue']
 assert mod.resolve_steps({'c&': ['/compact', '$prompt']}, 'c&', '') == ['/compact', '']
+itoken, iprompt, iinterrupt = mod.decode_control_line(b'cc!\n')
+assert (itoken, iprompt, iinterrupt) == ('cc', '', True), (itoken, iprompt, iinterrupt)
+legacy_token, legacy_prompt = mod.decode_control_line_legacy(b'c&\tY29udGludWU=\n')
+assert (legacy_token, legacy_prompt) == ('c&', 'continue')
 print('ok')
 `);
   assert.equal(out.trim(), 'ok');
