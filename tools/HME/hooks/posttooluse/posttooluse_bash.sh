@@ -13,7 +13,7 @@ if echo "$CMD" | grep -q 'doc/templates/TODO\.md'; then
   _TODO_INPUT=$(
     printf '%s' "$INPUT" \
       | jq -c '.tool_input.file_path = "doc/templates/TODO.md"' 2>/dev/null \
-      || printf '%s' "$INPUT"
+      || printf '%s' "$INPUT"  # silent-ok: malformed hook JSON falls back unchanged.
   )
   if ! _todo_guard_check "$_TODO_INPUT"; then
     _hme_check_errors_inline || true
