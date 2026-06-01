@@ -1,2 +1,0 @@
-{"role":"user","content":[{"type":"text","text":"just rename foo to bar, nothing else"}]}
-{"role":"assistant","content":[{"type":"text","text":"Here's what's left in the file."}]}
