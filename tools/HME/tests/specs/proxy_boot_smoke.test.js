@@ -6,6 +6,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const http = require('node:http');
 const net = require('node:net');
 const path = require('node:path');
