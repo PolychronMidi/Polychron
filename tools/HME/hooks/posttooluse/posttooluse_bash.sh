@@ -10,7 +10,12 @@ source "$SCRIPT_DIR/../helpers/_todo_guard.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 if echo "$CMD" | grep -q 'doc/templates/TODO\.md'; then
-  if ! _todo_guard_check "$(printf '%s' "$INPUT" | _safe_jq '.tool_input.file_path="doc/templates/TODO.md"' '{}')"; then
+  _TODO_INPUT=$(
+    printf '%s' "$INPUT" \
+      | jq -c '.tool_input.file_path = "doc/templates/TODO.md"' 2>/dev/null \
+      || printf '%s' "$INPUT"
+  )
+  if ! _todo_guard_check "$_TODO_INPUT"; then
     _hme_check_errors_inline || true
     exit 2
   fi
