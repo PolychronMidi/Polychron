@@ -217,7 +217,7 @@ test('context token usage parser extracts Anthropic JSON and SSE usage', () => {
 });
 
 test('OmniRoute context-window SSE stays an error event, not assistant text', () => {
-  const body = Buffer.from('event: error\ndata: {"type":"error","error":{"type":"invalid_request_error","message":"input exceeds the context window"}}\n\n');
+  const body = Buffer.from('event: error\ndata: {"type":"error","error":{"type":"invalid_request_error","message":"Your input exceeds the context window of this model. Please adjust your input and try again."}}\n\n');
   const { outHeaders, outBuf } = normalizeOmniContextWindowSse({
     isOmniRouteSwap: true,
     status: 200,
