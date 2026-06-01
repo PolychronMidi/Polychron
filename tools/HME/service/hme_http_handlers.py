@@ -150,7 +150,7 @@ def _reindex_files(files: list[str]) -> dict:
             except concurrent.futures.TimeoutError:
                 _log_error("reindex", f"timeout indexing {filepath} ({per_file_timeout:.0f}s)")
                 skipped.append(filepath)
-            # silent-ok: failure is returned/logged in tool output; service stays available.
+            # silent-ok: tool output returns/logs failure; service stays available.
             except Exception as e:
                 # not silent: _log_error records failure and skips this file
                 _log_error("reindex", f"index_file failed for {filepath}: {e}")

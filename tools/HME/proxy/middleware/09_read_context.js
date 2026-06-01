@@ -60,7 +60,7 @@ function _findCallers(projectRoot, filePath) {
   try {
     out = execFileSync('grep', args, { cwd: projectRoot, encoding: 'utf8', timeout: 3000, maxBuffer: 128 * 1024 });
   } catch (_e) {
-    // silent-ok: grep exit 1 means no callers; other grep failures disable caller enrichment for this file only.
+    // silent-ok: grep failure only disables caller enrichment for this file.
     // grep exits 1 on no matches; any error -> treat as no callers (silent)
     _callerCache.set(filePath, []);
     return [];

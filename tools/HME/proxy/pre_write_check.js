@@ -328,7 +328,7 @@ async function preWriteCheck(stdinJson) {
       return { ...shellDecision, updatedInput: ctx.toolInput, contextualRules: (shellDecision.contextualRules || []).concat(_rewriteMessages) };
     }
     return shellDecision;
-  // silent-ok: policy/state-client outage degrades to allow with visible contextual warning after hard-deny checks already ran.
+  // silent-ok: policy/state outage allows with warning after hard denies.
   } catch (err) {
     // Hook reliability must fail open: policy framework/state telemetry outages
     // should not break basic editing. Hard-deny checks above already ran.

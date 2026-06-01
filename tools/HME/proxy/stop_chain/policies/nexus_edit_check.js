@@ -40,7 +40,7 @@ function pruneCleanEdits() {
           // exit 0 -> no diff against HEAD -> drop the entry.
           continue;
         } catch (_e) {
-          // silent-ok: git diff nonzero means file differs from HEAD, so pending nexus entry is kept.
+          // silent-ok: git diff nonzero means changed; nexus entry stays.
           // exit !=0 -> diff present, keep the entry. Fall through.
         }
       }

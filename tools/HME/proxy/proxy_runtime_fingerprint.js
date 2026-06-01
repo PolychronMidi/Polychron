@@ -50,7 +50,7 @@ function computeRuntimeFingerprint(projectRoot) {
     hash.update('\0');
     try {
       hash.update(fs.readFileSync(abs));
-    // silent-ok: fingerprinting records unreadable dependency as literal "missing", causing hash drift rather than false freshness.
+    // silent-ok: unreadable dependency hashes as "missing"; hash drifts.
     } catch (_e) {
       hash.update('missing');
     }

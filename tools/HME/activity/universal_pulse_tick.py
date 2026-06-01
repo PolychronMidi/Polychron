@@ -100,7 +100,7 @@ def _tick(cfg, tracker):
         from todo_engine import store as _todo_store
         _todo_store.load()            # applies + persists due timer flips
         _todo_store.maybe_archive()   # archives a resolved set if any
-        # silent-ok: todo-engine tick failure is written to hme-errors; pulse probes continue independently.
+        # silent-ok: todo tick errors go to hme-errors; other probes continue.
     except Exception as err:
         _log_error(f"[universal_pulse] WARN todo-engine tick failed: "
                    f"{type(err).__name__}: {str(err)[:120]}")

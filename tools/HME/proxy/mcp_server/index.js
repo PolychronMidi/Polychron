@@ -102,7 +102,7 @@ async function _handleRpc(sessionId, msg) {
       try {
         result = await dispatcher.callTool(name, args || {}, timeoutMs);
       } catch (err) {
-        // silent-ok: dispatcher call failure is converted to JSON-RPC error or worker kill path below.
+        // silent-ok: dispatcher failure becomes JSON-RPC error/worker kill.
         const elapsed = Date.now() - t0;
         if (/timeout/i.test(err.message) && elapsed >= timeoutMs - 500) {
           // Hang detected: worker didn't respond within the declared window.

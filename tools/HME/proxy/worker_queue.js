@@ -90,7 +90,7 @@ async function waitForResult(jobId, timeoutMs = 10_000, pollMs = 50, resultsDir 
         try { fs.unlinkSync(resultFile); } catch (_e) { /* best-effort cleanup */ }
         return data;
       } catch (_e) {
-        // silent-ok: result file may be partially written between exists/read; polling loop retries.
+        // silent-ok: partial result-file read races poll loop; it retries.
         // Partial write between exists() and read; loop and retry.
       }
     }

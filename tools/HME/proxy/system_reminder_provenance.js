@@ -89,7 +89,7 @@ function recordEmittedReminder(root, text, source) {
     fs.mkdirSync(path.dirname(logPath), { recursive: true });
     fs.appendFileSync(logPath, JSON.stringify({ core, source: source || 'proxy' }) + '\n');
     return true;
-    // silent-ok: provenance ledger is dedupe telemetry; reminder emission already occurred.
+    // silent-ok: provenance ledger is dedupe-only; reminder already emitted.
   } catch (_e) {
     return false;
   }

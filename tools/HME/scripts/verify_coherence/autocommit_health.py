@@ -122,7 +122,7 @@ class AutocommitHealthVerifier(Verifier):
                 timeout=5,
             )
             worktree_dirty = dirty.returncode != 0 or bool(dirty.stdout.strip())
-            # silent-ok: git status probe failure is treated as dirty so stale-heartbeat detection remains fail-closed.
+            # silent-ok: git status failure counts dirty; heartbeat stays fail-closed.
         except Exception:
             worktree_dirty = True
         if worktree_dirty:

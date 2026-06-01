@@ -39,7 +39,7 @@ async function call(action, sessionId = '', payload = {}) {
     if (action === 'record-read') return await _http('POST', `/hme/session/${sid}/read`, payload);
     return await _http('POST', `/hme/session/${sid}/${action}`, payload);
   } catch (_e) {
-    // silent-ok: sidecar session-state RPC outage falls back to in-process session_state implementation.
+    // silent-ok: sidecar RPC outage falls back to in-process session_state.
     if (action === 'read') return sessionState.readState(sessionId);
     if (action === 'record-read') return sessionState.recordRead(payload.payload || {}, { ...payload.meta, session_id: sessionId });
     if (action === 'phase') return sessionState.recordPhase(payload.phase, { ...payload.meta, session_id: sessionId });

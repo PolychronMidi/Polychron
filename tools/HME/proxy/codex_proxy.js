@@ -89,7 +89,7 @@ function loadConfig() {
   if (_config) return _config;
   try {
     _config = loadJsonc(CONFIG_PATH);
-  // silent-ok: config load failure is stored in _load_error and disables request_transform instead of hiding proxy startup failure.
+  // silent-ok: config load error sets _load_error and disables transforms.
   } catch (err) {
     _config = { request_transform: {}, _load_error: err.message };
   }
@@ -210,7 +210,7 @@ async function handleResponses(req, res) {
   let body;
   try {
     body = JSON.parse(rawBody.toString('utf8') || '{}');
-  // silent-ok: invalid client JSON is surfaced as HTTP 400 codex_proxy_invalid_json with parser message.
+  // silent-ok: bad client JSON returns HTTP 400 codex_proxy_invalid_json.
   } catch (err) {
     res.writeHead(400, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'codex_proxy_invalid_json', message: err.message }));

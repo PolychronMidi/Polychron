@@ -40,7 +40,7 @@ function loadBiasManifest() {
       }
     }
   } catch (_err) {
-    // silent-ok: absent/malformed bias manifest only disables bias overlays; zone matching still applies.
+    // silent-ok: bad bias manifest only disables overlays; zones still match.
     // manifest absent or malformed -- zone-match only
   }
   _biasLoadedAt = now;

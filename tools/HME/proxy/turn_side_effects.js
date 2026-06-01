@@ -14,7 +14,7 @@ function runAutocommit({ host, projectRoot, record = () => {}, disabled = false 
   try {
     proxyAutocommit.onRequest({ payload: { messages: [{ role: 'user', content: '' }] }, ctx: { PROJECT_ROOT: projectRoot } });
     return 'ran';
-    // silent-ok: autocommit crash is recorded through supplied record callback as autocommit-crash.
+    // silent-ok: autocommit crash records via callback as autocommit-crash.
   } catch (err) {
     record({ kind: 'autocommit-crash', host, message: err.message, stack: err.stack });
     return 'crashed';

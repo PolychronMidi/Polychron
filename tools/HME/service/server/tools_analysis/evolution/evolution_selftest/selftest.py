@@ -389,7 +389,7 @@ def hme_selftest(verbose: bool = False) -> str:
             try:
                 with open(_reload_marker, encoding="utf-8") as _rf:
                     _resolved_after = float(json.load(_rf).get("ts", 0) or 0)
-            # silent-ok: failure is returned/logged in tool output; service stays available.
+            # silent-ok: tool output returns/logs failure; service stays available.
             except Exception:
                 _resolved_after = 0.0
             _stale_err_count = 0

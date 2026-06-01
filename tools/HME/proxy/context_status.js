@@ -54,7 +54,7 @@ function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
     const lines = content.split('\n').filter((l) => l.length > 0);
     return lines.slice(-maxLines);
   } catch (_err) {
-    // silent-ok: missing/unreadable status tail contributes no recent lines; other context status still renders.
+    // silent-ok: bad status tail adds no lines; other status still renders.
     return [];
   }
 }
@@ -121,7 +121,7 @@ function coherenceStatusLine() {
     else state = 'IN_BAND';
     return `coherence=${score.toFixed(3)} band=[${band[0]}, ${band[1]}] state=${state}`;
   } catch (_err) {
-    // silent-ok: unreadable coherence telemetry suppresses only optional coherence status line.
+    // silent-ok: bad coherence telemetry hides only optional status line.
     return null;
   }
 }

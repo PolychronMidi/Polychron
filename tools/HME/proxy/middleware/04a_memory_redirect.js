@@ -81,7 +81,7 @@ function _kbSearch(query) {
           }
           resolve(lines.join('\n'));
         } catch (err) {
-          // silent-ok: KB parse failure is inserted into prompt context as explicit "(KB parse error: ...)" text.
+          // silent-ok: KB parse failure is inserted as explicit context text.
           resolve(`(KB parse error: ${err.message})`);
         }
       });

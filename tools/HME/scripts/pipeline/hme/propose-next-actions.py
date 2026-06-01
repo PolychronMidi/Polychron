@@ -38,7 +38,7 @@ def _load(p):
     try:
         with open(os.path.join(PROJECT_ROOT, p), encoding="utf-8") as f:
             return json.load(f)
-        # silent-ok: malformed optional metrics input is skipped; recommendation summary still reports available signals.
+        # silent-ok: bad metrics row skipped; summary uses available signals.
     except Exception:
         return None
 
@@ -173,7 +173,7 @@ def main() -> int:
                 ["git", "log", "-10", "--pretty=%s%n%b"],
                 cwd=PROJECT_ROOT, timeout=5, text=True,
             )
-        # silent-ok: malformed optional telemetry row is skipped; audit result remains explicit.
+        # silent-ok: bad optional telemetry row skipped; result stays explicit.
         except Exception:
             log = ""
         for a in actions:

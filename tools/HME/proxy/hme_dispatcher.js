@@ -291,7 +291,7 @@ function parseJsonResponse(text) {
     const contentBlocks = Array.isArray(d.content) ? d.content : [];
     return { contentBlocks, usage: d.usage, stopReason: d.stop_reason };
   } catch (_e) {
-    // silent-ok: malformed JSON response yields empty parsed content while raw response path remains separate.
+    // silent-ok: bad JSON response yields empty parse; raw path is separate.
     return { contentBlocks: [], usage: null, stopReason: null };
   }
 }

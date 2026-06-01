@@ -275,7 +275,7 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
         if arbiter_ctx and _warm_ctx_fresh_p(_ARBITER_MODEL):
             payload["context"] = arbiter_ctx
-        # silent-ok: warm-context lookup failure is debug-logged; symbol extraction continues without cached context.
+        # silent-ok: warm-context failure debug-logs; cached context is skipped.
     except Exception as _wmerr:
         # not silent: debug log records warm-ctx failure; payload omits context
         logging.getLogger("HME").debug(

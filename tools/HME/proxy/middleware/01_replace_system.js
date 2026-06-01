@@ -48,7 +48,7 @@ function _loadCanonical() {
   let stat;
   try {
     stat = fs.statSync(CANONICAL_PATH);
-    // silent-ok: canonical prompt ENOENT disables optional replacement; unreadable file throws fail-fast below.
+    // silent-ok: missing prompt skips replacement; unreadable throws below.
   } catch (err) {
     if (err && err.code === 'ENOENT') {
       _cachedMtime = 0;

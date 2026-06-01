@@ -64,7 +64,7 @@ def _repair_stale_pipeline_lock() -> dict:
             cwd=PROJECT_ROOT, text=True, timeout=3, stderr=subprocess.DEVNULL,
         )
         return json.loads(raw)
-        # silent-ok: git HEAD lookup is status-panel decoration only; reload age remains visible without stale suffix.
+        # silent-ok: git HEAD lookup is decoration; reload age stays visible.
     except Exception:
         return {}
 
@@ -292,7 +292,7 @@ def main(argv):
                     ["git", "-C", PROJECT_ROOT, "rev-parse", "HEAD"],
                     text=True, stderr=subprocess.DEVNULL, timeout=2,
                 ).strip()[:8]
-            # silent-ok: malformed optional telemetry row is skipped; audit result remains explicit.
+            # silent-ok: bad optional telemetry row skipped; result stays explicit.
             except Exception:
                 current = ""
             stale = " stale" if loaded and current and loaded != current else ""

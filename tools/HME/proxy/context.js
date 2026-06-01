@@ -28,7 +28,7 @@ function loadCoherenceBudget() {
       else _budgetState = 'in_band';
     }
   } catch (_err) {
-    // silent-ok: unreadable coherence score falls back to neutral in_band injection state.
+    // silent-ok: unreadable HCI score falls back to neutral injection state.
     _budgetState = 'in_band';
   }
   _budgetLoadedAt = now;

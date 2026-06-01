@@ -69,7 +69,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
             try:
                 from tools_index import get_index_status as _get_index_status
                 parts.append(_get_index_status())
-            # silent-ok: failure is returned/logged in tool output; service stays available.
+            # silent-ok: tool output returns/logs failure; service stays available.
             except Exception as status_error:
                 parts.append(f"index counts unavailable: {type(status_error).__name__}: {status_error}")
         except Exception as e:

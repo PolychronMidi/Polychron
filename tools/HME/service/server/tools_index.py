@@ -156,7 +156,7 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
     for lib_name, future in futures.items():
         try:
             r = future.result()
-            # silent-ok: per-library indexing exception is surfaced in result lines; main index result is preserved.
+            # silent-ok: per-library index error is listed; main result persists.
         except Exception as e:
             # not silent: per-library probe error is surfaced in the output lines
             lines.append(f"[{lib_name}] Error: {type(e).__name__}: {e}")

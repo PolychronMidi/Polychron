@@ -112,7 +112,7 @@ function handleConnectionError({
   else log('sub-pipeline conn-error -- NOT tripping escape hatch');
   try {
     writeConnectionSnapshot({ errCode, label, errMsg, outBody, projectRoot });
-    // silent-ok: connection snapshot write failure is logged; client already receives upstream 502.
+    // silent-ok: snapshot write failure logs; client already gets upstream 502.
   } catch (snapErr) {
     log(`conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
   }

@@ -27,7 +27,7 @@ def test_langchain_descriptors_are_dependency_free_and_bare_named():
 def test_create_langchain_tools_fails_loud_when_optional_dependency_missing():
     try:
         import langchain_core  # noqa: F401
-        # silent-ok: optional langchain import probe; fallback test path uses local shim behavior.
+        # silent-ok: optional langchain import probe; fallback uses local shim.
     except Exception:
         try:
             create_langchain_tools()

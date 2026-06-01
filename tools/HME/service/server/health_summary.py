@@ -79,7 +79,7 @@ def _http_get(url: str, timeout: float = 2.0) -> str | None:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
             return resp.read().decode(errors="replace")[:200]
-        # silent-ok: route-health import/probe failure is rendered as unavailable in health output.
+        # silent-ok: route-health failure renders unavailable in health output.
     except Exception as e:
         return f"unreachable ({type(e).__name__})"
 

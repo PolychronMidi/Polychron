@@ -229,7 +229,7 @@ def _set_arbiter_busy(busy: bool) -> None:
             headers={"Content-Type": "application/json"},
         )
         _ur.urlopen(req, timeout=0.3).read()
-        # silent-ok: arbiter-busy daemon signal failure is debug-logged; generation falls back to pre-migration GPU-only routing.
+        # silent-ok: daemon busy-signal failure debug-logs; GPU-only route used.
     except Exception as _e:
         # not silent: debug log records ping failure; routing falls back GPU-only.
         # Daemon unreachable is expected during boot / upgrades.

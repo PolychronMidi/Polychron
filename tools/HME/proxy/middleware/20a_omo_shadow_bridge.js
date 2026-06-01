@@ -76,7 +76,7 @@ module.exports = {
           ? ctx.omoUniversalDecision
           : pluginResultsToUniversalDecision(results),
       });
-    // silent-ok: shadow bridge is telemetry-only; bridge errors emit omo_bridge_error and never alter the primary request decision.
+    // silent-ok: shadow bridge is telemetry-only; errors emit omo_bridge_error.
     } catch (err) {
       if (telemetry) telemetry({ event: 'omo_bridge_error', bridge: 'shadow_middleware', error: err.message });
     }

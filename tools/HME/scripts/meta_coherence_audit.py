@@ -176,7 +176,7 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
             ["node", str(validator)], capture_output=True, text=True,
             timeout=30, cwd=str(root), env={**os.environ, "PROJECT_ROOT": str(root)},  # env-ok: subprocess project-root override
         )
-        # silent-ok: reload-registry import failure is converted into an ERROR finding in audit output.
+        # silent-ok: reload-registry import failure becomes ERROR finding.
     except Exception as e:
         return [{"source": "check-tuning-invariants.js", "status": "ERROR",
                  "detail": f"invoke failed: {type(e).__name__}: {e}"}]
@@ -288,7 +288,7 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
                     "status": "MISSING",
                     "detail": f"{name} has no candidate file in reload_registry",
                 })
-    # silent-ok: malformed optional telemetry row is skipped; audit result remains explicit.
+    # silent-ok: bad optional telemetry row skipped; result stays explicit.
     except Exception as e:
         findings.append({
             "source": "evolution_selftest RELOADABLE",

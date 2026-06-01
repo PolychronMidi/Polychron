@@ -17,7 +17,7 @@ function bg(cmd, args, ctx, toolResult, opts = {}) {
     const child = spawn(cmd, args, { cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT }, stdio: 'ignore', detached: true, ...opts });
     child.on('error', (err) => reportFailure(ctx, toolResult, `${cmd} ${args.join(' ')}: ${err.message}`));
     child.unref();
-    // silent-ok: post-write side-effect spawn failure is appended to tool result via reportFailure.
+    // silent-ok: spawn failure is appended to tool result via reportFailure.
   } catch (err) {
     reportFailure(ctx, toolResult, `${cmd} ${args.join(' ')}: ${err.message}`);
   }

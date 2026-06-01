@@ -109,7 +109,7 @@ class BehavioralDetector:
         try:
             ctx = self._build_ctx(payload.get("transcript_path") or "", payload)
             fired = bool(self.predicate(ctx))
-        # silent-ok: malformed optional telemetry row is skipped; audit result remains explicit.
+        # silent-ok: bad optional telemetry row skipped; result stays explicit.
         except Exception:
             fired = False
         if fired:

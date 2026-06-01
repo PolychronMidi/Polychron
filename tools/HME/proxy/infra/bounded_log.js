@@ -16,7 +16,7 @@ function rotateIfNeeded(file, limit = maxBytes()) {
     if (stat.size <= limit) return;
     try { fs.rmSync(`${file}.1`, { force: true }); } catch (_err) { /* best-effort */ }
     fs.renameSync(file, `${file}.1`);
-    // silent-ok: log rotation is observability-only; append path still attempts current log write.
+    // silent-ok: rotation is observability-only; append still writes current log.
   } catch (_err) {
     // Missing/unreadable logs are best-effort observability only.
   }

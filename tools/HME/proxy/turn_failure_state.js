@@ -26,7 +26,7 @@ function readFailure(root = PROJECT_ROOT) {
     const age = Date.now() - Date.parse(data.ts || '');
     if (!Number.isFinite(age) || age > TTL_MS) { clearFailure(root); return null; }
     return data;
-  // silent-ok: ENOENT means no prior tool-failure state; unreadable/corrupt state returns explicit denial reason object below.
+  // silent-ok: ENOENT means no state; bad state returns denial reason.
   } catch (err) {
     if (err && err.code === 'ENOENT') return null;
     return {

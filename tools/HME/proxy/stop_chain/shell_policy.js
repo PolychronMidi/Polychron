@@ -56,7 +56,7 @@ function defaultParseDecision(stdout, ctx) {
       return ctx.deny(parsed.reason || `(stage emitted block with no reason)`);
     }
   } catch (_e) {
-    // silent-ok: malformed stage JSON falls through to regex extraction of block-shaped decision.
+    // silent-ok: bad stage JSON falls through to regex decision extraction.
     // The stage emitted block-shaped JSON we couldn't parse cleanly. Try
     // greedy-extract the first JSON object that contains "decision":"block".
     const m = stdout.match(/\{[^{}]*"decision"\s*:\s*"block"[^{}]*\}/);

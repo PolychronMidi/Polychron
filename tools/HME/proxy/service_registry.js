@@ -11,7 +11,7 @@ const REGISTRY_PATH = (() => {
     require('fs').accessSync(candidate);
     return candidate;
   } catch (_) {
-    // silent-ok: project-local services.json absent falls back to repository-root services.json.
+    // silent-ok: missing project services.json falls back to repo-root one.
     return path.join(FALLBACK_ROOT, 'tools', 'HME', 'config', 'services.json');
   }
 })();
