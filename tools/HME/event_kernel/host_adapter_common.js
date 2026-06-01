@@ -52,6 +52,7 @@ function maintenanceActive(root) {
     const ttl = Number(ttlRaw);
     const start = Date.parse(started);
     return Number.isFinite(ttl) && Number.isFinite(start) && Date.now() - start < ttl * 1000;
+    // silent-ok: malformed maintenance flag means maintenance inactive; normal hook dispatch remains enabled.
   } catch (err) {
     return false;
   }

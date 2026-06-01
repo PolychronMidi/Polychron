@@ -200,6 +200,7 @@ function denyReason(stdout) {
       || parsed.message
       || (parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecisionReason)
       || '';
+    // silent-ok: deny-reason extraction is advisory; raw hook stdout/stderr still drives normalization.
   } catch (err) {
     return '';
   }
@@ -280,6 +281,7 @@ function normalizeClaudeHookJsonStdout(rawStdout) {
   if (!doc) return '{}';
   try {
     return `${JSON.stringify(JSON.parse(doc))}\n`;
+    // silent-ok: malformed extracted JSON normalizes to empty stdout; hook stderr/exit status remain preserved by caller.
   } catch (_) {
     return '{}';
   }

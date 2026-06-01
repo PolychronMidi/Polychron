@@ -63,6 +63,7 @@ def load_trust_series(path: Path, max_rows: int = 5000) -> dict[str, list[float]
                 continue
             try:
                 d = json.loads(line)
+                # silent-ok: malformed trace JSONL row is skipped; correlation candidates require parseable rows.
             except Exception:
                 continue
             trust = d.get("trust") or {}

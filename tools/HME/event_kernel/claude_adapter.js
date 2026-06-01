@@ -247,6 +247,7 @@ function _writeCcToken(root, key, prompt = '') {
   let fd;
   try {
     fd = fs.openSync(fifo, fs.constants.O_WRONLY | fs.constants.O_NONBLOCK);
+    // silent-ok: nonblocking cc FIFO open may fail when no PTY bridge is attached; caller receives false and hook does not hang.
   } catch (_e) {
     return false;
   }

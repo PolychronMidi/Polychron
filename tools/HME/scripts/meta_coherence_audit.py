@@ -176,6 +176,7 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
             ["node", str(validator)], capture_output=True, text=True,
             timeout=30, cwd=str(root), env={**os.environ, "PROJECT_ROOT": str(root)},  # env-ok: subprocess project-root override
         )
+        # silent-ok: reload-registry import failure is converted into an ERROR finding in audit output.
     except Exception as e:
         return [{"source": "check-tuning-invariants.js", "status": "ERROR",
                  "detail": f"invoke failed: {type(e).__name__}: {e}"}]

@@ -23,6 +23,7 @@ function parseMaybeJson(value) {
   try {
     const parsed = JSON.parse(value);
     return parsed === null ? {} : parsed;
+    // silent-ok: adapter accepts non-JSON host payloads as raw values for compatibility.
   } catch (_) {
     return { raw: value };
   }

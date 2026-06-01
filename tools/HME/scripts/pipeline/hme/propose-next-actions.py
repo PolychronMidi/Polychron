@@ -38,6 +38,7 @@ def _load(p):
     try:
         with open(os.path.join(PROJECT_ROOT, p), encoding="utf-8") as f:
             return json.load(f)
+        # silent-ok: malformed optional metrics input is skipped; recommendation summary still reports available signals.
     except Exception:
         return None
 

@@ -77,6 +77,7 @@ def main() -> None:
                 continue
             try:
                 d = json.loads(line)
+                # silent-ok: malformed trace JSONL row is skipped; registry comparison only uses parseable trust rows.
             except Exception:
                 continue
             trust = d.get("trust") or {}

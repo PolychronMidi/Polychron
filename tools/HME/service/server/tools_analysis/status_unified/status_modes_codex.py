@@ -79,6 +79,7 @@ def _service_port(service_id: str, default: int) -> int:
                 continue
             env_port = os.environ.get(str(spec.get("env_port") or ""))  # env-ok: optional service port override
             return int(env_port or spec.get("default_port") or default)
+        # silent-ok: services.json port lookup is status-display only; default port keeps Codex status inspectable.
     except Exception as _exc:
         return default
     return default

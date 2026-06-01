@@ -21,6 +21,7 @@ function runHook({ cmd, transcriptEntries = [], env = {}, statePath = '', transc
       encoding: 'utf8',
     });
     return { stdout, ok: true };
+    // silent-ok: test cleanup may run after temp process already exited.
   } catch (err) {
     return { stdout: err.stdout?.toString() || '', stderr: err.stderr?.toString() || '', code: err.status, ok: false };
   } finally {

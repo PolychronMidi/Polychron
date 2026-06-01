@@ -59,6 +59,7 @@ function workingTreeDirty() {
       timeout: 5000,
     });
     return result.status !== 0 || Boolean(String(result.stdout || '').trim());
+    // silent-ok: git status exception treats tree as dirty, preserving stop gate safety.
   } catch (_e) {
     return true;
   }

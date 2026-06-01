@@ -64,6 +64,7 @@ def _repair_stale_pipeline_lock() -> dict:
             cwd=PROJECT_ROOT, text=True, timeout=3, stderr=subprocess.DEVNULL,
         )
         return json.loads(raw)
+        # silent-ok: git HEAD lookup is status-panel decoration only; reload age remains visible without stale suffix.
     except Exception:
         return {}
 

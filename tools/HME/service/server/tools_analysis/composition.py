@@ -35,6 +35,7 @@ def composition_arc() -> str:
 
     try:
         records = _load_trace(trace_path)
+        # silent-ok: trace read failure is returned to caller as composition error text.
     except Exception as e:
         return f"Error reading trace: {e}"
 

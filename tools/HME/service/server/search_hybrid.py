@@ -76,6 +76,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                     continue
                 for _f in _matches:
                     _keyword_hits[_f] = _keyword_hits.get(_f, 0) + 1
+            # silent-ok: grep identifier probe failure is warning-logged and only removes keyword boost for that identifier.
         except Exception as _e:
             # not silent: warning log records grep failure; identifier skipped
             _logger_hybrid.warning(f"hybrid grep failed for '{_ident}': {_e}")

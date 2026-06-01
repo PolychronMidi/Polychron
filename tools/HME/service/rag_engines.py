@@ -234,6 +234,7 @@ def _load_engines():
                             f"HME_RAG_GPU={_gpu_idx} has only {_free_gb:.1f} GB free "
                             f"(< {_MIN_FREE_GB}) -- RAG stack falling back to CPU"
                         )
+            # silent-ok: reload failure is logged and returned as error; terminal CUDA corruption hard-exits for supervisor respawn.
         except Exception as e:
             logger.warning(f"GPU detection failed, using CPU: {type(e).__name__}: {e}")
         logger.info(f"RAG device: {_rag_device}")

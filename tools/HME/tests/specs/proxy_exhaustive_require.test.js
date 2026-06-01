@@ -37,6 +37,7 @@ test('every proxy *.js file loads without throwing or producing undefined export
     let mod;
     try {
       mod = require(file);
+      // silent-ok: exhaustive require test records load error and continues scanning remaining files.
     } catch (err) {
       failures.push(`${rel}: require threw ${err && err.message ? err.message : err}`);
       continue;
