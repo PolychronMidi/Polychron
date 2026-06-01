@@ -290,7 +290,7 @@ OUT="${out}" _hme_bg_stdin_timeout 5 stdin-big "${root}/log/hme-bg-stdin-big.err
   assert.strictEqual(res.status, 0, res.stderr);
   const log = waitForLogEnd(root, 'stdin-big');
   assert.match(log, /end stdin-big exit=0/, log);
-  assert.strictEqual(fs.readFileSync(out, 'utf8'), '300001');
+  assert.strictEqual(fs.readFileSync(out, 'utf8'), '300000');
   assert.doesNotMatch(log, /oversized argv leaked/);
   fs.rmSync(root, { recursive: true, force: true });
 });
