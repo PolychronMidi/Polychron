@@ -11,3 +11,15 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. Sets with all items marked code 3_ or above get automatically archived in `log/todo` as `set<number>.md`
 
 ### Todo - Set 14
+
+#1 1_ regenerate repo mermaid and verify repo-mermaid-freshness
+
+#2 1_ rebaseline env-tamper only after treating current .env as intentional under explicit user authorization
+
+#3 1_ fix bg.sh oversized payload / setsid Argument list too long failures for pipeline bg scripts
+
+#4 1_ profile and trim UserPromptSubmit hook latency without weakening synchronous safety checks
+
+#5 1_ perform scoped silent-failure cleanup for load-bearing paths only; no generic fallback annotations
+
+#6 1_ run proxy availability smoke for active-active constant-availability invariant
