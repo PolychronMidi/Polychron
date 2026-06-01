@@ -108,15 +108,22 @@ _hme_check_errors_inline() {
   # Only emit if there are agent-errors. Self/observation errors are
   # informational; surfacing them mid-turn would create noise.
   if [ -n "$AGENT_ERRORS" ]; then
-    local BANNER="[ALERT] LIFESAVER - MID-TURN ERRORS DETECTED:
-${AGENT_ERRORS}
+    local AGENT_SNIP SELF_SNIP BANNER
+    AGENT_SNIP=$(printf '%s' "$AGENT_ERRORS" | head -c 8000)
+    [ "$AGENT_SNIP" != "$AGENT_ERRORS" ] && AGENT_SNIP="${AGENT_SNIP}
+... [truncated; see log/hme-errors.log]"
+    BANNER="[ALERT] LIFESAVER - MID-TURN ERRORS DETECTED:
+${AGENT_SNIP}
 
 These fired during the just-completed tool call. Diagnose and fix BEFORE the next tool call accumulates further failures on top of broken state."
     if [ -n "$SELF_ERRORS" ]; then
+      SELF_SNIP=$(printf '%s' "$SELF_ERRORS" | head -c 4000)
+      [ "$SELF_SNIP" != "$SELF_ERRORS" ] && SELF_SNIP="${SELF_SNIP}
+... [truncated; see log/hme-errors.log]"
       BANNER="${BANNER}
 
 [observation-only (informational, not blocking):
-${SELF_ERRORS}]"
+${SELF_SNIP}]"
     fi
     # additionalContext lands in the next turn's context. Silent on stdout
     if ! jq -n \
