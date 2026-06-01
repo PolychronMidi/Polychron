@@ -37,7 +37,18 @@ function semanticTokenEstimate(payload, env = process.env) {
   const msgCount = Array.isArray(payload.messages) ? payload.messages.length : 0;
   const toolCount = Array.isArray(payload.tools) ? payload.tools.length : 0;
   chars += 32 * msgCount + 96 * toolCount;
-  return Math.ceil(chars / perTok);
+  const contentEstimate = Math.ceil(chars / perTok);
+  // Conservative floor: the content-only walk skips JSON structural framing
+  // (keys, braces, tool_use ids, type tags) that real tokenizers DO count.
+  const structuralFloor = Math.ceil(_serializedBytesNoSignatures(payload) / perTok);
+  return Math.max(contentEstimate, structuralFloor);
+}
+
+function _serializedBytesNoSignatures(payload) {
+  return Buffer.byteLength(
+    JSON.stringify(payload || {}, (k, v) => (k === 'signature' || k === 'cache_control' ? undefined : v)),
+    'utf8',
+  );
 }
 
 function serializedBytes(payload) {
