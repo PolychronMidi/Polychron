@@ -384,8 +384,9 @@ function createContextBudget() {
     if (prunePlan.maxTier <= 0 || afterPruneBytes <= prunePlan.threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
       effectiveThreshold: () => prunePlan,
-      keepMin,
-      maxToolResultAge: staleToolKeepTurns,
+      keepMin: prunePlan.keepMin,
+      maxToolResultAge: prunePlan.maxToolResultAge,
+      toolResultByteFloor: prunePlan.toolResultByteFloor,
       env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: omniLocalSummary },
       log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
       route: 'omni-context',
