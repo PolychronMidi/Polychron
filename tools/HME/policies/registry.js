@@ -46,10 +46,7 @@ const PROJECT_ROOT = process.env.PROJECT_ROOT
 const BUILTIN_DIR = path.join(__dirname, 'builtin');
 
 // Decision factories. Same shape used by stop_chain/index.js.
-function deny(reason)      { return { decision: 'deny', reason: reason || '' }; }
-function instruct(message) { return { decision: 'instruct', message: message || '' }; }
-function allow(message)    { return { decision: 'allow', message: message || null }; }
-function rewrite(updatedInput, message) { return { decision: 'rewrite', updatedInput: updatedInput || {}, message: message || '' }; }
+const { deny, instruct, allow, rewrite } = Decision;
 
 // Internal registry. Order = registration order = load order.
 const _policies = [];
