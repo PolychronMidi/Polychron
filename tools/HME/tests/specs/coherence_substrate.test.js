@@ -5,8 +5,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { requireEnv } = require('../../proxy/shared/load_env');
 
-process.env.PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+process.env.PROJECT_ROOT = requireEnv('PROJECT_ROOT');
 
 const events = require('../../proxy/coherence_events');
 const incidents = require('../../proxy/incident_registry');

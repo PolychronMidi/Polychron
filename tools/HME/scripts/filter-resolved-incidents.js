@@ -2,8 +2,8 @@
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
-const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const { requireEnv } = require('../proxy/shared/load_env');
+const root = requireEnv('PROJECT_ROOT');
 const incidents = require('../proxy/incident_registry');
 const input = fs.readFileSync(0, 'utf8').split('\n').filter(Boolean);
 const out = incidents.unresolvedLines(root, input);

@@ -2,7 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const { requireEnv } = require('../proxy/shared/load_env');
+const root = requireEnv('PROJECT_ROOT');
 
 function arg(name, fallback = '') {
   const hit = process.argv.slice(2).find((a) => a.startsWith(`${name}=`));
