@@ -488,11 +488,11 @@ async function dispatchEvent(eventName, stdinJson) {
         if (native && native.stdout) return native;
         return omo.applied && omo.result ? omo.result : native;
       }
-      const scripts = PRETOOL_SCRIPTS[tool] || [];
+      const scripts = [...(PRETOOL_SCRIPTS[tool] || [])];
       // HME primer runs before first HME_* tool each session -- always chain it
       // for any HME_-prefixed tool, the primer self-guards against re-fire.
-      if (tool.startsWith('HME_') || tool.startsWith('mcp__HME__')) {
-        scripts.unshift(path.join(PRETOOLUSE, 'pretooluse_hme_primer.sh'));
+      if ((tool.startsWith('HME_') || tool.startsWith('mcp__HME__')) && HME_PRIMER_SCRIPT) {
+        scripts.unshift(_hookScript(HME_PRIMER_SCRIPT));
       }
       if (scripts.length === 0) return omo.applied && omo.result ? omo.result : { stdout: '', stderr: ' ', exit_code: 0 };
       const chained = await runChain(scripts, activeInput, 30_000, 'PreToolUse');
