@@ -37,6 +37,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const Decision = require('../event_kernel/decision');
 
 // Resolve PROJECT_ROOT without forcing the proxy/shared.js dependency, so
 // this module is usable from CLI contexts that don't import the proxy.
