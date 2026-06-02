@@ -92,39 +92,67 @@ function _enabled(env) {
   return String((env || process.env).HME_PROXY_ESTIMATOR_CALIBRATION || '') === '1';
 }
 
-// Effective factors for the estimator: persisted fit when available AND the
-// feedback loop is enabled, else the env priors. The flag gate keeps the
-function calibratedFactors(env = process.env, projectRoot = PROJECT_ROOT) {
+function _modelKey(model) {
+  return String(model || '').trim().toLowerCase();
+}
+
+// Normalize any persisted shape (incl. the legacy flat {samples,factors}) into
+// { global:{samples,factors}, models:{key:{samples,factors}} }. Different
+function _normalizeData(data) {
+  if (!data || typeof data !== 'object') return { global: { samples: [], factors: null }, models: {} };
+  if (data.global || data.models) {
+    return {
+      global: data.global && Array.isArray(data.global.samples) ? data.global : { samples: [], factors: null },
+      models: data.models && typeof data.models === 'object' ? data.models : {},
+    };
+  }
+  // Legacy flat structure -> treat as the global bucket.
+  return { global: { samples: Array.isArray(data.samples) ? data.samples : [], factors: data.factors || null }, models: {} };
+}
+
+// Effective factors for the estimator: per-model fit when available, else the
+// cross-model global fit, else env priors. Flag-gated for determinism.
+function calibratedFactors(env = process.env, projectRoot = PROJECT_ROOT, model = '') {
   const priors = resolveFactors(env, null);
   if (!_enabled(env)) return priors;
-  const data = loadCalibration(projectRoot);
-  if (data && data.factors && data.factors.fitted) {
-    return { perTok: data.factors.perTok, toolResultPerTok: data.factors.toolResultPerTok };
+  const data = _normalizeData(loadCalibration(projectRoot));
+  const key = _modelKey(model);
+  const perModel = key && data.models[key] && data.models[key].factors;
+  if (perModel && perModel.fitted) return { perTok: perModel.perTok, toolResultPerTok: perModel.toolResultPerTok };
+  if (data.global.factors && data.global.factors.fitted) {
+    return { perTok: data.global.factors.perTok, toolResultPerTok: data.global.factors.toolResultPerTok };
   }
   return priors;
 }
 
-// Record one ground-truth sample and re-fit. Best-effort: any failure is
-// swallowed (calibration is an optimization, never on the request critical path).
-function recordSample({ reg, tr, actual, env = process.env, projectRoot = PROJECT_ROOT } = {}) {
+function _pushFit(bucket, sample, priors) {
+  const samples = Array.isArray(bucket.samples) ? bucket.samples.slice() : [];
+  samples.push(sample);
+  while (samples.length > MAX_SAMPLES) samples.shift();
+  return { samples, factors: fitFactors(samples, priors) };
+}
+
+// Record one ground-truth sample into the global bucket and (if a model is
+// given) that model's bucket, re-fit both, persist. Best-effort: any failure
+function recordSample({ reg, tr, actual, model = '', env = process.env, projectRoot = PROJECT_ROOT } = {}) {
   if (!_enabled(env)) return null;
   if (!Number.isFinite(reg) || !Number.isFinite(tr) || !Number.isFinite(actual)) return null;
   if (actual < MIN_ACTUAL_TOKENS || (reg + tr) <= 0) return null;
   try {
     const file = calibrationPath(projectRoot);
-    let data = loadCalibration(projectRoot) || { samples: [], factors: null };
-    const samples = Array.isArray(data.samples) ? data.samples.slice() : [];
-    samples.push({ reg: Math.round(reg), tr: Math.round(tr), actual: Math.round(actual) });
-    while (samples.length > MAX_SAMPLES) samples.shift();
+    const data = _normalizeData(loadCalibration(projectRoot));
     const priors = resolveFactors(env, null);
-    const factors = fitFactors(samples, priors);
-    const next = { samples, factors, updated: new Date().toISOString() };
+    const sample = { reg: Math.round(reg), tr: Math.round(tr), actual: Math.round(actual) };
+    data.global = _pushFit(data.global, sample, priors);
+    const key = _modelKey(model);
+    if (key) data.models[key] = _pushFit(data.models[key] || { samples: [] }, sample, priors);
+    data.updated = new Date().toISOString();
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const tmp = `${file}.${process.pid}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(next));
+    fs.writeFileSync(tmp, JSON.stringify(data));
     fs.renameSync(tmp, file);
     _cache = { mtimeMs: -1, data: null };
-    return factors;
+    return key && data.models[key].factors.fitted ? data.models[key].factors : data.global.factors;
   } catch (_e) {
     return null;
   }
