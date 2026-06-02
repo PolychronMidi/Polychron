@@ -130,3 +130,30 @@ test('compactTranscriptFile atomically shrinks an over-limit transcript and keep
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('maybeCompactTranscriptFile honors the opt-out flag and high-water override', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
+  try {
+    const f = path.join(dir, 't.jsonl');
+    const lines = [];
+    for (let i = 0; i < 120; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 60000)));
+    fs.writeFileSync(f, lines.join('\n') + '\n');
+    const before = fs.readFileSync(f, 'utf8');
+
+    // Disabled -> no-op.
+    const off = maybeCompactTranscriptFile({ transcriptPath: f, env: { HME_TRANSCRIPT_COMPACT: '0' } });
+    assert.equal(off.reason, 'disabled');
+    assert.equal(fs.readFileSync(f, 'utf8'), before, 'disabled flag leaves file untouched');
+
+    // No path -> safe no-op.
+    assert.equal(maybeCompactTranscriptFile({ transcriptPath: '', env: {} }).reason, 'no_path');
+
+    // High-water override (1MB) -> compacts the ~7MB fixture.
+    const on = maybeCompactTranscriptFile({ transcriptPath: f, env: { HME_TRANSCRIPT_COMPACT_HIGH_WATER_MB: '1' } });
+    assert.equal(on.ok, true);
+    assert.ok(on.changedEntries > 0);
+    assert.ok(fs.statSync(f).size < Buffer.byteLength(before, 'utf8'));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
