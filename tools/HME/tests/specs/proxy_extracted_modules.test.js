@@ -965,12 +965,13 @@ test('microcompaction stop hook prevents below-target over-elision and reports t
   const tokenEstimate = (p) => Math.ceil(JSON.stringify(p).length / 2);
   const beforeTokens = tokenEstimate(payload);
   const targetTokens = beforeTokens - 45_000;
+  const threshold = targetTokens * 2;
   const changed = shrinkForPassthrough(payload, {
-    threshold: 1,
+    threshold,
     keepMin: 3,
     maxToolResultAge: 4,
     toolResultByteFloor: 1000,
-    effectiveThreshold: () => ({ threshold: 1, maxTier: 1, targetTokens, beforeTokens }),
+    effectiveThreshold: () => ({ threshold, maxTier: 1, targetTokens, beforeTokens }),
     microcompactStop: ({ payload: p }) => tokenEstimate(p) <= targetTokens,
     tokenEstimator: tokenEstimate,
     telemetry: (row) => telemetry.push(row),
