@@ -1091,17 +1091,17 @@ test('context budget compaction gears start near context high-water and escalate
     process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
     process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
     const budget = createContextBudget();
-    budget.setLastInputTokensLimit(1000);
+    const model = 'lfm-2.5-1.2b-instruct-openrouter-free';
 
-    let payload = { messages: [{ role: 'user', content: 'x'.repeat(750) }] };
+    let payload = { model, messages: [{ role: 'user', content: 'x'.repeat(24_500) }] };
     let plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 0);
     assert.equal(plan.threshold, Infinity);
 
-    payload = { messages: [{ role: 'user', content: 'x'.repeat(830) }] };
+    payload = { model, messages: [{ role: 'user', content: 'x'.repeat(27_000) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 1);
-    assert.equal(plan.threshold, 800);
+    assert.equal(plan.threshold, 26214);
     // Env baselines trim by gear; never derive from prior effective values.
     assert.equal(plan.maxToolResultAge, 30);
     assert.equal(plan.keepMin, 30);
