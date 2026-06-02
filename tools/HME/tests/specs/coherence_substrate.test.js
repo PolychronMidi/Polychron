@@ -154,3 +154,20 @@ test('ENFORCE: every tool_result-mutating middleware declares idempotency intent
   assert.deepEqual(mesh.queryMesh(process.env.PROJECT_ROOT, 'unmarked_mutators').map((n) => n.name), []);
   assert.deepEqual(mesh.queryMesh(process.env.PROJECT_ROOT, 'ownerless_state').map((n) => n.name), []);
 });
+
+test('ENFORCE: middleware manifest mutatesToolResult flag agrees with effects[] and source', () => {
+  const man = JSON.parse(fs.readFileSync(path.join(process.env.PROJECT_ROOT, 'tools/HME/proxy/middleware/manifest.json'), 'utf8'));
+  const MUT = /toolResult\.(append|replace|sanitize)/;
+  const flagEffectDrift = [];
+  const flagSourceDrift = [];
+  for (const m of man.modules) {
+    const effMutates = (m.effects || []).some((e) => MUT.test(e));
+    if (effMutates !== Boolean(m.mutatesToolResult)) flagEffectDrift.push(m.name);
+    if (m.mutatesToolResult) {
+      const src = fs.readFileSync(path.join(process.env.PROJECT_ROOT, 'tools/HME/proxy/middleware', m.file), 'utf8');
+      if (!/tool_result|toolResult|\.content/.test(src)) flagSourceDrift.push(m.name);
+    }
+  }
+  assert.deepEqual(flagEffectDrift, [], `mutatesToolResult flag disagrees with effects[]: ${flagEffectDrift.join(', ')}`);
+  assert.deepEqual(flagSourceDrift, [], `mutatesToolResult:true but source never touches tool results: ${flagSourceDrift.join(', ')}`);
+});
