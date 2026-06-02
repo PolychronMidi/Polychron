@@ -124,7 +124,8 @@ if [ -f "$ERROR_LOG" ]; then
       | grep -vE '^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-runtime|proxy-bridge|proxy-watchdog|hook-watchdog|hook-latency|crying_wolf|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+)\]' \
       | grep -vE '\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b' \
       | grep -vE '^[[:space:]]*$' \
-      | sort -u || true)
+      | sort -u \
+      | PROJECT_ROOT="$PROJECT" node "$PROJECT/tools/HME/scripts/filter-resolved-incidents.js" || true)
     if [ -z "$NEW_ERRORS" ]; then
       # silent-ok: advisory state/log write; failure cannot certify success.
       echo "$TOTAL" > "$WATERMARK" 2>/dev/null || true
