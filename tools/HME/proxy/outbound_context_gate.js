@@ -10,9 +10,9 @@ const { submitCcCompactOnce } = require('./cc_control');
 const { inputBudgetFor, estimateTokens } = require('./context_pressure');
 
 // Estimate the final outbound input size of `payload` (post-mutation) via the
-// shared, calibrated pressure model -- one estimator for every gate.
-function estimateInputTokens(payload, env) {
-  return estimateTokens(payload, env || process.env, PROJECT_ROOT);
+// shared conservative pressure model -- one estimator for every gate.
+function estimateInputTokens(payload, env, modelId = '') {
+  return estimateTokens(payload, env || process.env, PROJECT_ROOT, modelId);
 }
 
 // Reroute helper: from a swap chain, pick the first model whose input budget
