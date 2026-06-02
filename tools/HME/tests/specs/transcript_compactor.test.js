@@ -186,8 +186,9 @@ test('midturn trigger only fires in the emergency band, stop uses the gentler hi
   try {
     const f = path.join(dir, 't.jsonl');
     const lines = [];
-    for (let i = 0; i < 60; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
-    fs.writeFileSync(f, lines.join('\n') + '\n'); // ~5MB
+    // >keepRecent(80) entries so there are OLD entries beyond the recent window.
+    for (let i = 0; i < 200; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
+    fs.writeFileSync(f, lines.join('\n') + '\n'); // ~16MB
     const sizeMb = fs.statSync(f).size / 1048576;
     assert.ok(sizeMb > 1 && sizeMb < 24, 'fixture sits below both default thresholds');
 
