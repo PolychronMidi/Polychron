@@ -54,7 +54,9 @@ DEAD_ENV_ALLOWLIST = {
 # env-name fragments built by f-string / template-literal interpolation, e.g.
 # f"{provider}_DAILY_LIMIT_{label}". A declared key containing one of these is
 _DYN_NAME_RE = re.compile(r"""(?:f["']|`)[^"'`\n]*\{[^}]+\}[^"'`\n]*["'`]""")
-_DYN_SEG_RE = re.compile(r"[A-Z][A-Z0-9_]{3,}")
+# A dynamic-family fragment must be a COMPOUND token (>=2 underscore-joined
+# words, length >= 6) -- e.g. DAILY_LIMIT, RPM_LIMIT, MODEL_T. Generic single
+_DYN_SEG_RE = re.compile(r"[A-Z0-9]+(?:_[A-Z0-9]+)+")
 
 
 def dynamic_name_fragments(files: list[str]) -> set[str]:
@@ -64,7 +66,8 @@ def dynamic_name_fragments(files: list[str]) -> set[str]:
         for m in _DYN_NAME_RE.finditer(text):
             literal = re.sub(r"\{[^}]+\}", "\x00", m.group(0))
             for seg in _DYN_SEG_RE.findall(literal):
-                frags.add(seg)
+                if len(seg) >= 6:
+                    frags.add(seg)
     return frags
 
 
