@@ -29,4 +29,7 @@ module.exports = {
   quarantineReason: from('./model_route_health', 'quarantineReason'),
   routeSkipReason: from('./model_route_health', 'routeSkipReason'),
   markRouteCooldown: from('./model_route_health', 'markRouteCooldown'),
+  providerCooldownKey: from('./model_route_health', 'providerCooldownKey'),
+  markProviderCooldown: from('./model_route_health', 'markProviderCooldown'),
+  providerSkipReason: from('./model_route_health', 'providerSkipReason'),
 };
