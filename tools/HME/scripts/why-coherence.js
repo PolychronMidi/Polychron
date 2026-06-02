@@ -50,6 +50,42 @@ function runDebt() {
   for (const ob of summary.open_obligations.slice(0, 20)) console.log(`- obligation: ${ob}`);
   console.log(`unresolved_incidents=${unresolved.length}`);
   for (const line of unresolved.slice(0, 10)) console.log(`- incident: ${line.slice(0, 240)}`);
+  // Economics: turn ledger events into a coarse policy-feedback signal so noisy
+  // vs load-bearing incident classes are visible (narrow / retire / strengthen).
+  const economics = require('../proxy/coherence_economics');
+  const incidentEvents = events.filter((e) => e && e.kind === 'incident');
+  const resolverEvents = events.filter((e) => e && e.kind === 'resolver');
+  const fb = economics.policyFeedback({
+    policy: 'incident_surface',
+    prevented_failures: resolverEvents.length,
+    noise_events: Math.max(0, incidentEvents.length - resolverEvents.length),
+  });
+  console.log(`policy_feedback incident_surface: action=${fb.action} prevented=${fb.prevented_failures} noise=${fb.noise_events}`);
+}
+
+function runResolve() {
+  // Deliberate, on-demand (NOT hot-path): record a structured resolved-incident
+  // row for every error-log line a resolver can PROVE fixed. Dedupes by line so
+  const incidents = require('../proxy/incident_registry');
+  const resolvers = require('../proxy/incident_resolvers');
+  const lines = recentErrorLines(Number(arg('limit', 200)) || 200);
+  const seen = new Set();
+  let recorded = 0;
+  console.log('mode=resolve');
+  for (const line of lines) {
+    const r = resolvers.resolveLine(root, line);
+    if (!r.resolved || r.kind === 'observation' || r.kind === 'self_origin') continue;
+    const key = `${r.kind}:${line.slice(0, 120)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    incidents.resolveIncident(root, {
+      id: r.kind, component: 'hme', summary: r.reason || 'resolver-proven',
+      resolver: r.resolver, proof: r.proof || {},
+    });
+    recorded += 1;
+    console.log(`- resolved ${r.kind} via ${r.resolver}`);
+  }
+  console.log(`recorded_resolved=${recorded}`);
 }
 
 function runMesh() {
