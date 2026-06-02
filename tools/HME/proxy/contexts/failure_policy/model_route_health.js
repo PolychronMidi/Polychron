@@ -44,6 +44,22 @@ function routeSkipReason(routeKey, routeHealth = {}, env = process.env, now = Da
   return quarantineReason(routeHealth[routeKey], now);
 }
 
+// Provider-level cooldown. A 502 bad_gateway is an UPSTREAM-backend failure: all
+// model tiers that share that backend (e.g. every codex/gpt-5.5-* tier behind
+function providerCooldownKey(provider) {
+  return `provider/${String(provider || '').replace(/_/g, '-')}`;
+}
+
+function markProviderCooldown(provider, reason, opts = {}) {
+  if (!provider) return null;
+  return markRouteCooldown(providerCooldownKey(provider), reason, { ttlMs: 60_000, ...opts });
+}
+
+function providerSkipReason(provider, routeHealth = {}, env = process.env, now = Date.now()) {
+  if (!provider || routeQuarantineForced(env)) return '';
+  return quarantineReason(routeHealth[providerCooldownKey(provider)], now);
+}
+
 function markRouteCooldown(routeKey, reason, { ttlMs = 300_000, projectRoot = PROJECT_ROOT, now = Date.now() } = {}) {
   if (!routeKey) return null;
   const file = routeHealthPath(projectRoot);
