@@ -954,6 +954,36 @@ test('passthrough microcompaction honors configured stale tool horizon', () => {
   assert.ok(results.slice(-2).every((b) => String(b.content).length === 20000));
 });
 
+test('microcompaction stop hook prevents below-target over-elision and reports token metrics', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 12; i += 1) {
+    const id = `target-stop-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
+  }
+  const telemetry = [];
+  const tokenEstimate = (p) => Math.ceil(JSON.stringify(p).length / 2);
+  const beforeTokens = tokenEstimate(payload);
+  const targetTokens = beforeTokens - 45_000;
+  const changed = shrinkForPassthrough(payload, {
+    threshold: 1,
+    keepMin: 3,
+    maxToolResultAge: 4,
+    toolResultByteFloor: 1000,
+    effectiveThreshold: () => ({ threshold: 1, maxTier: 1, targetTokens, beforeTokens }),
+    microcompactStop: ({ payload: p }) => tokenEstimate(p) <= targetTokens,
+    tokenEstimator: tokenEstimate,
+    telemetry: (row) => telemetry.push(row),
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(changed < 10, `must stop before stripping the whole stale horizon, got ${changed}`);
+  assert.equal(telemetry.length, 0, 'below-threshold telemetry is emitted only on successful threshold fit');
+  const afterTokens = tokenEstimate(payload);
+  assert.ok(afterTokens <= targetTokens);
+  assert.ok(afterTokens > targetTokens - 15_000, `${afterTokens} overshot too far below ${targetTokens}`);
+});
 
 test('passthrough compaction drops oldest messages when microcompaction cannot hit threshold', () => {
   const payload = { messages: [] };
