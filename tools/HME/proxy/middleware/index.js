@@ -359,8 +359,16 @@ function _validateMiddlewareShape(mod) {
 
 function register(mod, file = '') {
   _validateMiddlewareShape(mod);
+  const manifestEntry = file ? _manifestEntryForFile(file) : null;
+  if (manifestEntry && manifestEntry.name !== mod.name) {
+    throw new Error(`[middleware] manifest ${file} declares name ${manifestEntry.name}, module exports ${mod.name}`);
+  }
   _modules.push(mod);
-  _moduleMeta.set(mod.name, { file, phase: _phaseForFile(file) });
+  _moduleMeta.set(mod.name, {
+    file,
+    phase: manifestEntry ? manifestEntry.phase : _phaseForFile(file),
+    ...(manifestEntry || {}),
+  });
 }
 
 function listMiddleware() {
