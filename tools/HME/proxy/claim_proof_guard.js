@@ -2,6 +2,8 @@
 
 const DONE_RE = /\b(done|fixed|complete|all\s+(?:set|green|passed)|nothing\s+missed)\b/i;
 const ABSOLUTE_RE = /\b(all|every|never|always|guaranteed)\b/i;
+const COMPLETION_WORD_RE = /\b(done|fixed|complete|completed|pass(?:es|ing|ed)?|green|resolved|working)\b/i;
+const ABSOLUTE_QUANT_RE = /\b(all|every|everything|fully|entirely|completely)\b/i;
 
 function classifyClaim(text) {
   const t = String(text || '');
@@ -9,6 +11,13 @@ function classifyClaim(text) {
   if (ABSOLUTE_RE.test(t)) return 'absolute';
   if (/\b(likely|maybe|hypothesis|suspect)\b/i.test(t)) return 'hypothesis';
   return 'ordinary';
+}
+
+// An absolute COMPLETION claim is the genuinely over-reaching shape: an absolute
+// quantifier paired with a completion word ("all tests pass", "everything is
+function isAbsoluteCompletion(text) {
+  const t = String(text || '');
+  return ABSOLUTE_QUANT_RE.test(t) && COMPLETION_WORD_RE.test(t);
 }
 
 function hasProof(events = [], claimClass = 'ordinary') {
