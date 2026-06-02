@@ -1078,7 +1078,6 @@ test('context budget compaction gears start near context high-water and escalate
         },
       }));
     };
-    writeZeroStatusline();
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
     process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '40';
@@ -1092,14 +1091,18 @@ test('context budget compaction gears start near context high-water and escalate
     process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
     const budget = createContextBudget();
     const model = 'lfm-2.5-1.2b-instruct-openrouter-free';
+    // Re-zero the shared statusline immediately before each read so the live
+    // Claude session's real usage (written cross-process to the same file) can
+    const planFor = (chars) => {
+      writeZeroStatusline();
+      return budget.effectiveCompactThreshold({ model, messages: [{ role: 'user', content: 'x'.repeat(chars) }] });
+    };
 
-    let payload = { model, messages: [{ role: 'user', content: 'x'.repeat(24_500) }] };
-    let plan = budget.effectiveCompactThreshold(payload);
+    let plan = planFor(24_500);
     assert.equal(plan.maxTier, 0);
     assert.equal(plan.threshold, Infinity);
 
-    payload = { model, messages: [{ role: 'user', content: 'x'.repeat(27_000) }] };
-    plan = budget.effectiveCompactThreshold(payload);
+    plan = planFor(27_000);
     assert.equal(plan.maxTier, 1);
     assert.equal(plan.threshold, 26214);
     // Env baselines trim by gear; never derive from prior effective values.
@@ -1107,16 +1110,14 @@ test('context budget compaction gears start near context high-water and escalate
     assert.equal(plan.keepMin, 30);
     assert.equal(plan.toolResultByteFloor, 28000);
 
-    payload = { model, messages: [{ role: 'user', content: 'x'.repeat(30_000) }] };
-    plan = budget.effectiveCompactThreshold(payload);
+    plan = planFor(30_000);
     assert.equal(plan.maxTier, 2);
     assert.equal(plan.threshold, 29491);
     assert.equal(plan.maxToolResultAge, 20);
     assert.equal(plan.keepMin, 20);
     assert.equal(plan.toolResultByteFloor, 18000);
 
-    payload = { model, messages: [{ role: 'user', content: 'x'.repeat(32_000) }] };
-    plan = budget.effectiveCompactThreshold(payload);
+    plan = planFor(32_000);
     assert.equal(plan.maxTier, 3);
     assert.equal(plan.threshold, 31784);
     assert.equal(plan.maxToolResultAge, 10);
