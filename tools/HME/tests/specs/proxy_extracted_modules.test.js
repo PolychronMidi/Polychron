@@ -1079,6 +1079,7 @@ test('context budget compaction gears start near context high-water and escalate
       }));
     };
     writeZeroStatusline();
+    process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
     process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '40';
