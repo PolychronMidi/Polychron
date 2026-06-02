@@ -42,8 +42,10 @@ test('isAbsoluteCompletion targets the over-reaching shape, not scoped fixes', (
   assert.equal(guard.isAbsoluteCompletion('renamed a variable'), false);
 });
 
-test('DENY: edited + absolute completion claim + no verification this turn', () => {
+test('DENY (strict): edited + absolute completion claim + no verification this turn', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-claimproof-'));
+  const prev = process.env.strict_mode;
+  process.env.strict_mode = '1';
   try {
     const tp = writeTranscript(root, turn('fix the bug', [
       { type: 'tool_use', name: 'Edit', input: {} },
@@ -52,7 +54,28 @@ test('DENY: edited + absolute completion claim + no verification this turn', () 
     const v = policy.run(ctxFor(tp, root));
     assert.equal(v.decision, 'deny');
     assert.match(v.reason, /CLAIM-PROOF/);
-  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  } finally {
+    if (prev === undefined) delete process.env.strict_mode; else process.env.strict_mode = prev;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('SHADOW (non-strict): same case instructs instead of denying', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-claimproof-'));
+  const prev = process.env.strict_mode;
+  process.env.strict_mode = '0';
+  try {
+    const tp = writeTranscript(root, turn('fix the bug', [
+      { type: 'tool_use', name: 'Edit', input: {} },
+      { type: 'text', text: 'All tests pass now and everything is fixed.' },
+    ]));
+    const v = policy.run(ctxFor(tp, root));
+    assert.equal(v.decision, 'instruct');
+    assert.match(v.message, /shadow/);
+  } finally {
+    if (prev === undefined) delete process.env.strict_mode; else process.env.strict_mode = prev;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('ALLOW: same absolute claim but a Bash verification ran this turn', () => {
