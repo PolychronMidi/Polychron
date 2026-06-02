@@ -21,7 +21,7 @@ test('canonical stores are registered up-front', () => {
 test('state-files-backed stores are registered from ownership registry', () => {
   const names = reg.listRegistered();
   assert.ok(names.includes('statefile_hme_middleware_processed'));
-  assert.ok(names.includes('statefile_hme_nexus'));
+  assert.ok(names.includes('statefile_hme_universal_pulse_heartbeat'));
   assert.ok(names.includes('statefile_hme_errors'));
   assert.ok(names.includes('statefile_hme_incidents'));
   assert.ok(names.includes('statefile_tool_retry_guard'));
