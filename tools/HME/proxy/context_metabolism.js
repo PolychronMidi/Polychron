@@ -59,4 +59,16 @@ function readFacts(root) {
   return state.read(STORE, root);
 }
 
-module.exports = { STORE, STAGES, normalizeFact, metabolismScore, nextStage, metabolize, appendFact, readFacts };
+// Scheduled metabolism pass: advance each fact one stage, drop composted ones,
+// and rewrite the store so raw traces don't accumulate forever (the "context
+function runMetabolismPass(root) {
+  const before = readFacts(root);
+  const advanced = metabolize(before);
+  const kept = advanced.filter((f) => f.stage !== 'composted');
+  const composted = advanced.length - kept.length;
+  state.write(STORE, kept.map((f) => ({ ...f, ts: f.ts || new Date().toISOString() })), root);
+  const durable = kept.filter((f) => f.stage === 'durable_invariant' || f.stage === 'compact_doctrine');
+  return { before: before.length, after: kept.length, composted, durable };
+}
+
+module.exports = { STORE, STAGES, normalizeFact, metabolismScore, nextStage, metabolize, appendFact, readFacts, runMetabolismPass };

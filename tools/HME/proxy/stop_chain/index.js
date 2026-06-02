@@ -339,10 +339,19 @@ async function runStopChain(stdinJson) {
     }
   }
 
-  appendTrace(
-    'chain_end',
-    firstDeny ? 'deny' : (instructs.length ? 'instruct' : 'allow')
-  );
+  const outcome = firstDeny ? 'deny' : (instructs.length ? 'instruct' : 'allow');
+  appendTrace('chain_end', outcome);
+
+  // Bounded producer: exactly ONE coherence event per Stop run summarizing the
+  // turn's outcome. Once-per-turn (not per-event) keeps the ledger from bloating.
+  try {
+    require('../coherence_events').appendEvent(PROJECT_ROOT, {
+      kind: 'policy_decision', subject: 'stop_chain', intent: `turn outcome=${outcome}`,
+      evidence: [], coherence_delta: outcome === 'deny' ? -1 : 0,
+      obligations: outcome === 'deny' ? ['resolve stop-chain deny before next stop'] : [],
+      proofClass: 'policy', meta: { outcome, instructs: instructs.length },
+    });
+  } catch (_e) { /* silent-ok: ledger is advisory; stop chain must not break */ }
 
   let stdout = '';
   if (firstDeny) {
