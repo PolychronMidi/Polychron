@@ -64,6 +64,18 @@ function runDebt() {
     noise_events: Math.max(0, incidentEvents.length - resolverEvents.length),
   });
   console.log(`policy_feedback incident_surface: action=${fb.action} prevented=${fb.prevented_failures} noise=${fb.noise_events}`);
+  // Surface durable invariants the metabolism pass has distilled from raw traces.
+  const facts = require('../proxy/context_metabolism').readFacts(root);
+  const durable = facts.filter((f) => f && (f.stage === 'durable_invariant' || f.stage === 'compact_doctrine'));
+  console.log(`durable_invariants=${durable.length} (raw_facts=${facts.length})`);
+  for (const f of durable.slice(0, 10)) console.log(`- invariant: ${f.subject}: ${String(f.content).slice(0, 120)}`);
+}
+
+function runMetabolize() {
+  const m = require('../proxy/context_metabolism').runMetabolismPass(root);
+  console.log('mode=metabolize');
+  console.log(`facts_before=${m.before} facts_after=${m.after} composted=${m.composted} durable=${m.durable.length}`);
+  for (const f of m.durable.slice(0, 10)) console.log(`- durable ${f.stage}: ${f.subject}`);
 }
 
 function runResolve() {
