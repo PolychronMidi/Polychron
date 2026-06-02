@@ -980,8 +980,11 @@ test('microcompaction stop hook prevents below-target over-elision and reports t
   });
   assert.ok(changed > 0);
   assert.ok(changed < 10, `must stop before stripping the whole stale horizon, got ${changed}`);
-  assert.equal(telemetry.length, 0, 'below-threshold telemetry is emitted only on successful threshold fit');
+  assert.equal(telemetry.length, 1);
   const afterTokens = tokenEstimate(payload);
+  assert.equal(telemetry[0].target_tokens, targetTokens);
+  assert.equal(telemetry[0].before_tokens, beforeTokens);
+  assert.equal(telemetry[0].after_tokens, afterTokens);
   assert.ok(afterTokens <= targetTokens);
   assert.ok(afterTokens > targetTokens - 15_000, `${afterTokens} overshot too far below ${targetTokens}`);
 });
