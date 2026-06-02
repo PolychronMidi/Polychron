@@ -14,6 +14,8 @@ function normalizePlan(raw) {
     keepMin: Number(plan.keepMin),
     maxToolResultAge: Number(plan.maxToolResultAge),
     toolResultByteFloor: Number(plan.toolResultByteFloor),
+    targetTokens: Number(plan.targetTokens),
+    beforeTokens: Number(plan.beforeTokens),
   };
 }
 
