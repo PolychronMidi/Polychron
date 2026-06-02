@@ -42,6 +42,7 @@ const { recordMiddlewareThrow } = require('./_middleware_throw_lifesaver');
 
 const NEXUS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
 const PHASES_FILE = path.join(__dirname, 'phases.json');
+const MANIFEST_FILE = path.join(__dirname, 'manifest.json');
 
 function _ensureDir(p) {
   try { fs.mkdirSync(path.dirname(p), { recursive: true }); } catch (_e) { /* ignore */ }
