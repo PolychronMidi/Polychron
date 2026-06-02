@@ -1069,7 +1069,16 @@ test('context budget compaction gears start near context high-water and escalate
   const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
   const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
   try {
-    try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
+    const writeZeroStatusline = () => {
+      fs.mkdirSync(runtimeDir, { recursive: true });
+      fs.writeFileSync(statusline, JSON.stringify({
+        context_window: {
+          context_window_size: 1000,
+          current_usage: { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        },
+      }));
+    };
+    writeZeroStatusline();
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
     process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '40';
