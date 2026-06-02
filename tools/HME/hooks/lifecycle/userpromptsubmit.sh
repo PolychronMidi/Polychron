@@ -129,7 +129,7 @@ if [ -f "$ERROR_LOG" ]; then
       | grep -vE '\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b' \
       | grep -vE '^[[:space:]]*$' \
       | sort -u \
-      | PROJECT_ROOT="$PROJECT" node "$PROJECT/tools/HME/scripts/filter-resolved-incidents.js" || true)
+      | PROJECT_ROOT="$PROJECT" node "$_FILTER_RESOLVED" || true)
     if [ -z "$NEW_ERRORS" ]; then
       # silent-ok: advisory state/log write; failure cannot certify success.
       echo "$TOTAL" > "$WATERMARK" 2>/dev/null || true
