@@ -56,6 +56,11 @@ function buildMesh(root = PROJECT_ROOT) {
 function queryMesh(root, mode = 'summary') {
   const mesh = buildMesh(root);
   if (mode === 'mutators') return mesh.nodes.filter((n) => n.type === 'middleware' && (n.meta.effects || []).some((e) => /payload|toolResult/.test(e)));
+  // Enforcement: a middleware that mutates tool_result MUST declare its
+  // idempotency intent (idempotencyMarkerRequired present, true or false).
+  if (mode === 'unmarked_mutators') return mesh.nodes.filter((n) => n.type === 'middleware' && n.meta.mutatesToolResult && !n.meta.idempotencyMarkerDeclared);
+  // Enforcement: every declared state file must name an owner.
+  if (mode === 'ownerless_state') return mesh.nodes.filter((n) => n.type === 'state_file' && !n.meta.owner);
   if (mode === 'orphans') {
     const covered = new Set(mesh.edges.filter((e) => e.kind === 'covers').map((e) => e.to));
     return mesh.nodes.filter((n) => ['middleware', 'route'].includes(n.type) && !covered.has(n.id));
