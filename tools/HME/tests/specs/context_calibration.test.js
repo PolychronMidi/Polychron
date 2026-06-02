@@ -59,7 +59,7 @@ test('fitFactors clamps absurd fits to sane bytes/token bounds', () => {
 
 test('recordSample persists, re-fits, and calibratedFactors reads the fit; estimator consumes it', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-calib-'));
-  const env = { HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '2.6', HME_PROXY_TOOL_RESULT_BYTES_PER_TOKEN_EST: '1.8' };
+  const env = CAL_ENV;
   try {
     // Before any data: factors fall back to env priors.
     let f = calibratedFactors(env, dir);
