@@ -9,6 +9,20 @@ test('slop caveman compression deletes requested glue words case-insensitively',
   assert.equal(result.out, '1; rdy; fix; ship');
 });
 
+test('slop caveman compression strips degenerate bare s and t but never real words', () => {
+  // Bare single-letter "s" (is/so/as) and "t" (it) are the dropped-leading-letter
+  // corruption form; strip them exactly like the full glue words already are.
+  assert.equal(_stripSlop('how t wrks').out, 'How wrks');
+  assert.equal(_stripSlop('guards t aganst').out, 'Guards aganst');
+  assert.equal(_stripSlop('path s exact').out, 'Path exct');
+  // Words that merely contain s/t must be untouched.
+  assert.equal(_stripSlop('test the list results').out, 'Test list reslts');
+  assert.equal(_stripSlop('strict mode set state').out, 'strict mode set state');
+  // Code/paths/tokens stay protected.
+  assert.equal(_stripSlop('run `t` here').out, 'run `t` here');
+  assert.match(_stripSlop('see file.ts now').out, /file\.ts/);
+});
+
 test('slop abbreviations are case-insensitive and preserve punctuation', () => {
   const result = _stripSlop('Acknowledged. WITHOUT delay, move into tests and to prod.');
   assert.ok(result.hits.includes('caveman_abbreviations'));
