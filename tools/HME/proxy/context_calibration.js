@@ -107,6 +107,7 @@ function calibratedFactors(env = process.env, projectRoot = PROJECT_ROOT) {
 // Record one ground-truth sample and re-fit. Best-effort: any failure is
 // swallowed (calibration is an optimization, never on the request critical path).
 function recordSample({ reg, tr, actual, env = process.env, projectRoot = PROJECT_ROOT } = {}) {
+  if (!_enabled(env)) return null;
   if (!Number.isFinite(reg) || !Number.isFinite(tr) || !Number.isFinite(actual)) return null;
   if (actual < MIN_ACTUAL_TOKENS || (reg + tr) <= 0) return null;
   try {

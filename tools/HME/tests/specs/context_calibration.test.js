@@ -9,6 +9,9 @@ const { fitFactors, recordSample, calibratedFactors, loadCalibration, MIN_SAMPLE
 const { semanticTokenEstimate } = require('../../proxy/context_token_estimate');
 
 const PRIORS = { perTok: 2.6, toolResultPerTok: 1.8 };
+// Apply/record are gated behind this flag so the estimator stays deterministic
+// for callers that don't opt in; calibration tests must enable it explicitly.
+const CAL_ENV = { HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '2.6', HME_PROXY_TOOL_RESULT_BYTES_PER_TOKEN_EST: '1.8', HME_PROXY_ESTIMATOR_CALIBRATION: '1' };
 
 test('fitFactors keeps priors below the minimum sample count', () => {
   const r = fitFactors([{ reg: 1000, tr: 2000, actual: 1500 }], PRIORS);
