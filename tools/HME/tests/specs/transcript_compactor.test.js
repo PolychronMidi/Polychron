@@ -9,6 +9,7 @@ const {
   compactEntry,
   compactTranscriptLines,
   compactTranscriptFile,
+  maybeCompactTranscriptFile,
 } = require('../../proxy/transcript_compactor');
 
 function bigToolEntry(i, size) {
