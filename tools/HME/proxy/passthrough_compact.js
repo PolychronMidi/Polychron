@@ -83,9 +83,15 @@ function shrinkForPassthrough(payload, opts = {}) {
   if (elided > 0) {
     serialized = JSON.stringify(payload);
     const afterBytes = _serializedBytes(payload);
-    log(`precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${afterBytes}B`);
+    const targetTokens = Number(plan.targetTokens) || 0;
+    const beforeTokens = Number(plan.beforeTokens) || 0;
+    const afterTokens = tokenEstimator ? Number(tokenEstimator(payload)) || 0 : 0;
+    log(`microcompact tool_result elision: elided ${elided} stale block(s), body=${afterBytes}B`);
+    if (targetTokens > 0 && afterTokens > 0 && afterTokens < targetTokens * 0.95) {
+      log(`microcompact target underrun: after=${afterTokens} target=${targetTokens} before=${beforeTokens}`);
+    }
     if (afterBytes <= threshold) {
-      log('precompact: tier-1 sufficient, no message drops needed');
+      log('microcompact reached threshold; no message drops needed');
       _emitCompaction({
         route,
         model,
