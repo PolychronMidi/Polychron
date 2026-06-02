@@ -36,7 +36,7 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
   const budgetFor = deps.inputBudgetFor || inputBudgetFor;
 
   let budget = budgetFor(modelId);
-  let tokens = estimate(payload, env);
+  let tokens = estimate(payload, env, modelId);
   if (budget <= 0 || tokens <= budget) {
     return { ok: true, action: 'fit', model: modelId, tokens, budget };
   }
