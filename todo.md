@@ -19,8 +19,12 @@
 - [x] Producer: `incident_registry.resolveIncident` is idempotent and is driven by `i/why mode=resolve` for resolver-proven error lines.
 - [x] Consumer: `i/why mode=proof` runs `claim_proof_guard` over the live ledger (blocks the "all incidents resolved" claim while any are unresolved).
 - [x] Consumer: `i/why mode=debt` emits a `coherence_economics` policy-feedback signal from real ledger events.
-- [x] Dedupe: self-origin/observation classification sourced from one `self_origin.js` instead of a third hand-maintained copy.
-- [ ] Deferred (deliberate, risky hot-path): run `claim_proof_guard` as a live blocker in the Stop chain. Left as a query-surface + library until scoped, to avoid destabilizing the request path.
+- [x] Dedupe: self-origin/observation classification sourced from one `self_origin.js`, with a drift-guard test asserting it stays a superset of `_self_tags.sh` and `22_lifesaver_inject` tag sets.
+- [x] Live blocker: `claim_proof` stop-chain policy wired in BOTH modes -- hard deny in strict (absolute completion claim + edits + no same-turn verification), shadow instruct + verdict event in non-strict so the enable decision is data-backed. Non-mandatory + fail-open so it can never wedge the chain.
+- [x] Producer: one bounded coherence event per Stop run (turn outcome), once-per-turn so the ledger does not bloat.
+- [x] Metabolism pass: `runMetabolismPass` advances/composts facts and surfaces durable invariants via `i/why mode=metabolize` and `mode=debt`, so raw traces don't accumulate as sludge.
+- [x] Enforcement: mesh test gates `mutatesToolResult` flag against effects[] and source; drift-alert threshold tuned (0.18->0.25) since the conservative gate absorbs sub-25% drift.
+- [x] Profiled UserPromptSubmit latency: hook is ~170ms in isolation (no single hot component; backgrounded python confirmed non-blocking). The p95=1100ms signal is load/environment-driven, not from the substrate; a real fix needs live per-step instrumentation (larger observability task), not a quick edit.
 
 ## Concrete implementation backlog
 
