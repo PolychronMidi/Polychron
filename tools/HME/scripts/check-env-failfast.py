@@ -266,7 +266,7 @@ def main() -> int:
         )
     if failed:
         return 1
-    print("env fail-fast ok: central references clean; root .env complete; 0 inline fallbacks")
+    print("env fail-fast ok: central references clean; root .env complete; 0 inline fallbacks; 0 dead keys")
     return 0
 
 
