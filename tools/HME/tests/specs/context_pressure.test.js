@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 
 const { inputBudgetFor, estimateTokens, contextPressure } = require('../../proxy/context_pressure');
 const { semanticTokenEstimate } = require('../../proxy/context_token_estimate');
+const { recordSample, MIN_SAMPLES_TO_FIT } = require('../../proxy/context_calibration');
 
 const BIG = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(200000) }] };
 
