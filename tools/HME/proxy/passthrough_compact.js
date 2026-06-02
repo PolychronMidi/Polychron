@@ -105,7 +105,7 @@ function shrinkForPassthrough(payload, opts = {}) {
         tool_result_byte_floor: toolResultByteFloor,
         target_tokens: Number(plan.targetTokens) || 0,
         before_tokens: Number(plan.beforeTokens) || 0,
-        after_tokens: Number(plan.afterTokens) || 0,
+        after_tokens: tokenEstimator ? Number(tokenEstimator(payload)) || 0 : 0,
       }, telemetry);
       return elided;
     }
