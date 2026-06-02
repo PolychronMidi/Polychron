@@ -143,7 +143,7 @@ function dispatchWhy(args) {
   for (const a of args) {
     if (a === 'mode=freeze') run('python3', [path.join(ROOT, 'tools/HME/scripts/freeze-check.py'), ...stripSelector(args, 'freeze')]);
     const m = /^mode=(.+)$/.exec(a);
-    if (m && ['proof', 'debt', 'mesh', 'resolve'].includes(m[1])) run('node', [path.join(ROOT, 'tools/HME/scripts/why-coherence.js'), ...args]);
+    if (m && ['proof', 'debt', 'mesh', 'resolve', 'metabolize'].includes(m[1])) run('node', [path.join(ROOT, 'tools/HME/scripts/why-coherence.js'), ...args]);
     if (m && modeMap[m[1]]) run('python3', [path.join(ROOT, 'tools/HME/scripts', modeMap[m[1]]), ...args]);
   }
   if (args.length > 1 || (args[0] || '').includes(' ') || (args[0] || '').includes('?')) {
