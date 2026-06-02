@@ -9,6 +9,31 @@ test('slop caveman compression deletes requested glue words case-insensitively',
   assert.equal(result.out, '1; rdy; fix; ship');
 });
 
+test('slop rewriter never erases a non-empty response (fail-safe replays originals)', () => {
+  // Over-compression of a short/glue-only block must NOT yield an empty assistant
+  // turn -- that reads as a blank response and can trip blank-retry cascades.
+  const runStream = (text) => {
+    const store = new Map();
+    const ctx = { get: (k) => store.get(k), set: (k, v) => store.set(k, v) };
+    const out = [];
+    const feed = (n, d) => {
+      const r = slopStripRewrite(n, d, ctx);
+      if (r === null) return;
+      if (r && r.events) { for (const [a, b] of r.events) out.push([a, b]); return; }
+      out.push([n, r]);
+    };
+    feed('content_block_start', { index: 0, content_block: { type: 'text' } });
+    feed('content_block_delta', { index: 0, delta: { type: 'text_delta', text } });
+    feed('content_block_stop', { index: 0 });
+    return out.filter(([n]) => n === 'content_block_delta').map(([, d]) => (d.delta && d.delta.text) || '').join('');
+  };
+  for (const glue of ['ok', 'it is so', 's t', 'so']) {
+    assert.equal(runStream(glue), glue, `must not erase ${JSON.stringify(glue)}`);
+  }
+  // Real prose with surviving content is still compressed (fail-safe does not over-fire)
+  assert.equal(runStream('the middleware is working so it is complete'), 'Middlwre workn done');
+});
+
 test('slop caveman compression strips degenerate bare s and t but never real words', () => {
   // Bare single-letter "s" (is/so/as) and "t" (it) are the dropped-leading-letter
   // corruption form; strip them exactly like the full glue words already are.
