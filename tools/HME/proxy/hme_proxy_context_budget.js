@@ -295,7 +295,10 @@ function createContextBudget() {
 
   function statuslineContextUsage() {
     try {
-      const file = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'claude-statusline-raw.json');
+      // HME_STATUSLINE_PATH is an optional relocation override (default: the
+      // canonical runtime path). Lets tests pin an isolated statusline so a
+      const file = process.env.HME_STATUSLINE_PATH
+        || path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'claude-statusline-raw.json');
       const stat = fs.statSync(file);
       if ((Date.now() - stat.mtimeMs) > 5 * 60 * 1000) return { used: 0, size: 0 };
       const data = JSON.parse(fs.readFileSync(file, 'utf8'));
