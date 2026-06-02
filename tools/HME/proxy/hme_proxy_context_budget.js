@@ -389,6 +389,10 @@ function createContextBudget() {
       keepMin: prunePlan.keepMin,
       maxToolResultAge: prunePlan.maxToolResultAge,
       toolResultByteFloor: prunePlan.toolResultByteFloor,
+      microcompactStop: ({ payload: p }) => {
+        const pressureNow = compactPressureTokens(p, serializedBytes(p), { ignoreStatusline: true });
+        return pressureNow.usedTokens <= prunePlan.targetTokens;
+      },
       env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: omniLocalSummary },
       log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
       route: 'omni-context',
