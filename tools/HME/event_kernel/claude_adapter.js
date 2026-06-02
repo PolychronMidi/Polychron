@@ -11,6 +11,7 @@ const { buildHostPayload, writeJsonAtomic } = require('./lifecycle_payload');
 const { claudeRelayFields, extractFirstJsonDocument } = require('./decision_normalizer');
 const { recordHookDecision } = require('./hook_decision_log');
 const timeTravel = require('./lifecycle_time_travel');
+const { maybeCompactTranscriptFile } = require('../proxy/transcript_compactor');
 
 function denyReason(stdout) {
   try {
