@@ -201,6 +201,23 @@ sys.exit(1)
 PY
 }
 
+# True (exit 0) iff $HEALTH_FILE names a pid that is alive right now, regardless
+# of ready/draining/staleness. A live incumbent must be drained gracefully; a
+_incumbent_alive() {
+  python3 - "$HEALTH_FILE" <<'PY'
+import json, os, sys
+try:
+    h = json.load(open(sys.argv[1]))
+    pid = int(h.get('pid') or 0)
+    if pid > 0:
+        os.kill(pid, 0)
+        sys.exit(0)
+except Exception:
+    pass
+sys.exit(1)
+PY
+}
+
 _mark_health_draining() {
   _draining_value="$1"
   python3 - "$HEALTH_FILE" "$_draining_value" <<'PY'
@@ -323,51 +340,56 @@ else
   echo "[slot-restart:$SLOT] no routable incumbent on this slot; bypassing peer-routable guard to cold-start (both-down recovery)" >&2
 fi
 
-# Step 1: withdraw this slot from shuffler routing before process termination.
-# Merely touching the drain flag is not enough: the backend observes it on its
-# heartbeat cadence, then the shuffler observes the health file on its own poll.
-echo "[slot-restart:$SLOT] writing drain flag $DRAIN_FLAG" >&2
-touch "$DRAIN_FLAG"
-_mark_health_draining 1 || true
-if ! _wait_shuffler_withdrawn; then
-  echo "[slot-restart:$SLOT] ABORT: shuffler still routes slot $SLOT after drain flag; NOT terminating incumbent" >&2
-  rm -f "$DRAIN_FLAG" 2>/dev/null || true
-  _mark_health_draining 0 || true
-  _record_failure "shuffler_drain_withdraw_timeout slot=$SLOT"
-  exit 1
-fi
+if _incumbent_alive; then
+  # Live incumbent: drain gracefully so in-flight requests are not dropped.
+  # Step 1: withdraw this slot from shuffler routing before process termination.
+  echo "[slot-restart:$SLOT] writing drain flag $DRAIN_FLAG" >&2
+  touch "$DRAIN_FLAG"
+  _mark_health_draining 1 || true
+  if ! _wait_shuffler_withdrawn; then
+    echo "[slot-restart:$SLOT] ABORT: shuffler still routes slot $SLOT after drain flag; NOT terminating incumbent" >&2
+    rm -f "$DRAIN_FLAG" 2>/dev/null || true
+    _mark_health_draining 0 || true
+    _record_failure "shuffler_drain_withdraw_timeout slot=$SLOT"
+    exit 1
+  fi
 
-# Step 2: poll heartbeat for in_flight==0 OR pid gone OR drain timeout.
-_t0="$(date +%s)"
-_pid=""
-while :; do
-  if [ -s "$HEALTH_FILE" ]; then
-    # silent-ok: helper failure falls through to blocked/unready probe path.
-    _pid="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('pid') or '')" "$HEALTH_FILE" 2>/dev/null || echo "")"
-    # silent-ok: helper failure falls through to blocked/unready probe path.
-    _in_flight="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('in_flight') or 0)" "$HEALTH_FILE" 2>/dev/null || echo 0)"
-  else
-    _in_flight=0
-  fi
-  if [ -z "$_pid" ] || ! kill -0 "$_pid" 2>/dev/null; then
-    echo "[slot-restart:$SLOT] backend exited cleanly" >&2
-    break
-  fi
-  if [ "${_in_flight:-0}" = "0" ] && [ "${_term_sent:-0}" = "0" ]; then
-    echo "[slot-restart:$SLOT] in_flight=0 but pid $_pid still alive; sending SIGTERM (single shot)" >&2
-    # silent-ok: process-exit race; later health/pid checks own the verdict.
-    kill -TERM "$_pid" 2>/dev/null || true
-    _term_sent=1
-  fi
-  _now="$(date +%s)"
-  if [ $(( _now - _t0 )) -ge "$_DRAIN_TIMEOUT_SEC" ]; then
-    echo "[slot-restart:$SLOT] drain timeout after ${_DRAIN_TIMEOUT_SEC}s; SIGKILL pid $_pid" >&2
-    # silent-ok: process-exit race; later health/pid checks own the verdict.
-    [ -n "$_pid" ] && kill -KILL "$_pid" 2>/dev/null || true
-    break
-  fi
-  sleep 1
-done
+  # Step 2: poll heartbeat for in_flight==0 OR pid gone OR drain timeout.
+  _t0="$(date +%s)"
+  _pid=""
+  while :; do
+    if [ -s "$HEALTH_FILE" ]; then
+      # silent-ok: helper failure falls through to blocked/unready probe path.
+      _pid="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('pid') or '')" "$HEALTH_FILE" 2>/dev/null || echo "")"
+      # silent-ok: helper failure falls through to blocked/unready probe path.
+      _in_flight="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('in_flight') or 0)" "$HEALTH_FILE" 2>/dev/null || echo 0)"
+    else
+      _in_flight=0
+    fi
+    if [ -z "$_pid" ] || ! kill -0 "$_pid" 2>/dev/null; then
+      echo "[slot-restart:$SLOT] backend exited cleanly" >&2
+      break
+    fi
+    if [ "${_in_flight:-0}" = "0" ] && [ "${_term_sent:-0}" = "0" ]; then
+      echo "[slot-restart:$SLOT] in_flight=0 but pid $_pid still alive; sending SIGTERM (single shot)" >&2
+      # silent-ok: process-exit race; later health/pid checks own the verdict.
+      kill -TERM "$_pid" 2>/dev/null || true
+      _term_sent=1
+    fi
+    _now="$(date +%s)"
+    if [ $(( _now - _t0 )) -ge "$_DRAIN_TIMEOUT_SEC" ]; then
+      echo "[slot-restart:$SLOT] drain timeout after ${_DRAIN_TIMEOUT_SEC}s; SIGKILL pid $_pid" >&2
+      # silent-ok: process-exit race; later health/pid checks own the verdict.
+      [ -n "$_pid" ] && kill -KILL "$_pid" 2>/dev/null || true
+      break
+    fi
+    sleep 1
+  done
+else
+  # Dead incumbent: a corpse cannot drain. Reclaim immediately rather than wait
+  # on the shuffler-withdraw handshake (that wait is the both-slots-down deadlock).
+  echo "[slot-restart:$SLOT] incumbent pid not alive; skipping drain handshake -- reclaiming dead slot immediately (both-down-safe)" >&2
+fi
 
 # Cleanup stale files so a fresh backend doesn't inherit them.
 rm -f "$DRAIN_FLAG" "$HEALTH_FILE" 2>/dev/null

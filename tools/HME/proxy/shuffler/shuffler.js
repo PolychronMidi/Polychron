@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { loadEnv, requireEnv } = require('../shared/load_env');
+const { isSlotRoutable } = require('../shared/slot_routable');
 
 loadEnv(path.resolve(__dirname, '..', '..', '..', '..', '.env'));
 
@@ -50,8 +51,9 @@ function _refreshHealth() {
 }
 
 function _isRoutable(slot) {
-  const h = BACKENDS[slot].health;
-  return Boolean(h && h.ready && !h.draining);
+  // Routability includes pid-liveness via the shared single source of truth:
+  // never route to (or report routable) a slot whose process is dead, even if
+  return isSlotRoutable(BACKENDS[slot].health, { staleMs: HEARTBEAT_STALE_MS });
 }
 
 function _routableSlots() {

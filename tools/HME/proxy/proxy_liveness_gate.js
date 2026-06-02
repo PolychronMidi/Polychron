@@ -5,16 +5,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { requireEnv } = require('./shared/load_env');
-
-function _isAlive(pid) {
-  if (!pid || typeof pid !== 'number') return false;
-  try { process.kill(pid, 0); return true; } catch (_) { return false; }
-}
+const { requireEnv, requireEnvInt } = require('./shared/load_env');
+const { isPidAlive } = require('./shared/slot_routable');
 
 // Pure core: classify each slot. deps = { isAlive, staleMs }.
 function evaluateSlots(slots, wantedFingerprint, now, deps) {
-  const isAlive = (deps && deps.isAlive) || _isAlive;
+  const isAlive = (deps && deps.isAlive) || isPidAlive;
   const staleMs = (deps && deps.staleMs) || 30_000;
   // Per-slot classification. A single slot being missing/dead/stale is NORMAL
   // during zero-downtime rotation (the watcher restarts one slot while the
@@ -67,7 +63,7 @@ function inspectLive(root) {
     const { currentRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
     wanted = currentRuntimeFingerprint(root);
   } catch (_) { /* if fingerprint can't compute, skip the drift dimension */ }
-  return evaluateSlots(slots, wanted, Date.now(), {});
+  return evaluateSlots(slots, wanted, Date.now(), { staleMs: requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS') });
 }
 
 // --check-only: exit non-zero on drift/outage, write nothing. For the
@@ -89,7 +85,7 @@ function runCli(root) {
     const { currentRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
     wanted = currentRuntimeFingerprint(root);
   } catch (_) { /* if fingerprint can't compute, skip the drift dimension */ }
-  const { ok, problems } = evaluateSlots(slots, wanted, Date.now(), {});
+  const { ok, problems } = evaluateSlots(slots, wanted, Date.now(), { staleMs: requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS') });
   if (ok) return 0;
   const line = formatLifesaver(problems);
   try {

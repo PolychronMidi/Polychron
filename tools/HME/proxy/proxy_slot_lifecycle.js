@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { requireEnv, requireEnvInt } = require('./shared/load_env');
+const { isPidAlive } = require('./shared/slot_routable');
 const { computeRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
 
 const STATE_SCHEMA_VERSION = 1;
@@ -88,10 +89,7 @@ function countSlotsWithFingerprint(runtimeDir, fingerprint, opts = {}) {
   if (!fingerprint) return 0;
   const slots = opts.slots || ['a', 'b'];
   const healthFile = (slot) => (opts.healthFile ? opts.healthFile(slot) : path.join(runtimeDir, `proxy-${slot}.health`));
-  const isAlive = opts.isAlive || ((pid) => {
-    if (!pid || typeof pid !== 'number') return false;
-    try { process.kill(pid, 0); return true; } catch (_) { return false; }
-  });
+  const isAlive = opts.isAlive || isPidAlive;
   const staleMs = Number(opts.staleMs !== undefined ? opts.staleMs : requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS'));
   const now = Number(opts.now || Date.now());
   let count = 0;

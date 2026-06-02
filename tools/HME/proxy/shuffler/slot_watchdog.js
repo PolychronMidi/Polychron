@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { loadEnv, requireEnv } = require('../shared/load_env');
+const { isPidAlive, isSlotRoutable } = require('../shared/slot_routable');
 const { currentRuntimeFingerprint } = require('../proxy_runtime_fingerprint');
 const { watchSelfAndReexec } = require('./self_reexec');
 
@@ -55,11 +56,6 @@ function _readJSONSafe(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { return null; }
 }
 
-function _pidAlive(pid) {
-  if (!pid || typeof pid !== 'number') return false;
-  try { process.kill(pid, 0); return true; } catch (_) { return false; }
-}
-
 function _respawnDecision(slot) {
   const s = state[slot];
   const now = Date.now();
@@ -73,7 +69,7 @@ function _respawnDecision(slot) {
   }
   s.missingSince = 0;
   const heartbeatAge = now - Number(h.ts || 0);
-  if (heartbeatAge >= STALE_MS && !_pidAlive(h.pid)) {
+  if (heartbeatAge >= STALE_MS && !isPidAlive(h.pid)) {
     return { yes: true, kind: 'dead', reason: `heartbeat ${Math.round(heartbeatAge / 1000)}s stale, pid ${h.pid} dead` };
   }
   const wanted = _currentRuntimeFingerprint();
@@ -92,6 +88,15 @@ function _alertStaleSlot(slot, reason) {
   try { fs.mkdirSync(path.dirname(ERR_LOG), { recursive: true }); fs.appendFileSync(ERR_LOG, line); }
   catch (_) { /* best-effort */ }
   console.error(line.trim());
+}
+
+function _reapStaleHealth(slot) {
+  // A hard-killed slot (SIGKILL/crash) leaves a health file advertising
+  // ready:true for a dead pid. Unlink it so no reader is fooled before respawn.
+  const h = _readJSONSafe(HEALTH[slot]);
+  if (h && !isPidAlive(h.pid)) {
+    try { fs.unlinkSync(HEALTH[slot]); } catch (_) { /* already gone */ }
+  }
 }
 
 function _respawn(slot, reason) {
@@ -115,11 +120,11 @@ function _respawn(slot, reason) {
 }
 
 function _routableCount() {
-  // A slot is routable when its health file is fresh, ready, and not draining.
+  // Routable iff fresh, ready, not draining, AND pid alive. The pid term stops a
+  // dead-but-fresh slot from counting -- otherwise the min-1 guard pins a corpse
   let n = 0;
   for (const slot of ['a', 'b']) {
-    const h = _readJSONSafe(HEALTH[slot]);
-    if (h && h.ready && !h.draining && (Date.now() - Number(h.ts || 0)) <= STALE_MS) n += 1;
+    if (isSlotRoutable(_readJSONSafe(HEALTH[slot]))) n += 1;
   }
   return n;
 }
@@ -150,13 +155,11 @@ function _tick() {
 
   const routable = _routableCount();
   const target = needs[0];
-  const targetRoutable = (() => {
-    const h = _readJSONSafe(HEALTH[target.slot]);
-    return Boolean(h && h.ready && !h.draining && (now - Number(h.ts || 0)) <= STALE_MS);
-  })();
+  const targetRoutable = isSlotRoutable(_readJSONSafe(HEALTH[target.slot]), { now });
   // Restarting `target` removes it from rotation iff it is currently routable.
   // Permit only when at least one OTHER slot remains routable, OR nothing is
   if (targetRoutable && routable <= 1) return;   // would zero out rotation -> defer
+  if (target.decision.kind === 'dead') _reapStaleHealth(target.slot);
   _respawn(target.slot, target.decision.reason);
 }
 
