@@ -11,6 +11,7 @@ const { applyEffortParams } = require('./model_effort');
 const {
   loadModelRouteHealth,
   routeSkipReason,
+  providerSkipReason,
 } = require('./contexts/failure_policy');
 
 // swapWindowCheck: does the request's estimated input exceed the swap model's
