@@ -112,4 +112,4 @@ function serializedBytes(payload) {
   return Buffer.byteLength(JSON.stringify(payload || {}), 'utf8');
 }
 
-module.exports = { semanticTokenEstimate, serializedBytes };
+module.exports = { semanticTokenEstimate, serializedBytes, payloadByteBuckets, resolveFactors };
