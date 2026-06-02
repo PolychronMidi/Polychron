@@ -82,4 +82,7 @@ module.exports = {
   quarantineReason,
   routeSkipReason,
   markRouteCooldown,
+  providerCooldownKey,
+  markProviderCooldown,
+  providerSkipReason,
 };
