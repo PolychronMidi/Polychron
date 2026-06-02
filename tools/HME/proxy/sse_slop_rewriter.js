@@ -46,6 +46,9 @@ const _ABBREVIATION_MAP = Object.freeze({
   'one by one': '1x1',
 
   // Common words / compact forms.
+  'add': '+',
+  'edit': 'edt',
+  'update': 'updt',
   'executing': 'doin',
   'execute': 'do',
   'sequence': 'seq',

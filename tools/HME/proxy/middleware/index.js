@@ -384,7 +384,7 @@ function listMiddleware() {
 // so proxy restart doesn't re-fire on historical events (LRU-capped in memory).
 const _processed = new Map(); // id -> insertion timestamp
 const _PROCESSED_CAP = 50_000;
-const _PROCESSED_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-middleware-processed.jsonl');
+const _PROCESSED_FILE = stateRegistry.paths('middleware_processed').abs;
 let _processedLoadedMtime = 0;
 
 function _loadProcessed() {
