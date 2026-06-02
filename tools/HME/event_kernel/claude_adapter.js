@@ -343,10 +343,14 @@ async function main() {
     },
     beforeFinalRelay: ({ event: ev, result, body, root }) => {
       if (ev === 'UserPromptSubmit') return _handleCcShortcut(result, body);
+      // SessionStart (resume/continue load) and PostToolUse (mid-turn balloon)
+      // are the other points the ~30MB transcript limit can bite; Stop is the
+      if (ev === 'SessionStart') { maybeCompactTranscript(root, body, 'session_start'); return result; }
+      if (ev === 'PostToolUse') { maybeCompactTranscript(root, body, 'midturn'); return result; }
       if (ev !== 'Stop') return result;
       const reason = denyReason(result.stdout || '');
       if (reason) stageStopReminder(root, reason);
-      maybeCompactStopTranscript(root, body);
+      maybeCompactTranscript(root, body, 'stop');
       return result;
     },
     finalRelay,
