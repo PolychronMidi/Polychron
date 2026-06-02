@@ -145,9 +145,6 @@ async function _recordPostToolEvidence(stdinJson) {
 }
 
 const HOOKS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'hooks');
-const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
-const PRETOOLUSE = path.join(HOOKS_DIR, 'pretooluse');
-const POSTTOOLUSE = path.join(HOOKS_DIR, 'posttooluse');
 
 function _hookScript(rel) {
   return path.join(HOOKS_DIR, rel);
