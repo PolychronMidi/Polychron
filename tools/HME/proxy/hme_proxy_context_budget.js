@@ -69,16 +69,11 @@ function loadModelCtxRegistry() {
   return map;
 }
 
-// modelInputBudget returns the model's full context-window budget
-// (context_length), or 0 when the model is unknown (callers MUST treat 0 as
-// "unknown -> do not gate"). Unified on context_length: input gating uses the
+// modelInputBudget returns the model's full context-window budget, 0 when
+// unknown (callers MUST treat 0 as "do not gate"). Delegates to the single
+// canonical resolver in context_pressure so the gate budget can never drift
 function modelInputBudget(modelId) {
-  const id = String(modelId || '');
-  if (!id) return 0;
-  const reg = loadModelCtxRegistry();
-  if (reg.has(id)) return reg.get(id);
-  for (const [k, v] of reg) if (id.includes(k)) return v;
-  return 0;
+  return require('./context_pressure').inputBudgetFor(modelId);
 }
 
 function _ensureProcessEnvLoaded() {
