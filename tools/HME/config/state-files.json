@@ -381,6 +381,82 @@
       "committed": false,
       "schema": "owner-defined",
       "repair": "run tools/HME/scripts/hme-doctor.py"
+    },
+    {
+      "path": "tools/HME/runtime/incidents.jsonl",
+      "owner": "tools/HME/proxy/incident_registry.js",
+      "readers": [
+        "diagnostics",
+        "i/status incidents (future)"
+      ],
+      "writers": [
+        "tools/HME/proxy/incident_registry.js"
+      ],
+      "retention": "append-only structured incident metadata; rendered text remains in log/hme-errors.log for legacy scanners",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with id,severity,component,summary,repair,dedupeKey,evidence,line,lifesaver",
+      "repair": "remove malformed tail row; incident_registry recreates file on next incident"
+    },
+    {
+      "path": "tools/HME/runtime/tool-retry-guard.json",
+      "owner": "tools/HME/event_kernel/dispatcher.js",
+      "readers": [
+        "tools/HME/event_kernel/dispatcher.js"
+      ],
+      "writers": [
+        "tools/HME/event_kernel/dispatcher.js"
+      ],
+      "retention": "last failed tool attempt only; cleared/advanced by intervening Read/Grep/Glob or changed input",
+      "generated": true,
+      "committed": false,
+      "schema": "JSON object with last_failed_attempt {tool,digest,input,reason,ts,recovered_at?}",
+      "repair": "remove file to reset retry guard state"
+    },
+    {
+      "path": "tools/HME/runtime/tool-retry-guard.jsonl",
+      "owner": "tools/HME/event_kernel/dispatcher.js",
+      "readers": [
+        "diagnostics"
+      ],
+      "writers": [
+        "tools/HME/event_kernel/dispatcher.js"
+      ],
+      "retention": "append-only retry guard audit trail; rotate if it grows beyond debugging value",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with ts, decision, tool, digest, reason",
+      "repair": "remove file; guard recreates on next retry event"
+    },
+    {
+      "path": "tools/HME/runtime/lifesaver-injections.jsonl",
+      "owner": "tools/HME/proxy/lifesaver_alerts.js",
+      "readers": [
+        "diagnostics"
+      ],
+      "writers": [
+        "tools/HME/proxy/lifesaver_alerts.js"
+      ],
+      "retention": "append-only lifesaver injection ledger; used for dedupe and proof of real alert surfacing",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with ts, source, bytes, and optional metadata",
+      "repair": "remove file; lifesaver_alerts recreates on next injection"
+    },
+    {
+      "path": "tools/HME/runtime/heartbeat-lifesaver.ts",
+      "owner": "tools/HME/proxy/lifesaver_alerts.js",
+      "readers": [
+        "diagnostics"
+      ],
+      "writers": [
+        "tools/HME/proxy/lifesaver_alerts.js"
+      ],
+      "retention": "single unix-second heartbeat timestamp for latest real lifesaver injection",
+      "generated": true,
+      "committed": false,
+      "schema": "plain integer unix timestamp seconds",
+      "repair": "remove file; lifesaver_alerts recreates on next injection"
     }
   ],
   "multi_writer": [
