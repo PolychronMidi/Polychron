@@ -35,8 +35,11 @@ function runProof() {
   // Live claim-proof check: can we truthfully claim "all incidents resolved"
   // right now? The guard evaluates that completion claim against the ledger's
   const verdict = guard.evaluateClaim('all incidents are resolved', events);
-  const supported = verdict.supported && unresolved.length === 0;
-  console.log(`claim "all incidents resolved": ${supported ? 'ALLOW (proof-backed)' : `${verdict.action.toUpperCase()} (${unresolved.length} unresolved, ${verdict.reason || 'no same-turn proof'})`}`);
+  let label;
+  if (unresolved.length > 0) label = `BLOCK (${unresolved.length} unresolved incidents)`;
+  else if (!verdict.supported) label = `${verdict.action.toUpperCase()} (${verdict.reason || 'no same-turn proof'})`;
+  else label = 'ALLOW (proof-backed)';
+  console.log(`claim "all incidents resolved": ${label}`);
 }
 
 function runDebt() {
