@@ -70,10 +70,15 @@ test('invariant mesh links core registries into queryable nodes', () => {
   assert.ok(mesh.queryMesh(process.env.PROJECT_ROOT, 'mutators').some((n) => n.type === 'middleware'));
 });
 
-test('context metabolism promotes useful proof and composts contradicted facts', () => {
-  assert.equal(metabolism.nextStage({ stage: 'raw_trace', proof_strength: 0.5, usefulness: 0.8, recency: 1 }), 'extracted_fact');
-  assert.equal(metabolism.nextStage({ stage: 'verified_fact', proof_strength: 0.9, usefulness: 0.8, recency: 1 }), 'durable_invariant');
-  assert.equal(metabolism.nextStage({ stage: 'verified_fact', contradicted_by: ['new proof'], proof_strength: 0.9 }), 'composted');
+test('context metabolism promotes useful proof, appends facts, and composts contradictions', () => {
+  const root = tmpRoot();
+  try {
+    assert.equal(metabolism.nextStage({ stage: 'raw_trace', proof_strength: 0.5, usefulness: 0.8, recency: 1 }), 'extracted_fact');
+    assert.equal(metabolism.nextStage({ stage: 'verified_fact', proof_strength: 0.9, usefulness: 0.8, recency: 1 }), 'durable_invariant');
+    assert.equal(metabolism.nextStage({ stage: 'verified_fact', contradicted_by: ['new proof'], proof_strength: 0.9 }), 'composted');
+    metabolism.appendFact(root, { subject: 'gate', content: 'prior max calibrated', proof_strength: 0.8, usefulness: 0.8, stage: 'extracted_fact' });
+    assert.equal(metabolism.readFacts(root).length, 1);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
 test('claim proof guard blocks unsupported done claims and allows executed proof', () => {
