@@ -385,7 +385,7 @@ function createContextBudget() {
     const prunePlan = planForUsage({ usedTokens: prunePressure.usedTokens, budgetTokens: budget });
     if (prunePlan.maxTier <= 0 || afterPruneBytes <= prunePlan.threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
-      effectiveThreshold: () => prunePlan,
+      effectiveThreshold: () => ({ ...prunePlan, beforeTokens: prunePressure.usedTokens }),
       keepMin: prunePlan.keepMin,
       maxToolResultAge: prunePlan.maxToolResultAge,
       toolResultByteFloor: prunePlan.toolResultByteFloor,
