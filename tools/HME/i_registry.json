@@ -48,6 +48,9 @@
         "predict",
         "conscience",
         "causality (with --chain / --root-cause)",
+        "proof",
+        "debt",
+        "mesh",
         "fractal-shape",
         "architecture-snapshot",
         "search (auto on multi-word)"
