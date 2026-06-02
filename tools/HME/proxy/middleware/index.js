@@ -187,22 +187,29 @@ let _pipelineDirty = false;
 const _retryCount = new Map(); // tool_use.id -> attempts
 const _MAX_RETRIES = 3;
 
-const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
-  'edit_context',
-  'cascade_prediction',
-  'read_context',
-  'grep_glob_neighborhood',
-  'dir_context',
-  'bash_enrichment',
-  'web_enrichment',
-  'edit_failure_context',
-]);
+// Compatibility fallback for modules loaded through tests/single-event callers
+// without manifest metadata in _moduleMeta. DERIVED from the manifest (single
+// source of truth) instead of a hand-maintained list that silently drifts:
+let _strictOnlyTRMutatorsCache = null;
+function _strictOnlyToolResultMutators() {
+  if (_strictOnlyTRMutatorsCache) return _strictOnlyTRMutatorsCache;
+  const out = new Set();
+  try {
+    for (const entry of _loadManifest().modules) {
+      if (entry && entry.strictMode === 'strict-only' && entry.mutatesToolResult === true) {
+        out.add(entry.name);
+      }
+    }
+  } catch (_e) { /* manifest unreadable -> empty fallback; register() meta still gates */ }
+  _strictOnlyTRMutatorsCache = out;
+  return out;
+}
 function _middlewareAllowed(mod, hookName) {
   if (isStrictMode()) return true;
   const meta = _moduleMeta && _moduleMeta.get(mod.name);
   if (meta && meta.strictMode === 'strict-only') return false;
-  // Compatibility fallback for modules loaded through tests without manifest metadata.
-  if (hookName === 'onToolResult' && NON_STRICT_TOOL_RESULT_TEXT_MUTATORS.has(mod.name)) return false;
+  // Fallback for modules loaded without manifest metadata (manifest-derived).
+  if (hookName === 'onToolResult' && _strictOnlyToolResultMutators().has(mod.name)) return false;
   return true;
 }
 
