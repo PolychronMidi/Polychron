@@ -262,7 +262,10 @@ function createContextBudget() {
     }
     if (payload) {
       const { calibratedFactors } = require('./context_calibration');
-      return { usedTokens: semanticTokenEstimate(payload, process.env, calibratedFactors(process.env, PROJECT_ROOT)), source: 'semantic' };
+      const model = String(opts.model || payload.model || payload.original_model || payload.target_model || '');
+      const prior = semanticTokenEstimate(payload, process.env, null);
+      const calibrated = semanticTokenEstimate(payload, process.env, calibratedFactors(process.env, PROJECT_ROOT, model));
+      return { usedTokens: Math.max(prior, calibrated), source: 'semantic' };
     }
     return { usedTokens: Math.ceil(bytes / contextBytesPerTokenEst), source: 'bytes' };
   }
