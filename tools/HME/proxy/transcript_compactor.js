@@ -6,6 +6,11 @@
 const fs = require('fs');
 const path = require('path');
 
+// Real Claude Code constants (binary 2.1.159): the transcript read path errors
+// at kO4=31457280 (30MB); the load-as-JSON ceiling is 268435456 (256MB). We
+// start compacting at 24MB (highWater) and treat 30MB as the hard limit the
+const HARD_LIMIT_BYTES = 31457280;
+
 const DEFAULTS = {
   // Don't touch the most recent N entries: current working context stays byte
   // exact so the active task is never degraded.
@@ -15,7 +20,17 @@ const DEFAULTS = {
   byteFloor: 4096,
   // File-level no-op guard: leave files under this size completely untouched.
   highWaterBytes: 24 * 1024 * 1024,
+  // Ceiling the escalation tiers must drive the file under (30MB).
+  hardLimitBytes: HARD_LIMIT_BYTES,
 };
+
+// Progressive elision tiers. Each shrinks the recent-keep window and byte floor
+// so that even a transcript whose RECENT turns alone exceed the hard limit
+const ESCALATION_TIERS = [
+  { keepRecent: 40, byteFloor: 2048 },
+  { keepRecent: 16, byteFloor: 1024 },
+  { keepRecent: 4, byteFloor: 256 },
+];
 
 function _marker(originalBytes) {
   return `(content elided by hme-proxy transcript-compactor: original was ${originalBytes}B; full output remains in the wire history the model already consumed)`;
