@@ -14,7 +14,7 @@ function _shortSha(root) {
 function _observationOrSelf(line, _root) {
   const body = String(line || '').replace(/^\[[0-9TZ:.-]+\]\s*/, '');
   if (/\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/.test(body)) return { resolved: true, kind: 'observation', resolver: 'severity classifier', proof: { line: body.slice(0, 160) }, reason: 'observation severity is not agent debt' };
-  if (/^\[(universal_pulse|hme-proxy|shuffler|proxy-liveness|proxy-failure)\]/.test(body)) return { resolved: true, kind: 'self_origin', resolver: 'self-origin classifier', proof: { line: body.slice(0, 160) }, reason: 'self-origin historical line is not open agent debt' };
+  if (/^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|hme-proxy|shuffler|proxy-liveness|proxy-failure|autocommit:proxy)\]/.test(body)) return { resolved: true, kind: 'self_origin', resolver: 'self-origin classifier', proof: { line: body.slice(0, 160) }, reason: 'self-origin historical line is not open agent debt' };
   return null;
 }
 
