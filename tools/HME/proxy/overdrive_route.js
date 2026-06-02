@@ -8,6 +8,7 @@ const {
 } = require('./omniroute_protocol');
 const { servicePort } = require('./service_registry');
 const { applyEffortParams } = require('./model_effort');
+const modelClassifier = require('./model_classifier');
 const {
   loadModelRouteHealth,
   routeSkipReason,
