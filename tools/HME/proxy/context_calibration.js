@@ -88,10 +88,15 @@ function loadCalibration(projectRoot = PROJECT_ROOT) {
   }
 }
 
-// Effective factors for the estimator: persisted fit when available, else the
-// env priors. Always returns a usable {perTok, toolResultPerTok}.
+function _enabled(env) {
+  return String((env || process.env).HME_PROXY_ESTIMATOR_CALIBRATION || '') === '1';
+}
+
+// Effective factors for the estimator: persisted fit when available AND the
+// feedback loop is enabled, else the env priors. The flag gate keeps the
 function calibratedFactors(env = process.env, projectRoot = PROJECT_ROOT) {
   const priors = resolveFactors(env, null);
+  if (!_enabled(env)) return priors;
   const data = loadCalibration(projectRoot);
   if (data && data.factors && data.factors.fitted) {
     return { perTok: data.factors.perTok, toolResultPerTok: data.factors.toolResultPerTok };
