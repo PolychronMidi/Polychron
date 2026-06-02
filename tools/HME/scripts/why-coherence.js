@@ -12,7 +12,7 @@ function arg(name, fallback = '') {
 
 function mode() {
   const m = arg('mode', process.argv[2] || 'proof');
-  return ['proof', 'debt', 'mesh', 'resolve'].includes(m) ? m : 'proof';
+  return ['proof', 'debt', 'mesh', 'resolve', 'metabolize'].includes(m) ? m : 'proof';
 }
 
 function recentErrorLines(limit = 40) {
