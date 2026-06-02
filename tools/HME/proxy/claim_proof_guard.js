@@ -38,4 +38,4 @@ function evaluateClaim(text, events = []) {
   };
 }
 
-module.exports = { classifyClaim, hasProof, evaluateClaim };
+module.exports = { classifyClaim, isAbsoluteCompletion, hasProof, evaluateClaim };
