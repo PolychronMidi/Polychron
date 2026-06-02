@@ -450,7 +450,7 @@ async function dispatchEvent(eventName, stdinJson) {
       await observeOmoShadow('SessionStart', empty);
       return runChain(routeRegistry.lifecycleScripts('SessionStart').map(_hookScript), empty, 30_000, 'SessionStart');
     case 'UserPromptSubmit':
-      return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty, 30_000, 'UserPromptSubmit');
+      return runChain(routeRegistry.lifecycleScripts('UserPromptSubmit').map(_hookScript), empty, 30_000, 'UserPromptSubmit');
     case 'Stop': {
       const omo = await applyOmoLive('Stop', empty);
       if (omo.status === 'disabled') await observeOmoShadow('Stop', empty);
