@@ -60,6 +60,7 @@ test('real-shape OmniRoute overflow snapshot compacts via stale tool_result elis
   const prev = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
   try {
     try { fs.unlinkSync(statusline); } catch (_e) { /* fixture absent */ }
+    process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '2.6';
     process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.85';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '20';
