@@ -11,6 +11,19 @@ function _shortSha(root) {
   try { return require('child_process').execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000 }).trim(); } catch (_e) { return ''; }
 }
 
+function _observationOrSelf(line, _root) {
+  const body = String(line || '').replace(/^\[[0-9TZ:.-]+\]\s*/, '');
+  if (/\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/.test(body)) return { resolved: true, kind: 'observation', resolver: 'severity classifier', proof: { line: body.slice(0, 160) }, reason: 'observation severity is not agent debt' };
+  if (/^\[(universal_pulse|hme-proxy|shuffler|proxy-liveness|proxy-failure|autocommit)\]/.test(body)) return { resolved: true, kind: 'self_origin', resolver: 'self-origin classifier', proof: { line: body.slice(0, 160) }, reason: 'self-origin historical line is not open agent debt' };
+  return null;
+}
+
+function _autocommitResolved(line, root) {
+  if (!/\[autocommit\].*pre-commit validation blocked/i.test(line)) return null;
+  const out = (() => { try { return require('child_process').execFileSync('git', ['-C', root, 'status', '--short'], { encoding: 'utf8', timeout: 1000 }).trim(); } catch (_e) { return ''; } })();
+  return { resolved: out === '', kind: 'autocommit', resolver: 'git status --short empty', proof: { status: out }, reason: out === '' ? 'working tree is clean' : 'working tree still dirty' };
+}
+
 function _upstreamContextWindow(line, root) {
   if (!/UPSTREAM_200_INTERACTIVE:.*context window/i.test(line)) return null;
   const m = /snapshot=([^\s)]+)/.exec(line);
