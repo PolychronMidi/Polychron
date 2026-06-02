@@ -555,9 +555,7 @@ async function runPipeline(payload, scan, session) {
 // A suffix letter (e.g. 08a_) is an explicit substep inside the integer phase.
 // rationale: manifest declares intent (phase, name) so renames trip a validator.
 function validateManifest(allFiles) {
-  let manifest;
-  try { manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8')); }
-  catch (_e) { return; }
+  const manifest = _loadManifest();
   const manifestFiles = new Set((manifest.modules || []).map((m) => m.file));
   const onDisk = new Set(allFiles);
   const missingFromManifest = [...onDisk].filter((f) => !manifestFiles.has(f));
