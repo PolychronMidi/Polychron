@@ -14,6 +14,7 @@ const resolvers = require('../../proxy/incident_resolvers');
 const mesh = require('../../proxy/invariant_mesh');
 const metabolism = require('../../proxy/context_metabolism');
 const claims = require('../../proxy/claim_proof_guard');
+const economics = require('../../proxy/coherence_economics');
 const state = require('../../proxy/state_registry');
 
 function tmpRoot() { return fs.mkdtempSync(path.join(os.tmpdir(), 'hme-coherence-')); }
