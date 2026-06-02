@@ -62,6 +62,7 @@ const POLICY_NAMES = [
   'anti_patterns',
   'nexus_pending',
   'work_checks',
+  'claim_proof',
   'holograph',
   'post_hooks',
 ];
