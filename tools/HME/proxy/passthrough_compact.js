@@ -65,7 +65,9 @@ function shrinkForPassthrough(payload, opts = {}) {
     if (!m || !Array.isArray(m.content)) continue;
     for (const b of m.content) {
       if (!b || b.type !== 'tool_result') continue;
-      const cstr = typeof b.content === 'string' ? b.content : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
+      const cstr = typeof b.content === 'string'
+        ? b.content
+        : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
       if (cstr.length < toolResultByteFloor) continue;
       b.content = `(content elided by hme-proxy precompact: original was ${cstr.length}B)`;
       elided += 1;
