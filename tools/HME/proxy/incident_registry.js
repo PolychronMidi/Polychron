@@ -100,8 +100,21 @@ function recordIncident(root, input, opts = {}) {
   }
 }
 
+function readIncidents(root) {
+  try {
+    return fs.readFileSync(path.join(root, INCIDENT_LOG_REL), 'utf8').split('\n').filter(Boolean)
+      .map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } }).filter(Boolean);
+  } catch (_e) {
+    return [];
+  }
+}
+
 function resolveIncident(root, input) {
-  return recordIncident(root, { ...input, status: 'resolved', severity: input.severity || 'lifesaver' }, { line: input.line || formatIncidentLine({ ...input, status: 'resolved' }) });
+  // Idempotent: skip if a resolved row with this dedupeKey already exists, so
+  // repeated deliberate resolve passes never spam the ledger.
+  const incident = normalizeIncident({ ...input, status: 'resolved', severity: input.severity || 'lifesaver' });
+  if (readIncidents(root).some((r) => r && r.status === 'resolved' && r.dedupeKey === incident.dedupeKey)) return true;
+  return recordIncident(root, incident, { line: input.line || formatIncidentLine(incident) });
 }
 
 function resolutionForLine(root, line) {
