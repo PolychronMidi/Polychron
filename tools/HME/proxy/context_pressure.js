@@ -16,12 +16,15 @@ function inputBudgetFor(modelId) {
   return 0;
 }
 
-// Calibrated input-token estimate for a payload (uses the learned bytes/token
-// when the feedback loop is enabled and fitted, else the env prior).
-function estimateTokens(payload, env = process.env, projectRoot = PROJECT_ROOT) {
+// Conservative input-token estimate for gates. Calibration may raise the estimate
+// when a route's tokenizer is denser than the priors, but it must never lower a
+// size gate below the static priors: fitted drift already proved that can ship a
+function estimateTokens(payload, env = process.env, projectRoot = PROJECT_ROOT, modelId = '') {
   const { semanticTokenEstimate } = require('./context_token_estimate');
   const { calibratedFactors } = require('./context_calibration');
-  return semanticTokenEstimate(payload, env, calibratedFactors(env, projectRoot));
+  const prior = semanticTokenEstimate(payload, env, null);
+  const calibrated = semanticTokenEstimate(payload, env, calibratedFactors(env, projectRoot, modelId));
+  return Math.max(prior, calibrated);
 }
 
 // Unified pressure reading against a target model window.
