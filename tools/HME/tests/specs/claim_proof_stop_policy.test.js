@@ -115,9 +115,10 @@ test('FAIL-OPEN: missing transcript allows (never wedges the chain)', () => {
   assert.equal(policy.run(ctxFor(null, process.env.PROJECT_ROOT)).decision, 'allow');
 });
 
-test('registered as a non-mandatory, strict-only stop policy', () => {
+test('registered as a non-mandatory stop policy that runs in both modes (self-gating)', () => {
   const src = fs.readFileSync(path.join(process.env.PROJECT_ROOT, 'tools/HME/proxy/stop_chain/index.js'), 'utf8');
-  assert.match(src, /'claim_proof'/);
-  assert.match(src, /STRICT_ONLY_POLICIES = new Set\(\[[^\]]*'claim_proof'/);
+  assert.match(src, /POLICY_NAMES = \[[\s\S]*'claim_proof'[\s\S]*\];/);
+  // self-gates internally -> NOT strict-only and NOT mandatory (fails open).
+  assert.doesNotMatch(src, /STRICT_ONLY_POLICIES = new Set\(\[[^\]]*'claim_proof'/);
   assert.doesNotMatch(src, /MANDATORY_POLICIES = new Set\(\[[^\]]*'claim_proof'/);
 });
