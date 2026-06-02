@@ -457,6 +457,39 @@
       "committed": false,
       "schema": "plain integer unix timestamp seconds",
       "repair": "remove file; lifesaver_alerts recreates on next injection"
+    },
+    {
+      "path": "tools/HME/runtime/coherence-events.jsonl",
+      "owner": "tools/HME/proxy/coherence_events.js",
+      "readers": [
+        "i/why mode=proof",
+        "i/why mode=debt",
+        "diagnostics"
+      ],
+      "writers": [
+        "tools/HME/proxy/coherence_events.js"
+      ],
+      "retention": "append-only compact coherence events; rotate after durable facts are metabolized",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with kind,subject,intent,evidence,coherence_delta,entropy_delta,obligations,expires,proof_class",
+      "repair": "remove malformed tail row; coherence_events recreates file on next append"
+    },
+    {
+      "path": "tools/HME/runtime/context-metabolism.jsonl",
+      "owner": "tools/HME/proxy/context_metabolism.js",
+      "readers": [
+        "i/why mode=debt",
+        "diagnostics"
+      ],
+      "writers": [
+        "context metabolism maintenance jobs"
+      ],
+      "retention": "raw facts decay into verified facts, durable invariants, compact doctrine, or composted rows",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with subject,content,stage,usefulness,proof_strength,recency,source,contradicted_by,retrieval_triggers,delete_when",
+      "repair": "remove malformed tail row; next metabolism pass recreates file"
     }
   ],
   "multi_writer": [
