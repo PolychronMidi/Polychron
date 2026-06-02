@@ -463,7 +463,7 @@ async function dispatchEvent(eventName, stdinJson) {
     }
     case 'PreCompact':
       if (!isStrictMode()) return { stdout: '', stderr: ' ', exit_code: 0 };
-      return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty, 30_000, 'PreCompact');
+      return runChain(routeRegistry.lifecycleScripts('PreCompact').map(_hookScript), empty, 30_000, 'PreCompact');
     case 'PostCompact':
       if (!isStrictMode()) return { stdout: '', stderr: ' ', exit_code: 0 };
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
