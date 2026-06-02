@@ -4,7 +4,6 @@
 // transcript that the proxy never touches; it grows unbounded and Claude Code
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const DEFAULTS = {
