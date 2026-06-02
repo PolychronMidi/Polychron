@@ -40,20 +40,23 @@ function stageStopReminder(root, reason) {
   writeJsonAtomic(file, JSON.stringify({ ts: new Date().toISOString(), text }));
 }
 
-// Stop is the quiescent point (turn ended, model idle) where the append-only
-// transcript can be shrunk below Claude Code's ~30MB read limit without a
-function maybeCompactStopTranscript(root, body) {
+// Shrink the append-only transcript below Claude Code's ~30MB read limit at a
+// safe point. Stop/SessionStart are quiescent (model idle) and use the 24MB
+// high-water; midturn (PostToolUse) only fires in the emergency band near the
+function maybeCompactTranscript(root, body, trigger) {
   try {
     const payload = JSON.parse(body || '{}');
     const transcriptPath = payload && payload.transcript_path;
     if (!transcriptPath) return;
-    const result = maybeCompactTranscriptFile({ transcriptPath });
+    let emit;
+    try { ({ emit } = require('../proxy/shared')); } catch (_e) { emit = undefined; }
+    const result = maybeCompactTranscriptFile({ transcriptPath, emit, trigger });
     if (result && result.changedEntries > 0 && root) {
       const ts = new Date().toISOString();
       const before = Math.round((result.beforeBytes || 0) / 1048576);
       const after = Math.round((result.afterBytes || 0) / 1048576);
       append(path.join(root, 'log', 'hme.log'),
-        `${ts} INFO transcript-compactor: ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB`);
+        `${ts} INFO transcript-compactor (${trigger}): ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB tier=${result.tier || 0}`);
     }
   } catch (_err) { /* silent-ok: transcript compaction is best-effort */ }
 }
