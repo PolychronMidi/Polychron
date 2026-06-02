@@ -26,7 +26,14 @@ function buildMesh(root = PROJECT_ROOT) {
     }
   }
   for (const m of middleware) {
-    nodes.push(_node('middleware', m.name, { file: m.file, phase: m.phase, effects: m.effects || [] }));
+    nodes.push(_node('middleware', m.name, {
+      file: m.file,
+      phase: m.phase,
+      effects: m.effects || [],
+      mutatesPayload: Boolean(m.mutatesPayload),
+      mutatesToolResult: Boolean(m.mutatesToolResult),
+      idempotencyMarkerDeclared: Object.prototype.hasOwnProperty.call(m, 'idempotencyMarkerRequired'),
+    }));
     for (const effect of m.effects || []) edges.push(_edge(`middleware:${m.name}`, `effect:${effect}`, 'emits_effect'));
   }
   for (const s of stateFiles) {
