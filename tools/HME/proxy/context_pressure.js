@@ -19,6 +19,7 @@ function inputBudgetFor(modelId) {
 // Conservative input-token estimate for gates. Calibration may raise the estimate
 // when a route's tokenizer is denser than the priors, but it must never lower a
 // size gate below the static priors: fitted drift already proved that can ship a
+// tool-result-heavy over-window payload upstream.
 function estimateTokens(payload, env = process.env, projectRoot = PROJECT_ROOT, modelId = '') {
   const { semanticTokenEstimate } = require('./context_token_estimate');
   const { calibratedFactors } = require('./context_calibration');
