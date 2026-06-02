@@ -23,6 +23,9 @@ test('state-files-backed stores are registered from ownership registry', () => {
   assert.ok(names.includes('statefile_hme_middleware_processed'));
   assert.ok(names.includes('statefile_hme_nexus'));
   assert.ok(names.includes('statefile_hme_errors'));
+  assert.ok(names.includes('statefile_hme_incidents'));
+  assert.ok(names.includes('statefile_tool_retry_guard'));
+  assert.ok(names.includes('statefile_lifesaver_injections'));
 });
 
 test('register rejects unsupported format', () => {
