@@ -1131,11 +1131,7 @@ test('context budget compaction gears start near context high-water and escalate
     });
   } finally {
     process.env = oldEnv;
-    if (prevStatusline == null) {
-      try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: tempfile cleanup */ }
-    } else {
-      fs.writeFileSync(statusline, prevStatusline);
-    }
+    try { fs.rmSync(path.dirname(isolatedStatusline), { recursive: true, force: true }); } catch (_e) { /* silent-ok: tempdir cleanup */ }
   }
 });
 
