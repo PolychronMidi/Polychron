@@ -11,24 +11,29 @@ function _meta(meta) {
   return meta && typeof meta === 'object' ? { ...meta } : {};
 }
 
+function _withMeta(base, meta) {
+  const m = _meta(meta);
+  return Object.keys(m).length > 0 ? { ...base, meta: m } : base;
+}
+
 function allow(message = null, meta = {}) {
-  return { decision: 'allow', message: message || null, meta: _meta(meta) };
+  return _withMeta({ decision: 'allow', message: message || null }, meta);
 }
 
 function deny(reason = '', meta = {}) {
-  return { decision: 'deny', reason: reason || '', meta: _meta(meta) };
+  return _withMeta({ decision: 'deny', reason: reason || '' }, meta);
 }
 
 function instruct(message = '', meta = {}) {
-  return { decision: 'instruct', message: message || '', meta: _meta(meta) };
+  return _withMeta({ decision: 'instruct', message: message || '' }, meta);
 }
 
 function rewrite(updatedInput = {}, message = '', meta = {}) {
-  return { decision: 'rewrite', updatedInput: updatedInput || {}, message: message || '', meta: _meta(meta) };
+  return _withMeta({ decision: 'rewrite', updatedInput: updatedInput || {}, message: message || '' }, meta);
 }
 
 function error(message = '', failMode = 'open', meta = {}) {
-  return { decision: 'error', message: message || '', failMode: failMode || 'open', meta: _meta(meta) };
+  return _withMeta({ decision: 'error', message: message || '', failMode: failMode || 'open' }, meta);
 }
 
 function isDeny(decision) {
