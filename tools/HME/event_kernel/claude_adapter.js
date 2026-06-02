@@ -43,10 +43,23 @@ function stageStopReminder(root, reason) {
 // Shrink the append-only transcript below Claude Code's ~30MB read limit at a
 // safe point. Stop/SessionStart are quiescent (model idle) and use the 24MB
 // high-water; midturn (PostToolUse) only fires in the emergency band near the
+function _resolveTranscriptPath(payload, root) {
+  if (payload && payload.transcript_path && fs.existsSync(payload.transcript_path)) return payload.transcript_path;
+  // SessionStart/PostToolUse hook inputs may omit transcript_path; resolve it
+  // from session_id the same way the Stop path does so all triggers work.
+  try {
+    const { transcriptForSession, claudeProjectsDir, newestJsonl } = require('./lifecycle_payload');
+    const dir = claudeProjectsDir(root);
+    if (!fs.existsSync(dir)) return '';
+    const sid = payload && payload.session_id;
+    return transcriptForSession(dir, sid) || newestJsonl(dir) || '';
+  } catch (_e) { return ''; }
+}
+
 function maybeCompactTranscript(root, body, trigger) {
   try {
     const payload = JSON.parse(body || '{}');
-    const transcriptPath = payload && payload.transcript_path;
+    const transcriptPath = _resolveTranscriptPath(payload, root);
     if (!transcriptPath) return;
     let emit;
     try { ({ emit } = require('../proxy/shared')); } catch (_e) { emit = undefined; }
