@@ -162,9 +162,11 @@ register({ name: 'agent_tier', relPath: 'tmp/hme-agent-tier.txt', format: 'text'
 register({ name: 'last_deny_reason', relPath: 'tmp/hme-last-deny-reason.txt', format: 'text' });
 register({ name: 'middleware_processed', relPath: 'tmp/hme-middleware-processed.jsonl', format: 'jsonl' });
 register({ name: 'turn_edits', relPath: 'tmp/hme-turn-edits.txt', format: 'text' });
+registerFromStateFiles();
 
 module.exports = {
   register,
+  registerFromStateFiles,
   read,
   write,
   append,
