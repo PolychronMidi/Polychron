@@ -46,3 +46,13 @@ test('22_lifesaver_inject consumes the canonical self_origin classifier (no priv
   assert.ok(/selfOrigin\.isObservation\(/.test(src), '22_lifesaver_inject must use selfOrigin.isObservation()');
   assert.ok(!/const SELF_TAG_RE\s*=/.test(src), '22_lifesaver_inject must NOT redefine a private SELF_TAG_RE (drift source)');
 });
+
+// context_status.js (the live session-status injector) is the third JS consumer
+// that previously hand-maintained a private self-tag subset. It must likewise
+test('context_status consumes the canonical self_origin classifier (no private _SELF_TAG_RE)', () => {
+  const src = fs.readFileSync(path.join(root, 'tools/HME/proxy/context_status.js'), 'utf8');
+  assert.ok(/require\(['"]\.\/self_origin['"]\)/.test(src), 'context_status must require ./self_origin');
+  assert.ok(/selfOrigin\.isSelfOrigin\(/.test(src), 'context_status must use selfOrigin.isSelfOrigin()');
+  assert.ok(/selfOrigin\.isObservation\(/.test(src), 'context_status must use selfOrigin.isObservation()');
+  assert.ok(!/_SELF_TAG_RE\s*=\s*\//.test(src), 'context_status must NOT redefine a private _SELF_TAG_RE (drift source)');
+});
