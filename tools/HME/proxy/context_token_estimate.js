@@ -60,25 +60,40 @@ function _tokenCharBuckets(value, inToolResult = false) {
   return out;
 }
 
-function semanticTokenEstimate(payload, env = process.env) {
-  if (!payload || typeof payload !== 'object') return 0;
-  const perTok = positiveNumber(env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST) || 4;
-  // Tool results are the dominant failure mode for OmniRoute over-window misses:
-  // large command/read outputs tokenize closer to ~1.8 bytes/token in the Codex
-  const toolResultPerTok = positiveNumber(env.HME_PROXY_TOOL_RESULT_BYTES_PER_TOKEN_EST)
-    || positiveNumber(env.HME_PROXY_CONTEXT_TOOL_RESULT_BYTES_PER_TOKEN_EST)
-    || 1.8;
+// Split a payload into the two byte buckets the estimator weighs separately:
+// tool_result content (heavy, tokenizes denser) vs everything else. Exported so
+// the calibration loop can record the same composition the estimate is built on.
+function payloadByteBuckets(payload) {
   const buckets = { regular: 0, toolResult: 0 };
+  if (!payload || typeof payload !== 'object') return buckets;
   for (const part of [payload.system, payload.messages, payload.tools]) {
     const b = _tokenCharBuckets(part);
     buckets.regular += b.regular;
     buckets.toolResult += b.toolResult;
   }
-  // Small framing allowance for roles/types/tool names without letting JSON
-  // escapes, cache metadata, or encrypted signatures dominate the estimate.
   const msgCount = Array.isArray(payload.messages) ? payload.messages.length : 0;
   const toolCount = Array.isArray(payload.tools) ? payload.tools.length : 0;
   buckets.regular += 32 * msgCount + 96 * toolCount;
+  return buckets;
+}
+
+// Resolve the bytes/token ratios. Optional `factors` (from the calibration
+// loop) override the env priors; absent factors -> env defaults -> hard
+function resolveFactors(env = process.env, factors = null) {
+  const envPerTok = positiveNumber(env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST) || 4;
+  const envToolPerTok = positiveNumber(env.HME_PROXY_TOOL_RESULT_BYTES_PER_TOKEN_EST)
+    || positiveNumber(env.HME_PROXY_CONTEXT_TOOL_RESULT_BYTES_PER_TOKEN_EST)
+    || 1.8;
+  return {
+    perTok: (factors && positiveNumber(factors.perTok)) || envPerTok,
+    toolResultPerTok: (factors && positiveNumber(factors.toolResultPerTok)) || envToolPerTok,
+  };
+}
+
+function semanticTokenEstimate(payload, env = process.env, factors = null) {
+  if (!payload || typeof payload !== 'object') return 0;
+  const { perTok, toolResultPerTok } = resolveFactors(env, factors);
+  const buckets = payloadByteBuckets(payload);
   const contentEstimate = Math.ceil((buckets.regular / perTok) + (buckets.toolResult / toolResultPerTok));
   // Conservative floor: the content-only walk skips JSON structural framing
   // (keys, braces, tool_use ids, type tags) that real tokenizers DO count.
