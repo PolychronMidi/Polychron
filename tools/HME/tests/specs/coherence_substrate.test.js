@@ -104,11 +104,53 @@ test('coherence economics covers budgets policy feedback immune checks and revie
   assert.equal(economics.reviewScales({ subtoken: 'proof', function: 'contract' }).filter((x) => x.checked).length, 2);
 });
 
-test('i/why proof debt and mesh modes dispatch', () => {
+test('i/why proof debt mesh resolve modes dispatch', () => {
   const why = path.join(process.env.PROJECT_ROOT, 'tools/HME/i/why');
-  for (const mode of ['proof', 'debt', 'mesh']) {
+  for (const mode of ['proof', 'debt', 'mesh', 'resolve']) {
     const r = spawnSync(why, [`mode=${mode}`], { cwd: process.env.PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT: process.env.PROJECT_ROOT }, encoding: 'utf8', timeout: 30000 });
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, new RegExp(`mode=${mode}`));
   }
+});
+
+test('PRODUCER: recordIncident fans out to a coherence event and a metabolism fact', () => {
+  const root = tmpRoot();
+  try {
+    incidents.recordIncident(root, { id: 'wire', component: 'test', summary: 'boom', repair: 'fix' });
+    const ev = events.readEvents(root);
+    assert.equal(ev.length, 1);
+    assert.equal(ev[0].kind, 'incident');
+    assert.deepEqual(ev[0].obligations, ['fix']);
+    const facts = metabolism.readFacts(root);
+    assert.equal(facts.length, 1);
+    assert.equal(facts[0].source, 'incident_registry');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('PRODUCER: resolveIncident is idempotent across runs', () => {
+  const root = tmpRoot();
+  try {
+    const input = { id: 'r', component: 'test', summary: 'fixed', resolver: 'unit', dedupeKey: 'upstream:line-x' };
+    assert.equal(incidents.resolveIncident(root, input), true);
+    incidents.resolveIncident(root, input);
+    incidents.resolveIncident(root, input);
+    const resolved = incidents.readIncidents(root).filter((r) => r.status === 'resolved' && r.dedupeKey === 'upstream:line-x');
+    assert.equal(resolved.length, 1, 'repeated resolve must not spam the ledger');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('DEDUP: incident_resolvers self/observation classification comes from self_origin.js', () => {
+  const selfOrigin = require('../../proxy/self_origin');
+  const root = tmpRoot();
+  try {
+    // resolver verdict for an observation line must agree with the shared module
+    assert.equal(selfOrigin.isObservation('[universal_pulse] WARN slow'), true);
+    assert.equal(resolvers.resolveLine(root, '[T] [universal_pulse] WARN slow').kind, 'observation');
+    assert.equal(resolvers.resolveLine(root, '[T] [agent-real] ERROR real').resolved, false);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('ENFORCE: every tool_result-mutating middleware declares idempotency intent; every state file has an owner', () => {
+  assert.deepEqual(mesh.queryMesh(process.env.PROJECT_ROOT, 'unmarked_mutators').map((n) => n.name), []);
+  assert.deepEqual(mesh.queryMesh(process.env.PROJECT_ROOT, 'ownerless_state').map((n) => n.name), []);
 });
