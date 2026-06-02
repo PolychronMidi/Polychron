@@ -19,6 +19,11 @@ const STATE_FILE_FORMAT_HINTS = {
   'tmp/hme-universal-pulse.heartbeat': { name: 'statefile_hme_universal_pulse_heartbeat', format: 'text' },
   'tools/HME/runtime/supervisor-abandoned': { name: 'statefile_supervisor_abandoned', format: 'json' },
   'log/hme-errors.log': { name: 'statefile_hme_errors', format: 'text' },
+  'tools/HME/runtime/incidents.jsonl': { name: 'statefile_hme_incidents', format: 'jsonl' },
+  'tools/HME/runtime/tool-retry-guard.json': { name: 'statefile_tool_retry_guard', format: 'json' },
+  'tools/HME/runtime/tool-retry-guard.jsonl': { name: 'statefile_tool_retry_guard_log', format: 'jsonl' },
+  'tools/HME/runtime/lifesaver-injections.jsonl': { name: 'statefile_lifesaver_injections', format: 'jsonl' },
+  'tools/HME/runtime/heartbeat-lifesaver.ts': { name: 'statefile_lifesaver_heartbeat', format: 'text' },
 };
 
 // rationale: tmp/-relative names so PROJECT_ROOT moves don't break entries.
