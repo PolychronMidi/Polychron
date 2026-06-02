@@ -343,6 +343,7 @@ async function main() {
       if (ev !== 'Stop') return result;
       const reason = denyReason(result.stdout || '');
       if (reason) stageStopReminder(root, reason);
+      maybeCompactStopTranscript(root, body);
       return result;
     },
     finalRelay,
