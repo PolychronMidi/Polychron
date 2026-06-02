@@ -448,7 +448,7 @@ async function dispatchEvent(eventName, stdinJson) {
       if (!isStrictMode()) return { stdout: '', stderr: ' ', exit_code: 0 };
       await applyOmoLive('SessionStart', empty);
       await observeOmoShadow('SessionStart', empty);
-      return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty, 30_000, 'SessionStart');
+      return runChain(routeRegistry.lifecycleScripts('SessionStart').map(_hookScript), empty, 30_000, 'SessionStart');
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty, 30_000, 'UserPromptSubmit');
     case 'Stop': {
