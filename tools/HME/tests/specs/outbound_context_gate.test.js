@@ -102,7 +102,7 @@ test('preflight smoke over-window returns local 413 without lifesaver noise', ()
     };
     fs.appendFileSync = (file, data, ...args) => { writes.push([String(file), String(data)]); return originalAppend(file, data, ...args); };
     const verdict = applyOutboundContextGate({
-      payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'x'.repeat(40000) }] },
+      payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'x'.repeat(160000) }] },
       isAnthropic: true,
       isInteractivePath: true,
       isOmniRouteSwap: false,
@@ -143,7 +143,7 @@ test('interactive over-window refusal triggers live cc compact once', () => {
     const fixtureRoot = path.join(os.tmpdir(), 'hme-outbound-gate-test');
     fs.appendFileSync = (_file, data, ..._args) => { writes.push(String(data)); };
     const verdict = applyOutboundContextGate({
-      payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'x'.repeat(40000) }] },
+      payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'x'.repeat(160000) }] },
       isAnthropic: true,
       isInteractivePath: true,
       isOmniRouteSwap: false,
