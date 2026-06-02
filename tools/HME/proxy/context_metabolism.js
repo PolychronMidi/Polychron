@@ -49,4 +49,14 @@ function metabolize(facts = []) {
   });
 }
 
-module.exports = { STAGES, normalizeFact, metabolismScore, nextStage, metabolize };
+function appendFact(root, fact) {
+  const row = { ts: new Date().toISOString(), ...normalizeFact(fact), stage: nextStage(fact), score: metabolismScore(fact) };
+  state.append(STORE, row, root);
+  return row;
+}
+
+function readFacts(root) {
+  return state.read(STORE, root);
+}
+
+module.exports = { STORE, STAGES, normalizeFact, metabolismScore, nextStage, metabolize, appendFact, readFacts };
