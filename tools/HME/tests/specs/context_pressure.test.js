@@ -1,0 +1,42 @@
+'use strict';
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+
+const { inputBudgetFor, estimateTokens, contextPressure } = require('../../proxy/context_pressure');
+const { semanticTokenEstimate } = require('../../proxy/context_token_estimate');
+
+const BIG = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(200000) }] };
+
+test('inputBudgetFor resolves the model context window and 0 for unknown (fail open)', () => {
+  assert.equal(inputBudgetFor('gpt-5.5-xhigh'), 480000);
+  assert.equal(inputBudgetFor('no-such-model-zzz'), 0);
+});
+
+test('contextPressure is the single used-vs-budget reading; null fraction when budget unknown', () => {
+  const env = { HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' };
+  const known = contextPressure({ payload: BIG, modelId: 'gpt-5.5-xhigh', env });
+  assert.equal(known.budget, 480000);
+  assert.ok(known.usedTokens > 0);
+  assert.ok(known.fraction > 0 && known.fraction === known.usedTokens / 480000);
+  assert.equal(known.headroom, Math.max(0, 480000 - known.usedTokens));
+
+  const unknown = contextPressure({ payload: BIG, modelId: 'no-such-model-zzz', env });
+  assert.equal(unknown.budget, 0);
+  assert.equal(unknown.fraction, null, 'no phantom window to divide by');
+  assert.equal(unknown.headroom, null);
+});
+
+test('estimateTokens matches the estimator with priors when calibration is disabled', () => {
+  // No HME_PROXY_ESTIMATOR_CALIBRATION flag -> calibratedFactors returns priors,
+  // so the shared estimate equals the bare estimator. Deterministic.
+  const env = { HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' };
+  assert.equal(estimateTokens(BIG, env), semanticTokenEstimate(BIG, env, null));
+});
+
+test('swap size-gate and outbound gate now read the SAME budget resolver', () => {
+  const { swapWindowCheck } = require('../../proxy/overdrive_route');
+  const { inputBudgetFor: gateBudget } = require('../../proxy/outbound_context_gate');
+  const wc = swapWindowCheck(BIG, 'gpt-5.5-xhigh', { HME_OMNI_SWAP_FIT_FRACTION: '0.95', HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' });
+  assert.equal(wc.budget, gateBudget('gpt-5.5-xhigh'), 'one budget resolver feeds both gates');
+  assert.equal(wc.budget, inputBudgetFor('gpt-5.5-xhigh'));
+});
