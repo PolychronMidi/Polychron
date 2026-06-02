@@ -466,7 +466,7 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain(routeRegistry.lifecycleScripts('PreCompact').map(_hookScript), empty, 30_000, 'PreCompact');
     case 'PostCompact':
       if (!isStrictMode()) return { stdout: '', stderr: ' ', exit_code: 0 };
-      return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
+      return runChain(routeRegistry.lifecycleScripts('PostCompact').map(_hookScript), empty, 30_000, 'PostCompact');
     case 'PreToolUse': {
       const omo = await applyOmoLive('PreToolUse', empty);
       if (omo.status === 'disabled') await observeOmoShadow('PreToolUse', empty);
