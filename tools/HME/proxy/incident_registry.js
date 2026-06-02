@@ -58,7 +58,7 @@ function recordIncident(root, input, opts = {}) {
   const incidentPath = path.join(root, INCIDENT_LOG_REL);
   try {
     fs.mkdirSync(path.dirname(errorPath), { recursive: true });
-    fs.appendFileSync(errorPath, `${line}\n`);
+    if (incident.status === 'open') fs.appendFileSync(errorPath, `${line}\n`);
     fs.mkdirSync(path.dirname(incidentPath), { recursive: true });
     fs.appendFileSync(incidentPath, `${JSON.stringify({ ...incident, line, lifesaver: LIFESAVER_TEXT_RE.test(line) })}\n`);
     return true;
@@ -66,6 +66,18 @@ function recordIncident(root, input, opts = {}) {
     process.stderr.write(`${line} (incident append failed: ${err.message})\n`);
     return false;
   }
+}
+
+function resolveIncident(root, input) {
+  return recordIncident(root, { ...input, status: 'resolved', severity: input.severity || 'lifesaver' }, { line: input.line || formatIncidentLine({ ...input, status: 'resolved' }) });
+}
+
+function resolutionForLine(root, line) {
+  return require('./incident_resolvers').resolveLine(root, line);
+}
+
+function unresolvedLines(root, lines) {
+  return (lines || []).filter((line) => !resolutionForLine(root, line).resolved);
 }
 
 module.exports = {
