@@ -2,10 +2,10 @@
 // Bridge: route any middleware throw to the LIFESAVER channel.
 //
 
-const fs = require('fs');
 const path = require('path');
+const incidentRegistry = require('../incident_registry');
 
-const ERROR_LOG_REL = path.join('log', 'hme-errors.log');
+const ERROR_LOG_REL = incidentRegistry.ERROR_LOG_REL;
 
 // Round-trip detector for our own emitted line.
 const _MIDDLEWARE_THROW_RE = /\[middleware-throw\] LIFESAVER -- /;
