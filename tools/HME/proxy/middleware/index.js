@@ -293,6 +293,37 @@ function _loadPhaseRegistry() {
   return _phaseRegistry;
 }
 
+let _manifest = null;
+function _loadManifest() {
+  if (_manifest) return _manifest;
+  const data = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8'));
+  const modules = Array.isArray(data.modules) ? data.modules : [];
+  const byFile = new Map();
+  const byName = new Map();
+  for (const entry of modules) {
+    if (!entry || typeof entry.file !== 'string' || typeof entry.name !== 'string') {
+      throw new Error('[middleware] manifest module entries require file and name');
+    }
+    if (!Array.isArray(entry.effects)) throw new Error(`[middleware] manifest ${entry.file} missing effects[]`);
+    if (typeof entry.mutatesPayload !== 'boolean') throw new Error(`[middleware] manifest ${entry.file} missing mutatesPayload boolean`);
+    if (typeof entry.mutatesToolResult !== 'boolean') throw new Error(`[middleware] manifest ${entry.file} missing mutatesToolResult boolean`);
+    if (!['always', 'strict-only'].includes(entry.strictMode || 'always')) throw new Error(`[middleware] manifest ${entry.file} invalid strictMode`);
+    if (entry.mutatesToolResult && entry.idempotencyMarkerRequired === undefined) {
+      throw new Error(`[middleware] manifest ${entry.file} mutates tool results but does not declare idempotencyMarkerRequired`);
+    }
+    if (byFile.has(entry.file)) throw new Error(`[middleware] manifest duplicate file ${entry.file}`);
+    if (byName.has(entry.name)) throw new Error(`[middleware] manifest duplicate name ${entry.name}`);
+    byFile.set(entry.file, entry);
+    byName.set(entry.name, entry);
+  }
+  _manifest = { raw: data, modules, byFile, byName };
+  return _manifest;
+}
+
+function _manifestEntryForFile(file) {
+  return _loadManifest().byFile.get(file) || null;
+}
+
 // Numeric prefix governs phase. An optional letter suffix (e.g. 06a) inserts
 // a module between integer slots without renumbering; the integer part still
 // determines its phase. See phases.json `_suffix_rule`.
