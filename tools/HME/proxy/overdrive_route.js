@@ -15,10 +15,10 @@ const {
 
 // swapWindowCheck: does the request's estimated input exceed the swap model's
 // input cap (with HME_OMNI_SWAP_FIT_FRACTION headroom)? budget 0 => unknown => no gate.
-function swapWindowCheck(payload, swapModel, env = process.env) {
+function swapWindowCheck(payload, swapModel, env = process.env, projectRoot = PROJECT_ROOT) {
   const fitFraction = Number(env.HME_OMNI_SWAP_FIT_FRACTION || '0.95');
   const { contextPressure } = require('./context_pressure');
-  const { usedTokens: estTokens, budget } = contextPressure({ payload, modelId: swapModel, env, projectRoot: PROJECT_ROOT });
+  const { usedTokens: estTokens, budget } = contextPressure({ payload, modelId: swapModel, env, projectRoot });
   const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
   return { exceeds, estTokens, budget, fitFraction };
 }
