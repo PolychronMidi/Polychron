@@ -57,3 +57,19 @@ test('incident registry can suppress resolver-proven historical lines', () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('incident ontology separates observations from unresolved agent debt', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-observation-'));
+  try {
+    const lines = [
+      '[T] [universal_pulse] WARN hook latency high',
+      '[T] [hme-proxy] LIFESAVER -- estimator drift informational after conservative gate fix',
+      '[T] [agent-real] ERROR still actionable',
+    ];
+    const unresolved = incidents.unresolvedLines(root, lines);
+    assert.equal(unresolved.length, 1);
+    assert.match(unresolved[0], /agent-real/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
