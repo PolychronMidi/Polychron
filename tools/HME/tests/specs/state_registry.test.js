@@ -18,6 +18,13 @@ test('canonical stores are registered up-front', () => {
   assert.ok(names.includes('turn_edits'));
 });
 
+test('state-files-backed stores are registered from ownership registry', () => {
+  const names = reg.listRegistered();
+  assert.ok(names.includes('statefile_hme_middleware_processed'));
+  assert.ok(names.includes('statefile_hme_nexus'));
+  assert.ok(names.includes('statefile_hme_errors'));
+});
+
 test('register rejects unsupported format', () => {
   assert.throws(() => reg.register({ name: 'x', relPath: 'tmp/x.bin', format: 'bin' }), /unsupported format/);
 });
