@@ -119,4 +119,5 @@ const m = mode();
 if (m === 'debt') runDebt();
 else if (m === 'mesh') runMesh();
 else if (m === 'resolve') runResolve();
+else if (m === 'metabolize') runMetabolize();
 else runProof();
