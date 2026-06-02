@@ -3,7 +3,7 @@ const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
 
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
-const { servicePort } = require('../service_registry');
+const { service, servicePort, serviceUrl } = require('../service_registry');
 
 const WORKER_PORT = servicePort('worker');
 const LLAMACPP_DAEMON_PORT = servicePort('llamacpp_daemon');
