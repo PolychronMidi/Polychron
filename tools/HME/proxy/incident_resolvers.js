@@ -20,8 +20,8 @@ function _observationOrSelf(line, _root) {
 
 function _autocommitResolved(line, root) {
   if (!/\[autocommit\].*pre-commit validation blocked/i.test(line)) return null;
-  const out = (() => { try { return require('child_process').execFileSync('git', ['-C', root, 'status', '--short'], { encoding: 'utf8', timeout: 1000 }).trim(); } catch (_e) { return ''; } })();
-  return { resolved: out === '', kind: 'autocommit', resolver: 'git status --short empty', proof: { status: out }, reason: out === '' ? 'working tree is clean' : 'working tree still dirty' };
+  const out = (() => { try { return require('child_process').execFileSync('git', ['-C', root, 'status', '--short'], { encoding: 'utf8', timeout: 1000 }).trim(); } catch (_e) { return '__git_status_failed__'; } })();
+  return { resolved: out === '', kind: 'autocommit', resolver: 'git status --short empty', proof: { status: out }, reason: out === '' ? 'working tree is clean' : 'working tree still dirty or unproven' };
 }
 
 function _upstreamContextWindow(line, root) {
