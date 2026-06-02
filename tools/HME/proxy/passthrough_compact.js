@@ -34,6 +34,7 @@ function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
   const telemetry = opts.telemetry;
+  const tokenEstimator = typeof opts.tokenEstimator === 'function' ? opts.tokenEstimator : null;
   const route = opts.route || 'passthrough';
   const model = opts.model || payload && (payload.model || payload.target_model || payload.original_model) || '';
   let keepMin = Number(opts.keepMin || 10);
