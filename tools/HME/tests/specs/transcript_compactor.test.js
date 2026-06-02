@@ -103,6 +103,59 @@ test('compactTranscriptFile is a no-op under the high-water mark', () => {
   }
 });
 
+// The resume-critical skeleton: Claude Code rebuilds the conversation tree
+// purely from uuid/parentUuid/type/role and tool_use<->tool_result pairing.
+// Compaction must leave ALL of that byte-identical; only content values change.
+function skeleton(jsonlText) {
+  return jsonlText.split('\n').filter((l) => l.trim()).map((line) => {
+    let o;
+    try { o = JSON.parse(line); }
+    catch (err) { return 'UNPARSEABLE:' + err.message; }
+    const msg = o.message || {};
+    const c = Array.isArray(msg.content) ? msg.content : [];
+    return JSON.stringify({
+      u: o.uuid, p: o.parentUuid, t: o.type, r: msg.role,
+      tu: c.filter((b) => b && b.type === 'tool_use').map((b) => b.id).sort(),
+      tr: c.filter((b) => b && b.type === 'tool_result').map((b) => b.tool_use_id).sort(),
+      types: c.map((b) => b && b.type).join(','),
+    });
+  });
+}
+
+test('compaction preserves the resume-critical skeleton (uuid/parent/type/role/tool-pairing)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
+  try {
+    const f = path.join(dir, 't.jsonl');
+    const lines = [];
+    for (let i = 0; i < 300; i += 1) {
+      // Interleave assistant tool_use with the matching user tool_result so
+      // pairing + chain are realistic.
+      lines.push(JSON.stringify({ uuid: `a${i}`, parentUuid: i === 0 ? null : `u${i - 1}`, type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'thinking', thinking: 'reason', signature: 's'.repeat(9000) }, { type: 'tool_use', id: `call${i}`, name: 'Bash', input: { command: 'x'.repeat(9000) } }] } }));
+      lines.push(JSON.stringify({ uuid: `u${i}`, parentUuid: `a${i}`, type: 'user',
+        toolUseResult: { stdout: 'x'.repeat(60000) },
+        message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: `call${i}`, content: 'y'.repeat(60000) }] } }));
+    }
+    fs.writeFileSync(f, lines.join('\n') + '\n');
+    const before = skeleton(fs.readFileSync(f, 'utf8'));
+    const r = compactTranscriptFile(f, { highWaterBytes: 1024, keepRecent: 40, byteFloor: 4096 });
+    assert.equal(r.ok, true);
+    assert.ok(r.changedEntries > 0);
+    const afterText = fs.readFileSync(f, 'utf8');
+    const after = skeleton(afterText);
+    assert.deepEqual(after, before, 'skeleton must be byte-identical -> resume tree intact');
+    // No broken parentUuid links and no orphaned tool_results introduced.
+    const rows = afterText.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
+    const uuids = new Set(rows.map((o) => o.uuid));
+    assert.ok(rows.every((o) => o.parentUuid === null || o.parentUuid === undefined || uuids.has(o.parentUuid)), 'every parentUuid resolves');
+    const toolUseIds = new Set(rows.flatMap((o) => ((o.message && o.message.content) || []).filter((b) => b && b.type === 'tool_use').map((b) => b.id)));
+    const orphans = rows.flatMap((o) => ((o.message && o.message.content) || []).filter((b) => b && b.type === 'tool_result' && b.tool_use_id && !toolUseIds.has(b.tool_use_id)));
+    assert.equal(orphans.length, 0, 'tool_use<->tool_result pairing preserved');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('compactTranscriptFile atomically shrinks an over-limit transcript and keeps it valid jsonl', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
   try {
