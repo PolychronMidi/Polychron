@@ -5,26 +5,14 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
-const { semanticTokenEstimate } = require('./context_token_estimate');
-const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./hme_proxy_request_mutation');
+const { compactLargeInteractiveAnthropicPayload } = require('./hme_proxy_request_mutation');
 const { submitCcCompactOnce } = require('./cc_control');
+const { inputBudgetFor, estimateTokens } = require('./context_pressure');
 
-// Resolved budget for a model id: the full context window (context_length).
-// Unified on context_length -- gate input against the whole window, not the
-// output-reserved max_input_tokens; the dynamic output cap handles output
-function inputBudgetFor(modelId) {
-  const info = modelOutputInfo(modelId);
-  if (info.context > 0) return info.context;
-  if (info.maxInput > 0 && info.maxOutput > 0) return info.maxInput + info.maxOutput;
-  if (info.maxInput > 0) return info.maxInput;
-  return 0; // unknown -> no gate (fail open; never block on missing config)
-}
-
-// Estimate the final outbound input size of `payload` (post-mutation), using
-// calibrated bytes/token when the feedback loop is enabled and fitted.
+// Estimate the final outbound input size of `payload` (post-mutation) via the
+// shared, calibrated pressure model -- one estimator for every gate.
 function estimateInputTokens(payload, env) {
-  const { calibratedFactors } = require('./context_calibration');
-  return semanticTokenEstimate(payload, env, calibratedFactors(env || process.env, PROJECT_ROOT));
+  return estimateTokens(payload, env || process.env, PROJECT_ROOT);
 }
 
 // Reroute helper: from a swap chain, pick the first model whose input budget
