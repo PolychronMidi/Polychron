@@ -31,21 +31,18 @@ function bashTags() {
   return new Set(tagsFromAlternation(m[1]));
 }
 
-function lifesaverTags() {
-  const src = fs.readFileSync(path.join(root, 'tools/HME/proxy/middleware/22_lifesaver_inject.js'), 'utf8');
-  const m = /SELF_TAG_RE = \/\^\\\[\(([^]*?)\)\\\]\//.exec(src);
-  assert.ok(m, '22_lifesaver_inject must define SELF_TAG_RE');
-  return new Set(tagsFromAlternation(m[1]));
-}
-
 test('self_origin.js is a superset of the bash _self_tags.sh tag set (no drift)', () => {
   const sup = selfOriginTags();
   const missing = [...bashTags()].filter((t) => !sup.has(t));
   assert.deepEqual(missing, [], `self_origin.js missing canonical bash tags: ${missing.join(', ')}`);
 });
 
-test('self_origin.js is a superset of the 22_lifesaver_inject SELF_TAG_RE tag set (no drift)', () => {
-  const sup = selfOriginTags();
-  const missing = [...lifesaverTags()].filter((t) => !sup.has(t));
-  assert.deepEqual(missing, [], `self_origin.js missing 22_lifesaver_inject tags: ${missing.join(', ')}`);
+// 22_lifesaver_inject.js (the live LIFESAVER request-path classifier) must
+// CONSUME the canonical self_origin classifier rather than hand-maintaining its
+test('22_lifesaver_inject consumes the canonical self_origin classifier (no private SELF_TAG_RE)', () => {
+  const src = fs.readFileSync(path.join(root, 'tools/HME/proxy/middleware/22_lifesaver_inject.js'), 'utf8');
+  assert.ok(/require\(['"]\.\.\/self_origin['"]\)/.test(src), '22_lifesaver_inject must require ../self_origin');
+  assert.ok(/selfOrigin\.isSelfOrigin\(/.test(src), '22_lifesaver_inject must use selfOrigin.isSelfOrigin()');
+  assert.ok(/selfOrigin\.isObservation\(/.test(src), '22_lifesaver_inject must use selfOrigin.isObservation()');
+  assert.ok(!/const SELF_TAG_RE\s*=/.test(src), '22_lifesaver_inject must NOT redefine a private SELF_TAG_RE (drift source)');
 });
