@@ -30,7 +30,8 @@ const CHILDREN = [
     cmd: 'python3',
     args: [path.join(MCP_DIR, 'worker.py'), '--port', String(WORKER_PORT)],
     env: mcpEnv,
-    healthUrl: `http://127.0.0.1:${WORKER_PORT}/health`,
+    healthUrl: serviceUrl('worker'),
+    required: service('worker').required !== false,
     startupMs: 25_000,   // worker loads RAG engines directly -- slower cold boot
     restartDelayMs: 2_000,
     maxRestarts: 20,
