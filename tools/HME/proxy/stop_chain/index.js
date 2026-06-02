@@ -31,6 +31,7 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 const { isStrictMode } = require('../strict_mode');
+const { deny, instruct, allow } = require('../../event_kernel/decision');
 
 // Unified policy registry -- used as a configuration overlay so any stop-
 let _unifiedConfig = null;
@@ -130,10 +131,6 @@ function logError(policyName, message) {
     );
   } catch (_e) { /* error-log write failure is never fatal */ }
 }
-
-function deny(reason)       { return { decision: 'deny', reason: reason || '' }; }
-function instruct(message)  { return { decision: 'instruct', message: message || '' }; }
-function allow(message)     { return { decision: 'allow', message: message || null }; }
 
 function tryParseJson(s) {
   try { return JSON.parse(s || '{}'); } catch (_e) { return {}; }
