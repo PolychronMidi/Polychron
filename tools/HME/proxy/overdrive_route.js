@@ -19,8 +19,9 @@ function swapWindowCheck(payload, swapModel, env = process.env) {
   const fitFraction = Number(env.HME_OMNI_SWAP_FIT_FRACTION || '0.95');
   const { modelInputBudget } = require('./hme_proxy_context_budget');
   const { semanticTokenEstimate } = require('./context_token_estimate');
+  const { calibratedFactors } = require('./context_calibration');
   const budget = modelInputBudget(swapModel);
-  const estTokens = semanticTokenEstimate(payload, env);
+  const estTokens = semanticTokenEstimate(payload, env, calibratedFactors(env, PROJECT_ROOT));
   const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
   return { exceeds, estTokens, budget, fitFraction };
 }
