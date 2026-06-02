@@ -44,6 +44,79 @@ def tracked_files(root: Path = ROOT) -> list[str]:
     return [p.decode("utf-8", "surrogateescape") for p in raw.split(b"\0") if p]
 
 
+# Keys consumed outside tracked Python/JS/shell source: native runtime libraries
+# (OpenMP/torch read OMP_* at C level) or vendored external services (omniroute
+DEAD_ENV_ALLOWLIST = {
+    "OMP_NUM_THREADS",
+    "CALL_LOG_PIPELINE_CAPTURE_STREAM_CHUNKS",
+    "CALL_LOG_PIPELINE_MAX_SIZE_KB",
+}
+# env-name fragments built by f-string / template-literal interpolation, e.g.
+# f"{provider}_DAILY_LIMIT_{label}". A declared key containing one of these is
+_DYN_NAME_RE = re.compile(r"""(?:f["']|`)[^"'`\n]*\{[^}]+\}[^"'`\n]*["'`]""")
+_DYN_SEG_RE = re.compile(r"[A-Z][A-Z0-9_]{3,}")
+
+
+def dynamic_name_fragments(files: list[str]) -> set[str]:
+    frags: set[str] = set()
+    for path, _rel in candidate_files(files):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for m in _DYN_NAME_RE.finditer(text):
+            literal = re.sub(r"\{[^}]+\}", "\x00", m.group(0))
+            for seg in _DYN_SEG_RE.findall(literal):
+                frags.add(seg)
+    return frags
+
+
+def intra_env_referenced(env_path: Path) -> set[str]:
+    refs: set[str] = set()
+    if not env_path.is_file():
+        return refs
+    for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        for m in re.finditer(r"\$\{?([A-Z_][A-Z0-9_]*)\}?", line):
+            refs.add(m.group(1))
+    return refs
+
+
+def above_marker_keys(env_path: Path) -> set[str]:
+    keys: set[str] = set()
+    if not env_path.is_file():
+        return keys
+    for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if MARKER in line:
+            break
+        m = ENV_KEY_RE.match(line.strip())
+        if m:
+            keys.add(m.group(1))
+    return keys
+
+
+MARKER = "SECRETS ABOVE THIS LINE"
+
+
+def dead_env_key_rows(files: list[str]) -> list[str]:
+    declared = parse_env_keys(ENV_TEMPLATE) if ENV_TEMPLATE.is_file() else set()
+    if not declared:
+        return []
+    code = "\n".join(
+        path.read_text(encoding="utf-8", errors="replace")
+        for path, _rel in candidate_files(files)
+    )
+    dyn_frags = dynamic_name_fragments(files)
+    intra = intra_env_referenced(ENV_TEMPLATE) | intra_env_referenced(ROOT_ENV)
+    by_value = above_marker_keys(ROOT_ENV)
+    dead: list[str] = []
+    for key in sorted(declared):
+        if key in DEAD_ENV_ALLOWLIST or key in intra or key in by_value:
+            continue
+        if re.search(r"(?<![A-Za-z0-9_])" + re.escape(key) + r"(?![A-Za-z0-9_])", code):
+            continue
+        if any(frag in key for frag in dyn_frags):
+            continue
+        dead.append(key)
+    return dead
+
+
 def parse_env_keys(path: Path) -> set[str]:
     keys: set[str] = set()
     for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
