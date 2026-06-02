@@ -303,9 +303,13 @@ async function handleAnthropicResponseComplete({
       const { input_tokens } = _extractUsageFromBody(outHeaders, outBuf);
       if (input_tokens != null) {
         const b = payloadByteBuckets(payload);
-        const factorsBefore = calibratedFactors(process.env);
+        const factorsBefore = calibratedFactors(process.env, undefined, swapModel);
         const estBefore = semanticTokenEstimate(payload, process.env, factorsBefore);
-        const fit = recordCalibrationSample({ reg: b.regular, tr: b.toolResult, actual: input_tokens });
+        const fit = recordCalibrationSample({ reg: b.regular, tr: b.toolResult, actual: input_tokens, model: swapModel });
+        // Drift signal computed with the POST-fit factors for this route: if the
+        // calibrated estimate still can't track actuals, alert (model changed).
+        const estAfter = fit ? semanticTokenEstimate(payload, process.env, fit) : estBefore;
+        maybeDriftAlert({ model: swapModel, estimated: estAfter, actual: input_tokens, fitted: Boolean(fit && fit.fitted) });
         // Per-turn calibration signal: est-vs-actual delta + the live fit, so
         // estimator drift is visible in telemetry before it routes a bad payload.
         emit({
