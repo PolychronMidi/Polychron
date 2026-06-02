@@ -194,21 +194,36 @@ function compactTranscriptFile(filePath, opts = {}) {
 // Orchestration entry for the Stop-hook lane. Reads the opt-out flag and the
 // high-water override from env, then runs the guarded atomic compaction. Pure
 // best-effort: any failure returns a reason and never throws.
-function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log } = {}) {
+function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, emit, trigger = 'stop' } = {}) {
   if (env.HME_TRANSCRIPT_COMPACT === '0') return { ok: true, reason: 'disabled', changedEntries: 0 };
   if (!transcriptPath || typeof transcriptPath !== 'string') return { ok: false, reason: 'no_path', changedEntries: 0 };
-  const mb = Number(env.HME_TRANSCRIPT_COMPACT_HIGH_WATER_MB);
-  const highWaterBytes = Number.isFinite(mb) && mb > 0 ? Math.floor(mb * 1024 * 1024) : DEFAULTS.highWaterBytes;
+  // Mid-turn (PostToolUse) is NOT a quiescent point -- Claude may append the
+  // next entry imminently -- so it only fires in the genuine emergency band
+  let highWaterBytes;
+  if (trigger === 'midturn') {
+    const emb = Number(env.HME_TRANSCRIPT_COMPACT_MIDTURN_MB);
+    highWaterBytes = Number.isFinite(emb) && emb > 0 ? Math.floor(emb * 1024 * 1024) : 28 * 1024 * 1024;
+  } else {
+    const mb = Number(env.HME_TRANSCRIPT_COMPACT_HIGH_WATER_MB);
+    highWaterBytes = Number.isFinite(mb) && mb > 0 ? Math.floor(mb * 1024 * 1024) : DEFAULTS.highWaterBytes;
+  }
   let result;
   try {
     result = compactTranscriptFile(transcriptPath, { highWaterBytes });
   } catch (err) {
     result = { ok: false, reason: `threw:${err && err.message}`, changedEntries: 0 };
   }
-  if (typeof log === 'function' && result.changedEntries > 0) {
+  if (result.changedEntries > 0) {
     const before = Math.round((result.beforeBytes || 0) / 1048576);
     const after = Math.round((result.afterBytes || 0) / 1048576);
-    log(`[hme] transcript-compactor: ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB (${transcriptPath})`);
+    if (typeof log === 'function') {
+      log(`[hme] transcript-compactor (${trigger}): ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB tier=${result.tier || 0} (${transcriptPath})`);
+    }
+    if (typeof emit === 'function') {
+      try {
+        emit({ event: 'transcript_compaction', trigger, changed_entries: result.changedEntries, before_mb: before, after_mb: after, tier: result.tier || 0 });
+      } catch (_e) { /* silent-ok: telemetry must never break the hook path */ }
+    }
   }
   return result;
 }
