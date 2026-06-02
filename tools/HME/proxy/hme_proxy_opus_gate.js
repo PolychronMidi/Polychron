@@ -1,5 +1,7 @@
 'use strict';
 
+const { isOpus } = require('./model_classifier');
+
 function createOpusGate({ env = process.env, log = console.error } = {}) {
   let opusInflight = Promise.resolve();
   let lastOpusFinishedAt = 0;
