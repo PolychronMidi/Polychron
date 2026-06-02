@@ -40,6 +40,24 @@ function stageStopReminder(root, reason) {
   writeJsonAtomic(file, JSON.stringify({ ts: new Date().toISOString(), text }));
 }
 
+// Stop is the quiescent point (turn ended, model idle) where the append-only
+// transcript can be shrunk below Claude Code's ~30MB read limit without a
+function maybeCompactStopTranscript(root, body) {
+  try {
+    const payload = JSON.parse(body || '{}');
+    const transcriptPath = payload && payload.transcript_path;
+    if (!transcriptPath) return;
+    const result = maybeCompactTranscriptFile({ transcriptPath });
+    if (result && result.changedEntries > 0 && root) {
+      const ts = new Date().toISOString();
+      const before = Math.round((result.beforeBytes || 0) / 1048576);
+      const after = Math.round((result.afterBytes || 0) / 1048576);
+      append(path.join(root, 'log', 'hme.log'),
+        `${ts} INFO transcript-compactor: ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB`);
+    }
+  } catch (_err) { /* silent-ok: transcript compaction is best-effort */ }
+}
+
 function proxyDownBanner(port) {
   return `[ALERT] LIFESAVER - HME PROXY OFFLINE - LOCAL EVENT KERNEL ACTIVE
 
