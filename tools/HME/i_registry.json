@@ -63,6 +63,9 @@
         "i/why mode=hci-drop",
         "i/why mode=hook",
         "i/why mode=verifier-utility",
+        "i/why mode=proof",
+        "i/why mode=debt",
+        "i/why mode=mesh view=mutators",
         "i/why \"where is the spam verifier defined\"",
         "i/why \"what caused the HCI drop yesterday\" --deep"
       ]
