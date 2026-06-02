@@ -95,6 +95,14 @@ test('coherence stores are registered from state-files.json', () => {
   assert.ok(names.includes('statefile_context_metabolism'));
 });
 
+test('coherence economics covers budgets policy feedback immune checks and review scales', () => {
+  const budget = economics.normalizeBudget({ benefit: 'blocked bad edit', latency_ms: 12, hook_noise: 0, false_positive_risk: 'low' });
+  assert.equal(budget.cost.latency_ms, 12);
+  assert.equal(economics.policyFeedback({ policy: 'p', prevented_failures: 0, noise_events: 4 }).action, 'retire');
+  assert.deepEqual(economics.detectAgentPatterns('fixed all done', ''), ['unsupported_done_claim']);
+  assert.equal(economics.reviewScales({ subtoken: 'proof', function: 'contract' }).filter((x) => x.checked).length, 2);
+});
+
 test('i/why proof debt and mesh modes dispatch', () => {
   const why = path.join(process.env.PROJECT_ROOT, 'tools/HME/i/why');
   for (const mode of ['proof', 'debt', 'mesh']) {
