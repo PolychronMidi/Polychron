@@ -83,3 +83,11 @@ test('i/why mode=search explicitly works', () => {
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /search|retrieval/i);
 });
+
+test('i/why coherence modes expose proof debt and mesh', () => {
+  for (const mode of ['proof', 'debt', 'mesh']) {
+    const r = _run([`mode=${mode}`]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.match(r.stdout, new RegExp(`mode=${mode}`));
+  }
+});
