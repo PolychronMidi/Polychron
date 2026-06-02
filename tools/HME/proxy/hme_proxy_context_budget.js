@@ -405,7 +405,7 @@ function createContextBudget() {
       projectRoot: PROJECT_ROOT,
     });
     const after = serializedBytes(payload);
-    const afterPressure = compactPressureTokens(payload, after, { ignoreStatusline: true });
+    const afterPressure = compactPressureTokens(payload, after, { ignoreStatusline: true, model });
     console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${Number.isFinite(prunePlan.threshold) ? prunePlan.threshold : 'none'}B tier=${prunePlan.maxTier} model=${model} pressure=${afterPressure.usedTokens}/${budget} pressure_source=${afterPressure.source} changed=${changed}`);
     // Compaction ran but the payload still exceeds the model window -> this turn
     // will 200 upstream. Surface a named self-origin LIFESAVER instead of staying silent
