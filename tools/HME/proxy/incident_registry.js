@@ -31,8 +31,14 @@ function normalizeIncident(input) {
   const repair = input.repair ? _singleLine(input.repair, 300) : '';
   const dedupeKey = _singleLine(input.dedupeKey || `${component}:${id}`, 200);
   const evidence = input.evidence && typeof input.evidence === 'object' ? { ...input.evidence } : {};
+  const status = ['open', 'resolved', 'observation'].includes(input.status) ? input.status : 'open';
+  const rootCause = _singleLine(input.rootCause || input.root_cause || '', 300);
+  const fixedBy = _singleLine(input.fixedBy || input.fixed_by || '', 120);
+  const regressionTest = _singleLine(input.regressionTest || input.regression_test || '', 240);
+  const resolver = _singleLine(input.resolver || '', 240);
+  const proof = input.proof && typeof input.proof === 'object' ? { ...input.proof } : {};
   const ts = input.ts || _ts();
-  return { id, severity, component, summary, repair, dedupeKey, evidence, ts };
+  return { id, severity, component, summary, repair, dedupeKey, evidence, status, rootCause, fixedBy, regressionTest, resolver, proof, ts };
 }
 
 function formatIncidentLine(input) {
