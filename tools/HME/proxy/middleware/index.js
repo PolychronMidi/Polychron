@@ -198,6 +198,9 @@ const NON_STRICT_TOOL_RESULT_TEXT_MUTATORS = new Set([
 ]);
 function _middlewareAllowed(mod, hookName) {
   if (isStrictMode()) return true;
+  const meta = _moduleMeta && _moduleMeta.get(mod.name);
+  if (meta && meta.strictMode === 'strict-only') return false;
+  // Compatibility fallback for modules loaded through tests without manifest metadata.
   if (hookName === 'onToolResult' && NON_STRICT_TOOL_RESULT_TEXT_MUTATORS.has(mod.name)) return false;
   return true;
 }
