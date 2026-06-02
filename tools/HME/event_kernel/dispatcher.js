@@ -149,41 +149,26 @@ const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
 const PRETOOLUSE = path.join(HOOKS_DIR, 'pretooluse');
 const POSTTOOLUSE = path.join(HOOKS_DIR, 'posttooluse');
 
-// Tool-name -> pretooluse script.
-const PRETOOL_SCRIPTS = {
-  Edit: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
-  MultiEdit: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
-  Update: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
-  Write: [path.join(PRETOOLUSE, 'pretooluse_write.sh')],
-  Bash: [path.join(PRETOOLUSE, 'pretooluse_bash.sh')],
-  Read: [path.join(PRETOOLUSE, 'pretooluse_read.sh')],
-  Grep: [path.join(PRETOOLUSE, 'pretooluse_grep.sh')],
-};
+function _hookScript(rel) {
+  return path.join(HOOKS_DIR, rel);
+}
 
-// Tool-name -> posttooluse scripts (log-tool-call runs for all).
-const UNIVERSAL_POSTTOOL = [path.join(HOOKS_DIR, 'log-tool-call.sh')];
-const POSTTOOL_SCRIPTS = {
-  Bash: [
-    path.join(POSTTOOLUSE, 'posttooluse_bash.sh'),
-    path.join(POSTTOOLUSE, 'posttooluse_pipeline_kb.sh'),
-  ],
-  Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
-  MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
-  Update: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
-  Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
-  Read: [path.join(POSTTOOLUSE, 'posttooluse_read_kb.sh')],
-};
+function _scriptMapFor(eventName) {
+  const raw = routeRegistry.shellByTool(eventName);
+  const out = {};
+  for (const [tool, scripts] of Object.entries(raw)) out[tool] = scripts.map(_hookScript);
+  return out;
+}
+
+// Tool-name -> hook scripts, sourced from dispatcher-routes.json.
+const PRETOOL_SCRIPTS = _scriptMapFor('PreToolUse');
+const UNIVERSAL_POSTTOOL = routeRegistry.universalScripts('PostToolUse').map(_hookScript);
+const POSTTOOL_SCRIPTS = _scriptMapFor('PostToolUse');
+const HME_PRIMER_SCRIPT = routeRegistry.hmePrimerScript('PreToolUse');
 
 const NATIVE_PRETOOL = nativeHooks.preToolHandlers;
 const NATIVE_POSTTOOL = nativeHooks.postToolHandlers;
-const OPENCODE_OBSERVATION_EVENTS = new Set([
-  'ChatHeaders',
-  'ChatMessagesTransform',
-  'ChatParams',
-  'ChatSystemTransform',
-  'ShellEnv',
-  'TextComplete',
-]);
+const OPENCODE_OBSERVATION_EVENTS = routeRegistry.observationEvents();
 
 /**
  * Invoke a single bash hook with the given stdin payload. Returns a Promise
