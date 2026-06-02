@@ -385,7 +385,7 @@ function createContextBudget() {
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
     const afterPruneBytes = serializedBytes(payload);
-    const prunePressure = compactPressureTokens(payload, afterPruneBytes, { ignoreStatusline: true });
+    const prunePressure = compactPressureTokens(payload, afterPruneBytes, { ignoreStatusline: true, model });
     const prunePlan = planForUsage({ usedTokens: prunePressure.usedTokens, budgetTokens: budget });
     if (prunePlan.maxTier <= 0 || afterPruneBytes <= prunePlan.threshold) return 0;
     const changed = shrinkForPassthrough(payload, {
