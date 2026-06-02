@@ -37,7 +37,7 @@ function createOpusGate({ env = process.env, log = console.error } = {}) {
 async function acquireOpusSlotIfNeeded({ isAnthropic, isInteractivePath, payload, acquireOpusSlot }) {
   const isOpusReq = isAnthropic && isInteractivePath
     && payload && typeof payload.model === 'string'
-    && /opus/i.test(payload.model);
+    && isOpus(payload.model);
   if (!isOpusReq || typeof acquireOpusSlot !== 'function') return () => {};
   return acquireOpusSlot();
 }
