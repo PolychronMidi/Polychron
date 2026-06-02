@@ -31,7 +31,7 @@ function estimateTokens(payload, env = process.env, projectRoot = PROJECT_ROOT, 
 //   { usedTokens, budget, fraction, headroom }
 function contextPressure({ payload, modelId, env = process.env, projectRoot = PROJECT_ROOT } = {}) {
   const budget = inputBudgetFor(modelId);
-  const usedTokens = estimateTokens(payload, env, projectRoot);
+  const usedTokens = estimateTokens(payload, env, projectRoot, modelId);
   const known = budget > 0;
   return {
     usedTokens,
