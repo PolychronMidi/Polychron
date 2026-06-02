@@ -215,11 +215,13 @@ function createContextBudget() {
     const gear = pressureForFraction(usedFraction);
     if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
     const targetFraction = gear === 1 ? compactGear1Target : (gear === 2 ? compactGear2Target : compactGear3Target);
-    const threshold = Math.max(1, Math.floor(budgetTokens * targetFraction * contextBytesPerTokenEst));
+    const targetTokens = Math.max(1, Math.floor(budgetTokens * targetFraction));
+    const threshold = Math.max(1, Math.floor(targetTokens * contextBytesPerTokenEst));
     // All gear knobs derive ONLY from the env baseline loaded for this request.
     // Never ratchet from a previously compacted/effective value.
     return {
       threshold,
+      targetTokens,
       maxTier: gear,
       ..._gearScaledCompactionKnobs({ gear, keepMin, staleToolKeepTurns, toolResultByteFloor }),
     };
