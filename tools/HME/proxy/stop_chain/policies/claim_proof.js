@@ -39,12 +39,12 @@ function _sameTurnToolUses(transcriptPath) {
   return names;
 }
 
-function _emitVerdict(root, claimClass, decision) {
+function _emitVerdict(root, claimClass, decision, shadow) {
   try {
     require('../../coherence_events').appendEvent(root, {
       kind: 'policy_decision', subject: 'stop:claim_proof', intent: `claim_class=${claimClass}`,
       evidence: [], coherence_delta: decision === 'deny' ? -1 : 0, proofClass: 'policy',
-      meta: { decision },
+      meta: { decision, shadow: Boolean(shadow) },
     });
   } catch (_e) { /* silent-ok: ledger is advisory */ }
 }
