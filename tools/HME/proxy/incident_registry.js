@@ -51,6 +51,37 @@ function formatIncidentLine(input) {
   return `${prefix}${incident.summary}${repair}`;
 }
 
+// Best-effort fan-out: every recorded incident becomes a coherence event (kind
+// 'incident'|'resolver') and a raw-trace metabolism fact. Lazy-required to avoid
+// a load cycle; wrapped so a ledger failure can never break incident recording.
+function _emitCoherence(root, incident) {
+  try {
+    const events = require('./coherence_events');
+    events.appendEvent(root, {
+      kind: incident.status === 'resolved' ? 'resolver' : 'incident',
+      subject: `${incident.component}:${incident.id}`,
+      intent: incident.summary,
+      evidence: incident.resolver ? [incident.resolver] : [],
+      coherence_delta: incident.status === 'resolved' ? 1 : -1,
+      entropy_delta: incident.status === 'resolved' ? -1 : 1,
+      obligations: incident.status === 'open' && incident.repair ? [incident.repair] : [],
+      proofClass: incident.status === 'resolved' ? 'derived' : (incident.severity === 'observation' ? 'observed' : 'policy'),
+      meta: { severity: incident.severity, status: incident.status },
+    });
+  } catch (_e) { /* silent-ok: ledger is advisory; incident path must not break */ }
+  try {
+    const metabolism = require('./context_metabolism');
+    metabolism.appendFact(root, {
+      subject: `${incident.component}:${incident.id}`,
+      content: incident.summary,
+      stage: incident.status === 'resolved' ? 'verified_fact' : 'raw_trace',
+      proof_strength: incident.status === 'resolved' ? 0.7 : 0.2,
+      usefulness: incident.severity === 'lifesaver' ? 0.7 : 0.4,
+      source: 'incident_registry',
+    });
+  } catch (_e) { /* silent-ok: metabolism is advisory */ }
+}
+
 function recordIncident(root, input, opts = {}) {
   const incident = normalizeIncident(input);
   const line = opts.line || formatIncidentLine(incident);
@@ -61,6 +92,7 @@ function recordIncident(root, input, opts = {}) {
     if (incident.status === 'open') fs.appendFileSync(errorPath, `${line}\n`);
     fs.mkdirSync(path.dirname(incidentPath), { recursive: true });
     fs.appendFileSync(incidentPath, `${JSON.stringify({ ...incident, line, lifesaver: LIFESAVER_TEXT_RE.test(line) })}\n`);
+    if (opts.emitCoherence !== false) _emitCoherence(root, incident);
     return true;
   } catch (err) {
     process.stderr.write(`${line} (incident append failed: ${err.message})\n`);
