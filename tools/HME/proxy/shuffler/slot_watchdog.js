@@ -17,6 +17,7 @@ const WATCHDOG_REEXEC_FILES = [
   path.join(__dirname, 'self_reexec.js'),
   path.join(__dirname, '..', 'proxy_runtime_fingerprint.js'),
   path.join(__dirname, '..', 'shared', 'load_env.js'),
+  path.join(__dirname, '..', 'shared', 'slot_routable.js'),
   ENV_FILE,
 ];
 
