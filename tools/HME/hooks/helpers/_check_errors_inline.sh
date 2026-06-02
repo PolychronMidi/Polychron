@@ -64,6 +64,11 @@ _hme_check_errors_inline() {
     case "$grace" in ''|*[!0-9]*) grace=120 ;; esac
     [ $((now - first)) -lt "$grace" ]
   }
+  local _FILTER_RESOLVED
+  _FILTER_RESOLVED="$PROJECT/tools/HME/scripts/filter-resolved-incidents.js"
+  if [ ! -x "$_FILTER_RESOLVED" ]; then
+    _FILTER_RESOLVED="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/filter-resolved-incidents.js"
+  fi
   local NEW_RAW AGENT_ERRORS SELF_ERRORS CANARY_LINES
   NEW_RAW=$(awk "NR > $WATERMARK" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
   CANARY_LINES=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -E "$_CANARY_RE" || true)
