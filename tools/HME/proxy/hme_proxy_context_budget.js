@@ -265,7 +265,10 @@ function createContextBudget() {
       const statusline = statuslineContextUsage();
       if (statusline.used > 0) return { usedTokens: statusline.used, source: 'statusline' };
     }
-    if (payload) return { usedTokens: semanticTokenEstimate(payload, process.env), source: 'semantic' };
+    if (payload) {
+      const { calibratedFactors } = require('./context_calibration');
+      return { usedTokens: semanticTokenEstimate(payload, process.env, calibratedFactors(process.env, PROJECT_ROOT)), source: 'semantic' };
+    }
     return { usedTokens: Math.ceil(bytes / contextBytesPerTokenEst), source: 'bytes' };
   }
 
