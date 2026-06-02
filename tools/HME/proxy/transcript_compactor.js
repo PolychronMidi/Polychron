@@ -144,12 +144,20 @@ function compactTranscriptFile(filePath, opts = {}) {
   let raw;
   try { raw = fs.readFileSync(filePath, 'utf8'); }
   catch (_e) { return { ok: false, reason: 'unreadable', changedEntries: 0 }; }
+  const hardLimitBytes = Number.isFinite(opts.hardLimitBytes) ? opts.hardLimitBytes : DEFAULTS.hardLimitBytes;
   const hadTrailingNewline = raw.endsWith('\n');
   const rawLines = raw.split('\n');
   if (hadTrailingNewline) rawLines.pop();
-  const result = compactTranscriptLines(rawLines, opts);
+  // Baseline pass (caller's keepRecent/byteFloor), then escalate ONLY if the
+  // result is still over the hard limit -- i.e. the recent-keep window alone is
+  let result = compactTranscriptLines(rawLines, opts);
+  let tier = 0;
+  while (result.afterBytes > hardLimitBytes && tier < ESCALATION_TIERS.length) {
+    result = compactTranscriptLines(rawLines, ESCALATION_TIERS[tier]);
+    tier += 1;
+  }
   if (result.changedEntries === 0) {
-    return { ok: true, reason: 'nothing_to_elide', changedEntries: 0, beforeBytes: result.beforeBytes, afterBytes: result.afterBytes };
+    return { ok: true, reason: 'nothing_to_elide', changedEntries: 0, beforeBytes: result.beforeBytes, afterBytes: result.afterBytes, tier };
   }
   // Abort if Claude Code appended/changed the file while we were compacting:
   // never clobber a concurrent write.
