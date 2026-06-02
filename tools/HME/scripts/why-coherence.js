@@ -99,4 +99,5 @@ function runMesh() {
 const m = mode();
 if (m === 'debt') runDebt();
 else if (m === 'mesh') runMesh();
+else if (m === 'resolve') runResolve();
 else runProof();
