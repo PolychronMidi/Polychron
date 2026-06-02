@@ -1,5 +1,8 @@
 'use strict';
 
+const state = require('./state_registry');
+
+const STORE = 'statefile_context_metabolism';
 const STAGES = ['raw_trace', 'extracted_fact', 'verified_fact', 'durable_invariant', 'compact_doctrine', 'composted'];
 
 function _single(value, limit = 600) { return String(value == null ? '' : value).replace(/\s+/g, ' ').trim().slice(0, limit); }
