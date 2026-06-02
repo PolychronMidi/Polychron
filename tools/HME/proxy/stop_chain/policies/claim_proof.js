@@ -67,15 +67,25 @@ function run(ctx) {
   const verdict = guard.evaluateClaim(claimText, events);
   if (verdict.supported) return ctx.allow();
 
+  // Strict mode enforces (deny); non-strict runs in shadow -- it still emits the
+  // verdict event so `i/why mode=debt` can show whether enabling the hard deny
+  const strict = (() => { try { return require('../../strict_mode').isStrictMode(); } catch (_e) { return false; } })();
+
   if (guard.isAbsoluteCompletion(claimText) && editsThisTurn > 0) {
-    _emitVerdict(ctx.projectRoot, claimClass, 'deny');
-    return ctx.deny(
-      'CLAIM-PROOF: this turn edited code and made an absolute completion claim ("all/every ... done/fixed/passing"), '
-      + 'but ran no verification (no Bash/test tool call since the last prompt). Run the relevant test or check, '
-      + 'then stop -- or restate the claim scoped to what you actually verified.',
+    _emitVerdict(ctx.projectRoot, claimClass, 'deny', !strict);
+    if (strict) {
+      return ctx.deny(
+        'CLAIM-PROOF: this turn edited code and made an absolute completion claim ("all/every ... done/fixed/passing"), '
+        + 'but ran no verification (no Bash/test tool call since the last prompt). Run the relevant test or check, '
+        + 'then stop -- or restate the claim scoped to what you actually verified.',
+      );
+    }
+    return ctx.instruct(
+      `CLAIM-PROOF (shadow): "${claimText.slice(0, 80)}" is an absolute completion claim after edits with no same-turn `
+      + 'verification. In strict mode this would block; run the check before claiming.',
     );
   }
-  _emitVerdict(ctx.projectRoot, claimClass, 'instruct');
+  _emitVerdict(ctx.projectRoot, claimClass, 'instruct', !strict);
   return ctx.instruct(
     `CLAIM-PROOF: "${claimText.slice(0, 80)}" reads as a ${claimClass} completion claim with no same-turn verification. `
     + 'Prefer running the check before claiming, or scope the claim to what was verified.',
