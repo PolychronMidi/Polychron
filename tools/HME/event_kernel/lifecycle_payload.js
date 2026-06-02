@@ -203,4 +203,4 @@ function buildHostPayload({ host, event, root, rawBody, cwd, teamRole }) {
   return JSON.stringify(payload);
 }
 
-module.exports = { parseJson, normalizeLifecyclePayload, buildHostPayload, addClaudeTranscript, addCodexTranscript, addOpencodeTranscript, newestJsonl, writeJsonAtomic };
+module.exports = { parseJson, normalizeLifecyclePayload, buildHostPayload, addClaudeTranscript, addCodexTranscript, addOpencodeTranscript, newestJsonl, transcriptForSession, claudeProjectsDir, writeJsonAtomic };
