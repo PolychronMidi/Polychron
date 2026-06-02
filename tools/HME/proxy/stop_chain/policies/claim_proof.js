@@ -67,7 +67,7 @@ function run(ctx) {
   const verdict = guard.evaluateClaim(claimText, events);
   if (verdict.supported) return ctx.allow();
 
-  if (claimClass === 'absolute' && editsThisTurn > 0) {
+  if (guard.isAbsoluteCompletion(claimText) && editsThisTurn > 0) {
     _emitVerdict(ctx.projectRoot, claimClass, 'deny');
     return ctx.deny(
       'CLAIM-PROOF: this turn edited code and made an absolute completion claim ("all/every ... done/fixed/passing"), '
