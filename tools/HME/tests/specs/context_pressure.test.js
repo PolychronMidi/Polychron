@@ -41,3 +41,26 @@ test('swap size-gate and outbound gate now read the SAME budget resolver', () =>
   assert.equal(wc.budget, gateBudget('gpt-5.5-xhigh'), 'one budget resolver feeds both gates');
   assert.equal(wc.budget, inputBudgetFor('gpt-5.5-xhigh'));
 });
+
+test('estimateTokens is conservative when calibration would lower a size gate', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-pressure-calib-'));
+  const env = {
+    HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '2.6',
+    HME_PROXY_TOOL_RESULT_BYTES_PER_TOKEN_EST: '1.8',
+    HME_PROXY_ESTIMATOR_CALIBRATION: '1',
+  };
+  const payload = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [
+    { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(820000) }] },
+  ] };
+  try {
+    for (let i = 0; i < MIN_SAMPLES_TO_FIT + 20; i += 1) {
+      const reg = 5000 + i * 50;
+      const tr = 300000 + i * 1500;
+      recordSample({ reg, tr, actual: Math.round(reg / 5.0 + tr / 3.5), model: 'gpt-5.5-xhigh', env, projectRoot: dir });
+    }
+    const prior = semanticTokenEstimate(payload, env, null);
+    assert.ok(estimateTokens(payload, env, dir, 'gpt-5.5-xhigh') >= prior);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
