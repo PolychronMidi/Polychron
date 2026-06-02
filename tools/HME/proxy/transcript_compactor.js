@@ -188,6 +188,8 @@ function compactTranscriptFile(filePath, opts = {}) {
     changedEntries: result.changedEntries,
     beforeBytes: result.beforeBytes,
     afterBytes: Buffer.byteLength(body, 'utf8'),
+    tier,
+    underHardLimit: Buffer.byteLength(body, 'utf8') <= hardLimitBytes,
   };
 }
 
