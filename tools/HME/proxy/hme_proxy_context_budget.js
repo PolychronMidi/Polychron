@@ -393,6 +393,7 @@ function createContextBudget() {
         const pressureNow = compactPressureTokens(p, serializedBytes(p), { ignoreStatusline: true });
         return pressureNow.usedTokens <= prunePlan.targetTokens;
       },
+      tokenEstimator: (p) => compactPressureTokens(p, serializedBytes(p), { ignoreStatusline: true }).usedTokens,
       env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: omniLocalSummary },
       log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
       route: 'omni-context',
