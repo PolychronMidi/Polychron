@@ -20,9 +20,11 @@ function inputBudgetFor(modelId) {
   return 0; // unknown -> no gate (fail open; never block on missing config)
 }
 
-// Estimate the final outbound input size of `payload` (post-mutation).
+// Estimate the final outbound input size of `payload` (post-mutation), using
+// calibrated bytes/token when the feedback loop is enabled and fitted.
 function estimateInputTokens(payload, env) {
-  return semanticTokenEstimate(payload, env);
+  const { calibratedFactors } = require('./context_calibration');
+  return semanticTokenEstimate(payload, env, calibratedFactors(env || process.env, PROJECT_ROOT));
 }
 
 // Reroute helper: from a swap chain, pick the first model whose input budget
