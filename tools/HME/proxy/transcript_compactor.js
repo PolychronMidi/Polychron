@@ -169,10 +169,33 @@ function compactTranscriptFile(filePath, opts = {}) {
   };
 }
 
+// Orchestration entry for the Stop-hook lane. Reads the opt-out flag and the
+// high-water override from env, then runs the guarded atomic compaction. Pure
+// best-effort: any failure returns a reason and never throws.
+function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log } = {}) {
+  if (env.HME_TRANSCRIPT_COMPACT === '0') return { ok: true, reason: 'disabled', changedEntries: 0 };
+  if (!transcriptPath || typeof transcriptPath !== 'string') return { ok: false, reason: 'no_path', changedEntries: 0 };
+  const mb = Number(env.HME_TRANSCRIPT_COMPACT_HIGH_WATER_MB);
+  const highWaterBytes = Number.isFinite(mb) && mb > 0 ? Math.floor(mb * 1024 * 1024) : DEFAULTS.highWaterBytes;
+  let result;
+  try {
+    result = compactTranscriptFile(transcriptPath, { highWaterBytes });
+  } catch (err) {
+    result = { ok: false, reason: `threw:${err && err.message}`, changedEntries: 0 };
+  }
+  if (typeof log === 'function' && result.changedEntries > 0) {
+    const before = Math.round((result.beforeBytes || 0) / 1048576);
+    const after = Math.round((result.afterBytes || 0) / 1048576);
+    log(`[hme] transcript-compactor: ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB (${transcriptPath})`);
+  }
+  return result;
+}
+
 module.exports = {
   DEFAULTS,
   compactEntry,
   compactTranscriptLines,
   compactTranscriptFile,
+  maybeCompactTranscriptFile,
   _marker,
 };
