@@ -231,17 +231,24 @@ def inline_fallback_rows(files: list[str], keys: set[str]) -> list[dict]:
     return out
 
 
-def findings() -> tuple[list[dict], list[str], list[dict]]:
+def findings() -> tuple[list[dict], list[str], list[dict], list[str]]:
     files = tracked_files()
     authority_rows = authority_reference_rows(files)
     env_rows = env_contract_rows()
     keys = parse_env_keys(ENV_TEMPLATE) if ENV_TEMPLATE.is_file() else set()
-    return authority_rows, env_rows, inline_fallback_rows(files, keys)
+    return authority_rows, env_rows, inline_fallback_rows(files, keys), dead_env_key_rows(files)
 
 
 def main() -> int:
-    authority_rows, env_rows, fallback_rows = findings()
+    authority_rows, env_rows, fallback_rows, dead_rows = findings()
     failed = False
+    for key in dead_rows:
+        failed = True
+        print(
+            f"env contract failed: declared key {key} has no consumer "
+            f"(remove from {ENV_TEMPLATE_REL} + root .env, or add to DEAD_ENV_ALLOWLIST "
+            f"in {SELF_REL} if consumed by a native/external/dynamic path)"
+        )
     for row in authority_rows:
         failed = True
         print(
