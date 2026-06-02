@@ -36,13 +36,39 @@ function _writeAtomic(absPath, contents) {
   fs.renameSync(tmp, absPath);
 }
 
-function register({ name, relPath, format, schema, ttlMs }) {
+function register({ name, relPath, format, schema, ttlMs, source }) {
   if (!name) throw new Error('state_registry.register: name required');
   if (!relPath) throw new Error('state_registry.register: relPath required');
   if (!['json', 'jsonl', 'text'].includes(format)) {
     throw new Error(`state_registry.register: unsupported format "${format}"`);
   }
-  REGISTRY.set(name, { name, relPath, format, schema: schema || null, ttlMs: ttlMs || null });
+  REGISTRY.set(name, { name, relPath, format, schema: schema || null, ttlMs: ttlMs || null, source: source || 'manual' });
+}
+
+function _loadStateFiles(projectRoot = PROJECT_ROOT) {
+  const file = path.join(projectRoot, STATE_FILES_REL);
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Array.isArray(data.single_owner) ? data.single_owner : [];
+  } catch (_err) {
+    return [];
+  }
+}
+
+function registerFromStateFiles(opts = {}) {
+  const projectRoot = opts.projectRoot || PROJECT_ROOT;
+  const formatHints = opts.formatHints || STATE_FILE_FORMAT_HINTS;
+  const registered = [];
+  for (const entry of _loadStateFiles(projectRoot)) {
+    const relPath = entry && entry.path;
+    if (!relPath || !formatHints[relPath]) continue;
+    const hint = formatHints[relPath];
+    const name = hint.name;
+    if (REGISTRY.has(name)) continue;
+    register({ name, relPath, format: hint.format, schema: hint.schema || null, source: 'state-files.json' });
+    registered.push(name);
+  }
+  return registered;
 }
 
 function _entry(name) {
