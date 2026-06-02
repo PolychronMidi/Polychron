@@ -29,15 +29,14 @@ function formatMiddlewareThrowLine(modName, err) {
 
 function recordMiddlewareThrow(root, modName, err) {
   const line = formatMiddlewareThrowLine(modName, err);
-  try {
-    const logPath = path.join(root, ERROR_LOG_REL);
-    fs.mkdirSync(path.dirname(logPath), { recursive: true });
-    fs.appendFileSync(logPath, line + '\n');
-    return true;
-  } catch (logErr) {
-    console.error(`${line} (hme-errors append failed: ${logErr.message})`);
-    return false;
-  }
+  return incidentRegistry.recordIncident(root, {
+    id: 'middleware-throw',
+    severity: 'lifesaver',
+    component: 'proxy-middleware',
+    summary: `middleware ${String(modName || 'unknown')}.onRequest threw and was swallowed: ${_errText(err).replace(/\s+/g, ' ').slice(0, 600)}`,
+    dedupeKey: `middleware-throw:${String(modName || 'unknown')}`,
+    evidence: { middleware: String(modName || 'unknown') },
+  }, { line });
 }
 
 // Generic proxy-failure -> LIFESAVER sink. Project rule: EVERY swallowed
