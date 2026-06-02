@@ -10,8 +10,17 @@
 - [x] Failure ontology: typed incidents with status, root cause, fixed_by, regression_test, resolver, and proof; suppress LIFESAVER ghosts only after proof.
 - [x] Agent immune system: detect readless edits, unsupported done claims, workaround ceremony, context stuffing, and hypothesis-free debugging.
 - [x] Self-healing policies: measure whether each deny/rewrite/instruct prevented a real failure or created noise; narrow or retire weak policies.
-- [x] Coherence-aware tests: every LIFESAVER class has a resolver, every mutating middleware has idempotency evidence, every state file has an owner.
+- [x] Coherence-aware tests: resolvers exist for targeted LIFESAVER classes (upstream context-window, stale-runtime, observation/self, autocommit) and unhandled classes fail-safe to surfacing; mesh test enforces every mutating middleware declares an idempotency marker and every state file has an owner.
 - [x] Multi-scale review: subtoken/provenance, function contracts, module boundaries, middleware lifecycle, request path, runtime ecology, portability.
+
+## Wiring (substrate is load-bearing, not inert)
+
+- [x] Producer: `incident_registry.recordIncident` fans out to a coherence event + a context-metabolism fact (best-effort, never breaks the incident path).
+- [x] Producer: `incident_registry.resolveIncident` is idempotent and is driven by `i/why mode=resolve` for resolver-proven error lines.
+- [x] Consumer: `i/why mode=proof` runs `claim_proof_guard` over the live ledger (blocks the "all incidents resolved" claim while any are unresolved).
+- [x] Consumer: `i/why mode=debt` emits a `coherence_economics` policy-feedback signal from real ledger events.
+- [x] Dedupe: self-origin/observation classification sourced from one `self_origin.js` instead of a third hand-maintained copy.
+- [ ] Deferred (deliberate, risky hot-path): run `claim_proof_guard` as a live blocker in the Stop chain. Left as a query-surface + library until scoped, to avoid destabilizing the request path.
 
 ## Concrete implementation backlog
 
