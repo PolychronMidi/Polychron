@@ -157,3 +157,74 @@ test('maybeCompactTranscriptFile honors the opt-out flag and high-water override
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('escalation tier drives a recent-heavy transcript under the hard limit', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
+  try {
+    const f = path.join(dir, 't.jsonl');
+    const lines = [];
+    for (let i = 0; i < 30; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
+    fs.writeFileSync(f, lines.join('\n') + '\n');
+    // keepRecent default (80) would treat all 30 as "recent" and elide nothing,
+    // leaving the file over the hard limit -> escalation must engage.
+    const r = compactTranscriptFile(f, { highWaterBytes: 1024, hardLimitBytes: 600000 });
+    assert.equal(r.ok, true);
+    assert.ok(r.tier > 0, `escalation must engage, got tier ${r.tier}`);
+    assert.ok(r.afterBytes <= 600000, `must drive under hard limit, got ${r.afterBytes}`);
+    const out = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean);
+    assert.equal(out.length, 30, 'no entry dropped even at deepest tier');
+    for (const l of out) JSON.parse(l);
+    // The most-recent entries stay byte-exact even when escalation is deep.
+    assert.equal(JSON.parse(out[29]).toolUseResult.stdout.length, 40000, 'newest turn preserved');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('midturn trigger only fires in the emergency band, stop uses the gentler high-water', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
+  try {
+    const f = path.join(dir, 't.jsonl');
+    const lines = [];
+    for (let i = 0; i < 60; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
+    fs.writeFileSync(f, lines.join('\n') + '\n'); // ~5MB
+    const sizeMb = fs.statSync(f).size / 1048576;
+    assert.ok(sizeMb > 1 && sizeMb < 24, 'fixture sits below both default thresholds');
+
+    // Default thresholds: stop high-water 24MB and midturn 28MB -> both no-op here.
+    assert.equal(maybeCompactTranscriptFile({ transcriptPath: f, env: {}, trigger: 'stop' }).changedEntries, 0);
+    assert.equal(maybeCompactTranscriptFile({ transcriptPath: f, env: {}, trigger: 'midturn' }).changedEntries, 0);
+
+    // Midturn override below the fixture size -> midturn fires; stop (24MB) still no-op.
+    assert.equal(maybeCompactTranscriptFile({ transcriptPath: f, env: { HME_TRANSCRIPT_COMPACT_MIDTURN_MB: '1' }, trigger: 'stop' }).changedEntries, 0);
+    const fired = maybeCompactTranscriptFile({ transcriptPath: f, env: { HME_TRANSCRIPT_COMPACT_MIDTURN_MB: '1' }, trigger: 'midturn' });
+    assert.ok(fired.changedEntries > 0, 'midturn fires once over its emergency threshold');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('maybeCompactTranscriptFile emits a transcript_compaction telemetry event', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
+  try {
+    const f = path.join(dir, 't.jsonl');
+    const lines = [];
+    for (let i = 0; i < 80; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
+    fs.writeFileSync(f, lines.join('\n') + '\n');
+    const events = [];
+    const r = maybeCompactTranscriptFile({
+      transcriptPath: f,
+      env: { HME_TRANSCRIPT_COMPACT_HIGH_WATER_MB: '1' },
+      emit: (e) => events.push(e),
+      trigger: 'stop',
+    });
+    assert.ok(r.changedEntries > 0);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event, 'transcript_compaction');
+    assert.equal(events[0].trigger, 'stop');
+    assert.ok(events[0].changed_entries > 0);
+    assert.ok(events[0].before_mb >= events[0].after_mb);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
