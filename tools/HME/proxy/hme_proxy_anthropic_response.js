@@ -296,6 +296,18 @@ async function handleAnthropicResponseComplete({
     getLastInputTokensLimit,
   });
 
+  // Calibration feedback: only on the OmniRoute path, where usage.input_tokens
+  // is the FULL input count (no Anthropic cache-read accounting to muddy it).
+  if (isOmniRouteSwap && outStatus >= 200 && outStatus < 300 && payload && Array.isArray(payload.messages)) {
+    try {
+      const { input_tokens } = _extractUsageFromBody(outHeaders, outBuf);
+      if (input_tokens != null) {
+        const b = payloadByteBuckets(payload);
+        recordCalibrationSample({ reg: b.regular, tr: b.toolResult, actual: input_tokens });
+      }
+    } catch (_e) { /* silent-ok: calibration is off the critical path */ }
+  }
+
   sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf });
   if (!skipStopFallback) {
     maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive, runInlineFallback });
