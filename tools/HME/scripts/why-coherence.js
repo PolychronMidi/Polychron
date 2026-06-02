@@ -24,13 +24,19 @@ function recentErrorLines(limit = 40) {
 }
 
 function runProof() {
-  const events = require('../proxy/coherence_events').readEvents(root, { limit: Number(arg('limit', 20)) || 20 });
+  const events = require('../proxy/coherence_events').readEvents(root, { limit: Number(arg('limit', 50)) || 50 });
   const incidents = require('../proxy/incident_registry');
+  const guard = require('../proxy/claim_proof_guard');
   const unresolved = incidents.unresolvedLines(root, recentErrorLines(80));
   console.log('mode=proof');
   console.log(`coherence_events=${events.length}`);
   for (const ev of events.slice(-10)) console.log(`- ${ev.kind} ${ev.subject || '(no subject)'} proof=${ev.proof_class} evidence=${(ev.evidence || []).length}`);
   console.log(`unresolved_incidents=${unresolved.length}`);
+  // Live claim-proof check: can we truthfully claim "all incidents resolved"
+  // right now? The guard evaluates that completion claim against the ledger's
+  const verdict = guard.evaluateClaim('all incidents are resolved', events);
+  const supported = verdict.supported && unresolved.length === 0;
+  console.log(`claim "all incidents resolved": ${supported ? 'ALLOW (proof-backed)' : `${verdict.action.toUpperCase()} (${unresolved.length} unresolved, ${verdict.reason || 'no same-turn proof'})`}`);
 }
 
 function runDebt() {
