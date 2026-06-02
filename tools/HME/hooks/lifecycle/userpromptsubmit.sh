@@ -116,6 +116,10 @@ if [ -f "$ERROR_LOG" ]; then
   echo "$TOTAL" > "$TURNSTART"
 
   if [ "$TOTAL" -gt "$LAST" ]; then
+    _FILTER_RESOLVED="$PROJECT/tools/HME/scripts/filter-resolved-incidents.js"
+    if [ ! -x "$_FILTER_RESOLVED" ]; then
+      _FILTER_RESOLVED="$(cd "$(dirname "$0")/../.." && pwd)/scripts/filter-resolved-incidents.js"
+    fi
     # Filter routine-ops noise (CANARY self-tests, proxy-watchdog respawns)
     # before showing as LIFESAVER alerts -- they're INFO, not errors.
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
