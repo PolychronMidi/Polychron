@@ -158,11 +158,41 @@ function recordSample({ reg, tr, actual, model = '', env = process.env, projectR
   }
 }
 
+// Drift alert: once a route is fitted, the calibrated estimate should track
+// actual tokens. If it is still off by more than this fraction, the estimator
+// can no longer model current traffic (e.g. the provider's tokenizer changed) --
+const DRIFT_REL_THRESHOLD = 0.18;
+const DRIFT_ALERT_MIN_INTERVAL_MS = 300000;
+let _lastDriftAlertMs = 0;
+
+function driftAlertLine({ model, estimated, actual, rel, ts }) {
+  return `[${ts}] [hme-proxy] LIFESAVER -- estimator drift: ${model || 'unknown'} calibrated estimate ~${estimated} vs actual ${actual} input tokens (off ${(rel * 100).toFixed(0)}%) despite a fitted calibration. The size gate may mis-route; if persistent the provider tokenizer changed -- re-check HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST priors / per-model calibration.\n`;
+}
+
+function maybeDriftAlert({ model, estimated, actual, fitted, projectRoot = PROJECT_ROOT, now = Date.now() }) {
+  if (!fitted || !(actual > 0) || !Number.isFinite(estimated)) return false;
+  const rel = Math.abs(estimated - actual) / actual;
+  if (rel <= DRIFT_REL_THRESHOLD) return false;
+  if (now - _lastDriftAlertMs < DRIFT_ALERT_MIN_INTERVAL_MS) return false;
+  _lastDriftAlertMs = now;
+  try {
+    const log = path.join(projectRoot || PROJECT_ROOT, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    fs.appendFileSync(log, driftAlertLine({ model, estimated, actual, rel, ts: new Date().toISOString() }));
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
 module.exports = {
   calibrationPath,
   fitFactors,
   loadCalibration,
   calibratedFactors,
   recordSample,
+  maybeDriftAlert,
+  driftAlertLine,
   MIN_SAMPLES_TO_FIT,
+  DRIFT_REL_THRESHOLD,
 };
