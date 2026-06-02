@@ -1192,6 +1192,7 @@ test('compaction knobs scale from env baselines per gear without ratcheting', ()
 test('live-style overflow payload compacts below gpt-5.5-xhigh context budget', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
+    process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '2.6';
     process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.85';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '20';
