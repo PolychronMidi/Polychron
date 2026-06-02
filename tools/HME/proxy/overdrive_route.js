@@ -72,27 +72,18 @@ function roleKey(role) {
   return '';
 }
 
+// Model-family classification is owned by model_classifier.js (single source).
+// These thin wrappers preserve the historical overdrive_route export names.
 function modelTier(modelId) {
-  const model = String(modelId || '').toLowerCase();
-  if (model.includes('opus')) return 'E5';
-  if (model.includes('sonnet')) return 'E4';
-  if (model.includes('haiku')) return 'E2';
-  return 'E5';
+  return modelClassifier.modelTier(modelId);
 }
 
 function claudeModelForOverdrive(modelId) {
-  const raw = String(modelId || '');
-  return raw.startsWith('claude-') ? raw : '';
+  return modelClassifier.claudeModel(modelId);
 }
 
 function providerPrefixedClaudeModel(modelId) {
-  const raw = String(modelId || '');
-  const slash = raw.indexOf('/');
-  if (slash < 0) return '';
-  const provider = raw.slice(0, slash).toLowerCase();
-  const bare = raw.slice(slash + 1);
-  if (provider !== 'anthropic' && provider !== 'claude') return '';
-  return bare.startsWith('claude-') ? bare : '';
+  return modelClassifier.providerPrefixedClaudeModel(modelId);
 }
 
 function providerKey(provider, env = process.env) {
