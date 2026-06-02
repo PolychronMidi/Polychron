@@ -69,17 +69,15 @@ function _attemptDigest(tool, input) {
 }
 
 function _readRetryState() {
-  try { return JSON.parse(fs.readFileSync(RETRY_STATE, 'utf8')); } catch (_e) { return {}; }
+  return stateRegistry.read('statefile_tool_retry_guard') || {};
 }
 
 function _writeRetryState(state) {
-  fs.mkdirSync(path.dirname(RETRY_STATE), { recursive: true });
-  fs.writeFileSync(RETRY_STATE, `${JSON.stringify(state, null, 2)}\n`);
+  stateRegistry.write('statefile_tool_retry_guard', state || {});
 }
 
 function _logRetry(row) {
-  fs.mkdirSync(path.dirname(RETRY_LOG), { recursive: true });
-  fs.appendFileSync(RETRY_LOG, `${JSON.stringify({ ts: new Date().toISOString(), ...row })}\n`);
+  stateRegistry.append('statefile_tool_retry_guard_log', { ts: new Date().toISOString(), ...row });
 }
 
 function _retryBlock(tool, input) {
