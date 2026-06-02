@@ -879,11 +879,16 @@ function _emitHeldTextEvents(state, index) {
     hits = stripped.hits;
     if (hits.length === 0) {
       for (const d of state.deltas || []) events.push(['content_block_delta', d]);
-    } else if (stripped.out) {
+    } else if (stripped.out && stripped.out.trim()) {
       const delta = state.blockType === 'thinking'
         ? { type: 'thinking_delta', thinking: stripped.out }
         : { type: 'text_delta', text: stripped.out };
       events.push(['content_block_delta', { type: 'content_block_delta', index, delta }]);
+    } else {
+      // FAIL-SAFE: over-compression reduced a non-empty block to nothing. A
+      // rewriter must never erase an assistant response (an empty block reads as
+      for (const d of state.deltas || []) events.push(['content_block_delta', d]);
+      hits = [];
     }
   }
 
