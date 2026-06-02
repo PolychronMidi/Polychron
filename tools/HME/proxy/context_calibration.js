@@ -161,7 +161,7 @@ function recordSample({ reg, tr, actual, model = '', env = process.env, projectR
 // Drift alert: once a route is fitted, the calibrated estimate should track
 // actual tokens. If it is still off by more than this fraction, the estimator
 // can no longer model current traffic (e.g. the provider's tokenizer changed) --
-const DRIFT_REL_THRESHOLD = 0.18;
+const DRIFT_REL_THRESHOLD = 0.25;
 const DRIFT_ALERT_MIN_INTERVAL_MS = 300000;
 let _lastDriftAlertMs = 0;
 
