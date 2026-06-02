@@ -210,7 +210,8 @@ test('maybeCompactTranscriptFile emits a transcript_compaction telemetry event',
   try {
     const f = path.join(dir, 't.jsonl');
     const lines = [];
-    for (let i = 0; i < 80; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
+    // >keepRecent(80) so old entries exist to elide.
+    for (let i = 0; i < 200; i += 1) lines.push(JSON.stringify(bigToolEntry(i, 40000)));
     fs.writeFileSync(f, lines.join('\n') + '\n');
     const events = [];
     const r = maybeCompactTranscriptFile({
