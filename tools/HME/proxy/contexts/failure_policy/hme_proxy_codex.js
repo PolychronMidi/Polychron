@@ -35,6 +35,15 @@ function recordOmniRouteFailureAdvance({
     console.error(`[hme-proxy] MODE=${odMode} fallback: ${failureKind} on ${omniProvider}/${swapModel} -> holding (fail ${st.pending}/${threshold}; retry same target before advancing)`);
     return;
   }
+  // A repeated 5xx (e.g. 502 bad_gateway) is an upstream-BACKEND failure shared by
+  // every tier of this provider. Cool the whole provider for a short window so the
+  // next request's chain skips it and fails over to a different backend instead of
+  if (typeof status === 'number' && status >= 500) {
+    try {
+      require('./model_route_health').markProviderCooldown(omniProvider, `upstream_5xx status=${status}`, { projectRoot });
+      console.error(`[hme-proxy] provider cooldown: ${omniProvider} parked ~60s after status=${status} (chain will skip all its tiers)`);
+    } catch (_e) { /* silent-ok: cooldown is best-effort; advance still proceeds */ }
+  }
   const next = swapChain[st.idx];
   const np = omniProviderForConfigProvider(next.provider || '');
   const ntf = omniTargetFormat(np);

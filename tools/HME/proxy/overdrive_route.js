@@ -127,6 +127,9 @@ function availableModel(model, skipSet, env = process.env, routeHealth = {}) {
   if (!model) return false;
   if (skipSet.has(providerKey(model.provider, env))) return false;
   if (!hasOmniCredential(model, env)) return false;
+  // Provider-level cooldown (set on a 502 bad_gateway burst) skips EVERY tier of
+  // that provider, so the chain fails over to a different backend, not a sibling.
+  if (providerSkipReason(providerKey(model.provider, env), routeHealth, env)) return false;
   return !routeSkipReason(modelRouteKey(model, env), routeHealth, env);
 }
 
