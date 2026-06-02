@@ -66,17 +66,21 @@ test('recordSample persists, re-fits, and calibratedFactors reads the fit; estim
     assert.equal(f.perTok, 2.6);
     assert.equal(f.toolResultPerTok, 1.8);
 
-    // Feed ground-truth samples (reg @3.0, tr @1.5).
+    // Feed ground-truth samples (reg @3.0, tr @1.5) for one model route.
     for (let i = 0; i < MIN_SAMPLES_TO_FIT + 10; i += 1) {
       const reg = 30000 + i * 700;
       const tr = 90000 - i * 900;
-      recordSample({ reg, tr, actual: Math.round(reg / 3.0 + tr / 1.5), env, projectRoot: dir });
+      recordSample({ reg, tr, actual: Math.round(reg / 3.0 + tr / 1.5), model: 'gpt-5.5-xhigh', env, projectRoot: dir });
     }
     const data = loadCalibration(dir);
-    assert.ok(data && data.factors && data.factors.fitted, 'calibration persisted a fit');
-    f = calibratedFactors(env, dir);
+    assert.ok(data && data.global && data.global.factors && data.global.factors.fitted, 'global fit persisted');
+    assert.ok(data.models && data.models['gpt-5.5-xhigh'] && data.models['gpt-5.5-xhigh'].factors.fitted, 'per-model fit persisted');
+    // Per-model lookup wins; cross-model global is the fallback for an unseen route.
+    f = calibratedFactors(env, dir, 'gpt-5.5-xhigh');
     assert.ok(Math.abs(f.perTok - 3.0) < 0.2, `calibrated perTok ~3.0, got ${f.perTok}`);
     assert.ok(Math.abs(f.toolResultPerTok - 1.5) < 0.15, `calibrated toolResultPerTok ~1.5, got ${f.toolResultPerTok}`);
+    const unseen = calibratedFactors(env, dir, 'some-other-model');
+    assert.ok(Math.abs(unseen.perTok - 3.0) < 0.2, 'unseen route falls back to the global fit');
 
     // The estimator, given calibrated factors, produces a HIGHER estimate for a
     // tool-result-heavy payload than with the (looser) priors -- closing the
