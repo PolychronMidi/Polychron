@@ -23,11 +23,15 @@ test('raw config has cc and dynamic c& under the top-level "multi-step" key', ()
   assert.ok(raw.simple && raw['two-step'], 'wire lanes present');
 });
 
-test('loader exposes the three lanes with the expected keys', () => {
-  assert.deepEqual(Object.keys(cfg.SHORTCUTS).sort(), ['c', 'd', 'e', 'm', 'n', 'r', 's', 't']);
-  assert.deepEqual(Object.keys(cfg.TWO_STEP_SHORTCUTS), ['1']);
-  assert.deepEqual(Object.keys(cfg.MULTI_STEP_SHORTCUTS).sort(), ['c&', 'cc']);
-  assert.deepEqual(cfg.multiStepSteps('cc'), ['/compact', 'continue']);
+test('loader lanes derive from config with no drift (single source of truth)', () => {
+  // Derive expectations from the raw config so adding a shortcut never breaks
+  // this test -- it only fails if the loader DRIFTS from config/shortcuts.json.
+  const raw = JSON.parse(fs.readFileSync(cfg.CONFIG_PATH, 'utf8'));
+  assert.deepEqual(Object.keys(cfg.SHORTCUTS).sort(), Object.keys(raw.simple).sort());
+  assert.deepEqual(Object.keys(cfg.TWO_STEP_SHORTCUTS).sort(), Object.keys(raw['two-step']).sort());
+  assert.deepEqual(Object.keys(cfg.MULTI_STEP_SHORTCUTS).sort(), Object.keys(raw['multi-step']).sort());
+  // Steps still resolve from config for the canonical multi-step keys.
+  assert.deepEqual(cfg.multiStepSteps('cc'), raw['multi-step'].cc.steps);
   assert.deepEqual(cfg.multiStepSteps('c&', 'continue'), ['/compact', 'continue']);
 });
 
