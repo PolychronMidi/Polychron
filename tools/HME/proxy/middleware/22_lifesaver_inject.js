@@ -6,6 +6,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { readAutocommitFailure, touchLifesaverHeartbeat, assertRealLifesaverInjection } = require('../lifesaver_alerts');
 const { isStrictMode } = require('../strict_mode');
+const selfOrigin = require('../self_origin');
 
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'tools/HME/runtime/errors-lastread.proxy';
