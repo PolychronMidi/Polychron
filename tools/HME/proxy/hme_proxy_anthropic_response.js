@@ -303,7 +303,24 @@ async function handleAnthropicResponseComplete({
       const { input_tokens } = _extractUsageFromBody(outHeaders, outBuf);
       if (input_tokens != null) {
         const b = payloadByteBuckets(payload);
-        recordCalibrationSample({ reg: b.regular, tr: b.toolResult, actual: input_tokens });
+        const factorsBefore = calibratedFactors(process.env);
+        const estBefore = semanticTokenEstimate(payload, process.env, factorsBefore);
+        const fit = recordCalibrationSample({ reg: b.regular, tr: b.toolResult, actual: input_tokens });
+        // Per-turn calibration signal: est-vs-actual delta + the live fit, so
+        // estimator drift is visible in telemetry before it routes a bad payload.
+        emit({
+          event: 'estimator_calibration',
+          model: swapModel,
+          estimated_tokens: estBefore,
+          actual_input_tokens: input_tokens,
+          delta: estBefore - input_tokens,
+          reg_bytes: Math.round(b.regular),
+          tool_result_bytes: Math.round(b.toolResult),
+          fitted: Boolean(fit && fit.fitted),
+          samples: fit ? fit.samples : null,
+          per_tok: fit ? fit.perTok : factorsBefore.perTok,
+          tool_result_per_tok: fit ? fit.toolResultPerTok : factorsBefore.toolResultPerTok,
+        });
       }
     } catch (_e) { /* silent-ok: calibration is off the critical path */ }
   }
