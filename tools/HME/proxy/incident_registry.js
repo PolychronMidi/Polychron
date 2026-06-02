@@ -132,6 +132,7 @@ module.exports = {
   normalizeIncident,
   formatIncidentLine,
   recordIncident,
+  readIncidents,
   resolveIncident,
   resolutionForLine,
   unresolvedLines,

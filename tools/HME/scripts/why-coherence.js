@@ -75,17 +75,21 @@ function runResolve() {
   for (const line of lines) {
     const r = resolvers.resolveLine(root, line);
     if (!r.resolved || r.kind === 'observation' || r.kind === 'self_origin') continue;
-    const key = `${r.kind}:${line.slice(0, 120)}`;
+    const key = `${r.kind}:${line.replace(/^\[[^\]]*\]\s*/, '').slice(0, 120)}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    // dedupeKey keyed on the line so resolveIncident stays idempotent across runs.
+    const before = incidents.readIncidents(root).length;
     incidents.resolveIncident(root, {
       id: r.kind, component: 'hme', summary: r.reason || 'resolver-proven',
-      resolver: r.resolver, proof: r.proof || {},
+      resolver: r.resolver, proof: r.proof || {}, dedupeKey: key,
     });
-    recorded += 1;
-    console.log(`- resolved ${r.kind} via ${r.resolver}`);
+    if (incidents.readIncidents(root).length > before) {
+      recorded += 1;
+      console.log(`- resolved ${r.kind} via ${r.resolver}`);
+    }
   }
-  console.log(`recorded_resolved=${recorded}`);
+  console.log(`recorded_resolved=${recorded} (idempotent; already-recorded skipped)`);
 }
 
 function runMesh() {
