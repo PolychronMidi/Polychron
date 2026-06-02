@@ -614,4 +614,4 @@ function loadAll() {
   return _modules.map((m) => m.name);
 }
 
-module.exports = { register, runPipeline, runOnToolResult, loadAll, listMiddleware, ctx, _modules, _moduleMeta };
+module.exports = { register, runPipeline, runOnToolResult, loadAll, listMiddleware, ctx, _modules, _moduleMeta, _strictOnlyToolResultMutators, _loadManifest };
