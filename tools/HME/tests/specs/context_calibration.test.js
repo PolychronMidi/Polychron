@@ -5,8 +5,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { fitFactors, recordSample, calibratedFactors, loadCalibration, MIN_SAMPLES_TO_FIT } = require('../../proxy/context_calibration');
+const { fitFactors, recordSample, calibratedFactors, loadCalibration, maybeDriftAlert, MIN_SAMPLES_TO_FIT } = require('../../proxy/context_calibration');
 const { semanticTokenEstimate } = require('../../proxy/context_token_estimate');
+const { swapWindowCheck } = require('../../proxy/overdrive_route');
 
 const PRIORS = { perTok: 2.6, toolResultPerTok: 1.8 };
 // Apply/record are gated behind this flag so the estimator stays deterministic
