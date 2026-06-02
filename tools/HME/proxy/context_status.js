@@ -8,7 +8,6 @@ const _path = require('path');
 const { PROJECT_ROOT: _PROJECT_ROOT } = require('./shared');
 const hmePaths = require('./infra/hme_paths');
 const { runtimePath, logPath, tmpPath } = require('./infra/paths');
-const selfOrigin = require('./self_origin');
 
 const CACHE_STABLE_MS = 4 * 60 * 1000;
 let _statusSnapshot = null;
@@ -92,14 +91,14 @@ function recentLifesaverErrors() {
     }
   }
 
-  // Self-origin (infra-health) and observation-severity classification is owned
-  // by proxy/self_origin.js (single canonical source, contract-tested). This
-  // module previously hand-maintained a private subset that drifted; consume the
+  // Mirror the same classification lifesaver.sh and lifesaver_inject.js
   const _CANARY_RE = /\[CANARY-/;
+  const _OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
+  const _SELF_TAG_RE = /\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+|hook-failure|sessionstart:[^\]]+)\]/;
   const filtered = fresh.filter((line) => {
     if (_CANARY_RE.test(line)) return false;
-    if (selfOrigin.isSelfOrigin(line)) return false;
-    if (selfOrigin.isObservation(line)) return false;
+    if (_SELF_TAG_RE.test(line)) return false;
+    if (_OBSERVATION_RE.test(line)) return false;
     return true;
   });
 
