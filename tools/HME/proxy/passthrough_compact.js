@@ -56,7 +56,8 @@ function shrinkForPassthrough(payload, opts = {}) {
 
   const recentStart = maxToolResultAge > 0 ? Math.max(0, msgs.length - maxToolResultAge) : 0;
   let elided = 0;
-  for (let i = 0; i < recentStart; i += 1) {
+  let microcompactHitThreshold = false;
+  for (let i = 0; i < recentStart && !microcompactHitThreshold; i += 1) {
     const m = msgs[i];
     if (!m || !Array.isArray(m.content)) continue;
     for (const b of m.content) {
@@ -65,6 +66,10 @@ function shrinkForPassthrough(payload, opts = {}) {
       if (cstr.length < toolResultByteFloor) continue;
       b.content = `(content elided by hme-proxy precompact: original was ${cstr.length}B)`;
       elided += 1;
+      if (Number.isFinite(threshold) && _serializedBytes(payload) <= threshold) {
+        microcompactHitThreshold = true;
+        break;
+      }
     }
   }
   if (elided > 0) {
