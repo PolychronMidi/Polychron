@@ -11,6 +11,15 @@ const _os = require('os');
 const { PROJECT_ROOT } = require('./shared');
 
 const REGISTRY = new Map();
+const STATE_FILES_REL = path.join('tools', 'HME', 'config', 'state-files.json');
+const STATE_FILE_FORMAT_HINTS = {
+  'tmp/hme-middleware-processed.jsonl': { name: 'statefile_hme_middleware_processed', format: 'jsonl' },
+  'tmp/hme-nexus.state': { name: 'statefile_hme_nexus', format: 'text' },
+  'tmp/hme-log-errors.watermark': { name: 'statefile_hme_log_errors_watermark', format: 'text' },
+  'tmp/hme-universal-pulse.heartbeat': { name: 'statefile_hme_universal_pulse_heartbeat', format: 'text' },
+  'tools/HME/runtime/supervisor-abandoned': { name: 'statefile_supervisor_abandoned', format: 'json' },
+  'log/hme-errors.log': { name: 'statefile_hme_errors', format: 'text' },
+};
 
 // rationale: tmp/-relative names so PROJECT_ROOT moves don't break entries.
 function _absPath(rel, projectRoot = PROJECT_ROOT) {
