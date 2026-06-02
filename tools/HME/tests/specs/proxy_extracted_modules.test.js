@@ -1065,19 +1065,20 @@ test('stop SSE writer includes required Anthropic stream envelope', () => {
 
 test('context budget compaction gears start near context high-water and escalate', () => {
   const oldEnv = { ...process.env };
-  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
-  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
-  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
+  // Pin an isolated statusline so the live Claude session / sibling tests cannot
+  // race the shared runtime file (their real ~200k usage would divide by this
+  const isolatedStatusline = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'hme-gear-statusline-')), 'statusline.json');
   try {
+    process.env.HME_STATUSLINE_PATH = isolatedStatusline;
     const writeZeroStatusline = () => {
-      fs.mkdirSync(runtimeDir, { recursive: true });
-      fs.writeFileSync(statusline, JSON.stringify({
+      fs.writeFileSync(isolatedStatusline, JSON.stringify({
         context_window: {
           context_window_size: 1000,
           current_usage: { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
         },
       }));
     };
+    writeZeroStatusline();
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
     process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '40';
