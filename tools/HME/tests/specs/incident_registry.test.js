@@ -36,7 +36,23 @@ test('incident registry writes text log plus structured JSONL', () => {
     assert.equal(rows.length, 1);
     assert.equal(rows[0].id, 'middleware-throw');
     assert.equal(rows[0].lifesaver, true);
+    assert.equal(rows[0].status, 'open');
     assert.deepEqual(rows[0].evidence, { mod: 'x' });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('incident registry can suppress resolver-proven historical lines', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-resolver-'));
+  try {
+    fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'tmp/payload.json'), JSON.stringify({
+      model: 'cx/gpt-5.5-xhigh', system: '', tools: [],
+      messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(900000) }] }],
+    }));
+    const line = '[T] UPSTREAM_200_INTERACTIVE: omniroute 200 api_error [interactive]: input exceeds the context window (snapshot=tmp/payload.json)';
+    assert.equal(incidents.unresolvedLines(root, [line]).length, 0);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
