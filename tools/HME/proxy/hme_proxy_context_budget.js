@@ -375,7 +375,7 @@ function createContextBudget() {
     const model = String(swapModel || '');
     const budget = resolveModelCtx(model);
     const before = serializedBytes(payload);
-    const pressure = compactPressureTokens(payload, before, { ignoreStatusline: true });
+    const pressure = compactPressureTokens(payload, before, { ignoreStatusline: true, model });
     const usedTokens = pressure.usedTokens;
     const plan = planForUsage({ usedTokens, budgetTokens: budget });
     if (!budget || plan.maxTier <= 0) return 0;
