@@ -106,3 +106,53 @@ test('recordSample ignores sub-threshold / empty samples', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('maybeDriftAlert fires a rate-limited LIFESAVER only when a fitted estimate stays off', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-calib-'));
+  const errLog = path.join(dir, 'log', 'hme-errors.log');
+  const read = () => { try { return fs.readFileSync(errLog, 'utf8'); } catch (_e) { return ''; } };
+  try {
+    const T = 1_000_000_000;
+    // Not fitted -> never alerts (pre-calibration deltas are expected/noisy).
+    assert.equal(maybeDriftAlert({ model: 'm', estimated: 50000, actual: 100000, fitted: false, projectRoot: dir, now: T }), false);
+    // Fitted but within tolerance -> no alert.
+    assert.equal(maybeDriftAlert({ model: 'm', estimated: 96000, actual: 100000, fitted: true, projectRoot: dir, now: T }), false);
+    // Fitted and >18% off -> alert.
+    assert.equal(maybeDriftAlert({ model: 'gpt-5.5-xhigh', estimated: 70000, actual: 100000, fitted: true, projectRoot: dir, now: T }), true);
+    assert.match(read(), /LIFESAVER -- estimator drift: gpt-5\.5-xhigh/);
+    // Rate-limited within the window.
+    assert.equal(maybeDriftAlert({ model: 'gpt-5.5-xhigh', estimated: 70000, actual: 100000, fitted: true, projectRoot: dir, now: T + 1000 }), false);
+    // After the window, fires again.
+    assert.equal(maybeDriftAlert({ model: 'gpt-5.5-xhigh', estimated: 70000, actual: 100000, fitted: true, projectRoot: dir, now: T + 400000 }), true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('END-TO-END: calibration flips the swap size-gate from pass to catch a real overflow', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-calib-'));
+  // gpt-5.5-xhigh window is 480000. Build a tool-result-heavy payload that the
+  // PRIOR estimate (loose) says fits, but whose TRUE token density (learned from
+  const env = { ...CAL_ENV, HME_OMNI_SWAP_FIT_FRACTION: '0.95' };
+  try {
+    const payload = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(820000) }] },
+    ] };
+    // With priors only (no calibration data yet): the gate's verdict.
+    const before = swapWindowCheck(payload, 'gpt-5.5-xhigh', env, dir);
+    // Teach the estimator that this route's tool output is DENSE (~1.4 B/tok):
+    // feed ground-truth samples for gpt-5.5-xhigh where actual >> prior estimate.
+    for (let i = 0; i < MIN_SAMPLES_TO_FIT + 20; i += 1) {
+      const reg = 5000 + i * 50;
+      const tr = 300000 + i * 1500;
+      recordSample({ reg, tr, actual: Math.round(reg / 2.6 + tr / 1.4), model: 'gpt-5.5-xhigh', env, projectRoot: dir });
+    }
+    const after = swapWindowCheck(payload, 'gpt-5.5-xhigh', env, dir);
+    assert.equal(after.budget, 480000);
+    assert.ok(after.estTokens > before.estTokens, `calibration raised the estimate (${before.estTokens} -> ${after.estTokens})`);
+    assert.equal(before.exceeds, false, 'prior estimate let the doomed payload through');
+    assert.equal(after.exceeds, true, 'calibrated estimate catches the overflow -> stays on a larger-window route');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
