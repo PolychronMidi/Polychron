@@ -42,7 +42,7 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
   }
   // Tier 1: compact again to fit (cheapest; preserves the chosen model).
   try { compact(payload); } catch (_e) { /* silent-ok: compaction best-effort */ }
-  tokens = estimate(payload, env);
+  tokens = estimate(payload, env, modelId);
   if (tokens <= budget) {
     return { ok: true, action: 'compacted', model: modelId, tokens, budget };
   }
