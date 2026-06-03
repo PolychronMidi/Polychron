@@ -1,8 +1,8 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
+const _fs = require('node:fs');
+const _path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { requireEnv } = require('../../proxy/shared/load_env');
 
