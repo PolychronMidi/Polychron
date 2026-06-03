@@ -66,7 +66,7 @@ function targetModelFor(requestedModel, cfg = loadModelsJson(), env = process.en
   return `${provider}/${raw}`;
 }
 
-let templateCache = new Map();
+const templateCache = new Map();
 
 function loadTemplate(root = PROJECT_ROOT, name) {
   const file = path.join(root, 'doc', 'templates', name);
