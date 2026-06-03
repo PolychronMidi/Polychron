@@ -67,6 +67,17 @@ test('live JS consumers use self_origin.js, not hand-maintained SELF_TAG_RE subs
   assert.ok(!/_SELF_TAG_RE\s*=/.test(status), 'context_status must not re-declare _SELF_TAG_RE');
 });
 
+test('live hook consumers derive self-tags from canonical, not a hand-maintained subset', () => {
+  // The alternation that must never be hand-copied into a consumer.
+  const handMirror = /_safe_curl\|_safe_jq\|_safe_py3/;
+  const ups = fileText('tools/HME/hooks/lifecycle/userpromptsubmit.sh');
+  const cw = fileText('tools/HME/hooks/helpers/lifesaver_crying_wolf.py');
+  assert.match(ups, /_hme_self_tag_re/, 'userpromptsubmit.sh must use _hme_self_tag_re');
+  assert.ok(!handMirror.test(ups), 'userpromptsubmit.sh must not inline a hand-maintained self-tag alternation');
+  assert.match(cw, /SELF_SUPPRESSED_TAG_PATTERNS/, 'lifesaver_crying_wolf.py must derive from self_origin SELF_SUPPRESSED_TAG_PATTERNS');
+  assert.ok(!handMirror.test(cw), 'lifesaver_crying_wolf.py must not inline a hand-maintained self-tag alternation');
+});
+
 // The agent-actionable override set documents the PROVEN-intentional reason the
 // live suppression set diverges from the canonical self-origin set: opencode-*
 test('every agent-actionable override IS a canonical self-origin tag', () => {
