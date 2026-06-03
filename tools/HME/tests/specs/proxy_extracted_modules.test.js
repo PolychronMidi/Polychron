@@ -1235,9 +1235,8 @@ test('context-window overflow alert is a named self-origin LIFESAVER only when o
   assert.match(line, /cx\/gpt-5\.5-high/);
   assert.match(line, /404000 tokens/);
   assert.match(line, /window 372000/);
-  // The [hme-proxy] tag must be classified self-origin (single source: _self_tags.sh).
-  const selfTags = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/hooks/helpers/_self_tags.sh'), 'utf8');
-  assert.match(selfTags, /hme-proxy/, 'hme-proxy must be in the shared self-origin tag regex');
+  // The [hme-proxy] tag must be classified self-origin (single source: self_origin.js).
+  assert.equal(require('../../proxy/self_origin').isSelfOriginSuppressed('[hme-proxy] LIFESAVER -- context budget'), true);
 });
 
 test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => withStatuslineUnavailable(() => {
