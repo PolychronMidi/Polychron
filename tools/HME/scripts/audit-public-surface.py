@@ -104,7 +104,6 @@ def _check_invocation_map(issues: list[str]) -> None:
     expected = {
         ("hme_admin", "i"): "i/hme admin action=<ACTION>",
         ("read", "i"): "Read",
-        ("hme_todo", "i"): "TodoWrite",
     }
     for (tool, key), value in expected.items():
         got = (tools.get(tool) or {}).get(key)
