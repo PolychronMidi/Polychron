@@ -256,23 +256,6 @@ if [[ -n "$PROMPT_BODY" ]]; then
   fi
 fi
 
-# Project-detect is informational context, not a safety gate. Surface cached
-# output from the prior turn and refresh in background to avoid sync Python tax.
-_PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
-_PD_CACHE="$_HME_PROJECT_TMP/hme-project-detect.cache"
-if [ -s "$_PD_CACHE" ]; then
-  cat "$_PD_CACHE" >&2
-fi
-if [ -x "$_PD" ]; then
-  export _PD_CACHE
-  _hme_bg_shell_timeout 10 project-detect "$PROJECT/log/hme-bg-project-detect.err" '
-    tmp="${_PD_CACHE}.$$.tmp"
-    PROJECT_ROOT="'"$PROJECT"'" python3 "'"$PROJECT_ROOT/tools/HME/scripts/project_detect.py"'" --tag \
-      >"$tmp" 2>>"'"$PROJECT/log/hme-bg-project-detect.err"'" \
-      && mv "$tmp" "$_PD_CACHE" || rm -f "$tmp"
-  '
-fi
-
 # inject auto-todo reminders from last turn's ingest
 _AUTO_TODO_REMINDER="$_HME_PROJECT_TMP/hme-auto-todos.reminder"
 if [ -f "$_AUTO_TODO_REMINDER" ] && [ -s "$_AUTO_TODO_REMINDER" ]; then
