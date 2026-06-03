@@ -203,7 +203,7 @@ test('Phase 12 provider template documents repeatable host expansion', () => {
     'host capability map entry',
     'golden fixtures',
   ]);
-  const doc = fs.readFileSync(path.join(__dirname, '../../../../doc/hme/hme-universal-provider-template.md'), 'utf8');
+  const doc = fs.readFileSync(path.join(__dirname, '../../../../doc/self-coherence-full.md#universal-hook-provider-template'), 'utf8');
   assert.match(doc, /unsupported/);
   assert.match(doc, /advisory/);
   assert.match(doc, /enforcement/);

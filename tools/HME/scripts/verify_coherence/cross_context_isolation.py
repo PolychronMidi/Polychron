@@ -1,6 +1,6 @@
 """Cross-context isolation invariant for proxy/ bounded contexts.
 
-doc/hme/PROXY_CONTEXTS.md declares five contexts (request_mutation,
+doc/self-coherence-full.md#hme-proxy-bounded-contexts declares five contexts (request_mutation,
 upstream_dispatch, response_transform, failure_policy,
 lifecycle_bridge). Rule 1: cross-context calls must go through the
 declared façade module under proxy/contexts/<name>/. Reaching into a

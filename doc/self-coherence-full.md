@@ -368,3 +368,330 @@ faults they were written to detect.
 - Activity event schema: [../tools/HME/activity/EVENTS.md](../tools/HME/activity/EVENTS.md)
 - Onboarding primer: [templates/ONBOARDING.md](templates/ONBOARDING.md)
 - Composition reference: [composition-full.md](composition-full.md)
+
+# HME proxy bounded contexts
+
+The proxy is large (107 files / ~14.5K lines). To keep coupling
+manageable while a full physical reorganization happens incrementally,
+this document declares the **bounded contexts** every new or migrated
+file should belong to. A file lives in exactly one context;
+cross-context dependencies should go through a single façade per
+context, never reach into another context's internals.
+
+## Contexts
+
+### request_mutation
+
+Transforms the inbound client request before dispatch.
+
+- `hme_proxy_request_mutation.js`, `messages.js`, `context.js`,
+  `compactor*.js`, `prompt_spam_guard.js`, all `middleware/*` modules.
+- Façade: `hme_proxy_request_mutation.mutateClaudeRequest`.
+
+### upstream_dispatch
+
+Resolves upstream + sends the request. Owns OmniRoute selection,
+overdrive routing, and the http(s) transport layer.
+
+- `upstream.js`, `overdrive_route.js`, `omniroute_client.js`,
+  `omniroute_protocol.js`, `model_route_resolver.js`,
+  `model_route_health.js`, `swap_state_store.js`, `hme_proxy_headers.js`,
+  `service_registry.js`, `hme_proxy.js`.
+- Façade: `hme_proxy_claude.handleRequest` (the Anthropic entrypoint).
+
+### response_transform
+
+Buffers and rewrites the upstream response into Anthropic-compatible
+SSE/JSON.
+
+- `hme_proxy_anthropic_response.js`, `legacy_swap_response.js`,
+  `sse_slop_rewriter.js`, `sse_stop_hook_rewriters.js`,
+  `codex_response_forwarder.js`, `codex_tool_text.js`,
+  `codex_omniroute.js`, `zen_translator.js`, `reasoning_to_thinking.js`,
+  `hme_proxy_response_send.js`, `hme_proxy_response_trace.js`,
+  `omni_tool_loop.js`.
+- Façade: `hme_proxy_anthropic_response.handleAnthropicResponseComplete`.
+
+### failure_policy
+
+Classifies failures, decides retry/fallback action, persists route
+quarantines, refreshes OAuth tokens. Pure functions where possible.
+
+- `omni_failure_policy.js` (the policy table),
+  `hme_proxy_upstream_failure.js`, `hme_proxy_codex.js`,
+  `hme_proxy_connection_errors.js`, `failure_classification.js`,
+  `model_route_health.js` (cooldowns).
+- Façade: `hme_proxy_upstream_failure.handleUpstreamFailureOrSuccess`.
+
+### lifecycle_bridge
+
+Maps Claude Code lifecycle events (PreToolUse, PostToolUse,
+SessionStart, Stop, UserPromptSubmit) into the portable event kernel.
+
+- `lifecycle_bridge.js`, `hme_proxy_routes.js`, `start_marker.js`,
+  `hme_dispatcher.js`, `supervisor/*.js`.
+- Façade: `lifecycle_bridge.handleLifecycleRoute`.
+
+### infra (shared primitives)
+
+Below all the contexts; should not depend on any of them.
+
+- `hme_config.js`, `subprocess.js`, `lifecycle_state.js`, `hme_paths.js`,
+  `shared/*.js`, `_dump.js`, `proxy_route_metrics.js`,
+  `config_loader.js`.
+
+## Rules
+
+1. **One façade per context.** Cross-context calls go through the
+   declared façade module. Reaching into a different context's helper
+   file is a refactor smell.
+2. **Pure helpers stay in infra.** Anything that doesn't depend on
+   another context belongs in infra so all contexts can use it without
+   pulling in a sibling context.
+3. **State lives in `lifecycle_state.js`.** Direct `fs.readFileSync` of
+   runtime markers is forbidden in new code.
+4. **Shell-outs go through `subprocess.js`.** Direct `child_process`
+   imports outside `subprocess.js` are deprecated.
+5. **Env reads go through `hme_config.js`.** Direct `_hmeRequireEnv`
+   calls in new code are deprecated.
+
+These rules are advisory until a verifier enforces them; for now they
+exist so new code and incremental migrations have a clear target.
+
+## Adopt-incrementally migration order
+
+Smallest-blast-radius first; each step is a separate commit:
+
+1. Infra helpers in place: `hme_config.js`, `subprocess.js`,
+   `lifecycle_state.js`, `omni_failure_policy.js`.
+2. Migrate one shell-out call site at a time to `subprocess.runSync`.
+3. Migrate one state-file read at a time to `lifecycle_state`.
+4. Migrate one env read at a time to `hme_config.load()`.
+5. After enough leaves move, lift the façades into per-context
+   directories (`proxy/contexts/<name>/index.js`).
+
+# Hook auto-rewrites and blocks
+
+PreToolUse and PostToolUse hooks run policies from
+`tools/HME/policies/builtin/`. Policies fall into three kinds:
+
+- **block-*** — deny the tool call when the pattern fires.
+- **rewrite-*** — mutate the tool input/output in place so the call can
+  proceed without a model retry. Surfaced as `DDoC stripped:` system
+  reminders.
+- **nexus-*** — informational checks gated by the unified TODO/NEXUS
+  surface.
+
+This document inventories every policy currently registered so the
+model has a single place to look up "why did my edit lose a line / get
+rewritten / get blocked?".
+
+## rewrite policies (silent mutation)
+
+| Policy                          | Trigger                                                | Mutation                                                                  |
+|  |  |  |
+| `rewrite-console-warn-prefix`   | `console.warn('...')` without the `Acceptable warning: ` prefix | Prepend the prefix to the first string argument.                  |
+| `rewrite-except-pass-silent-ok` | Python `except ...: pass` with no annotation           | Append `# silent-ok: pending review` to the pass line.                    |
+| `rewrite-hardcoded-project-root`| Hardcoded project-root literal in Write/Edit content   | Replace with `$PROJECT_ROOT`.                                             |
+| `block-character-spam`          | 4+ identical decoration chars (`====`, `####`, etc.)   | Strip the offending runs in-place. Per-line opt-out via `spam-ok` token.  |
+| `block-comment-bloat`           | 3+ consecutive non-annotation comment lines            | Truncate long comment lines and remove bloat lines.                       |
+| `block-comment-ellipsis-stub`   | Comment-ellipsis stub placeholders (`// ... rest`)     | Strip the stub.                                                           |
+
+The "block-" prefix on the last three is historical; they currently
+rewrite rather than block. New rewrite-class policies should use the
+`rewrite-` prefix.
+
+## block policies (deny)
+
+| Policy                          | Trigger                                                                              |
+|  |  |
+| `block-curl-pipe-sh`            | `curl ... \| sh` / `wget ... \| bash` and variants (supply-chain attack pattern).    |
+| `block-git-checkout-clobber`    | Broad `git checkout <ref> -- .` clobbers and direct restore of unified TODO state.   |
+| `block-memory-dir-writes`       | Writes to `.claude/projects/.../memory/`.                                            |
+| `block-mid-pipeline-write`      | Writes/edits to `src/` while `tmp/run.lock` exists.                                  |
+| `block-misplaced-log-tmp`       | Writes to nested `log/` or `tmp/` subdirectories (must live at project root).        |
+| `block-misplaced-metrics`       | Writes to `metrics/` outside `src/output/metrics/`.                                  |
+| `block-mkdir-misplaced-log-tmp` | `mkdir` of nested `log/` or `tmp/` directories.                                      |
+| `block-mkdir-misplaced-metrics` | `mkdir` of `metrics/` outside `src/output/metrics/`.                                 |
+| `block-runlock-deletion`        | Deletion of `tmp/run.lock`.                                                          |
+| `block-secret-content-pattern`  | Write/Edit content matching known secret patterns.                                   |
+| `block-secrets-write`           | Writes to canonical secret file paths (`.env`, `.credentials.json`, etc.).           |
+
+## nexus policies
+
+| Policy                          | Trigger                                                                              |
+|  |  |
+| `nexus-edit-check`              | Edits to files referenced by an open NEXUS TODO entry.                               |
+| `no-conflicts`                  | Edits to files currently flagged in merge-conflict state.                            |
+| `auto-fill-agent-description`   | Spawning a sub-agent without a `description` argument.                               |
+
+## Surface messages
+
+When a rewrite policy fires, the model receives a `system-reminder`
+containing `DDoC stripped: <rule_name> <details>`. To attribute a strip
+back to the responsible policy, search the policy directory for the rule
+name printed in the message.
+
+## Lint-only mode (proposed)
+
+Setting `HME_POLICIES_LINT_ONLY=1` would route all rewrites to warnings
+(no mutation) for a development window. This is not implemented yet but
+is the cleanest path to making policy churn visible during refactors
+without disabling the policies entirely.
+
+# HME OpenCode Universal Hook ABI
+
+HME owns `hme-opencode-hook/v1` as the canonical bridge contract between native hooks, proxy surfaces, OMO, and OpenCode-compatible plugins.
+
+## Boundary
+
+The ABI is an internal HME contract. OpenCode compatibility shapes the phase names and plugin-facing concepts, but HME keeps final authority over lifecycle, stop-chain, tool safety, and stream rewriting.
+
+## Core phases
+
+These phases mirror OpenCode-compatible hook concepts:
+
+- `chat.params` -- request/chat parameter observation or mutation.
+- `permission.ask` -- permission mediation before risky actions.
+- `tool.execute.before` -- pre-tool execution policy checks.
+- `tool.execute.after` -- post-tool observation and validation.
+
+## HME extension phases
+
+These phases are mandatory HME extensions, not optional plugin conveniences:
+
+- `stop.before` -- stop-chain and lifecycle completion enforcement.
+- `stream.text_block` -- buffered stream text-block allow/drop/rewrite decisions.
+
+They are explicit because existing HME semantics are stricter than generic OpenCode hooks. External plugins may participate only through declared capabilities; they cannot override mandatory HME denials.
+
+## Observational phases
+
+The contract also reserves low-risk observation phases for migration and shadow parity:
+
+- `session.start`
+- `session.end`
+- `message.input`
+- `message.output`
+- `stream.delta`
+- `policy.evaluate`
+- `telemetry.event`
+
+## Decision kinds
+
+Universal hook decisions are normalized before host-specific translation:
+
+- `allow`
+- `deny`
+- `modify`
+- `rewrite`
+- `drop`
+- `inject`
+- `ask_permission`
+- `defer`
+
+Provider adapters translate these decisions into Claude, Codex, Anthropic, OpenAI, OpenCode, or proxy-specific behavior. Unsupported host decisions must be explicit, never silent.
+
+## Current scope
+
+This phase adds the ABI contract, validators, OpenCode shadow-mode routing, and
+env-gated live application for the small set of decisions HME can safely express
+as HME-owned hook responses.
+
+Implemented surfaces:
+
+- `tools/HME/omo_bridge/contract.json`
+- `tools/HME/omo_bridge/contract_validator.js`
+- `tools/HME/omo_bridge/universal_event.js`
+- `tools/HME/omo_bridge/universal_decision.js`
+- `tools/HME/omo_bridge/shadow_runtime.js`
+- `tools/HME/event_kernel/dispatcher.js`
+- `tools/HME/tests/specs/omo_contract.test.js`
+
+Shadowed dispatcher events:
+
+- `SessionStart` -> `session.start`
+- `Stop` -> `stop.before`
+- `PreToolUse` -> `tool.execute.before`
+- `PermissionRequest` -> `permission.ask`
+- `PostToolUse` -> `tool.execute.after`
+
+Enable shadow mode with `HME_OMO_ENABLED=1` and `HME_OMO_MODE=shadow`. Configure
+the OMO source using `HME_OMO_SOURCE=path` plus `HME_OMO_PATH`, or
+`HME_OMO_SOURCE=package` plus `HME_OMO_PACKAGE`. Optional controls are
+`HME_OMO_REQUIRED_VERSION`, `HME_OMO_TIMEOUT_MS`, `HME_OMO_PHASES`, and
+`HME_OMO_PRELOAD`. Per-phase timeout variables use the phase name uppercased
+with dots replaced by underscores, for example
+`HME_OMO_TIMEOUT_TOOL_EXECUTE_BEFORE_MS`. `HME_OMO_TOOL_BEFORE_WARM_ONLY=1`
+skips cold `tool.execute.before` shadow observation until SessionStart preload
+has initialized OMO.
+
+In this workspace the installed package path is the current real-entrypoint
+smoke target: `HME_OMO_SOURCE=package` and
+`HME_OMO_PACKAGE=oh-my-openagent`. The development checkout at
+`tools/oh-my-openagent` may not have `dist/index.js` until it is built. Use a
+larger timeout, for example `HME_OMO_TIMEOUT_MS=10000`, when measuring cold
+`tool.execute.before` startup.
+
+HME remains authoritative. Shadow decisions, mutations, denials, plugin load
+errors, invalid events, and timeouts are telemetry only and cannot change live
+allow/deny, stop-chain, stream rewriting, permissions, provider routing,
+secret/path policy, or capability filtering.
+
+Enable live mode with `HME_OMO_ENABLED=1` and `HME_OMO_MODE=live`. Live mode uses
+the same source and timeout controls but only applies supported decisions after
+normalization and capability validation:
+
+- `PreToolUse` / `tool.execute.before`: `deny`, or `modify` with target `tool.input`.
+- `PermissionRequest` / `permission.ask`: `deny`.
+- `Stop` / `stop.before`: `deny`, and only when the HME stop-chain did not already block.
+
+OMO live failures are fail-open: missing builds, dependency/version failures,
+invalid events, plugin errors, timeouts, and unsupported decisions fall through
+to HME's native hook chain. Modified tool input is fed through downstream HME
+write/policy/native-hook validation before the modification is returned to the
+host. OMO does not bypass HME stop-chain, provider routing, stream rewriting,
+permission policy, secret/path policy, or capability filtering.
+
+Operational shadow telemetry is compact by design. HME writes phase, status,
+decision kind, plugin result statuses, duration, and hashes to
+`omo-shadow-decisions.jsonl` in the HME runtime directory. It does not write raw
+messages, prompts, tool arguments, command strings, patches, or reasons. Use
+`node tools/HME/scripts/omo-shadow-status.js` for recent status, decision, and
+latency summaries. Add `--fail-on-unhealthy` with thresholds such as
+`--max-timeout-rate` and `--max-p95-ms` to use the same data as a rollout gate.
+
+Future expansion of live application must remain separately enabled,
+phase-scoped, and tested against safety boundaries. External OMO output may not
+override HME denials or mutate safety-critical surfaces unless HME explicitly
+converts that observation into an HME-owned decision after policy validation.
+
+# Universal Hook Provider Template
+
+A new host must add adapter edges; policy code must not change.
+
+## Required checklist
+
+1. Event extraction: convert native lifecycle/tool/stream payloads into `hme-opencode-hook/v1` events.
+2. Session identity: preserve session id, cwd/project root, provider, model, and agent when available.
+3. Tool/permission representation: map tool name, input, output, permission target, and risk into canonical fields.
+4. Decision application path: translate universal decisions back to host outputs without silent degradation.
+5. Capability map entry: classify every ABI phase as `unsupported`, `advisory`, or `enforcement`.
+6. Golden fixtures: add inbound and outbound fixtures before enabling live routing.
+7. Shadow parity: run comparator telemetry before live enforcement.
+8. Cleanup gate: remove old host-specific policy only after parity and focused suites pass.
+
+## Capability meanings
+
+- `unsupported`: host cannot apply this phase/decision; safety-critical unsupported decisions fail closed.
+- `advisory`: host can observe and emit telemetry/effects, but cannot enforce live behavior.
+- `enforcement`: host can apply allow/deny/mutate/rewrite decisions through a translator.
+
+## Minimal files
+
+```text
+tools/HME/omo_bridge/adapters/<host>_inbound.js
+tools/HME/omo_bridge/translators/<host>_decision.js
+tools/HME/tests/fixtures/universal_hooks/<host>.json
+tools/HME/tests/specs/universal_hook_<host>.test.js
+```

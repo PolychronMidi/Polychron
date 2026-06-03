@@ -1,5 +1,5 @@
 {
-  "$comment": "File -> bounded-context membership per doc/hme/PROXY_CONTEXTS.md. Files not listed here default to 'infra' (shared primitives below all contexts). cross-context-isolation reads this registry and flags any require() that reaches into another context's internal helper instead of its façade.",
+  "$comment": "File -> bounded-context membership per doc/self-coherence-full.md#hme-proxy-bounded-contexts. Files not listed here default to 'infra' (shared primitives below all contexts). cross-context-isolation reads this registry and flags any require() that reaches into another context's internal helper instead of its façade.",
   "contexts": {
     "request_mutation": {
       "facade": "tools/HME/proxy/contexts/request_mutation/index.js",
