@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 'use strict';
+const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
 
 const fs = require('fs');
 const path = require('path');
