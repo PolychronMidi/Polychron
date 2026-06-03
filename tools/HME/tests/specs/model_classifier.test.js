@@ -7,6 +7,8 @@
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const _fs = require('node:fs');
+const _path = require('node:path');
 
 const mc = require('../../proxy/model_classifier');
 
