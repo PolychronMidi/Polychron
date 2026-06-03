@@ -6,7 +6,7 @@ The bridge owns `hme-opencode-hook/v1` as HME's universal hook ABI:
 - HME extension phases: `stop.before`, `stream.text_block`.
 - Validators live in `universal_event.js`, `universal_decision.js`, and `contract_validator.js`.
 
-See `doc/hme-opencode-universal-hook-abi.md` for the migration contract.
+See `doc/infra/hme-opencode-universal-hook-abi.md` for the migration contract.
 
 OpenCode routing is wired through `shadow_runtime.js` and
 `event_kernel/dispatcher.js`. Enable observation mode with:

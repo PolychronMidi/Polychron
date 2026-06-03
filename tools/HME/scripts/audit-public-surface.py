@@ -66,10 +66,10 @@ def _check_doc_root(issues: list[str]) -> None:
 
 
 def _check_i_registry(issues: list[str]) -> None:
-    i_dir = PROJECT / "i"
+    i_dir = PROJECT / "tools" / "HME" / "i"
     reg_path = PROJECT / "tools" / "HME" / "i_registry.json"
     if not i_dir.is_dir():
-        issues.append("i/ directory missing")
+        issues.append("tools/HME/i/ directory missing")
         return
     try:
         reg = _load_json(reg_path)
