@@ -485,18 +485,18 @@ class ShellHookAuditVerifier(Verifier):
 class ActivityEventsDocSyncVerifier(Verifier):
     """Telemetry events must stay registry-first.
 
-    `event_registry.json` is the source. EVENTS.md is generated from it,
-    and live emitters may only use registered event names on the declared
-    activity/signal stream."""
+    `event_registry.json` is the source. The telemetry-events block in
+    doc/self-coherence-full.md is generated from it, and live emitters may
+    only use registered event names on the declared activity/signal stream."""
     name = "activity-events-doc-sync"
     category = "doc"
     subtag = "drift-detection"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        doc_path = os.path.join(_PROJECT, "tools", "HME", "activity", "EVENTS.md")
+        doc_path = os.path.join(_PROJECT, "doc", "self-coherence-full.md")
         if not os.path.isfile(doc_path):
-            return skipped(summary="EVENTS.md not present", details=[doc_path])
+            return skipped(summary="self-coherence-full.md not present", details=[doc_path])
         with open(doc_path, encoding="utf-8") as f:
             doc_content = f.read()
         doc_events = set(re.findall(r"^-\s+\*\*`([a-z_]+)`\*\*", doc_content, re.MULTILINE))
