@@ -305,7 +305,7 @@ async function runStopChain(stdinJson) {
     }
     if (!result) {
       try {
-        // eslint-disable-next-line no-await-in-loop -- first-deny-wins: policies run in 
+        // eslint-disable-next-line no-await-in-loop -- first-deny-wins ordering: a later
         result = await policyMod.run(ctx);
       // silent-ok: policy throw logs; mandatory deny, optional allow.
       } catch (err) {
