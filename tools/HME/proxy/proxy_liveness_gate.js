@@ -52,18 +52,15 @@ function _readJSONSafe(p) {
 }
 
 // Pure evaluation against the live health files. Returns { ok, problems }.
+// This gate is availability-only: `drift` is only collected for routable slots,
+// and `problems` only consumes drift when routable === 0 (when drift is empty),
 function inspectLive(root) {
   const runtimeDir = path.join(root, 'tools', 'HME', 'runtime');
   const slots = {
     a: _readJSONSafe(path.join(runtimeDir, 'proxy-a.health')),
     b: _readJSONSafe(path.join(runtimeDir, 'proxy-b.health')),
   };
-  let wanted = '';
-  try {
-    const { currentRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
-    wanted = currentRuntimeFingerprint(root);
-  } catch (_) { /* if fingerprint can't compute, skip the drift dimension */ }
-  return evaluateSlots(slots, wanted, Date.now(), { staleMs: requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS') });
+  return evaluateSlots(slots, '', Date.now(), { staleMs: requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS') });
 }
 
 // --check-only: exit non-zero on drift/outage, write nothing. For the
