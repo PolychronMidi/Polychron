@@ -153,8 +153,8 @@ test('shortcuts_rewriter tolerates middleware contexts without markDirty', () =>
   assert.equal(payload.messages[0].content, 'next suggestions?');
 });
 
-test('shortcuts_rewriter "1" two-step: rewrites to first message + sets non-enumerable followup flag', async () => {
-  const payload = { messages: [{ role: 'user', content: '1' }] };
+test('shortcuts_rewriter "11" two-step: rewrites to first message + sets non-enumerable followup flag', async () => {
+  const payload = { messages: [{ role: 'user', content: '11' }] };
   const dirty = await runShortcut(payload);
   assert.equal(dirty, true);
   assert.equal(payload.messages[0].content, "reply only with 'hi'");
