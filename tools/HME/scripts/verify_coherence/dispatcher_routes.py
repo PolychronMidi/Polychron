@@ -64,7 +64,25 @@ class DispatcherRouteContractVerifier(Verifier):
         if "policyContext('PermissionRequest')" not in src:
             errors.append("dispatcher.js must resolve PermissionRequest policy via policyContext()")
 
-        total = len(declared | cases) + 2
+        # Every declared hook script must exist on disk under tools/HME/hooks/.
+        # The route-name contract above does not catch a typo'd script path
+        hooks_dir = os.path.join(_PROJECT, "tools", "HME", "hooks")
+        declared_scripts = set()
+        for r in contract.get("routes", []):
+            for s in r.get("scripts", []) or []:
+                declared_scripts.add(s)
+            for s in r.get("universalScripts", []) or []:
+                declared_scripts.add(s)
+            if r.get("hmePrimerScript"):
+                declared_scripts.add(r["hmePrimerScript"])
+            for arr in (r.get("shellByTool") or {}).values():
+                for s in arr or []:
+                    declared_scripts.add(s)
+        for s in sorted(declared_scripts):
+            if not os.path.exists(os.path.join(hooks_dir, s)):
+                errors.append(f"declared hook script missing on disk: tools/HME/hooks/{s}")
+
+        total = len(declared | cases) + len(declared_scripts) + 2
         if not errors:
             return passed(summary=f"{len(declared)} routes declared, switch + contract agree")
         score = max(0.0, 1.0 - len(errors) / max(1, total))
