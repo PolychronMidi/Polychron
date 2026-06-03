@@ -96,7 +96,7 @@ from .subagent import (  # noqa: F401
     AgentJobContractVerifier,
 )
 from .runtime_behavior import (  # noqa: F401
-    TransientErrorFilterVerifier, ContextBudgetVerifier,
+    TransientErrorFilterVerifier,
     WarmContextFreshnessVerifier, PlanOutputValidityVerifier,
     ServiceRegistryVerifier, ExplicitListTrackingRuleVerifier,
 )
