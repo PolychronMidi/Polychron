@@ -318,8 +318,8 @@ readers, writers, retention, generated/committed status, schema, and repair
 command. Update that JSON before adding a shared state writer.
 
 <!-- BEGIN GENERATED STATE REGISTRY -->
-- Registered state paths: 32 (24 single-owner, 8 multi-writer).
-- Generated state: 31; committed state: 1.
+- Registered state paths: 39 (30 single-owner, 9 multi-writer).
+- Generated state: 38; committed state: 1.
 - Repair commands and reader/writer ownership live in `tools/HME/config/state-files.json`.
 - Multi-writer paths:
   - `doc/templates/TODO.md` -- 2 writer(s): tools/HME/todo_engine/store.py, tools/HME/todo_engine/lifesaver_bridge.py
@@ -328,6 +328,7 @@ command. Update that JSON before adding a shared state writer.
   - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
   - `tools/HME/runtime/errors-lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
   - `tools/HME/runtime/errors-turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
+  - `tools/HME/runtime/heartbeat-lifesaver.ts` -- 2 writer(s): tools/HME/proxy/lifesaver_alerts.js, tools/HME/hooks/lifecycle/stop/lifesaver.sh
   - `tools/HME/runtime/metrics/*` -- 3 writer(s): tools/HME/proxy/infra/hme_paths.js, tools/HME/scripts/hme_paths.py, HME components using HME_METRICS_DIR
   - `tools/HME/runtime/state/*` -- 3 writer(s): tools/HME/proxy/infra/hme_paths.js, tools/HME/scripts/hme_paths.py, HME components using HME_STATE_DIR
 <!-- END GENERATED STATE REGISTRY -->
