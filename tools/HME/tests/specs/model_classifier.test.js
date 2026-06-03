@@ -70,3 +70,31 @@ test('classifier matches the legacy inline behavior it replaces', () => {
     assert.equal(mc.isOpus(id), /opus/i.test(String(id)), `opus mismatch for ${id}`);
   }
 });
+
+function* jsFiles(dir) {
+  for (const ent of _fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = _path.join(dir, ent.name);
+    if (ent.isDirectory()) yield* jsFiles(p);
+    else if (ent.isFile() && ent.name.endsWith('.js')) yield p;
+  }
+}
+
+test('live proxy code does not reintroduce raw model-family classifiers outside model_classifier.js', () => {
+  const proxyDir = _path.join(__dirname, '..', '..', 'proxy');
+  const offenders = [];
+  const rawClassifierPatterns = [
+    /\/[a-z]*opus[a-z]*\/[gimsuy]*/i,
+    /\/[a-z]*sonnet[a-z]*\/[gimsuy]*/i,
+    /\/[a-z]*haiku[a-z]*\/[gimsuy]*/i,
+    /\.includes\(['"](?:opus|sonnet|haiku)['"]\)/i,
+  ];
+  for (const file of jsFiles(proxyDir)) {
+    if (file.endsWith(_path.join('proxy', 'model_classifier.js'))) continue;
+    const rel = _path.relative(proxyDir, file);
+    const text = _fs.readFileSync(file, 'utf8');
+    for (const pattern of rawClassifierPatterns) {
+      if (pattern.test(text)) offenders.push(rel);
+    }
+  }
+  assert.deepEqual([...new Set(offenders)].sort(), [], 'use model_classifier.js family()/modelTier()/isOpus() instead of raw family regex/includes');
+});
