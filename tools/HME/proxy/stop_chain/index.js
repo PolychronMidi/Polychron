@@ -67,11 +67,8 @@ const POLICY_NAMES = [
   'post_hooks',
 ];
 
-// nexus_pending (the "unreviewed edit / incomplete lifecycle" NEXUS gate) and
-// work_checks are full-enforcement steps -- only run them in strict mode.
-// claim_proof runs in BOTH modes: it self-gates internally (hard deny only in
-// strict; shadow instruct + verdict event in non-strict) so the enable decision
-// for non-strict can be made from collected ledger data, not a guess.
+// STRICT_ONLY steps run only in strict mode; claim_proof self-gates in both
+// modes (see claim_proof policy + TODO #14 for the non-strict ledger rationale).
 const STRICT_ONLY_POLICIES = new Set(['work_checks', 'nexus_pending']);
 function _policyNamesForMode() {
   if (isStrictMode()) return POLICY_NAMES;
