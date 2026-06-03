@@ -1228,6 +1228,9 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`outbound_gate_compacted`** [activity] -- Outbound context gate compacted an interactive payload before upstream dispatch.
 - **`outbound_gate_over_window`** [activity] -- Outbound context gate refused a known-over-window payload after compaction and reroute were exhausted.
 - **`outbound_gate_rerouted`** [activity] -- Outbound context gate moved a payload to a larger-context route before dispatch.
+- **`estimator_calibration`** [activity] -- Proxy recorded a token-estimator calibration sample comparing estimated vs actual input tokens.
+- **`outbound_gate_compact_requested`** [activity] -- Outbound context gate requested a live-session compact cycle after an over-window verdict.
+- **`transcript_compaction`** [activity] -- Transcript compactor rewrote an oversized session transcript file to reclaim context budget.
 
 ### Proxy request mutation
 

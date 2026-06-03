@@ -659,6 +659,42 @@
       "summary": "Outbound context gate moved a payload to a larger-context route before dispatch."
     },
     {
+      "name": "estimator_calibration",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context"
+      ],
+      "summary": "Proxy recorded a token-estimator calibration sample comparing estimated vs actual input tokens."
+    },
+    {
+      "name": "outbound_gate_compact_requested",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context"
+      ],
+      "summary": "Outbound context gate requested a live-session compact cycle after an over-window verdict."
+    },
+    {
+      "name": "transcript_compaction",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context"
+      ],
+      "summary": "Transcript compactor rewrote an oversized session transcript file to reclaim context budget."
+    },
+    {
       "name": "shortcut_followup_submitted",
       "category": "Interactive / shortcut",
       "streams": [
