@@ -2,7 +2,6 @@
 // Bridge: route any middleware throw to the LIFESAVER channel.
 //
 
-const path = require('path');
 const incidentRegistry = require('../incident_registry');
 
 const ERROR_LOG_REL = incidentRegistry.ERROR_LOG_REL;
