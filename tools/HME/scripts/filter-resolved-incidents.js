@@ -5,6 +5,7 @@ const fs = require('fs');
 
 // Read stdin FIRST so any downstream failure can still surface the raw lines.
 let input = [];
+// silent-ok: empty/closed stdin -> no lines to filter; downstream write handles [].
 try { input = fs.readFileSync(0, 'utf8').split('\n').filter(Boolean); } catch (_e) { input = []; }
 const write = (lines) => process.stdout.write(lines.join('\n') + (lines.length ? '\n' : ''));
 
