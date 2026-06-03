@@ -204,7 +204,7 @@ function createClaudeHandler(deps) {
         headers: upstreamHeaders,
       };
 
-      let _releaseOpusSlot = await acquireOpusSlotIfNeeded({
+      const _releaseOpusSlot = await acquireOpusSlotIfNeeded({
         isAnthropic, isInteractivePath: _isInteractivePath, payload, acquireOpusSlot: _acquireOpusSlot,
       });
 
