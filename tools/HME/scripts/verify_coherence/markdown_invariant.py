@@ -56,7 +56,6 @@ ALLOWED_PREFIXES = (
     "doc/",
     "tools/csv_maestro/doc/",
     "tools/HME/activity/",
-    "tools/HME/doc/",
     "tools/HME/proxy/",
     "tools/HME/tests/fixtures/",
 )
