@@ -80,10 +80,10 @@ Adding a new gate for an external tool:
   2. _onb_before "state_name" + emit decision: deny with instructive reason
   3. Matching posttooluse_*.sh advances via _onb_advance_to
 
-Native TodoWrite integration:
+Task-surface integration:
   Onboarding state stays in tmp/hme-onboarding.state and status output.
-  Native TodoWrite remains a task surface; walkthrough steps are not mirrored
-  into persistent TODO storage.
+  The canonical task surface is doc/templates/TODO.md; walkthrough steps are
+  not mirrored into it.
 
 NOT enforced:
   * Cross-session graduation persistence (matches LLM amnesia)
