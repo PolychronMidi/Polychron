@@ -106,19 +106,15 @@ i/learn query=...                          KB search
 i/learn action=health                    KB durability/coverage check
 i/hme admin action=index                 reindex after batch changes
 i/hme admin action=reload                hot-reload tool modules
-TodoWrite                                Claude native task list; HME merges persistent
-                                         critical and TODO.md items automatically
+
 ```
 
 (Run `i/help` for the full wrapper surface and `i/help <name>` for usage.
 
 ## Todo system
 
-Claude's native `TodoWrite` is the public todo surface. Codex uses `update_plan`,
-which syncs into TODO.md automatically through the Codex proxy, with universal
-pulse as a fallback scanner. The HME layer adds the following transparently:
+doc/templates/TODO.md
 
-- **Subtodos + auto-completion.** Internal HME todo entries can carry subtodos; the native view shows them as indented rows (`  + text`).
 - **Critical flag.** Pass `critical=True` on add. Critical items surface at every turn start via `userpromptsubmit.sh` until resolved. LIFESAVER alerts auto-append as critical.
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `i/hme admin action=index` in the background. `learn` queues a reminder to call `i/learn` at the next turn. `commit` flags a commit nudge in the nexus.
 - **Onboarding stays separate.** The current walkthrough step appears in status output, not as persistent tasks.

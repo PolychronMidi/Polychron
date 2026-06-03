@@ -34,16 +34,6 @@ const BOILERPLATE_PATTERNS = [
     re: /^Stop hook feedback:\s*\n\[bash [^\]]*stop\.sh\]:\s*(ok|No stderr output)\s*$/,
     strip_whole_block: true,
   },
-  {
-    name: 'todowrite_nag',
-    re: /<system-reminder>\s*The TodoWrite tool hasn't been used recently[\s\S]*?<\/system-reminder>/,
-    strip_whole_block: false,
-  },
-  {
-    name: 'task_tools_nag',
-    re: TASK_TOOLS_NAG_RE,
-    strip_whole_block: false,
-  },
 ];
 
 function _isBoilerplateText(text) {
