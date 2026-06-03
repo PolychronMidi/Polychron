@@ -63,6 +63,21 @@ test('shortcuts_rewriter expands n after system reminder in string content', asy
   assert.equal(payload.messages[0].content, `${reminder}\nnext suggestions?`);
 });
 
+test('shortcuts_rewriter expands final-line shortcuts inside host interrupt envelopes', async () => {
+  const envelope = 'The user sent a new message while you were working:';
+  const payload = { messages: [{ role: 'user', content: `${envelope}\n\nc` }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, true);
+  assert.equal(payload.messages[0].content, `${envelope}\n\ncontinue`);
+});
+
+test('shortcuts_rewriter does not expand shortcuts embedded in ordinary prose', async () => {
+  const payload = { messages: [{ role: 'user', content: 'please fix this in c' }] };
+  const dirty = await runShortcut(payload);
+  assert.equal(dirty, false);
+  assert.equal(payload.messages[0].content, 'please fix this in c');
+});
+
 test('shortcuts_rewriter expands shortcut on last real user message before tool results', async () => {
   const payload = {
     messages: [
