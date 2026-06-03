@@ -1172,7 +1172,6 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`file_watcher_filtered`** [activity] -- A watcher write was suppressed by ignore directories, extensions, or noise suffixes.
 - **`file_written`** [activity] -- A watcher or proxy detected a write under an allow-listed path.
 - **`kb_draft_written`** [activity] -- posttooluse_bash auto-wrote tmp/hme-learn-draft.json after a stable pipeline verdict.
-- **`learn_suggested`** [activity] -- A hook suggested capturing novel findings into HME knowledge.
 - **`productive_incoherence`** [activity] -- An edit intentionally entered uncovered territory while preserving traceability.
 
 ### Interactive / shortcut
@@ -1200,7 +1199,6 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`omo_session_snapshot`** [activity] -- Read a read-only OMO/OpenCode session snapshot for HME use.
 - **`omo_tool_blocked`** [activity] -- An OMO-originated tool/action was blocked by HME policy.
 - **`omo_tool_bridge_exported`** [activity] -- Exported canonical HME tool descriptors into OMO-facing shape.
-- **`omo_tool_invoked`** [activity] -- An OMO-originated tool action entered the HME bridge invocation path.
 
 ### Pipeline / coherence
 
@@ -1219,7 +1217,6 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 
 - **`context_compaction`** [activity] -- Proxy compacted the request payload to fit upstream context limits.
 - **`context_token_usage`** [activity] -- Proxy recorded token usage delta for a completed upstream request.
-- **`context_window_retry`** [activity] -- Proxy retried after the upstream signaled context-window exhaustion.
 - **`context_window_compact_requested`** [activity] -- Proxy requested a live-session compact cycle after upstream context-window exhaustion.
 - **`model_route_quarantine`** [activity] -- Proxy marked an OmniRoute model route as cooldown after a credential or limit failure.
 - **`omniroute_credential_failover`** [activity] -- Proxy failed over to the next OmniRoute chain target after a credential failure on the primary.
@@ -1278,7 +1275,6 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`boilerplate_stripped`** [activity] -- The proxy removed boilerplate prefixes from tool output.
 - **`cache_control_normalized`** [activity] -- The proxy promoted short cache_control TTLs to avoid upstream ordering failures.
 - **`dir_context`** [activity] -- Directory-context middleware injected directory-intent context.
-- **`dominance_prefetch_fired`** [activity] -- Dominance prefetch warmed cache for a likely-next call.
 - **`edit_context`** [activity] -- Edit-context middleware injected pre-edit KB context.
 - **`edit_failure_context_appended`** [activity] -- Edit-failure middleware appended file context after an edit could not apply.
 - **`empty_tool_result_marked`** [activity] -- The proxy tagged an empty tool result body as SUCCESS or FAIL.
@@ -1306,7 +1302,6 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`skill_reminder_stripped`** [activity] -- The proxy removed repeated skill reminders or compacted low-signal Stop-hook feedback.
 - **`status_inject`** [activity] -- i/status output was auto-injected as a system reminder.
 - **`stop_reminder_inject`** [activity] -- Stop-reminder middleware injected a compact continuity reminder.
-- **`todo_status_suppressed`** [activity] -- Todo status filtering suppressed repeated todo-state context.
 - **`tool_call`** [activity] -- Generic proxy bookkeeping marker for a completed tool invocation.
 - **`upstream_conn_error`** [activity] -- A TCP/TLS-level failure occurred before an upstream HTTP response.
 - **`upstream_error`** [activity] -- The proxy classified an upstream HTTP or SSE response as failed.

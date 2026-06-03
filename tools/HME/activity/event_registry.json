@@ -172,18 +172,6 @@
       "summary": "posttooluse_bash auto-wrote tmp/hme-learn-draft.json after a stable pipeline verdict."
     },
     {
-      "name": "learn_suggested",
-      "category": "File-system / edit lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "filesystem",
-        "learn_suggestion"
-      ],
-      "summary": "A hook suggested capturing novel findings into HME knowledge."
-    },
-    {
       "name": "productive_incoherence",
       "category": "File-system / edit lifecycle",
       "streams": [
@@ -385,18 +373,6 @@
       "summary": "Exported canonical HME tool descriptors into OMO-facing shape."
     },
     {
-      "name": "omo_tool_invoked",
-      "category": "OMO bridge",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "omo_bridge",
-        "proxy"
-      ],
-      "summary": "An OMO-originated tool action entered the HME bridge invocation path."
-    },
-    {
       "name": "axis_rebalance_cost",
       "category": "Pipeline / coherence",
       "streams": [
@@ -534,18 +510,6 @@
         "telemetry"
       ],
       "summary": "Proxy recorded token usage delta for a completed upstream request."
-    },
-    {
-      "name": "context_window_retry",
-      "category": "Proxy / routing",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "retry"
-      ],
-      "summary": "Proxy retried after the upstream signaled context-window exhaustion."
     },
     {
       "name": "context_window_compact_requested",
@@ -1060,17 +1024,6 @@
       "summary": "Directory-context middleware injected directory-intent context."
     },
     {
-      "name": "dominance_prefetch_fired",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy"
-      ],
-      "summary": "Dominance prefetch warmed cache for a likely-next call."
-    },
-    {
       "name": "edit_context",
       "category": "Tool / proxy lifecycle",
       "streams": [
@@ -1377,18 +1330,6 @@
         "briefing"
       ],
       "summary": "Stop-reminder middleware injected a compact continuity reminder."
-    },
-    {
-      "name": "todo_status_suppressed",
-      "category": "Tool / proxy lifecycle",
-      "streams": [
-        "activity"
-      ],
-      "groups": [
-        "proxy",
-        "briefing"
-      ],
-      "summary": "Todo status filtering suppressed repeated todo-state context."
     },
     {
       "name": "tool_call",
