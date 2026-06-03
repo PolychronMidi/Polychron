@@ -450,9 +450,10 @@
         "diagnostics"
       ],
       "writers": [
-        "tools/HME/proxy/lifesaver_alerts.js"
+        "tools/HME/proxy/lifesaver_alerts.js",
+        "tools/HME/hooks/lifecycle/stop/lifesaver.sh"
       ],
-      "retention": "single unix-second heartbeat timestamp for latest real lifesaver injection",
+      "retention": "single unix-second heartbeat timestamp for the latest real lifesaver run (proxy injection or Stop-hook pass)",
       "generated": true,
       "committed": false,
       "schema": "plain integer unix timestamp seconds",
