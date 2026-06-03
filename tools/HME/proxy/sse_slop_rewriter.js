@@ -465,7 +465,7 @@ function _compactNonAlnumSegment(text) {
     // Preserve newline entries. Only strip spaces/tabs around punctuation that is
     // safe without padding; keep word separators around operators like &, |, -.
     .replace(/[ \t]*([,.;:!?])([ \t]*)/g, (_m, punct, tail) => punct + (tail ? ' ' : ''))
-    .replace(/[ \t]*([()\[\]{}])[ \t]*/g, '$1')
+    .replace(/[ \t]*([()[\]{}])[ \t]*/g, '$1')
     // Deduplicate concurrent repeated non-alphanumeric chars: !!! -> !, ... -> .
     .replace(/([^A-Za-z0-9\s])\1+/g, '$1');
 }
@@ -733,7 +733,7 @@ function _needsBoundaryBetween(left, right) {
   const r = String(right)[0];
   if (/\s/.test(l) || /\s/.test(r)) return false;
   if (/^[,.;:!?)]$/.test(r)) return false;
-  if (/^[(\[]$/.test(l)) return false;
+  if (/^[([]$/.test(l)) return false;
   return /[`\w)\]]/.test(l) && /[`\w]/.test(r);
 }
 
