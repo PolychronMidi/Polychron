@@ -36,8 +36,8 @@ function resolvePatchPath(raw) {
   const cleaned = cleanPath(raw);
   if (badPathShape(cleaned)) throw new Error('malformed apply_patch file path: ' + (cleaned || '(empty)'));
   const abs = path.resolve(PROJECT_ROOT, cleaned);
-  const rel = path.relative(PROJECT_ROOT, abs);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error('apply_patch path outside PROJECT_ROOT: ' + cleaned);
+  const relPath = path.relative(PROJECT_ROOT, abs);
+  if (relPath.startsWith('..') || path.isAbsolute(relPath)) throw new Error('apply_patch path outside PROJECT_ROOT: ' + cleaned);
   return abs;
 }
 

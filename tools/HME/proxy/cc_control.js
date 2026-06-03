@@ -56,14 +56,10 @@ function submitCcCompactOnce(root, { ttlMs = CC_COMPACT_INFLIGHT_MS, now = Date.
   }
   const delivered = submitCcShortcut(root, 'cc', '', { interrupt: true });
   if (!delivered) return { submitted: false, reason: 'no_bridge' };
-  try {
-    fs.mkdirSync(path.dirname(flag), { recursive: true });
-    fs.writeFileSync(flag, String(now));
-  } catch (err) {
-    // The token is already delivered; a missing flag only weakens the
-    // single-flight guard for the next overflow. Surface it rather than hide it.
-    throw err;
-  }
+  // The token is already delivered; if the flag write throws, a missing flag only
+  // weakens the single-flight guard for the next overflow. Let it surface (no catch)
+  fs.mkdirSync(path.dirname(flag), { recursive: true });
+  fs.writeFileSync(flag, String(now));
   return { submitted: true, reason: 'submitted' };
 }
 

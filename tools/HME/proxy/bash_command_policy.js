@@ -225,7 +225,7 @@ function createBashPolicyContext(input = {}, opts = {}) {
 // state instead of force-running restart scripts by hand. Match only
 const _RESTART_TARGET = '(?:polychron-(?:proxy-restart|slot-restart|launch|shutdown)\\.sh|proxy-supervisor\\.sh|codex-proxy-supervisor\\.sh|universal-pulse-supervisor\\.sh|proxy-watchdog\\.sh|slot_watchdog\\.js|file_watcher\\.js|shuffler\\.js)';
 const _RESTART_SCRIPT_RE = new RegExp(
-  // exec verb (bash/sh/node/setsid/nohup/source/./exec) immediately preceding a restart 
+  // exec verb (bash/sh/node/setsid/nohup/source/./exec) immediately preceding a restart
   '(?:\\b(?:bash|sh|node|setsid|nohup|exec|source)\\b[^;&|]*?|(?:^|[;&|]|\\s)\\.?/?\\S*?)' + _RESTART_TARGET
   // ...or a launcher-dir script run directly, or the worker-restart subcommand.
   + '|tools/HME/launcher/[\\w.-]+\\.sh|\\bworker-restart\\b',
