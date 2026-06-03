@@ -543,6 +543,9 @@ async function runPipeline(payload, scan, session) {
       if (typeof mod.onToolResult !== 'function') continue;
       if (!_middlewareAllowed(mod, 'onToolResult')) continue;
       try {
+        // Sequential by design (see runOnToolResult): phase order is
+        // load-bearing across shared payload mutation.
+        // eslint-disable-next-line no-await-in-loop
         await mod.onToolResult({ toolUse, toolResult, session, ctx });
       } catch (err) {
         console.error(`[middleware] ${mod.name}.onToolResult threw: ${err.message}`);
@@ -554,6 +557,9 @@ async function runPipeline(payload, scan, session) {
     if (typeof mod.onRequest !== 'function') continue;
     if (!_middlewareAllowed(mod, 'onRequest')) continue;
     try {
+      // Sequential by design: onRequest modules run in declared phase order
+      // and mutate the shared payload; parallelizing would race those writes.
+      // eslint-disable-next-line no-await-in-loop
       await mod.onRequest({ payload, scan, session, ctx });
     } catch (err) {
       console.error(`[middleware] ${mod.name}.onRequest threw: ${err.message}`);
