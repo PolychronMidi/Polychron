@@ -19,6 +19,9 @@ const CLAUDE_STRIP_RULES = [
   { name: 'stop-hook-proxy-echo', re: RE_STOP_HOOK_PROXY, action: 'remove-block' },
   { name: 'lifesaver-banner', re: RE_LIFESAVER_BANNER, action: 'remove-block' },
   { name: 'context-tail', re: RE_CONTEXT_TAIL, action: 'replace-with', replacement: '\n' },
+  // Embedded/unwrapped skill enumeration (no <system-reminder> wrapper, often a
+  // role:system string message). Excise just the skill list; trailing hook
+  { name: 'skill-list-embedded', re: RE_SKILL_LIST, action: 'replace-with', replacement: '' },
 ];
 
 const CODEX_WRAPPER_RULES = [
