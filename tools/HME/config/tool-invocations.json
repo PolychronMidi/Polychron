@@ -21,10 +21,6 @@
       "i": "i/hme admin action=reload",
       "primer": "i/hme admin action=reload"
     },
-    "hme_todo": {
-      "i": "TodoWrite",
-      "primer": "TodoWrite todos=[...]"
-    },
     "evolve": {
       "i": "i/evolve focus=<FOCUS>",
       "primer": "i/evolve focus=design"
