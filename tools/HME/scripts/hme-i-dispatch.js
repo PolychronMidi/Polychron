@@ -208,7 +208,7 @@ function dispatchHme(args) {
     process.exit(2);
   }
   if (first === 'todo' || first === 'hme_todo') {
-    console.error('i/hme: explicit HME todo is retired; use native TodoWrite. TodoWrite calls are HME-merged automatically.');
+    console.error('i/hme: explicit HME todo is retired. The canonical todo surface is doc/templates/TODO.md -- edit it directly via Edit/Write (one item per line, status-coded per the file header).');
     process.exit(2);
   }
   hmeCli(first, args.slice(1));
