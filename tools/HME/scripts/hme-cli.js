@@ -249,10 +249,9 @@ function _tryDirectLance(tool, args) {
       env: { ...process.env, PROJECT_ROOT: projectRoot },
     });
     let stdout = '';
-    let stderr = '';
-    const timer = setTimeout(() => { try { child.kill('SIGTERM'); } catch (_) {} resolve(null); }, 15_000);
+    const timer = setTimeout(() => { try { child.kill('SIGTERM'); } catch {} resolve(null); }, 15_000);
     child.stdout.on('data', (c) => { stdout += c.toString('utf8'); });
-    child.stderr.on('data', (c) => { stderr += c.toString('utf8'); });
+    child.stderr.resume();
     child.on('close', (code) => {
       clearTimeout(timer);
       if (code !== 0 || !stdout.trim()) return resolve(null);
