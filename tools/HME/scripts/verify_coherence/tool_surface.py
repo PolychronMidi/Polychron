@@ -1,4 +1,4 @@
-"""Tool-surface and native TodoWrite contract verifiers."""
+"""Tool-surface coverage verifiers."""
 from __future__ import annotations
 
 import ast
