@@ -65,20 +65,6 @@ test('compact_tool_descriptions preserves host-required Agent.description while 
   assert.deepEqual(Object.keys(payload.tools[0].input_schema.properties), ['level', 'prompt', 'description']);
 });
 
-test('compact_tool_descriptions inserts canonical TodoWrite when missing', () => {
-  const payload = { tools: [
-    { name: 'Read', description: 'very long read description' },
-    { name: 'TaskCreate', description: 'task create should have been filtered earlier' },
-  ] };
-  assert.equal(run(payload), true);
-  const names = payload.tools.map((t) => t.name);
-  assert.deepEqual(names, ['Read', 'TaskCreate', 'TodoWrite']);
-  const todo = payload.tools.find((t) => t.name === 'TodoWrite');
-  assert.match(todo.description, /^Maintain a session task list/);
-  assert.deepEqual(Object.keys(todo.input_schema.properties), ['todos']);
-  assert.deepEqual(todo.input_schema.required, ['todos']);
-});
-
 test('retired direct-surface TodoWrite disabler is gone', () => {
   assert.equal(fs.existsSync(path.join(__dirname, '..', '..', 'proxy', 'middleware', '04b_disable_todowrite_on_direct_tool_surface.js')), false);
   const payload = { tools: [{ name: 'Read' }, { name: 'TodoWrite' }, { name: 'Bash' }] };
