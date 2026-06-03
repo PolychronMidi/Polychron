@@ -117,6 +117,7 @@ async function _healthLoop() {
     if (!alive) {
       // Before spawn/give-up, adopt if healthURL already serves.
       if (spec.healthUrl) {
+        // eslint-disable-next-line no-await-in-loop -- per-child health probe: children 
         const alreadyServing = await _probe(spec.healthUrl);
         if (alreadyServing) {
           if (state.restarts > 0 || state.gaveUp) {

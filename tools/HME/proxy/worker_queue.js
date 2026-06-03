@@ -94,6 +94,7 @@ async function waitForResult(jobId, timeoutMs = 10_000, pollMs = 50, resultsDir 
         // Partial write between exists() and read; loop and retry.
       }
     }
+    // eslint-disable-next-line no-await-in-loop -- sequential result-file poll: each sle
     await new Promise((r) => setTimeout(r, pollMs));
   }
   return null;
