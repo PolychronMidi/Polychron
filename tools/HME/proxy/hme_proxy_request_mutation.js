@@ -149,8 +149,10 @@ async function mutateClaudeRequest({
     let compacted = 0;
     if (passthrough) compacted += shrinkForPassthrough(payload);
     compacted += compactLargeInteractiveAnthropicPayload(payload);
-
-    if (applyExplicitOtpmCap(payload)) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+    // Always evaluate the cap (it mutates payload); rebuild the outgoing buffer if
+    // any compaction OR the cap dirtied the payload -- otherwise a passthrough-mode
+    const capped = applyExplicitOtpmCap(payload);
+    if (compacted > 0 || capped) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
 
   if (payload && Array.isArray(payload.messages) && !passthrough) {
