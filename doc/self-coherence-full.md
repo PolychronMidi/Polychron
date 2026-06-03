@@ -1113,7 +1113,7 @@ The `tools` array on every request is ~60KB+ -- bigger than the system
 prompt. If you have tools you never use (`mcp__claude_ai_Google_Drive__*`,
 `EnterWorktree`/`ExitWorktree`, `Monitor`, `RemoteTrigger`, `WebFetch`,
 `WebSearch`, `CronCreate`/`Delete`/`List`, `PushNotification`, etc.),
-drop them via [`filter_tools.js`](middleware/03_filter_tools.js):
+drop them via [`filter_tools.js`](../tools/HME/proxy/middleware/03_filter_tools.js):
 
 ```
 # In .env -- comma-separated, exact tool names
