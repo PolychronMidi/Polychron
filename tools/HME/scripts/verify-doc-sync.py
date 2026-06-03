@@ -106,8 +106,8 @@ _LEGACY_MAP = {
     "index_codebase":    _action_form("index"),
     "clear_index":       _action_form("clear_index"),
     "hme_introspect":    _action_form("introspect"),
-    # Todo
-    "todo(action":       _tool_form("hme_todo", "TodoWrite"),
+    # Todo: the canonical surface is doc/templates/TODO.md edited via Edit/Write.
+    "todo(action":       "edit doc/templates/TODO.md via Edit/Write",
 }
 
 # Contexts where legacy names are FINE to appear (implementation refs, hook files, etc.)
