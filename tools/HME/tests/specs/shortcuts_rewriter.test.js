@@ -71,9 +71,10 @@ test('shortcuts_rewriter expands final-line shortcuts inside host interrupt enve
   assert.equal(payload.messages[0].content, `${envelope}\n\ncontinue`);
 });
 
-test('shortcuts_rewriter does not expand shortcuts embedded in ordinary prose', async () => {
+test('shortcuts_rewriter does not expand shortcuts embedded in ordinary prose', () => {
   const payload = { messages: [{ role: 'user', content: 'please fix this in c' }] };
-  const dirty = await runShortcut(payload);
+  let dirty = false;
+  shortcutsRewriter.onRequest({ payload, ctx: { markDirty: () => { dirty = true; } } });
   assert.equal(dirty, false);
   assert.equal(payload.messages[0].content, 'please fix this in c');
 });
