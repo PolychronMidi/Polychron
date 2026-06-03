@@ -122,7 +122,6 @@ async function handleAnthropicResponseComplete({
   setLastInputTokensRemaining,
   getLastInputTokensLimit,
   setLastInputTokensLimit,
-  estimatedContextTokens,
   omniContextThresholdBytes,
   injectContextHeader,
   anthropicTextSseBuffer,
