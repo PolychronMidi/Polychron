@@ -444,22 +444,6 @@
       "repair": "remove file; lifesaver_alerts recreates on next injection"
     },
     {
-      "path": "tools/HME/runtime/heartbeat-lifesaver.ts",
-      "owner": "tools/HME/proxy/lifesaver_alerts.js",
-      "readers": [
-        "diagnostics"
-      ],
-      "writers": [
-        "tools/HME/proxy/lifesaver_alerts.js",
-        "tools/HME/hooks/lifecycle/stop/lifesaver.sh"
-      ],
-      "retention": "single unix-second heartbeat timestamp for the latest real lifesaver run (proxy injection or Stop-hook pass)",
-      "generated": true,
-      "committed": false,
-      "schema": "plain integer unix timestamp seconds",
-      "repair": "remove file; lifesaver_alerts recreates on next injection"
-    },
-    {
       "path": "tools/HME/runtime/coherence-events.jsonl",
       "owner": "tools/HME/proxy/coherence_events.js",
       "readers": [
