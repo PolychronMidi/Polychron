@@ -3,6 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const { requireEnv } = require('../../proxy/shared/load_env');
 
 const root = requireEnv('PROJECT_ROOT');
@@ -24,53 +25,62 @@ function selfOriginTags() {
   return new Set(tagsFromAlternation(m[1]));
 }
 
-function bashTags() {
-  const src = fs.readFileSync(path.join(root, 'tools/HME/hooks/helpers/_self_tags.sh'), 'utf8');
-  const m = /\^\\\[\(([^]*?)\)\\\]/.exec(src);
-  assert.ok(m, '_self_tags.sh must expose a ^[(...)] alternation');
+function suppressedTags() {
+  const m = /\^\\\[\(([^]*?)\)\\\]/.exec(selfOrigin.SELF_SUPPRESSED_TAG_RE.source);
+  assert.ok(m, 'self_origin SELF_SUPPRESSED_TAG_RE must be a ^[(...)] alternation');
   return new Set(tagsFromAlternation(m[1]));
 }
 
-function lifesaverTags() {
-  const src = fs.readFileSync(path.join(root, 'tools/HME/proxy/middleware/22_lifesaver_inject.js'), 'utf8');
-  const m = /SELF_TAG_RE = \/\^\\\[\(([^]*?)\)\\\]\//.exec(src);
-  assert.ok(m, '22_lifesaver_inject must define SELF_TAG_RE');
+function bashSuppressedTags() {
+  const helper = path.join(root, 'tools/HME/hooks/helpers/_self_tags.sh');
+  const r = spawnSync('bash', ['-lc', `source ${JSON.stringify(helper)}; _hme_self_tag_re`], {
+    cwd: root,
+    env: { ...process.env, PROJECT_ROOT: root },
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 0, `_self_tags.sh should run cleanly: ${r.stderr}`);
+  const m = /\^\[\(([^]*?)\)\]/.exec(r.stdout.trim());
+  assert.ok(m, `_self_tags.sh must emit a ^[(...)] alternation, got: ${r.stdout}`);
   return new Set(tagsFromAlternation(m[1]));
 }
 
-test('self_origin.js is a superset of the bash _self_tags.sh tag set (no drift)', () => {
+function fileText(rel) {
+  return fs.readFileSync(path.join(root, rel), 'utf8');
+}
+
+test('self_origin.js suppression set is a subset of the canonical self-origin tag set', () => {
   const sup = selfOriginTags();
-  const missing = [...bashTags()].filter((t) => !sup.has(t));
-  assert.deepEqual(missing, [], `self_origin.js missing canonical bash tags: ${missing.join(', ')}`);
+  const missing = [...suppressedTags()].filter((t) => !sup.has(t));
+  assert.deepEqual(missing, [], `SELF_SUPPRESSED_TAG_RE tags absent from canonical SELF_TAG_RE: ${missing.join(', ')}`);
 });
 
-test('self_origin.js is a superset of the 22_lifesaver_inject SELF_TAG_RE tag set (no drift)', () => {
-  const sup = selfOriginTags();
-  const missing = [...lifesaverTags()].filter((t) => !sup.has(t));
-  assert.deepEqual(missing, [], `self_origin.js missing 22_lifesaver_inject tags: ${missing.join(', ')}`);
+test('bash _self_tags.sh emits the canonical suppression tag set from self_origin.js (no hand-maintained drift)', () => {
+  assert.deepEqual(bashSuppressedTags(), suppressedTags());
 });
 
-function contextStatusTags() {
-  const src = fs.readFileSync(path.join(root, 'tools/HME/proxy/context_status.js'), 'utf8');
-  const m = /_SELF_TAG_RE = \/\\\[\(([^]*?)\)\\\]\//.exec(src);
-  assert.ok(m, 'context_status must define _SELF_TAG_RE');
-  return new Set(tagsFromAlternation(m[1]));
-}
+test('live JS consumers use self_origin.js, not hand-maintained SELF_TAG_RE subsets', () => {
+  const lifesaver = fileText('tools/HME/proxy/middleware/22_lifesaver_inject.js');
+  const status = fileText('tools/HME/proxy/context_status.js');
+  assert.match(lifesaver, /require\('\.\.\/self_origin'\)/);
+  assert.match(status, /require\('\.\/self_origin'\)/);
+  assert.ok(!/const\s+SELF_TAG_RE\s*=/.test(lifesaver), '22_lifesaver_inject must not re-declare SELF_TAG_RE');
+  assert.ok(!/_SELF_TAG_RE\s*=/.test(status), 'context_status must not re-declare _SELF_TAG_RE');
+});
 
 // The agent-actionable override set documents the PROVEN-intentional reason the
-// live LIFESAVER subsets diverge from the canonical self-origin set: opencode-*
+// live suppression set diverges from the canonical self-origin set: opencode-*
 test('every agent-actionable override IS a canonical self-origin tag', () => {
   const sup = selfOriginTags();
   const missing = [...selfOrigin.AGENT_ACTIONABLE_OVERRIDES].filter((t) => !sup.has(t));
   assert.deepEqual(missing, [], `override tags absent from canonical SELF_TAG_RE: ${missing.join(', ')}`);
 });
 
-test('live LIFESAVER subsets deliberately OMIT the agent-actionable overrides (proven carve-out)', () => {
-  const live = lifesaverTags();
-  const status = contextStatusTags();
+test('live suppression set deliberately OMITS the agent-actionable overrides (proven carve-out)', () => {
+  const liveSuppressed = suppressedTags();
+  const bashSuppressed = bashSuppressedTags();
   for (const tag of selfOrigin.AGENT_ACTIONABLE_OVERRIDES) {
-    assert.ok(!live.has(tag), `22_lifesaver_inject must NOT suppress agent-actionable ${tag}`);
-    assert.ok(!status.has(tag), `context_status must NOT suppress agent-actionable ${tag}`);
+    assert.ok(!liveSuppressed.has(tag), `SELF_SUPPRESSED_TAG_RE must NOT suppress agent-actionable ${tag}`);
+    assert.ok(!bashSuppressed.has(tag), `_self_tags.sh must NOT suppress agent-actionable ${tag}`);
   }
 });
 
