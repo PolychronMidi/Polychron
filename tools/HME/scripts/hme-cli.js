@@ -177,7 +177,7 @@ function postTool(name, args) {
       reject(new Error(`hme-cli: request '${name}' exceeded ${timeoutMs}ms -- worker hung or slow`));
     });
     req.write(body);
-    installRequestTimeout(req, (typeof options !== 'undefined' && options.path) || (typeof requestOptions !== 'undefined' && requestOptions.path) || (typeof path !== 'undefined' && path) || '');
+    installRequestTimeout(req, `/tool/${name}`);
     req.end();
   });
 }
