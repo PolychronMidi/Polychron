@@ -3,9 +3,9 @@
 const assert = require('node:assert');
 const test = require('node:test');
 
-const fs = require('node:fs');
+const _fs = require('node:fs');
 const os = require('node:os');
-const path = require('node:path');
+const _path = require('node:path');
 
 const middleware = require('../../proxy/middleware/04_compact_tool_descriptions');
 const { dropToolUseRewrite } = require('../../proxy/sse_rewriters');
@@ -66,7 +66,7 @@ test('compact_tool_descriptions preserves host-required Agent.description while 
 });
 
 test('retired direct-surface TodoWrite disabler is gone', () => {
-  assert.equal(fs.existsSync(path.join(__dirname, '..', '..', 'proxy', 'middleware', '04b_disable_todowrite_on_direct_tool_surface.js')), false);
+  assert.equal(_fs.existsSync(_path.join(__dirname, '..', '..', 'proxy', 'middleware', '04b_disable_todowrite_on_direct_tool_surface.js')), false);
   const payload = { tools: [{ name: 'Read' }, { name: 'TodoWrite' }, { name: 'Bash' }] };
   assert.equal(run(payload), true);
   assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TodoWrite', 'Bash']);
@@ -87,9 +87,9 @@ test('SSE rewriter preserves TodoWrite tool_use blocks', () => {
 });
 
 test('filter_tools reads current .env drop list and strips task-tool surface', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-filter-tools-'));
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-'));
   try {
-    fs.writeFileSync(path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate,TaskGet,TaskList,TaskStop,TaskUpdate,TaskOutput # comment\n');
+    _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate,TaskGet,TaskList,TaskStop,TaskUpdate,TaskOutput # comment\n');
     const filter = require('../../proxy/middleware/03_filter_tools');
     const payload = { tools: [
       { name: 'Read' },
@@ -105,7 +105,7 @@ test('filter_tools reads current .env drop list and strips task-tool surface', (
     assert.equal(dirty, true);
     assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'Write']);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    _fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
