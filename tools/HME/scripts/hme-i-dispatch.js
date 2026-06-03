@@ -194,7 +194,7 @@ function dispatchReview(args) {
   if (r.status === 124) {
     const msg = `[${new Date().toISOString()}] [i/review] wall-clock timeout after ${timeout}s -- worker deadlock? Args: ${args.join(' ')}`;
     console.error(msg);
-    try { fs.appendFileSync(path.join(ROOT, 'log', 'hme-errors.log'), `${msg}\n`); } catch (_) {}
+    try { fs.appendFileSync(path.join(ROOT, 'log', 'hme-errors.log'), `${msg}\n`); } catch (_e) { /* best-effort error-log write */ }
   }
   process.exit(r.status === null ? 1 : r.status);
 }
