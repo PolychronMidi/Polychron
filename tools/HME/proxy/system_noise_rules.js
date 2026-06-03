@@ -1,6 +1,9 @@
 'use strict';
 
 const RE_SKILL = /^<system-reminder>\nThe following skills are available for use with the Skill tool:[\s\S]*?\n<\/system-reminder>\s*$/;
+// Unwrapped variant: the skill enumeration also arrives WITHOUT the
+// <system-reminder> wrapper (e.g. as a role:system message with string content).
+const RE_SKILL_LIST = /(?:<system-reminder>\n)?The following skills are available for use with the Skill tool:[\s\S]*?(?=\n+UserPromptSubmit hook additional context:|\n<\/system-reminder>|$)/;
 const RE_CONTEXT_FULL = /^<system-reminder>\nAs you answer the user's questions, you can use the following context:\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n<\/system-reminder>\s*$/;
 const RE_CONTEXT_TAIL = /\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n(?=<\/system-reminder>\s*$)/;
 const RE_STOP_HOOK_PROXY = /^<system-reminder>\nHME Stop Hook Feedback \(proxy-injected\)\n[\s\S]*?\n<\/system-reminder>\s*$/;
