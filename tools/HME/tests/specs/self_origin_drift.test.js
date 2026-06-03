@@ -45,7 +45,7 @@ function bashSuppressedTags() {
 }
 
 function fileText(rel) {
-  return fs.readFileSync(path.join(root, rel), 'utf8');
+  return _fs.readFileSync(_path.join(root, rel), 'utf8');
 }
 
 test('self_origin.js suppression set is a subset of the canonical self-origin tag set', () => {
