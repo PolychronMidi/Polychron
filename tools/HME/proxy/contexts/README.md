@@ -1,7 +1,7 @@
 # `proxy/contexts/<context>/index.js`
 
 Each subdirectory in `contexts/` is the **single façade** for a bounded
-context declared in `doc/infra/PROXY_CONTEXTS.md`. New code outside that
+context declared in `doc/hme/PROXY_CONTEXTS.md`. New code outside that
 context should depend on `./contexts/<name>` only, never on the
 context's internal helper files.
 
@@ -18,4 +18,4 @@ context directory and the façade re-exports become local requires.
 - Tests can stub a whole context by replacing the façade module in
   `require.cache`.
 
-See `doc/infra/PROXY_CONTEXTS.md` for the full context registry.
+See `doc/hme/PROXY_CONTEXTS.md` for the full context registry.

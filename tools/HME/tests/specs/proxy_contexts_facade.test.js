@@ -5,7 +5,7 @@ const assert = require('node:assert');
 const path = require('node:path');
 
 // Each entry: context dir + the exports the façade must expose. These
-// are the public surfaces declared in doc/infra/PROXY_CONTEXTS.md. If any
+// are the public surfaces declared in doc/hme/PROXY_CONTEXTS.md. If any
 
 const CONTEXTS = {
   request_mutation: ['mutateClaudeRequest', 'applyExplicitOtpmCap'],

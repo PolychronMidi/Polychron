@@ -2,4 +2,4 @@
 
 Bounded-context façade: resolves upstream + sends the request (OmniRoute
 selection, overdrive routing, http(s) transport). Public surface
-re-exported from `proxy/hme_proxy_claude.js`. See `doc/infra/PROXY_CONTEXTS.md`.
+re-exported from `proxy/hme_proxy_claude.js`. See `doc/hme/PROXY_CONTEXTS.md`.

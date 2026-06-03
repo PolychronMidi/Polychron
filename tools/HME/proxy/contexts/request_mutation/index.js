@@ -1,6 +1,6 @@
 'use strict';
 
-// Bounded-context façade per doc/infra/PROXY_CONTEXTS.md.
+// Bounded-context façade per doc/hme/PROXY_CONTEXTS.md.
 // Transforms the inbound client request before dispatch.
 
 const {
