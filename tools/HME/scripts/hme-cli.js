@@ -196,7 +196,7 @@ function _getVersion(host, port, timeoutMs) {
     );
     req.on('error', () => resolve(null));
     req.on('timeout', () => { req.destroy(); resolve(null); });
-    installRequestTimeout(req, (typeof options !== 'undefined' && options.path) || (typeof requestOptions !== 'undefined' && requestOptions.path) || (typeof path !== 'undefined' && path) || '');
+    installRequestTimeout(req, '/version');
     req.end();
   });
 }
