@@ -77,7 +77,8 @@ module.exports = {
     const { text, block, msg, isString } = _lastUserText(payload);
     if (!text || !msg) return;
 
-    const key = text.toLowerCase();
+    const key = _resolveShortcutKey(text);
+    if (!key) return;
     const shortcut = SHORTCUTS[key];
     if (shortcut) {
       _setUserText({ msg, block, isString }, shortcut);
