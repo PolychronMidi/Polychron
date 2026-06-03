@@ -33,3 +33,21 @@ Example:
 #19 5_ registry disk-existence assertions: dispatcher-routes was the only registry with a hook-script-existence contract; added registry_disk_existence.test.js covering services.json start/fix command paths and state-files.json owner/reader/writer/repair command paths. Fixed stale state-files references (audit-detector-stats.py -> analyze-detector-stats.py, middleware/context_budget.js -> middleware/17_context_budget.js). Evidence: registry_disk_existence 2/2 green; touched lint clean.
 
 #20 5_ SSE rewriter order contract: slop/ascii/stop-hook rewriter ordering is pinned by sse_rewriter_order_contract.test.js against hme_proxy_response_send.js. The contract locks structural/tool rewrites, reasoning->thinking, ASCII strip, stop-hook pre-tool/post-tool-pre-slop, slop, then post-slop order so a reorder is a test failure, not a silent behavior change. Evidence: contract test 1/1 green; touched lint clean.
+
+#21 0_ design-pattern: generate-don't-mirror. Every hand-maintained copy of a canonical source drifted this session (self_origin tags, EVENTS.md, state-registry doc, TodoWrite injection). Audit remaining canonical sources for hand-maintained mirror consumers and convert each consumer to derive/generate from the source; expand canonical-sources.json coverage until every declared single source of truth has zero hand mirrors.
+
+#22 0_ design-pattern: compute lazy, gated on outcome. proxy_liveness_gate hashed ~100 proxy files every turn for a value that never changed the verdict (fixed). Hunt the same eager-compute-then-discard smell on other hot paths (turn-start, tool-result, stop-chain) where expensive walk/hash/spawn results are conditionally unused.
+
+#23 3_ design-pattern: one writer, not N callers + lock. 3 autocommit entry-points (Stop hook, direct, proxy onRequest) serialize on one flock (was 30s pileup; reduced to 5s bail-fast). SCOPE BLOCK: replacing the N-callers-contend-on-lock pattern with a single owner + debounce/queue is an architectural change to the commit path; map the 27-writer hme-errors.log + autocommit owners and confirm the owner/queue design before refactoring live write paths.
+
+#24 0_ design-pattern: batch cold-start spawns. userpromptsubmit spawns python/node ~5-7x per turn (each ~20ms cold start). Consolidate the repeated userpromptsubmit_helper.py invocations into one verb-batched call (or a resident helper) to cut the fixed per-turn interpreter-startup tax.
+
+#25 0_ design-pattern: mutual-exclusion dead-code audit. Found drift logic in proxy_liveness_gate unreachable because its fill-condition (routable slot) and use-condition (zero routable) are mutually exclusive. Sweep for other branches whose guard can never co-occur with their consumer; consider a lint/verifier for it.
+
+#26 3_ design-pattern + UX: convert demands to completed findings (the project's declared north star). hme_dominance.md states the tool acts and the agent reads the consequence; "YOU MUST" demand-register is forbidden in middleware output. But NEXUS/LIFESAVER/exhaust_check still fire decision:block imperatives. SCOPE BLOCK (live safety behavior): run remediation in middleware and surface the DONE result into next-turn context instead of a turn-time order. Map each gate's demand and confirm the dominance migration scope before touching the error-surfacing path.
+
+#27 0_ design-pattern + UX: normalize agent input transparently. Shortcut expansion (c->continue) + interrupt-envelope handling already meet the agent where it typed and expand silently. Extend: any stable abbreviation or malformed-but-clear input should normalize before the model sees it, no error round-trip.
+
+#28 0_ design-pattern + UX: one noise classifier, fail-safe surfaced. self_origin suppresses infra noise and surfaces agent-actionable errors. Audit every surface (stderr, tool_result, stop feedback) to confirm it routes through the one classifier (with the opencode-* override carve-out) rather than ad-hoc per-site greps.
+
+#29 0_ design-pattern + UX: idempotent, order-pinned middleware. SSE order is now contract-pinned. Fill the idempotency-declaration gaps: every tool_result-mutating middleware should declare and honor idempotency (the manifest already has the field) so agent-facing transforms are re-runnable and output never flickers.
