@@ -44,6 +44,30 @@
       "why": "Single input-shortcut source for both the proxy (wire lanes) and the PTY bridge (multi-step)."
     },
     {
+      "source": "tools/HME/config/proxy-contexts.json",
+      "guard": "tools/HME/scripts/verify_coherence/cross_context_isolation.py",
+      "marker": "proxy-contexts",
+      "why": "Proxy bounded-context membership registry; cross-context require() into another context's internals fails the verifier."
+    },
+    {
+      "source": "tools/HME/i_registry.json",
+      "guard": "tools/HME/tests/specs/i_registry.test.js",
+      "marker": "i_registry",
+      "why": "i/ command registry; wrappers and registry entries must stay in sync."
+    },
+    {
+      "source": "tools/HME/event_kernel/route_registry.js",
+      "guard": "tools/HME/tests/specs/decision_and_route_registry.test.js",
+      "marker": "route_registry",
+      "why": "Event-kernel route registry contract; route table stays in sync with the dispatcher."
+    },
+    {
+      "source": "tools/HME/policies/registry.js",
+      "guard": "tools/HME/tests/specs/policies_registry.test.js",
+      "marker": "policies/registry",
+      "why": "Policy registry; hook/stop policy layers are populated from one source."
+    },
+    {
       "source": "tools/HME/config/tool-invocations.json",
       "guard": "tools/HME/scripts/audit-public-surface.py",
       "marker": "tool-invocations",
