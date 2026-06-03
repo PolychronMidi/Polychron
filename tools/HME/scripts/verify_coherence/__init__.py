@@ -148,6 +148,9 @@ from .host_cli_smoke import (  # noqa: F401
 from .dispatcher_routes import (  # noqa: F401
     DispatcherRouteContractVerifier,
 )
+from .canonical_coverage import (  # noqa: F401
+    CanonicalSourceCoverageVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
