@@ -1,3 +1,3 @@
 # activity/
 
-Activity-event registry, emitters, and rendered EVENTS.md documentation.
+Activity-event registry and emitters. render_events_doc.py regenerates the telemetry-events block in doc/self-coherence-full.md.

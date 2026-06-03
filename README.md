@@ -248,7 +248,7 @@ flowchart LR
     tools__omniroute["omniroute/"]
     tools__update["update/<br/><i>Vendor refresh helpers for ignored local tool integrations.</i>"]
     tools__HME__KB["HME/KB/"]
-    tools__HME__activity["HME/activity/<br/><i>Activity-event registry, emitters, and rendered EVENTS.md documentation.</i>"]
+    tools__HME__activity["HME/activity/<br/><i>Activity-event registry and emitters; the rendered catalog lives in doc/self-coherence-full.md.</i>"]
     tools__HME__config["HME/config/<br/><i>Declarative HME configuration: invariants, registries, hygiene rules.</i>"]
     tools__HME__doc["HME/doc/<br/><i>HME developer-facing reference docs (streaming contracts, tool registries).</i>"]
     tools__HME__event_kernel["HME/event_kernel/<br/><i>The event kernel is the canonical dispatcher for HME lifecycle and tool events.</i>"]

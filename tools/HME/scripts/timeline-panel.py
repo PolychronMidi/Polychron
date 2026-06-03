@@ -56,7 +56,7 @@ def _gather_marker_events(now: float, window_s: float) -> list[dict]:
 
     These are SYNTHESIZED events -- derived from file existence/mtime
     rather than emit() calls into hme-activity.jsonl. So they will NOT
-    appear in EVENTS.md (which catalogues real activity events) and the
+    appear in the telemetry-events block of doc/self-coherence-full.md (which catalogues real activity events) and the
     activity-events-doc-sync verifier won't see them as drift."""
     out = []
     candidates = [

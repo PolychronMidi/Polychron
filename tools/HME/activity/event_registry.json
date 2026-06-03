@@ -1,5 +1,5 @@
 {
-  "_doc": "Canonical HME telemetry event registry. Edit this file, then run tools/HME/activity/render_events_doc.py to refresh EVENTS.md.",
+  "_doc": "Canonical HME telemetry event registry. Edit this file, then run tools/HME/activity/render_events_doc.py to refresh the telemetry-events block in doc/self-coherence-full.md.",
   "events": [
     {
       "name": "system_prompt_replaced",

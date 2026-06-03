@@ -365,7 +365,7 @@ faults they were written to detect.
 
 - Event kernel: [../tools/HME/event_kernel/README.md](../tools/HME/event_kernel/README.md)
 - Hooks: [../tools/HME/hooks/README.md](../tools/HME/hooks/README.md)
-- Activity event schema: [../tools/HME/activity/EVENTS.md](../tools/HME/activity/EVENTS.md)
+- Activity event schema: see the [HME Telemetry Events](#hme-telemetry-events) section above
 - Onboarding primer: [templates/ONBOARDING.md](templates/ONBOARDING.md)
 - Composition reference: [composition-full.md](composition-full.md)
 
