@@ -69,20 +69,16 @@ function runCheckOnly(root) {
   return inspectLive(root).ok ? 0 : 1;
 }
 
-// CLI entry: read health files + fingerprint, append LIFESAVER to hme-errors.log
-// if degraded. Exits 0 always (the hook scanner does the bannering).
+// CLI entry: read health files, append LIFESAVER to hme-errors.log if degraded.
+// Exits 0 always (the hook scanner does the bannering). Availability-only: the
+// runtime fingerprint never changes the verdict here (see inspectLive), so we
 function runCli(root) {
   const runtimeDir = path.join(root, 'tools', 'HME', 'runtime');
   const slots = {
     a: _readJSONSafe(path.join(runtimeDir, 'proxy-a.health')),
     b: _readJSONSafe(path.join(runtimeDir, 'proxy-b.health')),
   };
-  let wanted = '';
-  try {
-    const { currentRuntimeFingerprint } = require('./proxy_runtime_fingerprint');
-    wanted = currentRuntimeFingerprint(root);
-  } catch (_) { /* if fingerprint can't compute, skip the drift dimension */ }
-  const { ok, problems } = evaluateSlots(slots, wanted, Date.now(), { staleMs: requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS') });
+  const { ok, problems } = evaluateSlots(slots, '', Date.now(), { staleMs: requireEnvInt('HME_PROXY_HEARTBEAT_STALE_MS') });
   if (ok) return 0;
   const line = formatLifesaver(problems);
   try {
