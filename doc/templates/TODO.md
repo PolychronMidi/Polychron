@@ -28,7 +28,7 @@ Example:
 
 #17 5_ model-family call-site sweep (item #3 tail): model_classifier.js is the single source; overdrive_route + opus_gate consume it. Grepped for remaining ad-hoc /opus/i, /sonnet/, /haiku/, tier-string literals scattered across proxy; no live proxy stragglers remained beyond a non-classifier comment. Added a contract test pinning no raw model-family regex/includes literals remain outside model_classifier.js. Evidence: model_classifier.test 8/8 green; touched lint clean.
 
-#18 0_ scripts lint lane: lint:proxy is the only gated surface (EXIT=0). tools/HME/scripts/** is ESLint-ignored — that is where the 27 phantom-debt lint findings lived and bit us mid-session. Decide: bring a second lint lane online for scripts OR document in the eslint config why scripts stay ungated, so "phantom error" confusion cannot recur.
+#18 5_ scripts lint lane: lint:proxy is no longer the only gated JS surface. Added dedicated `npm run lint:hme-scripts` using tools/HME/scripts/eslint.config.mjs so scripts are checked with Node/CommonJS rules instead of the root src/proxy naked-global config that caused phantom fs/path/main errors. Fixed the real findings the new lane exposed (hme-cli no-undef timeout path, unused imports/vars in HME pipeline scripts). Evidence: package JSON valid; lint:hme-scripts EXIT=0.
 
 #19 0_ registry disk-existence assertions: dispatcher-routes is the only registry with a hook-script-existence contract (verify_coherence/dispatcher_routes.py). Extend the same pattern to other string-named registries — service_registry/svcs.json, state_registry/state-files.json — so a renamed/missing target fails a contract test instead of at runtime.
 
