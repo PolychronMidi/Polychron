@@ -6,6 +6,7 @@
 const fs = require('fs');
 const _path = require('path');
 const { PROJECT_ROOT: _PROJECT_ROOT } = require('./shared');
+const selfOrigin = require('./self_origin');
 const hmePaths = require('./infra/hme_paths');
 const { runtimePath, logPath, tmpPath } = require('./infra/paths');
 
