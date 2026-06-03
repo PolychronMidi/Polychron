@@ -11,9 +11,6 @@ const RE_STOP_HOOK = /^Stop hook feedback:\n\[(?:node )?[^\]]+event_kernel\/clau
 const RE_STOP_HOOK_KEEP = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE|PRETOOL_SCHEMA_FIX/;
 const RE_AGENT_FEEDBACK = /^<system-reminder kind="[^"]+" source="[^"]+">\n[\s\S]*?\n<\/system-reminder>\s*$/;
 const RE_LIFESAVER_BANNER = /\[lifesaver inject from proxy\]\n[\s\S]*$/;
-// project-detect boilerplate: the UserPromptSubmit channel re-emits
-// `[project-detect] lang=... | test=...` + a bare `ok` line every turn. Pure
-const RE_PROJECT_DETECT = /(?:\n*UserPromptSubmit hook additional context:\s*)?\[project-detect\][^\n]*\n?(?:ok\n?)?/g;
 
 const CLAUDE_STRIP_RULES = [
   { name: 'agent-feedback-canonical', re: RE_AGENT_FEEDBACK, action: 'remove-block' },
