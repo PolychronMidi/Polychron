@@ -415,7 +415,6 @@ function createContextBudget() {
     effectiveCompactThreshold,
     shrinkForPassthrough: shrinkForProxyPassthrough,
     shrinkForContext: shrinkForOmniContext,
-    estimatedContextTokens,
     omniContextThresholdBytes,
     injectContextHeader,
     getConsecutive429s: () => { _refreshBackoffFromDisk(); return consecutive429s; },
