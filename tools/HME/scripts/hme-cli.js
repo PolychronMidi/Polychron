@@ -166,7 +166,7 @@ function postTool(name, args) {
           const parsed = JSON.parse(chunks);
           resolve({ status: res.statusCode, body: parsed });
         // silent-ok: adapter normalization preserves raw stdout/stderr for caller.
-        } catch (e) {
+        } catch {
           reject(new Error(`worker returned non-JSON (status ${res.statusCode}): ${chunks.slice(0, 300)}`));
         }
       });
