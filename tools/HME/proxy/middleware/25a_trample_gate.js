@@ -2,7 +2,10 @@
 // Immediate-fire trample gate: detect interrupt-marker in incoming user
 // content; force ack-prefix on next text. Stop-hook detector fires too late.
 
-const _INTERRUPT_MARKER = '<system-reminder>\nThe user sent a new message while you were working';
+// Match the STABLE phrase Claude Code injects on a mid-turn user interrupt,
+// not the exact `<system-reminder>\n` wrapper. The wrapper prefix is not
+// byte-stable across hosts/versions (and the interrupt is a transient
+const _INTERRUPT_MARKER = 'The user sent a new message while you were working';
 
 const _ACK_INSTRUCTION = [
   '',
