@@ -93,12 +93,15 @@ function isAgentActionableOverride(line) {
 // Suppression decision for a live consumer: self-origin AND not an
 // agent-actionable override. This is the behavior the live 22_lifesaver_inject
 function isSelfOriginSuppressed(line) {
-  return isSelfOrigin(line) && !isAgentActionableOverride(line);
+  return SELF_SUPPRESSED_TAG_RE.test(stripTs(line));
 }
 
 module.exports = {
   OBSERVATION_RE,
+  SELF_TAG_PATTERNS,
   SELF_TAG_RE,
+  SELF_SUPPRESSED_TAG_PATTERNS,
+  SELF_SUPPRESSED_TAG_RE,
   AGENT_ACTIONABLE_OVERRIDES,
   stripTs,
   isObservation,
