@@ -41,21 +41,11 @@ function rewriteAgent(tool) {
   return changed;
 }
 
-function ensureTodoWrite(tools) {
-  if (tools.some((tool) => tool && tool.name === 'TodoWrite')) return false;
-  tools.push({
-    name: 'TodoWrite',
-    description: COMPACT.TodoWrite,
-    input_schema: JSON.parse(JSON.stringify(TODOWRITE_SCHEMA)),
-  });
-  return true;
-}
-
 module.exports = {
   name: 'compact_tool_descriptions',
   onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.tools)) return;
-    let changed = ensureTodoWrite(payload.tools);
+    let changed = false;
     for (const tool of payload.tools) {
       if (!tool || typeof tool.name !== 'string') continue;
       if (tool.name === 'Agent') {
