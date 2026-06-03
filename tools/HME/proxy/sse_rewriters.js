@@ -37,9 +37,8 @@ function dropToolUseRewrite(eventName, data, ctx) {
 // Bash run_in_background -> /hme/spawn; avoids task-notification spam.
 
 const { serviceUrl } = require('./service_registry');
-const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
+const { evaluateBashInput } = require('./bash_command_policy');
 const { slopStripRewrite } = require('./sse_slop_rewriter');
-const { asciiStripRewrite } = require('./sse_ascii_strip_rewriter');
 
 const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);

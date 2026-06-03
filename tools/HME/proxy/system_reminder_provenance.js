@@ -75,7 +75,7 @@ function enforceReminderProvenance(payload, opts = {}) {
   return { stripped: state.stripped };
 }
 
-//  emitted-reminder ledger 
+//  emitted-reminder ledger
 // We record the normalized core of every reminder WE inject so the inspector
 
 const LEDGER_REL = path.join('tools', 'HME', 'runtime', 'emitted-reminders.jsonl');
