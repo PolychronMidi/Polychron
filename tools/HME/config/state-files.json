@@ -295,7 +295,7 @@
       "path": "tools/HME/runtime/metrics/detector-stats.jsonl",
       "owner": "each detector _emit_stats",
       "readers": [
-        "tools/HME/scripts/audit-detector-stats.py"
+        "tools/HME/scripts/analyze-detector-stats.py"
       ],
       "writers": [
         "each detector _emit_stats"
@@ -323,12 +323,12 @@
     },
     {
       "path": "tools/HME/runtime/metrics/hme-enricher-efficacy.jsonl",
-      "owner": "tools/HME/proxy/middleware/context_budget.js",
+      "owner": "tools/HME/proxy/middleware/17_context_budget.js",
       "readers": [
         "reports"
       ],
       "writers": [
-        "tools/HME/proxy/middleware/context_budget.js"
+        "tools/HME/proxy/middleware/17_context_budget.js"
       ],
       "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
       "generated": true,
