@@ -13,7 +13,7 @@ const {
   loadModelRouteHealth,
   routeSkipReason,
   providerSkipReason,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/model_route_health');
 
 // swapWindowCheck: does the request's estimated input exceed the swap model's
 // input cap (with HME_OMNI_SWAP_FIT_FRACTION headroom)? budget 0 => unknown => no gate.
