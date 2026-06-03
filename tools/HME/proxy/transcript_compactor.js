@@ -213,6 +213,7 @@ function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, em
   try {
     result = compactTranscriptFile(transcriptPath, { highWaterBytes });
   } catch (err) {
+    // silent-ok: failure is recorded in result.reason and surfaced via the transcript_co
     result = { ok: false, reason: `threw:${err && err.message}`, changedEntries: 0 };
   }
   if (result.changedEntries > 0) {

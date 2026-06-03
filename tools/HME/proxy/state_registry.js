@@ -58,6 +58,7 @@ function _loadStateFiles(projectRoot = PROJECT_ROOT) {
     const data = JSON.parse(fs.readFileSync(file, 'utf8'));
     return Array.isArray(data.single_owner) ? data.single_owner : [];
   } catch (_err) {
+    // silent-ok: missing/unparseable state-files.json = no registered single-owner store
     return [];
   }
 }

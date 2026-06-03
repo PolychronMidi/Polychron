@@ -97,6 +97,7 @@ function applyOutboundContextGate({
       try {
         compactResult = compactSubmitter(projectRoot);
       } catch (err) {
+        // silent-ok: error is captured into compactResult.error and emitted downstream, 
         compactResult = { submitted: false, reason: 'error', error: err && err.message ? err.message : String(err) };
       }
       try {
