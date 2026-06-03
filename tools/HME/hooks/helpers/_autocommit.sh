@@ -163,7 +163,7 @@ _ac_do_commit() {
       rm -f "$_git_lock" 2>/dev/null
     fi
   fi
-  # Flock for concurrent-commit serialization (advisory, 30s wait).
+  # Flock for concurrent-commit serialization (advisory, short bail-fast wait).
   local _ac_err_buf
   mkdir -p "$_AC_ROOT/tools/HME/runtime" 2>/dev/null
   _ac_err_buf=$(mktemp "$_AC_ROOT/tools/HME/runtime/hme-ac-err.XXXXXX" 2>/dev/null || echo "$_AC_ROOT/tools/HME/runtime/hme-ac-err.$$")  # silent-ok: optional fallback path.
@@ -171,9 +171,8 @@ _ac_do_commit() {
   exec 9>"$_AC_LOCK_FILE"
   # -E 75: lock held by a concurrent autocommit caller (proxy onRequest /
   # other hook) means that caller owns this dirty tree -- benign, NOT a
-  # failure. Only a genuine non-conflict flock error is worth recording.
   # silent-ok: lock contention is an expected singleton signal.
-  flock -E 75 -w 30 9 2>/dev/null
+  flock -E 75 -w 5 9 2>/dev/null
   _ac_flock_rc=$?
   if [ "$_ac_flock_rc" = 75 ]; then
     rm -f "$_ac_err_buf" 2>/dev/null
