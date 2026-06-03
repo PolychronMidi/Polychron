@@ -248,9 +248,8 @@ flowchart LR
     tools__omniroute["omniroute/"]
     tools__update["update/<br/><i>Vendor refresh helpers for ignored local tool integrations.</i>"]
     tools__HME__KB["HME/KB/"]
-    tools__HME__activity["HME/activity/<br/><i>Activity-event registry and emitters; the rendered catalog lives in doc/self-coherence-full.md.</i>"]
+    tools__HME__activity["HME/activity/<br/><i>Activity-event registry and emitters. render_events_doc.py regenerates the te...</i>"]
     tools__HME__config["HME/config/<br/><i>Declarative HME configuration: invariants, registries, hygiene rules.</i>"]
-    tools__HME__doc["HME/doc/<br/><i>HME developer-facing reference docs (streaming contracts, tool registries).</i>"]
     tools__HME__event_kernel["HME/event_kernel/<br/><i>The event kernel is the canonical dispatcher for HME lifecycle and tool events.</i>"]
     tools__HME__git_hooks["HME/git-hooks/<br/><i>Project git hooks installed by tools/HME/scripts/install-git-hooks.sh.</i>"]
     tools__HME__hme_tools["HME/hme_tools/<br/><i>`tools/HME/hme_tools` is the single source of truth for HME's native-looking ...</i>"]
@@ -278,7 +277,7 @@ flowchart LR
     tools__HME__hooks__direct["HME/hooks/direct/<br/><i>Direct (non-Claude-Code) hooks invoked by supervisors and launchers.</i>"]
     tools__HME__hooks__helpers["HME/hooks/helpers/<br/><i>Bash helpers sourced by every hook (safety preamble, signal bus, ledger).</i>"]
     tools__HME__hooks__lifecycle["HME/hooks/lifecycle/<br/><i>Claude Code lifecycle hooks: SessionStart, UserPromptSubmit, PreCompact, Stop.</i>"]
-    tools__HME__hooks__posttooluse["HME/hooks/posttooluse/<br/><i>PostToolUse hooks (per-tool: edit, bash, read, todowrite).</i>"]
+    tools__HME__hooks__posttooluse["HME/hooks/posttooluse/<br/><i>PostToolUse hooks (per-tool: edit, bash, read).</i>"]
     tools__HME__hooks__pretooluse["HME/hooks/pretooluse/<br/><i>PreToolUse hooks (per-tool gates: edit, bash, read, todowrite).</i>"]
     tools__HME__omo_bridge__adapters["HME/omo_bridge/adapters/<br/><i>Universal hook inbound adapters: host-native payloads enter here and become v...</i>"]
     tools__HME__omo_bridge__translators["HME/omo_bridge/translators/<br/><i>Universal hook outbound translators: validated universal decisions leave here...</i>"]
@@ -352,7 +351,6 @@ flowchart LR
     tools__HME --> tools__HME__KB
     tools__HME --> tools__HME__activity
     tools__HME --> tools__HME__config
-    tools__HME --> tools__HME__doc
     tools__HME --> tools__HME__event_kernel
     tools__HME --> tools__HME__git_hooks
     tools__HME --> tools__HME__hme_tools
