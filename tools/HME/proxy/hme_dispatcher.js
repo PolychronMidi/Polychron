@@ -241,6 +241,7 @@ async function maybeHandleHme(initialResponseBuf, initialHeaders, initialStatus,
   while (hmeUses.length > 0 && loops < 8) {
     loops++;
     // Dispatch all HME tools in parallel
+    // eslint-disable-next-line no-await-in-loop -- turn-by-turn continuation: each loop 
     const results = await Promise.all(hmeUses.map(async (tu) => {
       const result = await executeHmeTool(tu.name, tu.input);
       return { id: tu.id, result };
