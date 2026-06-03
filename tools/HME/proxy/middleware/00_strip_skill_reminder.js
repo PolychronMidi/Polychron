@@ -84,7 +84,15 @@ module.exports = {
   onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.messages)) return;
     let stripped = 0;
-    for (const msg of payload.messages) stripped += _stripFromContent(msg && msg.content);
+    for (const msg of payload.messages) {
+      if (!msg) continue;
+      if (typeof msg.content === 'string') {
+        const r = _stripFromString(msg.content);
+        if (r) { msg.content = r.text; stripped += r.stripped; }
+      } else {
+        stripped += _stripFromContent(msg.content);
+      }
+    }
     if (stripped === 0) return;
     ctx.markDirty();
     try {
