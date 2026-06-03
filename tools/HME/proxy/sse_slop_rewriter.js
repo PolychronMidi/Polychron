@@ -610,7 +610,7 @@ const _SLOP_PATTERNS = [
   // sides. The apostrophe guard is critical: without it, bare `i` followed by
   // "'" matches the "i" in "i'm" and deletes ONLY the letter, leaving "'m".
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|im|i['’]ll|ill|i['’]ve|ive|i['’]d|id|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|youre|you['’]ll|youll|we['’]ll|well|we['’]re|were|we|i|s|t|a|an|as|our|right|okay|ok|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|so|wait|be|the|that|that['’]s|thats|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
+    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|im|i['’]ll|ill|i['’]ve|ive|i['’]d|id|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|youre|you['’]ll|youll|we['’]ll|well|we['’]re|were|we|i|s|t|m|u|a|an|as|our|right|okay|ok|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|so|wait|be|the|that|that['’]s|thats|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
     repl: '' },
 
   // Caveman -ing suffix pass. minOutput blocks short false positives; plural
