@@ -32,7 +32,7 @@ function suppressedTags() {
 }
 
 function bashSuppressedTags() {
-  const helper = path.join(root, 'tools/HME/hooks/helpers/_self_tags.sh');
+  const helper = _path.join(root, 'tools/HME/hooks/helpers/_self_tags.sh');
   const r = spawnSync('bash', ['-lc', `source ${JSON.stringify(helper)}; _hme_self_tag_re`], {
     cwd: root,
     env: { ...process.env, PROJECT_ROOT: root },
