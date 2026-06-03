@@ -199,7 +199,7 @@ function upstreamModelId(model) {
 
 function _stripGo(id) { return upstreamModelId(id); }
 
-function stripOmniUnsupportedRequestFields(payload, omniProvider) {
+function stripOmniUnsupportedRequestFields(payload, _omniProvider) {
   if (!payload || typeof payload !== 'object') return false;
   let changed = false;
   if (payload.thinking && typeof payload.thinking === 'object') {
