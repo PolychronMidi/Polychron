@@ -90,7 +90,7 @@ function asciiStripRewrite(eventName, data, ctx) {
   const textHolds = _ctxGet(ctx, "ascii_text_holds", () => new Map());
   const bufs = _ctxGet(ctx, "ascii_think_bufs", () => new Map());
 
-  //  TEXT: stream inline unless it might be structured JSON 
+  //  TEXT: stream inline unless it might be structured JSON
   if (eventName === "content_block_start" && data.content_block
       && data.content_block.type === "text") {
     textHolds.set(data.index, { deltas: [], probing: true });
@@ -122,7 +122,7 @@ function asciiStripRewrite(eventName, data, ctx) {
     }
   }
 
-  //  THINKING: buffer the whole block, judge at stop 
+  //  THINKING: buffer the whole block, judge at stop
   if (eventName === "content_block_start" && data.content_block
       && data.content_block.type === "thinking") {
     bufs.set(data.index, { start: data, deltas: [], sig: null, foreign: false });
@@ -156,7 +156,7 @@ function asciiStripRewrite(eventName, data, ctx) {
     return null;
   }
 
-  //  TEXT delta without a start event: legacy inline path 
+  //  TEXT delta without a start event: legacy inline path
   if (eventName === "content_block_delta" && data.delta
       && data.delta.type === "text_delta" && typeof data.delta.text === "string") {
     return _rewriteTextDeltaData(data, ctx);
