@@ -13,7 +13,7 @@ const {
   loadModelRouteHealth,
   routeSkipReason,
   providerSkipReason,
-} = require('./contexts/failure_policy/model_route_health');
+} = require('./contexts/failure_policy');
 
 // swapWindowCheck: does the request's estimated input exceed the swap model's
 // input cap (with HME_OMNI_SWAP_FIT_FRACTION headroom)? budget 0 => unknown => no gate.
@@ -199,7 +199,7 @@ function upstreamModelId(model) {
 
 function _stripGo(id) { return upstreamModelId(id); }
 
-function stripOmniUnsupportedRequestFields(payload, _omniProvider) {
+function stripOmniUnsupportedRequestFields(payload, omniProvider) {
   if (!payload || typeof payload !== 'object') return false;
   let changed = false;
   if (payload.thinking && typeof payload.thinking === 'object') {
@@ -332,10 +332,8 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     result.swapMeta = legacy.model;
   }
   applyEffortParams(payload, result.swapMeta, result.omniProvider);
-  // LAZY: breaks import cycle overdrive_route -> zen_translator -> overdrive_route.
-  // Import the leaf module directly (not the response_transform barrel) so the
-  // banned-barrel circular-deps guard stays green.
-  const { translateRequestToOpenAI } = require('./zen_translator');
+  // LAZY: breaks import cycle overdrive_route -> response_transform -> overdrive_route.
+  const { translateRequestToOpenAI } = require('./contexts/response_transform');
   const oaPayload = translateRequestToOpenAI(payload, result.swapModel);
   clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
   clientReq.headers.authorization = `Bearer ${zenKey}`;

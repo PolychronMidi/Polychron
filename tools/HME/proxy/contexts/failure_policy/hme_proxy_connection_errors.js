@@ -3,12 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('../../shared');
-// LAZY leaf import (not the response_transform barrel): resolve
-// legacy_swap_response at call time so no load-time edge is added to the proxy
-// import graph. Used once, inside handleMidResponseError.
-function writeAnthropicStopSse(...args) {
-  return require('../../legacy_swap_response').writeAnthropicStopSse(...args);
-}
+const { writeAnthropicStopSse } = require('../response_transform');
 
 const RETRYABLE_CONN_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
 

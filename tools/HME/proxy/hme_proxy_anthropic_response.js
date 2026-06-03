@@ -6,13 +6,9 @@ function hmeDispatcher() {
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const { emit } = require('./shared');
-// LAZY leaf import: hme_proxy_upstream_failure participates in a load-time cycle
-// back through this file, so resolve it at call time (not the banned barrel and
-// not an eager top-level require). Used only inside handleAnthropicResponseComplete.
-function handleUpstreamFailureOrSuccess(...args) {
-  return require('./contexts/failure_policy/hme_proxy_upstream_failure')
-    .handleUpstreamFailureOrSuccess(...args);
-}
+const {
+  handleUpstreamFailureOrSuccess,
+} = require('./contexts/failure_policy');
 const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
 const {
   captureRateLimitTelemetry,

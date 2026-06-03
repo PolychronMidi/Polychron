@@ -3,13 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-// LAZY leaf import (not the failure_policy barrel): resolve hme_proxy_codex at
-// call time so no load-time edge is added (an eager leaf require reshuffles the
-// proxy import graph into new cycles). Used once, inside _maybeRetryBlank below.
-function retryBlankOmniRouteResponse(...args) {
-  return require('./contexts/failure_policy/hme_proxy_codex')
-    .retryBlankOmniRouteResponse(...args);
-}
+const { retryBlankOmniRouteResponse } = require('./contexts/failure_policy');
 
 function _sanitizeHeaders(headers) {
   const out = {};
