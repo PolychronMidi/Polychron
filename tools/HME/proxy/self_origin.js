@@ -5,20 +5,67 @@
 
 const OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
 
-// Canonical superset of the bash _self_tags.sh and 22_lifesaver_inject SELF_TAG_RE
-// tag sets. A drift-guard test (self_origin_drift.test.js) fails if either source
-// gains a tag this list does not cover, forcing this to stay the superset.
-const SELF_TAG_RE = /^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-runtime|proxy-bridge|proxy-watchdog|hook-watchdog|hook-stop-block|hook-runtime-error|hook-output-validation|hook-ui-echo-leak|hook-latency|hook-failure|crying_wolf|transcript-failfast|proxy-supervisor|proxy-liveness|proxy-failure|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|opencode-stderr|opencode-uncaught|opencode-unhandled-rejection|opencode-plugin|worker_client|worker:[^\]]+|autocommit:proxy|sessionstart:[^\]]+|HCI trajectory)\]/;
+// Canonical superset of every self-origin tag/pattern. Live consumers must NOT
+// hand-maintain regex subsets; they either use SELF_TAG_RE (identity) or
+// SELF_SUPPRESSED_TAG_RE/isSelfOriginSuppressed (live suppression decision that
+const SELF_TAG_PATTERNS = Object.freeze([
+  '_safe_curl',
+  '_safe_jq',
+  '_safe_py3',
+  'universal_pulse',
+  'supervisor',
+  'hme-proxy',
+  'proxy-runtime',
+  'proxy-bridge',
+  'proxy-watchdog',
+  'hook-watchdog',
+  'hook-stop-block',
+  'hook-runtime-error',
+  'hook-output-validation',
+  'hook-ui-echo-leak',
+  'hook-latency',
+  'hook-failure',
+  'crying_wolf',
+  'transcript-failfast',
+  'proxy-supervisor',
+  'proxy-liveness',
+  'proxy-failure',
+  'llamacpp_supervisor',
+  'llamacpp_offload_invariant',
+  'llamacpp_indexing_mode_resume',
+  'meta_observer',
+  'model_init',
+  'rag_proxy\\.project',
+  'startup_chain',
+  'opencode-stderr',
+  'opencode-uncaught',
+  'opencode-unhandled-rejection',
+  'opencode-plugin',
+  'worker_client',
+  'worker:[^]]+',
+  'autocommit:proxy',
+  'sessionstart:[^]]+',
+  'HCI trajectory',
+]);
 
 // Agent-actionable overrides: tags that match SELF_TAG_RE (they are emitted by
 // HME infrastructure, so by tag they look "self-origin") BUT report a fault the
-// AGENT caused and must therefore still surface on the live LIFESAVER path.
 const AGENT_ACTIONABLE_OVERRIDES = new Set([
   'opencode-stderr',
   'opencode-uncaught',
   'opencode-unhandled-rejection',
   'opencode-plugin',
 ]);
+
+function _tagRe(patterns) {
+  return new RegExp(`^\\[(${patterns.join('|')})\\]`);
+}
+
+const SELF_SUPPRESSED_TAG_PATTERNS = Object.freeze(
+  SELF_TAG_PATTERNS.filter((pattern) => !AGENT_ACTIONABLE_OVERRIDES.has(pattern))
+);
+const SELF_TAG_RE = _tagRe(SELF_TAG_PATTERNS);
+const SELF_SUPPRESSED_TAG_RE = _tagRe(SELF_SUPPRESSED_TAG_PATTERNS);
 
 function stripTs(line) {
   return String(line || '').replace(/^\[[0-9TZ:.-]+\]\s*/, '');
