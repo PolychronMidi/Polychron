@@ -1,5 +1,5 @@
 {
-  "_doc": "Explicit single-source-of-truth coverage registry. Each entry pins a canonical source file to the guard (contract test or verifier) that FAILS when a duplicate/circumvention drifts from it. canonical_coverage.py asserts every source+guard exists and every guard references its source via `marker`, so a canonical source can never silently lose its drift gate. This file is itself an entry (fixed point): its guard is the canonical_source_coverage contract test.",
+  "_doc": "Explicit single-source-of-truth coverage registry. Each entry pins a canonical source file to the guard (contract test or verifier) that FAILS when a duplicate/circumvention drifts from it. canonical_coverage.py asserts every source+guard exists and every guard references its source via `marker`, so a canonical source can never silently lose its drift gate. This file is itself an entry (fixed point): its guard is the canonical_coverage contract test.",
   "sources": [
     {
       "source": "tools/HME/proxy/self_origin.js",
@@ -63,7 +63,7 @@
     },
     {
       "source": "tools/HME/config/canonical-sources.json",
-      "guard": "tools/HME/tests/specs/canonical_source_coverage.test.js",
+      "guard": "tools/HME/tests/specs/canonical_coverage.test.js",
       "marker": "canonical-sources.json",
       "why": "This registry itself (fixed point): the coverage lattice must gate its own input registry."
     }
