@@ -26,7 +26,7 @@ Example:
 
 #16 5_ self-origin lv-path consolidation (item #1, full): self_origin.js is canonical (SELF_TAG_RE superset + AGENT_ACTIONABLE_OVERRIDES + isSelfOriginSuppressed). Rewired hand-maintained subsets in 22_lifesaver_inject.js, _self_tags.sh, context_status.js to consume the canonical classifier so opencode-* stays agent-actionable (surfaces) while infra tags suppress. SCOPE BLOCK handled: live LIFESAVER path preserves opencode-stderr surface via the override-set. Evidence: self_origin_drift + extracted/lifesaver/opencode specs green; grep shows no remaining local SELF_TAG_RE subsets in live consumers; touched lint clean.
 
-#17 0_ model-family call-site sweep (item #3 tail): model_classifier.js is the single source; overdrive_route + opus_gate consume it. Grep for remaining ad-hoc /opus/i, /sonnet/, /haiku/, tier-string literals scattered across proxy and rewire stragglers to family()/modelTier()/isOpus(). Add a contract test pinning no raw model-family regex literals remain outside model_classifier.js.
+#17 1_ model-family call-site sweep (item #3 tail): model_classifier.js is the single source; overdrive_route + opus_gate consume it. Grep for remaining ad-hoc /opus/i, /sonnet/, /haiku/, tier-string literals scattered across proxy and rewire stragglers to family()/modelTier()/isOpus(). Add a contract test pinning no raw model-family regex literals remain outside model_classifier.js.
 
 #18 0_ scripts lint lane: lint:proxy is the only gated surface (EXIT=0). tools/HME/scripts/** is ESLint-ignored — that is where the 27 phantom-debt lint findings lived and bit us mid-session. Decide: bring a second lint lane online for scripts OR document in the eslint config why scripts stay ungated, so "phantom error" confusion cannot recur.
 
