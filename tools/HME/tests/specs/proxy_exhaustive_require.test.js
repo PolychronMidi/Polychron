@@ -1,4 +1,4 @@
-// CONVENTIONS: see ../../proxy/CONVENTIONS.md -- this test require()s every
+// CONVENTIONS: see doc/self-coherence-full.md (Proxy module conventions) -- this test require()s every
 // *.js file in tools/HME/proxy/. Catches broken import paths, syntax errors,
 // undefined exports from cycles, and missing files in ANY proxy module --
 'use strict';

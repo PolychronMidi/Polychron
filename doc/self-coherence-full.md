@@ -979,3 +979,157 @@ opt-in archaeology, not a turn-time imperative.
 
 Demand register ("YOU MUST") becomes forbidden in middleware output.
 The tool acts; the agent reads the consequence.
+
+## Proxy module conventions
+
+### Imports: require from source, not barrels
+
+Every `require()` in the proxy must import directly from the source module file,
+never from a directory `index.js` barrel re-export — unless you are the
+top-level entry point (`hme_proxy.js`, `hme_proxy_core.js`).
+
+```js
+// DO: import from the specific source file
+const { markRouteCooldown } = require('./contexts/failure_policy/model_route_health');
+
+// DON'T: import from a barrel that re-exports everything
+const { markRouteCooldown } = require('./contexts/failure_policy');
+```
+
+**Why:** Barrel files pull in every transitive dependency of every sub-module
+they re-export. A single `require('./contexts/failure_policy')` loads
+`omni_failure_policy`, `hme_proxy_upstream_failure`, `hme_proxy_codex`,
+`failure_classification`, `hme_proxy_connection_errors`, and `model_route_health`
+— and `hme_proxy_connection_errors` in turn pulls in `response_transform`, which
+pulls in `hme_proxy_anthropic_response`, which pulls in `overdrive_route`.
+Importing the barrel from `overdrive_route` creates a circular chain.
+
+### Lazy requires are allowed if documented
+
+```js
+function someHandler(...args) {
+  const { helper } = require('./expensive_module');
+  return helper(...args);
+}
+```
+
+Lazy requires inside function bodies break import-time cycles. They are benign
+as long as the module is never required at the top level of a cycle participant.
+
+### Detecting violations
+
+```bash
+# Check for new circular dependencies (compares against baseline)
+npm run hme:circular
+
+# Run the import-sanity test (catches undefined-from-cycle imports)
+npm run test:hme -- --test-name-pattern="no circular dependency"
+
+# Update the baseline if you've resolved a known cycle
+npm run hme:circular  # auto-updates baseline on resolution
+```
+
+### The baseline
+
+`tools/HME/tests/fixtures/circular-baseline.txt` tracks the two known-benign
+cycles (both use lazy requires to break import-time chains). Any new cycle
+detected at import time will fail CI.
+
+### Known-resolved cycle: failure_policy ↔ response_transform
+
+`contexts/failure_policy/hme_proxy_connection_errors.js` once imported
+`writeAnthropicStopSse` from `../response_transform` (the barrel). That barrel
+imports `../../hme_proxy_anthropic_response`, which imports back from
+`../contexts/failure_policy`, closing the loop. Fix: import directly from the
+source leaf `../../legacy_swap_response` instead of the barrel. **Never
+re-import from `../response_transform` from inside `failure_policy/`.**
+
+# Canonical System Prompt
+
+`canonical-system-prompt.md` is the project-curated system prompt that
+replaces Claude Code's default when `HME_REPLACE_SYSTEM_PROMPT=1` in
+`.env`. The replacement is wholesale -- Anthropic can rephrase or
+restructure their default at will and our content still ships verbatim,
+no regex anchors to drift.
+
+Mechanism: [`tools/HME/proxy/middleware/01_replace_system.js`](middleware/01_replace_system.js).
+mtime-cached, so edits to the canonical file take effect on the next
+proxy-routed request after save (no proxy restart needed).
+
+## What's in the canonical (and why)
+
+15 lines / ~1.8KB -- down 93% from Claude Code's ~28KB default block 2.
+Only content that the system-prompt layer can do (because CLAUDE.md and
+HME hooks can't):
+
+1. Identity statement + pointer to CLAUDE.md and HME hooks as the
+   authority for project-specific behavior
+2. Two `IMPORTANT:` security directives -- refusal-policy text from
+   Anthropic that triggers refusals during reasoning, not just shaping
+3. Output channel awareness (text outside tool calls is user-facing,
+   markdown rendering, no-colon-before-tool-call convention)
+4. `<system-reminder>` tag awareness -- load-bearing for HME hooks to
+   inject directives the agent will act on
+5. Hook-as-user-input mapping -- without this the agent doesn't know how
+   to interpret hook block messages
+6. Prompt-injection awareness on tool_results from external sources
+7. Permission-mode awareness (denied calls shouldn't be retried verbatim)
+8. Auto-compaction awareness (older context may be summarized)
+
+Everything else (style, code conventions, refactor discipline, comment
+policy, end-of-turn discipline, system-reminder priority, plan
+adherence, Hypermeta workflow, etc.) is owned by `CLAUDE.md` (auto-loaded
+into context) and HME's hook layer (proxy middleware + stop-chain
+detectors like `exhaust_check` and `psycho_stop`, plus the `trample_gate`
+proxy middleware for request-time interrupt-ack).
+
+## Editing
+
+Edit `canonical-system-prompt.md` directly. Every byte goes verbatim to
+the model as the system prompt -- no comments, no markers, no header.
+Keep additions narrow: anything CLAUDE.md or a hook can enforce belongs
+there, not here. The system prompt is reserved for things only the
+system prompt can do.
+
+## Inspecting Claude Code's current default
+
+If Anthropic ships a new prompt structure and you want to refresh the
+canonical:
+
+1. `HME_DUMP_SYSTEM_PROMPT=1` in `.env`
+2. Restart proxy
+3. Fire any request through the proxy (e.g.,
+   `ANTHROPIC_BASE_URL=http://127.0.0.1:9099 claude -p "ping"`)
+4. Inspect `tmp/claude-system-prompt.txt` (system block only) AND
+   `tmp/claude-full-payload.json` (full request: system + tools + params)
+5. Restore `HME_DUMP_SYSTEM_PROMPT=0`
+
+The dump captures pre-replacement state (dump_system runs before
+replace_system in the middleware order).
+
+## Filtering tools (separate, bigger lever)
+
+The `tools` array on every request is ~60KB+ -- bigger than the system
+prompt. If you have tools you never use (`mcp__claude_ai_Google_Drive__*`,
+`EnterWorktree`/`ExitWorktree`, `Monitor`, `RemoteTrigger`, `WebFetch`,
+`WebSearch`, `CronCreate`/`Delete`/`List`, `PushNotification`, etc.),
+drop them via [`filter_tools.js`](middleware/03_filter_tools.js):
+
+```
+# In .env -- comma-separated, exact tool names
+HME_FILTER_TOOLS_DROP=mcp__claude_ai_Google_Drive__authenticate,mcp__claude_ai_Google_Drive__complete_authentication,EnterWorktree,ExitWorktree,Monitor,RemoteTrigger,WebFetch,WebSearch,CronCreate,CronDelete,CronList,PushNotification
+```
+
+**Removing a tool means the agent cannot call it** -- verify your
+workflow doesn't need it before adding to the list. To see the current
+tool surface, run the inspection workflow above and check the
+`tools[].name` list in `tmp/claude-full-payload.json`.
+
+Empirical baseline (current setup, measured end-to-end against a real
+captured Claude Code request):
+
+| | Raw default | Trimmed canonical + filter_tools |
+|---|---|---|
+| `system` block | 27,785B | 1,817B (93% smaller) |
+| `tools` array | 79,566B (26 entries) | 57,061B (14 entries -- 12 dropped) |
+| **Total payload** | **134,596B** | **~92KB (32% smaller)** |
