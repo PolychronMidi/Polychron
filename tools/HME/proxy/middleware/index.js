@@ -284,9 +284,8 @@ const ctx = {
   },
 };
 
-//  Registration
-const _modules = [];
-const _moduleMeta = new Map(); // module.name -> {file, phase}
+//  Registration (declared in the Registration section below; see _modules /
+//  _moduleMeta). Both are populated by register() at load time.
 
 let _phaseRegistry = null;
 function _loadPhaseRegistry() {
