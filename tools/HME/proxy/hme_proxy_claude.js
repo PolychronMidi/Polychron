@@ -33,7 +33,7 @@ function lifecycleBridge() {
 const {
   handleMidResponseError,
   handleConnectionError,
-} = require('./contexts/failure_policy');
+} = require('./contexts/failure_policy/hme_proxy_connection_errors');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
