@@ -3,10 +3,12 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('../../shared');
-// Leaf import (not the response_transform barrel): legacy_swap_response is
-// 0-cycle, so an eager leaf require is cycle-safe and keeps the banned-barrel
-// guard green.
-const { writeAnthropicStopSse } = require('../../legacy_swap_response');
+// LAZY leaf import (not the response_transform barrel): resolve
+// legacy_swap_response at call time so no load-time edge is added to the proxy
+// import graph. Used once, inside handleMidResponseError.
+function writeAnthropicStopSse(...args) {
+  return require('../../legacy_swap_response').writeAnthropicStopSse(...args);
+}
 
 const RETRYABLE_CONN_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
 
