@@ -15,6 +15,8 @@ _hme_self_tag_re() {
   # `a^` (matches nothing), so callers treat every line as agent-actionable
   # rather than wrongly suppressing real errors.
   _re="$(node -e 'const s=require(process.env.PROJECT_ROOT+"/tools/HME/proxy/self_origin"); console.log("^\\[("+s.SELF_SUPPRESSED_TAG_PATTERNS.join("|")+")\\]")' 2>/dev/null)" || { printf '%s\n' 'a^'; return 0; }
+  # silent-ok: cache write is a best-effort speed optimization; on failure the
+  # correct regex is still printed below, only the next call's fast path is lost.
   mkdir -p "$(dirname "$_cache")" 2>/dev/null
   printf '%s\n' "$_re" > "$_cache" 2>/dev/null || true
   printf '%s\n' "$_re"
