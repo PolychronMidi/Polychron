@@ -214,82 +214,9 @@ class ExplicitListTrackingRuleVerifier(Verifier):
         return passed(summary="doc/templates/AGENTS.md requires 1:1 tracking for explicit user lists")
 
 
-@register
-class ContextBudgetVerifier(Verifier):
-    """H-compact optimization #13: verify that chain-link snapshots are
-    being taken frequently enough relative to context consumption. Fails
-    if used_pct is high AND the latest chain link is stale (or missing),
-    because that means auto-compaction will likely strike before a
-    replacement snapshot exists.
-    """
-    name = "context-budget"
-    category = "runtime"
-    subtag = "drift-detection"
-    weight = 1.5
-
-    def _context_file(self) -> str:
-        env_file = os.environ.get("HME_CTX_FILE")
-        if env_file:
-            return env_file
-        return os.path.join(_PROJECT, "tools", "HME", "runtime", "proxy-context-norm.json")
-
-    def _used_pct(self, ctx: dict) -> float | None:
-        used = ctx.get("used_pct")
-        if used is not None:
-            return used
-        used_tokens = ctx.get("used")
-        size = ctx.get("size")
-        if used_tokens is None or not size:
-            return None
-        try:
-            return round((float(used_tokens) / float(size)) * 100, 2)
-        except (TypeError, ValueError, ZeroDivisionError):
-            return None
-
-    def run(self) -> VerdictResult:
-        ctx_file = self._context_file()
-        if not os.path.isfile(ctx_file):
-            return skipped(summary="no statusline data yet")
-        try:
-            with open(ctx_file) as f:
-                ctx = json.load(f)
-        except Exception as e:
-            return errored(summary=f"ctx read failed: {e}")
-        used = self._used_pct(ctx)
-        if used is None:
-            return skipped(summary="no used_pct/used+size in statusline data")
-
-        link_latest = os.path.join(METRICS_DIR, "chain-history", "latest.yaml")
-        link_age_s = None
-        if os.path.isfile(link_latest) or os.path.islink(link_latest):
-            try:
-                link_age_s = time.time() - os.path.getmtime(link_latest)
-            except OSError:
-                # Broken symlink or race with deletion -- leave link_age_s
-                # at its pre-check value. Narrow catch so unexpected
-                # errors propagate.
-                pass
-
-        # Policy:
-        #   used < 50%          -> fine, no link needed
-        #   50-70%               -> WARN if no link in last 30 min
-        #   70-85%               -> FAIL if no link in last 10 min
-        #   > 85%                -> FAIL if no link in last 5 min (compaction imminent)
-        if used < 50:
-            return passed(summary=f"context at {used}% -- safe")
-        if used < 70:
-            if link_age_s is None or link_age_s > 1800:
-                return warned(score=0.7, summary=f"context {used}%, no chain link in last 30min", details=["run: python3 tools/HME/scripts/chain-snapshot.py --eager"])
-            return passed(score=1.0, summary=f"context {used}%, link age {link_age_s:.0f}s")
-        if used < 85:
-            if link_age_s is None or link_age_s > 600:
-                return failed(score=0.3, summary=f"context {used}% nearing compaction + no recent link", details=["statusline preemption should have fired at 70%",
-                                "run: python3 tools/HME/scripts/chain-snapshot.py --imminent"])
-            return warned(score=0.6, summary=f"context {used}%, link age {link_age_s:.0f}s")
-        # > 85% -- compaction imminent
-        if link_age_s is None or link_age_s > 300:
-            return failed(summary=f"context {used}% -- COMPACTION IMMINENT with no fresh chain link", details=["CRITICAL: take a snapshot NOW before auto-compaction destroys state"])
-        return warned(summary=f"context {used}%, link age {link_age_s:.0f}s")
+# Retired: ContextBudgetVerifier nagged the agent to manually run
+# chain-snapshot.py when context exceeded 50% with no recent chain link. The
+# snapshot is event-driven -- precompact.sh and statusline preemption fire
 
 
 @register
