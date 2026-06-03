@@ -32,4 +32,4 @@ Example:
 
 #19 5_ registry disk-existence assertions: dispatcher-routes was the only registry with a hook-script-existence contract; added registry_disk_existence.test.js covering services.json start/fix command paths and state-files.json owner/reader/writer/repair command paths. Fixed stale state-files references (audit-detector-stats.py -> analyze-detector-stats.py, middleware/context_budget.js -> middleware/17_context_budget.js). Evidence: registry_disk_existence 2/2 green; touched lint clean.
 
-#20 1_ SSE rewriter order contract: slop/ascii/stop-hook rewriter ordering is implicit in hme_proxy_response_send.js. Add a small order-contract test pinning the strategy sequence so a reorder is a test failure, not a silent behavior change.
+#20 5_ SSE rewriter order contract: slop/ascii/stop-hook rewriter ordering is pinned by sse_rewriter_order_contract.test.js against hme_proxy_response_send.js. The contract locks structural/tool rewrites, reasoning->thinking, ASCII strip, stop-hook pre-tool/post-tool-pre-slop, slop, then post-slop order so a reorder is a test failure, not a silent behavior change. Evidence: contract test 1/1 green; touched lint clean.
