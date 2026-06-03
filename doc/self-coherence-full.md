@@ -1052,7 +1052,7 @@ replaces Claude Code's default when `HME_REPLACE_SYSTEM_PROMPT=1` in
 restructure their default at will and our content still ships verbatim,
 no regex anchors to drift.
 
-Mechanism: [`tools/HME/proxy/middleware/01_replace_system.js`](middleware/01_replace_system.js).
+Mechanism: [`tools/HME/proxy/middleware/01_replace_system.js`](../tools/HME/proxy/middleware/01_replace_system.js).
 mtime-cached, so edits to the canonical file take effect on the next
 proxy-routed request after save (no proxy restart needed).
 
