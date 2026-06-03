@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_hooks_bootstrap.sh"
+# Canonical self-origin classifier (derived from proxy/self_origin.js); do not
+# hand-maintain a local SELF_TAG_RE subset here -- it drifts.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_self_tags.sh"
 # MUST RUN BEFORE: stop
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
