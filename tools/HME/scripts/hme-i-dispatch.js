@@ -74,7 +74,7 @@ function dispatchAudit(args) {
 }
 
 function dispatchStatus(args) {
-  const local = ['state', 'timeline', 'holograph', 'substrate', 'activity', 'team', 'project', 'project-detect', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns', 'codex-route', 'codex_proxy', 'codex-proxy'];
+  const local = ['state', 'timeline', 'holograph', 'substrate', 'activity', 'team', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns', 'codex-route', 'codex_proxy', 'codex-proxy'];
   const { mode, rest } = selector(args, local);
   if (!mode && args.length === 0) run('python3', [path.join(ROOT, 'tools/HME/scripts/substrate-view.py'), 'brief']);
   if (mode === 'activity') {
