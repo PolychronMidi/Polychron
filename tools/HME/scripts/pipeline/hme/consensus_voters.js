@@ -11,7 +11,7 @@ const { metricPath } = require('./utils');
 
 const fs = require('fs');
 
-function makeVoters(ROOT) {
+function makeVoters(_ROOT) {
   function loadJson(p) {
     try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
     catch (_e) { return null; }

@@ -7,8 +7,7 @@
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
+const { loadJson, metricPath } = require('./utils');
 
 const OUT = metricPath('hme-evolution-priority.json');
 

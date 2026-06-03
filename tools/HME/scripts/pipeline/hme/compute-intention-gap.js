@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
+const { ROOT, loadJson, metricPath } = require('./utils');
 
 const TODOS = path.join(ROOT, 'tools', 'HME', 'KB', 'todos.json');
 const ACTIVITY = metricPath('hme-activity.jsonl');

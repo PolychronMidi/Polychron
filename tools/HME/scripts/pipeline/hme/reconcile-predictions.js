@@ -7,10 +7,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
+const { ROOT, loadJson, metricPath } = require('./utils');
 
 const PREDICTIONS = metricPath('hme-predictions.jsonl');
-const FINGERPRINT = metricPath('fingerprint-comparison.json');
 const ACCURACY_OUT = metricPath('hme-prediction-accuracy.json');
 const EMA_ALPHA = 0.2; // 20% weight on newest round, 80% on history
 const HISTORY_CAP = 50;
@@ -55,7 +54,6 @@ function extractShiftedModules() {
 
 function main() {
   const predictions = loadPredictions();
-  const fingerprint = loadJson(FINGERPRINT);
   const history = loadJson(ACCURACY_OUT) || { meta: {}, rounds: [], ema: null };
 
   if (predictions.length === 0) {

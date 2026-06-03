@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
+const { ROOT, loadJson, metricPath } = require('./utils');
 const projectAdapter = require('../../../proxy/project_adapter');
 
 const COHERENCE    = metricPath('hme-coherence.json');
@@ -186,15 +186,6 @@ function main() {
 
   // Compute rolling-window correlations over the last ROLLING_WINDOW rounds
   const window = trimmed.slice(-ROLLING_WINDOW);
-  const xs = {
-    coherence: window.map((s) => s.hme_coherence).filter((x) => typeof x === 'number'),
-    accuracy: window.map((s) => s.hme_prediction_accuracy).filter((x) => typeof x === 'number'),
-  };
-  const ys = {
-    verdict: window.map((s) => s.verdict_numeric).filter((x) => typeof x === 'number'),
-    complexity: window.map((s) => s.perceptual_complexity_avg).filter((x) => typeof x === 'number'),
-    clap: window.map((s) => s.clap_tension).filter((x) => typeof x === 'number'),
-  };
 
   // For correlation we need aligned pairs
   function aligned(xKey, yKey) {

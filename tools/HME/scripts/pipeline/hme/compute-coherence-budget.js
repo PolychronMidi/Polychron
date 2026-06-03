@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
+const { ROOT, loadJson, metricPath } = require('./utils');
 const projectAdapter = require('../../../proxy/project_adapter');
 
 const MUSICAL = metricPath('hme-musical-correlation.json');

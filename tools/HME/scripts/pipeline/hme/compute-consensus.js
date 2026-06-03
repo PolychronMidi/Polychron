@@ -18,7 +18,6 @@ const DIVERGENCE_THRESHOLD = 0.4;  // stdev above this triggers divergence alert
 // it in that module + import below. Orchestration stays here.
 const { makeVoters } = require('./consensus_voters');
 const _v = makeVoters(ROOT);
-const loadJson = _v.loadJson;
 const voteHci = _v.voteHci;
 const voteInvariants = _v.voteInvariants;
 const votePredictionRecall = _v.votePredictionRecall;
