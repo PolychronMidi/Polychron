@@ -99,8 +99,6 @@ function dispatchStatus(args) {
     holograph: 'tools/HME/scripts/holograph-panel.py',
     substrate: 'tools/HME/scripts/substrate-view.py',
     team: 'tools/HME/scripts/team_dashboard.py',
-    project: 'tools/HME/scripts/project_detect.py',
-    'project-detect': 'tools/HME/scripts/project_detect.py',
     forks: 'tools/HME/scripts/fork_watchdog.py',
     'fork-watchdog': 'tools/HME/scripts/fork_watchdog.py',
     'decision-audit': 'tools/HME/scripts/decision_audit.py',
