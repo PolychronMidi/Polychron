@@ -5,9 +5,9 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert');
-const fs = require('fs');
+const _fs = require('fs');
 const os = require('os');
-const path = require('path');
+const _path = require('path');
 const { execFileSync } = require('child_process');
 
 const { sessionKey, PROJECT_ROOT } = require('../../proxy/shared');
@@ -33,8 +33,8 @@ const hmeDispatcher = require('../../proxy/hme_dispatcher');
 // Invariant: if a circular dependency causes any import to resolve as undefined,
 // fail fast before any test logic runs. Each entry is [name, value, expectedType].
 test('detector stats helper stays shared and path-derived', () => {
-  const base = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_base.py'), 'utf8');
-  const stats = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_detector_stats.py'), 'utf8');
+  const base = _fs.readFileSync(_path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_base.py'), 'utf8');
+  const stats = _fs.readFileSync(_path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_detector_stats.py'), 'utf8');
   assert.match(base, /def emit_stats\(verdict: str, detail: str = ""\) -> None:/);
   assert.match(base, /_emit_stats\(None, verdict, detail\)/);
   assert.match(stats, /def _caller_detector_name\(\)/);
@@ -48,7 +48,7 @@ test('detector stats helper stays shared and path-derived', () => {
     'tools/HME/scripts/detectors/fabrication_check.py',
     'tools/HME/scripts/detectors/psycho_stop.py',
   ]) {
-    const text = fs.readFileSync(path.join(PROJECT_ROOT, rel), 'utf8');
+    const text = _fs.readFileSync(_path.join(PROJECT_ROOT, rel), 'utf8');
     assert.match(text, /from _base import emit_stats as _emit_stats, load_turn, transcript_arg/);
     assert.doesNotMatch(text, /def _emit_stats/);
     assert.doesNotMatch(text, /DETECTOR = detector|@DETECTOR/);
@@ -56,7 +56,7 @@ test('detector stats helper stays shared and path-derived', () => {
 });
 
 test('proxy bootstrap reads WORKER_PORT from supervisorChildren', () => {
-  const source = fs.readFileSync(path.join(PROJECT_ROOT, 'tools/HME/proxy/hme_proxy.js'), 'utf8');
+  const source = _fs.readFileSync(_path.join(PROJECT_ROOT, 'tools/HME/proxy/hme_proxy.js'), 'utf8');
   assert.match(source, /require\('\.\/contexts\/lifecycle_bridge'\)\.supervisorChildren/);
   const { supervisorChildren } = require('../../proxy/contexts/lifecycle_bridge');
   assert.equal(typeof supervisorChildren.WORKER_PORT, 'number');
@@ -110,16 +110,16 @@ function quiet(fn) {
 }
 
 function preserveStatuslineAbsent() {
-  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
-  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
-  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
-  try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
+  const runtimeDir = _path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = _path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = _fs.existsSync(statusline) ? _fs.readFileSync(statusline, 'utf8') : null;
+  try { _fs.unlinkSync(statusline); } catch { /* silent-ok: fixture absent */ }
   return () => {
     if (prevStatusline == null) {
-      try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: tempfile cleanup */ }
+      try { _fs.unlinkSync(statusline); } catch { /* silent-ok: tempfile cleanup */ }
     } else {
-      fs.mkdirSync(runtimeDir, { recursive: true });
-      fs.writeFileSync(statusline, prevStatusline);
+      _fs.mkdirSync(runtimeDir, { recursive: true });
+      _fs.writeFileSync(statusline, prevStatusline);
     }
   };
 }
@@ -148,7 +148,7 @@ function fakeClientRes() {
 }
 
 test('detectors policy has 15s timeout and shell policies keep stage defaults', () => {
-  const tmp_dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-shell-policy-'));
+  const tmp_dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-shell-policy-'));
   const prior = process.env.PROJECT_ROOT;
   process.env.PROJECT_ROOT = tmp_dir;
   try {
@@ -159,7 +159,7 @@ test('detectors policy has 15s timeout and shell policies keep stage defaults', 
   } finally {
     if (prior === undefined) delete process.env.PROJECT_ROOT;
     else process.env.PROJECT_ROOT = prior;
-    fs.rmSync(tmp_dir, { recursive: true, force: true });
+    _fs.rmSync(tmp_dir, { recursive: true, force: true });
   }
 });
 
@@ -181,11 +181,11 @@ test('detectors policy propagates transcript failfast payload', async () => {
 
 
 test('env loader reads root env only and invalid typed reads fail fast', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-env-contract-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-env-contract-'));
   const prior = { A: process.env.A, PORT: process.env.PORT };
   try {
-    fs.writeFileSync(path.join(dir, '.env'), 'A=ok\nPORT=abc\n');
-    loadEnv(path.join(dir, '.env'), { overwrite: true });
+    _fs.writeFileSync(_path.join(dir, '.env'), 'A=ok\nPORT=abc\n');
+    loadEnv(_path.join(dir, '.env'), { overwrite: true });
     assert.equal(process.env.A, 'ok');
     assert.throws(() => requireEnvInt('PORT'), /invalid integer environment key PORT/);
   } finally {
@@ -193,7 +193,7 @@ test('env loader reads root env only and invalid typed reads fail fast', () => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
-    fs.rmSync(dir, { recursive: true, force: true });
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -247,7 +247,7 @@ test('tool-result-heavy payload trips OmniRoute size gate before upstream 503/em
     tools: [],
     messages: [
       { role: 'user', content: [{ type: 'text', text: 'start' }] },
-      { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: path.join(os.tmpdir(), 'huge.log') } }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: _path.join(os.tmpdir(), 'huge.log') } }] },
       { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'x'.repeat(830_000) }] },
     ],
   };
@@ -276,15 +276,15 @@ test('Stop fallback omits blank transcript_path so lifecycle resolver can fill i
 });
 
 test('OmniRoute context-window overflow submits cc shortcut instead of bailing to another model', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-context-cc-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-context-cc-'));
   let readFd = null;
   try {
-    fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
-    const fifo = path.join(dir, 'tmp', 'hme-cc-control.fifo');
+    _fs.mkdirSync(_path.join(dir, 'tmp'), { recursive: true });
+    const fifo = _path.join(dir, 'tmp', 'hme-cc-control.fifo');
     execFileSync('mkfifo', [fifo]);
     // Open a non-blocking reader first so the proxy's O_WRONLY|O_NONBLOCK open
     // succeeds (without a reader a non-blocking write-open returns ENXIO).
-    readFd = fs.openSync(fifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+    readFd = _fs.openSync(fifo, _fs.constants.O_RDONLY | _fs.constants.O_NONBLOCK);
     let transportCalled = false;
     const transport = { request() { transportCalled = true; throw new Error('must NOT retry on another model'); } };
     const fullBody = Buffer.from('event: error\ndata: {"error":{"message":"input exceeds the context window"}}\n\n');
@@ -304,27 +304,27 @@ test('OmniRoute context-window overflow submits cc shortcut instead of bailing t
     let token = '';
     const buf = Buffer.alloc(64);
     for (let i = 0; i < 5 && !token; i++) {
-      try { const n = fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) token = buf.slice(0, n).toString('utf8'); }
-      catch (_e) { /* EAGAIN on the non-blocking pipe; retry */ }
+      try { const n = _fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) token = buf.slice(0, n).toString('utf8'); }
+      catch { /* EAGAIN on the non-blocking pipe; retry */ }
     }
     assert.match(token, /^cc!\n/, 'submits the interrupting cc shortcut so /compact does not queue behind generation');
     const state = loadModelRouteHealth(dir);
     assert.equal(state['cx/gpt-a'].reason, 'context_window_exceeded', 'still quarantines the overflowed route');
   } finally {
-    if (readFd !== null) { try { fs.closeSync(readFd); } catch (_e) { /* already closed */ } }
-    fs.rmSync(dir, { recursive: true, force: true });
+    if (readFd !== null) { try { _fs.closeSync(readFd); } catch { /* already closed */ } }
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
 test('cc compact submission is single-flight so /compact -> continue can never overlap/reorder', () => {
   const { submitCcCompactOnce, clearCcCompactInflight } = require('../../proxy/cc_control');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-cc-single-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-cc-single-'));
   let readFd = null;
   try {
-    fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
-    const fifo = path.join(dir, 'tmp', 'hme-cc-control.fifo');
+    _fs.mkdirSync(_path.join(dir, 'tmp'), { recursive: true });
+    const fifo = _path.join(dir, 'tmp', 'hme-cc-control.fifo');
     execFileSync('mkfifo', [fifo]);
-    readFd = fs.openSync(fifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+    readFd = _fs.openSync(fifo, _fs.constants.O_RDONLY | _fs.constants.O_NONBLOCK);
 
     const first = submitCcCompactOnce(dir);
     assert.equal(first.submitted, true, 'first overflow submits one compact cycle');
@@ -337,8 +337,8 @@ test('cc compact submission is single-flight so /compact -> continue can never o
     let bytes = '';
     const buf = Buffer.alloc(64);
     for (let i = 0; i < 5; i++) {
-      try { const n = fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) bytes += buf.slice(0, n).toString('utf8'); }
-      catch (_e) { break; }
+      try { const n = _fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) bytes += buf.slice(0, n).toString('utf8'); }
+      catch { break; }
     }
     assert.equal(bytes, 'cc!\n', 'only one interrupting /compact -> continue cycle dispatched');
 
@@ -347,13 +347,13 @@ test('cc compact submission is single-flight so /compact -> continue can never o
     assert.equal(clearCcCompactInflight(dir), false, 'idempotent clear');
     assert.equal(submitCcCompactOnce(dir).submitted, true, 'fresh overflow after clear re-triggers compact');
   } finally {
-    if (readFd !== null) { try { fs.closeSync(readFd); } catch (_e) { /* closed */ } }
-    fs.rmSync(dir, { recursive: true, force: true });
+    if (readFd !== null) { try { _fs.closeSync(readFd); } catch { /* closed */ } }
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
 test('model route cooldown marks context-window quarantine and expires by time', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-route-health-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-route-health-'));
   try {
     const now = Date.parse('2026-05-22T00:00:00Z');
     markRouteCooldown('cx/gpt-test', 'context_window_exceeded', { projectRoot: dir, ttlMs: 1000, now });
@@ -362,7 +362,7 @@ test('model route cooldown marks context-window quarantine and expires by time',
     assert.equal(routeSkipReason('cx/gpt-test', state, {}, now + 500), 'context_window_exceeded');
     assert.equal(routeSkipReason('cx/gpt-test', state, {}, now + 1500), '');
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -376,82 +376,82 @@ function _initGitRoot(dir) {
   execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'test@example.invalid'], { cwd: dir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
-  fs.writeFileSync(path.join(dir, 'x.txt'), 'x');
+  _fs.writeFileSync(_path.join(dir, 'x.txt'), 'x');
   execFileSync('git', ['add', 'x.txt'], { cwd: dir, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd: dir, stdio: 'ignore' });
   return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
 }
 
 test('lifesaver proxy injection drops resolved stale-runtime lines', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stale-drop-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-stale-drop-'));
   try {
     const head = _initGitRoot(dir);
-    fs.mkdirSync(path.join(dir, 'log'), { recursive: true });
-    fs.mkdirSync(path.join(dir, 'tools/HME/runtime'), { recursive: true });
-    const errLog = path.join(dir, 'log/hme-errors.log');
-    fs.writeFileSync(errLog, '');
-    fs.writeFileSync(path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: head }));
+    _fs.mkdirSync(_path.join(dir, 'log'), { recursive: true });
+    _fs.mkdirSync(_path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = _path.join(dir, 'log/hme-errors.log');
+    _fs.writeFileSync(errLog, '');
+    _fs.writeFileSync(_path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: head }));
     const mod = _freshLifesaverInject();
     const payload = { messages: [{ role: 'user', content: 'hi' }] };
     let dirtied = false;
     const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
     mod.onRequest({ payload, ctx }); // seed watermark
-    fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL stale but already fixed\n');
+    _fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL stale but already fixed\n');
     mod.onRequest({ payload, ctx });
     assert.equal(dirtied, false);
     assert.equal(payload.messages[0].content, 'hi');
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
 test('lifesaver proxy injection keeps overdue unresolved stale-runtime lines actionable', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stale-keep-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-stale-keep-'));
   const oldGrace = process.env.HME_POST_COMMIT_STALE_GRACE_SEC;
   try {
     const head = _initGitRoot(dir);
-    fs.mkdirSync(path.join(dir, 'log'), { recursive: true });
-    fs.mkdirSync(path.join(dir, 'tools/HME/runtime'), { recursive: true });
-    const errLog = path.join(dir, 'log/hme-errors.log');
-    fs.writeFileSync(errLog, '');
-    fs.writeFileSync(path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: 'oldsha' }));
-    fs.writeFileSync(path.join(dir, 'tools/HME/runtime/post-commit-stale-runtime.json'), JSON.stringify({ first_seen_epoch: 1, head_sha: head }));
+    _fs.mkdirSync(_path.join(dir, 'log'), { recursive: true });
+    _fs.mkdirSync(_path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = _path.join(dir, 'log/hme-errors.log');
+    _fs.writeFileSync(errLog, '');
+    _fs.writeFileSync(_path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: 'oldsha' }));
+    _fs.writeFileSync(_path.join(dir, 'tools/HME/runtime/post-commit-stale-runtime.json'), JSON.stringify({ first_seen_epoch: 1, head_sha: head }));
     process.env.HME_POST_COMMIT_STALE_GRACE_SEC = '0';
     const mod = _freshLifesaverInject();
     const payload = { messages: [{ role: 'user', content: 'hi' }] };
     let dirtied = false;
     const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
     mod.onRequest({ payload, ctx }); // seed watermark
-    fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL still stale\n');
+    _fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL still stale\n');
     mod.onRequest({ payload, ctx });
     assert.equal(dirtied, true);
     assert.match(payload.messages[0].content, /still stale/);
   } finally {
     if (oldGrace === undefined) delete process.env.HME_POST_COMMIT_STALE_GRACE_SEC;
     else process.env.HME_POST_COMMIT_STALE_GRACE_SEC = oldGrace;
-    fs.rmSync(dir, { recursive: true, force: true });
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
 test('lifesaver proxy injection surfaces OpenCode stderr validation errors', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-opencode-stderr-lifesaver-'));
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-opencode-stderr-lifesaver-'));
   try {
-    fs.mkdirSync(path.join(dir, 'log'), { recursive: true });
-    fs.mkdirSync(path.join(dir, 'tools/HME/runtime'), { recursive: true });
-    const errLog = path.join(dir, 'log/hme-errors.log');
-    fs.writeFileSync(errLog, '');
+    _fs.mkdirSync(_path.join(dir, 'log'), { recursive: true });
+    _fs.mkdirSync(_path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = _path.join(dir, 'log/hme-errors.log');
+    _fs.writeFileSync(errLog, '');
     const mod = _freshLifesaverInject();
     const payload = { messages: [{ role: 'user', content: 'hi' }] };
     let dirtied = false;
     const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
     mod.onRequest({ payload, ctx }); // seed watermark
-    fs.appendFileSync(errLog, '[opencode-stderr] ERROR Type validation error: message schema invalid while submitting\n');
+    _fs.appendFileSync(errLog, '[opencode-stderr] ERROR Type validation error: message schema invalid while submitting\n');
     mod.onRequest({ payload, ctx });
     assert.equal(dirtied, true);
     assert.match(payload.messages[0].content, /LIFESAVER -- unresolved errors/);
     assert.match(payload.messages[0].content, /\[opencode-stderr\] ERROR Type validation error/);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    _fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
@@ -666,34 +666,33 @@ test('role detection still honors explicit live team lead prompts', () => {
 
 test('mode 1 same-chain fallback index advances even when chain has a manual top', () => quiet(() => {
   // manually_toprank only fronts the chain; failover still progresses through it.
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
   try {
     const { chainSignature } = require('../../proxy/overdrive_route');
-    const cfg = require('../../proxy/shared').loadModelsJson();
     const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
-    fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
+    _fs.mkdirSync(_path.join(tmp, 'tmp'), { recursive: true });
     const probe = applyOverdriveRoute({
       payload: { ...payload }, clientReq: { ...clientReq, headers: { ...clientReq.headers } }, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
       stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
     });
-    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(probe.swapChain), fail: 1, ts: Date.now() }));
+    _fs.writeFileSync(_path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(probe.swapChain), fail: 1, ts: Date.now() }));
     const result = applyOverdriveRoute({
       payload, clientReq, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
       stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
     });
     assert.equal(result.swapMeta.id, result.swapChain[1].id, 'fallback index 1 selects swapChain[1] of the effective Claude-primary chain');
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
 test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch', () => quiet(() => {
   // Stale signature mismatch resets idx=0; manual top fronting still applies.
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
   try {
-    fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 9, chain: 'old-chain', fail: 9, ts: Date.now() }));
+    _fs.mkdirSync(_path.join(tmp, 'tmp'), { recursive: true });
+    _fs.writeFileSync(_path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 9, chain: 'old-chain', fail: 9, ts: Date.now() }));
     const payload = { model: 'claude-sonnet-4-6', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
     const result = applyOverdriveRoute({
@@ -713,7 +712,7 @@ test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch
     // anthropicOnlyCfg has only claude-opus-4-7-max-e5 (api_model='claude-opus-4-7'),
     assert.equal(result.swapMeta.api_model || result.swapMeta.id, 'claude-sonnet-4-6');
     assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
 test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
@@ -733,10 +732,10 @@ test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
 });
 
 test('mode 1 route health quarantine skips routes unless forced', () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-route-health-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-route-health-'));
   try {
-    fs.mkdirSync(path.join(tmp, 'tools', 'HME', 'runtime'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, 'tools', 'HME', 'runtime', 'model-route-health.json'), JSON.stringify({
+    _fs.mkdirSync(_path.join(tmp, 'tools', 'HME', 'runtime'), { recursive: true });
+    _fs.writeFileSync(_path.join(tmp, 'tools', 'HME', 'runtime', 'model-route-health.json'), JSON.stringify({
       'kilo-gateway/kilo-auto/free': { status: 'blocked', reason: 'manual test' },
     }));
     const cfg = {
@@ -754,11 +753,11 @@ test('mode 1 route health quarantine skips routes unless forced', () => {
     const forced = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver', HME_FORCE_QUARANTINED_ROUTES: '1' }, cfg, { projectRoot: tmp });
     assert.deepEqual(normal.chain.map((m) => m.id), ['step-free']);
     assert.deepEqual(forced.chain.map((m) => m.id), ['kilo-auto-free', 'step-free']);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
 test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () => quiet(() => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-claude-oauth-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-claude-oauth-'));
   try {
     const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
@@ -776,11 +775,11 @@ test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () 
     });
     assert.equal(result.applied, true);
     assert.match(payload.model, /^claude\/claude-opus-4-7/);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
 test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => quiet(() => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-thinking-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-thinking-'));
   try {
     const payload = {
       model: 'claude-opus-4-7',
@@ -809,11 +808,11 @@ test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => 
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinking'), false);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'output_config'), false);
     assert.doesNotMatch(result.outBody.toString('utf8'), /adaptive|output_config/);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
 test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic models', () => quiet(() => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-effort-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-effort-'));
   try {
     const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
@@ -832,11 +831,11 @@ test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic model
     assert.equal(result.applied, true);
     assert.match(payload.model, /^claude\/claude-opus-4-7/);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinkingLevel'), false);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
 test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () => quiet(() => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-'));
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-'));
   try {
     const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct', 'x-api-key': 'direct-key' }, url: '/v1/messages' };
@@ -864,12 +863,12 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
     assert.match(clientReq.headers['x-hme-upstream'], /^http:\/\/127\.0\.0\.1:/);
     assert.equal(clientReq.headers.authorization, undefined);
     assert.equal(clientReq.headers['x-api-key'], undefined);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
 test('mode 1 provider override applies capability matrix request overrides', () => quiet(() => {
   for (const provider of ['aihubmix', 'kilo-gateway']) {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
+    const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
     try {
       const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
       const clientReq = { headers: { authorization: 'Bearer direct', 'x-api-key': 'direct' }, url: '/v1/messages' };
@@ -891,7 +890,7 @@ test('mode 1 provider override applies capability matrix request overrides', () 
       assert.match(routed.model, new RegExp(`^${provider}/`));
       assert.equal(clientReq.headers.authorization, undefined);
       assert.equal(clientReq.headers['x-api-key'], undefined);
-    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+    } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
   }
 }));
 
@@ -1067,11 +1066,11 @@ test('context budget compaction gears start near context high-water and escalate
   const oldEnv = { ...process.env };
   // Pin an isolated statusline so the live Claude session / sibling tests cannot
   // race the shared runtime file (their real ~200k usage would divide by this
-  const isolatedStatusline = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'hme-gear-statusline-')), 'statusline.json');
+  const isolatedStatusline = _path.join(_fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-gear-statusline-')), 'statusline.json');
   try {
     process.env.HME_STATUSLINE_PATH = isolatedStatusline;
     const writeZeroStatusline = () => {
-      fs.writeFileSync(isolatedStatusline, JSON.stringify({
+      _fs.writeFileSync(isolatedStatusline, JSON.stringify({
         context_window: {
           context_window_size: 1000,
           current_usage: { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
@@ -1132,7 +1131,7 @@ test('context budget compaction gears start near context high-water and escalate
     });
   } finally {
     process.env = oldEnv;
-    try { fs.rmSync(path.dirname(isolatedStatusline), { recursive: true, force: true }); } catch (_e) { /* silent-ok: tempdir cleanup */ }
+    try { _fs.rmSync(_path.dirname(isolatedStatusline), { recursive: true, force: true }); } catch { /* silent-ok: tempdir cleanup */ }
   }
 });
 
@@ -1481,12 +1480,12 @@ test('request mutation direct smoke header bypasses lifecycle UserPromptSubmit f
 
 test('OmniRoute preflight does not let Claude statusline force target payload compaction', () => {
   const oldEnv = { ...process.env };
-  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
-  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
-  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
+  const runtimeDir = _path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = _path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = _fs.existsSync(statusline) ? _fs.readFileSync(statusline, 'utf8') : null;
   try {
-    fs.mkdirSync(runtimeDir, { recursive: true });
-    fs.writeFileSync(statusline, JSON.stringify({ context_window: { total_input_tokens: 999000, context_window_size: 1000000 } }));
+    _fs.mkdirSync(runtimeDir, { recursive: true });
+    _fs.writeFileSync(statusline, JSON.stringify({ context_window: { total_input_tokens: 999000, context_window_size: 1000000 } }));
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
@@ -1502,20 +1501,20 @@ test('OmniRoute preflight does not let Claude statusline force target payload co
   } finally {
     process.env = oldEnv;
     if (prevStatusline == null) {
-      try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: tempfile cleanup */ }
+      try { _fs.unlinkSync(statusline); } catch { /* silent-ok: tempfile cleanup */ }
     } else {
-      fs.writeFileSync(statusline, prevStatusline);
+      _fs.writeFileSync(statusline, prevStatusline);
     }
   }
 });
 
 test('OmniRoute preflight uses target payload pressure when statusline usage is unavailable', () => {
   const oldEnv = { ...process.env };
-  const runtimeDir = path.join(PROJECT_ROOT, 'tools/HME/runtime');
-  const statusline = path.join(runtimeDir, 'claude-statusline-raw.json');
-  const prevStatusline = fs.existsSync(statusline) ? fs.readFileSync(statusline, 'utf8') : null;
+  const runtimeDir = _path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = _path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = _fs.existsSync(statusline) ? _fs.readFileSync(statusline, 'utf8') : null;
   try {
-    try { fs.unlinkSync(statusline); } catch (_e) { /* silent-ok: fixture absent */ }
+    try { _fs.unlinkSync(statusline); } catch { /* silent-ok: fixture absent */ }
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.50';
@@ -1540,7 +1539,7 @@ test('OmniRoute preflight uses target payload pressure when statusline usage is 
     assert.ok(JSON.stringify(payload).length < before.length);
   } finally {
     process.env = oldEnv;
-    if (prevStatusline != null) fs.writeFileSync(statusline, prevStatusline);
+    if (prevStatusline != null) _fs.writeFileSync(statusline, prevStatusline);
   }
 });
 
