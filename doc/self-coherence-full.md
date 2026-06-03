@@ -695,3 +695,234 @@ tools/HME/omo_bridge/translators/<host>_decision.js
 tools/HME/tests/fixtures/universal_hooks/<host>.json
 tools/HME/tests/specs/universal_hook_<host>.test.js
 ```
+
+# Codex streaming tool-loop contract
+
+Interactive Codex requests (`stream: true`) must stay coherent between the CLI, HME proxy logs, and OmniRoute logs.
+
+## Contract
+
+When HME executes a Codex tool loop server-side for a streamed request:
+
+1. HME must open a client-visible SSE stream before or during the first server-side tool execution.
+2. HME must emit at least one client-visible progress delta before the final assistant answer.
+3. Visible progress may include the safe tool label and bounded result metadata, but must not stream full tool output by default.
+4. HME must not forward executable duplicate tool-call events to the client while also executing the same tool server-side.
+5. HME must not leak raw unsupported Claude-style tool calls such as `Bash`, `Read`, or `Agent` as client-executable calls.
+6. HME must not return `508 Loop Detected` for bounded tool loops; it must finalize or return a safe bounded fallback.
+7. HME must not ask the user to resend task context solely because of stale/incomplete/unsupported tool adapter noise.
+
+## Correlation
+
+Every Codex turn forwarded by HME should share these trace fields across response metrics and upstream request headers:
+
+- `correlation_id`
+- `session_id`
+- `thread_id`
+- `turn_id`
+- `tool_loop_depth`
+- `call_ids`
+- upstream/final response id when available
+
+HME sends equivalent upstream headers where possible:
+
+- `x-hme-codex-correlation-id`
+- `x-hme-codex-session-id`
+- `x-hme-codex-thread-id`
+- `x-hme-codex-turn-id`
+- `x-hme-codex-tool-loop-depth`
+
+## Hidden-loop violation
+
+A hidden-loop violation is any streamed Codex turn where HME executes one or more server-side tool calls but records zero client-visible progress events.
+
+Such cases are logged as:
+
+```text
+codex-hidden-tool-loop-violation
+```
+
+A healthy streamed server-side loop logs:
+
+```text
+codex-proxy-tool-loop-visible
+```
+
+and the final `response` event includes:
+
+- `client_sse_started: true`
+- `client_visible_progress_events > 0`
+- `tool_loop_count > 0`
+
+# Codex tool-loop graph
+
+HME's Codex tool loop is represented as an explicit small graph instead of unbounded recursive proxy branches.
+
+This is LangGraph-style orchestration implemented in-process for the current CommonJS proxy. The graph shape is intentionally small so it can later be swapped to LangGraphJS `StateGraph` without changing the proxy contract.
+
+## State
+
+The graph state records:
+
+- `correlation_id`, `session_id`, `thread_id`, `turn_id`
+- route and response kind (`json` / `sse`)
+- current `tool_loop_depth` (observability only — no cap is imposed)
+- collected tool calls
+- actionable tool calls
+- skipped malformed tool calls
+- duplicate call IDs
+- approval-gated calls
+- selected decision and invariant
+
+## Nodes
+
+```text
+inspect_response
+  -> execute_tools
+  -> malformed_tool_fallback
+  -> duplicate_tool_fallback
+  -> interrupt_before_tool
+  -> final
+```
+
+The proxy only executes tools after the graph returns `execute_tools`. There is no depth limit and no "finalization" stage; the tool loop runs as long as the upstream model keeps requesting tools, the same way the Anthropic/Claude route does. Context pressure is handled exclusively by the shared `passthrough_compact` path at the configured high-water fraction.
+
+## Invariants
+
+The graph encodes invariants directly rather than relying on detector sprawl:
+
+- `visible_progress_required`: streamed server-side tool execution must emit client-visible progress.
+- `no_duplicate_tool_execution`: a call ID already executed in the turn cannot execute again.
+- `no_raw_tool_leakage`: malformed tool calls are converted into a fallback path, not raw client tool calls.
+- `human_approval_gate`: destructive or write-capable tools can interrupt before execution when HITL is enabled.
+
+## Checkpoints
+
+Each graph transition writes best-effort durable checkpoints to:
+
+```text
+tools/HME/runtime/codex-tool-loop-checkpoints.jsonl
+tools/HME/runtime/codex-tool-loop-checkpoints/<correlation_id>.json
+```
+
+Checkpoints are compact observability records, not full prompt/history dumps. They contain routing state, call summaries, decision, invariant, and trace IDs.
+
+## Human approval
+
+Set:
+
+```text
+HME_CODEX_HITL=1
+```
+
+to make the graph return `interrupt_before_tool` before:
+
+- `Edit`
+- `Write`
+- destructive `Bash` commands such as `rm`, `git reset --hard`, `git clean`, force push, recursive chmod/chown, etc.
+
+Current proxy behavior for an interrupt is a bounded final response with the checkpoint ID. A future UI/Studio bridge can resume from the checkpoint after approval.
+
+## LangGraphJS migration seam
+
+The current module is:
+
+```text
+tools/HME/proxy/codex_tool_loop_graph.js
+```
+
+It exposes a pure decision function:
+
+```js
+runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids, response_kind })
+```
+
+This seam mirrors a future LangGraphJS `StateGraph`: state in, node transitions, checkpoint writes, decision out.
+
+# smolagents HME tool registry
+
+HME's canonical custom tools now live as smolagents `Tool` subclasses.
+
+The agent-facing names intentionally stay bare/native-looking:
+
+```text
+Agent
+Bash
+Edit
+Read
+WebFetch
+WebSearch
+Write
+```
+
+Do not prefix these names with `hme_`. The proxy, graph, and model schemas should preserve the same names so tools are indistinguishable from native tools from the agent perspective.
+
+## Source of truth
+
+```text
+tools/HME/hme_tools/base.py
+tools/HME/hme_tools/tools.py
+```
+
+`HMETool` subclasses `smolagents.Tool` and adds HME metadata:
+
+- `side_effect`
+- `approval`
+- `idempotent`
+- `max_output_bytes`
+- `aliases`
+- `visibility`
+- `policy`
+
+The smolagents fields remain the canonical model-facing contract:
+
+- `name`
+- `description`
+- `inputs`
+- `output_type`
+- `output_schema`
+- `forward()`
+
+## Export surfaces
+
+Use:
+
+```bash
+python3 tools/HME/hme_tools/export.py --kind codex
+python3 tools/HME/hme_tools/export.py --kind hme
+```
+
+`codex`/`openai`/`claude` exports model tool schemas with bare names.
+
+`hme` exports the same schemas plus HME policy metadata.
+
+The Node proxy consumes these through:
+
+```text
+tools/HME/proxy/hme_tool_registry.js
+tools/HME/proxy/codex_uniform_tools.js
+```
+
+## Execution
+
+Use:
+
+```bash
+python3 tools/HME/hme_tools/run_tool.py Bash --json <<< '{"command":"printf ok"}'
+```
+
+`run_tool.py` executes by bare tool name. Existing JS structured tool behavior remains the execution backend for Read/Edit/Write/WebFetch/Agent while the canonical declaration moves to smolagents.
+
+## Test contract
+
+```bash
+node --test tools/HME/tests/specs/smolagents_tool_registry.test.js
+```
+
+The tests assert:
+
+- exact bare tool names
+- no `hme_` prefixes
+- exported schemas are function/object schemas
+- HME policy metadata is separate from model schema
+- bare-name tool execution works
