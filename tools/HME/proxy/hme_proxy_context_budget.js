@@ -292,8 +292,6 @@ function createContextBudget() {
     return plan;
   }
 
-  function estimatedContextTokens(bytes) { return Math.ceil(bytes / contextBytesPerTokenEst); }
-
   function statuslineContextUsage() {
     try {
       // HME_STATUSLINE_PATH is an optional relocation override (default: the
