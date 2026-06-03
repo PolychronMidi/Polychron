@@ -25,6 +25,9 @@ const CLAUDE_STRIP_RULES = [
   // Embedded/unwrapped skill enumeration (no <system-reminder> wrapper, often a
   // role:system string message). Excise just the skill list; trailing hook
   { name: 'skill-list-embedded', re: RE_SKILL_LIST, action: 'replace-with', replacement: '' },
+  // Per-turn `[project-detect] ...` + `ok` boilerplate. Scoped to this exact
+  // line so other UserPromptSubmit context (LIFESAVER alerts) survives.
+  { name: 'project-detect-boilerplate', re: RE_PROJECT_DETECT, action: 'replace-with', replacement: '' },
 ];
 
 const CODEX_WRAPPER_RULES = [
