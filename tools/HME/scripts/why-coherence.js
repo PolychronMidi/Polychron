@@ -19,6 +19,7 @@ function recentErrorLines(limit = 40) {
   try {
     return fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8').split('\n').filter(Boolean).slice(-limit);
   } catch (_e) {
+    // silent-ok: missing/unreadable error log = no recent error lines for the why view.
     return [];
   }
 }
