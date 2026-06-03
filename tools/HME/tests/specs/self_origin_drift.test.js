@@ -39,7 +39,7 @@ function bashSuppressedTags() {
     encoding: 'utf8',
   });
   assert.equal(r.status, 0, `_self_tags.sh should run cleanly: ${r.stderr}`);
-  const m = /\^\[\(([^]*?)\)\]/.exec(r.stdout.trim());
+  const m = /\^\\\[\(([^]*?)\)\\\]/.exec(r.stdout.trim());
   assert.ok(m, `_self_tags.sh must emit a ^[(...)] alternation, got: ${r.stdout}`);
   return new Set(tagsFromAlternation(m[1]));
 }
