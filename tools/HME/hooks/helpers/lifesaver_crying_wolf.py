@@ -10,14 +10,45 @@ import sys
 from pathlib import Path
 
 OBSERVATION_RE = re.compile(r"\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b")
-SELF_TAG_RE = re.compile(
-    r"^\[(?:_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|"
-    r"hme-proxy|proxy-runtime|proxy-bridge|proxy-watchdog|hook-watchdog|hook-stop-block|hook-ui-echo-leak|crying_wolf|"
-    r"hook-runtime-error|proxy-supervisor|"
-    r"llamacpp_supervisor|llamacpp_offload_invariant|"
-    r"llamacpp_indexing_mode_resume|meta_observer|model_init|"
-    r"rag_proxy\.project|startup_chain|worker_client|worker:[^\]]+)\]"
-)
+
+
+def _load_self_tag_re() -> "re.Pattern":
+    """Derive the self-origin suppression regex from the single source
+    (proxy/self_origin.js SELF_SUPPRESSED_TAG_PATTERNS) instead of hand-mirroring
+    it. Mirrors hooks/helpers/_self_tags.sh: read the cached regex if it is newer
+    than self_origin.js, else regenerate via node, else fail SAFE to `a^` (match
+    nothing) so a load failure surfaces every line rather than suppressing real
+    errors."""
+    root = os.environ.get("PROJECT_ROOT") or os.getcwd()
+    cache = os.path.join(root, "tools", "HME", "runtime", "self-suppressed-tag-re.txt")
+    src = os.path.join(root, "tools", "HME", "proxy", "self_origin.js")
+    pattern = None
+    try:
+        if os.path.getmtime(cache) >= os.path.getmtime(src):
+            pattern = Path(cache).read_text(encoding="utf-8").strip()
+    except OSError:
+        pattern = None
+    if not pattern:
+        import subprocess
+        try:
+            out = subprocess.run(
+                ["node", "-e", 'const s=require(process.env.PROJECT_ROOT+"/tools/HME/proxy/self_origin"); console.log("^[("+s.SELF_SUPPRESSED_TAG_PATTERNS.join("|")+")]")'],
+                capture_output=True, text=True, timeout=5,
+                env={**os.environ, "PROJECT_ROOT": root},
+            )
+            pattern = out.stdout.strip() or None
+            if pattern:
+                try:
+                    Path(cache).parent.mkdir(parents=True, exist_ok=True)
+                    Path(cache).write_text(pattern + "\n", encoding="utf-8")
+                except OSError:
+                    pass  # silent-ok: cache write is a best-effort speed optimization
+        except (OSError, subprocess.SubprocessError):
+            pattern = None  # silent-ok: node unavailable -> fail SAFE below
+    return re.compile(pattern if pattern else r"a^")
+
+
+SELF_TAG_RE = _load_self_tag_re()
 CANARY_RE = re.compile(r"\[CANARY-")
 TS_RE = re.compile(r"^\[[0-9TZ:.\-]*\]\s*")
 RECOVERED_UPSTREAM_RES = (
