@@ -68,9 +68,10 @@ function _isAgentActionable(line, projectRoot) {
       && _sessionstartProxyDownResolved(projectRoot)) return false;
   if (/^\[stale_runtime\]/.test(body) && _staleRuntimeResolvedOrGrace(projectRoot)) return false;
   if (CRYING_WOLF_RE.test(body)) return true;
-  if (SELF_TAG_RE.test(body) && !criticalInfra) return false;
+  if (selfOrigin.isAgentActionableOverride(body)) return true;
+  if (selfOrigin.isSelfOriginSuppressed(body) && !criticalInfra) return false;
   if (HOOK_WATCHDOG_MISSING_RE.test(body)) return false;
-  if (OBSERVATION_RE.test(body) && !criticalInfra) return false;
+  if (selfOrigin.isObservation(body) && !criticalInfra) return false;
   return true;
 }
 
