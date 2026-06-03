@@ -30,6 +30,6 @@ Example:
 
 #18 5_ scripts lint lane: lint:proxy is no longer the only gated JS surface. Added dedicated `npm run lint:hme-scripts` using tools/HME/scripts/eslint.config.mjs so scripts are checked with Node/CommonJS rules instead of the root src/proxy naked-global config that caused phantom fs/path/main errors. Fixed the real findings the new lane exposed (hme-cli no-undef timeout path, unused imports/vars in HME pipeline scripts). Evidence: package JSON valid; lint:hme-scripts EXIT=0.
 
-#19 0_ registry disk-existence assertions: dispatcher-routes is the only registry with a hook-script-existence contract (verify_coherence/dispatcher_routes.py). Extend the same pattern to other string-named registries — service_registry/svcs.json, state_registry/state-files.json — so a renamed/missing target fails a contract test instead of at runtime.
+#19 1_ registry disk-existence assertions: dispatcher-routes is the only registry with a hook-script-existence contract (verify_coherence/dispatcher_routes.py). Extend the same pattern to other string-named registries — service_registry/svcs.json, state_registry/state-files.json — so a renamed/missing target fails a contract test instead of at runtime.
 
 #20 0_ SSE rewriter order contract: slop/ascii/stop-hook rewriter ordering is implicit in hme_proxy_response_send.js. Add a small order-contract test pinning the strategy sequence so a reorder is a test failure, not a silent behavior change.
