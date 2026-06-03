@@ -100,10 +100,12 @@ async function _awaitCompletion(taskId, timeoutMs) {
           stable = 0;
           prev = size;
         }
+        // eslint-disable-next-line no-await-in-loop -- sequential poll-until-stable: eac
         await _sleep(POLL_INTERVAL_MS);
       }
       return null;
     }
+    // eslint-disable-next-line no-await-in-loop -- sequential poll-until-output-appears:
     await _sleep(POLL_INTERVAL_MS);
   }
   return null;
