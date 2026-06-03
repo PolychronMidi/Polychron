@@ -196,6 +196,7 @@ async function _healthLoop() {
     const sinceStart = Date.now() - state.lastStart;
     if (sinceStart < spec.startupMs) continue; // still warming up
 
+    // eslint-disable-next-line no-await-in-loop -- per-child health probe: sequential so
     const healthy = await _probe(spec.healthUrl);
     if (healthy) {
       state.restarts = 0;  // reset on confirmed health -- stale count cleared
@@ -365,6 +366,7 @@ function start() {
   // Start children sequentially (each awaits its own pre-flight health probe).
   (async () => {
     for (const spec of CHILDREN) {
+      // eslint-disable-next-line no-await-in-loop -- intentional sequential startup: eac
       await _startChild(spec);
     }
   })().catch((err) => console.error('[supervisor] start sequence error:', err.message));
