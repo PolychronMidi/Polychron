@@ -37,6 +37,24 @@ function _applyRule(block, rule) {
   return null;
 }
 
+// String-content messages (e.g. a role:system message whose content is a plain
+// string) never reached the array walker below, so embedded skill/system spam
+// slipped through. Apply the remove/replace rules to the raw string and return
+function _stripFromString(text) {
+  if (typeof text !== 'string' || !text) return null;
+  let out = text;
+  let changed = false;
+  for (const rule of STRIP_RULES) {
+    if (rule.action === 'remove-block') {
+      if (rule.re.test(out)) { return { text: '', stripped: 1 }; }
+    } else if (rule.action === 'replace-with') {
+      const cleaned = out.replace(rule.re, rule.replacement);
+      if (cleaned !== out) { out = cleaned; changed = true; }
+    }
+  }
+  return changed ? { text: out, stripped: 1 } : null;
+}
+
 function _stripFromContent(content) {
   if (!Array.isArray(content)) return 0;
   let stripped = 0;

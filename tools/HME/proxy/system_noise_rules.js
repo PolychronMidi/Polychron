@@ -64,6 +64,7 @@ module.exports = {
   STOP_HOOK_HOST_ECHO_RULE,
   RE_STOP_HOOK,
   RE_STOP_HOOK_KEEP,
+  RE_SKILL_LIST,
   TEXT_TYPES,
   itemText,
   shouldStripSystemText,
