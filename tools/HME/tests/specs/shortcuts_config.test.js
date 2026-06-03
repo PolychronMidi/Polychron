@@ -43,7 +43,9 @@ test('LANE SEPARATION: cc and c& are local-session only -- never in a wire lane'
   }
   // wire shortcuts still resolve a display.
   assert.equal(cfg.shortcutDisplay('n'), 'next suggestions?');
-  assert.equal(cfg.shortcutDisplay('1'), "reply only with 'hi'");
+  assert.equal(cfg.shortcutDisplay('11'), "reply only with 'hi'");
+  // the 'te' simple shortcut resolves its display.
+  assert.equal(cfg.shortcutDisplay('te'), 'Describe in text what you were going to do next without using any tools');
 });
 
 test('multiStepKey matches exact and prefix multi-step keys case/space-insensitively, nothing else', () => {
