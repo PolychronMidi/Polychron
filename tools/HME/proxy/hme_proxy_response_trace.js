@@ -3,10 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-// Leaf import (not the failure_policy barrel): hme_proxy_codex has no path back
-// to this file, so an eager leaf require is cycle-safe and keeps the
-// banned-barrel guard green.
-const { retryBlankOmniRouteResponse } = require('./contexts/failure_policy/hme_proxy_codex');
+// LAZY leaf import (not the failure_policy barrel): resolve hme_proxy_codex at
+// call time so no load-time edge is added (an eager leaf require reshuffles the
+// proxy import graph into new cycles). Used once, inside _maybeRetryBlank below.
+function retryBlankOmniRouteResponse(...args) {
+  return require('./contexts/failure_policy/hme_proxy_codex')
+    .retryBlankOmniRouteResponse(...args);
+}
 
 function _sanitizeHeaders(headers) {
   const out = {};
