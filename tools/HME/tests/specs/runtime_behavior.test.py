@@ -2,10 +2,8 @@
 """Smoke + class-shape tests for verify_coherence.runtime_behavior."""
 from __future__ import annotations
 
-import json
 import os
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -18,7 +16,7 @@ os.environ.setdefault("HME_METRICS_DIR", str(ROOT / "metrics"))
 os.environ.setdefault("METRICS_DIR", str(ROOT / "metrics"))
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
-from helpers import assert_class_shape, smoke_run, with_project_root
+from helpers import assert_class_shape, smoke_run
 
 
 def _classes():
