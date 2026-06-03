@@ -73,7 +73,6 @@ function createClaudeHandler(deps) {
     getLastInputTokensLimit,
     setLastInputTokensLimit,
     setLastPayloadBytes,
-    estimatedContextTokens,
     omniContextThresholdBytes,
     loadedMiddleware = [],
   } = deps;
