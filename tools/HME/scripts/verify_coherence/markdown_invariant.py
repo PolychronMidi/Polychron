@@ -55,8 +55,6 @@ ALLOWED_FILENAMES = {
 ALLOWED_PREFIXES = (
     "doc/",
     "tools/csv_maestro/doc/",
-    "tools/HME/activity/",
-    "tools/HME/proxy/",
     "tools/HME/tests/fixtures/",
 )
 
