@@ -521,6 +521,9 @@ async function runOnToolResult(toolUse, toolResult, opts = {}) {
     if (filter && !filter.has(mod.name)) continue;
     if (!_middlewareAllowed(mod, 'onToolResult')) continue;
     try {
+      // Sequential by design: middleware phase ordering is load-bearing (a
+      // strip/normalize module must complete before a later enrich module sees
+      // eslint-disable-next-line no-await-in-loop
       await mod.onToolResult({ toolUse, toolResult, session, ctx });
     } catch (err) {
       console.error(`[middleware] ${mod.name}.onToolResult threw: ${err.message}`);
