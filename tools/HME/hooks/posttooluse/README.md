@@ -1,3 +1,3 @@
 # posttooluse/
 
-PostToolUse hooks (per-tool: edit, bash, read, todowrite).
+PostToolUse hooks (per-tool: edit, bash, read).

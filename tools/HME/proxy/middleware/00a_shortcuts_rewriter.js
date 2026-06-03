@@ -30,6 +30,19 @@ function _rewriteShortcutText(text, value) {
   return value;
 }
 
+// Resolve a shortcut key from user text. A shortcut is recognized when it is
+// EITHER the whole message OR alone on the final line -- the latter is how a
+// shortcut arrives when the host wraps mid-turn typing in an interrupt envelope
+function _resolveShortcutKey(text) {
+  const key = String(text || '').toLowerCase().trim();
+  if (Object.prototype.hasOwnProperty.call(SHORTCUTS, key)
+    || Object.prototype.hasOwnProperty.call(TWO_STEP_SHORTCUTS, key)) {
+    return key;
+  }
+  const tail = _SHORTCUT_TAIL_RE.exec(String(text || ''));
+  return tail ? tail[3].toLowerCase() : '';
+}
+
 function _lastUserText(payload) {
   const last = lastRealUserMessage(payload);
   if (!last) return { text: '', block: null, msg: null };
