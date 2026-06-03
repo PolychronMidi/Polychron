@@ -97,6 +97,7 @@ function watchSelfAndReexec(entryFile, extraFiles = [], pollMs = 3000) {
       try { cur = fs.statSync(f).mtimeMs; } catch (_) { continue; }
       if (mtimes.get(f) && cur !== mtimes.get(f)) {
         reexecInFlight = true;
+        // eslint-disable-next-line no-await-in-loop -- single-flight reexec: the in-flig
         const verdict = await performReexec(entryFile, process.argv.slice(2));
         if (verdict.action === 'exited') {
           clearInterval(timer);
