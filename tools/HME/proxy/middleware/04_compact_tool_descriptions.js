@@ -14,34 +14,11 @@ const AGENT_SCHEMA = {
   additionalProperties: false,
 };
 
-const TODOWRITE_SCHEMA = {
-  $schema: 'https://json-schema.org/draft/2020-12/schema',
-  type: 'object',
-  properties: {
-    todos: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          content: { type: 'string' },
-          status: { type: 'string', enum: ['pending', 'in_progress', 'completed'] },
-          activeForm: { type: 'string' },
-        },
-        required: ['content', 'status', 'activeForm'],
-        additionalProperties: true,
-      },
-    },
-  },
-  required: ['todos'],
-  additionalProperties: false,
-};
-
 const COMPACT = {
   Read: `Read a file by absolute path. Supports offset/limit for long text, images, PDFs (use pages for large PDFs), and notebooks. Returns numbered lines. Use for screenshots when given a path. Does not read directories.`,
   Bash: `Run a bash command and return output. Prefer Read/Edit/Write for file ops. Quote paths with spaces. Use absolute paths; avoid cd unless requested. Use timeout for long commands. Use run_in_background only when notification is enough. Never run destructive git/gh or bypass hooks unless explicitly requested.`,
   WebFetch: `Fetch and summarize a public URL with a prompt. URL must be valid; redirects require a follow-up request. Avoid private/authenticated URLs; use authenticated MCP or gh for GitHub when available. Read-only, cached briefly, may summarize large pages.`,
   WebSearch: `Search the web for current or post-cutoff info. Use 2026 in recent/current queries. Supports allowed/blocked domain filters. If used, final answer must include a Sources section with relevant result links.`,
-  TodoWrite: `Maintain a session task list. Use for multi-step work: mark one item in_progress at a time, update as work completes, and keep entries concrete/actionable.`,
 };
 
 function sameJson(a, b) {
