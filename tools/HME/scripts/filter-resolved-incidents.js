@@ -15,7 +15,7 @@ try {
   const incidents = require('../proxy/incident_registry');
   write(incidents.unresolvedLines(root, input));
 } catch (_e) {
-  // Fail SAFE: a broken env/resolver must never silently swallow real LIFESAVER
+  // silent-ok: fail SAFE -- a broken env/resolver must never swallow real LIFESAVER
   // errors. Surface every input line unchanged so the hook still blocks/alerts.
   write(input);
 }
