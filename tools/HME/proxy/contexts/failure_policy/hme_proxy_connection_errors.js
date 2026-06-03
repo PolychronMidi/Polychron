@@ -3,7 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('../../shared');
-const { writeAnthropicStopSse } = require('../response_transform');
+// Leaf import (not the response_transform barrel): legacy_swap_response is
+// 0-cycle, so an eager leaf require is cycle-safe and keeps the banned-barrel
+// guard green.
+const { writeAnthropicStopSse } = require('../../legacy_swap_response');
 
 const RETRYABLE_CONN_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
 
