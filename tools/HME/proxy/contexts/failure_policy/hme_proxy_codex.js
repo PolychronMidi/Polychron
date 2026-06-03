@@ -87,6 +87,7 @@ async function retryBlankOmniRouteResponse({
     const retryBody = Buffer.from(JSON.stringify(retryPayload), 'utf8');
     console.error(`[hme-proxy] BLANK retry ${ri}/${swapChain.length - 1}: ${tp}/${tid}`);
     try {
+      // eslint-disable-next-line no-await-in-loop -- sequential blank-response retry: ea
       const retryRes = await new Promise((resolve, reject) => {
         const req = http.request({
           hostname: '127.0.0.1',

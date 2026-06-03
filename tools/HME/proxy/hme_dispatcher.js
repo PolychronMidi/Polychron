@@ -259,6 +259,7 @@ async function maybeHandleHme(initialResponseBuf, initialHeaders, initialStatus,
     // Ensure stream:false for continuation; we buffer and re-parse.
     currentPayload.stream = false;
 
+    // eslint-disable-next-line no-await-in-loop -- sequential continuation turn: the nex
     lastResponse = await _callAnthropic(currentPayload, upstreamOpts);
     if (lastResponse.status < 200 || lastResponse.status >= 300) {
       // Propagate the error upstream -- return what we got.

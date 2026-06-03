@@ -141,6 +141,7 @@ async function retryOmniCredentialFailure({
     const retryOpts = { ...upstreamOpts, headers: retryHeaders };
     console.error(`[hme-proxy] OmniRoute credential failover ${ri}/${swapChain.length - 1}: ${failedRoute} -> ${route}`);
     try {
+      // eslint-disable-next-line no-await-in-loop -- sequential credential failover: eac
       const retry = await requestBuffer({ transport, opts: retryOpts, body: retryBody });
       if (retry.status >= 200 && retry.status < 300) {
         swapStore.recordSuccess(swapChain, retryIdx, projectRoot);
