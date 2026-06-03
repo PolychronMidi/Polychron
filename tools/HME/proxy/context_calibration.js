@@ -84,6 +84,7 @@ function loadCalibration(projectRoot = PROJECT_ROOT) {
     _cache = { mtimeMs: stat.mtimeMs, data };
     return data;
   } catch (_e) {
+    // silent-ok: unreadable/corrupt calibration file -> null = recompute from priors.
     return null;
   }
 }
@@ -154,6 +155,7 @@ function recordSample({ reg, tr, actual, model = '', env = process.env, projectR
     _cache = { mtimeMs: -1, data: null };
     return key && data.models[key].factors.fitted ? data.models[key].factors : data.global.factors;
   } catch (_e) {
+    // silent-ok: best-effort calibration persist; in-memory factors still serve callers.
     return null;
   }
 }
@@ -181,6 +183,7 @@ function maybeDriftAlert({ model, estimated, actual, fitted, projectRoot = PROJE
     fs.appendFileSync(log, driftAlertLine({ model, estimated, actual, rel, ts: new Date().toISOString() }));
     return true;
   } catch (_e) {
+    // silent-ok: drift-alert append is best-effort telemetry; failure must not break est
     return false;
   }
 }

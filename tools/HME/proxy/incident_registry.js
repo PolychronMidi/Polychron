@@ -105,6 +105,7 @@ function readIncidents(root) {
     return fs.readFileSync(path.join(root, INCIDENT_LOG_REL), 'utf8').split('\n').filter(Boolean)
       .map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } }).filter(Boolean);
   } catch (_e) {
+    // silent-ok: missing/unreadable incident log = no incidents to report.
     return [];
   }
 }
