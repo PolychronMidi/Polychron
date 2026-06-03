@@ -187,6 +187,11 @@ let _pipelineDirty = false;
 const _retryCount = new Map(); // tool_use.id -> attempts
 const _MAX_RETRIES = 3;
 
+// Module registry state. Declared here (above _middlewareAllowed and the
+// pipeline) so the no-use-before-define ordering holds; populated by register().
+const _modules = [];
+const _moduleMeta = new Map(); // module.name -> {file, phase}
+
 // Compatibility fallback for modules loaded through tests/single-event callers
 // without manifest metadata in _moduleMeta. DERIVED from the manifest (single
 // source of truth) instead of a hand-maintained list that silently drifts:
