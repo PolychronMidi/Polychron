@@ -479,6 +479,23 @@
   ],
   "multi_writer": [
     {
+      "path": "tools/HME/runtime/heartbeat-lifesaver.ts",
+      "coordination": "last-writer-wins single-timestamp heartbeat; the proxy lifesaver (lifesaver_alerts.js) and the Stop-hook lifesaver (lifesaver.sh) each stamp the latest real lifesaver run",
+      "writers": [
+        "tools/HME/proxy/lifesaver_alerts.js",
+        "tools/HME/hooks/lifecycle/stop/lifesaver.sh"
+      ],
+      "owner": "multi-writer heartbeat contract",
+      "readers": [
+        "diagnostics"
+      ],
+      "retention": "single unix-second heartbeat timestamp for the latest real lifesaver run (proxy injection or Stop-hook pass)",
+      "generated": true,
+      "committed": false,
+      "schema": "plain integer unix timestamp seconds",
+      "repair": "remove file; the next lifesaver run recreates it"
+    },
+    {
       "path": "tools/HME/runtime/metrics/*",
       "coordination": "HME-owned telemetry; project metrics stay adapter-scoped.",
       "writers": [
