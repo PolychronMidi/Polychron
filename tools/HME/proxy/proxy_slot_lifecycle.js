@@ -295,6 +295,7 @@ module.exports = {
   recordSlotEvent,
   latestBrokenFingerprint,
   countSlotsWithFingerprint,
+  quarantineStatus,
   canAdmitFingerprint,
   markSlotStarting,
   markSlotViable,
