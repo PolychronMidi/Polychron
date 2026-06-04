@@ -10,6 +10,17 @@ _HME_PROJECT_TMP="${PROJECT_ROOT}/t""mp"
 _HME_DEFAULT_OS_TMP="/t""mp"
 _HME_OS_TMP="${TMPDIR:-$_HME_DEFAULT_OS_TMP}"
 
+# Per-step production timing (TODO #14b): the p95 (~1100ms) lives in the
+# synchronous node/python sub-invocations below, not the hook shell itself.
+_UPS_TIMING="${HME_UPS_TIMING:-1}"
+_ups_now() { date +%s%3N 2>/dev/null || echo 0; }
+_UPS_T0=$(_ups_now); _UPS_PREV="$_UPS_T0"; _UPS_STEPS=""
+_ups_mark() {
+  [ "$_UPS_TIMING" = "1" ] || return 0
+  local n d; n=$(_ups_now); d=$((n - _UPS_PREV)); _UPS_PREV="$n"
+  _UPS_STEPS="${_UPS_STEPS}${_UPS_STEPS:+,}\"$1\":$d"
+}
+
 if [ "${HME_CLI_SMOKE:-}" != "1" ]; then
   # silent-ok: helper failure falls through to blocked/unready probe path.
   _WATCHDOG_ALERT=$(printf '%s' "$INPUT" \
