@@ -93,7 +93,7 @@ module.exports = {
     if (editCount === 0) return ctx.allow();
     const hints = await fetchKbHints();
     return ctx.deny(
-      `NEXUS -- ${editCount} unreviewed edit(s). Run \`i/review mode=forget\` before stopping.${hints}`
+      `NEXUS -- ${editCount} unreviewed edit(s); the Stop gate stays closed until they are reviewed. Run \`i/review mode=forget\` to clear it.${hints}`
     );
   },
 };
