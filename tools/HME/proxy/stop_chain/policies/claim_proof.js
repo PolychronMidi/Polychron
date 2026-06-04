@@ -12,7 +12,7 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'Update']);
 const VERIFY_TOOLS = new Set(['Bash']);
 
 // Tool_use blocks since the last real user prompt: {name, input} so callers can
-// read both the tool name AND its file_path (for same-artifact proof matching).
+// read both the tool name AND its file_path (recorded on the proof capsule).
 function _sameTurnToolBlocks(transcriptPath) {
   if (!transcriptPath) return [];
   let lines;
