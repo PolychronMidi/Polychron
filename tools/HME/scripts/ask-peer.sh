@@ -39,6 +39,25 @@ case "$SID_FILE" in tmp/.team-*.session) ;; *) echo "invalid session_file for $R
 case "$TIER" in E1|E2|E3|E4|E5) ;; *) echo "invalid tier for $ROLE: $TIER" >&2; exit 1 ;; esac
 case "$EFFORT" in low|medium|high|max) ;; *) echo "invalid effort for $ROLE: $EFFORT" >&2; exit 1 ;; esac
 
+FAMILY=""
+case "$ROLE" in
+  driver) FAMILY="driver" ;;
+  *_lead) FAMILY="team_lead" ;;
+  *_purple) FAMILY="team_purple" ;;
+  crew_e[1-5]_*) FAMILY="stage_crew" ;;
+esac
+if [[ -n "$FAMILY" && -f config/models.json ]]; then
+  MODEL_TIER="$(jq -r --arg family "$FAMILY" '.team_role_models[$family].tier // empty' config/models.json)"
+  EXPECTED_TIER="$MODEL_TIER"
+  if [[ "$MODEL_TIER" == "role" ]]; then
+    EXPECTED_TIER="$(printf '%s' "$ROLE" | sed -n 's/^crew_e\([1-5]\)_.*/E\1/p')"
+  fi
+  if [[ -n "$EXPECTED_TIER" && "$TIER" != "$EXPECTED_TIER" ]]; then
+    echo "tier drift for $ROLE: roles.json=$TIER models.json=$EXPECTED_TIER" >&2
+    exit 1
+  fi
+fi
+
 CALLER="${HME_TEAM_ROLE:-driver}"
 if [[ "$CALLER" != "driver" && "${HME_TEAM_DISPATCH_GUARD_OK:-}" != "1" ]]; then
   echo "ask-peer direct dispatch blocked for $CALLER; use team_dispatch_guard.py" >&2
