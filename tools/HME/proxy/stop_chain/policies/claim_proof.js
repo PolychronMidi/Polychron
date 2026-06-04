@@ -44,8 +44,8 @@ function _emitVerdict(root, claimClass, decision, shadow, details = {}) {
     require('../../coherence_events').appendEvent(root, {
       kind: 'policy_decision', subject: 'stop:claim_proof', intent: `claim_class=${claimClass}`,
       evidence: [], coherence_delta: decision === 'deny' ? -1 : 0, proofClass: 'policy',
-      // edits/verified are the TP/FP discriminator: a deny with verified=false is a
-      // genuine unverified-claim catch (signal); verified=true means the turn ran a
+      // meta.verified is the TP/FP discriminator: deny+verified=false is a genuine
+      // unverified-claim catch (signal); deny+verified=true is a likely false alarm.
       meta: { decision, shadow: Boolean(shadow), edits: Number(details.edits || 0), verified: Boolean(details.verified) },
     });
   } catch (_e) { /* silent-ok: ledger is advisory */ }
