@@ -130,6 +130,52 @@ def _recent_errors(log_path: str, minutes: int = 10) -> list[str]:
     return errors
 
 
+def _read_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _active_quarantine(state: dict) -> str:
+    slots = list((state.get("slots") or {}).values())
+
+    def is_quarantined(fp: str) -> bool:
+        if not fp:
+            return False
+        if any(s.get("status") == "viable" and s.get("runtime_fingerprint") == fp for s in slots):
+            return False
+        return any(s.get("status") == "broken" and s.get("runtime_fingerprint") == fp for s in slots)
+
+    for item in reversed(state.get("history") or []):
+        fp = item.get("runtime_fingerprint") if isinstance(item, dict) else ""
+        if item.get("event") == "broken" and is_quarantined(fp):
+            return fp
+    return ""
+
+
+def _proxy_quarantine_lines(project_root: str) -> list[str]:
+    runtime = Path(project_root) / "tools" / "HME" / "runtime"
+    state = _read_json(runtime / "proxy-slot-state.json")
+    current = str(_read_json(runtime / "proxy-runtime.json").get("runtime_fingerprint") or "")
+    quarantined = _active_quarantine(state)
+    serving = 0
+    now_ms = int(time.time() * 1000)
+    for name in ("a", "b"):
+        h = _read_json(runtime / f"proxy-{name}.health")
+        if h.get("runtime_fingerprint") != current or not h.get("ready") or h.get("draining"):
+            continue
+        if now_ms - int(h.get("ts") or 0) <= 30000:
+            serving += 1
+    if quarantined == current and current:
+        return [f"  BLOCKED current={current} quarantined={quarantined} -- source fix needed before supervisors can converge"]
+    if quarantined:
+        return [f"  waiting-fixed-build old_broken={quarantined} current={current or '?'} serving_current_slots={serving}"]
+    if serving:
+        return [f"  clear current={current} serving_current_slots={serving}"]
+    return ["  clear no active runtime fingerprint quarantine"]
+
+
 def _probe_versions(project_root: str) -> tuple[str, list[str]]:
     """Probe canonical + live versions, return (banner_line, mismatch_list)."""
     try:
