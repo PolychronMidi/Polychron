@@ -100,6 +100,7 @@ test('coherence stores are registered from state-files.json', () => {
   assert.ok(names.includes('statefile_coherence_events'));
   assert.ok(names.includes('statefile_context_metabolism'));
   assert.ok(names.includes('statefile_proof_capsules'));
+  assert.ok(names.includes('statefile_team_dispatch_budget'));
 });
 
 test('coherence economics covers budgets policy feedback immune checks and review scales', () => {
