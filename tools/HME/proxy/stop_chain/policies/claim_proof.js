@@ -74,7 +74,7 @@ function run(ctx) {
   const strict = (() => { try { return require('../../strict_mode').isStrictMode(); } catch (_e) { return false; } })();
 
   if (guard.isAbsoluteCompletion(claimText) && editsThisTurn > 0) {
-    _emitVerdict(ctx.projectRoot, claimClass, 'deny', !strict);
+    _emitVerdict(ctx.projectRoot, claimClass, 'deny', !strict, { edits: editsThisTurn, verified: verifiedThisTurn });
     if (strict) {
       return ctx.deny(
         'CLAIM-PROOF: this turn edited code and made an absolute completion claim ("all/every ... done/fixed/passing"), '
