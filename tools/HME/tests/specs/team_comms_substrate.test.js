@@ -48,16 +48,23 @@ function runDispatch(root, args, env = {}) {
   });
 }
 
-const BASE_ROLE = {
+const LEAD_ROLE = {
   channel: 'teams/driver.md',
-  session_file: 'tmp/.team-agent2.session',
+  session_file: 'tmp/.team-blue_lead.session',
   tier: 'E5',
+};
+
+const CREW_ROLE = {
+  channel: 'teams/driver.md',
+  session_file: 'tmp/.team-crew_e3_0.session',
+  tier: 'E3',
 };
 
 const BASE_AGENTS = {
   driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
-  agent2: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
-  crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 20 },
+  blue_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
+  red_lead: { status: 'retired', tier: 'E5', ctx_used_pct: 20 },
+  crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 30 },
 };
 
 test('ask-peer looks up registry, mints/resumes session, appends channel, and tail-caps', () => {
