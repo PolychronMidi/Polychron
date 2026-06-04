@@ -109,6 +109,7 @@ function printPolicyDeadWeight() {
   const builtins = registry.list().map((p) => p.name);
   const zeroFire = builtins.filter((n) => !seen.has(n)).sort();
   console.log(`policy_dead_weight: ${zeroFire.length}/${builtins.length} builtin policies 0-fire over last ${Math.min(window, rows.length)} hook-decision rows (REVIEW, not auto-retire)`);
+  console.log('  caveat: "seen" = denied/rewrote via the unified policy path; a 0-fire builtin that only INSTRUCTs, or fires via a shell/native path, may still be live -- a human confirms before retiring.');
   for (const n of zeroFire.slice(0, 30)) console.log(`- 0-fire: ${n}`);
 }
 
