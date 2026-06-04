@@ -8,6 +8,7 @@ const Decision = require('../../event_kernel/decision');
 const Render = require('../../event_kernel/decision_renderer');
 const routes = require('../../event_kernel/route_registry');
 
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const HOOKS_ROOT = path.resolve(__dirname, '..', '..', 'hooks');
 
 test('Decision algebra preserves host-neutral shapes', () => {
