@@ -49,8 +49,8 @@ const { applyOmoLive, observeOmoShadow } = require('../omo_bridge/shadow_runtime
 const { UNIVERSAL_HOOK_ABI } = require('../omo_bridge/universal_event');
 const { isStrictMode } = require('../proxy/strict_mode');
 const routeRegistry = require('./route_registry');
-const { renderPolicyAggregate, renderPolicyFailure } = require('./decision_renderer');
 const stateRegistry = require('../proxy/state_registry');
+const { renderPolicyAggregate, renderPolicyFailure } = require('./decision_renderer');
 
 const RETRY_STATE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-retry-guard.json');
 const RETRY_LOG = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-retry-guard.jsonl');
@@ -281,17 +281,10 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000, eventName = 'hoo
  * Subsequent policies still run for side effects (matches stop_chain).
  */
 function _failClosedPolicyError(message, eventName) {
-  if (eventName === 'PreToolUse') {
-    return {
-      stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: message } }),
-      stderr: `[unified-policies] ${message}\n`,
-      exit_code: 0,
-    };
-  }
   return {
-    stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: message } }),
+    stdout: renderPolicyFailure(message, eventName),
     stderr: `[unified-policies] ${message}\n`,
-    exit_code: 2,
+    exit_code: eventName === 'PreToolUse' || eventName === 'PermissionRequest' ? 0 : 2,
   };
 }
 
