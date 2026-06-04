@@ -76,10 +76,14 @@ function run(ctx) {
   const toolNames = _sameTurnToolUses(transcript);
   const editsThisTurn = toolNames.filter((n) => EDIT_TOOLS.has(n)).length;
   const verifiedThisTurn = toolNames.some((n) => VERIFY_TOOLS.has(n));
+  const verifyTools = toolNames.filter((n) => VERIFY_TOOLS.has(n));
+
+  // Every completion/absolute claim becomes a proof capsule (proved or debt).
+  _emitCapsule(ctx.projectRoot, claimText, claimClass, verifiedThisTurn, verifyTools);
 
   // Build the evidence event the substrate's guard reasons over.
   const events = verifiedThisTurn
-    ? [{ kind: 'test', evidence: toolNames.filter((n) => VERIFY_TOOLS.has(n)), proof_class: 'executed' }]
+    ? [{ kind: 'test', evidence: verifyTools, proof_class: 'executed' }]
     : [];
   const verdict = guard.evaluateClaim(claimText, events);
   if (verdict.supported) return ctx.allow();
