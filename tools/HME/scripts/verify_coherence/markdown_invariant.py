@@ -61,6 +61,7 @@ ALLOWED_PREFIXES = (
 # Single-file exceptions at otherwise non-prefixed locations.
 ALLOWED_PATHS = {
     "plan.md",
+    "chat.md",
 }
 
 SKIP_DIRS = {
