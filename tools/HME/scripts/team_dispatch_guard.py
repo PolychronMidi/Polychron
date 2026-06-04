@@ -232,7 +232,7 @@ def main() -> int:
     if args.send:
         if not args.message.strip():
             return _deny("missing_message", "--send requires --message")
-        code, stdout, stderr = _send(root, target, leash, args.message)
+        code, stdout, stderr = _send(root, target, leash, args.message, child_env)
         out.update({"sent": code == 0, "reply": stdout.strip(), "send_stderr": stderr.strip(), "send_exit": code})
     return _out(out)
 
