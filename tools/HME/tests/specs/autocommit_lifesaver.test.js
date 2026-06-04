@@ -132,7 +132,7 @@ test('autocommit queue drains multiple callers through one owner pass', () => {
       '_ac_run_owner_once',
       'state="$PROJECT_ROOT/tools/HME/runtime"',
       'printf "counter=%s\\n" "$(cat "$state/autocommit.counter")"',
-      '[ -e "$state/autocommit.queue" ] && echo queue_exists=yes || echo queue_exists=no',
+      'find "$state/autocommit.queue.d" -type f -name "*.req" -print -quit 2>/dev/null | grep -q . && echo queue_has_items=yes || echo queue_has_items=no',
       '[ -s "$state/autocommit.last-success" ] && echo last_success=yes || echo last_success=no',
     ].join('\n');
     const result = spawnSync('bash', ['-c', script], {
