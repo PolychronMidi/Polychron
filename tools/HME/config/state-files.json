@@ -214,6 +214,21 @@
       "repair": "remove the affected teams/*.md channel; ask-peer.sh recreates it on next dispatch"
     },
     {
+      "path": "tools/HME/runtime/team-dispatch-budget.json",
+      "owner": "tools/HME/scripts/team_dispatch_guard.py",
+      "readers": [
+        "tools/HME/scripts/team_dispatch_guard.py"
+      ],
+      "writers": [
+        "tools/HME/scripts/team_dispatch_guard.py"
+      ],
+      "retention": "per-turn peer-call budget counters, pruned after 24 hours by the dispatch guard",
+      "generated": true,
+      "committed": false,
+      "schema": "JSON object {turns:{turn_id:{count,ts}}}",
+      "repair": "remove tools/HME/runtime/team-dispatch-budget.json; guard recreates it on next dispatch"
+    },
+    {
       "path": "tools/HME/runtime/agent-jobs/*",
       "owner": "tools/HME/scripts/agent_jobs.py",
       "readers": [
