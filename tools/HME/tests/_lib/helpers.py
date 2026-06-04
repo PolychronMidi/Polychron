@@ -50,26 +50,36 @@ def with_project_root(tmpdir, fn):
     prior_pr = os.environ.get("PROJECT_ROOT")
     prior_hme_m = os.environ.get("HME_METRICS_DIR")
     prior_m = os.environ.get("METRICS_DIR")
+    prior_ignore = os.environ.get("HME_IGNORE_DIRS")
+    prior_overdrive = os.environ.get("OVERDRIVE_MODE")
+    prior_arbiter = os.environ.get("HME_ARBITER_PORT")
+    prior_proxy = os.environ.get("HME_PROXY_PORT")
     metrics = str(Path(tmpdir) / "metrics")
     os.environ["PROJECT_ROOT"] = str(tmpdir)
     os.environ["HME_METRICS_DIR"] = metrics
     os.environ["METRICS_DIR"] = metrics
+    os.environ.setdefault("HME_IGNORE_DIRS", "node_modules,.git,tmp,log")
+    os.environ.setdefault("OVERDRIVE_MODE", "0")
+    os.environ.setdefault("HME_ARBITER_PORT", "0")
+    os.environ.setdefault("HME_PROXY_PORT", "9099")
     purge_modules()
     try:
         return fn()
     finally:
-        if prior_pr is None:
-            os.environ.pop("PROJECT_ROOT", None)
-        else:
-            os.environ["PROJECT_ROOT"] = prior_pr
-        if prior_hme_m is None:
-            os.environ.pop("HME_METRICS_DIR", None)
-        else:
-            os.environ["HME_METRICS_DIR"] = prior_hme_m
-        if prior_m is None:
-            os.environ.pop("METRICS_DIR", None)
-        else:
-            os.environ["METRICS_DIR"] = prior_m
+        restore = {
+            "PROJECT_ROOT": prior_pr,
+            "HME_METRICS_DIR": prior_hme_m,
+            "METRICS_DIR": prior_m,
+            "HME_IGNORE_DIRS": prior_ignore,
+            "OVERDRIVE_MODE": prior_overdrive,
+            "HME_ARBITER_PORT": prior_arbiter,
+            "HME_PROXY_PORT": prior_proxy,
+        }
+        for key, value in restore.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
         purge_modules()
 
 
