@@ -120,5 +120,5 @@ PY
 )"
 fi
 
-append_turn peer "$RESP"
+append_turn_locked peer "$RESP"
 printf '%s\n' "$RESP"
