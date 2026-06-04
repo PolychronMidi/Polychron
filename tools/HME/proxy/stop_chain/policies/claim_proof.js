@@ -87,17 +87,30 @@ function run(ctx) {
   const claimClass = guard.classifyClaim(claimText);
   if (claimClass === 'ordinary' || claimClass === 'hypothesis') return ctx.allow();
 
-  const toolNames = _sameTurnToolUses(transcript);
+  const blocks = _sameTurnToolBlocks(transcript);
+  const toolNames = blocks.map((b) => b.name);
   const editsThisTurn = toolNames.filter((n) => EDIT_TOOLS.has(n)).length;
   const verifiedThisTurn = toolNames.some((n) => VERIFY_TOOLS.has(n));
   const verifyTools = toolNames.filter((n) => VERIFY_TOOLS.has(n));
+  const editedFiles = _editedFiles(blocks);
 
-  // Every completion/absolute claim becomes a proof capsule (proved or debt).
-  _emitCapsule(ctx.projectRoot, claimText, claimClass, verifiedThisTurn, verifyTools);
+  // P1: a completion claim is also backed by a fresh (non-decayed) proof capsule
+  // that names a file edited THIS turn. Read prior capsules BEFORE minting this
+  let capsuleBacks = false;
+  if (editsThisTurn > 0) {
+    let priorFresh = [];
+    try { priorFresh = require('../../coherence_organs').freshProofCapsules(ctx.projectRoot); } catch (_e) { priorFresh = []; }
+    capsuleBacks = require('../../coherence_organs').capsuleBacksArtifacts(priorFresh, editedFiles);
+  }
+  const proven = verifiedThisTurn || capsuleBacks;
+
+  // Every completion/absolute claim becomes a proof capsule (proved or debt),
+  // recording the files it touched so a later turn can match same-artifact proof.
+  _emitCapsule(ctx.projectRoot, claimText, claimClass, proven, verifyTools, editedFiles);
 
   // Build the evidence event the substrate's guard reasons over.
-  const events = verifiedThisTurn
-    ? [{ kind: 'test', evidence: verifyTools, proof_class: 'executed' }]
+  const events = proven
+    ? [{ kind: 'test', evidence: verifiedThisTurn ? verifyTools : ['fresh proof capsule (same artifact)'], proof_class: 'executed' }]
     : [];
   const verdict = guard.evaluateClaim(claimText, events);
   if (verdict.supported) return ctx.allow();
