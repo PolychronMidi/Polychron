@@ -211,6 +211,62 @@ test('WIRED (item 4): hook decision rows carry a coherence-field vector', () => 
   assert.ok(['clarify', 'preserve', 'repair', 'mutate', 'obscure', 'parasitize'].includes(summary.field.effect));
 });
 
+test('P1: capsuleBacksArtifacts -- same-artifact match, parse-gap fallback, no-fresh false', () => {
+  const fresh = [{ proof_status: 'proved', expired: false, artifacts: ['a.js'] }];
+  assert.equal(organs.capsuleBacksArtifacts(fresh, ['a.js']), true, 'same artifact backs the claim');
+  assert.equal(organs.capsuleBacksArtifacts(fresh, ['b.js']), false, 'different artifact does not (no cross-turn laundering)');
+  assert.equal(organs.capsuleBacksArtifacts(fresh, []), true, 'parse gap (no files) weakens to any fresh proved capsule');
+  assert.equal(organs.capsuleBacksArtifacts([{ proof_status: 'debt', expired: false, artifacts: ['a.js'] }], ['a.js']), false, 'a debt capsule never backs a claim');
+  assert.equal(organs.capsuleBacksArtifacts([], ['a.js']), false, 'no fresh capsule -> not backed');
+});
+
+function _transcript(root, opts) {
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+  const t = path.join(root, 'tmp', 'transcript.jsonl');
+  fs.writeFileSync(t, [
+    JSON.stringify({ type: 'user', message: { content: 'fix the parser' } }),
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: opts.file } }] } }),
+    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'All tests pass and everything is fixed.' }] } }),
+  ].join('\n') + '\n');
+  return t;
+}
+
+test('P1: a fresh same-artifact proof capsule backs a completion claim; a decayed one does not', () => {
+  const policy = require('../../proxy/stop_chain/policies/claim_proof');
+  const file = '/repo/src/parser.js';
+  // fresh capsule naming the file edited this turn -> claim is proven -> allow.
+  const okRoot = tmpRoot();
+  try {
+    organs.appendProofCapsule(okRoot, { claim: 'parser verified', evidence: ['node --test'], artifacts: [file], confidence: 0.9, freshness: 0.9 });
+    const res = policy.run({ payload: { transcript_path: _transcript(okRoot, { file }) }, projectRoot: okRoot,
+      allow: () => ({ decision: 'allow' }), instruct: (m) => ({ decision: 'instruct', message: m }), deny: (m) => ({ decision: 'deny', reason: m }) });
+    assert.equal(res.decision, 'allow', 'fresh same-artifact capsule should back the claim');
+  } finally { fs.rmSync(okRoot, { recursive: true, force: true }); }
+  // only a DECAYED capsule for the file -> not proven -> debt ladder (instruct in non-st
+  const staleRoot = tmpRoot();
+  try {
+    organs.appendProofCapsule(staleRoot, { claim: 'parser verified long ago', evidence: ['node --test'], artifacts: [file], ts: '2020-01-01T00:00:00Z', verified_at: '2020-01-01T00:00:00Z' });
+    const res = policy.run({ payload: { transcript_path: _transcript(staleRoot, { file }) }, projectRoot: staleRoot,
+      allow: () => ({ decision: 'allow' }), instruct: (m) => ({ decision: 'instruct', message: m }), deny: (m) => ({ decision: 'deny', reason: m }) });
+    assert.notEqual(res.decision, 'allow', 'a decayed-only capsule must NOT back the claim');
+  } finally { fs.rmSync(staleRoot, { recursive: true, force: true }); }
+});
+
+test('P3: resolvers carry braid fields so resolved incidents braid complete', () => {
+  const root = tmpRoot();
+  try {
+    const v = resolvers.resolveLine(root, '[T] [stale_runtime] slot a stranded on stale code');
+    assert.equal(v.kind, 'runtime_convergence');
+    assert.ok(v.invariant && v.runtimeState && v.recurrenceTest, 'stale-runtime resolver must carry braid fields');
+    const braid = organs.causalBraid({
+      id: v.kind, user_pain: 'stale code served', violated_invariant: v.invariant, responsible_subsystem: v.kind,
+      runtime_state: v.runtimeState, code_cause: v.reason, verification: JSON.stringify(v.proof),
+      recurrence_guard: v.recurrenceTest, memory_crystallization: v.resolver,
+    });
+    assert.deepEqual(braid.missing, [], 'resolver-proven incident should braid with no missing links');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('PRODUCER: recordIncident fans out to a coherence event and a metabolism fact', () => {
   const root = tmpRoot();
   try {
