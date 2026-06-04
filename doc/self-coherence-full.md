@@ -323,7 +323,7 @@ command. Update that JSON before adding a shared state writer.
 - Repair commands and reader/writer ownership live in `tools/HME/config/state-files.json`.
 - Multi-writer paths:
   - `doc/templates/TODO.md` -- 2 writer(s): tools/HME/todo_engine/store.py, tools/HME/todo_engine/lifesaver_bridge.py
-  - `log/hme-errors.log` -- 27 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+24 more)
+  - `log/hme-errors.log` -- 28 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+25 more)
   - `tmp/hme-nexus.state` -- 5 writer(s): tools/HME/proxy/middleware/index.js, tools/HME/hooks/posttooluse/posttooluse_hme_review.sh, tools/HME/hooks/lifecycle/stop/nexus_audit.sh (+2 more)
   - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
   - `tools/HME/runtime/errors-lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
