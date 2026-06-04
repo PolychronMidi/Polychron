@@ -224,7 +224,7 @@ function lifecycleContextResult(eventName, result) {
   if (!new Set(['SessionStart', 'UserPromptSubmit', 'PreCompact', 'PostCompact']).has(eventName)) return result;
   if ((result.stdout || '').trim()) return result;
   return {
-    stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: stderr } }),
+    stdout: renderInstruct(eventName, [stderr]),
     stderr: ' ',
     exit_code: result.exit_code || 0,
   };
