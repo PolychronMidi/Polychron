@@ -287,4 +287,15 @@ fi
 # clear stale deny reason temp file so it doesn't bleed into next turn's tool results
 rm -f "$_HME_PROJECT_TMP/hme-last-deny-reason.txt" 2>/dev/null || true
 
+# Emit one bounded per-step timing row (TODO #14b production timing).
+_ups_mark tail
+if [ "$_UPS_TIMING" = "1" ] && [ -n "$PROJECT_ROOT" ]; then
+  _UPS_TOTAL=$(( $(_ups_now) - _UPS_T0 ))
+  _UPS_FILE="$PROJECT_ROOT/tools/HME/runtime/ups-step-timing.jsonl"
+  printf '{"ts":"%s","total_ms":%d,"steps":{%s}}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_UPS_TOTAL" "$_UPS_STEPS" >> "$_UPS_FILE" 2>/dev/null || true
+  if [ "$(wc -l < "$_UPS_FILE" 2>/dev/null || echo 0)" -gt 500 ]; then
+    tail -n 500 "$_UPS_FILE" > "$_UPS_FILE.tmp" 2>/dev/null && mv "$_UPS_FILE.tmp" "$_UPS_FILE" 2>/dev/null || true
+  fi
+fi
+
 exit 0
