@@ -87,7 +87,7 @@ if [ -f "$ERROR_LOG" ]; then
       jq -n \
         --arg errors "$AGENT_ERRORS" \
         --arg self "$SELF_ERRORS" \
-        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor):\n" + $self + "]" else "" end) + "\n\nDiagnose root cause, implement fix, verify. Acknowledging without fixing is a CRITICAL VIOLATION.")},"decision":"block","reason":"LIFESAVER: AGENT-ORIGIN ERRORS FIRED THIS TURN"}'
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor):\n" + $self + "]" else "" end) + "\n\nThe Stop gate stays closed while these remain unresolved; the next Stop passes once the root cause is fixed so they stop firing -- acknowledging them does not clear it.")},"decision":"block","reason":"LIFESAVER: AGENT-ORIGIN ERRORS FIRED THIS TURN"}'
       _stderr_verdict "FAIL: lifesaver $((TOTAL - TURN_START_LINE))err"
       exit 0
     elif [ -n "$SELF_ERRORS" ]; then
