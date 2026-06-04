@@ -148,7 +148,9 @@ def _active_quarantine(state: dict) -> str:
         return any(s.get("status") == "broken" and s.get("runtime_fingerprint") == fp for s in slots)
 
     for item in reversed(state.get("history") or []):
-        fp = item.get("runtime_fingerprint") if isinstance(item, dict) else ""
+        if not isinstance(item, dict):
+            continue
+        fp = item.get("runtime_fingerprint") or ""
         if item.get("event") == "broken" and is_quarantined(fp):
             return fp
     return ""
