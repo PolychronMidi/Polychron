@@ -49,6 +49,9 @@ function _upstreamContextWindow(line, root) {
     snapshot: snapshotRel,
     proof: verdict,
     reason: verdict && verdict.ok === false ? 'captured payload is now refused locally' : 'captured payload still not refused locally',
+    invariant: 'outbound payload stays within the model context window',
+    runtimeState: `snapshot=${snapshotRel}`,
+    recurrenceTest: 'tools/HME/tests/specs/coherence_substrate.test.js (upstream context-window resolver)',
   };
 }
 
