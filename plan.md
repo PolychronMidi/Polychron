@@ -37,4 +37,4 @@ in this file is implemented until the user marks it approved.
 - Agent2 + Agent1 agree: adding the vector to more producers with no consumer is decoration -> bloat. Only worth doing with a concrete telemetry-only (NOT model-visible) consumer. Skip until such a consumer exists. Flagged, not padded.
 
 ## Decision
-Ranked P1 > P2 > P3 (P4 declined). If only one ships, ship P1. Awaiting human approve/deny per proposal.
+Ranked P1 > P2 > P3 (P4 declined). All three approved + implemented + verified (coherence_substrate 24/24, claim_proof+stop_chain 20/20, ownership audit 41/41 clean, bench-ups smoke OK). P4 stays declined until a concrete consumer appears.
