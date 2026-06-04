@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Autocommit helper. 4 parallel failure channels (sticky flag, hme-errors.log,
-# stderr, activity bridge) so no single break swallows errors.
-# Caller: `_ac_do_commit "caller-name"`; MUST NOT die on return code.
+# Autocommit helper. Entrypoints enqueue intent; one owner drains the queue and
+# keeps 4 failure channels (sticky flag, hme-errors.log, stderr, activity bridge).
+# Caller: `_ac_enqueue_commit "caller-name"`; MUST NOT die on return code.
 
 # Project root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up; no hardcoded fallback.
 _AC_SELF="${BASH_SOURCE[0]}"
