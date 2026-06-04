@@ -34,7 +34,7 @@ _AC_STATE_DIR="$_AC_ROOT/tools/HME/runtime"
 _AC_COUNTER="$_AC_STATE_DIR/autocommit.counter"
 _AC_LAST_SUCCESS="$_AC_STATE_DIR/autocommit.last-success"
 _AC_FAIL_FLAG="$_AC_STATE_DIR/autocommit.fail"
-_AC_QUEUE_FILE="$_AC_STATE_DIR/autocommit.queue"
+_AC_QUEUE_DIR="$_AC_STATE_DIR/autocommit.queue.d"
 _AC_OWNER_LOCK_FILE="$_AC_STATE_DIR/autocommit.owner.lock"
 _AC_LOCK_FILE="$_AC_STATE_DIR/autocommit.lock"
 _AC_ERROR_LOG="$_AC_ROOT/log/hme-errors.log"
@@ -295,9 +295,12 @@ _ac_do_commit() {
 }
 
 _ac_queue_request() {
-  local caller="${1:-unknown}"
-  mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
-  printf '%s\t%s\t%s\n' "$(date +%s 2>/dev/null || echo 0)" "$$" "$caller" >> "$_AC_QUEUE_FILE" 2>/dev/null || {
+  local caller="${1:-unknown}" safe ts qfile
+  safe=$(printf '%s' "$caller" | tr -c 'a-zA-Z0-9_.:-' '_')
+  ts=$(date +%s 2>/dev/null || echo 0)
+  mkdir -p "$_AC_QUEUE_DIR" 2>/dev/null || true
+  qfile="$_AC_QUEUE_DIR/$ts.$$.$RANDOM.$safe.req"
+  printf '%s\t%s\t%s\n' "$ts" "$$" "$caller" > "$qfile" 2>/dev/null || {
     _ac_record_failure "[$caller] failed to append autocommit queue request"
     return 1
   }
@@ -309,14 +312,22 @@ _ac_owner_claimed() {
   flock -n 8 2>/dev/null
 }
 
+_ac_queue_has_items() {
+  [ -d "$_AC_QUEUE_DIR" ] && find "$_AC_QUEUE_DIR" -type f -name '*.req' -print -quit 2>/dev/null | grep -q .
+}
+
 _ac_queue_drain_once() {
-  local callers="" batch="$_AC_QUEUE_FILE.draining.$$"
-  if [ -f "$_AC_QUEUE_FILE" ]; then
-    mv "$_AC_QUEUE_FILE" "$batch" 2>/dev/null || { cp "$_AC_QUEUE_FILE" "$batch" 2>/dev/null && : > "$_AC_QUEUE_FILE" 2>/dev/null; }
+  local callers="" batch="$_AC_STATE_DIR/autocommit.queue.draining.$$"
+  mkdir -p "$batch" 2>/dev/null || true
+  if [ -d "$_AC_QUEUE_DIR" ]; then
+    for q in "$_AC_QUEUE_DIR"/*.req; do
+      [ -e "$q" ] || break
+      mv "$q" "$batch/" 2>/dev/null || true
+    done
   fi
-  if [ -f "$batch" ]; then
-    callers=$(awk -F '\t' 'NF>=3 {print $3}' "$batch" 2>/dev/null | sort -u | paste -sd, -)
-    rm -f "$batch" 2>/dev/null
+  if [ -d "$batch" ]; then
+    callers=$(awk -F '\t' 'NF>=3 {print $3}' "$batch"/*.req 2>/dev/null | sort -u | paste -sd, -)
+    rm -rf "$batch" 2>/dev/null
   fi
   _ac_do_commit "owner:${callers:-queued}"
 }
@@ -324,7 +335,7 @@ _ac_queue_drain_once() {
 _ac_run_owner_once() {
   _ac_owner_claimed || return 0
   local drains=0
-  while [ -s "$_AC_QUEUE_FILE" ] && [ "$drains" -lt 3 ]; do
+  while _ac_queue_has_items && [ "$drains" -lt 3 ]; do
     _ac_queue_drain_once
     drains=$((drains + 1))
   done
