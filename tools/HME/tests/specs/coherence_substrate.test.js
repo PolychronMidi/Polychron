@@ -106,7 +106,7 @@ test('coherence economics covers budgets policy feedback immune checks and revie
   assert.equal(economics.reviewScales({ subtoken: 'proof', function: 'contract' }).filter((x) => x.checked).length, 2);
 });
 
-test('coherence organs 1-6 compile intent proof field genome leash freshness', () => {
+test('coherence organs 1-6 compile intent proof field genome leash freshness', async () => {
   const root = tmpRoot();
   try {
     const intent = organs.compileIntent('do 1-6');
@@ -120,6 +120,11 @@ test('coherence organs 1-6 compile intent proof field genome leash freshness', (
     assert.equal(organs.validatePolicyGenome({ name: 'p', protects: ['truth'], owner: 'hme' }).ok, true);
     assert.equal(organs.agentLeashContract({ prompt: 'scope: parse audit max duration 5 max tool 3 artifact report' }).ok, true);
     assert.equal(organs.agentLeashContract({ prompt: 'wander' }).ok, false);
+    const policy = require('../../policies/builtin/agent-leash-contract');
+    const denied = await policy.fn({ toolInput: { prompt: 'wander' }, payload: {}, allow: () => ({ decision: 'allow' }), deny: (reason) => ({ decision: 'deny', reason }) });
+    assert.equal(denied.decision, 'deny');
+    const synthetic = await policy.fn({ toolInput: { prompt: 'wander' }, payload: { _hme_synthetic_tool: true }, allow: () => ({ decision: 'allow' }), deny: (reason) => ({ decision: 'deny', reason }) });
+    assert.equal(synthetic.decision, 'allow');
     assert.equal(organs.freshnessStatus({ sourceMtime: 20, processStart: 10, runtimeFingerprint: 'a', wantedFingerprint: 'a' }).status, 'runtime_stale');
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
