@@ -29,12 +29,23 @@ ROLE_JSON="$(jq -c --arg role "$ROLE" '.roles[$role] // empty' "$ROLES_FILE")"
 CHANNEL="$(jq -r '.channel // empty' <<<"$ROLE_JSON")"
 SID_FILE="$(jq -r '.session_file // empty' <<<"$ROLE_JSON")"
 TIER="$(jq -r '.tier // empty' <<<"$ROLE_JSON")"
+EFFORT="$(jq -r '.effort // empty' <<<"$ROLE_JSON")"
+ROLE_REPLY_BYTES="$(jq -r '.max_reply_bytes // empty' <<<"$ROLE_JSON")"
+[[ -n "$EFFORT" ]] || EFFORT="${HME_TEAM_DEFAULT_EFFORT:-high}"
+[[ -n "$ROLE_REPLY_BYTES" ]] || ROLE_REPLY_BYTES="12000"
 
 case "$CHANNEL" in teams/*.md) ;; *) echo "invalid channel for $ROLE: $CHANNEL" >&2; exit 1 ;; esac
 case "$SID_FILE" in tmp/.team-*.session) ;; *) echo "invalid session_file for $ROLE: $SID_FILE" >&2; exit 1 ;; esac
 case "$TIER" in E1|E2|E3|E4|E5) ;; *) echo "invalid tier for $ROLE: $TIER" >&2; exit 1 ;; esac
+case "$EFFORT" in low|medium|high|max) ;; *) echo "invalid effort for $ROLE: $EFFORT" >&2; exit 1 ;; esac
 
-mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")"
+CALLER="${HME_TEAM_ROLE:-driver}"
+if [[ "$CALLER" != "driver" && "${HME_TEAM_DISPATCH_GUARD_OK:-}" != "1" ]]; then
+  echo "ask-peer direct dispatch blocked for $CALLER; use team_dispatch_guard.py" >&2
+  exit 1
+fi
+
+mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" tmp
 
 if [[ -s "$SID_FILE" ]]; then
   SID="$(tr -d '[:space:]' < "$SID_FILE")"
