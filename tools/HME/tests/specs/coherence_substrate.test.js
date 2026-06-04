@@ -313,8 +313,18 @@ test('Phase2 P2: immune_metabolize classifies recurring noise into deduped durab
     assert.ok(first.appended >= 2, 'recurring schema_drift + stale_runtime become durable memory');
     const facts = metabolism.readFacts(root).filter((f) => f.source === 'immune_classifier');
     assert.ok(facts.some((f) => f.subject === 'immune:schema_drift'), 'schema_drift class metabolized');
+    // Flag 3: same window -> REFRESH (recency=1), not a duplicate append.
     const second = im.run(root, { limit: 200, recur: 2 });
-    assert.equal(second.appended, 0, 'dedup: a class already in memory is not re-appended');
+    assert.equal(second.appended, 0, 'no duplicate append for an already-present class');
+    assert.ok(second.refreshed >= 2, 'a still-recurring class is refreshed, not skipped');
+    // Flag 3: class no longer recurring -> recency decays, then drops out of memory.
+    fs.writeFileSync(path.join(root, 'log', 'hme-errors.log'), '[t] [universal_pulse] observed tick\n');
+    let dropped = 0;
+    for (let i = 0; i < 8 && metabolism.readFacts(root).some((f) => f.source === 'immune_classifier'); i++) {
+      dropped += im.run(root, { limit: 200, recur: 2 }).dropped_out;
+    }
+    assert.ok(dropped >= 1, 'a fixed (no-longer-recurring) class must decay out of immune memory');
+    assert.equal(metabolism.readFacts(root).filter((f) => f.source === 'immune_classifier').length, 0, 'immune memory tracks CURRENT recurrence, not first-seen-forever');
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
