@@ -59,6 +59,7 @@ function appendJsonl(file, row) {
 
 function makeInvocation(label, stdinText = '') {
   const safeLabel = String(label || 'event').replace(/[^a-zA-Z0-9_.-]+/g, '-').slice(0, 80) || 'event';
+  _sweepStaleOnce();
   ensureDir(IPC_ROOT);
   const dir = fs.mkdtempSync(path.join(IPC_ROOT, `${safeLabel}-`));
   const stdinFile = path.join(dir, 'stdin.json');
