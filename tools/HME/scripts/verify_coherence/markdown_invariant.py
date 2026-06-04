@@ -245,6 +245,9 @@ class MarkdownInvariantVerifier(Verifier):
             if kind == "allowed_prefix":
                 allowed_count += 1
                 continue
+            if kind == "allowed_team_channel":
+                allowed_count += 1
+                continue
             if kind == "misplaced_canonical":
                 misplaced.append(detail)
                 continue
