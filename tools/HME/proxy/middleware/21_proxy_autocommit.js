@@ -79,6 +79,7 @@ function _enqueueViaHelper(root, caller) {
       _recordHelperFailure(root, caller, `autocommit queue helper spawn failed: ${String(err.message || err).slice(0, 600)}`);
     });
     child.unref();
+  // silent-ok: failure IS surfaced -- _recordHelperFailure writes fail-flag + hme-errors
   } catch (err) {
     _recordHelperFailure(root, caller, `autocommit queue helper spawn failed: ${String(err.message || err).slice(0, 600)}`);
   }
