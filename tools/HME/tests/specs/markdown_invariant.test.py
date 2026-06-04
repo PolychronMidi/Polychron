@@ -17,31 +17,34 @@ sys.path.insert(0, str(REPO_ROOT / "tools" / "HME" / "scripts"))
 
 
 def _with_project_root(tmpdir, fn):
-    prior = os.environ.get("PROJECT_ROOT")
-    prior_metrics = os.environ.get("HME_METRICS_DIR")
-    prior_project_metrics = os.environ.get("METRICS_DIR")
+    prior = {
+        "PROJECT_ROOT": os.environ.get("PROJECT_ROOT"),
+        "HME_METRICS_DIR": os.environ.get("HME_METRICS_DIR"),
+        "METRICS_DIR": os.environ.get("METRICS_DIR"),
+        "HME_IGNORE_DIRS": os.environ.get("HME_IGNORE_DIRS"),
+        "OVERDRIVE_MODE": os.environ.get("OVERDRIVE_MODE"),
+        "HME_ARBITER_PORT": os.environ.get("HME_ARBITER_PORT"),
+        "HME_PROXY_PORT": os.environ.get("HME_PROXY_PORT"),
+    }
     metrics = str(Path(tmpdir) / "tools/HME/runtime/metrics")
     os.environ["PROJECT_ROOT"] = str(tmpdir)
     os.environ["HME_METRICS_DIR"] = metrics
     os.environ["METRICS_DIR"] = metrics
+    os.environ.setdefault("HME_IGNORE_DIRS", "node_modules,.git,tmp,log")
+    os.environ.setdefault("OVERDRIVE_MODE", "0")
+    os.environ.setdefault("HME_ARBITER_PORT", "0")
+    os.environ.setdefault("HME_PROXY_PORT", "9099")
     for mod in list(sys.modules.keys()):
         if mod == "verify_coherence" or mod.startswith("verify_coherence."):
             sys.modules.pop(mod, None)
     try:
         return fn()
     finally:
-        if prior is None:
-            os.environ.pop("PROJECT_ROOT", None)
-        else:
-            os.environ["PROJECT_ROOT"] = prior
-        if prior_metrics is None:
-            os.environ.pop("HME_METRICS_DIR", None)
-        else:
-            os.environ["HME_METRICS_DIR"] = prior_metrics
-        if prior_project_metrics is None:
-            os.environ.pop("METRICS_DIR", None)
-        else:
-            os.environ["METRICS_DIR"] = prior_project_metrics
+        for key, value in prior.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
         for mod in list(sys.modules.keys()):
             if mod == "verify_coherence" or mod.startswith("verify_coherence."):
                 sys.modules.pop(mod, None)
