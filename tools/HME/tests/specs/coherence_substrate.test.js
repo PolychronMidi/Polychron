@@ -106,25 +106,20 @@ test('coherence economics covers budgets policy feedback immune checks and revie
   assert.equal(economics.reviewScales({ subtoken: 'proof', function: 'contract' }).filter((x) => x.checked).length, 2);
 });
 
-test('coherence organs 1-6 compile intent proof field genome leash freshness', async () => {
+test('coherence organs 1-6 field proof braid immune policy freshness', () => {
   const root = tmpRoot();
   try {
-    const intent = organs.compileIntent('do 1-6');
-    assert.deepEqual(intent.scope, organs.ORGANS);
-    assert.equal(intent.agentPolicy.requireLeash, true);
-    const proof = organs.appendProofCapsule(root, { claim: 'done', evidence: ['node --test'], verifier: 'unit', confidence: 0.9 });
-    assert.equal(proof.status, 'proved');
+    assert.deepEqual(organs.COHERENCE_ORGANS, ['coherence_field', 'proof_capsules', 'causal_braid', 'coherence_immune_system', 'policy_genome', 'temporal_coherence']);
+    assert.deepEqual(organs.VECTOR_FIELDS, ['intent_alignment', 'evidence_strength', 'entropy_cost', 'causal_parent', 'invariant_touched', 'user_pain_addressed', 'reversibility', 'freshness', 'proof_status', 'noise_risk']);
+    const proof = organs.appendProofCapsule(root, { claim: 'done', evidence: ['node --test'], verifier: 'unit', freshness: 0.9, confidence: 0.9 });
+    assert.equal(proof.proof_status, 'proved');
     assert.equal(organs.readProofCapsules(root).length, 1);
-    const field = organs.projectCoherenceField({ subject: 'x', intent_alignment: 0.8, evidence_strength: 0.8, entropy_cost: 0.1, noise_risk: 0.1 });
-    assert.ok(field.net_coherence > 1);
-    assert.equal(organs.validatePolicyGenome({ name: 'p', protects: ['truth'], owner: 'hme' }).ok, true);
-    assert.equal(organs.agentLeashContract({ prompt: 'scope: parse audit max duration 5 max tool 3 artifact report' }).ok, true);
-    assert.equal(organs.agentLeashContract({ prompt: 'wander' }).ok, false);
-    const policy = require('../../policies/builtin/agent-leash-contract');
-    const denied = await policy.fn({ toolInput: { prompt: 'wander' }, payload: {}, allow: () => ({ decision: 'allow' }), deny: (reason) => ({ decision: 'deny', reason }) });
-    assert.equal(denied.decision, 'deny');
-    const synthetic = await policy.fn({ toolInput: { prompt: 'wander' }, payload: { _hme_synthetic_tool: true }, allow: () => ({ decision: 'allow' }), deny: (reason) => ({ decision: 'deny', reason }) });
-    assert.equal(synthetic.decision, 'allow');
+    const field = organs.projectCoherenceField({ subject: 'x', intent_alignment: 0.8, evidence_strength: 0.8, entropy_cost: 0.1, noise_risk: 0.1, user_pain_addressed: 0.8 });
+    assert.equal(field.effect, 'repair');
+    const braid = organs.causalBraid({ user_pain: 'hurt', violated_invariant: 'truth', responsible_subsystem: 'hooks', runtime_state: 'stale', code_cause: 'cache', verification: 'test', recurrence_guard: 'regression', memory_crystallization: 'fact' });
+    assert.deepEqual(braid.missing, []);
+    assert.equal(organs.immuneResponse({ text: 'repeated hook UI spam' }).classification, 'repeated_hook_ui');
+    assert.equal(organs.validatePolicyGenome({ name: 'p', protects: ['truth'], owner: 'hme', fail_open_or_closed: 'open' }).ok, true);
     assert.equal(organs.freshnessStatus({ sourceMtime: 20, processStart: 10, runtimeFingerprint: 'a', wantedFingerprint: 'a' }).status, 'runtime_stale');
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
