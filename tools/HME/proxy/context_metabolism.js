@@ -79,4 +79,4 @@ function runMetabolismPass(root) {
   return { before: before.length, after: kept.length, composted, durable };
 }
 
-module.exports = { STORE, STAGES, normalizeFact, metabolismScore, nextStage, metabolize, appendFact, readFacts, runMetabolismPass };
+module.exports = { STORE, STAGES, normalizeFact, metabolismScore, nextStage, metabolize, appendFact, readFacts, writeFacts, runMetabolismPass };
