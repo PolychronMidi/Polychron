@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 
 const ERR_LOG = 'log/hme-errors.log';
 const STATE_DIR = path.join('tools', 'HME', 'runtime');
