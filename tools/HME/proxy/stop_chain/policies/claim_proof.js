@@ -65,16 +65,18 @@ function _emitVerdict(root, claimClass, decision, shadow, details = {}) {
   } catch (_e) { /* silent-ok: ledger is advisory */ }
 }
 
-// Every completion claim becomes a proof capsule: proved when same-turn
-// verification exists, otherwise proof-debt. No naked completion assertions.
-function _emitCapsule(root, claimText, claimClass, verified, verifyTools) {
+// Every completion claim becomes a proof capsule: proved when this turn carried
+// real proof (same-turn verify or a fresh same-artifact capsule), otherwise
+// proof-debt. Records the touched files so a later turn can match same-artifact.
+function _emitCapsule(root, claimText, claimClass, proven, verifyTools, artifacts) {
   try {
     require('../../coherence_organs').appendProofCapsule(root, {
       claim: claimText.slice(0, 240),
-      evidence: verified ? verifyTools : [],
-      verifier: verified ? 'same_turn_bash' : '',
-      confidence: verified ? 0.7 : 0.2,
-      freshness: verified ? 0.8 : 0.3,
+      evidence: proven ? (verifyTools.length ? verifyTools : ['fresh proof capsule']) : [],
+      artifacts: Array.isArray(artifacts) ? artifacts : [],
+      verifier: proven ? (verifyTools.length ? 'same_turn_bash' : 'fresh_capsule') : '',
+      confidence: proven ? 0.7 : 0.2,
+      freshness: proven ? 0.8 : 0.3,
       proofClass: `claim:${claimClass}`,
     });
   } catch (_e) { /* silent-ok: capsule ledger is advisory */ }
