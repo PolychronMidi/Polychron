@@ -23,6 +23,13 @@ function _withLifesaverSandbox(canaryLines, opts = {}) {
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+  // A real PROJECT_ROOT always has the canonical self-origin classifier; the
+  // sandbox must too, so _self_tags.sh -> _hme_self_tag_re (which derives from
+  fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'proxy'), { recursive: true });
+  fs.copyFileSync(
+    path.resolve(__dirname, '..', '..', 'proxy', 'self_origin.js'),
+    path.join(sandbox, 'tools', 'HME', 'proxy', 'self_origin.js'),
+  );
   const errLog = path.join(sandbox, 'log', 'hme-errors.log');
   fs.writeFileSync(errLog, canaryLines.join('\n') + '\n');
   if (branch === 'new') {
