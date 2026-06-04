@@ -288,7 +288,7 @@ function _failClosedPolicyError(message, eventName) {
     };
   }
   return {
-    stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: message } }),
+    stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: message } }),
     stderr: `[unified-policies] ${message}\n`,
     exit_code: 2,
   };
