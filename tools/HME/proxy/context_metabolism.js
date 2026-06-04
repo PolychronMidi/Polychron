@@ -59,6 +59,14 @@ function readFacts(root) {
   return state.read(STORE, root);
 }
 
+// Atomic replace of the whole fact store (owner-side). Used by the immune
+// reconcile, which must upsert/decay specific facts in place rather than append.
+function writeFacts(root, facts) {
+  const rows = (facts || []).map((f) => ({ ts: f.ts || new Date().toISOString(), ...normalizeFact(f), score: metabolismScore(f) }));
+  state.write(STORE, rows, root);
+  return rows;
+}
+
 // Scheduled metabolism pass: advance each fact one stage, drop composted ones,
 // and rewrite the store so raw traces don't accumulate forever (the "context
 function runMetabolismPass(root) {
