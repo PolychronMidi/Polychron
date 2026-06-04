@@ -6,6 +6,8 @@
       "channel": "teams/driver.md",
       "session_file": "tmp/.team-blue_lead.session",
       "tier": "E5",
+      "effort": "high",
+      "max_reply_bytes": 12000,
       "label": "Driver peer / first team lead"
     }
   }
