@@ -127,9 +127,104 @@ function runMesh() {
   else console.log(JSON.stringify(queryMesh(root, view), null, 2));
 }
 
+function runCoherenceField() {
+  const organs = require('../proxy/coherence_organs');
+  const events = require('../proxy/coherence_events').readEvents(root, { limit: Number(arg('limit', 200)) || 200 });
+  const summary = organs.summarizeCoherenceField(events);
+  console.log('mode=coherence-field');
+  console.log(`events=${summary.count} net_coherence=${summary.net_coherence}`);
+  console.log(`effects=${JSON.stringify(summary.effects)}`);
+  for (const ev of events.slice(-10)) {
+    const f = ev.field || organs.projectCoherenceField(ev);
+    console.log(`- ${ev.kind} ${ev.subject || '(no subject)'} effect=${f.effect} net=${f.net_coherence}`);
+  }
+  if (summary.high_noise.length) console.log(`high_noise=${summary.high_noise.slice(0, 10).join(', ')}`);
+}
+
+function runProofCapsules() {
+  const organs = require('../proxy/coherence_organs');
+  const capsules = organs.readProofCapsules(root);
+  const proved = capsules.filter((c) => c && c.proof_status === 'proved');
+  const debt = capsules.filter((c) => c && c.proof_status === 'debt');
+  console.log('mode=proof-capsules');
+  console.log(`capsules=${capsules.length} proved=${proved.length} debt=${debt.length}`);
+  for (const c of debt.slice(-10)) console.log(`- DEBT: ${String(c.claim).slice(0, 100)} (confidence=${c.confidence} freshness=${c.freshness})`);
+  for (const c of proved.slice(-5)) console.log(`- proved: ${String(c.claim).slice(0, 80)} via ${c.verifier}`);
+}
+
+function runCausalBraid() {
+  const organs = require('../proxy/coherence_organs');
+  const incidents = require('../proxy/incident_registry');
+  const rows = incidents.readIncidents(root).slice(-Number(arg('limit', 5) || 5));
+  console.log('mode=causal-braid');
+  if (!rows.length) { console.log('no incidents to braid'); return; }
+  for (const inc of rows) {
+    const braid = organs.causalBraid({
+      id: inc.id, user_pain: inc.summary, violated_invariant: inc.invariant || inc.component,
+      responsible_subsystem: inc.component, runtime_state: inc.runtime_state,
+      code_cause: inc.cause || inc.repair, verification: inc.proof && JSON.stringify(inc.proof),
+      recurrence_guard: inc.recurrence_test, memory_crystallization: inc.status === 'resolved' ? inc.resolver : '',
+    });
+    console.log(`- ${braid.id}: proved=${braid.chain.filter((s) => s.proved).length}/${braid.chain.length} missing=[${braid.missing.join(',')}]`);
+  }
+}
+
+function runImmune() {
+  const organs = require('../proxy/coherence_organs');
+  const lines = recentErrorLines(Number(arg('limit', 80)) || 80);
+  const counts = {};
+  let metabolized = 0;
+  for (const line of lines) {
+    const r = organs.immuneResponse({ text: line });
+    if (r.classification === 'none') continue;
+    counts[r.classification] = (counts[r.classification] || 0) + 1;
+    if (r.action === 'metabolize') metabolized += 1;
+  }
+  console.log('mode=immune');
+  const keys = Object.keys(counts);
+  if (!keys.length) { console.log('no DDoC/noise signals in recent error lines'); return; }
+  for (const k of keys) console.log(`- ${k}: ${counts[k]} (action=${organs.immuneResponse({ text: k.replace(/_/g, ' ') }).action})`);
+  console.log(`metabolize_candidates=${metabolized}`);
+}
+
+function runPolicyGenome() {
+  const organs = require('../proxy/coherence_organs');
+  const registry = require('../policies/registry');
+  registry.loadBuiltins();
+  const policies = registry.list();
+  const invalid = [];
+  console.log('mode=policy-genome');
+  for (const p of policies) {
+    const v = organs.validatePolicyGenome(registry.genomeInput(p));
+    if (!v.ok) invalid.push(`${p.name}: missing ${v.missing.join(',')}`);
+  }
+  console.log(`policies=${policies.length} valid_genomes=${policies.length - invalid.length} invalid=${invalid.length}`);
+  for (const line of invalid.slice(0, 20)) console.log(`- ${line}`);
+}
+
+function runFreshness() {
+  const organs = require('../proxy/coherence_organs');
+  const { currentRuntimeFingerprint } = require('../proxy/proxy_runtime_fingerprint');
+  let runtimeMeta = {};
+  try { runtimeMeta = JSON.parse(fs.readFileSync(path.join(root, 'tools/HME/runtime/proxy-runtime.json'), 'utf8')); } catch (_e) { runtimeMeta = {}; }
+  const wanted = (() => { try { return currentRuntimeFingerprint(root); } catch (_e) { return ''; } })();
+  const status = organs.freshnessStatus({ runtimeFingerprint: runtimeMeta.runtime_fingerprint || '', wantedFingerprint: wanted });
+  console.log('mode=freshness');
+  console.log(`runtime=${status.runtime_fingerprint || '?'} wanted=${status.wanted_fingerprint || '?'} status=${status.status}`);
+  const capsules = organs.readProofCapsules(root);
+  const decayed = capsules.filter((c) => c && c.freshness < 0.4);
+  console.log(`proof_capsules=${capsules.length} decayed=${decayed.length}`);
+}
+
 const m = mode();
 if (m === 'debt') runDebt();
 else if (m === 'mesh') runMesh();
 else if (m === 'resolve') runResolve();
 else if (m === 'metabolize') runMetabolize();
+else if (m === 'coherence-field') runCoherenceField();
+else if (m === 'proof-capsules') runProofCapsules();
+else if (m === 'causal-braid') runCausalBraid();
+else if (m === 'immune') runImmune();
+else if (m === 'policy-genome') runPolicyGenome();
+else if (m === 'freshness') runFreshness();
 else runProof();
