@@ -17,7 +17,7 @@ test('block-comment-bloat: rewrites 3+ consecutive comment lines to keep first 2
   const content = 'const x = 1;\n// header line 1 of block\n// header line 2 of block\n// header line 3 of block\n// header line 4 of block\nconst y = 2;\n';
   const r = await policy.fn(_ctx({ toolInput: { file_path: 'a.js', new_string: content } }));
   assert.strictEqual(r.decision, 'rewrite');
-  assert.match(r.message, /comment_bloat - lines removed/);
+  assert.match(r.message, /comment_bloat lines removed/);
   const out = r.updatedInput.new_string;
   assert.match(out, /header line 1 of block/);
   assert.match(out, /header line 2 of block/);
