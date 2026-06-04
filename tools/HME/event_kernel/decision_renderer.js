@@ -1,4 +1,9 @@
 'use strict';
+/**
+ * Canonical renderer for host-neutral policy decisions at the event-kernel edge.
+ * Policy modules return event_kernel/decision values; this file alone translates
+ * their aggregate into hookSpecificOutput JSON for hook events.
+ */
 
 const PERMISSION_EVENTS = new Set(['PreToolUse', 'PermissionRequest']);
 
