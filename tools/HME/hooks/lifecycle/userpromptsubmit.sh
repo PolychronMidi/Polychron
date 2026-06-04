@@ -185,6 +185,7 @@ ${_NEW_ERRORS_SNIP}"
     fi
   fi
 fi
+_ups_mark error_scan
 
 # HME critical todos: surface cached output from prior BG refresh; refresh in
 # background. The synchronous python3 invocation here was a ~500ms hot-path tax
