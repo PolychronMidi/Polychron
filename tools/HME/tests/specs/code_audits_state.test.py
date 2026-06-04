@@ -2,9 +2,11 @@
 """Smoke + class-shape tests for verify_coherence.code_audits_state."""
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
