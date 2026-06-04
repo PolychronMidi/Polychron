@@ -49,6 +49,7 @@ const { applyOmoLive, observeOmoShadow } = require('../omo_bridge/shadow_runtime
 const { UNIVERSAL_HOOK_ABI } = require('../omo_bridge/universal_event');
 const { isStrictMode } = require('../proxy/strict_mode');
 const routeRegistry = require('./route_registry');
+const { renderPolicyAggregate, renderPolicyFailure } = require('./decision_renderer');
 const stateRegistry = require('../proxy/state_registry');
 
 const RETRY_STATE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'tool-retry-guard.json');
