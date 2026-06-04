@@ -67,6 +67,8 @@ function renderPolicyAggregate(aggregate, options = {}) {
 
 module.exports = {
   renderDeny,
+  renderAsk,
+  renderAllow,
   renderRewrite,
   renderInstruct,
   renderPolicyAggregate,
