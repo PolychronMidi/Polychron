@@ -162,7 +162,7 @@ test('pre-write hardcoded-root: rewrites literal root to $PROJECT_ROOT', async (
   assert.strictEqual(decision.permissionDecision, 'allow');
   assert.ok(decision.updatedInput, 'rewrite should populate updatedInput');
   assert.match(decision.updatedInput.content, /\$PROJECT_ROOT\/tools/);
-  assert.match((decision.contextualRules || []).join('\n'), /DDoC stripped: hardcoded project root/);
+  assert.deepStrictEqual(decision.contextualRules || [], []);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
