@@ -53,7 +53,7 @@ test('codex Agent dispatch: auto-fill-agent-description rewrites missing descrip
   assert.equal(hso.updatedInput.description, 'Audit parser edge cases');
   assert.equal(hso.updatedInput.prompt, 'Audit parser edge cases');
   assert.equal(hso.updatedInput.level, 2);
-  assert.match(hso.additionalContext, /auto-filled Agent.description/);
+  assert.equal(hso.additionalContext, undefined);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
