@@ -203,7 +203,7 @@ function _normalizeClaudeStdoutObject(event, parsed) {
     }
   }
 
-  return { parsed: out, issues };
+  return { parsed: out, issues, repairs };
 }
 
 function validateClaudeStdout(event, stdout, root) {
