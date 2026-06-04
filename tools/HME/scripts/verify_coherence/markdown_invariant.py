@@ -179,6 +179,8 @@ def _classify(rel_path: Path) -> tuple[str, str]:
     rel_str = str(rel_path).replace(os.sep, "/")
     if rel_str in ALLOWED_PATHS:
         return "allowed_canonical", ""
+    if rel_path.parent == TEAM_CHANNEL_DIR and name in {"driver.md", "red.md", "blue.md", "purple.md"}:
+        return "allowed_team_channel", ""
     if any(rel_str.startswith(prefix) for prefix in ALLOWED_PREFIXES):
         return "allowed_prefix", ""
     if name in ALLOWED_FILENAMES:
