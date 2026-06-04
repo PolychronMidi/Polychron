@@ -62,6 +62,13 @@ const CREW_ROLE = {
   tier: 'E3',
 };
 
+const BAD_EFFORT_ROLE = {
+  channel: 'teams/driver.md',
+  session_file: 'tmp/.team-blue_lead.session',
+  tier: 'E5',
+  effort: 'max-plus',
+};
+
 const BASE_AGENTS = {
   driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
   blue_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
