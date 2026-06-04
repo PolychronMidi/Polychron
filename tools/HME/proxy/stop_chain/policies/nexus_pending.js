@@ -108,6 +108,6 @@ module.exports = {
     }
 
     if (issues.length === 0) return ctx.allow();
-    return ctx.deny(`NEXUS -- incomplete lifecycle steps:\n${issues.join('\n')}\n\nFinish these before stopping.`);
+    return ctx.deny(`NEXUS -- incomplete lifecycle steps:\n${issues.join('\n')}\n\nThe Stop gate stays closed until these are resolved.`);
   },
 };
