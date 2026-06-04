@@ -68,18 +68,19 @@ function _enqueueViaHelper(root, caller) {
     return;
   }
   const script = 'source "$1"; _ac_enqueue_commit "$HME_AUTOCOMMIT_CALLER"';
-  const result = spawnSync('bash', ['-c', script, '_', helper], {
-    cwd: root,
-    encoding: 'utf8',
-    timeout: 70_000,
-    env: { ...process.env, PROJECT_ROOT: root, HME_AUTOCOMMIT_CALLER: caller },
-  });
-  if (result.error || result.status !== 0) {
-    const detail = (result.error && result.error.message)
-      || result.stderr
-      || result.stdout
-      || `exit ${result.status ?? 'signal:' + result.signal}`;
-    _recordHelperFailure(root, caller, `autocommit queue helper failed: ${String(detail).slice(0, 600)}`);
+  try {
+    const child = spawn('bash', ['-c', script, '_', helper], {
+      cwd: root,
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env, PROJECT_ROOT: root, HME_AUTOCOMMIT_CALLER: caller },
+    });
+    child.on('error', (err) => {
+      _recordHelperFailure(root, caller, `autocommit queue helper spawn failed: ${String(err.message || err).slice(0, 600)}`);
+    });
+    child.unref();
+  } catch (err) {
+    _recordHelperFailure(root, caller, `autocommit queue helper spawn failed: ${String(err.message || err).slice(0, 600)}`);
   }
 }
 
