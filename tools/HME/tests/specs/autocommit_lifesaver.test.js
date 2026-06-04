@@ -87,11 +87,20 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
   }
 });
 
-test('proxy autocommit failure logging dedupes identical sticky failures', () => {
+test('autocommit entrypoints enqueue through the shared single-owner helper', () => {
+  const helper = fs.readFileSync(path.join(repoRoot, 'tools/HME/hooks/helpers/_autocommit.sh'), 'utf8');
+  const stop = fs.readFileSync(path.join(repoRoot, 'tools/HME/hooks/lifecycle/stop/autocommit.sh'), 'utf8');
+  const direct = fs.readFileSync(path.join(repoRoot, 'tools/HME/hooks/direct/autocommit-direct.sh'), 'utf8');
   const middleware = fs.readFileSync(path.join(repoRoot, 'tools/HME/proxy/middleware/21_proxy_autocommit.js'), 'utf8');
-  assert.match(middleware, /const body = `\[\$\{caller\}\] \$\{reason\}`/);
-  assert.match(middleware, /prior\.includes\(body\)/);
-  assert.match(middleware, /return;/);
+  assert.match(helper, /_ac_queue_request\(\)/);
+  assert.match(helper, /_ac_run_owner_once\(\)/);
+  assert.match(stop, /_ac_enqueue_commit stop\.sh/);
+  assert.doesNotMatch(stop, /_ac_do_commit stop\.sh/);
+  assert.match(direct, /_ac_enqueue_commit "direct-\$\{1:-unknown\}"/);
+  assert.doesNotMatch(direct, /_ac_do_commit "direct-/);
+  assert.match(middleware, /_enqueueViaHelper/);
+  assert.doesNotMatch(middleware, /function _attemptCommit/);
+  assert.doesNotMatch(middleware, /spawnSync\('flock'/);
 });
 
 test('_isBenignRace classifies concurrent-caller lock contention as benign (no LIFESAVER)', () => {
