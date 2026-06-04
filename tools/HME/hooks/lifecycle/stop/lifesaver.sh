@@ -128,7 +128,7 @@ if [ -f "$ERROR_LOG" ]; then
       jq -n \
         --arg errors "$UNFIXED_AGENT" \
         --arg self "$UNFIXED_SELF" \
-        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin:\n" + $self + "]" else "" end) + "\n\nFix them now. Acknowledging without fixing is a CRITICAL VIOLATION.")},"decision":"block","reason":"LIFESAVER: UNADDRESSED ERRORS FROM PREVIOUS TURN"}'
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin:\n" + $self + "]" else "" end) + "\n\nThe Stop gate stays closed while these remain unresolved; it passes once the root cause is fixed so they stop firing -- acknowledging them does not clear it.")},"decision":"block","reason":"LIFESAVER: UNADDRESSED ERRORS FROM PREVIOUS TURN"}'
       _stderr_verdict "FAIL: lifesaver prior-turn"
       exit 0
     elif [ -n "$UNFIXED_SELF" ]; then
