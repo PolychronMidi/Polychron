@@ -48,12 +48,17 @@ def test_followup_with_qualifier_never_auto_flips():
     assert todos[0].code == "4f"
 
 
-def test_archivable_requires_all_done():
-    assert not set_is_archivable([])
-    assert not set_is_archivable([Todo(1, "5", "a"), Todo(2, "1", "b")])
-    assert not set_is_archivable([Todo(1, "3", "a"), Todo(2, "5", "b"), Todo(3, "4f", "c")])
-    assert set_is_archivable([Todo(1, "5", "a"), Todo(2, "5", "b")])
-    assert not set_is_archivable([Todo(1, "2", "a"), Todo(2, "5", "b")])
+def test_archivable_when_terminal_with_completion():
+    assert not set_is_archivable([])                                              # empty
+    assert not set_is_archivable([Todo(1, "5", "a"), Todo(2, "1", "b")])          # 1_ in progress
+    assert not set_is_archivable([Todo(1, "2", "a"), Todo(2, "5", "b")])          # 2_ in progress
+    assert not set_is_archivable([Todo(1, "0", "a"), Todo(2, "5", "b")])          # 0_ in progress
+    assert set_is_archivable([Todo(1, "5", "a"), Todo(2, "5", "b")])              # all done
+    # mixed terminal + at least one 5_: archivable (3_/4f_ carry forward)
+    assert set_is_archivable([Todo(1, "3", "a"), Todo(2, "5", "b"), Todo(3, "4f", "c")])
+    # loop-safety: terminal-only with NO 5_ does not archive (nothing to bank)
+    assert not set_is_archivable([Todo(1, "3", "a"), Todo(2, "4f", "c")])
+    assert not set_is_archivable([Todo(1, "4", "a"), Todo(2, "3", "b")])
 
 
 if __name__ == "__main__":
