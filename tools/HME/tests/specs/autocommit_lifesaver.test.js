@@ -100,7 +100,7 @@ test('autocommit entrypoints enqueue through the shared single-owner helper', ()
   assert.doesNotMatch(direct, /_ac_do_commit "direct-/);
   assert.match(middleware, /_enqueueViaHelper/);
   assert.doesNotMatch(middleware, /function _attemptCommit/);
-  assert.doesNotMatch(middleware, /spawnSync\('flock'/);
+  assert.doesNotMatch(middleware, /spawnSync/);
 });
 
 test('autocommit queue drains multiple callers through one owner pass', () => {
