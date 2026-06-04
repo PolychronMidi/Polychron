@@ -41,7 +41,7 @@ boundedness before any role grows. If I1+I2 don't feel tighter than today's
 - bounded cost: low; one script + a registry + a file move. Tests: registry lookup, mint/resume, append-to-correct-channel, tail-cap.
 - NOT this: NO per-channel scripts (drift); NO broadcast/all-hands/standup primitive (fan-out = the easiest noise generator) -- point-to-point only; NO new live roles yet.
 
-### I2 -- Leash + dispatch gate (make the mesh SAFE before it exists)  [proposed]  (rank 2)
+### I2 -- Leash + dispatch gate (make the mesh SAFE before it exists)  [approved]  (rank 2)
 - intent: wire router selection to comms as an EXPLICIT, leashed, counted handoff -- never an auto-send.
 - seam: a thin dispatch guard between team_agent_router.py (PURE selector: tier->role, least-ctx) and ask-peer.sh. Enforces: spawn-depth cap (Driver->Lead->Crew, depth 2 max); per-Driver-turn peer-call BUDGET (N+1 blocked + surfaced); crew-cant-spawn HARD gate (E1-E2 blocked, only E3/E4 spawn, capped at originating tier); per-call leash (scope/artifact/max-duration/max-tools -- the runaway-20min lesson), over-bound reply truncated/quarantined.
 - net coherence: the router stays a pure selector (no router-triggered auto-send = cascade risk); every dispatch is explicit, counted, leashed. Makes the mesh provably bounded BEFORE any mesh roles exist.
