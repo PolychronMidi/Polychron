@@ -74,6 +74,19 @@ test('decision renderer renders PermissionRequest output with PermissionRequest 
   });
 });
 
+test('policy-path modules do not construct host hook JSON directly', () => {
+  const rels = [
+    'tools/HME/event_kernel/dispatcher.js',
+    'tools/HME/proxy/pre_write_check.js',
+    ...fs.readdirSync(path.join(REPO_ROOT, 'tools/HME/policies/builtin'))
+      .filter((f) => f.endsWith('.js'))
+      .map((f) => `tools/HME/policies/builtin/${f}`),
+  ];
+  for (const rel of rels) {
+    assert.doesNotMatch(fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8'), /hookSpecificOutput/, rel);
+  }
+});
+
 test('route registry exposes executable dispatcher contract', () => {
   assert.equal(routes.policyContext('PermissionRequest'), 'PreToolUse');
   assert.equal(routes.strictMode('SessionStart'), 'strict-only');
