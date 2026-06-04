@@ -149,6 +149,11 @@ test('dispatch guard blocks depth cap, per-turn budget, and E1-E2 crew spawning'
     assert.equal(out.allowed, false);
     assert.equal(out.code, 'budget');
 
+    r = runDispatch(root, ['--caller', 'blue_lead', '--tier', 'E3', '--scope', 'x', '--artifact', 'y', '--max-duration', '30', '--max-tools', '1'], { HME_TEAM_DEPTH: '2' });
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'spawn_depth', 'peer-propagated depth must block cascades');
+
     r = runDispatch(root, ['--caller', 'crew_e1_0', '--tier', 'E1', '--scope', 'x', '--artifact', 'y', '--max-duration', '30', '--max-tools', '1']);
     out = JSON.parse(r.stdout);
     assert.equal(out.allowed, false);
