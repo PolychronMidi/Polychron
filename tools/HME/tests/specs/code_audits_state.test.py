@@ -21,13 +21,39 @@ _AUDIT = _PROJECT / "tools" / "HME" / "scripts" / "audit-state-file-ownership.py
 _ROGUE_BODY = "#!/usr/bin/env bash\necho boom " + (">" * 2) + " log/hme-errors.log\n"
 
 
-def _run_audit():
+def _run_audit(project_root: Path = _PROJECT):
     rc = subprocess.run(
         ["python3", str(_AUDIT)],
         capture_output=True, text=True, timeout=60,
-        env={**os.environ, "PROJECT_ROOT": str(_PROJECT)},
+        env={**os.environ, "PROJECT_ROOT": str(project_root)},
     )
     return rc.returncode, rc.stdout
+
+
+def _write_minimal_state_registry(root: Path) -> None:
+    """Create the smallest PROJECT_ROOT fixture the ownership audit needs.
+
+    Negative-path tests must not write rogue hook files into the live checkout:
+    autocommit can observe and stage them mid-test before the finally-block runs.
+    """
+    cfg = root / "tools" / "HME" / "config"
+    cfg.mkdir(parents=True, exist_ok=True)
+    (cfg / "state-files.json").write_text(json.dumps({
+        "single_owner": [],
+        "multi_writer": [{
+            "path": "log/hme-errors.log",
+            "coordination": "test fixture append contract",
+            "writers": ["tools/HME/hooks/declared_writer.sh"],
+            "owner": "test fixture",
+            "readers": ["diagnostics"],
+            "retention": "test fixture",
+            "generated": True,
+            "committed": False,
+            "schema": "append-only text",
+            "repair": "run tools/HME/scripts/hme-doctor.py",
+        }],
+        "files": [],
+    }), encoding="utf-8")
 
 
 def _classes():
