@@ -186,4 +186,5 @@ _brief_add() {
       --session="${USER:-shell}" \
       >/dev/null 2>&1 &
   fi
+  return 0
 }
