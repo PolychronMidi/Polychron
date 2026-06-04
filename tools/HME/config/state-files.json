@@ -563,6 +563,7 @@
         "tools/HME/activity/universal_pulse.py",
         "tools/HME/proxy/middleware/20_hme_log_watermark.js",
         "tools/HME/proxy/middleware/19_mcp_fail_scan.js",
+        "tools/HME/proxy/middleware/21_proxy_autocommit.js",
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
         "tools/HME/hooks/helpers/_autocommit.sh",
         "tools/HME/hooks/helpers/safety/curl.sh",
