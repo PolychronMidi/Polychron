@@ -39,12 +39,14 @@ function _sameTurnToolUses(transcriptPath) {
   return names;
 }
 
-function _emitVerdict(root, claimClass, decision, shadow) {
+function _emitVerdict(root, claimClass, decision, shadow, details = {}) {
   try {
     require('../../coherence_events').appendEvent(root, {
       kind: 'policy_decision', subject: 'stop:claim_proof', intent: `claim_class=${claimClass}`,
       evidence: [], coherence_delta: decision === 'deny' ? -1 : 0, proofClass: 'policy',
-      meta: { decision, shadow: Boolean(shadow) },
+      // edits/verified are the TP/FP discriminator: a deny with verified=false is a
+      // genuine unverified-claim catch (signal); verified=true means the turn ran a
+      meta: { decision, shadow: Boolean(shadow), edits: Number(details.edits || 0), verified: Boolean(details.verified) },
     });
   } catch (_e) { /* silent-ok: ledger is advisory */ }
 }
