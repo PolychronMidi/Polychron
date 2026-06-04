@@ -102,7 +102,7 @@ else
   else
     MODE=(--session-id "$SID")
   fi
-  RESP="$(claude -p "${MODE[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
+  RESP="$(env -u HME_TEAM_DISPATCH_GUARD_OK claude -p "${MODE[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
     | jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end')"
 fi
 
