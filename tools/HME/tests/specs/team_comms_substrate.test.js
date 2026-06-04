@@ -103,13 +103,18 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
   }
 });
 
-test('ask-peer rejects roles outside bounded team channel and session paths', () => {
+test('ask-peer rejects roles outside bounded paths and effort ceiling', () => {
   const root = tmpProject();
   try {
     writeRoles(root, { bad: { channel: 'chat.md', session_file: 'tmp/.team-bad.session', tier: 'E5' } });
-    const r = runAsk(root, ['bad', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
+    let r = runAsk(root, ['bad', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /invalid channel/);
+
+    writeRoles(root, { blue_lead: BAD_EFFORT_ROLE });
+    r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /invalid effort/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
