@@ -312,7 +312,7 @@ _ac_owner_claimed() {
 _ac_queue_drain_once() {
   local callers="" batch="$_AC_QUEUE_FILE.draining.$$"
   if [ -f "$_AC_QUEUE_FILE" ]; then
-    mv "$_AC_QUEUE_FILE" "$batch" 2>/dev/null || cp "$_AC_QUEUE_FILE" "$batch" 2>/dev/null
+    mv "$_AC_QUEUE_FILE" "$batch" 2>/dev/null || { cp "$_AC_QUEUE_FILE" "$batch" 2>/dev/null && : > "$_AC_QUEUE_FILE" 2>/dev/null; }
   fi
   if [ -f "$batch" ]; then
     callers=$(awk -F '\t' 'NF>=3 {print $3}' "$batch" 2>/dev/null | sort -u | paste -sd, -)
