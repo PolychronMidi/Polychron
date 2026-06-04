@@ -321,7 +321,7 @@ _ac_queue_drain_once() {
 _ac_run_owner_once() {
   _ac_owner_claimed || return 0
   _ac_queue_drain_once
-  exec 9>&-
+  exec 8>&-
 }
 
 _ac_enqueue_commit() {
