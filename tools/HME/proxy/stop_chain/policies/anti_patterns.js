@@ -2,8 +2,9 @@
 /**
  * Pure-JS port of anti_patterns.sh -- anti-pattern blockers driven by the
  * verdict file written by the detectors policy. Each verdict maps to a
- * potential `deny` with a stable user-facing reason (text mirrored from
- * the original bash version verbatim so existing user expectations hold).
+ * potential `deny` whose reason follows the hme_dominance doctrine: the tool
+ * acts (the deny holds the gate) and the agent reads the consequence, not an
+ * imperative demand. Every reason keeps its identifier prefix + rescue paths.
  *
  * MUST RUN AFTER: detectors
  * MUST RUN BEFORE: work_checks
