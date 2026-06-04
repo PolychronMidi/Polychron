@@ -212,7 +212,8 @@ test('synthetic PreToolUse Edit rewrites stub content via ellipsis-stub policy',
     tool_input: { file_path: target, old_string: 'const x = 1;', new_string: '// prev' + 'ious implementation' },
   });
   assert.match(res.stdout, /permissionDecision":"allow/);
-  assert.match(res.stdout, /DDoC stripped: ellipsis stub/);
+  assert.match(res.stdout, /updatedInput/);
+  assert.doesNotMatch(res.stdout, /ellipsis stub/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
