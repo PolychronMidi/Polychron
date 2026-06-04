@@ -87,7 +87,7 @@ function run(ctx) {
       + 'verification. In strict mode this would block; run the check before claiming.',
     );
   }
-  _emitVerdict(ctx.projectRoot, claimClass, 'instruct', !strict);
+  _emitVerdict(ctx.projectRoot, claimClass, 'instruct', !strict, { edits: editsThisTurn, verified: verifiedThisTurn });
   return ctx.instruct(
     `CLAIM-PROOF: "${claimText.slice(0, 80)}" reads as a ${claimClass} completion claim with no same-turn verification. `
     + 'Prefer running the check before claiming, or scope the claim to what was verified.',
