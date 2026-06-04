@@ -119,4 +119,22 @@ function recordPolicyRewrite(root, payload = {}, rewrites = []) {
   append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(row));
 }
 
-module.exports = { hookDecisionSummary, recordHookDecision, denyStormOverride, recordHookCheckpoint, recordPolicyRewrite };
+// Records WHICH builtin policy fired a deny (parity with recordPolicyRewrite's
+// policies[]), so `i/why mode=debt` can diff the registry against policies seen
+function recordPolicyDeny(root, payload = {}, policyName = '', reason = '') {
+  if (!root || !policyName) return;
+  const row = {
+    ts: Math.floor(Date.now() / 1000),
+    ts_iso: new Date().toISOString(),
+    event: 'policy_deny',
+    kind: 'policy_deny',
+    host: payload._hme_host || '',
+    tool: payload.tool_name || '',
+    session_id: payload.session_id || '',
+    policies: [String(policyName)],
+    reason_hash: reasonHash(String(reason || '')),
+  };
+  append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(row));
+}
+
+module.exports = { hookDecisionSummary, recordHookDecision, denyStormOverride, recordHookCheckpoint, recordPolicyRewrite, recordPolicyDeny };
