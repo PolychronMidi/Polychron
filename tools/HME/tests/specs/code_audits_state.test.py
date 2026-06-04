@@ -69,11 +69,13 @@ def _classes():
 
 class CodeAuditsStateModuleTests(unittest.TestCase):
     def test_class_shape(self):
-        for cls in _classes():
-            assert_class_shape(self, cls)
+        def _run():
+            for cls in _classes():
+                assert_class_shape(self, cls)
+        with_project_root(_PROJECT, _run)
 
     def test_smoke_run(self):
-        smoke_run(self, _classes())
+        with_project_root(_PROJECT, lambda: smoke_run(self, _classes()))
 
 
 class StateOwnershipGateTests(unittest.TestCase):
