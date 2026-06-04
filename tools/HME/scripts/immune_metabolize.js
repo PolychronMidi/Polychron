@@ -85,7 +85,7 @@ if (require.main === module) {
     if (m) opts[m[1]] = m[2];
   }
   const out = run(_root(), opts);
-  process.stdout.write(`immune_metabolize: scanned=${out.scanned} recurring=${out.recurring} appended=${out.appended}\n`);
+  process.stdout.write(`immune_metabolize: scanned=${out.scanned} recurring=${out.recurring} appended=${out.appended} refreshed=${out.refreshed} dropped_out=${out.dropped_out}\n`);
 }
 
 module.exports = { run };
