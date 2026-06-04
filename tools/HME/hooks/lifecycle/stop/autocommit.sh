@@ -5,7 +5,7 @@
 # lifecycle work still needs to run and the helper has already recorded
 # the failure to every channel it could reach.
 source "${_HME_HELPERS_DIR}/_autocommit.sh"
-_ac_do_commit stop.sh || true
+_ac_enqueue_commit stop.sh || true
 # Clear the nexus COMMIT_FAILED marker on success. The helper already
 if [ ! -f "$_AC_FAIL_FLAG" ]; then
   source "${_HME_HELPERS_DIR}/_nexus.sh"
