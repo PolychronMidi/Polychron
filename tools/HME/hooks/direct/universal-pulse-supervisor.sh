@@ -64,7 +64,10 @@ _up_code_mtime() {
   for f in "$_UP_PYTHON_SCRIPT" \
            "$_SV_ROOT/tools/HME/activity/universal_pulse_tick.py" \
            "$_SV_ROOT/tools/HME/scripts/refresh_pid_file.py" \
-           "$_SV_ROOT/tools/HME/scripts/service_registry.py"; do
+           "$_SV_ROOT/tools/HME/scripts/service_registry.py" \
+           "$_SV_ROOT/tools/HME/todo_engine/store.py" \
+           "$_SV_ROOT/tools/HME/todo_engine/lifecycle.py" \
+           "$_SV_ROOT/tools/HME/todo_engine/grammar.py"; do
     [ -f "$f" ] || continue
     # silent-ok: bad timestamp forces conservative stale/reprobe behavior.
     m=$(stat -c %Y "$f" 2>/dev/null || echo 0)
