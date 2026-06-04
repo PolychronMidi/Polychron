@@ -1,0 +1,12 @@
+{
+  "$schema": "./roles.schema.json",
+  "_doc": "Bounded peer roles. ask-peer.sh is the sole writer for channel transcripts and per-role session files.",
+  "roles": {
+    "agent2": {
+      "channel": "teams/driver.md",
+      "session_file": "tmp/.team-agent2.session",
+      "tier": "E5",
+      "label": "Driver peer"
+    }
+  }
+}
