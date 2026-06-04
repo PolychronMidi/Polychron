@@ -10,9 +10,11 @@ function arg(name, fallback = '') {
   return hit ? hit.slice(name.length + 1) : fallback;
 }
 
+const MODES = ['proof', 'debt', 'mesh', 'resolve', 'metabolize', 'coherence-field', 'proof-capsules', 'causal-braid', 'immune', 'policy-genome', 'freshness'];
+
 function mode() {
   const m = arg('mode', process.argv[2] || 'proof');
-  return ['proof', 'debt', 'mesh', 'resolve', 'metabolize'].includes(m) ? m : 'proof';
+  return MODES.includes(m) ? m : 'proof';
 }
 
 function recentErrorLines(limit = 40) {
