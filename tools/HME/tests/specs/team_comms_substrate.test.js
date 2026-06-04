@@ -52,6 +52,8 @@ const LEAD_ROLE = {
   channel: 'teams/driver.md',
   session_file: 'tmp/.team-blue_lead.session',
   tier: 'E5',
+  effort: 'high',
+  max_reply_bytes: 12000,
 };
 
 const CREW_ROLE = {
