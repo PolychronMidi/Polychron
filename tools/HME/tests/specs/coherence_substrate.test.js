@@ -32,6 +32,10 @@ test('coherence event ledger normalizes and appends proof-carrying rows', () => 
     const rows = events.readEvents(root);
     assert.equal(rows.length, 1);
     assert.equal(events.summarize(rows).open_obligations[0], 'report');
+    // WIRED (item 1): every appended event carries a coherence-field vector.
+    assert.ok(rows[0].field, 'event must carry a coherence field');
+    assert.equal(typeof rows[0].field.net_coherence, 'number');
+    assert.ok(['clarify', 'preserve', 'repair', 'mutate', 'obscure', 'parasitize'].includes(rows[0].field.effect));
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
