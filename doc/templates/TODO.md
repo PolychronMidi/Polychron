@@ -10,7 +10,7 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
-### Todo - Set 19
+### Todo - Set 20
 
 #13 4_ self-coherence substrate (typed coherence-event ledger + failure ontology): incident_registry fans out to coherence_events + context_metabolism facts; incident_resolvers prove upstream-context-window/stale-runtime/autocommit/observation classes resolved so LIFESAVER ghosts suppress only after proof; claim_proof stop policy wired live (strict = hard-deny on absolute-completion-claim+edits+no-verification, non-strict = shadow instruct + verdict event), non-mandatory + fail-open so it cannot wedge the chain; context_metabolism.runMetabolismPass composts low-score facts and surfaces durable invariants; invariant_mesh + tests gate every tool_result-mutating middleware's idempotency declaration and every state-file owner; self_origin.js is the single classifier with a drift-guard vs _self_tags.sh / 22_lifesaver_inject; i/why mode=proof|debt|mesh|resolve|metabolize; one bounded coherence event per Stop run; drift threshold 0.18→0.25; replaced the non-canonical root todo.md; full HME suite green [E3]
 
