@@ -3,7 +3,9 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
+const fs = require('node:fs');
 const Decision = require('../../event_kernel/decision');
+const Render = require('../../event_kernel/decision_renderer');
 const routes = require('../../event_kernel/route_registry');
 
 const HOOKS_ROOT = path.resolve(__dirname, '..', '..', 'hooks');
