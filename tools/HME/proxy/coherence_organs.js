@@ -133,19 +133,11 @@ function readProofCapsules(root, opts = {}) {
   return opts.freshOnly ? decayed.filter((c) => !c.expired && c.proof_status === 'proved') : decayed;
 }
 
-// Fresh, still-proved capsules a completion claim may rely on right now.
+// Fresh, still-proved capsules (decayed/expired excluded). Read by i/why
+// freshness/proof-capsule views; claim_proof never substitutes a prior capsule
+// for verifying this-turn edits (see P5 -- that path was a proof-laundering hole).
 function freshProofCapsules(root, now = Date.now()) {
   return readProofCapsules(root, { freshOnly: true, now });
-}
-
-// Does any fresh proved capsule back a claim about these artifacts? Same-artifact
-// match when files are known (blocks cross-turn proof laundering); when files are
-function capsuleBacksArtifacts(capsules, files) {
-  const fresh = (capsules || []).filter((c) => c && c.proof_status === 'proved' && !c.expired);
-  if (!fresh.length) return false;
-  const wanted = (files || []).map((f) => _text(f, 300)).filter(Boolean);
-  if (!wanted.length) return true;
-  return fresh.some((c) => Array.isArray(c.artifacts) && c.artifacts.some((a) => wanted.includes(a)));
 }
 
 function causalBraid(input = {}) {
