@@ -27,11 +27,20 @@ function renderDeny(eventName, reason) {
   return _hook(eventName, { additionalContext: message });
 }
 
-function renderRewrite(eventName, updatedInput, messages = []) {
-  const context = messages.map(_text).filter(Boolean).join('\n');
-  const fields = { permissionDecision: 'allow', updatedInput: updatedInput || {} };
+function renderAsk(eventName, reason) {
+  return _hook(eventName, { permissionDecision: 'ask', permissionDecisionReason: _text(reason) });
+}
+
+function renderAllow(eventName, messages = [], updatedInput = null) {
+  const context = messages.map(_text).filter(Boolean).join('\n\n');
+  const fields = { permissionDecision: 'allow' };
   if (context) fields.additionalContext = context;
+  if (updatedInput && typeof updatedInput === 'object') fields.updatedInput = updatedInput;
   return _hook(eventName, fields);
+}
+
+function renderRewrite(eventName, updatedInput, messages = []) {
+  return renderAllow(eventName, messages, updatedInput || {});
 }
 
 function renderInstruct(eventName, messages = []) {
