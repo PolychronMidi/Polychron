@@ -334,13 +334,14 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
       if (eventName === 'PreToolUse') {
         stdout = JSON.stringify({
           hookSpecificOutput: {
+            hookEventName: 'PreToolUse',
             permissionDecision: 'deny',
             permissionDecisionReason: firstDeny.reason,
           },
         });
       } else {
         stdout = JSON.stringify({
-          hookSpecificOutput: { additionalContext: firstDeny.reason },
+          hookSpecificOutput: { hookEventName: eventName, additionalContext: firstDeny.reason },
         });
       }
       if (!combinedStderr) combinedStderr = ' ';
