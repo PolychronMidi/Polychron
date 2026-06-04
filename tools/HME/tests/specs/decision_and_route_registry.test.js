@@ -33,6 +33,41 @@ test('Decision.combineFirstDeny keeps first deny and aggregates instruct/rewrite
   assert.deepEqual(r.errors.map((x) => x.message), ['broken']);
 });
 
+test('decision renderer owns hookSpecificOutput for policy denies, rewrites, and instructs', () => {
+  const denied = JSON.parse(Render.renderPolicyAggregate({ firstDeny: Decision.deny('no') }, { eventName: 'PreToolUse' }));
+  assert.deepEqual(denied.hookSpecificOutput, {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'deny',
+    permissionDecisionReason: 'no',
+  });
+  const rewritten = JSON.parse(Render.renderPolicyAggregate({
+    firstDeny: null,
+    rewrites: [Decision.rewrite({ command: 'pwd' }, 'rw')],
+    instructs: [Decision.instruct('note')],
+  }, { eventName: 'PreToolUse', toolInput: { command: 'pwd' } }));
+  assert.deepEqual(rewritten.hookSpecificOutput, {
+    hookEventName: 'PreToolUse',
+    permissionDecision: 'allow',
+    updatedInput: { command: 'pwd' },
+    additionalContext: 'rw\nnote',
+  });
+  const instructed = JSON.parse(Render.renderPolicyAggregate({
+    firstDeny: null,
+    rewrites: [],
+    instructs: [Decision.instruct('a'), Decision.instruct('b')],
+  }, { eventName: 'PostToolUse' }));
+  assert.deepEqual(instructed.hookSpecificOutput, { hookEventName: 'PostToolUse', additionalContext: 'a\n\nb' });
+});
+
+test('decision renderer renders PermissionRequest output with PermissionRequest hookEventName', () => {
+  const out = JSON.parse(Render.renderPolicyAggregate({ firstDeny: Decision.deny('no') }, { eventName: 'PermissionRequest' }));
+  assert.deepEqual(out.hookSpecificOutput, {
+    hookEventName: 'PermissionRequest',
+    permissionDecision: 'deny',
+    permissionDecisionReason: 'no',
+  });
+});
+
 test('route registry exposes executable dispatcher contract', () => {
   assert.equal(routes.policyContext('PermissionRequest'), 'PreToolUse');
   assert.equal(routes.strictMode('SessionStart'), 'strict-only');
