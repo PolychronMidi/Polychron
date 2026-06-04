@@ -207,6 +207,7 @@ module.exports = {
   loadCustom,
   list,
   get,
+  genomeInput,
   matchingFor,
   runChain,
   deny,
