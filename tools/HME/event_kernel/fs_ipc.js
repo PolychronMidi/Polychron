@@ -180,5 +180,6 @@ module.exports = {
   makeInvocation,
   spawnFileInput,
   spawnFileInputSync,
+  sweepStaleInvocations,
   tmpdir,
 };
