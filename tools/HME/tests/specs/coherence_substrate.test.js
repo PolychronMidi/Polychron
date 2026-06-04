@@ -285,6 +285,39 @@ test('P3 integration: resolver verdict -> resolved incident -> complete braid (f
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test('Phase2 P1: recordPolicyDeny logs the firing policy name for dead-weight diffing', () => {
+  const root = tmpRoot();
+  try {
+    const log = require('../../event_kernel/hook_decision_log');
+    log.recordPolicyDeny(root, { tool_name: 'Bash', session_id: 's' }, 'block-curl-pipe-sh', 'BLOCKED: curl|sh');
+    const rows = fs.readFileSync(path.join(root, 'tools/HME/runtime/hook-decisions.jsonl'), 'utf8')
+      .trim().split('\n').map(JSON.parse);
+    const deny = rows.find((r) => r.kind === 'policy_deny');
+    assert.ok(deny, 'a policy_deny row must be written');
+    assert.deepEqual(deny.policies, ['block-curl-pipe-sh']);
+    assert.equal(deny.tool, 'Bash');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('Phase2 P2: immune_metabolize classifies recurring noise into deduped durable memory', () => {
+  const root = tmpRoot();
+  try {
+    fs.mkdirSync(path.join(root, 'log'), { recursive: true });
+    const lines = [];
+    for (let i = 0; i < 4; i++) lines.push('[t] [hook-output-validation] hookSpecificOutput missing hookEventName');
+    for (let i = 0; i < 3; i++) lines.push('[t] [shuffler] slot a stranded on stale code runtime stale');
+    lines.push('[t] [universal_pulse] RECOVERED worker');
+    fs.writeFileSync(path.join(root, 'log', 'hme-errors.log'), lines.join('\n') + '\n');
+    const im = require('../../scripts/immune_metabolize');
+    const first = im.run(root, { limit: 200, recur: 2 });
+    assert.ok(first.appended >= 2, 'recurring schema_drift + stale_runtime become durable memory');
+    const facts = metabolism.readFacts(root).filter((f) => f.source === 'immune_classifier');
+    assert.ok(facts.some((f) => f.subject === 'immune:schema_drift'), 'schema_drift class metabolized');
+    const second = im.run(root, { limit: 200, recur: 2 });
+    assert.equal(second.appended, 0, 'dedup: a class already in memory is not re-appended');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('PRODUCER: recordIncident fans out to a coherence event and a metabolism fact', () => {
   const root = tmpRoot();
   try {
