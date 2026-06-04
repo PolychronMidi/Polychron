@@ -10,12 +10,16 @@ const routes = require('../../event_kernel/route_registry');
 const HOOKS_ROOT = path.resolve(__dirname, '..', '..', 'hooks');
 
 test('Decision algebra preserves host-neutral shapes', () => {
+  assert.deepEqual(Decision.TYPES, Object.freeze({ ALLOW: 'allow', DENY: 'deny', INSTRUCT: 'instruct', REWRITE: 'rewrite', ERROR: 'error' }));
   assert.deepEqual(Decision.allow('ok'), { decision: 'allow', message: 'ok' });
   assert.deepEqual(Decision.deny('no'), { decision: 'deny', reason: 'no' });
   assert.deepEqual(Decision.instruct('look'), { decision: 'instruct', message: 'look' });
   assert.deepEqual(Decision.rewrite({ command: 'pwd' }, 'rewritten'), {
     decision: 'rewrite', updatedInput: { command: 'pwd' }, message: 'rewritten',
   });
+  assert.equal(Decision.kindOf(Decision.rewrite()), 'rewrite');
+  assert.equal(Decision.isAllow(Decision.allow()), true);
+  assert.equal(Decision.isError(Decision.error('broken')), true);
   assert.deepEqual(Decision.deny('no', { source: 'test' }), { decision: 'deny', reason: 'no', meta: { source: 'test' } });
 });
 
