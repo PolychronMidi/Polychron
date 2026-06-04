@@ -46,6 +46,7 @@ if [[ "$CALLER" != "driver" && "${HME_TEAM_DISPATCH_GUARD_OK:-}" != "1" ]]; then
 fi
 
 mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" tmp
+LOCK_FILE="tmp/.team-channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 
 if [[ -s "$SID_FILE" ]]; then
   SID="$(tr -d '[:space:]' < "$SID_FILE")"
