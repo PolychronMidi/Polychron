@@ -96,7 +96,7 @@ function _retryBlock(tool, input) {
   if (last.digest !== digest || last.recovered_at) return null;
   const reason = `BLOCKED: repeated failed ${tool} attempt without an intervening Read/Grep/Glob or changed input.`;
   _logRetry({ decision: 'block', tool, digest, reason });
-  return { stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }), stderr: ' ', exit_code: 0 };
+  return { stdout: renderDeny('PreToolUse', reason), stderr: ' ', exit_code: 0 };
 }
 
 function _recordToolFailure(tool, input, response) {
