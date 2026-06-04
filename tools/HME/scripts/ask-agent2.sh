@@ -2,7 +2,9 @@
 # Send a prompt to the peer Claude (Agent2) over the persisted session and log
 # both turns to chat.md. Agent1 = this orchestrator; Agent2 = resumed CLI session.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+# Script lives at tools/HME/scripts/; repo root is three levels up. The state
+# paths below (tmp/.agent2_session, chat.md) are repo-root-relative.
+cd "$(dirname "$0")/../../.."
 
 SID_FILE="tmp/.agent2_session"
 CHAT="chat.md"
