@@ -109,8 +109,8 @@ def _turn_key(raw: str, caller: str) -> tuple[str | None, bool]:
 
 
 def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str) -> tuple[bool, dict[str, Any]]:
-    key, implicit = _turn_key(turn_id, caller)
-    if not key:
+    turn_key, implicit = _turn_key(turn_id, caller)
+    if not turn_key:
         return False, {"turn_id": "", "limit": budget, "used": 0, "unscoped": True}
     path = root / BUDGET_REL
     data = _load_json(path, {"turns": {}})
@@ -118,20 +118,20 @@ def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str) -> tuple
         data = {"turns": {}}
     turns = data.setdefault("turns", {})
     now = time.time()
-    for key in list(turns.keys()):
+    for stale_key in list(turns.keys()):
         try:
-            if now - float(turns[key].get("ts", 0)) > 24 * 3600:
-                turns.pop(key, None)
+            if now - float(turns[stale_key].get("ts", 0)) > 24 * 3600:
+                turns.pop(stale_key, None)
         except (AttributeError, TypeError, ValueError):
-            turns.pop(key, None)
-    row = turns.setdefault(turn_id, {"count": 0, "ts": now})
+            turns.pop(stale_key, None)
+    row = turns.setdefault(turn_key, {"count": 0, "ts": now})
     used = int(row.get("count") or 0)
     if used >= budget:
-        return False, {"turn_id": turn_id, "limit": budget, "used": used}
+        return False, {"turn_id": turn_key, "limit": budget, "used": used, "implicit": implicit}
     row["count"] = used + 1
     row["ts"] = now
     _write_json_atomic(path, data)
-    return True, {"turn_id": turn_id, "limit": budget, "used": used + 1}
+    return True, {"turn_id": turn_key, "limit": budget, "used": used + 1, "implicit": implicit}
 
 
 def _message_with_leash(target: str, leash: dict[str, Any], message: str) -> str:
