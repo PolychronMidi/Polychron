@@ -47,7 +47,7 @@ function readVerdicts() {
 
 const REASONS = {
   ANTI_POLLING:
-    'ANTI-POLLING: You polled pipeline/task status multiple times in one turn. This is the wait-and-poll antipattern. Background tasks fire notifications when done -- use pipeline_digest (freshness guard) or do real work instead.',
+    'ANTI-POLLING: You polled pipeline/task status multiple times in one turn -- the wait-and-poll antipattern. Background tasks fire notifications when done, so polling burns the turn without advancing it. The gate clears once the turn uses pipeline_digest (freshness guard) or does real work instead.',
   ANTI_IDLE:
     'ANTI-IDLE: Pipeline is running in background. The Stop gate stays closed while the pipeline runs; it clears once the pipeline completes or 20+ tool calls of substantive work land. High-leverage work meanwhile:\n1. Run index_codebase (KB stays fresh for next round)\n2. Pick next evolution targets from the suggest_evolution output and implement them\n3. Run what_did_i_forget on any recently changed files\n4. Update docs or KB entries for this round',
   FABRICATION:
