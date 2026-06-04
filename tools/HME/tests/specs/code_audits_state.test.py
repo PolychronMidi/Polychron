@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
-from helpers import assert_class_shape, smoke_run
+from helpers import assert_class_shape, smoke_run, with_project_root
 
 _PROJECT = Path(__file__).resolve().parents[4]
 _AUDIT = _PROJECT / "tools" / "HME" / "scripts" / "audit-state-file-ownership.py"
