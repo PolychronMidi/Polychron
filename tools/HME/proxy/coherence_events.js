@@ -35,8 +35,29 @@ function normalizeEvent(input = {}) {
   };
 }
 
+function _attachField(event) {
+  try {
+    const { projectCoherenceField } = require('./coherence_organs');
+    const field = projectCoherenceField({
+      subject: event.subject || event.kind,
+      kind: event.kind,
+      intent: event.intent,
+      evidence: event.evidence,
+      entropy_delta: event.entropy_delta,
+      proof_status: event.proof_class,
+      noise_risk: event.meta && event.meta.noise_risk,
+      user_pain: event.meta && event.meta.user_pain,
+      invariant: event.meta && event.meta.invariant_touched,
+      causal_parent: event.meta && event.meta.causal_parent,
+    });
+    return { ...event, field: { net_coherence: field.net_coherence, effect: field.effect, noise_risk: field.noise_risk, freshness: field.freshness } };
+  } catch (_e) {
+    return event;
+  }
+}
+
 function appendEvent(root, input) {
-  const event = normalizeEvent(input);
+  const event = _attachField(normalizeEvent(input));
   state.append(LEDGER_STORE, event, root);
   return event;
 }
