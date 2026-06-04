@@ -11,7 +11,9 @@ const fs = require('fs');
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'Update']);
 const VERIFY_TOOLS = new Set(['Bash']);
 
-function _sameTurnToolUses(transcriptPath) {
+// Tool_use blocks since the last real user prompt: {name, input} so callers can
+// read both the tool name AND its file_path (for same-artifact proof matching).
+function _sameTurnToolBlocks(transcriptPath) {
   if (!transcriptPath) return [];
   let lines;
   try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); } catch (_e) { return []; }
@@ -30,13 +32,25 @@ function _sameTurnToolUses(transcriptPath) {
     }
   }
   if (lastUserIdx < 0) return [];
-  const names = [];
+  const blocks = [];
   for (let i = lastUserIdx + 1; i < entries.length; i++) {
     const entry = entries[i];
     if ((entry.type || entry.role) !== 'assistant') continue;
-    for (const b of _assistantToolUses(entry)) names.push(String(b.name || ''));
+    for (const b of _assistantToolUses(entry)) blocks.push({ name: String(b.name || ''), input: b.input || {} });
   }
-  return names;
+  return blocks;
+}
+
+// file_paths edited this turn -- Edit/Write/MultiEdit carry input.file_path;
+// shapes we can't parse (apply_patch, missing field) simply yield no files,
+function _editedFiles(blocks) {
+  const files = [];
+  for (const b of blocks) {
+    if (!EDIT_TOOLS.has(b.name)) continue;
+    const fp = b.input && b.input.file_path;
+    if (typeof fp === 'string' && fp) files.push(fp);
+  }
+  return files;
 }
 
 function _emitVerdict(root, claimClass, decision, shadow, details = {}) {
