@@ -65,8 +65,8 @@ function runDebt() {
     noise_events: Math.max(0, incidentEvents.length - resolverEvents.length),
   });
   console.log(`policy_feedback incident_surface: action=${fb.action} prevented=${fb.prevented_failures} noise=${fb.noise_events}`);
-  // claim_proof shadow signal-vs-noise: deny verdicts split by the TP/FP
-  // discriminator (verified=false = genuine unverified-claim catch = signal;
+  // claim_proof shadow signal-vs-noise: split denies by meta.verified --
+  // verified=false = genuine catch (signal), verified=true = false alarm (noise).
   const cpDenies = events.filter((e) => e && e.subject === 'stop:claim_proof' && e.meta && e.meta.decision === 'deny');
   const cpScored = cpDenies.filter((e) => typeof e.meta.verified === 'boolean');
   const cpSignal = cpScored.filter((e) => !e.meta.verified).length;
