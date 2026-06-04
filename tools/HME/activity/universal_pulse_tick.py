@@ -43,6 +43,7 @@ DEFAULT_HEARTBEAT = PROJECT_ROOT / "tmp" / "hme-universal-pulse.heartbeat"
 MAINTENANCE_FLAG = PROJECT_ROOT / "tmp" / "hme-proxy-maintenance.flag"
 
 _shutdown = False
+_IMMUNE_LAST_RUN = 0.0  # epoch of last immune-metabolize spawn (throttle)
 
 
 def _resolve_threshold(hook_name, thresholds, default_ms):
