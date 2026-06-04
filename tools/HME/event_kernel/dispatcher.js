@@ -365,7 +365,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     }
     if (instructs.length) {
       const stdout = JSON.stringify({
-        hookSpecificOutput: { additionalContext: instructs.map((i) => i.message).join('\n\n') },
+        hookSpecificOutput: { hookEventName: eventName, additionalContext: instructs.map((i) => i.message).join('\n\n') },
       });
       if (!combinedStderr) combinedStderr = ' ';
       return { stdout, stderr: combinedStderr, exit_code: 0 };
@@ -373,7 +373,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     return null;
   } catch (err) {
     return {
-      stdout: JSON.stringify({ hookSpecificOutput: { additionalContext: `UNIFIED POLICY RUNTIME FAILURE: ${err.message}` } }),
+      stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: `UNIFIED POLICY RUNTIME FAILURE: ${err.message}` } }),
       stderr: `[unified-policies] crash: ${err.message}\n`,
       exit_code: 2,
     };
