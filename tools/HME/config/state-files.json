@@ -493,6 +493,22 @@
       "committed": false,
       "schema": "JSONL rows with claim,evidence,verifier,freshness,confidence,decay,proof_status,verified_at,expires_at",
       "repair": "remove malformed tail row; coherence_organs recreates file on next capsule"
+    },
+    {
+      "path": "tools/HME/runtime/ups-step-timing.jsonl",
+      "owner": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+      "readers": [
+        "tools/HME/scripts/ups_timing.py",
+        "operators"
+      ],
+      "writers": [
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
+      ],
+      "retention": "append-only per-step UserPromptSubmit timing, self-bounded to the last 500 rows by the hook",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with ts, total_ms, steps{watchdog,petulance_reset,bg_spawns,liveness_gate,crying_wolf,error_scan,tail}",
+      "repair": "remove file; the next UserPromptSubmit hook recreates it"
     }
   ],
   "multi_writer": [
