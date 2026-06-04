@@ -329,6 +329,12 @@ async function _runUnifiedPolicies(policyEventName, toolName, stdinJson, outputE
         recordPolicyRewrite(PROJECT_ROOT, payload, aggregate.rewrites);
       } catch (_e) { /* silent-ok: telemetry must never block */ }
     }
+    if (aggregate.firstDeny && aggregate.firstDeny.policy) {
+      try {
+        const { recordPolicyDeny } = require('./hook_decision_log');
+        recordPolicyDeny(PROJECT_ROOT, payload, aggregate.firstDeny.policy, aggregate.firstDeny.reason);
+      } catch (_e) { /* silent-ok: telemetry must never block */ }
+    }
     const stdout = renderPolicyAggregate(aggregate, { eventName: outputEventName, toolInput: ctx.toolInput });
     if (stdout) return { stdout, stderr: combinedStderr || ' ', exit_code: 0 };
     return null;
