@@ -137,6 +137,44 @@ test('i/why proof debt mesh resolve modes dispatch', () => {
   }
 });
 
+test('WIRED (items 3,4,6,8): operator i/why coherence views dispatch', () => {
+  const why = path.join(process.env.PROJECT_ROOT, 'tools/HME/i/why');
+  for (const mode of ['coherence-field', 'proof-capsules', 'causal-braid', 'immune', 'policy-genome', 'freshness']) {
+    const r = spawnSync(why, [`mode=${mode}`], { cwd: process.env.PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT: process.env.PROJECT_ROOT }, encoding: 'utf8', timeout: 30000 });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, new RegExp(`mode=${mode}`));
+  }
+});
+
+test('WIRED (item 2): claim_proof emits a proof-debt capsule for an unverified completion claim', () => {
+  const root = tmpRoot();
+  try {
+    fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+    const transcript = path.join(root, 'tmp', 'transcript.jsonl');
+    fs.writeFileSync(transcript, [
+      JSON.stringify({ type: 'user', message: { content: 'fix the parser' } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: {} }] } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'All tests pass and everything is fixed.' }] } }),
+    ].join('\n') + '\n');
+    const policy = require('../../proxy/stop_chain/policies/claim_proof');
+    policy.run({ payload: { transcript_path: transcript }, projectRoot: root, allow: () => ({ decision: 'allow' }), instruct: (m) => ({ decision: 'instruct', message: m }), deny: (m) => ({ decision: 'deny', reason: m }) });
+    const capsules = organs.readProofCapsules(root);
+    assert.equal(capsules.length, 1, 'completion claim must mint a proof capsule');
+    assert.equal(capsules[0].proof_status, 'debt', 'no same-turn verification => proof debt');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('WIRED (item 5): every builtin policy yields a valid reflexive genome', () => {
+  const registry = require('../../policies/registry');
+  registry.loadBuiltins();
+  const invalid = [];
+  for (const p of registry.list()) {
+    const v = organs.validatePolicyGenome(registry.genomeInput(p));
+    if (!v.ok) invalid.push(`${p.name}: ${v.missing.join(',')}`);
+  }
+  assert.deepEqual(invalid, [], `policies missing genome fields: ${invalid.join('; ')}`);
+});
+
 test('PRODUCER: recordIncident fans out to a coherence event and a metabolism fact', () => {
   const root = tmpRoot();
   try {
