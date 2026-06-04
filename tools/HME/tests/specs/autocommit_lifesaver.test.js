@@ -103,6 +103,52 @@ test('autocommit entrypoints enqueue through the shared single-owner helper', ()
   assert.doesNotMatch(middleware, /spawnSync\('flock'/);
 });
 
+test('autocommit queue drains multiple callers through one owner pass', () => {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-autocommit-queue-'));
+  try {
+    fs.mkdirSync(path.join(sandbox, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, '.git'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'bin'), { recursive: true });
+    const fakeGit = path.join(sandbox, 'bin', 'git');
+    fs.writeFileSync(fakeGit, [
+      '#!/usr/bin/env bash',
+      'if [ "$1" = "-C" ]; then shift 2; fi',
+      'case "$1" in',
+      '  add|commit|diff|status) exit 0 ;;',
+      '  write-tree) echo 1111111111111111111111111111111111111111; exit 0 ;;',
+      '  rev-parse) echo testtree; exit 0 ;;',
+      '  *) exit 0 ;;',
+      'esac',
+      '',
+    ].join('\n'));
+    fs.chmodSync(fakeGit, 0o755);
+    const helper = path.join(repoRoot, 'tools', 'HME', 'hooks', 'helpers', '_autocommit.sh');
+    const script = [
+      `source ${JSON.stringify(helper)}`,
+      '_ac_queue_request stop.sh',
+      '_ac_queue_request onRequest',
+      '_ac_run_owner_once',
+      'state="$PROJECT_ROOT/tools/HME/runtime"',
+      'printf "counter=%s\\n" "$(cat "$state/autocommit.counter")"',
+      '[ -e "$state/autocommit.queue" ] && echo queue_exists=yes || echo queue_exists=no',
+      '[ -s "$state/autocommit.last-success" ] && echo last_success=yes || echo last_success=no',
+    ].join('\n');
+    const result = spawnSync('bash', ['-c', script], {
+      cwd: sandbox,
+      encoding: 'utf8',
+      env: { ...process.env, PROJECT_ROOT: sandbox, PATH: `${path.join(sandbox, 'bin')}${path.delimiter}${process.env.PATH || ''}` },
+    });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /counter=0/);
+    assert.match(result.stdout, /queue_exists=no/);
+    assert.match(result.stdout, /last_success=yes/);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
 test('_isBenignRace classifies concurrent-caller lock contention as benign (no LIFESAVER)', () => {
   const { _isBenignRace } = require(path.join(repoRoot, 'tools/HME/proxy/middleware/21_proxy_autocommit.js'));
   assert.equal(typeof _isBenignRace, 'function');
