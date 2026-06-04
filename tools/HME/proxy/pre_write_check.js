@@ -300,6 +300,10 @@ async function preWriteCheck(stdinJson) {
     }
     if (firstDeny) {
       const out = _repeatDeny(payload, _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`));
+      try {
+        const { recordPolicyDeny } = require('../event_kernel/hook_decision_log');
+        recordPolicyDeny(PROJECT_ROOT, payload, firstDeny.policy, firstDeny.reason);
+      } catch (_e) { /* silent-ok: telemetry must never block */ }
       await stateClient.call('write', payload.session_id || '', { payload, decision: out });
       return out;
     }
