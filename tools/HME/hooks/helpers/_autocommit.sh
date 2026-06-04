@@ -326,7 +326,7 @@ _ac_queue_drain_once() {
   if [ -d "$_AC_QUEUE_DIR" ]; then
     for q in "$_AC_QUEUE_DIR"/*.req; do
       [ -e "$q" ] || break
-      # silent-ok: a request that loses the move race stays in the queue and drains next 
+      # silent-ok: a lost move-race request stays queued and drains next pass.
       mv "$q" "$batch/" 2>/dev/null || true
     done
   fi
