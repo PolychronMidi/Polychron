@@ -80,6 +80,7 @@ function summarizeCoherenceField(rows = []) {
 
 function normalizeProofCapsule(input = {}) {
   const evidence = Array.isArray(input.evidence) ? input.evidence.map((x) => _text(x, 240)).filter(Boolean) : [];
+  const artifacts = Array.isArray(input.artifacts) ? input.artifacts.map((x) => _text(x, 300)).filter(Boolean).slice(0, 50) : [];
   const verifiedAt = _text(input.verifiedAt || input.verified_at || input.ts || '');
   const expiresAt = _text(input.expiresAt || input.expires_at || '');
   const freshness = _unit(input.freshness, expiresAt ? 0.8 : 0.6);
@@ -89,6 +90,7 @@ function normalizeProofCapsule(input = {}) {
     ts: input.ts || new Date().toISOString(),
     claim: _text(input.claim, 500),
     evidence,
+    artifacts,
     verifier: _text(input.verifier || input.check, 240),
     freshness,
     confidence,
