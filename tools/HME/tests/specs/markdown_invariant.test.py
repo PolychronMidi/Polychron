@@ -157,6 +157,34 @@ class MarkdownInvariantTests(unittest.TestCase):
             r = _with_project_root(root, _run)
             self.assertEqual(r.status, "PASS", msg=f"details={r.details}")
 
+    def test_team_channels_are_bounded_allowlist(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "doc/composition.md",
+                "doc/composition-full.md",
+                "doc/self-coherence.md",
+                "doc/self-coherence-full.md",
+                "README.md",
+                "teams/README.md",
+                "teams/driver.md",
+                "teams/red.md",
+                "teams/blue.md",
+                "teams/purple.md",
+            ):
+                _write(root, rel, "x\n")
+
+            def _run():
+                from verify_coherence.markdown_invariant import MarkdownInvariantVerifier
+                return MarkdownInvariantVerifier().run()
+            r = _with_project_root(root, _run)
+            self.assertEqual(r.status, "PASS", msg=f"details={r.details}")
+
+            _write(root, "teams/noise.md", "not a channel\n")
+            r = _with_project_root(root, _run)
+            self.assertEqual(r.status, "FAIL")
+            self.assertTrue(any("teams/noise.md" in d for d in r.details), msg=f"details={r.details}")
+
     def test_missing_dir_intent_readme_warns(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
