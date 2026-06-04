@@ -131,6 +131,25 @@ function get(name) {
   return _byName.get(name) || null;
 }
 
+// Reflexive policy genome: a policy declares its failure modes via an optional
+// `genome` block; absent fields derive from the registration shape so every
+function genomeInput(policy) {
+  const p = policy || {};
+  const g = p.genome && typeof p.genome === 'object' ? p.genome : {};
+  const isRewrite = /^rewrite-|auto-fill/.test(p.name || '');
+  return {
+    name: p.name,
+    protects: g.protects || (p.category ? [p.category] : ['coherence']),
+    known_false_positives: g.known_false_positives || [],
+    fail_open_or_closed: g.fail_open_or_closed || (isRewrite ? 'open' : 'closed'),
+    visible_output_allowed: g.visible_output_allowed !== undefined ? g.visible_output_allowed : !isRewrite,
+    telemetry_only: g.telemetry_only !== undefined ? g.telemetry_only : isRewrite,
+    owner: g.owner || 'HME policies',
+    recurrence_test: g.recurrence_test || '',
+    retirement_condition: g.retirement_condition || 'retire when noise_events>prevented_failures with no real catch',
+  };
+}
+
 /**
  * Return policies matching an event + tool, with config-aware enable/disable.
  * `event` is one of 'PreToolUse', 'PostToolUse', 'Stop', etc. `tool` is
