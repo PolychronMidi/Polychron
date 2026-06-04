@@ -288,13 +288,13 @@ function _failClosedPolicyError(message, eventName) {
   };
 }
 
-async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
+async function _runUnifiedPolicies(policyEventName, toolName, stdinJson, outputEventName = policyEventName) {
   let registry, config;
   try {
     registry = require('../policies/registry');
     config = require('../policies/config');
   } catch (err) {
-    return _failClosedPolicyError(`UNIFIED POLICY LOAD FAILURE: ${err.message}`, eventName);
+    return _failClosedPolicyError(`UNIFIED POLICY LOAD FAILURE: ${err.message}`, outputEventName);
   }
   try {
     registry.loadBuiltins();
@@ -305,7 +305,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
         : path.join(PROJECT_ROOT, cfg.customPoliciesPath);
       registry.loadCustom(customPath);
     }
-    const policies = registry.matchingFor(eventName, toolName, config);
+    const policies = registry.matchingFor(policyEventName, toolName, config);
     if (policies.length === 0) return null;
     let payload;
     try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { payload = {}; }
@@ -320,56 +320,23 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
       rewrite: registry.rewrite,
       params: {},
     };
-    const { firstDeny, instructs, rewrites, errors } = await registry.runChain(policies, ctx);
+    const aggregate = await registry.runChain(policies, ctx);
     let combinedStderr = '';
-    for (const e of errors) combinedStderr += `[unified-policies] ${e.policy}: ${e.error}\n`;
-    if (firstDeny) {
-      let stdout;
-      if (eventName === 'PreToolUse') {
-        stdout = JSON.stringify({
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            permissionDecision: 'deny',
-            permissionDecisionReason: firstDeny.reason,
-          },
-        });
-      } else {
-        stdout = JSON.stringify({
-          hookSpecificOutput: { hookEventName: eventName, additionalContext: firstDeny.reason },
-        });
-      }
-      if (!combinedStderr) combinedStderr = ' ';
-      return { stdout, stderr: combinedStderr, exit_code: 0 };
-    }
-    if (rewrites && rewrites.length && eventName === 'PreToolUse') {
+    for (const e of aggregate.errors || []) combinedStderr += `[unified-policies] ${e.policy}: ${e.error}\n`;
+    if (aggregate.rewrites && aggregate.rewrites.length && (outputEventName === 'PreToolUse' || outputEventName === 'PermissionRequest')) {
       try {
         const { recordPolicyRewrite } = require('./hook_decision_log');
-        recordPolicyRewrite(PROJECT_ROOT, payload, rewrites);
+        recordPolicyRewrite(PROJECT_ROOT, payload, aggregate.rewrites);
       } catch (_e) { /* silent-ok: telemetry must never block */ }
-      const stdout = JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'allow',
-          updatedInput: ctx.toolInput,
-          additionalContext: [...rewrites.map((r) => r.message).filter(Boolean), ...instructs.map((i) => i.message)].join('\n'),
-        },
-      });
-      if (!combinedStderr) combinedStderr = ' ';
-      return { stdout, stderr: combinedStderr, exit_code: 0 };
     }
-    if (instructs.length) {
-      const stdout = JSON.stringify({
-        hookSpecificOutput: { hookEventName: eventName, additionalContext: instructs.map((i) => i.message).join('\n\n') },
-      });
-      if (!combinedStderr) combinedStderr = ' ';
-      return { stdout, stderr: combinedStderr, exit_code: 0 };
-    }
+    const stdout = renderPolicyAggregate(aggregate, { eventName: outputEventName, toolInput: ctx.toolInput });
+    if (stdout) return { stdout, stderr: combinedStderr || ' ', exit_code: 0 };
     return null;
   } catch (err) {
     return {
-      stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: `UNIFIED POLICY RUNTIME FAILURE: ${err.message}` } }),
+      stdout: renderPolicyFailure(`UNIFIED POLICY RUNTIME FAILURE: ${err.message}`, outputEventName),
       stderr: `[unified-policies] crash: ${err.message}\n`,
-      exit_code: 2,
+      exit_code: outputEventName === 'PreToolUse' || outputEventName === 'PermissionRequest' ? 0 : 2,
     };
   }
 }
