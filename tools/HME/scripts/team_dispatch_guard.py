@@ -147,12 +147,14 @@ def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_
     )
 
 
-def _send(root: Path, target: str, leash: dict[str, Any], message: str) -> tuple[int, str, str]:
+def _send(root: Path, target: str, leash: dict[str, Any], message: str,
+          child_env: dict[str, str]) -> tuple[int, str, str]:
     env = os.environ.copy()
+    env.update(child_env)
     env["HME_ASK_PEER_PROJECT_ROOT"] = str(root)
     env.setdefault("HME_TEAM_MAX_REPLY_BYTES", "12000")
     proc = subprocess.run(
-        [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message)],
+        [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
         cwd=str(root), env=env, text=True, capture_output=True, timeout=leash["max_duration"], check=False,
     )
     return proc.returncode, proc.stdout, proc.stderr
