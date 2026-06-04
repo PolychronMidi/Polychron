@@ -34,6 +34,7 @@ _AC_STATE_DIR="$_AC_ROOT/tools/HME/runtime"
 _AC_COUNTER="$_AC_STATE_DIR/autocommit.counter"
 _AC_LAST_SUCCESS="$_AC_STATE_DIR/autocommit.last-success"
 _AC_FAIL_FLAG="$_AC_STATE_DIR/autocommit.fail"
+_AC_QUEUE_FILE="$_AC_STATE_DIR/autocommit.queue"
 _AC_LOCK_FILE="$_AC_STATE_DIR/autocommit.lock"
 _AC_ERROR_LOG="$_AC_ROOT/log/hme-errors.log"
 
