@@ -252,6 +252,11 @@ function validateClaudeStdout(event, stdout, root) {
     if (event === 'PreToolUse' || event === 'PermissionRequest') return _lifesaverBlock(event, message);
     return JSON.stringify(normalized.parsed);
   }
+  if (normalized.repairs && normalized.repairs.length) {
+    // Benign auto-repairs (e.g. a hook omitted hookEventName, which the adapter
+    // owns): the hook's intent is preserved, so relay the corrected JSON. Record
+    logHookError(root, event, `Hook output auto-repaired for Claude ${event}: ${normalized.repairs.join('; ')}`, 'hook-output-validation');
+  }
   // Emit the canonical single-document serialization, NOT the raw stdout. The
   // raw stdout can carry a trailing second JSON object or junk after the first
   return JSON.stringify(normalized.parsed);
