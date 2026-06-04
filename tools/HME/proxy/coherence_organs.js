@@ -105,8 +105,35 @@ function appendProofCapsule(root, capsule) {
   return row;
 }
 
-function readProofCapsules(root) {
-  return state.read(PROOF_STORE, root);
+const PROOF_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Proof decays with age: a capsule verified two days ago no longer backs a
+// "fixed" claim. Recompute freshness from elapsed time (or explicit expires_at)
+function decayProofCapsule(capsule, now = Date.now()) {
+  const c = normalizeProofCapsule(capsule);
+  const base = Date.parse(c.verified_at || c.ts || '') || 0;
+  const expiry = Date.parse(c.expires_at || '') || (base ? base + PROOF_TTL_MS : 0);
+  let freshness = c.freshness;
+  if (expiry) {
+    const remaining = expiry - now;
+    const span = expiry - (base || (expiry - PROOF_TTL_MS));
+    freshness = span > 0 ? _unit(remaining / span, 0) : 0;
+  }
+  const expired = expiry > 0 && now >= expiry;
+  return { ...c, freshness, decay: _unit(1 - freshness), expired, proof_status: (!expired && c.evidence.length && c.confidence >= 0.6 && freshness >= 0.4) ? 'proved' : 'debt' };
+}
+
+function readProofCapsules(root, opts = {}) {
+  const rows = state.read(PROOF_STORE, root);
+  if (!opts.decay && !opts.freshOnly) return rows;
+  const now = Number(opts.now || Date.now());
+  const decayed = rows.map((r) => decayProofCapsule(r, now));
+  return opts.freshOnly ? decayed.filter((c) => !c.expired && c.proof_status === 'proved') : decayed;
+}
+
+// Fresh, still-proved capsules a completion claim may rely on right now.
+function freshProofCapsules(root, now = Date.now()) {
+  return readProofCapsules(root, { freshOnly: true, now });
 }
 
 function causalBraid(input = {}) {
