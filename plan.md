@@ -34,7 +34,7 @@ boundedness before any role grows. If I1+I2 don't feel tighter than today's
 2-agent loop, STOP -- the baseline already wins. Build on the existing router
 (team_agent_router.py) and generalize the one comms primitive; do NOT rebuild either.
 
-### I1 -- Comms substrate (generalize the 1-peer primitive)  [proposed]  (rank 1, MVP)
+### I1 -- Comms substrate (generalize the 1-peer primitive)  [approved]  (rank 1, MVP)
 - intent: turn ask-agent2.sh (single peer) into an N-role channel primitive, exercised by the channel we ALREADY use (Driver<->one Lead), with 0 new live agents.
 - seam: `teams/roles.json` (role -> {channel, session_file: tmp/.team-<role>.session, tier}; single source of truth, self_origin pattern) + ONE `scripts/ask-peer.sh <role> "msg"` that registry-looks-up session+channel, mints (--session-id) or resumes (--resume/--fork), appends to channel.md; ask-agent2.sh becomes a thin alias. Move chat.md -> teams/driver.md; allowlist teams/*.md in markdown_invariant. Channels are append-only + TAIL-CAPPED (like ups-step-timing's 500-row cap) so they never become a context-burn artifact.
 - net coherence: ONE comms implementation (no per-channel script copies = the drift we killed in decision_renderer/P1); deterministic per-role session files; nothing can storm yet (point-to-point, no fan-out, no auto-spawn).
