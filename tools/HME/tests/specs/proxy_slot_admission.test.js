@@ -88,3 +88,20 @@ test('resetFingerprintState lifts a quarantine explicitly (operator/launch overr
   slot.resetFingerprintState(rt, 'Q', 'manual clear');
   assert.equal(slot.canAdmitFingerprint(rt, 'Q').ok, true);
 });
+
+test('quarantineStatus distinguishes current-broken, fixed-waiting, and cleared states', () => {
+  const rt = tmpRuntime();
+  slot.markSlotBroken(rt, 'a', 'BAD', 'boom');
+  assert.equal(slot.quarantineStatus(rt, 'BAD', { isAlive: () => true }).status, 'blocked_current');
+  const fixed = slot.quarantineStatus(rt, 'FIXED', { isAlive: () => true });
+  assert.equal(fixed.status, 'waiting_fixed_build');
+  assert.equal(fixed.quarantinedFingerprint, 'BAD');
+  assert.equal(fixed.currentBlocked, false);
+  slot.markSlotViable(rt, 'b', 'FIXED');
+  fs.mkdirSync(rt, { recursive: true });
+  fs.writeFileSync(path.join(rt, 'proxy-b.health'), JSON.stringify({ pid: 2, ts: 100, ready: true, draining: false, runtime_fingerprint: 'FIXED' }));
+  const clear = slot.quarantineStatus(rt, 'FIXED', { isAlive: () => true, staleMs: 5000, now: 100 });
+  assert.equal(clear.status, 'waiting_fixed_build');
+  slot.markSlotViable(rt, 'a', 'BAD');
+  assert.equal(slot.quarantineStatus(rt, 'FIXED', { isAlive: () => true, staleMs: 5000, now: 100 }).status, 'cleared_by_viable');
+});
