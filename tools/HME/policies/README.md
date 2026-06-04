@@ -56,11 +56,12 @@ Decision aggregation: first `deny` wins; subsequent policies still run
 for side effects (mirrors `stop_chain/index.js`). Rewrites compose:
 the chain mutates `ctx.toolInput` in flight so each downstream policy
 sees the updated input; the dispatcher emits one `permissionDecision:
-'allow'` with the final `updatedInput` plus all rewrite messages
-joined as `additionalContext`. Rule of thumb: prefer `ctx.rewrite`
-over `ctx.deny` when the fix is mechanical (strip spam, truncate
-long line, substitute literal path, auto-fill missing arg) -- denies
-force a retry loop and burn context.
+'allow'` with the final `updatedInput`. Rewrite messages stay in
+telemetry; only true `ctx.instruct(...)` messages surface as
+`additionalContext`, keeping mechanical rewrites quiet. Rule of thumb:
+prefer `ctx.rewrite` over `ctx.deny` when the fix is mechanical (strip
+spam, truncate long line, substitute literal path, auto-fill missing
+arg) -- denies force a retry loop and burn context.
 
 ## Configuration
 
