@@ -110,6 +110,7 @@ fi
 # blocking LIFESAVER to hme-errors.log, which the scan below surfaces THIS turn.
 # silent-ok: helper failure falls through to blocked/unready probe path.
 PROJECT_ROOT="$PROJECT_ROOT" timeout 5 node "$PROJECT_ROOT/tools/HME/proxy/proxy_liveness_gate.js" 2>/dev/null || true
+_ups_mark liveness_gate
 
 # LIFESAVER error-log monitor: surfaces hme-errors.log new lines as
 # additionalContext. Errors must be FIXED, not acknowledged.
@@ -121,6 +122,7 @@ TURNSTART="$PROJECT/tools/HME/runtime/errors-turnstart"
 # crying_wolf: consume stale self-health lines before emergency bannering.
 python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
   --mode self-only --reason userpromptsubmit --quiet >/dev/null 2>&1 || true
+_ups_mark crying_wolf
 
 mkdir -p "$_HME_PROJECT_TMP"
 
