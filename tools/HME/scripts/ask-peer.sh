@@ -98,11 +98,11 @@ else
   else
     MODE=(--session-id "$SID")
   fi
-  RESP="$(claude -p "${MODE[@]}" --output-format json --effort max --model default "$MSG" 2>/dev/null \
+  RESP="$(claude -p "${MODE[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
     | jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end')"
 fi
 
-MAX_REPLY_BYTES="${HME_TEAM_MAX_REPLY_BYTES:-12000}"
+MAX_REPLY_BYTES="${HME_TEAM_MAX_REPLY_BYTES:-$ROLE_REPLY_BYTES}"
 if [[ "$MAX_REPLY_BYTES" =~ ^[0-9]+$ ]] && (( MAX_REPLY_BYTES > 0 )); then
   RESP="$(RESP="$RESP" MAX_REPLY_BYTES="$MAX_REPLY_BYTES" python3 - <<'PY'
 import os
