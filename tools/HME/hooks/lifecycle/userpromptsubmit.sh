@@ -43,6 +43,7 @@ fi
 # silent-ok: helper failure falls through to blocked/unready probe path.
 [ -x "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \
   PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" --reset-user-prompt 2>/dev/null || true
+_ups_mark petulance_reset
 
 if [ -n "$PROJECT_ROOT" ] && [ -f "${PROJECT_ROOT}/doc/templates/TODO.md" ]; then
   mkdir -p "${_HME_PROJECT_TMP}" 2>/dev/null
