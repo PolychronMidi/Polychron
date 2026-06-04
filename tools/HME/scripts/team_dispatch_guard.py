@@ -158,7 +158,6 @@ def _send(root: Path, target: str, leash: dict[str, Any], message: str,
     env = os.environ.copy()
     env.update(child_env)
     env["HME_ASK_PEER_PROJECT_ROOT"] = str(root)
-    env.setdefault("HME_TEAM_MAX_REPLY_BYTES", "12000")
     proc = subprocess.run(
         [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
         cwd=str(root), env=env, text=True, capture_output=True, timeout=leash["max_duration"], check=False,
