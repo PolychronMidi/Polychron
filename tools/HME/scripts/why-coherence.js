@@ -159,11 +159,12 @@ function runCausalBraid() {
   console.log('mode=causal-braid');
   if (!rows.length) { console.log('no incidents to braid'); return; }
   for (const inc of rows) {
+    const proofText = inc.proof && Object.keys(inc.proof).length ? JSON.stringify(inc.proof) : '';
     const braid = organs.causalBraid({
       id: inc.id, user_pain: inc.summary, violated_invariant: inc.invariant || inc.component,
-      responsible_subsystem: inc.component, runtime_state: inc.runtime_state,
-      code_cause: inc.cause || inc.repair, verification: inc.proof && JSON.stringify(inc.proof),
-      recurrence_guard: inc.recurrence_test, memory_crystallization: inc.status === 'resolved' ? inc.resolver : '',
+      responsible_subsystem: inc.component, runtime_state: inc.runtimeState,
+      code_cause: inc.rootCause || inc.repair, verification: proofText,
+      recurrence_guard: inc.regressionTest, memory_crystallization: inc.status === 'resolved' ? (inc.resolver || inc.fixedBy) : '',
     });
     console.log(`- ${braid.id}: proved=${braid.chain.filter((s) => s.proved).length}/${braid.chain.length} missing=[${braid.missing.join(',')}]`);
   }
