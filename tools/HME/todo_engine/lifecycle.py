@@ -8,8 +8,12 @@ Rules from TODO_new.md:
   4f_  follow-up: after effective_minutes (default 30), flip -> 0_, UNLESS a
        qualifier is set (_q="...") -- a qualifier means "wait for the named
        condition", so the timer does not auto-fire.
-  archive: a set archives only when every item is 5_ complete. Non-5_
-       terminal items (3_/4_/4f_) stay active; they are not archivable.
+  archive: a set archives once no item is still in progress (none at 0_/1_/2_)
+       AND at least one item is 5_ complete. The completed items bank to the
+       archive snapshot; the non-5_ terminal items (3_/4_/4f_) carry forward,
+       codes preserved, into the next set. The >=1-5_ rule both gives the
+       archive something to bank and stops a carry-over-only set (no 5_) from
+       re-archiving forever.
 """
 from __future__ import annotations
 
