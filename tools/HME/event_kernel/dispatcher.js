@@ -467,7 +467,7 @@ async function dispatchEvent(eventName, stdinJson) {
       const tool = _toolName(empty);
       // PermissionRequest reuses the PreToolUse policy context -- declared in
       // dispatcher-routes.json, not hardcoded, so the reuse is auditable.
-      const unifiedRes = await _runUnifiedPolicies(policyContext('PermissionRequest'), tool, empty);
+      const unifiedRes = await _runUnifiedPolicies(policyContext('PermissionRequest'), tool, empty, 'PermissionRequest');
       return unifiedRes && unifiedRes.stdout ? unifiedRes : { stdout: '', stderr: ' ', exit_code: 0 };
     }
     case 'PostToolUse': {
