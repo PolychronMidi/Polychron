@@ -16,10 +16,12 @@ deepwiki.config.json
 *.pyc
 /.claude
 
-# Agent1<->Agent2 peer-chat log: high-frequency append transcript; allowed .md
-# (markdown_invariant) but untracked to keep autocommit churn-free. plan.md (the
-# reviewed deliverable) stays tracked.
+# Bounded peer-channel logs: high-frequency append transcripts; allowed by
+# markdown_invariant but untracked to keep autocommit churn-free. plan.md (the
+# reviewed deliverable) and teams/roles.json stay tracked.
 /chat.md
+/teams/*.md
+!/teams/README.md
 
 # Root split guards: source lives under src/ or tools/HME/; root artifacts stay untracked and banned by check-root-only-dirs.
 /output
