@@ -46,15 +46,31 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   assert.equal(claudeStop.stderr, ' ');
 });
 
-test('Claude adapter repairs invalid PreToolUse stdout into Lifesaver deny', () => {
+test('Claude adapter repairs missing/mismatched PreToolUse hookEventName instead of blocking the tool', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-pretool-lifesaver-'));
   try {
     const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
-    const out = JSON.parse(validateClaudeStdout('PreToolUse', JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'missing event' } }), tmp));
-    assert.equal(out.hookSpecificOutput.hookEventName, 'PreToolUse');
-    assert.equal(out.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(out.hookSpecificOutput.permissionDecisionReason, /\[ALERT\] LIFESAVER/);
-    assert.match(out.hookSpecificOutput.permissionDecisionReason, /hookSpecificOutput missing hookEventName/);
+    // hookEventName is a field the adapter owns: a hook that omits it must have
+    // its INTENT preserved, not be masked behind a LIFESAVER deny. A deny stays a
+    const deny = JSON.parse(validateClaudeStdout('PreToolUse', JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'real deny reason' } }), tmp));
+    assert.equal(deny.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.equal(deny.hookSpecificOutput.permissionDecision, 'deny');
+    assert.equal(deny.hookSpecificOutput.permissionDecisionReason, 'real deny reason');
+    assert.doesNotMatch(deny.hookSpecificOutput.permissionDecisionReason, /\[ALERT\] LIFESAVER/);
+    // The regression that blocked legitimate tool calls: an ALLOW + context that
+    // omits hookEventName must STAY an allow, not be flipped into a deny.
+    const allow = JSON.parse(validateClaudeStdout('PreToolUse', JSON.stringify({ hookSpecificOutput: { permissionDecision: 'allow', additionalContext: '[hme primer] x' } }), tmp));
+    assert.equal(allow.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.equal(allow.hookSpecificOutput.permissionDecision, 'allow');
+    assert.equal(allow.hookSpecificOutput.additionalContext, '[hme primer] x');
+    // A mismatched hookEventName is corrected to the actual event.
+    const mismatch = JSON.parse(validateClaudeStdout('PreToolUse', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', permissionDecision: 'allow', additionalContext: 'y' } }), tmp));
+    assert.equal(mismatch.hookSpecificOutput.hookEventName, 'PreToolUse');
+    // A genuinely-unparseable root still fails closed into a LIFESAVER deny.
+    const fatal = JSON.parse(validateClaudeStdout('PreToolUse', JSON.stringify([1, 2, 3]), tmp));
+    assert.equal(fatal.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.equal(fatal.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(fatal.hookSpecificOutput.permissionDecisionReason, /\[ALERT\] LIFESAVER/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
