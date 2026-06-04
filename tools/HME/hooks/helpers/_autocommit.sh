@@ -305,7 +305,7 @@ _ac_queue_request() {
 
 _ac_owner_claimed() {
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
-  exec 9>"$_AC_LOCK_FILE"
+  exec 9>"$_AC_OWNER_LOCK_FILE"
   flock -n 9 2>/dev/null
 }
 
