@@ -173,7 +173,8 @@ test('dispatch guard can explicitly send through ask-peer with leash text', () =
     assert.equal(out.sent, true);
     assert.equal(out.reply, 'ok');
     assert.equal(out.depth.next, 1);
-    assert.equal(out.budget.turn_id, 'driver:' + String(process.ppid).replace(/.*/, out.budget.turn_id).split(':').slice(0, 1)[0] || out.budget.turn_id);
+    assert.equal(out.budget.implicit, true);
+    assert.match(out.budget.turn_id, /^driver:/);
     const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
     assert.match(channel, /Leashed peer handoff for blue_lead/);
     assert.match(channel, /max_tools: 2/);
