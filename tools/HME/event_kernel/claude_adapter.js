@@ -132,17 +132,20 @@ function _lifesaverBlock(event, message) {
 
 function _normalizeClaudeStdoutObject(event, parsed) {
   const issues = [];
+  const repairs = [];
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { parsed: null, issues: ['stdout JSON root must be an object'] };
+    return { parsed: null, issues: ['stdout JSON root must be an object'], repairs };
   }
   const out = { ...parsed };
   if (out.hookSpecificOutput && typeof out.hookSpecificOutput === 'object' && !Array.isArray(out.hookSpecificOutput)) {
     out.hookSpecificOutput = { ...out.hookSpecificOutput };
+    // hookEventName is deterministic (it equals THIS event), so a missing or
+    // mismatched value is always repairable -- the adapter owns the field. It is
     if (!out.hookSpecificOutput.hookEventName) {
-      issues.push('hookSpecificOutput missing hookEventName');
-      if (event !== 'PreToolUse' && event !== 'PermissionRequest') out.hookSpecificOutput.hookEventName = event;
+      out.hookSpecificOutput.hookEventName = event;
+      repairs.push('added missing hookSpecificOutput.hookEventName');
     } else if (out.hookSpecificOutput.hookEventName !== event) {
-      issues.push(`hookSpecificOutput hookEventName=${JSON.stringify(out.hookSpecificOutput.hookEventName)} did not match ${event}; corrected before host relay`);
+      repairs.push(`corrected hookSpecificOutput.hookEventName ${JSON.stringify(out.hookSpecificOutput.hookEventName)} -> ${event}`);
       out.hookSpecificOutput.hookEventName = event;
     }
   }
