@@ -3,7 +3,8 @@
 TODO.md is the single source of truth. Cross-process writers (lifesaver,
 pulse, humans, the agent) serialize through an OS flock + atomic rename.
 Every load applies due timers and stamps fresh anchors; every save renders
-canonical grammar. Archival only happens when every active item is 5_ complete.
+canonical grammar. A set archives once nothing is in progress and >=1 item is
+5_; the non-5_ (3_/4_/4f_) items carry forward into the next set.
 """
 from __future__ import annotations
 
