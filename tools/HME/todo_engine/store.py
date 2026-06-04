@@ -153,9 +153,10 @@ def recover_orphaned_carryovers() -> int:
 
 
 def maybe_archive(now: float | None = None) -> str | None:
-    """If every active item is 5_, archive it to log/todo/set<N>.md and
-    advance to an empty next set. Non-5_ items remain active and block archive.
-    Returns archive path or None."""
+    """Archive the active set once nothing is in progress (no 0_/1_/2_) and at
+    least one item is 5_ (set_is_archivable): write the full set snapshot to
+    log/todo/set<N>.md, then start set N+1 carrying the non-5_ (3_/4_/4f_) items
+    forward with their codes preserved. Returns the archive path or None."""
     now = time.time() if now is None else now
 
     def _do():
@@ -168,8 +169,9 @@ def maybe_archive(now: float | None = None) -> str | None:
         n = _next_set_number(header)
         dest = d / f"set{n}.md"
         dest.write_text(render_document(header, todos), encoding="utf-8")
+        carried = [t for t in todos if t.code != "5"]
         next_header = advance_set_header(header, n + 1)
-        _atomic_write(render_document(next_header, []))
+        _atomic_write(render_document(next_header, carried))
         return str(dest)
 
     return _with_lock(_do)
