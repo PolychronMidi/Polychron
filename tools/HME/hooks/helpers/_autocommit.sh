@@ -297,9 +297,11 @@ _ac_do_commit() {
 _ac_queue_request() {
   local caller="${1:-unknown}" safe ts qfile
   safe=$(printf '%s' "$caller" | tr -c 'a-zA-Z0-9_.:-' '_')
+  # silent-ok: a 0 timestamp fallback only affects queue-filename ordering, not correctne
   ts=$(date +%s 2>/dev/null || echo 0)
   mkdir -p "$_AC_QUEUE_DIR" 2>/dev/null || true
   qfile="$_AC_QUEUE_DIR/$ts.$$.$RANDOM.$safe.req"
+  # silent-ok: failure IS surfaced -- the || block records it to every channel and return
   printf '%s\t%s\t%s\n' "$ts" "$$" "$caller" > "$qfile" 2>/dev/null || {
     _ac_record_failure "[$caller] failed to append autocommit queue request"
     return 1
@@ -309,10 +311,12 @@ _ac_queue_request() {
 _ac_owner_claimed() {
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
   exec 8>"$_AC_OWNER_LOCK_FILE"
+  # silent-ok: non-blocking lock-miss is the expected "another caller owns the drain" sig
   flock -n 8 2>/dev/null
 }
 
 _ac_queue_has_items() {
+  # silent-ok: absent/unreadable queue dir means no pending requests.
   [ -d "$_AC_QUEUE_DIR" ] && find "$_AC_QUEUE_DIR" -type f -name '*.req' -print -quit 2>/dev/null | grep -q .
 }
 
@@ -322,6 +326,7 @@ _ac_queue_drain_once() {
   if [ -d "$_AC_QUEUE_DIR" ]; then
     for q in "$_AC_QUEUE_DIR"/*.req; do
       [ -e "$q" ] || break
+      # silent-ok: a request that loses the move race stays in the queue and drains next 
       mv "$q" "$batch/" 2>/dev/null || true
     done
   fi
