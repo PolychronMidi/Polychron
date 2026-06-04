@@ -79,7 +79,12 @@ def _all_other_complete_map(todos: list[Todo]) -> dict[int, bool]:
 
 
 def set_is_archivable(todos: list[Todo]) -> bool:
-    """True when the set is non-empty and every item is 5_ complete."""
+    """True when the set has completed work to bank and nothing still in
+    progress: non-empty, no item at 0_/1_/2_, and at least one item is 5_.
+    The non-5_ terminal items (3_/4_/4f_) carry forward to the next set; the
+    >=1-5_ rule keeps a carry-over-only set (no 5_) from re-archiving forever."""
     if not todos:
         return False
-    return all(t.code == _COMPLETE for t in todos)
+    if any(t.code in IN_PROGRESS_CODES for t in todos):
+        return False
+    return any(t.code == _COMPLETE for t in todos)
