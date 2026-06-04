@@ -142,7 +142,7 @@ test('autocommit queue drains multiple callers through one owner pass', () => {
     });
     assert.strictEqual(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /counter=0/);
-    assert.match(result.stdout, /queue_exists=no/);
+    assert.match(result.stdout, /queue_has_items=no/);
     assert.match(result.stdout, /last_success=yes/);
   } finally {
     fs.rmSync(sandbox, { recursive: true, force: true });
