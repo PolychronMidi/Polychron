@@ -62,6 +62,7 @@ if [ -n "$PROJECT_ROOT" ] && [ -n "$PROMPT" ]; then
 fi
 _hme_bg_timeout 15 stale-state-sweep "$PROJECT_ROOT/log/hme-bg-stale-state-sweep.err" \
   python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py"
+_ups_mark bg_spawns
 
 # UserPromptSubmit must not run synchronous git/precommit work. Request-side
 # proxy_autocommit owns autocommit and writes the same sticky fail flag; this
