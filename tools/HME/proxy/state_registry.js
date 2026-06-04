@@ -26,6 +26,7 @@ const STATE_FILE_FORMAT_HINTS = {
   'tools/HME/runtime/heartbeat-lifesaver.ts': { name: 'statefile_lifesaver_heartbeat', format: 'text' },
   'tools/HME/runtime/coherence-events.jsonl': { name: 'statefile_coherence_events', format: 'jsonl' },
   'tools/HME/runtime/context-metabolism.jsonl': { name: 'statefile_context_metabolism', format: 'jsonl' },
+  'tools/HME/runtime/proof-capsules.jsonl': { name: 'statefile_proof_capsules', format: 'jsonl' },
 };
 
 // rationale: tmp/-relative names so PROJECT_ROOT moves don't break entries.
