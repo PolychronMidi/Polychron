@@ -19,8 +19,11 @@ sys.path.insert(0, str(REPO_ROOT / "tools" / "HME" / "scripts"))
 def _with_project_root(tmpdir, fn):
     prior = os.environ.get("PROJECT_ROOT")
     prior_metrics = os.environ.get("HME_METRICS_DIR")
+    prior_project_metrics = os.environ.get("METRICS_DIR")
+    metrics = str(Path(tmpdir) / "tools/HME/runtime/metrics")
     os.environ["PROJECT_ROOT"] = str(tmpdir)
-    os.environ["HME_METRICS_DIR"] = str(Path(tmpdir) / "tools/HME/runtime/metrics")
+    os.environ["HME_METRICS_DIR"] = metrics
+    os.environ["METRICS_DIR"] = metrics
     for mod in list(sys.modules.keys()):
         if mod == "verify_coherence" or mod.startswith("verify_coherence."):
             sys.modules.pop(mod, None)
@@ -28,13 +31,17 @@ def _with_project_root(tmpdir, fn):
         return fn()
     finally:
         if prior is None:
-            del os.environ["PROJECT_ROOT"]
+            os.environ.pop("PROJECT_ROOT", None)
         else:
             os.environ["PROJECT_ROOT"] = prior
         if prior_metrics is None:
-            del os.environ["HME_METRICS_DIR"]
+            os.environ.pop("HME_METRICS_DIR", None)
         else:
             os.environ["HME_METRICS_DIR"] = prior_metrics
+        if prior_project_metrics is None:
+            os.environ.pop("METRICS_DIR", None)
+        else:
+            os.environ["METRICS_DIR"] = prior_project_metrics
         for mod in list(sys.modules.keys()):
             if mod == "verify_coherence" or mod.startswith("verify_coherence."):
                 sys.modules.pop(mod, None)
