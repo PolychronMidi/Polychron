@@ -81,6 +81,10 @@ function runDebt() {
   const durable = facts.filter((f) => f && (f.stage === 'durable_invariant' || f.stage === 'compact_doctrine'));
   console.log(`durable_invariants=${durable.length} (raw_facts=${facts.length})`);
   for (const f of durable.slice(0, 10)) console.log(`- invariant: ${f.subject}: ${String(f.content).slice(0, 120)}`);
+  // P2 (phase 2): recurring noise the immune classifier metabolized into memory.
+  const immune = facts.filter((f) => f && f.source === 'immune_classifier');
+  console.log(`immune_memory=${immune.length} recurring noise classes metabolized`);
+  for (const f of immune.slice(0, 10)) console.log(`- immune: ${f.subject}: ${String(f.content).slice(0, 120)}`);
   printPolicyDeadWeight();
 }
 
