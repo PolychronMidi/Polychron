@@ -105,6 +105,24 @@ test('coherence economics covers budgets policy feedback immune checks and revie
   assert.equal(economics.reviewScales({ subtoken: 'proof', function: 'contract' }).filter((x) => x.checked).length, 2);
 });
 
+test('coherence organs 1-6 compile intent proof field genome leash freshness', () => {
+  const root = tmpRoot();
+  try {
+    const intent = organs.compileIntent('do 1-6');
+    assert.deepEqual(intent.scope, organs.ORGANS);
+    assert.equal(intent.agentPolicy.requireLeash, true);
+    const proof = organs.appendProofCapsule(root, { claim: 'done', evidence: ['node --test'], verifier: 'unit', confidence: 0.9 });
+    assert.equal(proof.status, 'proved');
+    assert.equal(organs.readProofCapsules(root).length, 1);
+    const field = organs.projectCoherenceField({ subject: 'x', intent_alignment: 0.8, evidence_strength: 0.8, entropy_cost: 0.1, noise_risk: 0.1 });
+    assert.ok(field.net_coherence > 1);
+    assert.equal(organs.validatePolicyGenome({ name: 'p', protects: ['truth'], owner: 'hme' }).ok, true);
+    assert.equal(organs.agentLeashContract({ prompt: 'scope: parse audit max duration 5 max tool 3 artifact report' }).ok, true);
+    assert.equal(organs.agentLeashContract({ prompt: 'wander' }).ok, false);
+    assert.equal(organs.freshnessStatus({ sourceMtime: 20, processStart: 10, runtimeFingerprint: 'a', wantedFingerprint: 'a' }).status, 'runtime_stale');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('i/why proof debt mesh resolve modes dispatch', () => {
   const why = path.join(process.env.PROJECT_ROOT, 'tools/HME/i/why');
   for (const mode of ['proof', 'debt', 'mesh', 'resolve']) {
