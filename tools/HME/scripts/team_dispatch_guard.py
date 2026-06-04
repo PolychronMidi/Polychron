@@ -206,9 +206,17 @@ def main() -> int:
     if target not in roles:
         return _deny("unregistered_target", f"target {target} is not in teams/roles.json", target=target)
 
-    ok, budget_info = _reserve_budget(root, args.turn_id, args.budget)
+    ok, budget_info = _reserve_budget(root, args.turn_id, args.budget, caller)
     if not ok:
-        return _deny("budget", f"peer-call budget exhausted for turn {args.turn_id}", budget=budget_info)
+        return _deny("budget", "peer-call budget exhausted or unscoped", budget=budget_info)
+
+    child_env = {
+        "HME_TEAM_ROLE": target,
+        "HME_TEAM_DEPTH": str(next_depth),
+        "HME_TEAM_MAX_DEPTH": str(args.max_depth),
+        "HME_TEAM_TURN_ROOT": str(budget_info.get("turn_id") or ""),
+        "HME_TEAM_DISPATCH_GUARD_OK": "1",
+    }
 
     out: dict[str, Any] = {
         "allowed": True,
