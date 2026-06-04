@@ -207,7 +207,7 @@
       "writers": [
         "tools/HME/scripts/ask-peer.sh"
       ],
-      "retention": "append-only point-to-point peer transcript, self-bounded by ask-peer.sh tail cap",
+      "retention": "append-only point-to-point peer transcript, flock-serialized and self-bounded by ask-peer.sh tail cap",
       "generated": true,
       "committed": false,
       "schema": "markdown transcript with compact driver/peer turns",
