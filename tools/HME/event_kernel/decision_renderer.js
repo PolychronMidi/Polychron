@@ -46,7 +46,7 @@ function renderPolicyAggregate(aggregate, options = {}) {
   const rewrites = aggregate.rewrites || [];
   const instructs = aggregate.instructs || [];
   if (rewrites.length && PERMISSION_EVENTS.has(eventName)) {
-    return renderRewrite(eventName, toolInput, [..._messages(rewrites), ..._messages(instructs)]);
+    return renderRewrite(eventName, toolInput, _messages(instructs));
   }
   if (instructs.length) return renderInstruct(eventName, _messages(instructs));
   return '';
