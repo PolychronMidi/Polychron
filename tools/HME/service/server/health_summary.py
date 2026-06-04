@@ -282,6 +282,10 @@ def health() -> str:
         lines.append(f"  unavailable: {type(e).__name__}: {e}")
     lines.append("")
 
+    lines.append("### Proxy quarantine")
+    lines.extend(_proxy_quarantine_lines(project_root))
+    lines.append("")
+
     # GPU
     lines.append("### GPU")
     for gpu in _gpu_state():
