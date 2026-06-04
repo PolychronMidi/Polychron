@@ -211,45 +211,38 @@ test('WIRED (item 4): hook decision rows carry a coherence-field vector', () => 
   assert.ok(['clarify', 'preserve', 'repair', 'mutate', 'obscure', 'parasitize'].includes(summary.field.effect));
 });
 
-test('P1: capsuleBacksArtifacts -- same-artifact match, parse-gap fallback, no-fresh false', () => {
-  const fresh = [{ proof_status: 'proved', expired: false, artifacts: ['a.js'] }];
-  assert.equal(organs.capsuleBacksArtifacts(fresh, ['a.js']), true, 'same artifact backs the claim');
-  assert.equal(organs.capsuleBacksArtifacts(fresh, ['b.js']), false, 'different artifact does not (no cross-turn laundering)');
-  assert.equal(organs.capsuleBacksArtifacts(fresh, []), true, 'parse gap (no files) weakens to any fresh proved capsule');
-  assert.equal(organs.capsuleBacksArtifacts([{ proof_status: 'debt', expired: false, artifacts: ['a.js'] }], ['a.js']), false, 'a debt capsule never backs a claim');
-  assert.equal(organs.capsuleBacksArtifacts([], ['a.js']), false, 'no fresh capsule -> not backed');
-});
-
 function _transcript(root, opts) {
   fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
   const t = path.join(root, 'tmp', 'transcript.jsonl');
+  const blocks = [{ type: 'tool_use', name: 'Edit', input: { file_path: opts.file } }];
+  if (opts.verify) blocks.push({ type: 'tool_use', name: 'Bash', input: { command: 'node --test' } });
   fs.writeFileSync(t, [
     JSON.stringify({ type: 'user', message: { content: 'fix the parser' } }),
-    JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: opts.file } }] } }),
+    JSON.stringify({ type: 'assistant', message: { content: blocks } }),
     JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'All tests pass and everything is fixed.' }] } }),
   ].join('\n') + '\n');
   return t;
 }
 
-test('P1: a fresh same-artifact proof capsule backs a completion claim; a decayed one does not', () => {
+test('P5: a same-turn verify proves an edited-file claim; a prior capsule never launders a re-edit', () => {
   const policy = require('../../proxy/stop_chain/policies/claim_proof');
   const file = '/repo/src/parser.js';
-  // fresh capsule naming the file edited this turn -> claim is proven -> allow.
+  // same-turn Bash verify on the edited file -> proven -> allow.
   const okRoot = tmpRoot();
   try {
-    organs.appendProofCapsule(okRoot, { claim: 'parser verified', evidence: ['node --test'], artifacts: [file], confidence: 0.9, freshness: 0.9 });
-    const res = policy.run({ payload: { transcript_path: _transcript(okRoot, { file }) }, projectRoot: okRoot,
+    const res = policy.run({ payload: { transcript_path: _transcript(okRoot, { file, verify: true }) }, projectRoot: okRoot,
       allow: () => ({ decision: 'allow' }), instruct: (m) => ({ decision: 'instruct', message: m }), deny: (m) => ({ decision: 'deny', reason: m }) });
-    assert.equal(res.decision, 'allow', 'fresh same-artifact capsule should back the claim');
+    assert.equal(res.decision, 'allow', 'a same-turn verify proves the claim');
   } finally { fs.rmSync(okRoot, { recursive: true, force: true }); }
-  // only a DECAYED capsule for the file -> not proven -> debt ladder (instruct in non-st
-  const staleRoot = tmpRoot();
+  // H1 laundering guard: a fresh prior-turn capsule for the SAME file + a this-turn
+  // re-edit with NO same-turn verify must NOT pass -- the prior proof predates the edit.
+  const launderRoot = tmpRoot();
   try {
-    organs.appendProofCapsule(staleRoot, { claim: 'parser verified long ago', evidence: ['node --test'], artifacts: [file], ts: '2020-01-01T00:00:00Z', verified_at: '2020-01-01T00:00:00Z' });
-    const res = policy.run({ payload: { transcript_path: _transcript(staleRoot, { file }) }, projectRoot: staleRoot,
+    organs.appendProofCapsule(launderRoot, { claim: 'parser verified last turn', evidence: ['node --test'], artifacts: [file], confidence: 0.9, freshness: 0.9 });
+    const res = policy.run({ payload: { transcript_path: _transcript(launderRoot, { file, verify: false }) }, projectRoot: launderRoot,
       allow: () => ({ decision: 'allow' }), instruct: (m) => ({ decision: 'instruct', message: m }), deny: (m) => ({ decision: 'deny', reason: m }) });
-    assert.notEqual(res.decision, 'allow', 'a decayed-only capsule must NOT back the claim');
-  } finally { fs.rmSync(staleRoot, { recursive: true, force: true }); }
+    assert.notEqual(res.decision, 'allow', 'a prior capsule must NOT back a this-turn re-edit (no laundering)');
+  } finally { fs.rmSync(launderRoot, { recursive: true, force: true }); }
 });
 
 test('P3: resolvers carry braid fields so resolved incidents braid complete', () => {
