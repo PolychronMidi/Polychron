@@ -475,6 +475,24 @@
       "committed": false,
       "schema": "JSONL rows with subject,content,stage,usefulness,proof_strength,recency,source,contradicted_by,retrieval_triggers,delete_when",
       "repair": "remove malformed tail row; next metabolism pass recreates file"
+    },
+    {
+      "path": "tools/HME/runtime/proof-capsules.jsonl",
+      "owner": "tools/HME/proxy/coherence_organs.js",
+      "readers": [
+        "i/why mode=proof-capsules",
+        "i/why mode=freshness",
+        "diagnostics"
+      ],
+      "writers": [
+        "tools/HME/proxy/coherence_organs.js",
+        "tools/HME/proxy/stop_chain/policies/claim_proof.js"
+      ],
+      "retention": "append-only proof capsules; decayed/expired capsules are ignored by readers and rotated manually",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with claim,evidence,verifier,freshness,confidence,decay,proof_status,verified_at,expires_at",
+      "repair": "remove malformed tail row; coherence_organs recreates file on next capsule"
     }
   ],
   "multi_writer": [
