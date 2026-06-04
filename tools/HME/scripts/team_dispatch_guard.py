@@ -134,13 +134,15 @@ def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str) -> tuple
     return True, {"turn_id": turn_key, "limit": budget, "used": used + 1, "implicit": implicit}
 
 
-def _message_with_leash(target: str, leash: dict[str, Any], message: str) -> str:
+def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_env: dict[str, str]) -> str:
     return (
         f"Leashed peer handoff for {target}.\n"
         f"scope: {leash['scope']}\n"
         f"artifact: {leash['artifact']}\n"
         f"max_duration_seconds: {leash['max_duration']}\n"
-        f"max_tools: {leash['max_tools']}\n\n"
+        f"max_tools: {leash['max_tools']}\n"
+        f"dispatch_depth: {child_env['HME_TEAM_DEPTH']} / {child_env['HME_TEAM_MAX_DEPTH']}\n"
+        f"turn_budget_id: {child_env['HME_TEAM_TURN_ROOT']}\n\n"
         f"Task:\n{message}"
     )
 
