@@ -8,8 +8,8 @@ const { PROJECT_ROOT } = require('../proxy/shared');
 
 const IPC_ROOT = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'event-ipc');
 
-// Per-invocation cleanup() only runs on graceful child close. When the PARENT
-// (proxy slot, event kernel) is SIGKILLed or restarts mid-spawn, the detached
+// Safety net: per-invocation cleanup() only runs on graceful close, so a
+// SIGKILLed/restarted parent leaks its detached child's dir; sweep stale ones.
 const IPC_TTL_MS = (() => {
   const n = parseInt(process.env.HME_EVENT_IPC_TTL_MS || '', 10);
   return Number.isFinite(n) && n > 0 ? n : 3_600_000;
