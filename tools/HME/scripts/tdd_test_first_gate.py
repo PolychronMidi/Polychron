@@ -96,6 +96,11 @@ def main(argv: list[str]) -> int:
     if not fp.is_absolute():
         fp = (project_root / fp).resolve()
 
+    # The gate only governs project implementation files. A path outside the
+    # project root (e.g. a /tmp scratch file) is out of scope -- skip it rather
+    if not fp.is_relative_to(project_root):
+        return 0
+
     if _is_skipped(fp, project_root):
         return 0
     if not _is_impl_file(fp):
