@@ -194,6 +194,7 @@ test('dispatch guard can explicitly send through ask-peer with leash text', () =
     assert.equal(out.depth.next, 1);
     assert.equal(out.budget.implicit, true);
     assert.match(out.budget.turn_id, /^driver:/);
+    assert.ok(fs.existsSync(path.join(root, 'tmp/.team-channel-teams_driver.md.lock')));
     const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
     assert.match(channel, /Leashed peer handoff for blue_lead/);
     assert.match(channel, /max_tools: 2/);
