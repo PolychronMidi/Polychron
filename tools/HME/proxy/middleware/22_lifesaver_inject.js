@@ -238,7 +238,7 @@ module.exports = {
     }
 
     const banner =
-      'LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:\n' +
+      'LIFESAVER -- unresolved errors in hme-errors.log; these stay surfaced until the root cause is fixed and they stop firing:\n' +
       unread.join('\n');
 
     // Append to LAST USER MESSAGE (not payload.system) -- mutating
