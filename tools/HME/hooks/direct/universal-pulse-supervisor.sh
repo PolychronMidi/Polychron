@@ -86,8 +86,13 @@ _up_spawn_child() {
   local _existing
   _existing=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
   if _up_alive "$_existing" "universal_pulse.py"; then
-    _UP_CHILD_CODE_MTIME=$(_up_code_mtime)
-    _up_log "adopted existing universal_pulse.py pid=$_existing (no respawn)"
+    # Baseline the adopted child to its ACTUAL start time, not "now". A daemon
+    # forked before a code edit caches the old modules forever; baselining to
+    local _start_epoch
+    _start_epoch=$(date -d "$(ps -o lstart= -p "$_existing" 2>/dev/null)" +%s 2>/dev/null || echo 0)
+    case "$_start_epoch" in ''|*[!0-9]*|0) _start_epoch=$(_up_code_mtime) ;; esac
+    _UP_CHILD_CODE_MTIME="$_start_epoch"
+    _up_log "adopted existing universal_pulse.py pid=$_existing start_epoch=$_start_epoch (no respawn)"
     return 0
   fi
   mkdir -p "$_SV_ROOT/log" "$_SV_ROOT/tmp" 2>/dev/null
