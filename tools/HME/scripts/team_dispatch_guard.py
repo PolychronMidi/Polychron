@@ -97,9 +97,21 @@ def _validate_leash(args: argparse.Namespace) -> dict[str, Any] | str:
     }
 
 
-def _reserve_budget(root: Path, turn_id: str, budget: int) -> tuple[bool, dict[str, Any]]:
-    if not turn_id:
-        return True, {"turn_id": "", "limit": budget, "used": 0, "unscoped": True}
+def _turn_key(raw: str, caller: str) -> tuple[str | None, bool]:
+    if raw:
+        return raw, False
+    seeded = os.environ.get("HME_TEAM_TURN_ROOT") or ""
+    if seeded:
+        return seeded, False
+    if caller == "driver":
+        return f"driver:{os.getppid()}:{int(time.time() // 3600)}", True
+    return None, True
+
+
+def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str) -> tuple[bool, dict[str, Any]]:
+    key, implicit = _turn_key(turn_id, caller)
+    if not key:
+        return False, {"turn_id": "", "limit": budget, "used": 0, "unscoped": True}
     path = root / BUDGET_REL
     data = _load_json(path, {"turns": {}})
     if not isinstance(data, dict):
