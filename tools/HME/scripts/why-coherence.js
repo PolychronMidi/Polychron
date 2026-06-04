@@ -65,6 +65,15 @@ function runDebt() {
     noise_events: Math.max(0, incidentEvents.length - resolverEvents.length),
   });
   console.log(`policy_feedback incident_surface: action=${fb.action} prevented=${fb.prevented_failures} noise=${fb.noise_events}`);
+  // claim_proof shadow signal-vs-noise: deny verdicts split by the TP/FP
+  // discriminator (verified=false = genuine unverified-claim catch = signal;
+  const cpDenies = events.filter((e) => e && e.subject === 'stop:claim_proof' && e.meta && e.meta.decision === 'deny');
+  const cpScored = cpDenies.filter((e) => typeof e.meta.verified === 'boolean');
+  const cpSignal = cpScored.filter((e) => !e.meta.verified).length;
+  const cpNoise = cpScored.filter((e) => e.meta.verified).length;
+  const cpFb = economics.policyFeedback({ policy: 'claim_proof_shadow', prevented_failures: cpSignal, noise_events: cpNoise });
+  const cpLegacy = cpDenies.length - cpScored.length;
+  console.log(`policy_feedback claim_proof_shadow: action=${cpFb.action} signal=${cpSignal} noise=${cpNoise} legacy_unscored=${cpLegacy} -- flip non-strict to hard-deny only when action=keep and signal>0`);
   // Surface durable invariants the metabolism pass has distilled from raw traces.
   const facts = require('../proxy/context_metabolism').readFacts(root);
   const durable = facts.filter((f) => f && (f.stage === 'durable_invariant' || f.stage === 'compact_doctrine'));
