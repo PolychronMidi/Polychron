@@ -86,29 +86,26 @@ class StateOwnershipGateTests(unittest.TestCase):
         self.assertEqual(rc, 0, f"expected clean audit, got rc={rc}\n{out}")
 
     def test_undeclared_writer_fails(self):
-        rogue = _PROJECT / "tools" / "HME" / "hooks" / "pretooluse" / "_gate_test_rogue.sh"
-        rogue.write_text(_ROGUE_BODY, encoding="utf-8")
-        try:
-            rc, out = _run_audit()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_minimal_state_registry(root)
+            rogue = root / "tools" / "HME" / "hooks" / "pretooluse" / "_gate_test_rogue.sh"
+            rogue.parent.mkdir(parents=True, exist_ok=True)
+            rogue.write_text(_ROGUE_BODY, encoding="utf-8")
+            rc, out = _run_audit(root)
             self.assertEqual(rc, 1, f"undeclared writer must trip drift; got rc={rc}\n{out}")
             self.assertIn("_gate_test_rogue.sh", out)
-        finally:
-            rogue.unlink(missing_ok=True)
 
     def test_disabled_dir_is_ignored(self):
-        d = _PROJECT / "tools" / "HME" / "hooks" / "pretooluse" / "bash" / "_disabled"
-        d.mkdir(parents=True, exist_ok=True)
-        rogue = d / "_gate_test_inert.sh"
-        rogue.write_text(_ROGUE_BODY, encoding="utf-8")
-        try:
-            rc, out = _run_audit()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_minimal_state_registry(root)
+            d = root / "tools" / "HME" / "hooks" / "pretooluse" / "bash" / "_disabled"
+            d.mkdir(parents=True, exist_ok=True)
+            rogue = d / "_gate_test_inert.sh"
+            rogue.write_text(_ROGUE_BODY, encoding="utf-8")
+            rc, out = _run_audit(root)
             self.assertEqual(rc, 0, f"_disabled writers must be ignored; got rc={rc}\n{out}")
-        finally:
-            rogue.unlink(missing_ok=True)
-            try:
-                d.rmdir()
-            except OSError:
-                pass  # silent-ok: pending review
 
 
 if __name__ == "__main__":
