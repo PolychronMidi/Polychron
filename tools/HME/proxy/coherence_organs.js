@@ -5,13 +5,26 @@ const state = require('./state_registry');
 const PROOF_STORE = 'statefile_proof_capsules';
 try { state.register({ name: PROOF_STORE, relPath: 'tools/HME/runtime/proof-capsules.jsonl', format: 'jsonl' }); } catch (_e) {}
 
-const ORGANS = [
-  'intent_compiler',
-  'proof_capsule_ledger',
-  'coherence_field_index',
+const COHERENCE_ORGANS = [
+  'coherence_field',
+  'proof_capsules',
+  'causal_braid',
+  'coherence_immune_system',
   'policy_genome',
-  'agent_leash_kernel',
-  'temporal_freshness_mesh',
+  'temporal_coherence',
+];
+
+const VECTOR_FIELDS = [
+  'intent_alignment',
+  'evidence_strength',
+  'entropy_cost',
+  'causal_parent',
+  'invariant_touched',
+  'user_pain_addressed',
+  'reversibility',
+  'freshness',
+  'proof_status',
+  'noise_risk',
 ];
 
 function _text(value, limit = 500) {
@@ -23,37 +36,66 @@ function _num(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function compileIntent(prompt = '') {
-  const text = _text(prompt, 2000).toLowerCase();
-  const allSix = /\bdo\s+(?:1\s*-\s*6|1\s*to\s*6)\b/.test(text);
-  const scope = allSix ? ORGANS.slice() : [];
-  if (/\bhook ui\b|\bsilence\b/.test(text)) scope.push('hook_ui_silence_contract');
-  if (/\bschema\b|hookspecificoutput/.test(text)) scope.push('schema_boundary_hardening');
-  if (/\bquarantine\b|fingerprint/.test(text)) scope.push('quarantine_convergence_proof');
+function _unit(value, fallback = 0) {
+  return Math.max(0, Math.min(1, _num(value, fallback)));
+}
+
+function normalizeCoherenceVector(input = {}) {
+  const evidenceDefault = Array.isArray(input.evidence) && input.evidence.length ? 0.7 : 0.2;
   return {
-    intent: _text(prompt),
-    scope: Array.from(new Set(scope)),
-    nonGoals: ['no_subagents_without_leash', 'no_manual_restarts', 'no_autocommit_polling', 'no_broad_audits'],
-    requiredProof: ['targeted_tests', 'changed_files', 'recurrence_guard'],
-    agentPolicy: { allowSubagents: false, requireLeash: true },
+    intent_alignment: _unit(input.intent_alignment, input.intent ? 0.7 : 0.3),
+    evidence_strength: _unit(input.evidence_strength, evidenceDefault),
+    entropy_cost: _unit(input.entropy_cost, Math.max(0, _num(input.entropy_delta, 0))),
+    causal_parent: _text(input.causal_parent || input.parent || '', 240),
+    invariant_touched: _text(input.invariant_touched || input.invariant || '', 240),
+    user_pain_addressed: _unit(input.user_pain_addressed, input.user_pain ? 0.7 : 0),
+    reversibility: _unit(input.reversibility, 0.5),
+    freshness: _unit(input.freshness, input.proof_status === 'stale' ? 0.2 : 0.7),
+    proof_status: _text(input.proof_status || input.proof_class || 'unknown', 80),
+    noise_risk: _unit(input.noise_risk, 0),
   };
+}
+
+function coherenceEffect(vector) {
+  const v = normalizeCoherenceVector(vector);
+  if (v.noise_risk >= 0.7 || v.entropy_cost >= 0.8) return 'parasitize';
+  if (v.evidence_strength < 0.3 && v.intent_alignment < 0.5) return 'obscure';
+  if (v.user_pain_addressed >= 0.6 && v.evidence_strength >= 0.6) return 'repair';
+  if (v.reversibility < 0.3 && v.intent_alignment >= 0.6) return 'mutate';
+  if (v.intent_alignment >= 0.7 && v.evidence_strength >= 0.6) return 'clarify';
+  return 'preserve';
+}
+
+function projectCoherenceField(event = {}) {
+  const vector = normalizeCoherenceVector(event);
+  const net = Number((vector.intent_alignment + vector.evidence_strength + vector.user_pain_addressed + vector.reversibility + vector.freshness - vector.entropy_cost - vector.noise_risk).toFixed(4));
+  return { subject: _text(event.subject || event.kind || 'event', 240), ...vector, net_coherence: net, effect: coherenceEffect(vector) };
+}
+
+function summarizeCoherenceField(rows = []) {
+  const projected = rows.map(projectCoherenceField);
+  const net = projected.reduce((sum, r) => sum + r.net_coherence, 0);
+  return { count: projected.length, net_coherence: Number(net.toFixed(4)), effects: projected.reduce((acc, row) => ({ ...acc, [row.effect]: (acc[row.effect] || 0) + 1 }), {}), high_noise: projected.filter((r) => r.noise_risk >= 0.5).map((r) => r.subject) };
 }
 
 function normalizeProofCapsule(input = {}) {
   const evidence = Array.isArray(input.evidence) ? input.evidence.map((x) => _text(x, 240)).filter(Boolean) : [];
   const verifiedAt = _text(input.verifiedAt || input.verified_at || input.ts || '');
   const expiresAt = _text(input.expiresAt || input.expires_at || '');
-  const confidence = Math.max(0, Math.min(1, _num(input.confidence, evidence.length ? 0.7 : 0.2)));
+  const freshness = _unit(input.freshness, expiresAt ? 0.8 : 0.6);
+  const confidence = _unit(input.confidence, evidence.length ? 0.7 : 0.2);
+  const decay = _unit(input.decay, 1 - freshness);
   return {
     ts: input.ts || new Date().toISOString(),
     claim: _text(input.claim, 500),
     evidence,
     verifier: _text(input.verifier || input.check, 240),
-    proof_class: _text(input.proofClass || input.proof_class || 'observed', 80),
+    freshness,
+    confidence,
+    decay,
+    proof_status: evidence.length && confidence >= 0.6 && freshness >= 0.4 ? 'proved' : 'debt',
     verified_at: verifiedAt,
     expires_at: expiresAt,
-    confidence,
-    status: evidence.length && confidence >= 0.6 ? 'proved' : 'debt',
   };
 }
 
@@ -67,27 +109,42 @@ function readProofCapsules(root) {
   return state.read(PROOF_STORE, root);
 }
 
-function projectCoherenceField(event = {}) {
-  const intent = Math.max(0, Math.min(1, _num(event.intent_alignment, event.intent ? 0.7 : 0.3)));
-  const proof = Math.max(0, Math.min(1, _num(event.evidence_strength, (event.evidence || []).length ? 0.7 : 0.2)));
-  const entropy = Math.max(0, Math.min(1, _num(event.entropy_cost, Math.max(0, _num(event.entropy_delta, 0)))));
-  const noise = Math.max(0, Math.min(1, _num(event.noise_risk, 0)));
-  const renewal = Math.max(0, Math.min(1, _num(event.recurrence_value, (event.obligations || []).length ? 0.5 : 0.2)));
-  const net = Number((intent + proof + renewal - entropy - noise).toFixed(4));
-  return { subject: _text(event.subject || event.kind || 'event', 240), intent_alignment: intent, evidence_strength: proof, entropy_cost: entropy, noise_risk: noise, recurrence_value: renewal, net_coherence: net };
+function causalBraid(input = {}) {
+  const steps = [
+    ['user_pain', input.user_pain],
+    ['violated_invariant', input.violated_invariant],
+    ['responsible_subsystem', input.responsible_subsystem || input.subsystem],
+    ['runtime_state', input.runtime_state],
+    ['code_cause', input.code_cause],
+    ['verification', input.verification],
+    ['recurrence_guard', input.recurrence_guard],
+    ['memory_crystallization', input.memory_crystallization || input.memory],
+  ].map(([kind, value]) => ({ kind, value: _text(value, 500), proved: Boolean(_text(value, 500)) }));
+  return { id: _text(input.id || input.subject || 'causal-braid', 160), chain: steps, missing: steps.filter((s) => !s.proved).map((s) => s.kind) };
 }
 
-function summarizeCoherenceField(rows = []) {
-  const projected = rows.map(projectCoherenceField);
-  const net = projected.reduce((sum, r) => sum + r.net_coherence, 0);
-  return { count: projected.length, net_coherence: Number(net.toFixed(4)), high_noise: projected.filter((r) => r.noise_risk >= 0.5).map((r) => r.subject) };
+const IMMUNE_PATTERNS = [
+  ['repeated_hook_ui', /repeated hook|hook ui|additionalContext.*spam|crying_wolf/i, 'suppress'],
+  ['subagent_overrun', /subagent.*(overrun|late|20 minutes|runaway)/i, 'quarantine'],
+  ['manual_auto_poll', /manual.*(autocommit|automatic|auto system)|autocommit.*poll/i, 'repair'],
+  ['stale_runtime', /stale daemon|module cache|runtime stale|old code/i, 'repair'],
+  ['schema_drift', /hookSpecificOutput|hookEventName|schema drift/i, 'repair'],
+  ['context_burn', /context burn|useless explanation|wall of text|acknowledge/i, 'suppress'],
+  ['ceremonial_verification', /ceremony|manual check|redundant test/i, 'metabolize'],
+];
+
+function immuneResponse(input = {}) {
+  const text = _text(input.text || input.message || input.summary || '', 2000);
+  const hits = IMMUNE_PATTERNS.filter(([, re]) => re.test(text)).map(([kind, , action]) => ({ kind, action }));
+  return { signal: text, hits, classification: hits[0] ? hits[0].kind : 'none', action: hits[0] ? hits[0].action : 'observe', memory: hits.length ? 'record_pattern' : 'none' };
 }
 
 function policyGenome(policy = {}) {
   return {
     name: _text(policy.name || 'unknown', 120),
     protects: Array.isArray(policy.protects) ? policy.protects.map((x) => _text(x, 120)).filter(Boolean) : [_text(policy.category || 'unknown', 120)],
-    fail_mode: _text(policy.failMode || policy.fail_mode || 'open', 40),
+    known_false_positives: Array.isArray(policy.known_false_positives) ? policy.known_false_positives.map((x) => _text(x, 160)).filter(Boolean) : [],
+    fail_open_or_closed: _text(policy.failOpenOrClosed || policy.fail_open_or_closed || policy.failMode || 'open', 40),
     visible_output_allowed: Boolean(policy.visibleOutputAllowed || policy.visible_output_allowed || false),
     telemetry_only: policy.telemetryOnly !== false,
     owner: _text(policy.owner || 'HME', 120),
@@ -100,44 +157,37 @@ function validatePolicyGenome(policy = {}) {
   const g = policyGenome(policy);
   const missing = [];
   if (!g.protects.length || !g.protects[0]) missing.push('protects');
-  if (!g.fail_mode) missing.push('fail_mode');
+  if (!g.fail_open_or_closed) missing.push('fail_open_or_closed');
   if (!g.owner) missing.push('owner');
   return { ok: missing.length === 0, missing, genome: g };
-}
-
-function agentLeashContract(input = {}) {
-  const prompt = _text(input.prompt || input.task || '', 3000);
-  const scope = _text(input.scope || input.description || '', 240);
-  const artifact = _text(input.artifact || input.expected_artifact || '', 240);
-  const maxDurationMin = _num(input.maxDurationMin || input.max_duration_min || input.maxMinutes, 0);
-  const maxToolCalls = _num(input.maxToolCalls || input.max_tool_calls, 0);
-  const promptHasBounds = /max (duration|tool)|artifact|scope:/i.test(prompt);
-  const ok = Boolean(scope && artifact && maxDurationMin > 0 && maxToolCalls > 0) || promptHasBounds;
-  return { ok, scope, artifact, max_duration_min: maxDurationMin, max_tool_calls: maxToolCalls, reason: ok ? '' : 'Agent launch requires scope, max duration, max tool calls, and expected artifact.' };
 }
 
 function freshnessStatus(input = {}) {
   const sourceMtime = _num(input.sourceMtime || input.source_mtime, 0);
   const processStart = _num(input.processStart || input.process_start, 0);
+  const moduleImport = _num(input.moduleImportTime || input.module_import_time, processStart);
   const runtime = _text(input.runtimeFingerprint || input.runtime_fingerprint || '', 120);
   const wanted = _text(input.wantedFingerprint || input.wanted_fingerprint || runtime, 120);
   const proofTs = _num(input.proofTs || input.proof_ts, 0);
-  const runtimeStale = Boolean(wanted && runtime && wanted !== runtime) || (sourceMtime > 0 && processStart > 0 && processStart < sourceMtime);
+  const runtimeStale = Boolean(wanted && runtime && wanted !== runtime) || (sourceMtime > 0 && processStart > 0 && processStart < sourceMtime) || (sourceMtime > 0 && moduleImport > 0 && moduleImport < sourceMtime);
   const proofStale = proofTs > 0 && sourceMtime > 0 && proofTs < sourceMtime;
   const status = runtimeStale ? 'runtime_stale' : proofStale ? 'proof_stale' : 'fresh';
-  return { status, runtime_stale: runtimeStale, proof_stale: proofStale, runtime_fingerprint: runtime, wanted_fingerprint: wanted };
+  return { status, source_mtime: sourceMtime, process_start_time: processStart, module_import_time: moduleImport, runtime_stale: runtimeStale, proof_stale: proofStale, runtime_fingerprint: runtime, wanted_fingerprint: wanted };
 }
 
 module.exports = {
-  ORGANS,
-  compileIntent,
+  COHERENCE_ORGANS,
+  VECTOR_FIELDS,
+  normalizeCoherenceVector,
+  coherenceEffect,
+  projectCoherenceField,
+  summarizeCoherenceField,
   normalizeProofCapsule,
   appendProofCapsule,
   readProofCapsules,
-  projectCoherenceField,
-  summarizeCoherenceField,
+  causalBraid,
+  immuneResponse,
   policyGenome,
   validatePolicyGenome,
-  agentLeashContract,
   freshnessStatus,
 };
