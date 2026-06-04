@@ -65,8 +65,8 @@ function _scanAndRewrite(fp, content) {
   const kept = [];
   for (let i = 0; i < lines.length; i++) if (keep.has(i)) kept.push(lines[i]);
   const messages = [];
-  if (bloatRemoved.length) messages.push(`DDoC stripped: comment_bloat - lines removed: [${bloatRemoved.join(',')}]`);
-  for (const lt of longTruncs) messages.push(`DDoC stripped: chars ${lt.removed} removed from line ${lt.line}`);
+  if (bloatRemoved.length) messages.push(`comment_bloat lines removed: [${bloatRemoved.join(',')}]`);
+  for (const lt of longTruncs) messages.push(`comment_bloat chars ${lt.removed} removed from line ${lt.line}`);
   return { content: kept.join('\n'), messages };
 }
 
