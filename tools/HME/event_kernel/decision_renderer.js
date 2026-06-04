@@ -23,10 +23,11 @@ function renderDeny(eventName, reason) {
 }
 
 function renderRewrite(eventName, updatedInput, messages = []) {
-  const context = messages.map(_text).filter(Boolean).join('\n');
-  const fields = { permissionDecision: 'allow', updatedInput: updatedInput || {} };
-  if (context) fields.additionalContext = context;
-  return _hook(eventName, fields);
+  return _hook(eventName, {
+    permissionDecision: 'allow',
+    updatedInput: updatedInput || {},
+    additionalContext: messages.map(_text).filter(Boolean).join('\n'),
+  });
 }
 
 function renderInstruct(eventName, messages = []) {
