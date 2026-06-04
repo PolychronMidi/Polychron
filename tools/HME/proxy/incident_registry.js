@@ -37,8 +37,12 @@ function normalizeIncident(input) {
   const regressionTest = _singleLine(input.regressionTest || input.regression_test || '', 240);
   const resolver = _singleLine(input.resolver || '', 240);
   const proof = input.proof && typeof input.proof === 'object' ? { ...input.proof } : {};
+  // Causal-braid fields: invariant violated + observed runtime state at incident
+  // time, so a resolved incident reconstructs a complete pain->guard chain.
+  const invariant = _singleLine(input.invariant || input.invariant_touched || '', 240);
+  const runtimeState = _singleLine(input.runtimeState || input.runtime_state || '', 300);
   const ts = input.ts || _ts();
-  return { id, severity, component, summary, repair, dedupeKey, evidence, status, rootCause, fixedBy, regressionTest, resolver, proof, ts };
+  return { id, severity, component, summary, repair, dedupeKey, evidence, status, rootCause, fixedBy, regressionTest, resolver, proof, invariant, runtimeState, ts };
 }
 
 function formatIncidentLine(input) {
