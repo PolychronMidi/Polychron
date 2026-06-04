@@ -106,10 +106,14 @@ function runResolve() {
     if (seen.has(key)) continue;
     seen.add(key);
     // dedupeKey keyed on the line so resolveIncident stays idempotent across runs.
+    // Carry the resolver-known braid fields so i/why mode=causal-braid reconstructs
+    // a complete chain instead of mostly-missing links.
     const before = incidents.readIncidents(root).length;
     incidents.resolveIncident(root, {
-      id: r.kind, component: 'hme', summary: r.reason || 'resolver-proven',
+      id: r.kind, component: r.kind || 'hme', summary: r.reason || 'resolver-proven',
       resolver: r.resolver, proof: r.proof || {}, dedupeKey: key,
+      invariant: r.invariant || '', runtimeState: r.runtimeState || '',
+      regressionTest: r.recurrenceTest || '', rootCause: r.reason || '',
     });
     if (incidents.readIncidents(root).length > before) {
       recorded += 1;
