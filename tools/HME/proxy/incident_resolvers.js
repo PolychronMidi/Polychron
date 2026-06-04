@@ -66,6 +66,9 @@ function _staleRuntime(line, root) {
     resolver: 'proxy-runtime.git_sha == HEAD',
     proof: { head, live },
     reason: head && live && head === live ? 'runtime fingerprint matches current HEAD' : 'runtime fingerprint not proven current',
+    invariant: 'proxy runtime serves current HEAD code',
+    runtimeState: `head=${head || '?'} live=${live || '?'}`,
+    recurrenceTest: 'tools/HME/tests/specs/polychron_restart_contract.test.js',
   };
 }
 
