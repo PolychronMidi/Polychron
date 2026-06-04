@@ -109,7 +109,7 @@ test('ask-peer rejects roles outside bounded team channel and session paths', ()
 test('dispatch guard blocks depth cap, per-turn budget, and E1-E2 crew spawning', () => {
   const root = tmpProject();
   try {
-    writeRoles(root, { agent2: BASE_ROLE, crew_e3_0: { ...BASE_ROLE, session_file: 'tmp/.team-crew_e3_0.session' } });
+    writeRoles(root, { blue_lead: LEAD_ROLE, crew_e3_0: CREW_ROLE });
     writeDashboard(root, BASE_AGENTS);
     const common = ['--caller', 'driver', '--tier', 'E5', '--scope', 'review', '--artifact', 'plan.md', '--max-duration', '30', '--max-tools', '2'];
 
@@ -123,7 +123,7 @@ test('dispatch guard blocks depth cap, per-turn budget, and E1-E2 crew spawning'
     assert.equal(r.status, 0, r.stderr);
     out = JSON.parse(r.stdout);
     assert.equal(out.allowed, true);
-    assert.equal(out.target, 'agent2');
+    assert.equal(out.target, 'blue_lead');
     r = runDispatch(root, [...common, '--turn-id', 't1', '--budget', '1']);
     out = JSON.parse(r.stdout);
     assert.equal(out.allowed, false);
@@ -141,7 +141,7 @@ test('dispatch guard blocks depth cap, per-turn budget, and E1-E2 crew spawning'
 test('dispatch guard can explicitly send through ask-peer with leash text', () => {
   const root = tmpProject();
   try {
-    writeRoles(root, { agent2: BASE_ROLE });
+    writeRoles(root, { blue_lead: LEAD_ROLE });
     writeDashboard(root, BASE_AGENTS);
     const r = runDispatch(root, [
       '--caller', 'driver', '--tier', 'E5', '--scope', 'bounded review', '--artifact', 'plan.md',
@@ -153,7 +153,7 @@ test('dispatch guard can explicitly send through ask-peer with leash text', () =
     assert.equal(out.sent, true);
     assert.equal(out.reply, 'ok');
     const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
-    assert.match(channel, /Leashed peer handoff for agent2/);
+    assert.match(channel, /Leashed peer handoff for blue_lead/);
     assert.match(channel, /max_tools: 2/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
