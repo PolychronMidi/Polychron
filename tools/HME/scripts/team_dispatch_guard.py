@@ -55,6 +55,12 @@ def _roles(root: Path) -> dict[str, Any]:
 
 
 def _infer_depth(caller: str) -> int:
+    try:
+        env_depth = int(os.environ.get("HME_TEAM_DEPTH", ""))
+        if env_depth >= 0:
+            return env_depth
+    except ValueError:
+        pass  # silent-ok: pending review
     return 0 if caller == "driver" else 1
 
 
