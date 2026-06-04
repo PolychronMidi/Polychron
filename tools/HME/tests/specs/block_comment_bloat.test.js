@@ -30,7 +30,7 @@ test('block-comment-bloat: truncates comment line >= LONG_LINE chars', async () 
   const content = `const a = 1;\n${longComment}\nconst b = 2;\n`;
   const r = await policy.fn(_ctx({ toolInput: { file_path: 'a.js', content } }));
   assert.strictEqual(r.decision, 'rewrite');
-  assert.match(r.message, /DDoC stripped: chars 90-/);
+  assert.match(r.message, /comment_bloat chars 90-/);
   const lines = r.updatedInput.content.split('\n');
   assert.ok(lines[1].length < 90, `truncated comment should be <90 chars, was ${lines[1].length}`);
 });
