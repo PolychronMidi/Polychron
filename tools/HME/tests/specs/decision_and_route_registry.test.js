@@ -49,8 +49,9 @@ test('decision renderer owns hookSpecificOutput for policy denies, rewrites, and
     hookEventName: 'PreToolUse',
     permissionDecision: 'allow',
     updatedInput: { command: 'pwd' },
-    additionalContext: 'rw\nnote',
+    additionalContext: 'note',
   });
+  assert.doesNotMatch(JSON.stringify(rewritten), /rw/);
   const instructed = JSON.parse(Render.renderPolicyAggregate({
     firstDeny: null,
     rewrites: [],
