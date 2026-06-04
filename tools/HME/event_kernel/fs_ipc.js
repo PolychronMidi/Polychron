@@ -8,8 +8,41 @@ const { PROJECT_ROOT } = require('../proxy/shared');
 
 const IPC_ROOT = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'event-ipc');
 
+// Per-invocation cleanup() only runs on graceful child close. When the PARENT
+// (proxy slot, event kernel) is SIGKILLed or restarts mid-spawn, the detached
+const IPC_TTL_MS = (() => {
+  const n = parseInt(process.env.HME_EVENT_IPC_TTL_MS || '', 10);
+  return Number.isFinite(n) && n > 0 ? n : 3_600_000;
+})();
+let _sweptThisProcess = false;
+
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function sweepStaleInvocations(now = Date.now()) {
+  let removed = 0;
+  let entries;
+  // silent-ok: absent IPC_ROOT means nothing to sweep.
+  try { entries = fs.readdirSync(IPC_ROOT, { withFileTypes: true }); }
+  catch (_e) { return 0; }
+  for (const ent of entries) {
+    if (!ent.isDirectory()) continue;
+    const dir = path.join(IPC_ROOT, ent.name);
+    let st;
+    try { st = fs.statSync(dir); } catch (_e) { continue; }
+    if (now - st.mtimeMs < IPC_TTL_MS) continue;
+    try { fs.rmSync(dir, { recursive: true, force: true }); removed += 1; }
+    catch (_e) { /* best effort */ }
+  }
+  return removed;
+}
+
+function _sweepStaleOnce() {
+  if (_sweptThisProcess) return;
+  _sweptThisProcess = true;
+  if (process.env.HME_KEEP_EVENT_IPC === '1') return;
+  try { sweepStaleInvocations(); } catch (_e) { /* best effort */ }
 }
 
 function atomicWrite(file, text) {
