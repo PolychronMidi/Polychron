@@ -96,15 +96,9 @@ function run(ctx) {
   const verifyTools = toolNames.filter((n) => VERIFY_TOOLS.has(n));
   const editedFiles = _editedFiles(blocks);
 
-  // P1: a completion claim is also backed by a fresh (non-decayed) proof capsule
-  // that names a file edited THIS turn. Read prior capsules BEFORE minting this
-  let capsuleBacks = false;
-  if (editsThisTurn > 0) {
-    let priorFresh = [];
-    try { priorFresh = require('../../coherence_organs').freshProofCapsules(ctx.projectRoot); } catch (_e) { priorFresh = []; }
-    capsuleBacks = require('../../coherence_organs').capsuleBacksArtifacts(priorFresh, editedFiles);
-  }
-  const proven = verifiedThisTurn || capsuleBacks;
+  // P5 (Agent2 H1/H2): a prior-turn proof capsule's proof PREDATES any edit made
+  // this turn, so it can never back this-turn edits -- edited work requires a
+  const proven = verifiedThisTurn;
 
   // Every completion/absolute claim becomes a proof capsule (proved or debt),
   // recording the files it touched so a later turn can match same-artifact proof.
@@ -112,7 +106,7 @@ function run(ctx) {
 
   // Build the evidence event the substrate's guard reasons over.
   const events = proven
-    ? [{ kind: 'test', evidence: verifiedThisTurn ? verifyTools : ['fresh proof capsule (same artifact)'], proof_class: 'executed' }]
+    ? [{ kind: 'test', evidence: verifyTools, proof_class: 'executed' }]
     : [];
   const verdict = guard.evaluateClaim(claimText, events);
   if (verdict.supported) return ctx.allow();
