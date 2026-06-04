@@ -144,7 +144,7 @@ test('pre-write rewrites long comment lines instead of denying', async () => {
   assert.strictEqual(first.permissionDecision, 'allow');
   assert.ok(first.updatedInput, 'rewrite should populate updatedInput');
   assert.ok(first.updatedInput.content.length < content.length, 'content should be trimmed');
-  assert.match((first.contextualRules || []).join('\n'), /DDoC stripped: chars/);
+  assert.deepStrictEqual(first.contextualRules || [], []);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
