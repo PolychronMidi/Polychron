@@ -226,6 +226,7 @@ module.exports = {
   readProofCapsules,
   decayProofCapsule,
   freshProofCapsules,
+  capsuleBacksArtifacts,
   PROOF_TTL_MS,
   causalBraid,
   immuneResponse,
