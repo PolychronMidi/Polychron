@@ -293,6 +293,42 @@ _ac_do_commit() {
   return 1
 }
 
+_ac_queue_request() {
+  local caller="${1:-unknown}"
+  mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
+  printf '%s\t%s\t%s\n' "$(date +%s 2>/dev/null || echo 0)" "$$" "$caller" >> "$_AC_QUEUE_FILE" 2>/dev/null || {
+    _ac_record_failure "[$caller] failed to append autocommit queue request"
+    return 1
+  }
+}
+
+_ac_owner_claimed() {
+  mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
+  exec 9>"$_AC_LOCK_FILE"
+  flock -n 9 2>/dev/null
+}
+
+_ac_queue_drain_once() {
+  local callers=""
+  if [ -f "$_AC_QUEUE_FILE" ]; then
+    callers=$(awk -F '\t' 'NF>=3 {print $3}' "$_AC_QUEUE_FILE" 2>/dev/null | sort -u | paste -sd, -)
+  fi
+  : > "$_AC_QUEUE_FILE" 2>/dev/null || true
+  _ac_do_commit "owner:${callers:-queued}"
+}
+
+_ac_run_owner_once() {
+  _ac_owner_claimed || return 0
+  _ac_queue_drain_once
+  exec 9>&-
+}
+
+_ac_enqueue_commit() {
+  local caller="${1:-unknown}"
+  _ac_queue_request "$caller" || return 1
+  _ac_run_owner_once
+}
+
 # Read-only helper for the LIFESAVER UserPromptSubmit scan and other
 
 _ac_is_healthy() {
