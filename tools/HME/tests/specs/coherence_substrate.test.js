@@ -175,6 +175,42 @@ test('WIRED (item 5): every builtin policy yields a valid reflexive genome', () 
   assert.deepEqual(invalid, [], `policies missing genome fields: ${invalid.join('; ')}`);
 });
 
+test('WIRED (item 3): proof capsules decay with age and drop out of the fresh set', () => {
+  const root = tmpRoot();
+  try {
+    organs.appendProofCapsule(root, { claim: 'old fix', evidence: ['node --test'], verifier: 'unit', ts: '2020-01-01T00:00:00Z', verified_at: '2020-01-01T00:00:00Z' });
+    organs.appendProofCapsule(root, { claim: 'fresh fix', evidence: ['node --test'], verifier: 'unit', confidence: 0.9, freshness: 0.9 });
+    const decayed = organs.readProofCapsules(root, { decay: true });
+    const old = decayed.find((c) => c.claim === 'old fix');
+    assert.equal(old.expired, true, 'a 2020 capsule must read as expired');
+    assert.equal(old.proof_status, 'debt', 'decayed proof is debt -> reverify');
+    const fresh = organs.freshProofCapsules(root);
+    assert.ok(fresh.every((c) => c.claim !== 'old fix'), 'expired capsule must not back a live claim');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('WIRED (item 2): incidents capture braid fields so a resolved incident reconstructs a complete chain', () => {
+  const inc = incidents.normalizeIncident({ id: 'stale', component: 'pulse', summary: 'todo not archived', invariant: 'freshness', runtimeState: 'daemon ran stale todo_engine', rootCause: 'module cache', regressionTest: 'pulse_supervisor_reload.test.js', resolver: 'supervisor reload', proof: { reloaded: true }, status: 'resolved' });
+  assert.equal(inc.invariant, 'freshness');
+  assert.equal(inc.runtimeState, 'daemon ran stale todo_engine');
+  const braid = organs.causalBraid({
+    id: inc.id, user_pain: inc.summary, violated_invariant: inc.invariant, responsible_subsystem: inc.component,
+    runtime_state: inc.runtimeState, code_cause: inc.rootCause, verification: JSON.stringify(inc.proof),
+    recurrence_guard: inc.regressionTest, memory_crystallization: inc.resolver,
+  });
+  assert.deepEqual(braid.missing, [], 'a fully-specified resolved incident must braid with no missing links');
+});
+
+test('WIRED (item 4): hook decision rows carry a coherence-field vector', () => {
+  const log = require('../../event_kernel/hook_decision_log');
+  const deny = '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"BLOCKED: secret"}}';
+  const summary = log.hookDecisionSummary('claude', 'PreToolUse', deny, deny, { tool_name: 'Write', session_id: 's' });
+  assert.ok(summary, 'a deny decision must produce a summary row');
+  assert.ok(summary.field, 'hook decision row must carry a coherence field');
+  assert.equal(typeof summary.field.net_coherence, 'number');
+  assert.ok(['clarify', 'preserve', 'repair', 'mutate', 'obscure', 'parasitize'].includes(summary.field.effect));
+});
+
 test('PRODUCER: recordIncident fans out to a coherence event and a metabolism fact', () => {
   const root = tmpRoot();
   try {
