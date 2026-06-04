@@ -324,8 +324,8 @@ async function preWriteCheck(stdinJson) {
     }
     if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
     await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
-    if (_rewriteMessages.length && shellDecision.permissionDecision === 'allow') {
-      return { ...shellDecision, updatedInput: ctx.toolInput, contextualRules: (shellDecision.contextualRules || []).concat(_rewriteMessages) };
+    if (rewrites && rewrites.length && shellDecision.permissionDecision === 'allow') {
+      return { ...shellDecision, updatedInput: ctx.toolInput };
     }
     return shellDecision;
   // silent-ok: policy/state outage allows with warning after hard denies.
