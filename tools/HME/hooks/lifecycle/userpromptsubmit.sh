@@ -30,6 +30,7 @@ if [ "${HME_CLI_SMOKE:-}" != "1" ]; then
     printf '%s\n' "$_WATCHDOG_ALERT" >&2
   fi
 fi
+_ups_mark watchdog
 
 # Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
 if [ -n "$PROJECT_ROOT" ]; then
