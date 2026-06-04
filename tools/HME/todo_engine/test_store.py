@@ -56,12 +56,19 @@ def test_mutate_roundtrips():
     assert [t.id for t in todos] == [1, 2] and todos[1].code == "1"
 
 
-def test_archive_waits_when_non_done_terminal_todos_remain():
+def test_archive_rolls_and_carries_non_done_terminal_todos():
     d, store = _fresh_root()
     _write(d, "# rules\n\n### Todo - Set 4\n\n#1 5_ done a\n#2 3_ blocked b\n#3 4f_ follow c\n")
-    assert store.maybe_archive(now=T0) is None
+    # nothing in progress (no 0_/1_/2_) and >=1 5_ -> archives, banking the
+    # full snapshot and carrying the non-5_ items forward with codes preserved.
+    path = store.maybe_archive(now=T0)
+    assert path is not None and Path(path).name == "set4.md"
+    archived = Path(path).read_text()
+    assert "done a" in archived and "blocked b" in archived and "follow c" in archived
     _, todos = store.load(now=T0)
-    assert [(t.id, t.code, t.text) for t in todos] == [(1, "5", "done a"), (2, "3", "blocked b"), (3, "4f", "follow c")]
+    assert [(t.id, t.code, t.text) for t in todos] == [(2, "3", "blocked b"), (3, "4f", "follow c")]
+    # loop-safety: the carry-over-only set has no 5_, so it does NOT re-archive.
+    assert store.maybe_archive(now=T0) is None
 
 
 def test_archive_when_all_done_advances_to_empty_next_set():
