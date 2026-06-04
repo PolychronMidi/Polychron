@@ -86,8 +86,8 @@ _up_spawn_child() {
   local _existing
   _existing=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null || true)
   if _up_alive "$_existing" "universal_pulse.py"; then
-    # Baseline the adopted child to its ACTUAL start time, not "now". A daemon
-    # forked before a code edit caches the old modules forever; baselining to
+    # Baseline the adopted child to its real start time, not "now", so a daemon
+    # forked before a code edit is still seen as stale and reloaded below.
     local _start_epoch
     _start_epoch=$(date -d "$(ps -o lstart= -p "$_existing" 2>/dev/null)" +%s 2>/dev/null || echo 0)
     case "$_start_epoch" in ''|*[!0-9]*|0) _start_epoch=$(_up_code_mtime) ;; esac
