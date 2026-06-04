@@ -310,11 +310,14 @@ _ac_owner_claimed() {
 }
 
 _ac_queue_drain_once() {
-  local callers=""
+  local callers="" batch="$_AC_QUEUE_FILE.draining.$$"
   if [ -f "$_AC_QUEUE_FILE" ]; then
-    callers=$(awk -F '\t' 'NF>=3 {print $3}' "$_AC_QUEUE_FILE" 2>/dev/null | sort -u | paste -sd, -)
+    mv "$_AC_QUEUE_FILE" "$batch" 2>/dev/null || cp "$_AC_QUEUE_FILE" "$batch" 2>/dev/null
   fi
-  : > "$_AC_QUEUE_FILE" 2>/dev/null || true
+  if [ -f "$batch" ]; then
+    callers=$(awk -F '\t' 'NF>=3 {print $3}' "$batch" 2>/dev/null | sort -u | paste -sd, -)
+    rm -f "$batch" 2>/dev/null
+  fi
   _ac_do_commit "owner:${callers:-queued}"
 }
 
