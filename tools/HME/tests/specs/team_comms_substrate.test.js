@@ -106,6 +106,24 @@ test('ask-peer rejects roles outside bounded team channel and session paths', ()
   }
 });
 
+test('ask-peer blocks non-driver direct peer dispatch unless guard marked it', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { crew_e3_0: CREW_ROLE });
+    const blocked = runAsk(root, ['crew_e3_0', 'hello'], {
+      HME_TEAM_ROLE: 'blue_lead', HME_ASK_PEER_FAKE_REPLY: 'nope',
+    });
+    assert.notEqual(blocked.status, 0);
+    assert.match(blocked.stderr, /use team_dispatch_guard\.py/);
+    const allowed = runAsk(root, ['crew_e3_0', 'hello'], {
+      HME_TEAM_ROLE: 'blue_lead', HME_TEAM_DISPATCH_GUARD_OK: '1', HME_ASK_PEER_FAKE_REPLY: 'ok',
+    });
+    assert.equal(allowed.status, 0, allowed.stderr);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('dispatch guard blocks depth cap, per-turn budget, and E1-E2 crew spawning', () => {
   const root = tmpProject();
   try {
