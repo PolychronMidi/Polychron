@@ -331,7 +331,9 @@ _ac_queue_drain_once() {
     done
   fi
   if [ -d "$batch" ]; then
+    # silent-ok: a missing caller name only affects the commit-message label, not the com
     callers=$(awk -F '\t' 'NF>=3 {print $3}' "$batch"/*.req 2>/dev/null | sort -u | paste -sd, -)
+    # silent-ok: a leftover batch dir is harmless and swept by the next drain.
     rm -rf "$batch" 2>/dev/null
   fi
   _ac_do_commit "owner:${callers:-queued}"
