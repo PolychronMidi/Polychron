@@ -81,6 +81,31 @@ function runDebt() {
   const durable = facts.filter((f) => f && (f.stage === 'durable_invariant' || f.stage === 'compact_doctrine'));
   console.log(`durable_invariants=${durable.length} (raw_facts=${facts.length})`);
   for (const f of durable.slice(0, 10)) console.log(`- invariant: ${f.subject}: ${String(f.content).slice(0, 120)}`);
+  printPolicyDeadWeight();
+}
+
+// P1 (phase 2): diff the builtin registry against policies seen firing (deny or
+// rewrite) over the recorded hook-decision window. A 0-fire policy is a REVIEW
+function printPolicyDeadWeight() {
+  let registry;
+  try { registry = require('../policies/registry'); registry.loadBuiltins(); }
+  catch (_e) { return; }
+  let rows = [];
+  try {
+    rows = fs.readFileSync(path.join(root, 'tools/HME/runtime/hook-decisions.jsonl'), 'utf8')
+      .split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } }).filter(Boolean);
+  } catch (_e) { rows = []; }
+  const window = Number(arg('policy_window', 2000)) || 2000;
+  const seen = new Set();
+  for (const r of rows.slice(-window)) {
+    if (r && (r.kind === 'policy_deny' || r.kind === 'policy_rewrite')) {
+      for (const name of r.policies || []) seen.add(name);
+    }
+  }
+  const builtins = registry.list().map((p) => p.name);
+  const zeroFire = builtins.filter((n) => !seen.has(n)).sort();
+  console.log(`policy_dead_weight: ${zeroFire.length}/${builtins.length} builtin policies 0-fire over last ${Math.min(window, rows.length)} hook-decision rows (REVIEW, not auto-retire)`);
+  for (const n of zeroFire.slice(0, 30)) console.log(`- 0-fire: ${n}`);
 }
 
 function runMetabolize() {
