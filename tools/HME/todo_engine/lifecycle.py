@@ -21,6 +21,7 @@ from .grammar import Todo, TIMED_CODES
 
 _COMPLETE = "5"
 CARRYOVER_CODES = ("3", "4", "4f")
+IN_PROGRESS_CODES = ("0", "1", "2")
 
 
 def _is_complete(todo: Todo) -> bool:
