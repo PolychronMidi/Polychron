@@ -38,7 +38,23 @@ function hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload = 
     surfaced_channels: cleanFields.channels,
     raw_channels: rawFields.channels,
     duplicate_systemMessage_stripped: Boolean(raw.systemMessage && raw.systemMessage === rawFields.reason && !clean.systemMessage),
+    field: _decisionField(event, payload.tool_name || '', decision, reason),
   };
+}
+
+// Widen the coherence field beyond the coherence-event ledger: every recorded
+// hook decision carries a vector + effect so deny/instruct enforcement is
+function _decisionField(event, tool, decision, reason) {
+  try {
+    const { projectCoherenceField } = require('../proxy/coherence_organs');
+    const f = projectCoherenceField({
+      kind: 'policy_decision', subject: `${event}:${tool || 'tool'}`, intent: decision || 'decision',
+      evidence: reason ? [String(reason).slice(0, 120)] : [], proof_status: 'policy',
+    });
+    return { net_coherence: f.net_coherence, effect: f.effect, noise_risk: f.noise_risk };
+  } catch (_e) {
+    return null;
+  }
 }
 
 function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, payload = {}) {
