@@ -252,10 +252,11 @@ def _probe_detector(detector_module: str, probe_text: str,
 
 
 def main() -> int:
-    # Load every policy file once.
+    # Load every policy file once. rglob (not glob) so reasons live in
+    # work_checks/reasons.js subdirectories are still scanned.
     policy_srcs = {}
-    for js in _POLICY_DIR.glob("*.js"):
-        policy_srcs[js.name] = js.read_text(encoding="utf-8")
+    for js in _POLICY_DIR.rglob("*.js"):
+        policy_srcs[str(js.relative_to(_POLICY_DIR))] = js.read_text(encoding="utf-8")
     if not policy_srcs:
         print(f"FAIL: no policy files found under {_POLICY_DIR}")
         return 1
