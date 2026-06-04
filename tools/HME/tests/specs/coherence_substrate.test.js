@@ -260,6 +260,31 @@ test('P3: resolvers carry braid fields so resolved incidents braid complete', ()
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test('P3 integration: resolver verdict -> resolved incident -> complete braid (field-name contract)', () => {
+  // Pins the ACTUAL delivered path (Agent2 review): a field rename anywhere in
+  // resolveLine -> resolveIncident -> readIncidents -> causalBraid must fail here,
+  const root = tmpRoot();
+  try {
+    const v = resolvers.resolveLine(root, '[T] [stale_runtime] slot a stranded on stale code');
+    incidents.resolveIncident(root, {
+      id: v.kind, component: v.kind || 'hme', summary: v.reason || 'resolver-proven',
+      resolver: v.resolver, proof: v.proof || {}, dedupeKey: `${v.kind}:stale`,
+      invariant: v.invariant || '', runtimeState: v.runtimeState || '',
+      regressionTest: v.recurrenceTest || '', rootCause: v.reason || '',
+    });
+    const inc = incidents.readIncidents(root).find((r) => r.status === 'resolved');
+    assert.ok(inc, 'resolved incident must persist');
+    const proofText = inc.proof && Object.keys(inc.proof).length ? JSON.stringify(inc.proof) : '';
+    const braid = organs.causalBraid({
+      id: inc.id, user_pain: inc.summary, violated_invariant: inc.invariant || inc.component,
+      responsible_subsystem: inc.component, runtime_state: inc.runtimeState,
+      code_cause: inc.rootCause || inc.repair, verification: proofText,
+      recurrence_guard: inc.regressionTest, memory_crystallization: inc.resolver || inc.fixedBy,
+    });
+    assert.deepEqual(braid.missing, [], 'the resolver->incident->braid chain must braid complete end to end');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('PRODUCER: recordIncident fans out to a coherence event and a metabolism fact', () => {
   const root = tmpRoot();
   try {
