@@ -142,6 +142,8 @@ test('dispatch guard blocks depth cap, per-turn budget, and E1-E2 crew spawning'
     out = JSON.parse(r.stdout);
     assert.equal(out.allowed, true);
     assert.equal(out.target, 'blue_lead');
+    assert.equal(out.budget.turn_id, 't1');
+    assert.equal(out.budget.implicit, false);
     r = runDispatch(root, [...common, '--turn-id', 't1', '--budget', '1']);
     out = JSON.parse(r.stdout);
     assert.equal(out.allowed, false);
