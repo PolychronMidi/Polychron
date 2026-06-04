@@ -183,6 +183,37 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
+      "path": "tmp/.team-*.session",
+      "owner": "tools/HME/scripts/ask-peer.sh",
+      "readers": [
+        "tools/HME/scripts/ask-peer.sh"
+      ],
+      "writers": [
+        "tools/HME/scripts/ask-peer.sh"
+      ],
+      "retention": "per-role Claude CLI session ids for bounded peer channels; remove a role session file to mint a new peer session",
+      "generated": true,
+      "committed": false,
+      "schema": "plain UUID session id",
+      "repair": "remove the affected tmp/.team-*.session file; ask-peer.sh recreates it on next dispatch"
+    },
+    {
+      "path": "teams/*.md",
+      "owner": "tools/HME/scripts/ask-peer.sh",
+      "readers": [
+        "operators",
+        "tools/HME/scripts/ask-peer.sh"
+      ],
+      "writers": [
+        "tools/HME/scripts/ask-peer.sh"
+      ],
+      "retention": "append-only point-to-point peer transcript, self-bounded by ask-peer.sh tail cap",
+      "generated": true,
+      "committed": false,
+      "schema": "markdown transcript with compact driver/peer turns",
+      "repair": "remove the affected teams/*.md channel; ask-peer.sh recreates it on next dispatch"
+    },
+    {
       "path": "tools/HME/runtime/agent-jobs/*",
       "owner": "tools/HME/scripts/agent_jobs.py",
       "readers": [
