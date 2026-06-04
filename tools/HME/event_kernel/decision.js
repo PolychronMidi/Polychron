@@ -16,36 +16,56 @@ function _withMeta(base, meta) {
   return Object.keys(m).length > 0 ? { ...base, meta: m } : base;
 }
 
+const TYPES = Object.freeze({
+  ALLOW: 'allow',
+  DENY: 'deny',
+  INSTRUCT: 'instruct',
+  REWRITE: 'rewrite',
+  ERROR: 'error',
+});
+
 function allow(message = null, meta = {}) {
-  return _withMeta({ decision: 'allow', message: message || null }, meta);
+  return _withMeta({ decision: TYPES.ALLOW, message: message || null }, meta);
 }
 
 function deny(reason = '', meta = {}) {
-  return _withMeta({ decision: 'deny', reason: reason || '' }, meta);
+  return _withMeta({ decision: TYPES.DENY, reason: reason || '' }, meta);
 }
 
 function instruct(message = '', meta = {}) {
-  return _withMeta({ decision: 'instruct', message: message || '' }, meta);
+  return _withMeta({ decision: TYPES.INSTRUCT, message: message || '' }, meta);
 }
 
 function rewrite(updatedInput = {}, message = '', meta = {}) {
-  return _withMeta({ decision: 'rewrite', updatedInput: updatedInput || {}, message: message || '' }, meta);
+  return _withMeta({ decision: TYPES.REWRITE, updatedInput: updatedInput || {}, message: message || '' }, meta);
 }
 
 function error(message = '', failMode = 'open', meta = {}) {
-  return _withMeta({ decision: 'error', message: message || '', failMode: failMode || 'open' }, meta);
+  return _withMeta({ decision: TYPES.ERROR, message: message || '', failMode: failMode || 'open' }, meta);
+}
+
+function kindOf(decision) {
+  return decision && typeof decision === 'object' ? decision.decision || '' : '';
+}
+
+function isAllow(decision) {
+  return kindOf(decision) === TYPES.ALLOW;
 }
 
 function isDeny(decision) {
-  return Boolean(decision && decision.decision === 'deny');
+  return kindOf(decision) === TYPES.DENY;
 }
 
 function isInstruct(decision) {
-  return Boolean(decision && decision.decision === 'instruct');
+  return kindOf(decision) === TYPES.INSTRUCT;
 }
 
 function isRewrite(decision) {
-  return Boolean(decision && decision.decision === 'rewrite');
+  return kindOf(decision) === TYPES.REWRITE;
+}
+
+function isError(decision) {
+  return kindOf(decision) === TYPES.ERROR;
 }
 
 function combineFirstDeny(results) {
@@ -55,19 +75,23 @@ function combineFirstDeny(results) {
     if (isDeny(item) && !out.firstDeny) out.firstDeny = item;
     else if (isInstruct(item) && item.message) out.instructs.push(item);
     else if (isRewrite(item)) out.rewrites.push(item);
-    else if (item.decision === 'error') out.errors.push(item);
+    else if (isError(item)) out.errors.push(item);
   }
   return out;
 }
 
 module.exports = {
+  TYPES,
   allow,
   deny,
   instruct,
   rewrite,
   error,
+  kindOf,
+  isAllow,
   isDeny,
   isInstruct,
   isRewrite,
+  isError,
   combineFirstDeny,
 };
