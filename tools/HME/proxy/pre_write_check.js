@@ -338,16 +338,10 @@ async function preWriteCheck(stdinJson) {
 }
 
 function toHookResponse(decision) {
-  if (decision.permissionDecision === 'deny') {
-    return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: decision.reason } });
-  }
-  if (decision.permissionDecision === 'ask') {
-    return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: decision.reason } });
-  }
-  if (decision.contextualRules && decision.contextualRules.length) {
-    const out = { hookEventName: 'PreToolUse', permissionDecision: 'allow', additionalContext: decision.contextualRules.join('\n\n') };
-    if (decision.updatedInput && typeof decision.updatedInput === 'object') out.updatedInput = decision.updatedInput;
-    return JSON.stringify({ hookSpecificOutput: out });
+  if (decision.permissionDecision === 'deny') return renderDeny('PreToolUse', decision.reason);
+  if (decision.permissionDecision === 'ask') return renderAsk('PreToolUse', decision.reason);
+  if ((decision.contextualRules && decision.contextualRules.length) || (decision.updatedInput && typeof decision.updatedInput === 'object')) {
+    return renderAllow('PreToolUse', decision.contextualRules || [], decision.updatedInput || null);
   }
   return '';
 }
