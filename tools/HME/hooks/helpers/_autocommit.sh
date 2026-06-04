@@ -334,10 +334,16 @@ _ac_queue_drain_once() {
 
 _ac_run_owner_once() {
   _ac_owner_claimed || return 0
-  local drains=0
-  while _ac_queue_has_items && [ "$drains" -lt 3 ]; do
-    _ac_queue_drain_once
-    drains=$((drains + 1))
+  local drains=0 idle=0
+  while [ "$drains" -lt 3 ] && [ "$idle" -lt 2 ]; do
+    if _ac_queue_has_items; then
+      _ac_queue_drain_once
+      drains=$((drains + 1))
+      idle=0
+    else
+      sleep 0.1
+      idle=$((idle + 1))
+    fi
   done
   exec 8>&-
 }
