@@ -78,16 +78,19 @@ cap_channel() {
   mv "$tmp" "$CHANNEL"
 }
 
-append_turn() {
+append_turn_locked() {
   local who="$1"
   local text="$2"
   local payload
   payload="$(printf '%s' "$text" | json_string)"
-  printf '<%s role="%s" tier="%s">%s</%s>\n' "$who" "$ROLE" "$TIER" "$payload" "$who" >> "$CHANNEL"
-  cap_channel
+  (
+    flock -x 9
+    printf '<%s role="%s" tier="%s">%s</%s>\n' "$who" "$ROLE" "$TIER" "$payload" "$who" >> "$CHANNEL"
+    cap_channel
+  ) 9>>"$LOCK_FILE"
 }
 
-append_turn driver "$MSG"
+append_turn_locked driver "$MSG"
 
 if [[ -n "${HME_ASK_PEER_FAKE_REPLY:-}" ]]; then
   RESP="$HME_ASK_PEER_FAKE_REPLY"
