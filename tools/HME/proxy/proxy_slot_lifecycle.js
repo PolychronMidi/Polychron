@@ -104,6 +104,25 @@ function countSlotsWithFingerprint(runtimeDir, fingerprint, opts = {}) {
   return count;
 }
 
+function quarantineStatus(runtimeDir, currentFingerprint, opts = {}) {
+  const state = readSlotState(runtimeDir);
+  const quarantinedFingerprint = latestBrokenFingerprint(runtimeDir);
+  const currentServingSlots = countSlotsWithFingerprint(runtimeDir, currentFingerprint, opts);
+  const currentBlocked = Boolean(currentFingerprint && quarantinedFingerprint === currentFingerprint && isQuarantined(state, currentFingerprint));
+  let status = 'clear';
+  if (currentBlocked) status = 'blocked_current';
+  else if (quarantinedFingerprint) status = 'waiting_fixed_build';
+  else if (currentServingSlots > 0) status = 'cleared_by_viable';
+  const message = currentBlocked
+    ? `current fingerprint ${currentFingerprint} is quarantined; fix source so the supervisor gets a new fingerprint`
+    : quarantinedFingerprint
+      ? `old fingerprint ${quarantinedFingerprint} remains quarantined; current fingerprint ${currentFingerprint || 'unknown'} is admissible, waiting for supervisors to converge`
+      : currentServingSlots > 0
+        ? `current fingerprint ${currentFingerprint} has ${currentServingSlots} viable slot(s); quarantine cleared`
+        : 'no active runtime fingerprint quarantine';
+  return { status, currentFingerprint: currentFingerprint || '', quarantinedFingerprint, currentBlocked, currentServingSlots, message };
+}
+
 // Admission control for putting `fingerprint` onto a slot. The ONLY denial is a
 // quarantined (proven-broken) build -- that is what stops a known breakage from
 function canAdmitFingerprint(runtimeDir, fingerprint, _opts = {}) {
