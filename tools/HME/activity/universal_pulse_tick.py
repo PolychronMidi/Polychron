@@ -106,6 +106,23 @@ def _tick(cfg, tracker):
         _log_error(f"[universal_pulse] WARN todo-engine tick failed: "
                    f"{type(err).__name__}: {str(err)[:120]}")
 
+    # Phase-2 P2: complete the immune loop off the hot path. At most every ~10
+    # min, classify recurring noise in hme-errors.log into durable
+    global _IMMUNE_LAST_RUN
+    if now - _IMMUNE_LAST_RUN >= 600:
+        _IMMUNE_LAST_RUN = now
+        helper = PROJECT_ROOT / "tools" / "HME" / "scripts" / "immune_metabolize.js"
+        try:
+            subprocess.Popen(
+                ["node", str(helper)],
+                cwd=str(PROJECT_ROOT),
+                env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except Exception as err:
+            _log_error(f"[universal_pulse] WARN immune-metabolize spawn failed: "
+                       f"{type(err).__name__}: {str(err)[:120]}")
+
     for probe in cfg.get("http_probes", []):
         name = probe["name"]
         url = probe["url"]
