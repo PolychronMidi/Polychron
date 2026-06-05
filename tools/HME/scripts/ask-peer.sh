@@ -103,11 +103,16 @@ cap_channel() {
 append_turn_locked() {
   local who="$1"
   local text="$2"
-  local payload
-  payload="$(printf '%s' "$text" | json_string)"
+  # Human-readable: real newlines inside the tag (no JSON-escaped "\n"), so the
+  # channel transcripts are auditable as prose. Strip any stray close-tag.
+  text="${text//<\/$who>/<\/ $who>}"
   (
     flock -x 9
-    printf '<%s role="%s" tier="%s">%s</%s>\n' "$who" "$ROLE" "$TIER" "$payload" "$who" >> "$CHANNEL"
+    {
+      printf '<%s role="%s" tier="%s">\n' "$who" "$ROLE" "$TIER"
+      printf '%s\n' "$text"
+      printf '</%s>\n\n' "$who"
+    } >> "$CHANNEL"
     cap_channel
   ) 9>>"$LOCK_FILE"
 }
