@@ -235,6 +235,8 @@ async function main() {
     case 'disable': rc = cmdDisable(positional[0], scope); break;
     case 'reset':   rc = cmdReset(positional[0], scope); break;
     case 'paths':   rc = cmdPaths(); break;
+    case 'check':   rc = cmdCheck(); break;
+    case 'validate': rc = cmdCheck(); break;
     case 'eval':    rc = await cmdEval(positional[0]); break;
     case '--help':
     case '-h':
