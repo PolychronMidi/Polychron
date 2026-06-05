@@ -260,6 +260,7 @@ def main() -> int:
     p.add_argument("--max-tools", type=int, default=0)
     p.add_argument("--duration-cap", type=int, default=int(os.environ.get("HME_TEAM_DURATION_CAP", "1200")))
     p.add_argument("--tool-cap", type=int, default=int(os.environ.get("HME_TEAM_TOOL_CAP", "20")))
+    p.add_argument("--max-live", type=int, default=int(os.environ.get("HME_TEAM_MAX_LIVE_TURNS", "8")))
     p.add_argument("--send", action="store_true", help="explicitly call ask-peer.sh after checks pass")
     p.add_argument("--message", default="")
     args = p.parse_args()
@@ -269,18 +270,27 @@ def main() -> int:
     if not caller:
         return _deny("missing_caller", "caller role is required")
 
+    # F-C: a non-driver caller must carry guard provenance (the token the guard
+    # itself sets on children). Optional strict mode rejects a spoofed
+    if (os.environ.get("HME_TEAM_STRICT_IDENTITY") == "1"
+            and caller != "driver" and os.environ.get("HME_TEAM_DISPATCH_GUARD_OK") != "1"):
+        return _deny("identity", f"non-driver caller {caller} lacks guard provenance token")
+
     leash = _validate_leash(args)
     if isinstance(leash, str):
         return _deny("leash", leash)
 
-    depth = args.depth if args.depth is not None else _infer_depth(caller)
-    next_depth = depth + 1
-    if next_depth > args.max_depth:
-        return _deny("spawn_depth", f"dispatch depth {next_depth} exceeds cap {args.max_depth}", depth=depth, max_depth=args.max_depth)
-
+    # crew gate before depth so an E1-E2 crew is denied as crew_spawn, not depth.
     effective_tier, crew_error = _effective_tier(caller, args.tier)
     if crew_error:
         return _deny("crew_spawn", crew_error, caller=caller)
+
+    depth = _infer_depth(caller, args.depth)
+    if depth is None:  # F-C: fail closed when depth is unknown for a non-driver
+        return _deny("depth_unknown", f"depth unknown for non-driver caller {caller}; refusing (fail-closed)", caller=caller)
+    next_depth = depth + 1
+    if next_depth > args.max_depth:
+        return _deny("spawn_depth", f"dispatch depth {next_depth} exceeds cap {args.max_depth}", depth=depth, max_depth=args.max_depth)
 
     target = resolve_target_for_tier(caller, effective_tier or args.tier)
     if not target:
@@ -292,9 +302,14 @@ def main() -> int:
     if target not in roles:
         return _deny("unregistered_target", f"target {target} is not in teams/roles.json", target=target)
 
-    ok, budget_info = _reserve_budget(root, args.turn_id, args.budget, caller)
+    # F-A: validate the message BEFORE reserving, so a malformed --send can't
+    # consume budget at all.
+    if args.send and not args.message.strip():
+        return _deny("missing_message", "--send requires --message")
+
+    ok, budget_info, bcode = _reserve_budget(root, args.turn_id, args.budget, caller, args.max_live)
     if not ok:
-        return _deny("budget", "peer-call budget exhausted or unscoped", budget=budget_info)
+        return _deny(bcode or "budget", f"dispatch denied ({bcode or 'budget'})", budget=budget_info)
 
     child_env = {
         "HME_TEAM_ROLE": target,
