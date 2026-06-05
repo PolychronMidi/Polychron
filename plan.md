@@ -269,6 +269,25 @@ here. Nothing in this file is implemented until the user marks it approved.
 - Unit-proven (now 23/23): default dispatch re-forks the driver even when a valid
   prior per-role session exists; HME_TEAM_RESUME_PEER_SESSIONS=1 resumes instead.
 
+## Self-evolution iteration 9 (DONE -- router fixes + reviewer-charter hardening)
+- Re-ran the router round with fork-default + 360s leash. All three peers
+  (red, red_purple, cross) CONVERGED on the same 2 grounded team_agent_router.py
+  bugs (no new unique find -- router is simpler than ask-peer), both fixed + tested:
+  - CALLER NORMALIZATION [done]: resolve_target_for_tier (the API chokepoint the
+    guard imports) now normalizes caller (str/strip/lower) so a stray-case/space
+    caller like " Crew_E1_0 " can't ESCAPE _BLOCKED_CALLERS or mis-route a
+    lead/driver to crew. Fails toward denial.
+  - MALFORMED-STDIN GUARD [done]: main() wraps json.load(sys.stdin) in try/except
+    (+ non-dict guard) -> deterministic rc-0 passthrough instead of a traceback
+    that could let host crash-handling fail open. Mirrors _load() defensiveness.
+  - 3 new router tests (26 team tests total): stray-space crew stays blocked,
+    uppercase driver routes to a lead, malformed stdin returns rc 0 with no traceback.
+- SUBSTRATE OBSERVATION + FIX: the forked peers burned most of their turn asking
+  for write permission instead of reporting findings. Hardened the reviewer charter
+  (ask-peer ROLE_SYSTEM + guard handoff) to state peers are REVIEWERS: report each
+  finding as text (cite section + one-line fix), verify read-only, and never
+  request tool/write grants or wait for approval.
+
 ## Decision
 The mesh is a self-evolving review system: driver-FORK peers with FULL tool
 access (real context + live verification), sequential dispatch, adversarial
