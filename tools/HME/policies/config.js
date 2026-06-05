@@ -116,9 +116,7 @@ function validateKnownPolicyNames(knownNames) {
   const known = knownNames instanceof Set ? knownNames : new Set(knownNames || []);
   const cfg = get();
   const errors = [];
-  for (const file of cfg.files || []) {
-    const raw = _readJson(file);
-    if (!raw) continue;
+  for (const { file, cfg: raw } of cfg.rawScopes || []) {
     for (const n of _normalizeArray(raw.enabled)) if (!known.has(n)) errors.push(_unknownMessage(n, file, 'enabled'));
     for (const n of _normalizeArray(raw.disabled)) if (!known.has(n)) errors.push(_unknownMessage(n, file, 'disabled'));
     if (raw.params && typeof raw.params === 'object') {
