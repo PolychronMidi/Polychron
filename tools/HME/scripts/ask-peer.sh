@@ -61,7 +61,6 @@ if [[ -n "$FAMILY" && -f config/models.json ]]; then
   fi
 fi
 
-CALLER="${HME_TEAM_ROLE:-driver}"
 if [[ "$CALLER" != "driver" && "${HME_TEAM_DISPATCH_GUARD_OK:-}" != "1" ]]; then
   echo "ask-peer direct dispatch blocked for $CALLER; use team_dispatch_guard.py" >&2
   exit 1
