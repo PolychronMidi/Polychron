@@ -318,8 +318,8 @@ readers, writers, retention, generated/committed status, schema, and repair
 command. Update that JSON before adding a shared state writer.
 
 <!-- BEGIN GENERATED STATE REGISTRY -->
-- Registered state paths: 39 (30 single-owner, 9 multi-writer).
-- Generated state: 38; committed state: 1.
+- Registered state paths: 45 (36 single-owner, 9 multi-writer).
+- Generated state: 44; committed state: 1.
 - Repair commands and reader/writer ownership live in `tools/HME/config/state-files.json`.
 - Multi-writer paths:
   - `doc/templates/TODO.md` -- 2 writer(s): tools/HME/todo_engine/store.py, tools/HME/todo_engine/lifesaver_bridge.py
