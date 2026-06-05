@@ -171,6 +171,7 @@ function genomeInput(policy) {
  * the tool name when applicable (or empty for hook-level events like Stop).
  */
 function matchingFor(event, tool, configResolver) {
+  validateConfigNames(configResolver);
   const out = [];
   for (const p of _policies) {
     if (!p.match.events.includes(event)) continue;
