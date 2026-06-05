@@ -180,6 +180,43 @@ test('ask-peer forks the driver with full tool access (no local disallowed-tools
   }
 });
 
+test('ask-peer re-forks the driver by default (no stale per-role resume) unless opted in', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    const bin = path.join(root, 'bin');
+    fs.mkdirSync(bin, { recursive: true });
+    const argsFile = path.join(root, 'teams/runtime/claude-args.json');
+    fs.writeFileSync(path.join(bin, 'claude'), `#!/usr/bin/env bash\npython3 - <<'PY' "$@"\nimport json, sys\nopen(${JSON.stringify(argsFile)}, 'w').write(json.dumps(sys.argv[1:]))\nprint(json.dumps({'result':'ok','session_id':'33333333-3333-4333-8333-333333333333'}))\nPY\n`);
+    fs.chmodSync(path.join(bin, 'claude'), 0o755);
+    // pre-seed a valid prior peer session id + a fake transcript for it
+    fs.writeFileSync(path.join(root, 'teams/runtime/blue_lead.session'), '33333333-3333-4333-8333-333333333333\n');
+    const proj = `${root.replace(/\//g, '-')}`;
+    fs.mkdirSync(path.join(root, 'home/.claude/projects', proj), { recursive: true });
+    fs.writeFileSync(path.join(root, 'home/.claude/projects', proj, '33333333-3333-4333-8333-333333333333.jsonl'), '{}\n');
+    const env = {
+      PATH: `${bin}:${process.env.PATH}`,
+      HOME: path.join(root, 'home'),
+      HME_DRIVER_SESSION_ID: '22222222-2222-4222-8222-222222222222',
+    };
+    // default: re-fork the driver, do NOT resume the stale per-role thread
+    let r = runAsk(root, ['blue_lead', 'review'], env);
+    assert.equal(r.status, 0, r.stderr);
+    let args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
+    assert.ok(args.includes('--fork-session'), 'default dispatch re-forks the driver');
+    assert.equal(args.indexOf('22222222-2222-4222-8222-222222222222') >= 0, true);
+
+    // opt-in: resume the prior per-role thread for multi-turn dialogue
+    r = runAsk(root, ['blue_lead', 'again'], { ...env, HME_TEAM_RESUME_PEER_SESSIONS: '1' });
+    assert.equal(r.status, 0, r.stderr);
+    args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
+    assert.ok(!args.includes('--fork-session'), 'opt-in resumes instead of forking');
+    assert.deepEqual(args.slice(0, 3), ['-p', '--resume', '33333333-3333-4333-8333-333333333333']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('ask-peer fails closed before appending on invalid driver SID and appends explicit peer-error on bad JSON', () => {
   const root = tmpProject();
   try {
