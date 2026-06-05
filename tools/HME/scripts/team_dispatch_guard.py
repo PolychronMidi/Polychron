@@ -69,14 +69,15 @@ def _driver_sid(root: Path) -> str:
         return ""
 
 
-def _infer_depth(caller: str) -> int:
-    try:
-        env_depth = int(os.environ.get("HME_TEAM_DEPTH", ""))
-        if env_depth >= 0:
-            return env_depth
-    except ValueError:
-        pass  # silent-ok: pending review
-    return 0 if caller == "driver" else 1
+def _infer_depth(caller: str, explicit: int | None) -> int | None:
+    # F-C: fail CLOSED. Trust only an explicit --depth or a propagated
+    # HME_TEAM_DEPTH; the driver is depth 0 by definition. A non-driver with no
+    if explicit is not None:
+        return explicit if explicit >= 0 else None
+    env = os.environ.get("HME_TEAM_DEPTH", "")
+    if env.isdigit():
+        return int(env)
+    return 0 if caller == "driver" else None
 
 
 def _crew_tier(role: str) -> str | None:
