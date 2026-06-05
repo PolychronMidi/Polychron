@@ -159,9 +159,19 @@ function policyDecisionClass(policy) {
   return p.decisionClass || 'mixed';
 }
 
+// Memoized per config snapshot + policy count so the hot matchingFor path does
+// not re-read config files from disk on every hook event. config.get() returns
+// a stable cached object until config.reset(), so identity is a safe key.
+let _validatedSnapshot = null;
+let _validatedPolicyCount = -1;
 function validateConfigNames(configResolver) {
   if (!configResolver || typeof configResolver.validateKnownPolicyNames !== 'function') return true;
-  return configResolver.validateKnownPolicyNames(new Set(_policies.map((p) => p.name)));
+  const snap = typeof configResolver.get === 'function' ? configResolver.get() : null;
+  if (snap && _validatedSnapshot === snap && _validatedPolicyCount === _policies.length) return true;
+  configResolver.validateKnownPolicyNames(new Set(_policies.map((p) => p.name)));
+  _validatedSnapshot = snap;
+  _validatedPolicyCount = _policies.length;
+  return true;
 }
 
 // Reflexive policy genome: a policy declares its failure modes via an optional
