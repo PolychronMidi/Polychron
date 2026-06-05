@@ -137,8 +137,8 @@ function loadCustom(customPath) {
     const full = path.join(customPath, f);
     try {
       const mod = require(full);
-      register(mod, full);
       assertDecisionClassMatchesSource(mod, full);
+      register(mod, full);
     } catch (err) {
       errors.push(`[policies] failed to load ${full}: ${err.message}`);
     }
