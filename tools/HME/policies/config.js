@@ -103,8 +103,32 @@ function paramsFor(name, defaults = {}) {
   return { ...defaults, ...(cfg.params[name] || {}) };
 }
 
+function _unknownMessage(name, file, kind) {
+  const mapped = RENAMED_POLICIES[name];
+  return mapped
+    ? `${file}: stale ${kind} policy name '${name}' (renamed to '${mapped}')`
+    : `${file}: unknown ${kind} policy name '${name}'`;
+}
+
+function validateKnownPolicyNames(knownNames) {
+  const known = knownNames instanceof Set ? knownNames : new Set(knownNames || []);
+  const cfg = get();
+  const errors = [];
+  for (const file of cfg.files || []) {
+    const raw = _readJson(file);
+    if (!raw) continue;
+    for (const n of _normalizeArray(raw.enabled)) if (!known.has(n)) errors.push(_unknownMessage(n, file, 'enabled'));
+    for (const n of _normalizeArray(raw.disabled)) if (!known.has(n)) errors.push(_unknownMessage(n, file, 'disabled'));
+    if (raw.params && typeof raw.params === 'object') {
+      for (const n of Object.keys(raw.params)) if (!known.has(n)) errors.push(_unknownMessage(n, file, 'params'));
+    }
+  }
+  if (errors.length) throw new Error(`[policies/config] ${errors.join('; ')}`);
+  return true;
+}
+
 module.exports = {
-  load, get, reset, isEnabled, paramsFor,
+  load, get, reset, isEnabled, paramsFor, validateKnownPolicyNames, RENAMED_POLICIES,
   // Surface internal scope file paths for the CLI's `paths` subcommand.
   _scopeFiles,
 };
