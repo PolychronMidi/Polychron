@@ -143,19 +143,22 @@ else
   PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
   PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
   if [[ -n "$PEER_SID" && -f "$PEER_TRANSCRIPT" ]]; then
-    MODE=(--resume "$PEER_SID")                    # continue this peer's own thread
-  elif [[ -n "$DRIVER_SID" ]]; then
-    MODE=(--resume "$DRIVER_SID" --fork-session)   # first contact: FORK driver -> inherit full context
+    MODE=(--resume "$PEER_SID")                    # continue this peer's own distinct thread
+  elif [[ "$CTX_MODE" == "fork" && -n "$DRIVER_SID" ]]; then
+    MODE=(--resume "$DRIVER_SID" --fork-session)   # context_mode=fork: inherit full driver context
   else
-    echo "ask-peer: no peer session and no driver session to fork (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2
-    exit 1
+    MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # distinct agent: fresh context + role charter
   fi
-  # A forked peer inherits the driver's tools + agentic disposition and will
-  # re-explore (long Read/Grep loops) unless constrained. Peers are REVIEWERS
+  # Peers are REVIEWERS that answer from the charter + the task (which carries
+  # the artifact); disallow heavy tools so they don't re-explore (slow) and so a
   DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS-Read Grep Glob Bash Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent}"
   TOOL_ARGS=()
   if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
-  RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
+  # HME_TEAM_PEER=1 tags the sub-session so HME lifecycle hooks can treat it as
+  # an ephemeral peer (avoids the UserPromptSubmit-before-SessionStart misfire).
+  RAW="$(env HME_TEAM_PEER=1 -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER \
+    claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --append-system-prompt "$ROLE_SYSTEM" \
+    --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
   RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
   NEW_SID="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].session_id) else .session_id end' <<<"$RAW")"
   [[ -n "$NEW_SID" && "$NEW_SID" != "null" ]] && printf '%s\n' "$NEW_SID" > "$SID_FILE"
