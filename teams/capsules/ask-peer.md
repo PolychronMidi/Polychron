@@ -4,9 +4,9 @@
 tools/HME/scripts/ask-peer.sh -- the single comms primitive every team member
 uses. Looks up a role in teams/roles.json, validates it, appends the caller turn
 to the role's channel (real-newline, structural-tag-neutralized, turn-atomic
-tail-capped, flock-serialized), launches a peer `claude -p` (resume own peer
-thread / fork driver), stream-caps raw stdout through a FIFO capper, parses
-reply/session, and appends peer turn or explicit peer-error.
+tail-capped, flock-serialized), forks the driver session (or, opt-in, resumes the
+role thread), stream-caps raw stdout via a FIFO capper, parses reply/session, and
+appends peer turn or explicit peer-error.
 
 ## goal
 Find DECISION-CHANGING security/correctness flaws that survive the current
@@ -16,9 +16,10 @@ guard (team_dispatch_guard.py) is assumed correct; review ask-peer.sh itself.
 ## constraints
 Usage model: single-driver, pull-only, sequential dispatch (NOT concurrent
 fan-out). Non-driver callers must arrive via the guard (HME_TEAM_DISPATCH_GUARD_OK=1).
-Only forked peers are allowed. Peers have full inherited context and full tool
-access; any tool filtering is centralized at the proxy via HME_FILTER_TOOLS_DROP,
-not ask-peer. bash is set -euo pipefail. jq + python3 available.
+Only forked peers are allowed; default re-forks the driver, HME_TEAM_RESUME_PEER_SESSIONS=1
+opts into per-role memory. Peers have full inherited context and full tool access;
+any tool filtering is centralized at the proxy via HME_FILTER_TOOLS_DROP, not
+ask-peer. bash is set -euo pipefail. jq + python3 available.
 
 ## rubric
 Classify each finding P0 (ship-blocker) / P1 (should-fix) / P2 (nice). For each:
@@ -220,15 +221,21 @@ else
     exit 1
   fi
 
-  PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
-  PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
-  PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
-  if [[ -n "$PEER_SID" ]]; then
-    if ! valid_sid "$PEER_SID"; then
-      rm -f "$SID_FILE"
-      PEER_SID=""
-    elif [[ ! -f "$PEER_TRANSCRIPT" ]]; then
-      PEER_SID=""
+  # Default every peer call to a fresh FORK of the current driver session. This
+  # preserves full driver context without resuming stale per-role threads whose
+  # old task/narration can contaminate a new review. Multi-turn dialogue runners
+  PEER_SID=""
+  if [[ "${HME_TEAM_RESUME_PEER_SESSIONS:-0}" == "1" && -s "$SID_FILE" ]]; then
+    PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
+    PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
+    PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
+    if [[ -n "$PEER_SID" ]]; then
+      if ! valid_sid "$PEER_SID"; then
+        rm -f "$SID_FILE"
+        PEER_SID=""
+      elif [[ ! -f "$PEER_TRANSCRIPT" ]]; then
+        PEER_SID=""
+      fi
     fi
   fi
   if [[ -n "$PEER_SID" ]]; then
