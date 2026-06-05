@@ -80,7 +80,7 @@ function load() {
     }
   }
 
-  return { enabled, disabled, params, customPoliciesPath, files };
+  return { enabled, disabled, params, customPoliciesPath, files, rawScopes };
 }
 
 let _cached = null;
