@@ -253,6 +253,22 @@ here. Nothing in this file is implemented until the user marks it approved.
 - Unit/audit status stayed green (22/22 team tests, env failfast, silent-failure,
   shell-undefined, state ownership, markdown invariant, opencode host).
 
+## Self-evolution iteration 8 (DONE -- fork-default kills stale-resume contamination)
+- Third round (team_agent_router.py target) exposed a REAL fork/full-tool failure
+  mode (NOT a reason to neuter): one peer ran to the 200s leash and was killed,
+  another resumed its STALE per-role session and echoed the driver's current
+  narration instead of reviewing the router. Root cause: ask-peer resumed an old
+  per-role thread by default, and the leash was too short for full-tool review.
+- Fixed without removing fork/tools:
+  - DEFAULT RE-FORK [done]: every peer call now forks the CURRENT driver session by
+    default (full context, no stale thread). Per-role memory is opt-in via
+    HME_TEAM_RESUME_PEER_SESSIONS=1, which round_dialogue.sh sets for real debates.
+  - LEASH HEADROOM [done]: round_measured.sh max_duration is 600s (env override
+    HME_TEAM_ROUND_MAX_DURATION) and max_tools 8, so full-tool forked peers can
+    actually verify against the tree instead of being killed mid-review.
+- Unit-proven (now 23/23): default dispatch re-forks the driver even when a valid
+  prior per-role session exists; HME_TEAM_RESUME_PEER_SESSIONS=1 resumes instead.
+
 ## Decision
 The mesh is a self-evolving review system: driver-FORK peers with FULL tool
 access (real context + live verification), sequential dispatch, adversarial
