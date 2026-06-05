@@ -13,6 +13,7 @@ _HME_OS_TMP="${TMPDIR:-$_HME_DEFAULT_OS_TMP}"
 # Per-step production timing (TODO #14b): the p95 (~1100ms) lives in the
 # synchronous node/python sub-invocations below, not the hook shell itself.
 _UPS_TIMING="${HME_UPS_TIMING:-1}"
+# silent-ok: timing metric only; if date fails, zero keeps hook non-blocking.
 _ups_now() { date +%s%3N 2>/dev/null || echo 0; }
 _UPS_T0=$(_ups_now); _UPS_PREV="$_UPS_T0"; _UPS_STEPS=""
 _ups_mark() {
