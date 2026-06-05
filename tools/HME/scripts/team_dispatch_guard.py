@@ -480,6 +480,13 @@ def main() -> int:
                 return _deny("capsule_read", f"could not read --capsule: {e}")
             if missing:
                 return _deny("capsule_invalid", f"capsule missing required sections: {', '.join(missing)} (need ## " + ", ## ".join(CAPSULE_REQUIRED) + ")")
+            # Measured-round lesson (iter 4): a capsule's ## coverage claimed code
+            # (_send/main) the ## evidence had truncated -> peers grounded on a
+            gaps = _capsule_coverage_gaps(capsule)
+            if gaps:
+                return _deny("capsule_coverage_gap",
+                             "coverage claims symbols missing from ## evidence: " + ", ".join(gaps[:12]),
+                             missing_evidence=gaps[:12])
             message = _capsule_message(capsule, args.message)
         elif args.context_file:
             try:
