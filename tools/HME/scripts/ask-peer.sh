@@ -171,15 +171,16 @@ else
   PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
   PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
   if [[ -n "$PEER_SID" && -f "$PEER_TRANSCRIPT" ]]; then
-    MODE=(--resume "$PEER_SID")                    # continue this peer's own distinct thread
-  elif [[ "$CTX_MODE" == "fork" && -n "$DRIVER_SID" ]]; then
-    MODE=(--resume "$DRIVER_SID" --fork-session)   # context_mode=fork: inherit full driver context
+    MODE=(--resume "$PEER_SID")                    # continue this peer's own ongoing thread (forked once, then persists)
+  elif [[ "$CTX_MODE" == "fork" ]]; then
+    [[ -n "$DRIVER_SID" ]] || { echo "context_mode=fork for $ROLE but no driver session id (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2; exit 1; }
+    MODE=(--resume "$DRIVER_SID" --fork-session)   # context_mode=fork (DEFAULT): inherit the driver's FULL context
   else
-    MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # distinct agent: fresh context + role charter
+    MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # context_mode=fresh: blank context + role charter
   fi
-  # Peers are REVIEWERS that answer from the charter + the task (which carries
-  # the artifact); disallow heavy tools so they don't re-explore (slow) and so a
-  DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS-Read Grep Glob Bash Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent}"
+  # Peers FORK the driver and keep FULL tool access by default, so they have the
+  # real context AND can verify against the live tree instead of fabricating. Opt
+  DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS:-}"
   TOOL_ARGS=()
   if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
   # Ephemeral peers must NOT run the HME orchestration hooks: a `-p` peer fires
