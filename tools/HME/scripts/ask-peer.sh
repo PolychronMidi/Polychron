@@ -225,12 +225,9 @@ else
   RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
   SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
 
-  set +e
-  env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
-    claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
-    --append-system-prompt "$ROLE_SYSTEM" \
-    --output-format json --effort "$EFFORT" --model default "$MSG" \
-    > >(python3 -c 'import sys
+  RAW_FIFO="$(mktemp -u "teams/runtime/raw-fifo.${SAFE_ROLE}.XXXXXX")"
+  mkfifo "$RAW_FIFO"
+  python3 -c 'import sys
 out_path, cap_s, flag_path = sys.argv[1:4]
 cap = int(cap_s)
 seen = 0
@@ -246,10 +243,24 @@ with open(out_path, "wb") as out:
         if seen + len(chunk) > cap:
             truncated = True
         seen += len(chunk)
-open(flag_path, "w", encoding="utf-8").write("1" if truncated else "0")' "$RAW_CAP_FILE" "$RAW_CAP" "$TRUNC_FILE") \
-    2>"$ERR_FILE"
+open(flag_path, "w", encoding="utf-8").write("1" if truncated else "0")' "$RAW_CAP_FILE" "$RAW_CAP" "$TRUNC_FILE" < "$RAW_FIFO" &
+  CAP_PID=$!
+  set +e
+  env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
+    claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
+    --append-system-prompt "$ROLE_SYSTEM" \
+    --output-format json --effort "$EFFORT" --model default "$MSG" \
+    > "$RAW_FIFO" 2>"$ERR_FILE"
   CLAUDE_STATUS=$?
+  wait "$CAP_PID"
+  CAP_STATUS=$?
   set -e
+  if (( CAP_STATUS != 0 )); then
+    RESP="[peer-error: raw stdout capper exited $CAP_STATUS; stderr: $ERR_FILE]"
+    append_exchange "$RESP"
+    printf '%s\n' "$RESP"
+    exit "$CAP_STATUS"
+  fi
   if (( CLAUDE_STATUS != 0 )); then
     RESP="[peer-error: claude exited $CLAUDE_STATUS; stderr: $ERR_FILE]"
     append_exchange "$RESP"
