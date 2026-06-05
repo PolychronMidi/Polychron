@@ -7,7 +7,7 @@
       "channel_by_caller": {
         "red_purple": "teams/red.md"
       },
-      "session_file": "tmp/.team-red_lead.session",
+      "session_file": "teams/runtime/red_lead.session",
       "tier": "E5",
       "effort": "high",
       "max_reply_bytes": 12000,
@@ -20,7 +20,7 @@
       "channel_by_caller": {
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-blue_lead.session",
+      "session_file": "teams/runtime/blue_lead.session",
       "tier": "E5",
       "effort": "high",
       "max_reply_bytes": 12000,
@@ -38,7 +38,7 @@
         "crew_e3_1": "teams/red.md",
         "blue_purple": "teams/purple.md"
       },
-      "session_file": "tmp/.team-red_purple.session",
+      "session_file": "teams/runtime/red_purple.session",
       "tier": "E4",
       "effort": "medium",
       "max_reply_bytes": 10000,
@@ -56,7 +56,7 @@
         "crew_e3_1": "teams/blue.md",
         "red_purple": "teams/purple.md"
       },
-      "session_file": "tmp/.team-blue_purple.session",
+      "session_file": "teams/runtime/blue_purple.session",
       "tier": "E4",
       "effort": "medium",
       "max_reply_bytes": 10000,
@@ -72,7 +72,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e4_0.session",
+      "session_file": "teams/runtime/crew_e4_0.session",
       "tier": "E4",
       "effort": "medium",
       "max_reply_bytes": 9000,
@@ -88,7 +88,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e4_1.session",
+      "session_file": "teams/runtime/crew_e4_1.session",
       "tier": "E4",
       "effort": "medium",
       "max_reply_bytes": 9000,
@@ -104,7 +104,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e3_0.session",
+      "session_file": "teams/runtime/crew_e3_0.session",
       "tier": "E3",
       "effort": "medium",
       "max_reply_bytes": 8000,
@@ -120,7 +120,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e3_1.session",
+      "session_file": "teams/runtime/crew_e3_1.session",
       "tier": "E3",
       "effort": "medium",
       "max_reply_bytes": 8000,
@@ -136,7 +136,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e2_0.session",
+      "session_file": "teams/runtime/crew_e2_0.session",
       "tier": "E2",
       "effort": "low",
       "max_reply_bytes": 6000,
@@ -152,7 +152,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e2_1.session",
+      "session_file": "teams/runtime/crew_e2_1.session",
       "tier": "E2",
       "effort": "low",
       "max_reply_bytes": 6000,
@@ -168,7 +168,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e1_0.session",
+      "session_file": "teams/runtime/crew_e1_0.session",
       "tier": "E1",
       "effort": "low",
       "max_reply_bytes": 5000,
@@ -184,7 +184,7 @@
         "blue_lead": "teams/blue.md",
         "blue_purple": "teams/blue.md"
       },
-      "session_file": "tmp/.team-crew_e1_1.session",
+      "session_file": "teams/runtime/crew_e1_1.session",
       "tier": "E1",
       "effort": "low",
       "max_reply_bytes": 5000,
