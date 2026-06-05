@@ -531,6 +531,40 @@ test('guard --capsule fails closed when coverage claims code symbols its evidenc
   }
 });
 
+test('guard --capsule heading parser ignores markdown headings inside fenced evidence', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--caller', 'driver', '--tier', 'E5', '--scope', 's', '--artifact', 'plan.md',
+      '--max-duration', '30', '--max-tools', '2', '--turn-id', 'tfence', '--budget', '3', '--send', '--message', 'review'];
+
+    // A # comment inside the evidence code fence must NOT become a capsule heading
+    // and truncate evidence before append_turn_locked(). This regression was found
+    const fenceCap = path.join(root, 'tmp', 'fence.md');
+    fs.writeFileSync(fenceCap,
+      '## artifact\na\n## goal\ng\n## rubric\nr\n' +
+      '## coverage\nincluded: cap_channel, append_turn_locked.\n' +
+      '## evidence\n```bash\n# keep whole turns\ncap_channel() { :; }\n# append the peer turn\nappend_turn_locked() { :; }\n```\n');
+    let r = runDispatch(root, [...base, '--capsule', fenceCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.sent, true);
+
+    // Likewise, a fake required heading inside a fence must not satisfy the
+    // required-section check.
+    const fakeHeading = path.join(root, 'tmp', 'fake-heading.md');
+    fs.writeFileSync(fakeHeading,
+      '## artifact\na\n## goal\ng\n## evidence\n```bash\n# rubric\nnot a section\n```\n');
+    r = runDispatch(root, [...base, '--capsule', fakeHeading], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'capsule_invalid');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('guard fixes from the measured capsule round: leash control-char injection + corrupt budget row fail closed', () => {
   const root = tmpProject();
   try {
