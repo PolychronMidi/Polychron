@@ -93,3 +93,32 @@ test('non-empty registry with no matching tier surfaces helpful diagnostic', () 
   assert.equal(out.permissionDecision, 'allow');
   assert.match(out.additionalContext, /1 agent\(s\) registered, none match/);
 });
+
+test('blocked E1/E2 crew stays blocked even with stray case/whitespace caller', () => {
+  const root = projectWithDashboard(AGENTS);
+  // caller normalization happens at resolve_target_for_tier (the chokepoint),
+  // so a spoofed " Crew_E1_0 " must NOT escape the spawn block.
+  const r = runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } }, ' Crew_E1_0 ');
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout).hookSpecificOutput;
+  assert.equal(out.permissionDecision, 'deny');
+  assert.match(out.permissionDecisionReason, /E1-E2 stage crew may not spawn/);
+});
+
+test('uppercase/whitespace driver still routes to a team lead (no mis-route to crew)', () => {
+  const root = projectWithDashboard(AGENTS);
+  const r = runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } }, ' Driver ');
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout).hookSpecificOutput;
+  assert.equal(out.permissionDecision, 'allow');
+  assert.match(out.updatedInput.prompt, /You are (blue|red)_lead/);
+});
+
+test('malformed stdin is a deterministic passthrough (rc 0, no traceback)', () => {
+  const root = projectWithDashboard(AGENTS);
+  const command = `PROJECT_ROOT=${JSON.stringify(root)} OVERDRIVE_MODE=1 HME_TEAM_ROLE=driver python3 ${JSON.stringify(ROUTER)} <<< 'not json'`;
+  const r = spawnSync('bash', ['-lc', command], { cwd: PROJECT_ROOT, env: { ...process.env }, encoding: 'utf8', timeout: 10_000 });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout.trim(), '');
+  assert.doesNotMatch(r.stderr, /Traceback/);
+});
