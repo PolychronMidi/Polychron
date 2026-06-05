@@ -99,7 +99,8 @@ TRUNC_FILE=""
 RESP_FILE=""
 SID_OUT_FILE=""
 RAW_FIFO=""
-cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"} ${RAW_FIFO:+"$RAW_FIFO"}; }
+RAW_FIFO_DIR=""
+cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"} ${RAW_FIFO:+"$RAW_FIFO"}; [[ -n "${RAW_FIFO_DIR:-}" ]] && rm -rf "$RAW_FIFO_DIR"; }
 trap cleanup_tmp EXIT
 
 valid_sid() {
