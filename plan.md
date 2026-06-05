@@ -122,10 +122,12 @@ here. Nothing in this file is implemented until the user marks it approved.
 - IMPLEMENTED the mesh's own design: guard `--capsule` validates required
   sections (## artifact/## goal/## rubric) and wraps the task with the cite-or-
   decline contract. The mesh designed its next feature; it now exists + is tested.
-- Lifecycle misfire FIXED ROBUSTLY: peers run with `--setting-sources user`
-  (no project HME hooks) -> a single controlled peer call produced 0 new
-  UserPromptSubmit-before-SessionStart alerts (env-tag alone wasn't reaching
-  claude's hooks reliably).
+- Lifecycle misfire fix (CORRECTED in iter 4): my first attempt used
+  `--setting-sources user`, which was BACKWARDS -- the HME hooks live in USER
+  settings (~/.claude), so that loaded exactly the hooks to drop and the misfire
+  kept firing. Real fix: `--setting-sources project,local` (exclude user) ->
+  verified routing still works (env-based) and a peer call produces 0 new
+  UserPromptSubmit-before-SessionStart alerts.
 - Operational insight (real, from a transient anthropic 200 overloaded_error):
   bursting many concurrent peer calls overloads the provider. Mesh dispatch must
   stay sequential / rate-limited; the F-D live-turn bound + one-round-at-a-time
