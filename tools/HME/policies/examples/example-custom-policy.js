@@ -23,6 +23,7 @@ module.exports = {
   description: 'Instruct the agent when a Bash tool_response exceeds the configured size threshold.',
   category: 'noise-reduction',
   defaultEnabled: false, // opt-in: disabled by default
+  decisionClass: 'mixed',
   match: {
     events: ['PostToolUse'],
     tools: ['Bash'],
