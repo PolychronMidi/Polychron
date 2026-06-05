@@ -26,7 +26,7 @@ function _scanAndStrip(content) {
 }
 
 module.exports = {
-  name: 'block-comment-ellipsis-stub',
+  name: 'rewrite-comment-ellipsis-stub',
   description: 'Rewrite Write content containing comment-ellipsis stub placeholders.',
   category: 'security',
   defaultEnabled: true,

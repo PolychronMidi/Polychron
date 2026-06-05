@@ -100,7 +100,7 @@ test('block-character-spam: allow empty content', async () => {
 
 test('block-character-spam: registry registers policy with correct match', () => {
   registry.loadBuiltins();
-  const found = registry.list().find((p) => p.name === 'block-character-spam');
+  const found = registry.list().find((p) => p.name === 'rewrite-character-spam');
   assert.ok(found, 'policy should be registered');
   assert.deepStrictEqual(found.match.events, ['PreToolUse']);
   assert.deepStrictEqual(
