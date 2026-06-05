@@ -9,7 +9,7 @@
  *   enable <name>              Add to project-shared config/policies.json `enabled` list.
  *   disable <name>              Add to project-shared config/policies.json `disabled` list.
  *   reset <name>               Remove name from both lists (revert to defaultEnabled).
- *   paths                      Print the three config-scope file paths.
+ *   paths                      Print the config-scope file paths.
  *   eval <name>                Run a single policy against stdin JSON ({toolInput,...}); print decision.
  *
  * Config writes go to the PROJECT-shared `config/policies.json` by default.
