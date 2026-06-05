@@ -138,13 +138,18 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
     assert.match(channel, /<peer role="blue_lead" tier="E5">\nreply one\n<\/peer>/);
     assert.doesNotMatch(channel, /\\n/, 'no literal backslash-n escapes in the channel');
 
-    r = runAsk(root, ['blue_lead', 'again'], { HME_ASK_PEER_FAKE_REPLY: 'reply two', HME_TEAM_CHANNEL_TAIL_LINES: '4' });
+    r = runAsk(root, ['blue_lead', 'again'], { HME_ASK_PEER_FAKE_REPLY: 'reply two', HME_TEAM_CHANNEL_TAIL_LINES: '5' });
     assert.equal(r.status, 0, r.stderr);
     const sid2 = fs.readFileSync(sidPath, 'utf8').trim();
     assert.equal(sid2, sid1, 'existing session id is reused');
     channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
-    assert.ok(channel.split('\n').length <= 5, 'channel is tail-capped (<=4 lines + trailing)');
+    // turn-aware cap: bounded, recent content kept, and the body never starts
+    // mid-turn (first non-header line is a whole turn-open tag, never a fragment).
+    assert.ok(channel.split('\n').length <= 8, 'channel is tail-capped to recent whole turns');
     assert.match(channel, /reply two/);
+    assert.doesNotMatch(channel, /hello/, 'oldest turn dropped by the cap');
+    const bodyLines = channel.split('\n').slice(1).filter(Boolean);
+    assert.match(bodyLines[0], /^<(driver|peer) /, 'cap never leaves a partial leading turn');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
