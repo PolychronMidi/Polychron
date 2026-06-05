@@ -45,7 +45,7 @@ channel files. "Keep, unused" = dead weight = retire. Do not run a 2nd trial.
 - mesh: Driver -> red_lead -> (purple handoff) -> blue rebuttal, 1 round, same
   artifact, same wall budget (<=4 calls/path).
 
-### P3 -- Exact measured comparison + binary kill criterion  [proposed]
+### P3 -- Exact measured comparison + binary kill criterion  [approved]
 - signal: count DISTINCT decision-changing catches each path makes that the OTHER
   missed (unique real catches; discard dupes/style).
 - cost: total peer calls, total in+out bytes, channel-line growth.
