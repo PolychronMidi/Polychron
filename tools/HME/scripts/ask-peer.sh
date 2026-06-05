@@ -141,8 +141,11 @@ append_turn_locked() {
   local who="$1"
   local text="$2"
   # Human-readable: real newlines inside the tag (no JSON-escaped "\n"), so the
-  # channel transcripts are auditable as prose. Strip any stray close-tag.
-  text="${text//<\/$who>/<\/ $who>}"
+  # channel transcripts are auditable as prose.
+  text="${text//<driver/‹driver}"
+  text="${text//<\/driver/‹/driver}"
+  text="${text//<peer/‹peer}"
+  text="${text//<\/peer/‹/peer}"
   (
     flock -x 9
     {
