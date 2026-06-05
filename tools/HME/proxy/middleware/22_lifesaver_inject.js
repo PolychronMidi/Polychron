@@ -38,7 +38,7 @@ function _sessionstartProxyDownResolved(projectRoot) {
 
 function _staleRuntimeResolvedOrGrace(projectRoot) {
   try {
-    const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000 }).trim();
+    const head = execFileSync('git', ['-C', projectRoot, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
     const runtimePath = path.join(projectRoot, 'tools/HME/runtime/proxy-runtime.json');
     let live = '';
     try { live = JSON.parse(fs.readFileSync(runtimePath, 'utf8')).git_sha || ''; } catch (_e) { /* optional metadata */ }
