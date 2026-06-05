@@ -88,7 +88,7 @@ if [[ -z "$ROLE_SYSTEM" ]]; then
     *)           ROLE_SYSTEM="You are $ROLE, a forked team peer." ;;
   esac
 fi
-ROLE_SYSTEM="$ROLE_SYSTEM You are a forked peer with the driver's full inherited context. Answer only in the requested team role; do not continue driver narration or echo the handoff. Use tools as needed to verify. Be terse and decision-changing."
+ROLE_SYSTEM="$ROLE_SYSTEM You are a forked peer with the driver's full inherited context. Answer only in the requested team role; do not continue driver narration or echo the handoff. You are a REVIEWER: report each finding as text (cite the section + a one-line fix); verify read-only with tools as needed. Do NOT request write/tool permission or wait for approval -- just deliver findings. Be terse and decision-changing."
 
 mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
 LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
