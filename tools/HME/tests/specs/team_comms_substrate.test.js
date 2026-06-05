@@ -305,8 +305,10 @@ test('I3 dispatch guard selects real roles and writes caller-specific channels',
     assert.equal(out.allowed, true);
     assert.equal(out.target, 'red_lead');
 
+    // Non-driver callers carry propagated depth (a real dispatched peer always
+    // has HME_TEAM_DEPTH from child_env); without it the guard now fails closed.
     r = runDispatch(root, [
-      '--caller', 'red_lead', '--tier', 'E4', '--turn-id', 'i3-red', '--budget', '4',
+      '--caller', 'red_lead', '--tier', 'E4', '--depth', '1', '--turn-id', 'i3-red', '--budget', '4',
       '--scope', 'red purple review', '--artifact', 'teams/red.md', '--max-duration', '30', '--max-tools', '2',
       '--send', '--message', 'challenge this red plan',
     ], { HME_ASK_PEER_FAKE_REPLY: 'red purple ok' });
@@ -318,7 +320,7 @@ test('I3 dispatch guard selects real roles and writes caller-specific channels',
     assert.match(fs.readFileSync(path.join(root, 'teams/red.md'), 'utf8'), /challenge this red plan/);
 
     r = runDispatch(root, [
-      '--caller', 'red_purple', '--tier', 'E4', '--turn-id', 'i3-red', '--budget', '4',
+      '--caller', 'red_purple', '--tier', 'E4', '--depth', '1', '--turn-id', 'i3-red', '--budget', '4',
       '--scope', 'purple opposition', '--artifact', 'teams/purple.md', '--max-duration', '30', '--max-tools', '2',
       '--send', '--message', 'oppose this from blue purple',
     ], { HME_ASK_PEER_FAKE_REPLY: 'blue purple ok' });
@@ -330,7 +332,7 @@ test('I3 dispatch guard selects real roles and writes caller-specific channels',
     assert.match(fs.readFileSync(path.join(root, 'teams/purple.md'), 'utf8'), /oppose this from blue purple/);
 
     r = runDispatch(root, [
-      '--caller', 'red_lead', '--tier', 'E3', '--turn-id', 'i3-crew', '--budget', '4',
+      '--caller', 'red_lead', '--tier', 'E3', '--depth', '1', '--turn-id', 'i3-crew', '--budget', '4',
       '--scope', 'red crew check', '--artifact', 'teams/red.md', '--max-duration', '30', '--max-tools', '2',
     ]);
     assert.equal(r.status, 0, r.stderr);
