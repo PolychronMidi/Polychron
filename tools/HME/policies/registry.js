@@ -123,8 +123,8 @@ function loadCustom(customPath) {
   if (stat.isFile()) {
     try {
       const mod = require(customPath);
-      register(mod, customPath);
       assertDecisionClassMatchesSource(mod, customPath);
+      register(mod, customPath);
     } catch (err) {
       throw new Error(`[policies] failed to load custom ${customPath}: ${err.message}`);
     }
