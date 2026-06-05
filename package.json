@@ -33,6 +33,7 @@
     "tc": "node src/scripts/utils/run-with-log.js tc.log tsc -p . --noEmit",
     "test": "node src/tests/regimeReactiveDampingCore.test.js",
     "test:hme": "node tools/HME/tests/run.js",
+    "test:hme:logged": "node src/scripts/utils/run-with-log.js test-hme.log node tools/HME/tests/run.js",
     "audit": "npm audit",
     "deps:check": "depcheck",
     "deps:audit": "npm audit && depcheck",
