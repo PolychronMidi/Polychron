@@ -72,8 +72,33 @@ here. Nothing in this file is implemented until the user marks it approved.
   fork-identity limit means the mesh's adversarial value is real for concrete
   early-turn reviews and weak as a generic "team of distinct agents."
 
+## Self-evolution iteration 2 (DONE -- distinct-agent substrate + mesh re-review)
+- Substrate evolved to kill fork-identity contamination at the root: peers are
+  now DISTINCT AGENTS (context_mode=fresh + per-role `system` charter + role
+  isolation) instead of pure driver-forks. Verified: a fresh red_lead returns a
+  clean role answer in ~9s with ZERO driver-narration echo.
+- Other improvements this iteration: channel writer uses REAL newlines (no
+  JSON-escaped "\n"); HME_TEAM_PEER=1 makes peer sub-sessions no-op the driver
+  lifecycle hooks (kills the UserPromptSubmit-before-SessionStart misfire);
+  fixed an `env`-arg-order bug (assignments-before-`-u` -> exit 127).
+- Re-ran the mesh (now distinct agents) to review the new substrate. Clean,
+  uncontaminated, readable channels. It found REAL bugs in my own code; I fixed
+  the top two and unit-proved them (now 9/9):
+  - TIMEOUT-ORPHAN [done]: subprocess timeout killed only ask-peer.sh; the
+    `claude` grandchild orphaned and kept spending (the exact orphan I'd been
+    killing by hand). Fix: run the child in its own process group
+    (start_new_session) and killpg the WHOLE group on timeout. Test proves the
+    guard returns in ~2s, not 60s.
+  - TAIL-CAP TURN-BLINDNESS [done]: real newlines let a raw `tail -n` bisect a
+    turn. Fix: turn-atomic cap (keep last whole turns, never a fragment). Tested.
+  - Also notable: blue/purple peers HONESTLY DECLINED to invent criticisms when
+    the handoff didn't carry the artifact -- distinct agents not hallucinating.
+- Open debt (mesh-named, not yet done): hard output/byte cap on peer stdout;
+  channel tag-forgeability (current format escapes only the exact close-tag);
+  pass the artifact + prior findings into purple-handoff hops so they're grounded.
+
 ## Decision
-Mesh fully implemented + working; F-A..F-D fixes landed + unit-proven (8/8);
-self-evolve loop produced 2 substrate findings (role-isolation framing applied;
-forked-peer lifecycle misfire still open). Channels (teams/{red,blue,purple}.md)
-are populated for human audit.
+Mesh fully implemented, distinct-agent (no contamination), self-evolving: it
+reviewed its own substrate and surfaced real bugs that are now fixed + tested
+(9/9). Channels are clean, readable, populated for audit. Continue iterating on
+the open debt above as the next self-evolve pass.
