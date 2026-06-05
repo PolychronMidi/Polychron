@@ -97,8 +97,43 @@ here. Nothing in this file is implemented until the user marks it approved.
   channel tag-forgeability (current format escapes only the exact close-tag);
   pass the artifact + prior findings into purple-handoff hops so they're grounded.
 
+## Self-evolution iteration 3 (DONE -- close open debt + multi-step dialogue)
+- Closed the iter-2 open debt (all unit-proven, now 12/12):
+  - OUTPUT/BYTE CAP [done]: ask-peer caps captured claude JSON (head -c, 4MB);
+    truncated JSON degrades to empty (no OOM).
+  - TAG-FORGEABILITY [done]: channel writer neutralizes ALL structural tags in
+    payloads (<driver/<peer/</...> -> guillemet form), so a reply can't spoof
+    transcript structure. Test asserts exactly one real close tag.
+  - GROUNDING [done]: guard --context-file / --capsule carry the artifact into
+    fresh-agent hops so they're grounded instead of declining.
+- MULTI-STEP DIALOGUE (the user's ask): ran a real 2-round red<->blue debate
+  (each peer RESUMES its session = memory) + purple synthesis, on the open design
+  question "fresh distinct agents vs driver-fork." Both sides CONCEDED real
+  points and CONVERGED. Decision-changing output:
+  - DEFAULT = fresh independent judges for adversarial/decision review; demote
+    driver-forks to read-only context scouts with NO decision authority, and only
+    fork from a CLEAN/curated substrate, never the live meta-heavy transcript.
+  - The ONE mechanism that lets grounded independent peers beat a single
+    high-effort reviewer: a mandatory CONTEXT CAPSULE (artifact+goal+constraints+
+    evidence+rubric+coverage{included/excluded/why}); peers must CITE capsule
+    sections, flag GAPs, or decline -- "not vibes or packet-quality roulette."
+  - Hybrid only as a formal one-way pipeline: clean-fork scouts -> cited capsule
+    -> fresh judges adjudicate. Trap if ad hoc or forks get votes.
+- IMPLEMENTED the mesh's own design: guard `--capsule` validates required
+  sections (## artifact/## goal/## rubric) and wraps the task with the cite-or-
+  decline contract. The mesh designed its next feature; it now exists + is tested.
+- Lifecycle misfire FIXED ROBUSTLY: peers run with `--setting-sources user`
+  (no project HME hooks) -> a single controlled peer call produced 0 new
+  UserPromptSubmit-before-SessionStart alerts (env-tag alone wasn't reaching
+  claude's hooks reliably).
+- Operational insight (real, from a transient anthropic 200 overloaded_error):
+  bursting many concurrent peer calls overloads the provider. Mesh dispatch must
+  stay sequential / rate-limited; the F-D live-turn bound + one-round-at-a-time
+  discipline are the guardrails. Do NOT fan out heavy rounds.
+
 ## Decision
-Mesh fully implemented, distinct-agent (no contamination), self-evolving: it
-reviewed its own substrate and surfaced real bugs that are now fixed + tested
-(9/9). Channels are clean, readable, populated for audit. Continue iterating on
-the open debt above as the next self-evolve pass.
+Mesh is distinct-agent, grounded (Context Capsule), and self-evolving end-to-end:
+a multi-step red/blue dialogue DESIGNED the capsule mechanism and I built + tested
+it (12/12). Substrate debt closed. Next self-evolve pass: build a real Context
+Capsule for an actual review target and run ONE grounded, sequential round
+(no fan-out) to measure whether grounded multi-peer beats a single high-effort peer.
