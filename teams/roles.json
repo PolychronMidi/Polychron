@@ -1,6 +1,6 @@
 {
   "$schema": "./roles.schema.json",
-  "_doc": "Bounded peer roles. ask-peer.sh is the sole writer for channel transcripts and per-role session files.",
+  "_doc": "Bounded peer roles. ask-peer.sh is the sole writer for channel transcripts and per-role session files. Channels are point-to-point and selected by caller when a role participates in intra-team or purple inter-team review.",
   "roles": {
     "blue_lead": {
       "channel": "teams/driver.md",
@@ -8,7 +8,67 @@
       "tier": "E5",
       "effort": "high",
       "max_reply_bytes": 12000,
-      "label": "Driver peer / first team lead"
+      "label": "Blue team lead"
+    },
+    "red_lead": {
+      "channel": "teams/driver.md",
+      "session_file": "tmp/.team-red_lead.session",
+      "tier": "E5",
+      "effort": "high",
+      "max_reply_bytes": 12000,
+      "label": "Red team lead"
+    },
+    "blue_purple": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "blue_lead": "teams/blue.md",
+        "red_purple": "teams/purple.md"
+      },
+      "session_file": "tmp/.team-blue_purple.session",
+      "tier": "E4",
+      "effort": "medium",
+      "max_reply_bytes": 10000,
+      "label": "Blue purple partner"
+    },
+    "red_purple": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "blue_purple": "teams/purple.md"
+      },
+      "session_file": "tmp/.team-red_purple.session",
+      "tier": "E4",
+      "effort": "medium",
+      "max_reply_bytes": 10000,
+      "label": "Red purple partner"
+    },
+    "crew_e3_0": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "tmp/.team-crew_e3_0.session",
+      "tier": "E3",
+      "effort": "medium",
+      "max_reply_bytes": 8000,
+      "label": "Stage crew E3 slot 0"
+    },
+    "crew_e3_1": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "tmp/.team-crew_e3_1.session",
+      "tier": "E3",
+      "effort": "medium",
+      "max_reply_bytes": 8000,
+      "label": "Stage crew E3 slot 1"
     }
   }
 }
