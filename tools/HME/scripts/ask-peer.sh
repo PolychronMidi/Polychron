@@ -116,7 +116,7 @@ cap_channel() {
   [[ "$lines" =~ ^[0-9]+$ ]] || return 0
   (( lines <= cap )) && return 0
   local tmp
-  tmp="$(mktemp "tmp/.team-tail.XXXXXX")"
+  tmp="$(mktemp "teams/runtime/tail.XXXXXX")"
   CHANNEL="$CHANNEL" CAP="$cap" python3 - > "$tmp" <<'PY'
 import os, re
 path, cap = os.environ['CHANNEL'], int(os.environ['CAP'])
