@@ -2,7 +2,7 @@
 # MEASURED grounded review round: BASELINE (one high-effort peer) vs MULTI-PEER
 # (red_lead -> red_purple -> blue_purple cross-exam), both Context-Capsule-
 set -uo pipefail
-REPO="${PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"; cd "$REPO"
+REPO="${PROJECT_ROOT}"; cd "$REPO"
 OUT="$REPO/teams/runtime/output"; mkdir -p "$OUT"
 DASH="$REPO/tools/HME/runtime/team-dashboard.json"; SNAP="$OUT/m.snap"
 if [ -f "$DASH" ]; then cp "$DASH" "$SNAP"; else echo MISSING > "$SNAP"; fi
