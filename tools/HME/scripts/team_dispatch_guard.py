@@ -261,8 +261,10 @@ def _refund_budget(root: Path, turn_key: str | None) -> None:
         if not ok:
             return
         row = data["turns"].get(turn_key)
-        if row:
-            row["count"] = max(0, int(row.get("count") or 0) - 1)
+        # measured-round finding (blue_purple): the same row-shape risk exists on
+        # the refund path; a malformed row must not crash refund. Validate first.
+        if _valid_turn_row(row):
+            row["count"] = max(0, row["count"] - 1)
             _write_json_atomic(path, data)
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)
