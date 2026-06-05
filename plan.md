@@ -60,7 +60,7 @@ here. Nothing in this file is implemented until the user marks it approved.
   truncated to "[SUCCESS"; add a no_target/empty-reply LOUD abort.
 - NOT now: do not re-expand the role mesh. These harden the ONE proven loop only.
 
-### P1 -- Make a trial physically valid before it can score  [approved]
+### P1 -- Make a trial physically valid before it can score  [done]
 - seam: seed the three real channel files (teams/red.md, teams/blue.md,
   teams/purple.md) with a header line so they exist + are tail-cap targets;
   register the roles the round touches in team-dashboard.json (red_lead,
