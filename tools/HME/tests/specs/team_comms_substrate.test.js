@@ -190,6 +190,7 @@ test('ask-peer re-forks the driver by default (no stale per-role resume) unless 
     fs.writeFileSync(path.join(bin, 'claude'), `#!/usr/bin/env bash\npython3 - <<'PY' "$@"\nimport json, sys\nopen(${JSON.stringify(argsFile)}, 'w').write(json.dumps(sys.argv[1:]))\nprint(json.dumps({'result':'ok','session_id':'33333333-3333-4333-8333-333333333333'}))\nPY\n`);
     fs.chmodSync(path.join(bin, 'claude'), 0o755);
     // pre-seed a valid prior peer session id + a fake transcript for it
+    fs.mkdirSync(path.join(root, 'teams/runtime'), { recursive: true });
     fs.writeFileSync(path.join(root, 'teams/runtime/blue_lead.session'), '33333333-3333-4333-8333-333333333333\n');
     const proj = `${root.replace(/\//g, '-')}`;
     fs.mkdirSync(path.join(root, 'home/.claude/projects', proj), { recursive: true });
