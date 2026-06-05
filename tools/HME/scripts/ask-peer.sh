@@ -219,8 +219,8 @@ else
   [[ "$RAW_CAP" =~ ^[0-9]+$ ]] || RAW_CAP=4000000
   (( RAW_CAP > 0 )) || RAW_CAP=4000000
   SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
-  RAW_FULL="$(mktemp "teams/runtime/raw-full.${SAFE_ROLE}.XXXXXX")"
   RAW_CAP_FILE="$(mktemp "teams/runtime/raw-cap.${SAFE_ROLE}.XXXXXX")"
+  TRUNC_FILE="$(mktemp "teams/runtime/raw-trunc.${SAFE_ROLE}.XXXXXX")"
   RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
   SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
 
@@ -229,7 +229,24 @@ else
     claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
     --output-format json --effort "$EFFORT" --model default "$MSG" \
-    >"$RAW_FULL" 2>"$ERR_FILE"
+    > >(python3 -c 'import sys
+out_path, cap_s, flag_path = sys.argv[1:4]
+cap = int(cap_s)
+seen = 0
+truncated = False
+with open(out_path, "wb") as out:
+    while True:
+        chunk = sys.stdin.buffer.read(65536)
+        if not chunk:
+            break
+        if seen < cap:
+            take = min(len(chunk), cap - seen)
+            out.write(chunk[:take])
+        if seen + len(chunk) > cap:
+            truncated = True
+        seen += len(chunk)
+open(flag_path, "w", encoding="utf-8").write("1" if truncated else "0")' "$RAW_CAP_FILE" "$RAW_CAP" "$TRUNC_FILE") \
+    2>"$ERR_FILE"
   CLAUDE_STATUS=$?
   set -e
   if (( CLAUDE_STATUS != 0 )); then
@@ -239,10 +256,7 @@ else
     exit "$CLAUDE_STATUS"
   fi
 
-  head -c "$RAW_CAP" "$RAW_FULL" > "$RAW_CAP_FILE"
-  TRUNCATED=0
-  RAW_SIZE="$(wc -c < "$RAW_FULL" | tr -d ' ')"
-  [[ "$RAW_SIZE" =~ ^[0-9]+$ ]] && (( RAW_SIZE > RAW_CAP )) && TRUNCATED=1
+  TRUNCATED="$(cat "$TRUNC_FILE" 2>/dev/null || printf '0')"
   if ! python3 - "$RAW_CAP_FILE" "$RESP_FILE" "$SID_OUT_FILE" "$TRUNCATED" <<'PY'
 import json, sys
 raw_path, resp_path, sid_path, truncated = sys.argv[1:5]
