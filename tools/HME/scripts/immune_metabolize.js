@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 function _root() {
-  return process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+  if (!process.env.PROJECT_ROOT) throw new Error('PROJECT_ROOT is required');
+  return process.env.PROJECT_ROOT;
 }
 
 function run(root, opts = {}) {
