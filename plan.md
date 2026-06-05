@@ -27,7 +27,7 @@ signal. Bias strongly toward RETIRE. Give the mesh exactly ONE fair, best-case
 run; if it doesn't clearly win on catch-per-cost, delete the role entries +
 channel files. "Keep, unused" = dead weight = retire. Do not run a 2nd trial.
 
-### P1 -- Make a trial physically valid before it can score  [proposed]
+### P1 -- Make a trial physically valid before it can score  [approved]
 - seam: seed the three real channel files (teams/red.md, teams/blue.md,
   teams/purple.md) with a header line so they exist + are tail-cap targets;
   register the roles the round touches in team-dashboard.json (red_lead,
