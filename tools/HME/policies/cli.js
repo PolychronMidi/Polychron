@@ -64,6 +64,7 @@ function cmdAll() {
 }
 
 function cmdSummary() {
+  _initRegistry();
   const meta = require('./meta_registry');
   const s = meta.summary();
   console.log(`total: ${s.total}`);
