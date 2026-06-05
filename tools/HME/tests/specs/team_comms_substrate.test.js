@@ -180,6 +180,34 @@ test('ask-peer forks the driver with full tool access (no local disallowed-tools
   }
 });
 
+test('ask-peer fails closed before appending on invalid driver SID and appends explicit peer-error on bad JSON', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    let r = runAsk(root, ['blue_lead', 'review'], { HME_DRIVER_SESSION_ID: 'not-a-uuid' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /no valid driver session id/);
+    assert.equal(fs.existsSync(path.join(root, 'teams/driver.md')), false, 'no half-turn before fork preflight');
+
+    const bin = path.join(root, 'bin');
+    fs.mkdirSync(bin, { recursive: true });
+    fs.writeFileSync(path.join(bin, 'claude'), '#!/usr/bin/env bash\nprintf "not json"\n');
+    fs.chmodSync(path.join(bin, 'claude'), 0o755);
+    r = runAsk(root, ['blue_lead', 'review'], {
+      PATH: `${bin}:${process.env.PATH}`,
+      HOME: path.join(root, 'home'),
+      HME_DRIVER_SESSION_ID: '22222222-2222-4222-8222-222222222222',
+    });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stdout, /peer-error: invalid peer JSON/);
+    const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
+    assert.match(channel, /<driver role="blue_lead" tier="E5">\nreview\n<\/driver>/);
+    assert.match(channel, /<peer role="blue_lead" tier="E5">\n\[peer-error: invalid peer JSON/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('ask-peer rejects roles outside bounded paths, effort ceiling, model-tier sync, and non-fork context', () => {
   const root = tmpProject();
   try {
