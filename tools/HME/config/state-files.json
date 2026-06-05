@@ -183,7 +183,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "tmp/.team-*.session",
+      "path": "teams/runtime/*.session",
       "owner": "tools/HME/scripts/ask-peer.sh",
       "readers": [
         "tools/HME/scripts/ask-peer.sh"
@@ -195,7 +195,7 @@
       "generated": true,
       "committed": false,
       "schema": "plain UUID session id",
-      "repair": "remove the affected tmp/.team-*.session file; ask-peer.sh recreates it on next dispatch"
+      "repair": "remove the affected teams/runtime/*.session file; ask-peer.sh recreates it on next dispatch"
     },
     {
       "path": "teams/*.md",
