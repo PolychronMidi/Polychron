@@ -229,6 +229,21 @@
       "repair": "remove stale teams/runtime/channel-*.lock files when no ask-peer.sh process is active"
     },
     {
+      "path": "teams/runtime/*.stderr",
+      "owner": "tools/HME/scripts/ask-peer.sh",
+      "readers": [
+        "operators"
+      ],
+      "writers": [
+        "tools/HME/scripts/ask-peer.sh"
+      ],
+      "retention": "last peer Claude CLI stderr per role; kept out of channel stdout while preserving diagnostics",
+      "generated": true,
+      "committed": false,
+      "schema": "plain text stderr log per role",
+      "repair": "remove stale teams/runtime/*.stderr files; ask-peer.sh recreates on next dispatch"
+    },
+    {
       "path": "tools/HME/runtime/team-dispatch-budget.json",
       "owner": "tools/HME/scripts/team_dispatch_guard.py",
       "readers": [
