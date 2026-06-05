@@ -5,8 +5,8 @@ tools/HME/scripts/ask-peer.sh -- the single comms primitive every team member
 uses. Looks up a role in teams/roles.json, validates it, appends the caller turn
 to the role's channel (real-newline, structural-tag-neutralized, turn-atomic
 tail-capped, flock-serialized), launches a peer `claude -p` (resume own peer
-thread / fork driver), stream-caps raw stdout, parses reply/session, and appends
-peer turn or explicit peer-error.
+thread / fork driver), stream-caps raw stdout through a FIFO capper, parses
+reply/session, and appends peer turn or explicit peer-error.
 
 ## goal
 Find DECISION-CHANGING security/correctness flaws that survive the current
@@ -29,8 +29,8 @@ style notes. Prefer injection/escaping, race, fail-open, and quota-evasion flaws
 included: the full ask-peer.sh source below -- arg parsing, role lookup +
 validation, tier-drift check, non-driver dispatch block, FORCE_FAIL/FORCE_HANG,
 ROLE_SYSTEM charter, valid_sid, resolve_driver_sid, cap_channel,
-append_turn_locked, append_exchange, peer launch MODE, stream raw cap, robust JSON
-parse, SID persistence, and reply byte-cap.
+append_turn_locked, append_exchange, peer launch MODE, FIFO stream raw cap,
+robust JSON parse, SID persistence, and reply byte-cap.
 excluded: team_dispatch_guard.py, teams/roles.json contents, host_hook_entry.js
 (assume correct for this review).
 
@@ -136,7 +136,8 @@ RAW_CAP_FILE=""
 TRUNC_FILE=""
 RESP_FILE=""
 SID_OUT_FILE=""
-cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"}; }
+RAW_FIFO=""
+cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"} ${RAW_FIFO:+"$RAW_FIFO"}; }
 trap cleanup_tmp EXIT
 
 valid_sid() {
@@ -262,12 +263,9 @@ else
   RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
   SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
 
-  set +e
-  env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
-    claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
-    --append-system-prompt "$ROLE_SYSTEM" \
-    --output-format json --effort "$EFFORT" --model default "$MSG" \
-    > >(python3 -c 'import sys
+  RAW_FIFO="$(mktemp -u "teams/runtime/raw-fifo.${SAFE_ROLE}.XXXXXX")"
+  mkfifo "$RAW_FIFO"
+  python3 -c 'import sys
 out_path, cap_s, flag_path = sys.argv[1:4]
 cap = int(cap_s)
 seen = 0
@@ -283,10 +281,24 @@ with open(out_path, "wb") as out:
         if seen + len(chunk) > cap:
             truncated = True
         seen += len(chunk)
-open(flag_path, "w", encoding="utf-8").write("1" if truncated else "0")' "$RAW_CAP_FILE" "$RAW_CAP" "$TRUNC_FILE") \
-    2>"$ERR_FILE"
+open(flag_path, "w", encoding="utf-8").write("1" if truncated else "0")' "$RAW_CAP_FILE" "$RAW_CAP" "$TRUNC_FILE" < "$RAW_FIFO" &
+  CAP_PID=$!
+  set +e
+  env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
+    claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
+    --append-system-prompt "$ROLE_SYSTEM" \
+    --output-format json --effort "$EFFORT" --model default "$MSG" \
+    > "$RAW_FIFO" 2>"$ERR_FILE"
   CLAUDE_STATUS=$?
+  wait "$CAP_PID"
+  CAP_STATUS=$?
   set -e
+  if (( CAP_STATUS != 0 )); then
+    RESP="[peer-error: raw stdout capper exited $CAP_STATUS; stderr: $ERR_FILE]"
+    append_exchange "$RESP"
+    printf '%s\n' "$RESP"
+    exit "$CAP_STATUS"
+  fi
   if (( CLAUDE_STATUS != 0 )); then
     RESP="[peer-error: claude exited $CLAUDE_STATUS; stderr: $ERR_FILE]"
     append_exchange "$RESP"
