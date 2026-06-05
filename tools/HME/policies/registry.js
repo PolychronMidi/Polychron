@@ -131,12 +131,27 @@ function get(name) {
   return _byName.get(name) || null;
 }
 
+function policyDecisionClass(policy) {
+  const p = policy || {};
+  if (p.decisionClass) return p.decisionClass;
+  const name = p.name || '';
+  if (/^rewrite-|^auto-fill/.test(name)) return 'rewrite';
+  if (/^block-|^no-|^nexus-/.test(name)) return 'block';
+  return 'mixed';
+}
+
+function validateConfigNames(configResolver) {
+  if (!configResolver || typeof configResolver.validateKnownPolicyNames !== 'function') return true;
+  return configResolver.validateKnownPolicyNames(new Set(_policies.map((p) => p.name)));
+}
+
 // Reflexive policy genome: a policy declares its failure modes via an optional
 // `genome` block; absent fields derive from the registration shape so every
 function genomeInput(policy) {
   const p = policy || {};
   const g = p.genome && typeof p.genome === 'object' ? p.genome : {};
-  const isRewrite = /^rewrite-|auto-fill/.test(p.name || '');
+  const decisionClass = policyDecisionClass(p);
+  const isRewrite = decisionClass === 'rewrite';
   return {
     name: p.name,
     protects: g.protects || (p.category ? [p.category] : ['coherence']),
