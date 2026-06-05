@@ -10,6 +10,7 @@
  *   disable <name>              Add to project-shared config/policies.json `disabled` list.
  *   reset <name>               Remove name from both lists (revert to defaultEnabled).
  *   paths                      Print the config-scope file paths.
+ *   check                      Validate registered policy names referenced by config.
  *   eval <name>                Run a single policy against stdin JSON ({toolInput,...}); print decision.
  *
  * Config writes go to the PROJECT-shared `config/policies.json` by default.
