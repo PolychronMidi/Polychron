@@ -244,7 +244,14 @@ def resolve_target_for_tier(caller: str, request_tier: str) -> Optional[str]:
 # --- CLI / hook entry point ---
 
 def main() -> int:
-    payload = json.load(sys.stdin)
+    # Malformed/empty stdin must be a deterministic passthrough (rc 0), NOT a
+    # traceback that crashes the PreToolUse hook (host crash-handling may fail
+    try:
+        payload = json.load(sys.stdin)
+    except (json.JSONDecodeError, ValueError, UnicodeDecodeError):
+        return 0
+    if not isinstance(payload, dict):
+        return 0
     if os.environ.get("OVERDRIVE_MODE") != "1":
         return 0
     if payload.get("tool_name") != "Agent":
