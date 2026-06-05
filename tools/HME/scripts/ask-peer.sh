@@ -178,16 +178,14 @@ else
   DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS-Read Grep Glob Bash Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent}"
   TOOL_ARGS=()
   if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
-  # HME_TEAM_PEER=1 tags the sub-session so HME lifecycle hooks can treat it as
-  # an ephemeral peer (avoids the UserPromptSubmit-before-SessionStart misfire).
-  # NOTE: env -u flags MUST precede NAME=VALUE assignments, else env treats the
-  # first flag after an assignment as the command (-> exit 127).
-  # Self-evolve finding: capturing claude's full JSON unbounded can OOM on a
-  # runaway peer. Hard-cap the captured bytes (head -c); a truncated JSON simply
-  # fails to parse -> empty RESP (graceful), memory stays bounded.
+  # Ephemeral peers must NOT run the project's HME orchestration hooks: a `-p`
+  # peer fires UserPromptSubmit without a SessionStart, which trips the hook
+  # watchdog. --setting-sources user loads only user settings (no project/local
   RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
+  SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-user}"
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
-    claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --append-system-prompt "$ROLE_SYSTEM" \
+    claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --setting-sources "$SETTING_SOURCES" \
+    --append-system-prompt "$ROLE_SYSTEM" \
     --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
     | head -c "$RAW_CAP")"
   RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
