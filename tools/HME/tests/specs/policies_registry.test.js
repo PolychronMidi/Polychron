@@ -54,6 +54,17 @@ test('registry: register rejects missing decisionClass', () => {
   }), /decisionClass as block\|rewrite\|mixed/);
 });
 
+test('loadCustom rejects custom policies without decisionClass', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-custom-policy-'));
+  try {
+    const file = path.join(dir, 'missing-decision-class.js');
+    fs.writeFileSync(file, `module.exports = { name:'custom-missing-decision-class-${Date.now()}', description:'x', category:'test', defaultEnabled:true, match:{events:['Stop']}, fn:(ctx)=>ctx.allow() };\n`);
+    assert.throws(() => registry.loadCustom(file), /decisionClass as block\|rewrite\|mixed/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('registry: register rejects duplicate names', () => {
   const name = 'test-dup-' + Date.now();
   const p = {
