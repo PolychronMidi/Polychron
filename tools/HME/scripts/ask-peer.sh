@@ -208,7 +208,8 @@ else
   RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
   SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
 
-  RAW_FIFO="$(mktemp -u "teams/runtime/raw-fifo.${SAFE_ROLE}.XXXXXX")"
+  RAW_FIFO_DIR="$(mktemp -d "teams/runtime/raw-fifo.${SAFE_ROLE}.XXXXXX")"
+  RAW_FIFO="$RAW_FIFO_DIR/pipe"
   mkfifo "$RAW_FIFO"
   python3 -c 'import sys
 out_path, cap_s, flag_path = sys.argv[1:4]
