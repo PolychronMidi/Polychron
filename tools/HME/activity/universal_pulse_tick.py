@@ -120,6 +120,7 @@ def _tick(cfg, tracker):
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
         except Exception as err:
+            # silent-ok: exception is surfaced to hme-errors via _log_error below.
             _log_error(f"[universal_pulse] WARN immune-metabolize spawn failed: "
                        f"{type(err).__name__}: {str(err)[:120]}")
 
