@@ -186,6 +186,7 @@ else
   # hooks live in USER settings (~/.claude), so peers load ONLY project,local
   RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
   SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
+  # silent-ok: peer stderr is suppressed to keep channels clean; nonzero still fails via 
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
     claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
