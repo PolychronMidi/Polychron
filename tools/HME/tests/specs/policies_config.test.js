@@ -132,3 +132,15 @@ test('config: known policy names pass validation', _withSandbox(async (sandbox, 
   cfg.reset();
   assert.strictEqual(cfg.validateKnownPolicyNames(new Set(['known-policy', 'other-policy'])), true);
 }));
+
+test('i/policies list reports stale renamed config keys', _withSandbox(async (sandbox) => {
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), { disabled: ['block-comment-bloat'] });
+  const cli = path.resolve(__dirname, '..', '..', 'policies', 'cli.js');
+  const r = spawnSync('node', [cli, 'list'], {
+    cwd: path.resolve(__dirname, '../../../..'),
+    env: { ...process.env, PROJECT_ROOT: sandbox },
+    encoding: 'utf8',
+  });
+  assert.notStrictEqual(r.status, 0);
+  assert.match(r.stderr, /stale disabled policy name 'block-comment-bloat' \(renamed to 'rewrite-comment-bloat'\)/);
+}));
