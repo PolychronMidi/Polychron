@@ -122,12 +122,9 @@ remain in `hooks/pretooluse/bash/blackbox_guards.sh` for shell command parsing,
 but new cross-tool policy logic should live in JS first and expose any shared
 parsing through a helper rather than cloning checks into shell.
 
-## Meta-registry (step 2)
+## Meta-registry
 
-The unified registry covers hook-time only. A separate cross-layer
-meta-registry would catalog rules from all 11 enforcement layers
-(ESLint, hypermeta, HCI verifiers, audit scripts, boot, runtime,
-PreToolUse, PostToolUse, Stop, middleware, prose) under a single
-discovery surface -- `i/policies list` would show every rule across
-every layer, with metadata-only entries delegating to each layer's
-existing implementation. Out of scope for this PR.
+The executable registry covers hook-time only. The cross-layer meta-registry
+is discovery-only: `i/policies all` and `i/policies summary` enumerate hook
+policies plus lint, HCI, audit, boot, hypermeta, and middleware rules while
+leaving each layer's execution path intact.
