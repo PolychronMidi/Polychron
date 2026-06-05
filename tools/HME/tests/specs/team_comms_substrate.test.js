@@ -155,6 +155,22 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
   }
 });
 
+test('ask-peer prunes old per-role stderr files (bounded, no unbounded accumulation)', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    const rt = path.join(root, 'teams/runtime');
+    fs.mkdirSync(rt, { recursive: true });
+    for (let i = 0; i < 9; i++) fs.writeFileSync(path.join(rt, `blue_lead.${1000 + i}.${i}.stderr`), 'x');
+    const r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'ok', HME_TEAM_STDERR_KEEP: '5' });
+    assert.equal(r.status, 0, r.stderr);
+    const left = fs.readdirSync(rt).filter((f) => f.startsWith('blue_lead.') && f.endsWith('.stderr'));
+    assert.ok(left.length <= 5, `stderr files bounded, got ${left.length}`);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('ask-peer forks the driver with full tool access (no local disallowed-tools path)', () => {
   const root = tmpProject();
   try {
