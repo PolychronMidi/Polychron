@@ -14,19 +14,13 @@ const VERIFIER = path.resolve(__dirname, '../../../../src/scripts/pipeline/valid
 const PROJECT_ROOT = path.resolve(__dirname, '../../../..');
 
 function _runVerifier(env = {}) {
-  // Run the verifier from the project root in a clean env. Returns
-  // { code, stdout, stderr } even on non-zero exit.
-  try {
-    const out = execFileSync('node', [VERIFIER], {
-      cwd: PROJECT_ROOT,
-      env: { ...process.env, ...env },
-      encoding: 'utf8',
-    });
-    return { code: 0, stdout: out, stderr: '' };
-  } catch (e) {
-    // silent-ok: optional fallback path.
-    return { code: e.status || 1, stdout: e.stdout || '', stderr: e.stderr || '' };
-  }
+  const r = spawnSync('node', [VERIFIER], {
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, ...env },
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  return { code: r.status || 0, stdout: r.stdout || '', stderr: r.stderr || '' };
 }
 
 test('check-module-manifests: clean tree passes', () => {
