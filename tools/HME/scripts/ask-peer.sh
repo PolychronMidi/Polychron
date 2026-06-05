@@ -114,8 +114,23 @@ cap_channel() {
   (( lines <= cap )) && return 0
   local tmp
   tmp="$(mktemp "tmp/.team-tail.XXXXXX")"
-  # keep the header line, then the tail realigned to the first whole turn
-  { head -n 1 "$CHANNEL"; tail -n "$cap" "$CHANNEL" | sed -n '/^<\(driver\|peer\) /,$p'; } > "$tmp"
+  CHANNEL="$CHANNEL" CAP="$cap" python3 - > "$tmp" <<'PY'
+import os, re
+path, cap = os.environ['CHANNEL'], int(os.environ['CAP'])
+lines = open(path, encoding='utf-8').read().split('\n')
+header, rest = (lines[0] if lines else ''), lines[1:]
+starts = [i for i, l in enumerate(rest) if re.match(r'^<(driver|peer) ', l)]
+if not starts:
+    print('\n'.join(lines), end=''); raise SystemExit
+# keep whole turns from the end; total kept lines <= cap, but always >=1 turn
+keep = starts[-1]
+for s in reversed(starts):
+    if (len(rest) - s) <= cap:
+        keep = s
+    else:
+        break
+print('\n'.join([header] + rest[keep:]), end='')
+PY
   mv "$tmp" "$CHANNEL"
 }
 
