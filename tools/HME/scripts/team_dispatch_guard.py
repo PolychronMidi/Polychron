@@ -348,10 +348,11 @@ def _refund_budget(root: Path, turn_key: str | None) -> None:
 def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_env: dict[str, str]) -> str:
     caller = child_env.get("HME_TEAM_CALLER", "driver")
     return (
-        # Role-isolation framing: a peer FORKED from the driver inherits the
-        # driver's full context AND its narration. Without this it tends to
-        f"You are {target}, a DISTINCT team peer (not the driver). {caller} is asking you.\n"
-        f"Answer ONLY in the {target} role; do NOT continue the driver's narration or echo this handoff.\n"
+        # Role framing: a peer FORKED from the driver inherits full context and
+        # tools; the prompt must steer it into the requested team role without
+        # nuking that context.
+        f"You are {target}, a forked team peer with the driver's full inherited context. {caller} is asking you.\n"
+        f"Answer ONLY in the {target} role; do NOT continue the driver's narration or echo this handoff. Use tools as needed to verify.\n"
         f"Leashed peer handoff for {target}.\n"
         f"scope: {leash['scope']}\n"
         f"artifact: {leash['artifact']}\n"
