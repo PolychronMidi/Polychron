@@ -169,10 +169,29 @@ here. Nothing in this file is implemented until the user marks it approved.
   `project,local` (exclude user) and re-verified 0 misfires. Don't claim "fixed"
   from one quiet sample; confirm under the real workload.
 
+## Self-evolution iteration 5 (DONE -- capsule coverage<->evidence consistency check)
+- Closed the iter-4 named next-pass item (the lesson the mesh caught on my OWN
+  capsule: ## coverage claimed code -- _send/main -- the ## evidence had
+  truncated). New `_capsule_coverage_gaps()` in team_dispatch_guard.py:
+  - parses the capsule into section bodies, reads the `## coverage` `included:`
+    clause, extracts CODE symbols only (underscore-bearing / backtick / paren-
+    quoted; bare prose words ignored so it never false-positives on English),
+    and fails CLOSED (deny `capsule_coverage_gap` + `missing_evidence` list) if a
+    claimed symbol is absent from the `## evidence` body. Skips `excluded:`.
+    No-ops when either section is absent (nothing claimed -> nothing to verify).
+  - Wired into the `--capsule` path BEFORE any peer call, so a capsule whose own
+    evidence doesn't carry its coverage claims can't ground a peer.
+- Unit-proven (now 14/14 substrate, 19 total with team_agent_router): a capsule
+  claiming _reserve_budget/_send/main with evidence carrying only _reserve_budget
+  is denied (_send in missing_evidence, no peer call); evidence carrying every
+  claimed symbol is allowed (no false positive).
+
 ## Decision
-The mesh is now a PROVEN self-evolving review system: distinct-agent + Context-
+The mesh is a PROVEN self-evolving review system: distinct-agent + Context-
 Capsule-grounded + sequential + adversarial cross-exam, and a measured round
 showed it BEATS a single high-effort peer (more unique real bugs + false-positive
 correction, all cited, with honest GAP-flagging). It found 3 real guard bugs that
-are now fixed + tested (13/13). Next pass: add a capsule coverage<->evidence
-consistency check, then point the proven loop at a fresh real review target.
+are now fixed + tested, and the capsule contract now self-checks coverage<->
+evidence consistency (14/14 substrate, 19 total). Next: point the proven loop
+(done-evidence capsule -> sequential grounded round) at a fresh real review
+target, confirming results across samples before claiming success.
