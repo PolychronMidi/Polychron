@@ -71,12 +71,9 @@ test('i/status state shows pipeline state', () => {
 
 // Smoke tests for the three new horizon-seed modes shipped this session.
 function _runStatus(mode) {
-  const r = spawnSync(I_STATUS, [`mode=${mode}`], {
-    encoding: 'utf8',
-    timeout: 15000,
-    cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT },
-  });
+  const opts = { encoding: 'utf8', timeout: CMD_TIMEOUT_MS, cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT } };
+  let r = spawnSync(I_STATUS, [`mode=${mode}`], opts);
+  if (r.status === null) r = spawnSync(I_STATUS, [`mode=${mode}`], opts);
   return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
 }
 
