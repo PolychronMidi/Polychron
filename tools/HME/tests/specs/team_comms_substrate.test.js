@@ -155,7 +155,32 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
   }
 });
 
-test('ask-peer rejects roles outside bounded paths, effort ceiling, and model-tier sync', () => {
+test('ask-peer forks the driver with full tool access (no local disallowed-tools path)', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    const bin = path.join(root, 'bin');
+    fs.mkdirSync(bin, { recursive: true });
+    const argsFile = path.join(root, 'teams/runtime/claude-args.json');
+    fs.writeFileSync(path.join(bin, 'claude'), `#!/usr/bin/env bash\npython3 - <<'PY' "$@"\nimport json, sys\nopen(${JSON.stringify(argsFile)}, 'w').write(json.dumps(sys.argv[1:]))\nprint(json.dumps({'result':'fork ok','session_id':'11111111-1111-4111-8111-111111111111'}))\nPY\n`);
+    fs.chmodSync(path.join(bin, 'claude'), 0o755);
+
+    const r = runAsk(root, ['blue_lead', 'review'], {
+      PATH: `${bin}:${process.env.PATH}`,
+      HOME: path.join(root, 'home'),
+      HME_DRIVER_SESSION_ID: 'driver-session-7',
+    });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout, 'fork ok\n');
+    const args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
+    assert.deepEqual(args.slice(0, 4), ['-p', '--resume', 'driver-session-7', '--fork-session']);
+    assert.ok(!args.includes('--disallowedTools'), 'ask-peer must not maintain a local tool-deny path');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('ask-peer rejects roles outside bounded paths, effort ceiling, model-tier sync, and non-fork context', () => {
   const root = tmpProject();
   try {
     writeRoles(root, { bad: { channel: 'chat.md', session_file: 'teams/runtime/bad.session', tier: 'E5' } });
