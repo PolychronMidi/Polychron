@@ -78,7 +78,9 @@ _CAPSULE_HEAD_RE = re.compile(r"^#{1,3}\s+([a-z_]+)\b", re.MULTILINE)
 
 def _load_capsule(path: Path, cap: int) -> tuple[str, list[str]]:
     text = path.read_text(encoding="utf-8", errors="ignore")[:cap]
-    sections = {m.group(1).lower() for m in _CAPSULE_HEAD_RE.finditer(text)}
+    # Fence-aware: a `# goal` line inside a ``` code fence is a code comment, not
+    # a real section heading, so it must not falsely satisfy a required section.
+    sections = {name for _s, _e, name in _capsule_headings(text)}
     missing = [s for s in CAPSULE_REQUIRED if s not in sections]
     return text, missing
 
