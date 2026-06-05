@@ -6,8 +6,8 @@
  * (PreToolUse / PostToolUse / Stop / proxy middleware).
  *
  * Design intent: every hook-time rule shares the same registration shape
- * (`{name, description, category, defaultEnabled, match: {events, tools},
- * fn(ctx), params?}`) and the same enable/disable contract. Discovery is
+ * (`{name, description, category, defaultEnabled, decisionClass,
+ * match: {events, tools}, fn(ctx), params?}`) and the same enable/disable contract. Discovery is
  * unified (`i/policies list`); configuration is unified (scoped JSON
  * files); per-layer dispatchers (stop_chain, pretooluse_bash, middleware)
  * consult this registry to decide whether to run a given policy.
