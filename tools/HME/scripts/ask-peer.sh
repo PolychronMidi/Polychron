@@ -182,9 +182,14 @@ else
   # an ephemeral peer (avoids the UserPromptSubmit-before-SessionStart misfire).
   # NOTE: env -u flags MUST precede NAME=VALUE assignments, else env treats the
   # first flag after an assignment as the command (-> exit 127).
+  # Self-evolve finding: capturing claude's full JSON unbounded can OOM on a
+  # runaway peer. Hard-cap the captured bytes (head -c); a truncated JSON simply
+  # fails to parse -> empty RESP (graceful), memory stays bounded.
+  RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
     claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --append-system-prompt "$ROLE_SYSTEM" \
-    --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
+    --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
+    | head -c "$RAW_CAP")"
   RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
   NEW_SID="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].session_id) else .session_id end' <<<"$RAW")"
   [[ -n "$NEW_SID" && "$NEW_SID" != "null" ]] && printf '%s\n' "$NEW_SID" > "$SID_FILE"
