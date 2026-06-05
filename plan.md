@@ -37,7 +37,7 @@ channel files. "Keep, unused" = dead weight = retire. Do not run a 2nd trial.
   as a result (the exact bug that made the last trial invalid).
 - NOT this: no new code; no broadcast; no extra roles beyond the four the round needs.
 
-### P2 -- One real task, both paths, comparable  [proposed]
+### P2 -- One real task, both paths, comparable  [approved]
 - task: a single ADVERSARIAL REVIEW of one real code artifact the single peer has
   ALREADY reviewed (known-quality baseline). Identical prompt, "return only
   decision-changing flaws."
