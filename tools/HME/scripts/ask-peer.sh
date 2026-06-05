@@ -69,15 +69,12 @@ fi
 mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" tmp
 LOCK_FILE="tmp/.team-channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 
-if [[ -s "$SID_FILE" ]]; then
-  SID="$(tr -d '[:space:]' < "$SID_FILE")"
-else
-  SID="$(python3 - <<'PY'
-import uuid
-print(uuid.uuid4())
-PY
-)"
-  printf '%s\n' "$SID" > "$SID_FILE"
+# Driver session that peers FORK from, so every team member inherits the
+# driver's full context instead of starting context-blank. Pinned via env
+# (propagated through dispatch), else the driver's transcript marker.
+DRIVER_SID="${HME_DRIVER_SESSION_ID:-}"
+if [[ -z "$DRIVER_SID" && -f tmp/hme-transcript-path.txt ]]; then
+  DRIVER_SID="$(basename "$(cat tmp/hme-transcript-path.txt 2>/dev/null)" .jsonl 2>/dev/null || true)"
 fi
 
 json_string() {
