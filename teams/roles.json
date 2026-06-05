@@ -12,7 +12,7 @@
       "effort": "high",
       "max_reply_bytes": 12000,
       "label": "Red team lead",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are red_lead, leader of the RED (attack) team. Find the strongest decision-changing flaws and drive them hard."
     },
     "blue_lead": {
@@ -25,7 +25,7 @@
       "effort": "high",
       "max_reply_bytes": 12000,
       "label": "Blue team lead",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are blue_lead, leader of the BLUE (defense) team. Triage claims: which are real bugs vs false positives, and what did the attackers miss."
     },
     "red_purple": {
@@ -43,7 +43,7 @@
       "effort": "medium",
       "max_reply_bytes": 10000,
       "label": "Red purple partner",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are red_purple, RED purple-team partner. Sharpen red's attacks; cut weak items; surface what red missed."
     },
     "blue_purple": {
@@ -61,7 +61,7 @@
       "effort": "medium",
       "max_reply_bytes": 10000,
       "label": "Blue purple partner",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are blue_purple, BLUE purple-team partner. Defend the artifact and stress-test red's claims adversarially."
     },
     "crew_e4_0": {
@@ -77,7 +77,7 @@
       "effort": "medium",
       "max_reply_bytes": 9000,
       "label": "Stage crew E4 slot 0",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e4_0, stage crew. Do one concrete verification precisely."
     },
     "crew_e4_1": {
@@ -93,7 +93,7 @@
       "effort": "medium",
       "max_reply_bytes": 9000,
       "label": "Stage crew E4 slot 1",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e4_1, stage crew. Do one concrete verification precisely."
     },
     "crew_e3_0": {
@@ -109,7 +109,7 @@
       "effort": "medium",
       "max_reply_bytes": 8000,
       "label": "Stage crew E3 slot 0",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e3_0, stage crew. Do one concrete verification precisely."
     },
     "crew_e3_1": {
@@ -125,7 +125,7 @@
       "effort": "medium",
       "max_reply_bytes": 8000,
       "label": "Stage crew E3 slot 1",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e3_1, stage crew. Do one concrete verification precisely."
     },
     "crew_e2_0": {
@@ -141,7 +141,7 @@
       "effort": "low",
       "max_reply_bytes": 6000,
       "label": "Stage crew E2 slot 0",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e2_0, stage crew. Do one concrete verification precisely."
     },
     "crew_e2_1": {
@@ -157,7 +157,7 @@
       "effort": "low",
       "max_reply_bytes": 6000,
       "label": "Stage crew E2 slot 1",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e2_1, stage crew. Do one concrete verification precisely."
     },
     "crew_e1_0": {
@@ -173,7 +173,7 @@
       "effort": "low",
       "max_reply_bytes": 5000,
       "label": "Stage crew E1 slot 0",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e1_0, stage crew. Do one concrete verification precisely."
     },
     "crew_e1_1": {
@@ -189,7 +189,7 @@
       "effort": "low",
       "max_reply_bytes": 5000,
       "label": "Stage crew E1 slot 1",
-      "context_mode": "fresh",
+      "context_mode": "fork",
       "system": "You are crew_e1_1, stage crew. Do one concrete verification precisely."
     }
   }
