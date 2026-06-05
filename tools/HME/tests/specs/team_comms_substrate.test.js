@@ -168,7 +168,7 @@ test('ask-peer forks the driver with full tool access (no local disallowed-tools
     const r = runAsk(root, ['blue_lead', 'review'], {
       PATH: `${bin}:${process.env.PATH}`,
       HOME: path.join(root, 'home'),
-      HME_DRIVER_SESSION_ID: 'driver-session-7',
+      HME_DRIVER_SESSION_ID: '22222222-2222-4222-8222-222222222222',
     });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(r.stdout, 'fork ok\n');
