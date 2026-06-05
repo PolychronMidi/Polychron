@@ -20,7 +20,7 @@ Classify P0/P1/P2. For each: exact function/block, failure, and one-line fix.
 Reject style notes. Prefer fail-open, spoofing, tier/order, and stale-state bugs.
 
 ## coverage
-included: full team_agent_router.py source below -- registry load, tier parsing,
+included: full router source below -- registry load, tier parsing,
 role filtering/selection, diagnostics, and main CLI behavior.
 excluded: ask-peer.sh and team_dispatch_guard.py (assume current and correct).
 
