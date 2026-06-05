@@ -9,13 +9,14 @@ const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const I_STATUS = path.join(PROJECT_ROOT, 'tools/HME/i/status');
 const I_REVIEW = path.join(PROJECT_ROOT, 'tools/HME/i/review');
 
-function run(cmd, args, timeout = 20000) {
-  const r = spawnSync(cmd, args, {
-    encoding: 'utf8',
-    timeout,
-    cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT },
-  });
+const CMD_TIMEOUT_MS = Number(process.env.HME_TEST_CMD_TIMEOUT_MS) || 20000;
+
+function run(cmd, args, timeout = CMD_TIMEOUT_MS) {
+  const opts = { encoding: 'utf8', timeout, cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT } };
+  let r = spawnSync(cmd, args, opts);
+  // status === null means spawnSync killed it at the wall-clock timeout, not a
+  // real exit. Worker-dependent i/ commands (i/review mode=forget is a ~35s
+  if (r.status === null) r = spawnSync(cmd, args, opts);
   return { status: r.status, stdout: r.stdout || '', stderr: r.stderr || '' };
 }
 
