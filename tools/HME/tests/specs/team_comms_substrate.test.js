@@ -256,3 +256,88 @@ test('dispatch guard can explicitly send through ask-peer with leash text', () =
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('I3 roles route to red, blue, and purple channels without broadcast', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, meshRoles());
+    let r = runAsk(root, ['red_purple', 'red intra'], {
+      HME_TEAM_ROLE: 'red_lead', HME_TEAM_DISPATCH_GUARD_OK: '1', HME_ASK_PEER_FAKE_REPLY: 'red ok',
+    });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(fs.readFileSync(path.join(root, 'teams/red.md'), 'utf8'), /red intra/);
+
+    r = runAsk(root, ['blue_purple', 'blue intra'], {
+      HME_TEAM_ROLE: 'blue_lead', HME_TEAM_DISPATCH_GUARD_OK: '1', HME_ASK_PEER_FAKE_REPLY: 'blue ok',
+    });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(fs.readFileSync(path.join(root, 'teams/blue.md'), 'utf8'), /blue intra/);
+
+    r = runAsk(root, ['blue_purple', 'purple cross'], {
+      HME_TEAM_ROLE: 'red_purple', HME_TEAM_DISPATCH_GUARD_OK: '1', HME_ASK_PEER_FAKE_REPLY: 'purple ok',
+    });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(fs.readFileSync(path.join(root, 'teams/purple.md'), 'utf8'), /purple cross/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('I3 dispatch guard selects real roles and writes caller-specific channels', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, meshRoles());
+    writeDashboard(root, {
+      driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
+      blue_lead: { status: 'retired', tier: 'E5', ctx_used_pct: 1 },
+      red_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
+      red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 20 },
+      blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 30 },
+      crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 40 },
+    });
+
+    let r = runDispatch(root, [
+      '--caller', 'driver', '--tier', 'E5', '--turn-id', 'i3-driver', '--budget', '4',
+      '--scope', 'red lead bootstrap', '--artifact', 'teams/driver.md', '--max-duration', '30', '--max-tools', '2',
+    ]);
+    assert.equal(r.status, 0, r.stderr);
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.target, 'red_lead');
+
+    r = runDispatch(root, [
+      '--caller', 'red_lead', '--tier', 'E4', '--turn-id', 'i3-red', '--budget', '4',
+      '--scope', 'red purple review', '--artifact', 'teams/red.md', '--max-duration', '30', '--max-tools', '2',
+      '--send', '--message', 'challenge this red plan',
+    ], { HME_ASK_PEER_FAKE_REPLY: 'red purple ok' });
+    assert.equal(r.status, 0, r.stderr);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.target, 'red_purple');
+    assert.equal(out.sent, true);
+    assert.match(fs.readFileSync(path.join(root, 'teams/red.md'), 'utf8'), /challenge this red plan/);
+
+    r = runDispatch(root, [
+      '--caller', 'red_purple', '--tier', 'E4', '--turn-id', 'i3-red', '--budget', '4',
+      '--scope', 'purple opposition', '--artifact', 'teams/purple.md', '--max-duration', '30', '--max-tools', '2',
+      '--send', '--message', 'oppose this from blue purple',
+    ], { HME_ASK_PEER_FAKE_REPLY: 'blue purple ok' });
+    assert.equal(r.status, 0, r.stderr);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.target, 'blue_purple');
+    assert.equal(out.sent, true);
+    assert.match(fs.readFileSync(path.join(root, 'teams/purple.md'), 'utf8'), /oppose this from blue purple/);
+
+    r = runDispatch(root, [
+      '--caller', 'red_lead', '--tier', 'E3', '--turn-id', 'i3-crew', '--budget', '4',
+      '--scope', 'red crew check', '--artifact', 'teams/red.md', '--max-duration', '30', '--max-tools', '2',
+    ]);
+    assert.equal(r.status, 0, r.stderr);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.target, 'crew_e3_0');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
