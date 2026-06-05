@@ -5,7 +5,8 @@ tools/HME/scripts/ask-peer.sh -- the single comms primitive every team member
 uses. Looks up a role in teams/roles.json, validates it, appends the caller turn
 to the role's channel (real-newline, structural-tag-neutralized, turn-atomic
 tail-capped, flock-serialized), launches a peer `claude -p` (resume own peer
-thread / fork driver), caps reply bytes, appends peer turn.
+thread / fork driver), stream-caps raw stdout, parses reply/session, and appends
+peer turn or explicit peer-error.
 
 ## goal
 Find DECISION-CHANGING security/correctness flaws that survive the current
@@ -26,10 +27,10 @@ style notes. Prefer injection/escaping, race, fail-open, and quota-evasion flaws
 
 ## coverage
 included: the full ask-peer.sh source below -- arg parsing, role lookup +
-validation, tier-drift check, the non-driver dispatch block, FORCE_FAIL/FORCE_HANG
-test injection, ROLE_SYSTEM charter, DRIVER_SID resolution, valid_sid,
-resolve_driver_sid, cap_channel, append_turn_locked, the peer launch (MODE/RAW),
-robust JSON parse, and the reply byte-cap.
+validation, tier-drift check, non-driver dispatch block, FORCE_FAIL/FORCE_HANG,
+ROLE_SYSTEM charter, valid_sid, resolve_driver_sid, cap_channel,
+append_turn_locked, append_exchange, peer launch MODE, stream raw cap, robust JSON
+parse, SID persistence, and reply byte-cap.
 excluded: team_dispatch_guard.py, teams/roles.json contents, host_hook_entry.js
 (assume correct for this review).
 
@@ -131,11 +132,11 @@ mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
 LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 SAFE_ROLE="$(printf '%s' "$ROLE" | sed 's#[^A-Za-z0-9_.-]#_#g')"
 ERR_FILE="teams/runtime/${SAFE_ROLE}.$$.${EPOCHREALTIME//./}.stderr"
-RAW_FULL=""
 RAW_CAP_FILE=""
+TRUNC_FILE=""
 RESP_FILE=""
 SID_OUT_FILE=""
-cleanup_tmp() { rm -f ${RAW_FULL:+"$RAW_FULL"} ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"}; }
+cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"}; }
 trap cleanup_tmp EXIT
 
 valid_sid() {
@@ -201,8 +202,27 @@ append_turn_locked() {
 
 append_exchange() {
   local peer_text="$1"
-  append_turn_locked driver "$MSG"
-  append_turn_locked peer "$peer_text"
+  local driver_text="$MSG"
+  driver_text="${driver_text//<driver/‹driver}"
+  driver_text="${driver_text//<\/driver/‹/driver}"
+  driver_text="${driver_text//<peer/‹peer}"
+  driver_text="${driver_text//<\/peer/‹/peer}"
+  peer_text="${peer_text//<driver/‹driver}"
+  peer_text="${peer_text//<\/driver/‹/driver}"
+  peer_text="${peer_text//<peer/‹peer}"
+  peer_text="${peer_text//<\/peer/‹/peer}"
+  (
+    flock -x 9
+    {
+      printf '<driver role="%s" tier="%s">\n' "$ROLE" "$TIER"
+      printf '%s\n' "$driver_text"
+      printf '</driver>\n\n'
+      printf '<peer role="%s" tier="%s">\n' "$ROLE" "$TIER"
+      printf '%s\n' "$peer_text"
+      printf '</peer>\n\n'
+    } >> "$CHANNEL"
+    cap_channel
+  ) 9>>"$LOCK_FILE"
 }
 
 FAKE_REPLY="${HME_ASK_PEER_FAKE_REPLY:-}"
@@ -237,8 +257,8 @@ else
   [[ "$RAW_CAP" =~ ^[0-9]+$ ]] || RAW_CAP=4000000
   (( RAW_CAP > 0 )) || RAW_CAP=4000000
   SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
-  RAW_FULL="$(mktemp "teams/runtime/raw-full.${SAFE_ROLE}.XXXXXX")"
   RAW_CAP_FILE="$(mktemp "teams/runtime/raw-cap.${SAFE_ROLE}.XXXXXX")"
+  TRUNC_FILE="$(mktemp "teams/runtime/raw-trunc.${SAFE_ROLE}.XXXXXX")"
   RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
   SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
 
@@ -247,7 +267,24 @@ else
     claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
     --output-format json --effort "$EFFORT" --model default "$MSG" \
-    >"$RAW_FULL" 2>"$ERR_FILE"
+    > >(python3 -c 'import sys
+out_path, cap_s, flag_path = sys.argv[1:4]
+cap = int(cap_s)
+seen = 0
+truncated = False
+with open(out_path, "wb") as out:
+    while True:
+        chunk = sys.stdin.buffer.read(65536)
+        if not chunk:
+            break
+        if seen < cap:
+            take = min(len(chunk), cap - seen)
+            out.write(chunk[:take])
+        if seen + len(chunk) > cap:
+            truncated = True
+        seen += len(chunk)
+open(flag_path, "w", encoding="utf-8").write("1" if truncated else "0")' "$RAW_CAP_FILE" "$RAW_CAP" "$TRUNC_FILE") \
+    2>"$ERR_FILE"
   CLAUDE_STATUS=$?
   set -e
   if (( CLAUDE_STATUS != 0 )); then
@@ -257,10 +294,7 @@ else
     exit "$CLAUDE_STATUS"
   fi
 
-  head -c "$RAW_CAP" "$RAW_FULL" > "$RAW_CAP_FILE"
-  TRUNCATED=0
-  RAW_SIZE="$(wc -c < "$RAW_FULL" | tr -d ' ')"
-  [[ "$RAW_SIZE" =~ ^[0-9]+$ ]] && (( RAW_SIZE > RAW_CAP )) && TRUNCATED=1
+  TRUNCATED="$(cat "$TRUNC_FILE" 2>/dev/null || printf '0')"
   if ! python3 - "$RAW_CAP_FILE" "$RESP_FILE" "$SID_OUT_FILE" "$TRUNCATED" <<'PY'
 import json, sys
 raw_path, resp_path, sid_path, truncated = sys.argv[1:5]
