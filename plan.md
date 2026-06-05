@@ -216,6 +216,31 @@ here. Nothing in this file is implemented until the user marks it approved.
 - The capsule + cite-or-decline machinery remains available for grounding, but it
   is no longer a substitute for real forked context + live verification.
 
+## Self-evolution iteration 6 (DONE -- forked/full-tool mesh reviewed ask-peer)
+- Ran the measured sequential mesh round using the corrected substrate: peers were
+  driver FORKS with full inherited context and full tool access. The round reviewed
+  teams/capsules/ask-peer.md (rebuilt from the live ask-peer.sh source).
+- Mesh findings that survived cross-exam and were fixed:
+  - PATH CONFINEMENT [done]: string-glob checks like `teams/*.md` could allow
+    traversal-shaped paths. ask-peer now allows only explicit channel files
+    teams/{driver,red,blue,purple}.md and requires session files directly under
+    teams/runtime/*.session (no nested/parent traversal).
+  - FORK SID VALIDATION + PREFLIGHT [done]: driver/peer session ids now must match
+    Claude UUID shape; invalid driver SID fails closed before any channel append;
+    invalid peer SID is deleted/reforked from the valid driver SID. Launch
+    preflight happens before appending the driver turn, preventing half exchanges.
+  - PEER OUTPUT HARDENING [done]: claude stdout is captured to runtime files,
+    byte-capped without a pipefail/SIGPIPE abort, parsed via tolerant Python, and
+    malformed/truncated JSON becomes an explicit bounded peer-error turn instead
+    of killing ask-peer after a driver-only append.
+  - STDERR EVIDENCE [done]: peer stderr is per-call (`teams/runtime/<role>.<pid>.<ts>.stderr`)
+    instead of per-role overwrite, preserving diagnostics.
+  - DEAD NOISE [done]: removed the unused `json_string()` helper.
+- Unit-proven (now 22/22 team tests): fork/full-tool launch has no local tool-deny
+  arg, non-fork context is rejected, traversal-shaped channel/session paths are
+  rejected, invalid driver SID leaves no half-turn, and bad peer JSON appends an
+  explicit peer-error turn.
+
 ## Decision
 The mesh is a self-evolving review system: driver-FORK peers with FULL tool
 access (real context + live verification), sequential dispatch, adversarial
