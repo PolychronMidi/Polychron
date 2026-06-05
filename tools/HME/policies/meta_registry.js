@@ -37,24 +37,26 @@ const PROJECT_ROOT = process.env.PROJECT_ROOT
 // Adapters
 
 function _scanHookPolicies() {
-  // Reuses the existing registry -- the canonical source.
-  try {
-    const registry = require('./registry');
-    const config = require('./config');
-    registry.loadBuiltins();
-    return registry.list().map((p) => ({
-      name: p.name,
-      layer: 'hook',
-      category: p.category || 'uncategorized',
-      description: p.description || '',
-      file: '(builtin)',
-      defaultEnabled: p.defaultEnabled,
-      status: config.isEnabled(p.name, p.defaultEnabled) ? 'on' : 'off',
-    }));
-  } catch (_e) {
-    // silent-ok: optional fallback path.
-    return [];
+  const registry = require('./registry');
+  const config = require('./config');
+  registry.loadBuiltins();
+  const cfg = config.get();
+  if (cfg.customPoliciesPath) {
+    const customPath = path.isAbsolute(cfg.customPoliciesPath)
+      ? cfg.customPoliciesPath
+      : path.join(PROJECT_ROOT, cfg.customPoliciesPath);
+    registry.loadCustom(customPath);
   }
+  registry.validateConfigNames(config);
+  return registry.list().map((p) => ({
+    name: p.name,
+    layer: 'hook',
+    category: p.category || 'uncategorized',
+    description: p.description || '',
+    file: '(builtin)',
+    defaultEnabled: p.defaultEnabled,
+    status: config.isEnabled(p.name, p.defaultEnabled) ? 'on' : 'off',
+  }));
 }
 
 function _scanEslintRules() {
