@@ -83,6 +83,59 @@ def _load_capsule(path: Path, cap: int) -> tuple[str, list[str]]:
     return text, missing
 
 
+def _capsule_section_bodies(text: str) -> dict[str, str]:
+    # Split a capsule into {section_name: body_text} using the heading regex so a
+    # coverage<->evidence consistency check can compare what coverage CLAIMS is
+    bodies: dict[str, str] = {}
+    matches = list(_CAPSULE_HEAD_RE.finditer(text))
+    for i, m in enumerate(matches):
+        name = m.group(1).lower()
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        bodies[name] = text[start:end]
+    return bodies
+
+
+# A "code symbol" claim worth verifying: backtick-quoted token, an identifier
+# bearing an underscore (e.g. _reserve_budget), or one written with call parens
+_COVERAGE_SYMBOL_RE = re.compile(r"`([^`]+)`|\b([A-Za-z_][A-Za-z0-9_]*(?:\(\))?)")
+_CODE_SYMBOL_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _capsule_coverage_gaps(text: str) -> list[str]:
+    bodies = _capsule_section_bodies(text)
+    coverage = bodies.get("coverage")
+    evidence = bodies.get("evidence")
+    # Only enforce when BOTH sections exist: coverage makes claims, evidence is
+    # where they must be honored. No coverage section -> nothing claimed to check.
+    if not coverage or not evidence:
+        return []
+    # Restrict to the "included:" clause (what coverage asserts IS present); the
+    # "excluded:" clause names things deliberately absent and must not be checked.
+    inc = coverage
+    low = coverage.lower()
+    i = low.find("included:")
+    if i != -1:
+        inc = coverage[i + len("included:"):]
+        x = inc.lower().find("excluded:")
+        if x != -1:
+            inc = inc[:x]
+    claimed: list[str] = []
+    seen: set[str] = set()
+    for m in _COVERAGE_SYMBOL_RE.finditer(inc):
+        tok = (m.group(1) or m.group(2) or "").strip().rstrip("()")
+        if not tok or tok in seen:
+            continue
+        # A symbol worth verifying = looks like code: has an underscore or was
+        # explicitly backtick/paren-quoted. Plain words are skipped.
+        is_code = ("_" in tok) or bool(m.group(1)) or m.group(2, ).endswith("()") if m.group(2) else ("_" in tok)
+        if not (_CODE_SYMBOL_RE.match(tok) and is_code):
+            continue
+        seen.add(tok)
+        claimed.append(tok)
+    return [s for s in claimed if s not in evidence]
+
+
 def _capsule_message(capsule: str, message: str) -> str:
     return (
         "CONTEXT CAPSULE -- ground EVERY claim in a capsule section; if the "
