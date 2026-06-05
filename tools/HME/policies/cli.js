@@ -238,7 +238,7 @@ async function main() {
       console.log('  enable NAME       Enable a policy (writes to config/policies.json by default).');
       console.log('  disable NAME      Disable a policy.');
       console.log('  reset NAME        Revert to defaultEnabled (remove from both enable/disable lists).');
-      console.log('  paths             Print the three config-scope file paths.');
+      console.log('  paths             Print the config-scope file paths.');
       console.log('  eval NAME         Run one policy against stdin JSON ({tool_input,...}).');
       rc = 0;
       break;

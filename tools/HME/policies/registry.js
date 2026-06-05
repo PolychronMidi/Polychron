@@ -1,14 +1,14 @@
 'use strict';
 /**
  * Unified hook-time policy registry. Adapted from FailproofAI's framework
- * (their `BuiltinPolicyDefinition` shape + three-scope config + first-deny-
+ * (their `BuiltinPolicyDefinition` shape + scoped config + first-deny-
  * wins evaluator), narrowed to Polychron's enforcement layers 7-11
  * (PreToolUse / PostToolUse / Stop / proxy middleware).
  *
  * Design intent: every hook-time rule shares the same registration shape
  * (`{name, description, category, defaultEnabled, match: {events, tools},
  * fn(ctx), params?}`) and the same enable/disable contract. Discovery is
- * unified (`i/policies list`); configuration is unified (three-scope JSON
+ * unified (`i/policies list`); configuration is unified (scoped JSON
  * files); per-layer dispatchers (stop_chain, pretooluse_bash, middleware)
  * consult this registry to decide whether to run a given policy.
  *
