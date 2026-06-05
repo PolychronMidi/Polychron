@@ -163,8 +163,27 @@ append_turn_locked() {
 
 append_exchange() {
   local peer_text="$1"
-  append_turn_locked driver "$MSG"
-  append_turn_locked peer "$peer_text"
+  local driver_text="$MSG"
+  driver_text="${driver_text//<driver/‹driver}"
+  driver_text="${driver_text//<\/driver/‹/driver}"
+  driver_text="${driver_text//<peer/‹peer}"
+  driver_text="${driver_text//<\/peer/‹/peer}"
+  peer_text="${peer_text//<driver/‹driver}"
+  peer_text="${peer_text//<\/driver/‹/driver}"
+  peer_text="${peer_text//<peer/‹peer}"
+  peer_text="${peer_text//<\/peer/‹/peer}"
+  (
+    flock -x 9
+    {
+      printf '<driver role="%s" tier="%s">\n' "$ROLE" "$TIER"
+      printf '%s\n' "$driver_text"
+      printf '</driver>\n\n'
+      printf '<peer role="%s" tier="%s">\n' "$ROLE" "$TIER"
+      printf '%s\n' "$peer_text"
+      printf '</peer>\n\n'
+    } >> "$CHANNEL"
+    cap_channel
+  ) 9>>"$LOCK_FILE"
 }
 
 FAKE_REPLY="${HME_ASK_PEER_FAKE_REPLY:-}"
