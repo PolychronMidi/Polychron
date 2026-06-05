@@ -494,9 +494,9 @@ rewritten / get blocked?".
 | `rewrite-console-warn-prefix`   | `console.warn('...')` without the `Acceptable warning: ` prefix | Prepend the prefix to the first string argument.                  |
 | `rewrite-except-pass-silent-ok` | Python `except ...: pass` with no annotation           | Append `# silent-ok: pending review` to the pass line.                    |
 | `rewrite-hardcoded-project-root`| Hardcoded project-root literal in Write/Edit content   | Replace with `$PROJECT_ROOT`.                                             |
-| `block-character-spam`          | 4+ identical decoration chars (`====`, `####`, etc.)   | Strip the offending runs in-place. Per-line opt-out via `spam-ok` token.  |
-| `block-comment-bloat`           | 3+ consecutive non-annotation comment lines            | Truncate long comment lines and remove bloat lines.                       |
-| `block-comment-ellipsis-stub`   | Comment-ellipsis stub placeholders (`// ... rest`)     | Strip the stub.                                                           |
+| `rewrite-character-spam`        | 4+ identical decoration chars (`====`, `####`, etc.)   | Strip the offending runs in-place. Per-line opt-out via `spam-ok` token.  |
+| `rewrite-comment-bloat`         | 3+ consecutive non-annotation comment lines            | Truncate long comment lines and remove bloat lines.                       |
+| `rewrite-comment-ellipsis-stub` | Comment-ellipsis stub placeholders (`// ... rest`)     | Strip the stub.                                                           |
 
 The "block-" prefix on the last three is historical; they currently
 rewrite rather than block. New rewrite-class policies should use the
