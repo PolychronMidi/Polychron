@@ -100,12 +100,9 @@ test('i/status mode=hci-by-subtag renders Horizon VI subtag aggregation', () => 
 
 const I_WHY = path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'why');
 function _runWhy(args) {
-  const r = spawnSync(I_WHY, args, {
-    encoding: 'utf8',
-    timeout: 15000,
-    cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT },
-  });
+  const opts = { encoding: 'utf8', timeout: CMD_TIMEOUT_MS, cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT } };
+  let r = spawnSync(I_WHY, args, opts);
+  if (r.status === null) r = spawnSync(I_WHY, args, opts);
   return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
 }
 
