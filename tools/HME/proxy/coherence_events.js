@@ -52,6 +52,7 @@ function _attachField(event) {
     });
     return { ...event, field: { net_coherence: field.net_coherence, effect: field.effect, noise_risk: field.noise_risk, freshness: field.freshness } };
   } catch (_e) {
+    // silent-ok: field enrichment is optional; normalized event is still appended.
     return event;
   }
 }
