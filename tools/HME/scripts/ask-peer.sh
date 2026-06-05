@@ -40,8 +40,14 @@ CALLER_CHANNEL="$(jq -r --arg caller "$CALLER" '.channel_by_caller[$caller] // e
 [[ -n "$EFFORT" ]] || EFFORT="${HME_TEAM_DEFAULT_EFFORT:-high}"
 [[ -n "$ROLE_REPLY_BYTES" ]] || ROLE_REPLY_BYTES="12000"
 
-case "$CHANNEL" in teams/*.md) ;; *) echo "invalid channel for $ROLE: $CHANNEL" >&2; exit 1 ;; esac
-case "$SID_FILE" in teams/runtime/*.session) ;; *) echo "invalid session_file for $ROLE: $SID_FILE" >&2; exit 1 ;; esac
+case "$CHANNEL" in
+  teams/driver.md|teams/red.md|teams/blue.md|teams/purple.md) ;;
+  *) echo "invalid channel for $ROLE: $CHANNEL" >&2; exit 1 ;;
+esac
+if [[ "$SID_FILE" != teams/runtime/*.session || "$(dirname "$SID_FILE")" != "teams/runtime" ]]; then
+  echo "invalid session_file for $ROLE: $SID_FILE" >&2
+  exit 1
+fi
 case "$TIER" in E1|E2|E3|E4|E5) ;; *) echo "invalid tier for $ROLE: $TIER" >&2; exit 1 ;; esac
 case "$EFFORT" in low|medium|high|max) ;; *) echo "invalid effort for $ROLE: $EFFORT" >&2; exit 1 ;; esac
 case "$CTX_MODE" in fork) ;; *) echo "invalid context_mode for $ROLE: $CTX_MODE (only forked peers are allowed)" >&2; exit 1 ;; esac
@@ -70,16 +76,10 @@ if [[ "$CALLER" != "driver" && "${HME_TEAM_DISPATCH_GUARD_OK:-}" != "1" ]]; then
   exit 1
 fi
 
-# Test-only failure injection (mirrors HME_ASK_PEER_FAKE_REPLY) so the guard's
-# reserve-refund-on-failure path can be exercised deterministically.
 [[ "${HME_ASK_PEER_FORCE_FAIL:-}" == "1" ]] && { echo "ask-peer: forced failure (test)" >&2; exit 1; }
-# Test-only hang with a backgrounded child, to verify the guard killpg's the
-# WHOLE process group on timeout (no orphaned grandchild survives the leash).
 FORCE_HANG="${HME_ASK_PEER_FORCE_HANG:-}"
 [[ -n "$FORCE_HANG" ]] && { sleep "$FORCE_HANG" & wait; exit 0; }
 
-# Role charter layered on a DRIVER FORK: keep the full inherited context, but
-# answer in the requested team role instead of continuing driver narration.
 if [[ -z "$ROLE_SYSTEM" ]]; then
   case "$FAMILY" in
     team_lead)   ROLE_SYSTEM="You are $ROLE, lead of your team. Drive a sharp, decision-changing critique/plan." ;;
@@ -92,24 +92,29 @@ ROLE_SYSTEM="$ROLE_SYSTEM You are a forked peer with the driver's full inherited
 
 mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
 LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
-ERR_FILE="teams/runtime/$(printf '%s' "$ROLE" | sed 's#[^A-Za-z0-9_.-]#_#g').stderr"
+SAFE_ROLE="$(printf '%s' "$ROLE" | sed 's#[^A-Za-z0-9_.-]#_#g')"
+ERR_FILE="teams/runtime/${SAFE_ROLE}.$$.${EPOCHREALTIME//./}.stderr"
+RAW_FULL=""
+RAW_CAP_FILE=""
+RESP_FILE=""
+SID_OUT_FILE=""
+cleanup_tmp() { rm -f ${RAW_FULL:+"$RAW_FULL"} ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"}; }
+trap cleanup_tmp EXIT
 
-# Driver session that peers FORK from, so every team member inherits the
-# driver's full context instead of starting context-blank. Pinned via env
-# (propagated through dispatch), else the driver's transcript marker.
-DRIVER_SID="${HME_DRIVER_SESSION_ID:-}"
-if [[ -z "$DRIVER_SID" && -f tmp/hme-transcript-path.txt ]]; then
-  # silent-ok: optional driver-session marker; empty SID falls back to fresh/fork mode lo
-  DRIVER_SID="$(basename "$(cat tmp/hme-transcript-path.txt 2>/dev/null)" .jsonl 2>/dev/null || true)"
-fi
+valid_sid() {
+  [[ "$1" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]
+}
 
-json_string() {
-  python3 -c 'import json,sys; print(json.dumps(sys.stdin.read(), ensure_ascii=False))'
+resolve_driver_sid() {
+  local sid="${HME_DRIVER_SESSION_ID:-}"
+  if [[ -z "$sid" && -f tmp/hme-transcript-path.txt ]]; then
+    # silent-ok: optional driver-session marker; invalid/missing SID fails closed below.
+    sid="$(basename "$(cat tmp/hme-transcript-path.txt 2>/dev/null)" .jsonl 2>/dev/null || true)"
+  fi
+  printf '%s' "$sid"
 }
 
 cap_channel() {
-  # Self-evolve finding (red_purple): with real newlines, a raw `tail -n` can
-  # bisect a turn and leave a malformed transcript. Cap by line budget BUT
   local cap="${HME_TEAM_CHANNEL_TAIL_LINES:-500}"
   [[ "$cap" =~ ^[0-9]+$ ]] || cap=500
   (( cap > 0 )) || cap=500
@@ -128,7 +133,6 @@ header, rest = (lines[0] if lines else ''), lines[1:]
 starts = [i for i, l in enumerate(rest) if re.match(r'^<(driver|peer) ', l)]
 if not starts:
     print('\n'.join(lines), end=''); raise SystemExit
-# keep whole turns from the end; total kept lines <= cap, but always >=1 turn
 keep = starts[-1]
 for s in reversed(starts):
     if (len(rest) - s) <= cap:
@@ -143,8 +147,6 @@ PY
 append_turn_locked() {
   local who="$1"
   local text="$2"
-  # Human-readable: real newlines inside the tag (no JSON-escaped "\n"), so the
-  # channel transcripts are auditable as prose.
   text="${text//<driver/‹driver}"
   text="${text//<\/driver/‹/driver}"
   text="${text//<peer/‹peer}"
@@ -160,35 +162,113 @@ append_turn_locked() {
   ) 9>>"$LOCK_FILE"
 }
 
-append_turn_locked driver "$MSG"
+append_exchange() {
+  local peer_text="$1"
+  append_turn_locked driver "$MSG"
+  append_turn_locked peer "$peer_text"
+}
 
 FAKE_REPLY="${HME_ASK_PEER_FAKE_REPLY:-}"
 if [[ -n "$FAKE_REPLY" ]]; then
   RESP="$FAKE_REPLY"
   [[ -s "$SID_FILE" ]] || python3 -c 'import uuid;print(uuid.uuid4())' > "$SID_FILE"
 else
+  DRIVER_SID="$(resolve_driver_sid)"
+  if ! valid_sid "$DRIVER_SID"; then
+    echo "context_mode=fork for $ROLE but no valid driver session id (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2
+    exit 1
+  fi
+
   PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
   PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
   PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
-  if [[ -n "$PEER_SID" && -f "$PEER_TRANSCRIPT" ]]; then
-    MODE=(--resume "$PEER_SID")                    # continue this peer's own ongoing thread (forked once, then persists)
-  else
-    [[ -n "$DRIVER_SID" ]] || { echo "context_mode=fork for $ROLE but no driver session id (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2; exit 1; }
-    MODE=(--resume "$DRIVER_SID" --fork-session)   # inherit the driver's FULL context
+  if [[ -n "$PEER_SID" ]]; then
+    if ! valid_sid "$PEER_SID"; then
+      rm -f "$SID_FILE"
+      PEER_SID=""
+    elif [[ ! -f "$PEER_TRANSCRIPT" ]]; then
+      PEER_SID=""
+    fi
   fi
-  # Peers FORK the driver and keep FULL tool access: they have the real context
-  # AND can verify against the live tree instead of fabricating. Tool filtering,
-  # where wanted, is enforced centrally at the proxy via HME_FILTER_TOOLS_DROP --
+  if [[ -n "$PEER_SID" ]]; then
+    MODE=(--resume "$PEER_SID")
+  else
+    MODE=(--resume "$DRIVER_SID" --fork-session)
+  fi
+
   RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
+  [[ "$RAW_CAP" =~ ^[0-9]+$ ]] || RAW_CAP=4000000
+  (( RAW_CAP > 0 )) || RAW_CAP=4000000
   SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
-  RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
+  RAW_FULL="$(mktemp "teams/runtime/raw-full.${SAFE_ROLE}.XXXXXX")"
+  RAW_CAP_FILE="$(mktemp "teams/runtime/raw-cap.${SAFE_ROLE}.XXXXXX")"
+  RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
+  SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
+
+  set +e
+  env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
     claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
-    --output-format json --effort "$EFFORT" --model default "$MSG" 2>"$ERR_FILE" \
-    | head -c "$RAW_CAP")"
-  RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
-  NEW_SID="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].session_id) else .session_id end' <<<"$RAW")"
-  [[ -n "$NEW_SID" && "$NEW_SID" != "null" ]] && printf '%s\n' "$NEW_SID" > "$SID_FILE"
+    --output-format json --effort "$EFFORT" --model default "$MSG" \
+    >"$RAW_FULL" 2>"$ERR_FILE"
+  CLAUDE_STATUS=$?
+  set -e
+  if (( CLAUDE_STATUS != 0 )); then
+    RESP="[peer-error: claude exited $CLAUDE_STATUS; stderr: $ERR_FILE]"
+    append_exchange "$RESP"
+    printf '%s\n' "$RESP"
+    exit "$CLAUDE_STATUS"
+  fi
+
+  head -c "$RAW_CAP" "$RAW_FULL" > "$RAW_CAP_FILE"
+  TRUNCATED=0
+  RAW_SIZE="$(wc -c < "$RAW_FULL" | tr -d ' ')"
+  [[ "$RAW_SIZE" =~ ^[0-9]+$ ]] && (( RAW_SIZE > RAW_CAP )) && TRUNCATED=1
+  if ! python3 - "$RAW_CAP_FILE" "$RESP_FILE" "$SID_OUT_FILE" "$TRUNCATED" <<'PY'
+import json, sys
+raw_path, resp_path, sid_path, truncated = sys.argv[1:5]
+raw = open(raw_path, 'rb').read().decode('utf-8', errors='replace')
+try:
+    obj = json.loads(raw)
+    if isinstance(obj, list):
+        obj = next((x for x in obj if isinstance(x, dict) and x.get('type') == 'result'), {})
+    if not isinstance(obj, dict):
+        obj = {}
+    reply = obj.get('result') or ''
+    sid = obj.get('session_id') or ''
+    if not isinstance(reply, str):
+        reply = ''
+    if not isinstance(sid, str):
+        sid = ''
+    open(resp_path, 'w', encoding='utf-8').write(reply)
+    open(sid_path, 'w', encoding='utf-8').write(sid)
+except Exception as e:
+    note = '[peer-error: invalid peer JSON'
+    if truncated == '1':
+        note += ' (truncated by raw byte cap)'
+    note += f': {type(e).__name__}]'
+    open(resp_path, 'w', encoding='utf-8').write(note)
+    open(sid_path, 'w', encoding='utf-8').write('')
+    raise SystemExit(1)
+PY
+  then
+    RESP="$(cat "$RESP_FILE")"
+    append_exchange "$RESP"
+    printf '%s\n' "$RESP"
+    exit 1
+  fi
+  RESP="$(cat "$RESP_FILE")"
+  NEW_SID="$(cat "$SID_OUT_FILE")"
+  if [[ -n "$NEW_SID" ]]; then
+    if valid_sid "$NEW_SID"; then
+      printf '%s\n' "$NEW_SID" > "$SID_FILE"
+    else
+      RESP="[peer-error: invalid session_id returned by claude; stderr: $ERR_FILE]"
+      append_exchange "$RESP"
+      printf '%s\n' "$RESP"
+      exit 1
+    fi
+  fi
 fi
 
 MAX_REPLY_BYTES="${HME_TEAM_MAX_REPLY_BYTES:-$ROLE_REPLY_BYTES}"
@@ -205,5 +285,5 @@ PY
 )"
 fi
 
-append_turn_locked peer "$RESP"
+append_exchange "$RESP"
 printf '%s\n' "$RESP"
