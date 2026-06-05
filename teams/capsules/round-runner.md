@@ -22,7 +22,7 @@ Classify P0/P1/P2. For each: block, exact failure, one-line fix. Reject style
 notes. Prefer state-leak, trap/cleanup, quoting, and race/ordering bugs.
 
 ## coverage
-included: the full round_measured.sh source below -- PROJECT_ROOT handling, DASH
+included: the full harness source below -- PROJECT_ROOT handling, DASH
 snapshot/restore trap, channel/session/budget reset, the gcap guard wrapper,
 reply extraction, and the baseline + multi-peer dispatch sequence.
 excluded: ask-peer.sh, team_dispatch_guard.py, team_agent_router.py.
