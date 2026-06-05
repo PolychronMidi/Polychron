@@ -137,6 +137,11 @@ def _validate_leash(args: argparse.Namespace) -> dict[str, Any] | str:
         return "missing --scope"
     if not args.artifact.strip():
         return "missing --artifact"
+    # Measured-round finding: scope/artifact are interpolated into the
+    # line-oriented leash header in _message_with_leash; a CR/LF/control char
+    for name, val in (("scope", args.scope), ("artifact", args.artifact)):
+        if any(ord(c) < 0x20 for c in val):
+            return f"--{name} contains control characters (header-injection guard)"
     if args.max_duration <= 0:
         return "--max-duration must be positive seconds"
     if args.max_tools <= 0:
