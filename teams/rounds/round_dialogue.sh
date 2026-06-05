@@ -2,7 +2,7 @@
 # MULTI-STEP dialogue round: red vs blue debate a real open design question over
 # MULTIPLE turns (each peer RESUMES its own session -> remembers prior turns),
 set -uo pipefail
-REPO="${PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"; cd "$REPO"
+REPO="${PROJECT_ROOT}"; cd "$REPO"
 OUT="$REPO/teams/runtime/output"; mkdir -p "$OUT"
 DASH="$REPO/tools/HME/runtime/team-dashboard.json"; SNAP="$OUT/dlg.snap"
 if [ -f "$DASH" ]; then cp "$DASH" "$SNAP"; else echo MISSING > "$SNAP"; fi
