@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 
 const registry = require('../../policies/registry');
-const policy = require('../../policies/builtin/block-character-spam');
+const policy = require('../../policies/builtin/rewrite-character-spam');
 
 const _eq = (n) => '='.repeat(n);
 const _dash = (n) => '-'.repeat(n);
