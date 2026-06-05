@@ -66,6 +66,10 @@ if [[ "$CALLER" != "driver" && "${HME_TEAM_DISPATCH_GUARD_OK:-}" != "1" ]]; then
   exit 1
 fi
 
+# Test-only failure injection (mirrors HME_ASK_PEER_FAKE_REPLY) so the guard's
+# reserve-refund-on-failure path can be exercised deterministically.
+[[ "${HME_ASK_PEER_FORCE_FAIL:-}" == "1" ]] && { echo "ask-peer: forced failure (test)" >&2; exit 1; }
+
 mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" tmp
 LOCK_FILE="tmp/.team-channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 
