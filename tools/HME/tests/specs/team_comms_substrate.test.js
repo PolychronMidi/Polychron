@@ -460,3 +460,35 @@ test('guard --context-file grounds the peer task with the artifact', () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('guard --capsule enforces the Context Capsule contract (required sections + citation framing)', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--caller', 'driver', '--tier', 'E5', '--scope', 's', '--artifact', 'plan.md',
+      '--max-duration', '30', '--max-tools', '2', '--turn-id', 'tcap', '--budget', '3', '--send', '--message', 'review'];
+
+    // invalid capsule (missing required sections) -> deny, no peer call
+    const badCap = path.join(root, 'tmp', 'bad.md');
+    fs.writeFileSync(badCap, '## artifact\nx\n');  // missing goal + rubric
+    let r = runDispatch(root, [...base, '--capsule', badCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'capsule_invalid');
+
+    // valid capsule -> sent, and the peer task carries the capsule + citation contract
+    const goodCap = path.join(root, 'tmp', 'good.md');
+    fs.writeFileSync(goodCap, '## artifact\nCAP_MARK_7\n## goal\ng\n## rubric\nr\n');
+    r = runDispatch(root, [...base, '--capsule', goodCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.sent, true);
+    const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
+    assert.match(channel, /CONTEXT CAPSULE/);
+    assert.match(channel, /CAP_MARK_7/);
+    assert.match(channel, /cite capsule sections/i);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
