@@ -180,6 +180,12 @@ function cmdPaths() {
   return 0;
 }
 
+function cmdCheck() {
+  _initRegistry();
+  console.log(`ok: ${registry.list().length} policies; config names valid`);
+  return 0;
+}
+
 async function cmdEval(name) {
   _initRegistry();
   const p = registry.get(name);
