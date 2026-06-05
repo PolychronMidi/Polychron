@@ -65,6 +65,24 @@ test('loadCustom rejects custom policies without decisionClass', () => {
   }
 });
 
+test('loadCustom rejects custom policy whose decisionClass contradicts source', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-custom-drift-'));
+  try {
+    const file = path.join(dir, 'block-named-rewriter.js');
+    fs.writeFileSync(file, `module.exports = { name:'custom-block-but-rewrites-${Date.now()}', description:'x', category:'test', defaultEnabled:false, decisionClass:'block', match:{events:['PreToolUse'],tools:['Write']}, fn:(ctx)=>ctx.rewrite({}, 'x') };\n`);
+    assert.throws(() => registry.loadCustom(file), /declares decisionClass 'block' but only rewrites/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('policyDecisionClass returns declared class or mixed (no name inference)', () => {
+  assert.strictEqual(registry.policyDecisionClass({ name: 'block-foo', decisionClass: 'rewrite' }), 'rewrite');
+  assert.strictEqual(registry.policyDecisionClass({ name: 'block-foo' }), 'mixed');
+  assert.strictEqual(registry.policyDecisionClass({ name: 'rewrite-foo' }), 'mixed');
+  assert.strictEqual(registry.policyDecisionClass({}), 'mixed');
+});
+
 test('registry: register rejects duplicate names', () => {
   const name = 'test-dup-' + Date.now();
   const p = {
