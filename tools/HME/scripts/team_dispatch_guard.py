@@ -335,9 +335,13 @@ def main() -> int:
         "sent": False,
     }
     if args.send:
-        if not args.message.strip():
-            return _deny("missing_message", "--send requires --message")
         code, stdout, stderr = _send(root, target, leash, args.message, child_env)
+        if code != 0:
+            # F-A: the gated dispatch failed -> refund the reserved unit so a
+            # timeout/error never permanently burns the per-turn cap.
+            _refund_budget(root, budget_info.get("turn_id"))
+            budget_info = {**budget_info, "refunded": True}
+            out["budget"] = budget_info
         out.update({"sent": code == 0, "reply": stdout.strip(), "send_stderr": stderr.strip(), "send_exit": code})
     return _out(out)
 
