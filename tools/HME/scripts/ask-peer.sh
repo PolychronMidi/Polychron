@@ -182,15 +182,21 @@ else
     exit 1
   fi
 
-  PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
-  PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
-  PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
-  if [[ -n "$PEER_SID" ]]; then
-    if ! valid_sid "$PEER_SID"; then
-      rm -f "$SID_FILE"
-      PEER_SID=""
-    elif [[ ! -f "$PEER_TRANSCRIPT" ]]; then
-      PEER_SID=""
+  # Default every peer call to a fresh FORK of the current driver session. This
+  # preserves full driver context without resuming stale per-role threads whose
+  # old task/narration can contaminate a new review. Multi-turn dialogue runners
+  PEER_SID=""
+  if [[ "${HME_TEAM_RESUME_PEER_SESSIONS:-0}" == "1" && -s "$SID_FILE" ]]; then
+    PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
+    PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
+    PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
+    if [[ -n "$PEER_SID" ]]; then
+      if ! valid_sid "$PEER_SID"; then
+        rm -f "$SID_FILE"
+        PEER_SID=""
+      elif [[ ! -f "$PEER_TRANSCRIPT" ]]; then
+        PEER_SID=""
+      fi
     fi
   fi
   if [[ -n "$PEER_SID" ]]; then
