@@ -11,6 +11,7 @@ test('registry: register validates the policy contract', () => {
     description: 'unit test fixture',
     category: 'test',
     defaultEnabled: false,
+    decisionClass: 'mixed',
     match: { events: ['PreToolUse'], tools: ['Bash'] },
     fn: () => registry.allow(),
   };
