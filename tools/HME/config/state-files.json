@@ -214,7 +214,7 @@
       "repair": "remove the affected teams/*.md channel; ask-peer.sh recreates it on next dispatch"
     },
     {
-      "path": "tmp/.team-channel-*.lock",
+      "path": "teams/runtime/channel-*.lock",
       "owner": "tools/HME/scripts/ask-peer.sh",
       "readers": [
         "tools/HME/scripts/ask-peer.sh"
@@ -226,7 +226,7 @@
       "generated": true,
       "committed": false,
       "schema": "empty advisory lock file",
-      "repair": "remove stale tmp/.team-channel-*.lock files when no ask-peer.sh process is active"
+      "repair": "remove stale teams/runtime/channel-*.lock files when no ask-peer.sh process is active"
     },
     {
       "path": "tools/HME/runtime/team-dispatch-budget.json",
