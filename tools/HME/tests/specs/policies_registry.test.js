@@ -43,7 +43,7 @@ test('registry: register rejects empty events', () => {
 test('registry: register rejects duplicate names', () => {
   const name = 'test-dup-' + Date.now();
   const p = {
-    name, description: 'x', category: 'test', defaultEnabled: false,
+    name, description: 'x', category: 'test', defaultEnabled: false, decisionClass: 'mixed',
     match: { events: ['Stop'] }, fn: () => {},
   };
   registry.register(p);
