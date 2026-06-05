@@ -415,7 +415,7 @@ def main() -> int:
     p.add_argument("--max-live", type=int, default=int(os.environ.get("HME_TEAM_MAX_LIVE_TURNS", "8")))
     p.add_argument("--send", action="store_true", help="explicitly call ask-peer.sh after checks pass")
     p.add_argument("--message", default="")
-    p.add_argument("--context-file", default="", help="grounding context (artifact/prior findings) prepended to the task; keeps fresh distinct-agent peers grounded instead of inventing")
+    p.add_argument("--context-file", default="", help="grounding context (artifact/prior findings) prepended to the task; supplements a forked peer's inherited context")
     p.add_argument("--context-cap", type=int, default=int(os.environ.get("HME_TEAM_CONTEXT_CAP", "24000")))
     p.add_argument("--capsule", default="", help="Context Capsule file (markdown with required ## artifact/## goal/## rubric sections). Peers must cite capsule sections, flag GAPs, or decline -- the mechanism that lets grounded independent peers beat one high-effort reviewer.")
     args = p.parse_args()
