@@ -19,6 +19,7 @@ module.exports = {
   description: 'Block Write tool calls targeting credential filenames (id_rsa, *.pem, .npmrc, etc.).',
   category: 'security',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Write'] },
   params: {},
   async fn(ctx) {

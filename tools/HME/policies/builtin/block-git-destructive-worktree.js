@@ -41,6 +41,7 @@ module.exports = {
   description: 'Block `git restore --worktree`, `git reset --hard|--merge`, `git clean -f*`, `git checkout -- .`, `git read-tree --reset -u` (working-tree clobber risk).',
   category: 'review-discipline',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Bash'] },
   params: {},
   async fn(ctx) {

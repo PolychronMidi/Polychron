@@ -27,6 +27,7 @@ module.exports = {
   description: 'Block `git checkout <ref> -- .` and `git stash && git checkout` patterns (working-tree clobber risk).',
   category: 'review-discipline',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Bash'] },
   params: {},
   async fn(ctx) {

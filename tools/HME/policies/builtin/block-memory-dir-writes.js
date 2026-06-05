@@ -10,6 +10,7 @@ module.exports = {
   description: 'Block writes to .claude/projects/*/memory/* (deprecated; use HME KB or doc/templates/AGENTS.md).',
   category: 'consistency',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

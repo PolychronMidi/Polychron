@@ -17,6 +17,7 @@ module.exports = {
   description: 'Block writes/edits to src/ while a pipeline run is in progress (tmp/run.lock exists).',
   category: 'consistency',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

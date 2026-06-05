@@ -85,6 +85,7 @@ module.exports = {
   description: 'Rewrite Edit/Write content with 3+ consecutive non-annotation comment lines (trim/truncate).',
   category: 'style',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Edit', 'Write', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

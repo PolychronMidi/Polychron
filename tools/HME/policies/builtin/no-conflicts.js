@@ -18,6 +18,7 @@ module.exports = {
   description: 'Block stop when git merge/rebase is in progress with unresolved conflicts.',
   category: 'git-discipline',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['Stop'] },
   params: {},
   async fn(ctx) {

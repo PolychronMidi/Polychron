@@ -10,6 +10,7 @@ module.exports = {
   description: 'Block writes to metrics/ outside src/output/metrics/.',
   category: 'consistency',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

@@ -10,6 +10,7 @@ module.exports = {
   description: 'Block `mkdir` of metrics/ outside src/output/metrics/.',
   category: 'consistency',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Bash'] },
   params: {},
   async fn(ctx) {

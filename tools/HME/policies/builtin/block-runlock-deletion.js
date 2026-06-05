@@ -84,6 +84,7 @@ module.exports = {
   description: 'Block any deletion / move / truncate of tmp/run.lock (argv-tokenized).',
   category: 'security',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Bash'] },
   params: {},
   async fn(ctx) {

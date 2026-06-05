@@ -15,6 +15,7 @@ module.exports = {
   description: 'Block writes whose content contains api_key=/password=/secret=/token= followed by a long base64-ish string.',
   category: 'security',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Write'] },
   params: {},
   async fn(ctx) {

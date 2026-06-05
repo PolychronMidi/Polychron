@@ -15,6 +15,7 @@ module.exports = {
   description: 'Auto-fill missing Agent.description from prompt; eases recurring tool-call failures.',
   category: 'ergonomics',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Agent', 'Task'] },
   params: {},
   async fn(ctx) {

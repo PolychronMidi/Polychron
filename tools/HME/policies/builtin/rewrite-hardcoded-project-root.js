@@ -42,6 +42,7 @@ module.exports = {
   description: 'Rewrite Write/Edit content that embeds the literal PROJECT_ROOT path; substitute $PROJECT_ROOT.',
   category: 'style',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

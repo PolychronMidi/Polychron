@@ -44,6 +44,7 @@ module.exports = {
   description: 'Rewrite Write/Edit content containing 4+ identical decoration characters (strip runs in place).',
   category: 'style',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

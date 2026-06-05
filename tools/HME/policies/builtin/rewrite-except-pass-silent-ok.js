@@ -49,6 +49,7 @@ module.exports = {
   description: 'Rewrite Python Write/Edit content with naked `except: pass` to include a `# silent-ok: pending review` annotation.',
   category: 'style',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

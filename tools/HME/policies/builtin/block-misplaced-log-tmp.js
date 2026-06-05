@@ -14,6 +14,7 @@ module.exports = {
   description: 'Block writes to log/ or tmp/ outside the project root (defends against path-resolution bugs).',
   category: 'consistency',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

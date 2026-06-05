@@ -48,6 +48,7 @@ module.exports = {
   description: 'Rewrite Write/Edit content with bare console.warn() to use the required "Acceptable warning:" prefix.',
   category: 'style',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {

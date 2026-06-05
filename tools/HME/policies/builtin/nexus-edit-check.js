@@ -23,6 +23,7 @@ module.exports = {
   description: 'Block stop when unreviewed edits exist; emit i/review reminder with KB hits.',
   category: 'review-discipline',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['Stop'] },
   params: {},
   async fn(ctx) {

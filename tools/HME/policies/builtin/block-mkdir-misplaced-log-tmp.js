@@ -17,6 +17,7 @@ module.exports = {
   description: 'Block `mkdir` of log/ or tmp/ subdirectories outside the project root.',
   category: 'consistency',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Bash'] },
   params: {},
   async fn(ctx) {

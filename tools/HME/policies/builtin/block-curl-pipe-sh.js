@@ -20,6 +20,7 @@ module.exports = {
   description: 'Block curl|sh and wget|sh patterns (supply-chain attack vector).',
   category: 'security',
   defaultEnabled: true,
+  decisionClass: 'block',
   match: { events: ['PreToolUse'], tools: ['Bash'] },
   params: {},
   async fn(ctx) {

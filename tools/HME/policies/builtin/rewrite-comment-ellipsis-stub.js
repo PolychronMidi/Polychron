@@ -30,6 +30,7 @@ module.exports = {
   description: 'Rewrite Write content containing comment-ellipsis stub placeholders.',
   category: 'security',
   defaultEnabled: true,
+  decisionClass: 'rewrite',
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {
