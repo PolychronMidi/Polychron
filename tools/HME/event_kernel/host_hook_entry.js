@@ -13,6 +13,13 @@ const host = arg('host');
 const event = arg('event') || process.argv[2] || '';
 const root = path.resolve(__dirname, '..');
 
+// Ephemeral team-peer sub-sessions (ask-peer.sh sets HME_TEAM_PEER=1) must NOT
+// run the driver's orchestration lifecycle. A `-p` peer fires UserPromptSubmit
+if (process.env.HME_TEAM_PEER === '1') {
+  try { require('fs').readFileSync(0); } catch (_e) { /* no stdin: fine */ }
+  process.exit(0);
+}
+
 const adapter = host === 'codex'
   ? path.join(root, 'event_kernel', 'codex_adapter.js')
   : host === 'opencode'
