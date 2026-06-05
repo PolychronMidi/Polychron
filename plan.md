@@ -288,11 +288,34 @@ here. Nothing in this file is implemented until the user marks it approved.
   finding as text (cite section + one-line fix), verify read-only, and never
   request tool/write grants or wait for approval.
 
+## Self-evolution iteration 10 (DONE -- mesh reviewed its own harness; charter fix confirmed)
+- Pointed the mesh at its OWN harness (teams/rounds/round_measured.sh via a new
+  round-runner capsule). m_redp explicitly CONFIRMED the iter-9 charter fix worked:
+  red_lead delivered grounded findings directly (no more "grant me write" waste).
+- Applied the grounded harness P1s the round found:
+  - STALE-RESULT LEAK [done]: OUT is cleared (rm m_*.json + m.err) at round start
+    so a timed-out dispatch can't leave a prior run's reply read as current.
+  - DASHBOARD SNAPSHOT/RESTORE [done]: per-run mktemp snapshot + an out-of-band
+    HAD_DASH flag (not an in-band MISSING sentinel a real dashboard could collide
+    with) + a checked restore cp that warns on failure.
+  - DOWNSTREAM INJECTION [done]: a prior peer's reply is marker-neutralized (san:
+    strip leading ## headings + GAP:) before being embedded in the next peer's
+    --message, so a reply can't spoof capsule sections/GAP flags downstream.
+- Applied two grounded operational fixes (full tools = real runtime risk to bound):
+  - STDERR BOUND [done]: ask-peer prunes old per-role .stderr files (keep recent
+    HME_TEAM_STDERR_KEEP=5) so per-call diagnostics can't accumulate unbounded.
+  - STALE-TEMP SWEEP [done]: round start sweeps raw-cap/raw-trunc/reply/sid/raw-fifo
+    temps a SIGKILL'd peer (EXIT trap skipped) may leak.
+- Unit-proven (now 27 team tests): stderr files stay bounded; all prior guarantees
+  hold. Env/silent/shell/state/markdown/opencode verifiers green.
+
 ## Decision
-The mesh is a self-evolving review system: driver-FORK peers with FULL tool
-access (real context + live verification), sequential dispatch, adversarial
-cross-exam, with capsule grounding available but not a replacement for context.
-The corrected fork/full-tool mesh has now found and fixed concrete ask-peer bugs
-(path confinement, SID validation/preflight, output/parse hardening, stderr
-evidence retention, deterministic FIFO raw-cap). Next: run another fork/full-tool
-round on a new target to keep deepening without neutering peers.
+The mesh is a PROVEN self-evolving review system: driver-FORK peers with FULL
+tool access (real context + live verification), sequential, capsule-grounded,
+adversarial. Over iterations 6-10 the corrected fork/full-tool mesh found and
+fixed real bugs in ask-peer (path confinement, SID preflight, output/parse
+hardening, FIFO raw-cap, stderr bound), team_agent_router (caller normalization,
+malformed-stdin guard), and its own harness (stale-result leak, dashboard
+snapshot/restore, downstream injection) -- all without neutering peers. The
+reviewer-charter fix is behaviorally confirmed. Next: keep pointing the loop at
+fresh real targets (proxy middleware, event-kernel) under the same discipline.
