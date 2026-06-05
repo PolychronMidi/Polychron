@@ -146,24 +146,6 @@ PY
   mv "$tmp" "$CHANNEL"
 }
 
-append_turn_locked() {
-  local who="$1"
-  local text="$2"
-  text="${text//<driver/‹driver}"
-  text="${text//<\/driver/‹/driver}"
-  text="${text//<peer/‹peer}"
-  text="${text//<\/peer/‹/peer}"
-  (
-    flock -x 9
-    {
-      printf '<%s role="%s" tier="%s">\n' "$who" "$ROLE" "$TIER"
-      printf '%s\n' "$text"
-      printf '</%s>\n\n' "$who"
-    } >> "$CHANNEL"
-    cap_channel
-  ) 9>>"$LOCK_FILE"
-}
-
 append_exchange() {
   local peer_text="$1"
   local driver_text="$MSG"
