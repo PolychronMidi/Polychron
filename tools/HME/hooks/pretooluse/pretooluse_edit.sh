@@ -114,7 +114,7 @@ case "$FILE" in
     ;;
 esac
 
-# Rule retired: block-comment-bloat now rewrites in the JS policy framework.
+# Rule retired: rewrite-comment-bloat now rewrites in the JS policy framework.
 
 # CONSTITUTION rule 3: naked except:pass without silent-ok annotation.
 if echo "$FILE" | grep -qE '\.py$'; then
