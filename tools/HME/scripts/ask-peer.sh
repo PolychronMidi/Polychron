@@ -125,7 +125,12 @@ else
     echo "ask-peer: no peer session and no driver session to fork (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2
     exit 1
   fi
-  RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER claude -p "${MODE[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
+  # A forked peer inherits the driver's tools + agentic disposition and will
+  # re-explore (long Read/Grep loops) unless constrained. Peers are REVIEWERS
+  DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS-Read Grep Glob Bash Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent}"
+  TOOL_ARGS=()
+  if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
+  RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
   RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
   NEW_SID="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].session_id) else .session_id end' <<<"$RAW")"
   [[ -n "$NEW_SID" && "$NEW_SID" != "null" ]] && printf '%s\n' "$NEW_SID" > "$SID_FILE"
