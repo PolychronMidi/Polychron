@@ -8,7 +8,7 @@ function _readJson(file) {
 }
 
 function _shortSha(root) {
-  try { return require('child_process').execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000 }).trim(); } catch (_e) { return ''; }
+  try { return require('child_process').execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch (_e) { return ''; }
 }
 
 function _observationOrSelf(line, _root) {
