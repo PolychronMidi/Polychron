@@ -112,16 +112,23 @@ append_turn_locked driver "$MSG"
 
 if [[ -n "${HME_ASK_PEER_FAKE_REPLY:-}" ]]; then
   RESP="$HME_ASK_PEER_FAKE_REPLY"
+  [[ -s "$SID_FILE" ]] || python3 -c 'import uuid;print(uuid.uuid4())' > "$SID_FILE"
 else
   PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
-  TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$SID.jsonl"
-  if [[ -f "$TRANSCRIPT" ]]; then
-    MODE=(--resume "$SID")
+  PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
+  PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
+  if [[ -n "$PEER_SID" && -f "$PEER_TRANSCRIPT" ]]; then
+    MODE=(--resume "$PEER_SID")                    # continue this peer's own thread
+  elif [[ -n "$DRIVER_SID" ]]; then
+    MODE=(--resume "$DRIVER_SID" --fork-session)   # first contact: FORK driver -> inherit full context
   else
-    MODE=(--session-id "$SID")
+    echo "ask-peer: no peer session and no driver session to fork (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2
+    exit 1
   fi
-  RESP="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER claude -p "${MODE[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
-    | jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end')"
+  RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER claude -p "${MODE[@]}" --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
+  RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
+  NEW_SID="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].session_id) else .session_id end' <<<"$RAW")"
+  [[ -n "$NEW_SID" && "$NEW_SID" != "null" ]] && printf '%s\n' "$NEW_SID" > "$SID_FILE"
 fi
 
 MAX_REPLY_BYTES="${HME_TEAM_MAX_REPLY_BYTES:-$ROLE_REPLY_BYTES}"
