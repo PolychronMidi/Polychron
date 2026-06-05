@@ -89,6 +89,7 @@ _up_spawn_child() {
     # Baseline the adopted child to its real start time, not "now", so a daemon
     # forked before a code edit is still seen as stale and reloaded below.
     local _start_epoch
+    # silent-ok: ps/date probe is best-effort; fallback to code mtime is explicit below.
     _start_epoch=$(date -d "$(ps -o lstart= -p "$_existing" 2>/dev/null)" +%s 2>/dev/null || echo 0)
     case "$_start_epoch" in ''|*[!0-9]*|0) _start_epoch=$(_up_code_mtime) ;; esac
     _UP_CHILD_CODE_MTIME="$_start_epoch"
