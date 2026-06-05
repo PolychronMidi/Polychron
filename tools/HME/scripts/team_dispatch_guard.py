@@ -192,6 +192,20 @@ def _prune_turns(turns: dict[str, Any], now: float) -> None:
             turns.pop(stale_key, None)
 
 
+def _valid_turn_row(row: Any) -> bool:
+    # Measured-round finding: a parseable-but-semantically-corrupt row (negative
+    # count, non-int count, non-numeric ts, non-dict) under-enforces the budget
+    if not isinstance(row, dict):
+        return False
+    count = row.get("count")
+    ts = row.get("ts")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        return False
+    if not isinstance(ts, (int, float)) or isinstance(ts, bool):
+        return False
+    return True
+
+
 def _budget_lock(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = open(path.with_name(path.name + ".lock"), "w")  # noqa: SIM115 (held by caller)
