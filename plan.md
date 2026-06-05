@@ -39,32 +39,41 @@ here. Nothing in this file is implemented until the user marks it approved.
   -on-fail + global-concurrency-bound). That is real adversarial signal a single
   peer would likely miss.
 
-## Real guard bugs the mesh surfaced (in team_dispatch_guard.py; fix candidates)
-- F-A [proposed]: budget reserve burns quota on FAILED/timed-out route (debit
-  before send succeeds, no rollback) -- consensus #1, behavior-changing. Commit-
-  on-success / refund on abort.
-- F-B [proposed]: flock + fsync the budget read-modify-write (atomic reservation);
-  closes the concurrent-fan-out race + the corrupt-mid-write fail-open compound.
-- F-C [proposed]: one pinned parent token -> depth + caller identity fail-CLOSED
-  together (deny when depth/identity unknown for a non-driver; folds the
-  HME_TEAM_DEPTH / spoofable --caller holes).
-- F-D [proposed]: global concurrency bound (cap distinct live turn_ids), not just
-  per-turn budget; validate tier before TIER_ORDER indexing; fail-closed state load.
-- Named debt: max_tools is advisory (no runtime killer) -- the runaway leash lesson.
+## Guard hardening F-A..F-D (DONE + unit-proven, 8/8 in team_comms_substrate)
+- F-A [done]: reserve-then-REFUND. Budget unit is refunded when the gated send
+  fails (timeout/error); message validated BEFORE reserve so a malformed --send
+  can't burn quota.
+- F-B [done]: flock-serialized budget read-modify-write + fsync atomic write
+  (closes the concurrent-fan-out race + corrupt-mid-write durability).
+- F-C [done]: depth fail-CLOSED (deny when depth unknown for a non-driver, no
+  silent default-to-1); optional HME_TEAM_STRICT_IDENTITY rejects a spoofed
+  non-driver caller lacking the guard provenance token.
+- F-D [done]: global concurrency bound (--max-live distinct turn_ids);
+  fail-closed corrupt-state load (existing-but-unparseable budget => deny, not
+  fail-open reset); defensive tier validation before TIER_ORDER indexing.
+- Named debt (still open): max_tools is advisory (no runtime killer).
 
-## Meta-cognition (team/task structure)
-- A multi-agent mesh is worthless if members start context-blank; the ONE thing
-  that makes peers useful is inheriting the driver's full context (fork), then
-  constraining them to ANSWER not re-explore. Get those two right before judging
-  mesh value -- I judged (retire) on crippled peers and was wrong.
-- Adversarial value is real when red and blue actually DISAGREE on a live artifact
-  (here: race likelihood) and purple forces a consensus -- that produced catches
-  neither a single peer nor a non-adversarial 2nd peer surfaced.
+## Self-evolution loop (mesh reviewing its own substrate) -- real findings
+- The mesh review of F-A..F-D surfaced TWO substrate findings about ITSELF:
+  1. FORK-IDENTITY CONTAMINATION: a fork of the driver IS the driver (same model
+     + context + identity). On a concrete artifact-review task it plays the role
+     straight (the earlier round produced genuine red-vs-blue dissent), but when
+     the driver transcript is thick with orchestration narration the fork
+     CONTINUES that narration instead of answering as the role -- or recognizes
+     the role request as roleplay and declines. Partial mitigation added:
+     role-isolation framing in the leashed handoff ("you are <role>, distinct,
+     do not continue the driver's narration"). Deeper truth: distinct adversarial
+     value wants distinct agents/contexts; fork-of-driver is best for review
+     dispatched EARLY in a clean turn, not deep in a meta-heavy transcript.
+  2. LIFECYCLE MISFIRE: forked peer sessions fire the full HME hook chain and a
+     peer observed UserPromptSubmit before SessionStart on its fork -> forked
+     peers trip lifecycle ordering. Open substrate item to fix.
+- Honest read: the loop self-evolved (the mesh improved the mesh), but the
+  fork-identity limit means the mesh's adversarial value is real for concrete
+  early-turn reviews and weak as a generic "team of distinct agents."
 
 ## Decision
-Full mesh implemented + working + audited (teams/{red,blue,purple}.md). Next:
-human audits the channels; F-A..F-D are real guard fixes awaiting approve/deny.
-
-## Decision
-Phase 4 ran and RETIRED the mesh (above). Phase 5 (F-A..F-D) hardens the retained
-single-peer substrate; awaiting human approve/deny per fix.
+Mesh fully implemented + working; F-A..F-D fixes landed + unit-proven (8/8);
+self-evolve loop produced 2 substrate findings (role-isolation framing applied;
+forked-peer lifecycle misfire still open). Channels (teams/{red,blue,purple}.md)
+are populated for human audit.
