@@ -92,6 +92,19 @@ test('Edit auto-brief enrichment curl timeout fails open', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('Edit auto-brief remains telemetry-only and never surfaces additionalContext', async () => {
+  const root = _withSandbox('codex-edit-auto-brief-hidden-');
+  const file = path.join(root, 'src', 'fixture.js');
+  fs.writeFileSync(file, 'const x = 1;\n');
+  const fakeCurl = path.join(root, 'bin', 'curl');
+  fs.writeFileSync(fakeCurl, '#!/usr/bin/env bash\nprintf %s \'{"kb":[{"category":"pattern","title":"hidden brief"}]}\'\n');
+  fs.chmodSync(fakeCurl, 0o755);
+  const edit = await dispatch(root, 'Edit', { file_path: file, old_string: 'const x = 1;\n', new_string: 'const x = 2;\n' });
+  assert.equal(edit.exit_code, 0, edit.stderr || edit.stdout);
+  assert.doesNotMatch(edit.stdout || '', /hme auto-brief|additionalContext|hidden brief/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('codex-route and hook-decision status views are compact and API-only', () => {
   const root = _withSandbox('codex-status-');
   const script = `
