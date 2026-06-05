@@ -359,7 +359,14 @@ def main() -> int:
         "sent": False,
     }
     if args.send:
-        code, stdout, stderr = _send(root, target, leash, args.message, child_env)
+        message = args.message
+        if args.context_file:
+            try:
+                ctx = Path(args.context_file).read_text(encoding="utf-8", errors="ignore")[: args.context_cap]
+                message = f"GROUND YOUR ANSWER IN THIS CONTEXT (do not invent beyond it):\n{ctx}\n\n---\n{args.message}"
+            except OSError as e:
+                return _deny("context_file", f"could not read --context-file: {e}")
+        code, stdout, stderr = _send(root, target, leash, message, child_env)
         if code != 0:
             # F-A: the gated dispatch failed -> refund the reserved unit so a
             # timeout/error never permanently burns the per-turn cap.
