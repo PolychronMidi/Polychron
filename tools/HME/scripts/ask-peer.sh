@@ -78,8 +78,8 @@ fi
 FORCE_HANG="${HME_ASK_PEER_FORCE_HANG:-}"
 [[ -n "$FORCE_HANG" ]] && { sleep "$FORCE_HANG" & wait; exit 0; }
 
-# Role charter: a DISTINCT-agent identity (the self-evolve finding: a pure
-# driver-fork shares the driver's identity and contaminates -- it continues the
+# Role charter layered on a DRIVER FORK: keep the full inherited context, but
+# answer in the requested team role instead of continuing driver narration.
 if [[ -z "$ROLE_SYSTEM" ]]; then
   case "$FAMILY" in
     team_lead)   ROLE_SYSTEM="You are $ROLE, lead of your team. Drive a sharp, decision-changing critique/plan." ;;
