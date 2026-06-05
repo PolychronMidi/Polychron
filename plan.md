@@ -163,6 +163,11 @@ here. Nothing in this file is implemented until the user marks it approved.
   -- the mesh caught my own capsule including only lines 1-260 (cutting off _send/
   main) while coverage claimed them. Next capsules must carry complete evidence
   for every coverage claim (a capsule-quality check is the next refinement).
+- LESSON integrated (honesty): the iter-3 "misfire fixed robustly" claim was
+  premature -- the alert recurred during the measured round. Re-diagnosed: HME
+  hooks are USER-level, so `--setting-sources user` was backwards. Corrected to
+  `project,local` (exclude user) and re-verified 0 misfires. Don't claim "fixed"
+  from one quiet sample; confirm under the real workload.
 
 ## Decision
 The mesh is now a PROVEN self-evolving review system: distinct-agent + Context-
