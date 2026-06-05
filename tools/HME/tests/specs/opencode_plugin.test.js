@@ -304,12 +304,18 @@ test('OpenCode plugin mirrors OpenCode stderr errors to hme-errors for Lifesaver
   fs.mkdirSync(path.join(root, 'tools/HME/event_kernel'), { recursive: true });
   fs.writeFileSync(path.join(root, 'tools/HME/event_kernel/host_hook_entry.js'), 'process.exit(0)\n');
 
-  const mod = await import(`${pluginUrl}?stderr-route-${Date.now()}`);
-  await mod.default({ project: { directory: root } });
-  process.stderr.write('Type validation error: message schema invalid while submitting\n');
-  const errLog = fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8');
-  assert.match(errLog, /\[opencode-stderr\] ERROR Type validation error/);
-  fs.rmSync(root, { recursive: true, force: true });
+  const originalWrite = process.stderr.write;
+  try {
+    process.stderr.write = () => true;
+    const mod = await import(`${pluginUrl}?stderr-route-${Date.now()}`);
+    await mod.default({ project: { directory: root } });
+    process.stderr.write('Type validation error: message schema invalid while submitting\n');
+    const errLog = fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8');
+    assert.match(errLog, /\[opencode-stderr\] ERROR Type validation error/);
+  } finally {
+    process.stderr.write = originalWrite;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('OpenCode plugin falls back to installed HME root outside HME projects', async () => {
