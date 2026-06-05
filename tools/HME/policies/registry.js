@@ -62,6 +62,9 @@ function _validatePolicy(p, source) {
   if (typeof p.defaultEnabled !== 'boolean') {
     throw new Error(`policy '${p.name}' must declare defaultEnabled as boolean`);
   }
+  if (!['block', 'rewrite', 'mixed'].includes(p.decisionClass)) {
+    throw new Error(`policy '${p.name}' must declare decisionClass as block|rewrite|mixed`);
+  }
 }
 
 function register(policy, source = '<external>') {
