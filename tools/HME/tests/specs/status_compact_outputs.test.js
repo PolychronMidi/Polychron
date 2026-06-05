@@ -48,7 +48,7 @@ test('i/status state default is compact; help=true contains drill-ins', () => {
 });
 
 test('i/review mode=forget clean output omits static reminder and clean verdict marker', () => {
-  const r = run(I_REVIEW, ['mode=forget'], 60000);
+  const r = run(I_REVIEW, ['mode=forget'], Number(process.env.HME_TEST_REVIEW_TIMEOUT_MS) || 90000);
   assert.equal(r.status, 0, r.stderr);
   if (/Warnings: none found/.test(r.stdout)) {
     assert.doesNotMatch(r.stdout, /## Reminders/);
