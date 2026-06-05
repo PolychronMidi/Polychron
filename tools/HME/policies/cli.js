@@ -195,6 +195,7 @@ async function cmdEval(name) {
     deny: registry.deny,
     instruct: registry.instruct,
     allow: registry.allow,
+    rewrite: registry.rewrite,
     params: config.paramsFor(p.name, p.params || {}),
   };
   let result;
