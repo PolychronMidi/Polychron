@@ -85,7 +85,7 @@ if [[ -z "$ROLE_SYSTEM" ]]; then
     team_lead)   ROLE_SYSTEM="You are $ROLE, lead of your team. Drive a sharp, decision-changing critique/plan." ;;
     team_purple) ROLE_SYSTEM="You are $ROLE, a purple-team partner. Adversarially stress-test claims and surface what others miss." ;;
     stage_crew)  ROLE_SYSTEM="You are $ROLE, stage crew. Do one concrete verification precisely and report the result." ;;
-    *)           ROLE_SYSTEM="You are $ROLE, a distinct team peer." ;;
+    *)           ROLE_SYSTEM="You are $ROLE, a forked team peer." ;;
   esac
 fi
 ROLE_SYSTEM="$ROLE_SYSTEM You are a DISTINCT agent, NOT the driver. Answer only in your role; never continue the driver's narration or echo the handoff. Be terse and decision-changing."
