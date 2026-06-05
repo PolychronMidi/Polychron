@@ -234,21 +234,37 @@ def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_
 
 def _send(root: Path, target: str, leash: dict[str, Any], message: str,
           child_env: dict[str, str]) -> tuple[int, str, str]:
+    # Self-evolve finding (red_purple): subprocess timeout kills only ask-peer.sh;
+    # the `claude` grandchild orphans and keeps spending. Run the child in its own
     env = os.environ.copy()
     env.update(child_env)
     env["HME_ASK_PEER_PROJECT_ROOT"] = str(root)
+    proc = subprocess.Popen(
+        [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
+        cwd=str(root), env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
     try:
-        proc = subprocess.run(
-            [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
-            cwd=str(root), env=env, text=True, capture_output=True, timeout=leash["max_duration"], check=False,
-        )
-    except subprocess.TimeoutExpired as e:
-        # A slow peer must not crash the guard with an unhandled traceback; the
-        # leash already killed the child at max_duration. Report it structured.
-        partial = (e.stdout or "")
-        partial = partial.decode("utf-8", "ignore") if isinstance(partial, bytes) else partial
-        return 124, partial, f"peer timed out after {leash['max_duration']}s (leash max_duration)"
-    return proc.returncode, proc.stdout, proc.stderr
+        stdout, stderr = proc.communicate(timeout=leash["max_duration"])
+        return proc.returncode, stdout, stderr
+    except subprocess.TimeoutExpired:
+        _kill_group(proc, signal.SIGTERM)
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc, signal.SIGKILL)
+            stdout, stderr = (proc.stdout.read() if proc.stdout else ""), ""
+        return 124, stdout or "", f"peer group killed after {leash['max_duration']}s (leash max_duration)"
+
+
+def _kill_group(proc: "subprocess.Popen[str]", sig: int) -> None:
+    try:
+        os.killpg(os.getpgid(proc.pid), sig)
+    except (ProcessLookupError, PermissionError):
+        try:
+            proc.send_signal(sig)
+        except ProcessLookupError:
+            pass  # silent-ok: pending review
 
 
 def main() -> int:
