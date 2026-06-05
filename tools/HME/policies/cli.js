@@ -31,6 +31,7 @@ function _initRegistry() {
       : path.join(registry.PROJECT_ROOT, cfg.customPoliciesPath);
     registry.loadCustom(resolved);
   }
+  registry.validateConfigNames(config);
 }
 
 function _statusOf(p) {
