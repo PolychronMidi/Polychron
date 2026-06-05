@@ -136,11 +136,7 @@ function get(name) {
 
 function policyDecisionClass(policy) {
   const p = policy || {};
-  if (p.decisionClass) return p.decisionClass;
-  const name = p.name || '';
-  if (/^rewrite-|^auto-fill/.test(name)) return 'rewrite';
-  if (/^block-|^no-|^nexus-/.test(name)) return 'block';
-  return 'mixed';
+  return p.decisionClass || 'mixed';
 }
 
 function validateConfigNames(configResolver) {
