@@ -229,6 +229,10 @@ def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str,
         turns = data["turns"]
         now = time.time()
         _prune_turns(turns, now)
+        # fail CLOSED on any surviving semantically-corrupt row (negative/non-int
+        # count etc.) rather than under-enforcing or crashing in int() later.
+        if any(not _valid_turn_row(r) for r in turns.values()):
+            return False, {"turn_id": turn_key, "limit": budget, "corrupt": True}, "corrupt_state"
         if turn_key not in turns and len(turns) >= max_live:
             return (False, {"turn_id": turn_key, "limit": budget, "live_turns": len(turns),
                             "max_live": max_live}, "max_live_turns")
