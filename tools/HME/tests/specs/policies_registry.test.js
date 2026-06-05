@@ -73,7 +73,7 @@ test('matching: tool filter applies', () => {
   assert.ok(!writeNames.includes('block-curl-pipe-sh'));
 });
 
-test('name-prefix matches decision verb (genome derives from name)', () => {
+test('policyDecisionClass matches decision verb and drives genome defaults', () => {
   const fs = require('fs');
   const path = require('path');
   const dir = registry.BUILTIN_DIR;
@@ -82,13 +82,18 @@ test('name-prefix matches decision verb (genome derives from name)', () => {
     const full = path.join(dir, f);
     const src = fs.readFileSync(full, 'utf8');
     const policy = require(full);
-    const name = policy.name || f;
+    const cls = registry.policyDecisionClass(policy);
     const canDeny = /ctx\.deny\b/.test(src);
     const canRewrite = /ctx\.rewrite\b/.test(src);
-    if (/^block-/.test(name) && canRewrite && !canDeny) mism.push(`${name}: named block- but only rewrites`);
-    if (/^rewrite-/.test(name) && canDeny && !canRewrite) mism.push(`${name}: named rewrite- but only denies`);
+    if (cls === 'block' && canRewrite && !canDeny) mism.push(`${policy.name}: class block but only rewrites`);
+    if (cls === 'rewrite' && canDeny && !canRewrite) mism.push(`${policy.name}: class rewrite but only denies`);
+    const g = registry.genomeInput(policy);
+    if (cls === 'rewrite') {
+      assert.strictEqual(g.fail_open_or_closed, 'open', `${policy.name} rewrite genome fail-open`);
+      assert.strictEqual(g.telemetry_only, true, `${policy.name} rewrite genome telemetry`);
+    }
   }
-  assert.deepStrictEqual(mism, [], `policy name<->verb drift: ${mism.join('; ')}`);
+  assert.deepStrictEqual(mism, [], `policy decision-class drift: ${mism.join('; ')}`);
 });
 
 test('runChain: first deny wins; chain continues for side effects', async () => {
