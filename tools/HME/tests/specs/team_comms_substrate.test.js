@@ -199,6 +199,11 @@ test('ask-peer rejects roles outside bounded paths, effort ceiling, model-tier s
     r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /tier drift/);
+
+    writeRoles(root, { blue_lead: { ...LEAD_ROLE, context_mode: 'fresh' } });
+    r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /only forked peers are allowed/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
