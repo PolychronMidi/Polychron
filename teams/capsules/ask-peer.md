@@ -111,7 +111,8 @@ fi
 [[ "${HME_ASK_PEER_FORCE_FAIL:-}" == "1" ]] && { echo "ask-peer: forced failure (test)" >&2; exit 1; }
 # Test-only hang with a backgrounded child, to verify the guard killpg's the
 # WHOLE process group on timeout (no orphaned grandchild survives the leash).
-[[ -n "${HME_ASK_PEER_FORCE_HANG:-}" ]] && { sleep "$HME_ASK_PEER_FORCE_HANG" & wait; exit 0; }
+FORCE_HANG="${HME_ASK_PEER_FORCE_HANG:-}"
+[[ -n "$FORCE_HANG" ]] && { sleep "$FORCE_HANG" & wait; exit 0; }
 
 # Role charter: a DISTINCT-agent identity (the self-evolve finding: a pure
 # driver-fork shares the driver's identity and contaminates -- it continues the
@@ -195,8 +196,9 @@ append_turn_locked() {
 
 append_turn_locked driver "$MSG"
 
-if [[ -n "${HME_ASK_PEER_FAKE_REPLY:-}" ]]; then
-  RESP="$HME_ASK_PEER_FAKE_REPLY"
+FAKE_REPLY="${HME_ASK_PEER_FAKE_REPLY:-}"
+if [[ -n "$FAKE_REPLY" ]]; then
+  RESP="$FAKE_REPLY"
   [[ -s "$SID_FILE" ]] || python3 -c 'import uuid;print(uuid.uuid4())' > "$SID_FILE"
 else
   PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
