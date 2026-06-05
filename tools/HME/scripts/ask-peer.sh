@@ -98,6 +98,7 @@ LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.
 # (propagated through dispatch), else the driver's transcript marker.
 DRIVER_SID="${HME_DRIVER_SESSION_ID:-}"
 if [[ -z "$DRIVER_SID" && -f tmp/hme-transcript-path.txt ]]; then
+  # silent-ok: optional driver-session marker; empty SID falls back to fresh/fork mode lo
   DRIVER_SID="$(basename "$(cat tmp/hme-transcript-path.txt 2>/dev/null)" .jsonl 2>/dev/null || true)"
 fi
 
