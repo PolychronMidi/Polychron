@@ -42,6 +42,7 @@ function _statusOf(p) {
 }
 
 function cmdAll() {
+  _initRegistry();
   const meta = require('./meta_registry');
   const rules = meta.listAll();
   // Group by layer.
