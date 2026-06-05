@@ -106,8 +106,8 @@ function loadBuiltins() {
     const builtinFile = path.join(BUILTIN_DIR, f);
     try {
       const mod = require(builtinFile);
-      register(mod, `builtin/${f}`);
       assertDecisionClassMatchesSource(mod, builtinFile);
+      register(mod, `builtin/${f}`);
     } catch (err) {
       errors.push(`[policies] failed to load builtin/${f}: ${err.message}`);
     }
