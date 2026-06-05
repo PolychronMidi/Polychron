@@ -77,7 +77,7 @@ CALLER_CHANNEL="$(jq -r --arg caller "$CALLER" '.channel_by_caller[$caller] // e
 [[ -n "$ROLE_REPLY_BYTES" ]] || ROLE_REPLY_BYTES="12000"
 
 case "$CHANNEL" in teams/*.md) ;; *) echo "invalid channel for $ROLE: $CHANNEL" >&2; exit 1 ;; esac
-case "$SID_FILE" in tmp/.team-*.session) ;; *) echo "invalid session_file for $ROLE: $SID_FILE" >&2; exit 1 ;; esac
+case "$SID_FILE" in teams/runtime/*.session) ;; *) echo "invalid session_file for $ROLE: $SID_FILE" >&2; exit 1 ;; esac
 case "$TIER" in E1|E2|E3|E4|E5) ;; *) echo "invalid tier for $ROLE: $TIER" >&2; exit 1 ;; esac
 case "$EFFORT" in low|medium|high|max) ;; *) echo "invalid effort for $ROLE: $EFFORT" >&2; exit 1 ;; esac
 case "$CTX_MODE" in fork|fresh) ;; *) echo "invalid context_mode for $ROLE: $CTX_MODE" >&2; exit 1 ;; esac
@@ -125,8 +125,8 @@ if [[ -z "$ROLE_SYSTEM" ]]; then
 fi
 ROLE_SYSTEM="$ROLE_SYSTEM You are a DISTINCT agent, NOT the driver. Answer only in your role; never continue the driver's narration or echo the handoff. Be terse and decision-changing."
 
-mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" tmp
-LOCK_FILE="tmp/.team-channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
+mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
+LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 
 # Driver session that peers FORK from, so every team member inherits the
 # driver's full context instead of starting context-blank. Pinned via env
@@ -152,7 +152,7 @@ cap_channel() {
   [[ "$lines" =~ ^[0-9]+$ ]] || return 0
   (( lines <= cap )) && return 0
   local tmp
-  tmp="$(mktemp "tmp/.team-tail.XXXXXX")"
+  tmp="$(mktemp "teams/runtime/tail.XXXXXX")"
   CHANNEL="$CHANNEL" CAP="$cap" python3 - > "$tmp" <<'PY'
 import os, re
 path, cap = os.environ['CHANNEL'], int(os.environ['CAP'])
