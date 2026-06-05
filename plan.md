@@ -26,11 +26,10 @@ here. Nothing in this file is implemented until the user marks it approved.
      8-byte junk -> the "mesh has no value / retire" read was an artifact of
      crippled peers, NOT the mesh idea). Fix: ask-peer forks the driver session
      (--resume <driver_sid> --fork-session); guard propagates HME_DRIVER_SESSION_ID.
-  2. TOOLS-DISALLOWED: a forked peer inherits the driver's tools and re-explores
-     (long Read loops, 10+ min) -- that was the "slowness", NOT transcript size
-     (a fabricated theory; 300-485K-token calls return in <20s). Fix: peers are
-     reviewers that answer from inherited context with --disallowedTools; a real
-     forked review now returns in ~20s.
+  2. TOOL-DISALLOW WAS LATER REJECTED: I temporarily blocked peer tools to stop
+     long re-explore loops, but that neutered verification. Current standing fix
+     is the opposite: forked peers keep FULL tool access and any filtering belongs
+     only in the central proxy HME_FILTER_TOOLS_DROP path.
 - Demonstrated mesh VALUE (this round, not theory): red sharpened to a P0 trio;
   blue triaged/demoted the race, promoted reserve-burns-on-failure as today's
   bug, and ADDED catches red missed (corrupt-mid-write fail-open compound; no
