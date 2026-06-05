@@ -61,6 +61,29 @@ def _roles(root: Path) -> dict[str, Any]:
     return roles if isinstance(roles, dict) else {}
 
 
+# Context Capsule contract -- designed by the mesh's own multi-step red/blue
+# dialogue: the mechanism that lets multiple grounded independent peers beat a
+CAPSULE_REQUIRED = ("artifact", "goal", "rubric")
+CAPSULE_OPTIONAL = ("constraints", "evidence", "coverage")
+_CAPSULE_HEAD_RE = re.compile(r"^#{1,3}\s+([a-z_]+)\b", re.MULTILINE)
+
+
+def _load_capsule(path: Path, cap: int) -> tuple[str, list[str]]:
+    text = path.read_text(encoding="utf-8", errors="ignore")[:cap]
+    sections = {m.group(1).lower() for m in _CAPSULE_HEAD_RE.finditer(text)}
+    missing = [s for s in CAPSULE_REQUIRED if s not in sections]
+    return text, missing
+
+
+def _capsule_message(capsule: str, message: str) -> str:
+    return (
+        "CONTEXT CAPSULE -- ground EVERY claim in a capsule section; if the "
+        "capsule lacks evidence for a claim, write 'GAP: <what is missing>' or "
+        "decline. Do NOT invent beyond the capsule.\n\n"
+        f"{capsule}\n\n---\nTASK (cite capsule sections in your answer):\n{message}"
+    )
+
+
 def _driver_sid(root: Path) -> str:
     """Root driver session id (peers fork it) from the transcript marker."""
     try:
