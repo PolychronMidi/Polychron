@@ -296,6 +296,7 @@ if [ "$_UPS_TIMING" = "1" ] && [ -n "$PROJECT_ROOT" ]; then
   _UPS_FILE="${HME_UPS_TIMING_FILE:-$PROJECT_ROOT/tools/HME/runtime/ups-step-timing.jsonl}"
   printf '{"ts":"%s","total_ms":%d,"steps":{%s}}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_UPS_TOTAL" "$_UPS_STEPS" >> "$_UPS_FILE" 2>/dev/null || true
   if [ "$(wc -l < "$_UPS_FILE" 2>/dev/null || echo 0)" -gt 500 ]; then
+    # silent-ok: telemetry compaction only; append already happened, failure is non-block
     tail -n 500 "$_UPS_FILE" > "$_UPS_FILE.tmp" 2>/dev/null && mv "$_UPS_FILE.tmp" "$_UPS_FILE" 2>/dev/null || true
   fi
 fi
