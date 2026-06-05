@@ -127,6 +127,9 @@ test('policyDecisionClass matches decision verb and drives genome defaults', () 
     const src = fs.readFileSync(full, 'utf8');
     const policy = require(full);
     const cls = registry.policyDecisionClass(policy);
+    if (!['block', 'rewrite', 'mixed'].includes(policy.decisionClass)) {
+      mism.push(`${policy.name}: missing/invalid decisionClass '${policy.decisionClass}'`);
+    }
     const canDeny = /ctx\.deny\b/.test(src);
     const canRewrite = /ctx\.rewrite\b/.test(src);
     if (cls === 'block' && canRewrite && !canDeny) mism.push(`${policy.name}: class block but only rewrites`);
@@ -135,6 +138,12 @@ test('policyDecisionClass matches decision verb and drives genome defaults', () 
     if (cls === 'rewrite') {
       assert.strictEqual(g.fail_open_or_closed, 'open', `${policy.name} rewrite genome fail-open`);
       assert.strictEqual(g.telemetry_only, true, `${policy.name} rewrite genome telemetry`);
+      assert.strictEqual(g.visible_output_allowed, false, `${policy.name} rewrite genome not visible`);
+    }
+    if (cls === 'block') {
+      assert.strictEqual(g.fail_open_or_closed, 'closed', `${policy.name} block genome fail-closed`);
+      assert.strictEqual(g.telemetry_only, false, `${policy.name} block genome not telemetry-only`);
+      assert.strictEqual(g.visible_output_allowed, true, `${policy.name} block genome visible`);
     }
   }
   assert.deepStrictEqual(mism, [], `policy decision-class drift: ${mism.join('; ')}`);
