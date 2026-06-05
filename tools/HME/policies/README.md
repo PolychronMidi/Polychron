@@ -37,6 +37,7 @@ module.exports = {
   description: 'one-line summary',
   category: 'security' | 'review-discipline' | 'git-discipline' | ...,
   defaultEnabled: true | false,
+  decisionClass: 'block' | 'rewrite' | 'mixed',
   match: {
     events: ['PreToolUse'],          // 'PreToolUse' | 'PostToolUse' | 'Stop'
     tools: ['Bash'],                 // optional: restrict to specific tools
