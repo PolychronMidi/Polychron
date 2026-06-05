@@ -72,17 +72,15 @@ here. Nothing in this file is implemented until the user marks it approved.
   early-turn reviews and weak as a generic "team of distinct agents."
 
 ## Self-evolution iteration 2 (DONE -- distinct-agent substrate + mesh re-review)
-- Substrate evolved to kill fork-identity contamination at the root: peers are
-  now DISTINCT AGENTS (context_mode=fresh + per-role `system` charter + role
-  isolation) instead of pure driver-forks. Verified: a fresh red_lead returns a
-  clean role answer in ~9s with ZERO driver-narration echo.
-- Other improvements this iteration: channel writer uses REAL newlines (no
+- This iteration temporarily tried context-blank peers to avoid driver-identity
+  contamination. That was later REJECTED by the standing user directive because
+  it nuked context and made tool-blocked peers fabricate instead of verify.
+- Still-valid fixes from this iteration: channel writer uses REAL newlines (no
   JSON-escaped "\n"); HME_TEAM_PEER=1 makes peer sub-sessions no-op the driver
   lifecycle hooks (kills the UserPromptSubmit-before-SessionStart misfire);
   fixed an `env`-arg-order bug (assignments-before-`-u` -> exit 127).
-- Re-ran the mesh (now distinct agents) to review the new substrate. Clean,
-  uncontaminated, readable channels. It found REAL bugs in my own code; I fixed
-  the top two and unit-proved them (now 9/9):
+- The mesh found REAL bugs in my own code; I fixed the top two and unit-proved
+  them (now 9/9):
   - TIMEOUT-ORPHAN [done]: subprocess timeout killed only ask-peer.sh; the
     `claude` grandchild orphaned and kept spending (the exact orphan I'd been
     killing by hand). Fix: run the child in its own process group
@@ -90,11 +88,8 @@ here. Nothing in this file is implemented until the user marks it approved.
     guard returns in ~2s, not 60s.
   - TAIL-CAP TURN-BLINDNESS [done]: real newlines let a raw `tail -n` bisect a
     turn. Fix: turn-atomic cap (keep last whole turns, never a fragment). Tested.
-  - Also notable: blue/purple peers HONESTLY DECLINED to invent criticisms when
-    the handoff didn't carry the artifact -- distinct agents not hallucinating.
-- Open debt (mesh-named, not yet done): hard output/byte cap on peer stdout;
-  channel tag-forgeability (current format escapes only the exact close-tag);
-  pass the artifact + prior findings into purple-handoff hops so they're grounded.
+- Open debt from that point: hard output/byte cap on peer stdout; channel
+  tag-forgeability; pass artifacts/prior findings into handoffs.
 
 ## Self-evolution iteration 3 (DONE -- close open debt + multi-step dialogue)
 - Closed the iter-2 open debt (all unit-proven, now 12/12):
@@ -103,24 +98,15 @@ here. Nothing in this file is implemented until the user marks it approved.
   - TAG-FORGEABILITY [done]: channel writer neutralizes ALL structural tags in
     payloads (<driver/<peer/</...> -> guillemet form), so a reply can't spoof
     transcript structure. Test asserts exactly one real close tag.
-  - GROUNDING [done]: guard --context-file / --capsule carry the artifact into
-    fresh-agent hops so they're grounded instead of declining.
-- MULTI-STEP DIALOGUE (the user's ask): ran a real 2-round red<->blue debate
-  (each peer RESUMES its session = memory) + purple synthesis, on the open design
-  question "fresh distinct agents vs driver-fork." Both sides CONCEDED real
-  points and CONVERGED. Decision-changing output:
-  - DEFAULT = fresh independent judges for adversarial/decision review; demote
-    driver-forks to read-only context scouts with NO decision authority, and only
-    fork from a CLEAN/curated substrate, never the live meta-heavy transcript.
-  - The ONE mechanism that lets grounded independent peers beat a single
-    high-effort reviewer: a mandatory CONTEXT CAPSULE (artifact+goal+constraints+
-    evidence+rubric+coverage{included/excluded/why}); peers must CITE capsule
-    sections, flag GAPs, or decline -- "not vibes or packet-quality roulette."
-  - Hybrid only as a formal one-way pipeline: clean-fork scouts -> cited capsule
-    -> fresh judges adjudicate. Trap if ad hoc or forks get votes.
-- IMPLEMENTED the mesh's own design: guard `--capsule` validates required
-  sections (## artifact/## goal/## rubric) and wraps the task with the cite-or-
-  decline contract. The mesh designed its next feature; it now exists + is tested.
+  - GROUNDING [done]: guard --context-file / --capsule carry the artifact/prior
+    findings into handoffs; this supplements, not replaces, forked context.
+- Historical note: the round at that time argued for context-blank judges. That
+  conclusion is superseded by the correction below: peers must be driver forks
+  with full tool access. The useful survivor is the Context Capsule contract,
+  not the context-nuking default.
+- IMPLEMENTED the capsule contract: guard `--capsule` validates required sections
+  (## artifact/## goal/## rubric) and wraps the task with the cite-or-decline
+  contract. The contract remains useful as grounding for forked peers.
 - Lifecycle misfire fix (CORRECTED in iter 4): my first attempt used
   `--setting-sources user`, which was BACKWARDS -- the HME hooks live in USER
   settings (~/.claude), so that loaded exactly the hooks to drop and the misfire
