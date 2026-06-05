@@ -23,6 +23,14 @@ deepwiki.config.json
 /teams/*.md
 !/teams/README.md
 
+# Team durable feature infra (NOT throwaway -- moved out of tmp/):
+#   teams/capsules/  -- Context Capsules (tracked review inputs)
+#   teams/rounds/    -- review round runners (tracked)
+#   teams/runtime/   -- ephemeral peer session ids, channel locks, tail temps
+#                       (regenerated per dispatch, machine-specific -> ignored).
+/teams/runtime/*
+!/teams/runtime/README.md
+
 # Root split guards: source lives under src/ or tools/HME/; root artifacts stay untracked and banned by check-root-only-dirs.
 /output
 /i
