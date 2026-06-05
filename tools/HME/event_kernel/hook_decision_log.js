@@ -53,6 +53,7 @@ function _decisionField(event, tool, decision, reason) {
     });
     return { net_coherence: f.net_coherence, effect: f.effect, noise_risk: f.noise_risk };
   } catch (_e) {
+    // silent-ok: coherence field is optional telemetry; caller records decision anyway.
     return null;
   }
 }
