@@ -343,3 +343,50 @@ test('I3 dispatch guard selects real roles and writes caller-specific channels',
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('guard hardening: depth fail-closed, reserve-refund-on-failure, corrupt-state fail-closed, max-live bound', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--tier', 'E5', '--scope', 's', '--artifact', 'plan.md', '--max-duration', '30', '--max-tools', '2'];
+
+    // F-C: non-driver caller with no propagated depth -> fail CLOSED (not silent depth=1).
+    let r = runDispatch(root, ['--caller', 'blue_lead', ...base]);
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'depth_unknown');
+
+    // F-A: a FAILED send refunds the reserved unit so the slot isn't burned.
+    // budget=1: a failed send then a successful send must both be allowed.
+    const bad = runDispatch(root, ['--caller', 'driver', ...base, '--turn-id', 'tref', '--budget', '1',
+      '--send', '--message', 'x'], { HME_ASK_PEER_PROJECT_ROOT: root, HME_ASK_PEER_FORCE_FAIL: '1', PATH: '/nonexistent' });
+    // (the send fails because ask-peer can't run; guard must refund)
+    out = JSON.parse(bad.stdout);
+    assert.equal(out.sent, false);
+    assert.equal(out.budget.refunded, true);
+    const good = runDispatch(root, ['--caller', 'driver', ...base, '--turn-id', 'tref', '--budget', '1',
+      '--send', '--message', 'y'], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    out = JSON.parse(good.stdout);
+    assert.equal(out.allowed, true, 'refund must free the slot for a real send');
+    assert.equal(out.sent, true);
+
+    // F-D: corrupt (existing-but-unparseable) budget state fails CLOSED.
+    fs.writeFileSync(path.join(root, 'tools/HME/runtime/team-dispatch-budget.json'), '{ this is not json');
+    r = runDispatch(root, ['--caller', 'driver', ...base, '--turn-id', 'tc', '--budget', '4']);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'corrupt_state');
+
+    // F-D: global concurrency bound -- a new distinct turn beyond --max-live is denied.
+    fs.rmSync(path.join(root, 'tools/HME/runtime/team-dispatch-budget.json'), { force: true });
+    let okTurn = runDispatch(root, ['--caller', 'driver', ...base, '--turn-id', 'L1', '--budget', '4', '--max-live', '1']);
+    assert.equal(JSON.parse(okTurn.stdout).allowed, true);
+    let denyTurn = runDispatch(root, ['--caller', 'driver', ...base, '--turn-id', 'L2', '--budget', '4', '--max-live', '1']);
+    out = JSON.parse(denyTurn.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'max_live_turns');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
