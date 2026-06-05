@@ -35,9 +35,26 @@ excluded: ask-peer.sh, team_dispatch_guard.py, team_agent_router.py.
 set -uo pipefail
 REPO="${PROJECT_ROOT}"; cd "$REPO"
 OUT="$REPO/teams/runtime/output"; mkdir -p "$OUT"
-DASH="$REPO/tools/HME/runtime/team-dashboard.json"; SNAP="$OUT/m.snap"
-if [ -f "$DASH" ]; then cp "$DASH" "$SNAP"; else echo MISSING > "$SNAP"; fi
-cleanup(){ if [ -f "$SNAP" ] && ! grep -qx MISSING "$SNAP"; then cp "$SNAP" "$DASH"; else rm -f "$DASH"; fi; }
+# Harness fix (mesh-found P1): clear prior round results so a timed-out/failed
+# dispatch can't leave a STALE m_*.json that reply()/the summary reads as current.
+rm -f "$OUT"/m_*.json "$OUT"/m.err
+# Sweep stale per-call temps that a SIGKILL'd peer (EXIT trap skipped) may leak.
+rm -f "$OUT"/../raw-cap.* "$OUT"/../raw-trunc.* "$OUT"/../reply.* "$OUT"/../sid.* 2>/dev/null
+rm -rf "$OUT"/../raw-fifo.* 2>/dev/null
+DASH="$REPO/tools/HME/runtime/team-dashboard.json"
+# Harness fix (mesh-found P1): per-run snapshot path + an out-of-band presence
+# flag (NOT an in-band MISSING sentinel that a real dashboard could collide with),
+SNAP="$(mktemp "$OUT/m.snap.XXXXXX")"
+HAD_DASH=0
+if [ -f "$DASH" ]; then HAD_DASH=1; cp "$DASH" "$SNAP"; fi
+cleanup(){
+  if [ "$HAD_DASH" = "1" ]; then
+    if ! cp "$SNAP" "$DASH"; then echo "WARN: failed to restore $DASH from $SNAP" >&2; fi
+  else
+    rm -f "$DASH"
+  fi
+  rm -f "$SNAP"
+}
 trap cleanup EXIT
 cat > "$DASH" <<'JSON'
 {"agents":{"driver":{"role":"driver","status":"registered","tier":"E5","ctx_used_pct":5},
@@ -56,16 +73,19 @@ gcap(){ # caller tier depth turnid chan msg out  (capsule-grounded guard send)
     --scope "measured capsule review" --artifact "teams/$5.md" --max-duration "$DUR" --max-tools 8 \
     --capsule "$CAP" --send --message "$6" > "$OUT/$7" 2>>"$OUT/m.err"; }
 reply(){ python3 -c "import json,sys;print(json.load(open('$OUT/$1')).get('reply',''))" 2>/dev/null; }
+# Harness fix (mesh-found P1): neutralize structural markers (## headings, GAP:)
+# in a prior peer's reply before embedding it in the NEXT peer's --message, so a
+san(){ sed -E 's/^#{1,6} /  /; s/^GAP:/gap:/' ; }
 
 # === BASELINE: one high-effort peer, capsule-grounded (driver->blue_lead) ===
 gcap driver E5 0 m-base blue "BASELINE single reviewer. Per the capsule rubric, list ALL decision-changing flaws (P0/P1) with function + fix. Cite capsule sections." m_base.json
 
 # === MULTI-PEER, sequential ===
 gcap driver E5 0 m-red red "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent." m_red.json
-RED="$(reply m_red.json)"
-gcap red_lead E4 1 m-redp red "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said: $RED" m_redp.json
-REDP="$(reply m_redp.json)"
-gcap red_purple E4 1 m-cross purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set: $REDP" m_cross.json
+RED="$(reply m_red.json | san)"
+gcap red_lead E4 1 m-redp red "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED" m_redp.json
+REDP="$(reply m_redp.json | san)"
+gcap red_purple E4 1 m-cross purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set (quoted, markers neutralized): $REDP" m_cross.json
 
 echo "measured-done"
 for f in m_base m_red m_redp m_cross; do printf '%s reply_bytes=%s\n' "$f" "$(reply $f.json | wc -c)"; done

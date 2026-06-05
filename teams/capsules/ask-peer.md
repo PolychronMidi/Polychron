@@ -133,6 +133,14 @@ mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
 LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 SAFE_ROLE="$(printf '%s' "$ROLE" | sed 's#[^A-Za-z0-9_.-]#_#g')"
 ERR_FILE="teams/runtime/${SAFE_ROLE}.$$.${EPOCHREALTIME//./}.stderr"
+# Per-call stderr keeps diagnostics, but must not accumulate unbounded: keep only
+# the most recent few per role (newest by mtime; older pruned). Tolerant of none.
+prune_stderr() {
+  local keep="${HME_TEAM_STDERR_KEEP:-5}" old
+  while IFS= read -r old; do [[ -n "$old" ]] && rm -f "$old"; done < <(ls -1t teams/runtime/"${SAFE_ROLE}".*.stderr 2>/dev/null | tail -n +"$keep")
+  return 0
+}
+prune_stderr
 RAW_CAP_FILE=""
 TRUNC_FILE=""
 RESP_FILE=""
