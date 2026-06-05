@@ -360,8 +360,8 @@ test('guard hardening: depth fail-closed, reserve-refund-on-failure, corrupt-sta
     // F-A: a FAILED send refunds the reserved unit so the slot isn't burned.
     // budget=1: a failed send then a successful send must both be allowed.
     const bad = runDispatch(root, ['--caller', 'driver', ...base, '--turn-id', 'tref', '--budget', '1',
-      '--send', '--message', 'x'], { HME_ASK_PEER_PROJECT_ROOT: root, HME_ASK_PEER_FORCE_FAIL: '1', PATH: '/nonexistent' });
-    // (the send fails because ask-peer can't run; guard must refund)
+      '--send', '--message', 'x'], { HME_ASK_PEER_FORCE_FAIL: '1' });
+    // (ask-peer exits non-zero via the test injection; guard must refund)
     out = JSON.parse(bad.stdout);
     assert.equal(out.sent, false);
     assert.equal(out.budget.refunded, true);
