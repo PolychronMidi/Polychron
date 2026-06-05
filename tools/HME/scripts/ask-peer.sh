@@ -89,8 +89,8 @@ if [[ -z "$ROLE_SYSTEM" ]]; then
 fi
 ROLE_SYSTEM="$ROLE_SYSTEM You are a DISTINCT agent, NOT the driver. Answer only in your role; never continue the driver's narration or echo the handoff. Be terse and decision-changing."
 
-mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" tmp
-LOCK_FILE="tmp/.team-channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
+mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
+LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
 
 # Driver session that peers FORK from, so every team member inherits the
 # driver's full context instead of starting context-blank. Pinned via env
