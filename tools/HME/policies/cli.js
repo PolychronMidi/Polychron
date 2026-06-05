@@ -175,7 +175,6 @@ function cmdPaths() {
   const files = config._scopeFiles();
   console.log(`local:   ${files[0]}${fs.existsSync(files[0]) ? '' : ' (does not exist)'}`);
   console.log(`project: ${files[1]}${fs.existsSync(files[1]) ? '' : ' (does not exist)'}`);
-  console.log(`global:  ${files[2]}${fs.existsSync(files[2]) ? '' : ' (does not exist)'}`);
   return 0;
 }
 
