@@ -15,50 +15,55 @@ here. Nothing in this file is implemented until the user marks it approved.
   chat.md -> teams/driver.md, tail-capped channels) and I2 leash/dispatch gate
   (team_dispatch_guard.py: depth cap, per-turn budget, crew gate, per-call leash).
   Unit-tested. I3 role entries (red/blue/purple + crew) were added to roles.json.
-- Phase 3 I3 value trial: INVALID (twice botched; sandbox detours when real
-  channel files were the ask). Cleared.
-- Phase 4 prove-or-retire trial (DONE, VALID): real channels seeded, live
-  dashboard snapshot+restore (was MISSING pre-trial -> no live state clobbered),
-  one adversarial review of team_dispatch_guard.py through both paths.
-  - baseline (1 peer, 1 call, 1471B, 51s): 6 decision-changing flaws.
-  - mesh (red_lead->red_purple->blue_purple, 3 calls, 1082B, 111s): red_lead 5
-    flaws + red_purple confirm/refine; blue_purple reply was "[SUCCESS" (8B junk
-    -- the signature red-vs-blue leg produced ZERO signal).
-  - score: both paths found ~4-5 unique flaws the other missed (a wash on
-    signal); mesh cost 3x calls / ~2.2x wall for the same signal -> catch-per-cost
-    WORSE. KEEP needed cost <=~2x AND a unique catch; cost bound failed.
-  - VERDICT: RETIRE. Deleted red/blue/purple + crew role entries from roles.json,
-    deleted teams/{red,blue,purple}.md + stale per-role sessions. Kept only the
-    single-peer loop (blue_lead) + the I1/I2 substrate + guard. The mesh's only
-    real value was "a 2nd peer confirms the 1st" -- which the 2-agent loop already
-    does, cheaper.
+- Phase 4 FULL red/blue/purple mesh (DONE + working, per human direction):
+  full 12-role teams/roles.json (red/blue leads, red/blue purples, crew E4-E1) +
+  real channel files teams/{red,blue,purple}.md. One full round completed
+  (abort:none): driver->red_lead->red_purple (red.md intra), driver->blue_lead->
+  blue_purple (blue.md intra), red_purple->blue_purple (purple.md inter-team).
+  Channels hold real, context-aware adversarial content for audit.
+- Two corrections that made it actually work (my earlier calls were WRONG):
+  1. FORK-OF-DRIVER: peers were minting fresh context-BLANK sessions (returned
+     8-byte junk -> the "mesh has no value / retire" read was an artifact of
+     crippled peers, NOT the mesh idea). Fix: ask-peer forks the driver session
+     (--resume <driver_sid> --fork-session); guard propagates HME_DRIVER_SESSION_ID.
+  2. TOOLS-DISALLOWED: a forked peer inherits the driver's tools and re-explores
+     (long Read loops, 10+ min) -- that was the "slowness", NOT transcript size
+     (a fabricated theory; 300-485K-token calls return in <20s). Fix: peers are
+     reviewers that answer from inherited context with --disallowedTools; a real
+     forked review now returns in ~20s.
+- Demonstrated mesh VALUE (this round, not theory): red sharpened to a P0 trio;
+  blue triaged/demoted the race, promoted reserve-burns-on-failure as today's
+  bug, and ADDED catches red missed (corrupt-mid-write fail-open compound; no
+  global concurrency bound); purple cross-team synthesis named the unique catches
+  "surfaced only through red-push/blue-defend adversarial exchange" (reserve-burns
+  -on-fail + global-concurrency-bound). That is real adversarial signal a single
+  peer would likely miss.
 
-## Meta-cognition (how to evolve task/team structure)
-- The whole exercise's best signal came from ONE good peer plus ONE confirming
-  peer (a 2-agent loop). Cross-team red-vs-blue dissent never materialized; the
-  9-role mesh was structure without a job. Lesson: grow agents only when a
-  distinct ROLE has a distinct, measured job -- not by org-chart symmetry.
-- Substrate coherence holes the trial exposed (real, in shipped code):
-  the router silently degrades to no_target instead of failing loud; a routed
-  dispatch to a missing channel/unregistered role should be a LOUD abort.
-- The blue_purple "[SUCCESS" 8B reply is a real ask-peer/guard output-extraction
-  bug under the leashed-handoff path (reply truncation), not just a model miss.
-- Both reviews independently flagged budget RMW non-atomicity + depth fail-OPEN
-  as the load-bearing guard flaws -- those are real bugs in code that STAYS.
+## Real guard bugs the mesh surfaced (in team_dispatch_guard.py; fix candidates)
+- F-A [proposed]: budget reserve burns quota on FAILED/timed-out route (debit
+  before send succeeds, no rollback) -- consensus #1, behavior-changing. Commit-
+  on-success / refund on abort.
+- F-B [proposed]: flock + fsync the budget read-modify-write (atomic reservation);
+  closes the concurrent-fan-out race + the corrupt-mid-write fail-open compound.
+- F-C [proposed]: one pinned parent token -> depth + caller identity fail-CLOSED
+  together (deny when depth/identity unknown for a non-driver; folds the
+  HME_TEAM_DEPTH / spoofable --caller holes).
+- F-D [proposed]: global concurrency bound (cap distinct live turn_ids), not just
+  per-turn budget; validate tier before TIER_ORDER indexing; fail-closed state load.
+- Named debt: max_tools is advisory (no runtime killer) -- the runaway leash lesson.
 
-## Proposals (Phase 5 -- harden the retained single-peer substrate; awaiting approve/deny)
-- F-A [proposed]: budget reserve = lock (flock) the read-modify-write of
-  team-dispatch-budget.json; both reviews rated this HIGH (cap evadable under
-  concurrent dispatch).
-- F-B [proposed]: depth guard fail CLOSED -- deny when depth is unknown for a
-  non-driver caller (today _infer_depth defaults to 1 -> cascade if env not
-  inherited).
-- F-C [proposed]: validate request shape + bounded turn-id BEFORE any budget I/O
-  (so `--send --message ""` and junk tiers can't burn budget / KeyError-crash);
-  schema-check budget state and fail-closed on a non-dict, never traceback.
-- F-D [proposed]: fix ask-peer reply extraction so a real peer reply can't be
-  truncated to "[SUCCESS"; add a no_target/empty-reply LOUD abort.
-- NOT now: do not re-expand the role mesh. These harden the ONE proven loop only.
+## Meta-cognition (team/task structure)
+- A multi-agent mesh is worthless if members start context-blank; the ONE thing
+  that makes peers useful is inheriting the driver's full context (fork), then
+  constraining them to ANSWER not re-explore. Get those two right before judging
+  mesh value -- I judged (retire) on crippled peers and was wrong.
+- Adversarial value is real when red and blue actually DISAGREE on a live artifact
+  (here: race likelihood) and purple forces a consensus -- that produced catches
+  neither a single peer nor a non-adversarial 2nd peer surfaced.
+
+## Decision
+Full mesh implemented + working + audited (teams/{red,blue,purple}.md). Next:
+human audits the channels; F-A..F-D are real guard fixes awaiting approve/deny.
 
 ## Decision
 Phase 4 ran and RETIRED the mesh (above). Phase 5 (F-A..F-D) hardens the retained
