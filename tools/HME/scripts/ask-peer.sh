@@ -172,11 +172,9 @@ else
   PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
   if [[ -n "$PEER_SID" && -f "$PEER_TRANSCRIPT" ]]; then
     MODE=(--resume "$PEER_SID")                    # continue this peer's own ongoing thread (forked once, then persists)
-  elif [[ "$CTX_MODE" == "fork" ]]; then
-    [[ -n "$DRIVER_SID" ]] || { echo "context_mode=fork for $ROLE but no driver session id (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2; exit 1; }
-    MODE=(--resume "$DRIVER_SID" --fork-session)   # context_mode=fork (DEFAULT): inherit the driver's FULL context
   else
-    MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # context_mode=fresh: blank context + role charter
+    [[ -n "$DRIVER_SID" ]] || { echo "context_mode=fork for $ROLE but no driver session id (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2; exit 1; }
+    MODE=(--resume "$DRIVER_SID" --fork-session)   # inherit the driver's FULL context
   fi
   # Peers FORK the driver and keep FULL tool access: they have the real context
   # AND can verify against the live tree instead of fabricating. Tool filtering,
