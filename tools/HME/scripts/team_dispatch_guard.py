@@ -222,6 +222,9 @@ def main() -> int:
         "HME_TEAM_MAX_DEPTH": str(args.max_depth),
         "HME_TEAM_TURN_ROOT": str(budget_info.get("turn_id") or ""),
         "HME_TEAM_DISPATCH_GUARD_OK": "1",
+        # Pin the root driver session so every routed peer forks from the
+        # driver (inherits full context) rather than minting a blank session.
+        "HME_DRIVER_SESSION_ID": os.environ.get("HME_DRIVER_SESSION_ID") or _driver_sid(root),
     }
 
     out: dict[str, Any] = {
