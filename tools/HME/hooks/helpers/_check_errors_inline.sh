@@ -83,7 +83,11 @@ _hme_check_errors_inline() {
   local _SELF_BY_TAG _REMAINING _SELF_BY_SEV
   _SELF_BY_TAG=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -E "$_SELF_TAG_RE" || true)
   _REMAINING=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -vE "$_SELF_TAG_RE" || true)
-  AGENT_ERRORS=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' | PROJECT_ROOT="$PROJECT" node "$_FILTER_RESOLVED" || true)
+  if [ -f "$_FILTER_RESOLVED" ]; then
+    AGENT_ERRORS=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' | PROJECT_ROOT="$PROJECT" node "$_FILTER_RESOLVED" || true)
+  else
+    AGENT_ERRORS=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  fi
   _SELF_BY_SEV=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
   SELF_ERRORS=$(printf '%s\n%s\n' "$_SELF_BY_TAG" "$_SELF_BY_SEV" | /usr/bin/grep -v '^$' | sort -u || true)
   # Mark each consumed canary in the pending tracker so the Stop-hook
