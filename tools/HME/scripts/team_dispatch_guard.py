@@ -384,7 +384,15 @@ def main() -> int:
     }
     if args.send:
         message = args.message
-        if args.context_file:
+        if args.capsule:
+            try:
+                capsule, missing = _load_capsule(Path(args.capsule), args.context_cap)
+            except OSError as e:
+                return _deny("capsule_read", f"could not read --capsule: {e}")
+            if missing:
+                return _deny("capsule_invalid", f"capsule missing required sections: {', '.join(missing)} (need ## " + ", ## ".join(CAPSULE_REQUIRED) + ")")
+            message = _capsule_message(capsule, args.message)
+        elif args.context_file:
             try:
                 ctx = Path(args.context_file).read_text(encoding="utf-8", errors="ignore")[: args.context_cap]
                 message = f"GROUND YOUR ANSWER IN THIS CONTEXT (do not invent beyond it):\n{ctx}\n\n---\n{args.message}"
