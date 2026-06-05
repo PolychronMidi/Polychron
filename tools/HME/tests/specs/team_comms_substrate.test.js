@@ -56,11 +56,56 @@ const LEAD_ROLE = {
   max_reply_bytes: 12000,
 };
 
+const RED_LEAD_ROLE = {
+  channel: 'teams/driver.md',
+  session_file: 'tmp/.team-red_lead.session',
+  tier: 'E5',
+  effort: 'high',
+  max_reply_bytes: 12000,
+};
+
+const BLUE_PURPLE_ROLE = {
+  channel: 'teams/driver.md',
+  channel_by_caller: { blue_lead: 'teams/blue.md', red_purple: 'teams/purple.md' },
+  session_file: 'tmp/.team-blue_purple.session',
+  tier: 'E4',
+  effort: 'medium',
+  max_reply_bytes: 10000,
+};
+
+const RED_PURPLE_ROLE = {
+  channel: 'teams/driver.md',
+  channel_by_caller: { red_lead: 'teams/red.md', blue_purple: 'teams/purple.md' },
+  session_file: 'tmp/.team-red_purple.session',
+  tier: 'E4',
+  effort: 'medium',
+  max_reply_bytes: 10000,
+};
+
 const CREW_ROLE = {
   channel: 'teams/driver.md',
+  channel_by_caller: { red_lead: 'teams/red.md', red_purple: 'teams/red.md', blue_lead: 'teams/blue.md', blue_purple: 'teams/blue.md' },
   session_file: 'tmp/.team-crew_e3_0.session',
   tier: 'E3',
+  effort: 'medium',
+  max_reply_bytes: 8000,
 };
+
+const CREW_ROLE_1 = {
+  ...CREW_ROLE,
+  session_file: 'tmp/.team-crew_e3_1.session',
+};
+
+function meshRoles() {
+  return {
+    blue_lead: LEAD_ROLE,
+    red_lead: RED_LEAD_ROLE,
+    blue_purple: BLUE_PURPLE_ROLE,
+    red_purple: RED_PURPLE_ROLE,
+    crew_e3_0: CREW_ROLE,
+    crew_e3_1: CREW_ROLE_1,
+  };
+}
 
 const BAD_EFFORT_ROLE = {
   channel: 'teams/driver.md',
