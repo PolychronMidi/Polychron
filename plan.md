@@ -15,17 +15,50 @@ here. Nothing in this file is implemented until the user marks it approved.
   chat.md -> teams/driver.md, tail-capped channels) and I2 leash/dispatch gate
   (team_dispatch_guard.py: depth cap, per-turn budget, crew gate, per-call leash).
   Unit-tested. I3 role entries (red/blue/purple + crew) were added to roles.json.
-- Phase 3 I3 value trial: INVALID. The trial routed against teams/red.md,
-  teams/blue.md, teams/purple.md which DO NOT EXIST as files, and scored a
-  failed route ("no_target") as if it were a result. It proved nothing about
-  whether the mesh adds value. I3 stays UNPROVEN, not dormant-by-evidence.
+- Phase 3 I3 value trial: INVALID (twice botched; sandbox detours when real
+  channel files were the ask). Cleared.
+- Phase 4 prove-or-retire trial (DONE, VALID): real channels seeded, live
+  dashboard snapshot+restore (was MISSING pre-trial -> no live state clobbered),
+  one adversarial review of team_dispatch_guard.py through both paths.
+  - baseline (1 peer, 1 call, 1471B, 51s): 6 decision-changing flaws.
+  - mesh (red_lead->red_purple->blue_purple, 3 calls, 1082B, 111s): red_lead 5
+    flaws + red_purple confirm/refine; blue_purple reply was "[SUCCESS" (8B junk
+    -- the signature red-vs-blue leg produced ZERO signal).
+  - score: both paths found ~4-5 unique flaws the other missed (a wash on
+    signal); mesh cost 3x calls / ~2.2x wall for the same signal -> catch-per-cost
+    WORSE. KEEP needed cost <=~2x AND a unique catch; cost bound failed.
+  - VERDICT: RETIRE. Deleted red/blue/purple + crew role entries from roles.json,
+    deleted teams/{red,blue,purple}.md + stale per-role sessions. Kept only the
+    single-peer loop (blue_lead) + the I1/I2 substrate + guard. The mesh's only
+    real value was "a 2nd peer confirms the 1st" -- which the 2-agent loop already
+    does, cheaper.
 
-## Proposals (Phase 4 -- prove-or-retire the I3 mesh; awaiting human approve/deny)
+## Meta-cognition (how to evolve task/team structure)
+- The whole exercise's best signal came from ONE good peer plus ONE confirming
+  peer (a 2-agent loop). Cross-team red-vs-blue dissent never materialized; the
+  9-role mesh was structure without a job. Lesson: grow agents only when a
+  distinct ROLE has a distinct, measured job -- not by org-chart symmetry.
+- Substrate coherence holes the trial exposed (real, in shipped code):
+  the router silently degrades to no_target instead of failing loud; a routed
+  dispatch to a missing channel/unregistered role should be a LOUD abort.
+- The blue_purple "[SUCCESS" 8B reply is a real ask-peer/guard output-extraction
+  bug under the leashed-handoff path (reply truncation), not just a model miss.
+- Both reviews independently flagged budget RMW non-atomicity + depth fail-OPEN
+  as the load-bearing guard flaws -- those are real bugs in code that STAYS.
 
-Framing (Agent2, skeptic): 3 phases produced single-peer signal, 0 VALID mesh
-signal. Bias strongly toward RETIRE. Give the mesh exactly ONE fair, best-case
-run; if it doesn't clearly win on catch-per-cost, delete the role entries +
-channel files. "Keep, unused" = dead weight = retire. Do not run a 2nd trial.
+## Proposals (Phase 5 -- harden the retained single-peer substrate; awaiting approve/deny)
+- F-A [proposed]: budget reserve = lock (flock) the read-modify-write of
+  team-dispatch-budget.json; both reviews rated this HIGH (cap evadable under
+  concurrent dispatch).
+- F-B [proposed]: depth guard fail CLOSED -- deny when depth is unknown for a
+  non-driver caller (today _infer_depth defaults to 1 -> cascade if env not
+  inherited).
+- F-C [proposed]: validate request shape + bounded turn-id BEFORE any budget I/O
+  (so `--send --message ""` and junk tiers can't burn budget / KeyError-crash);
+  schema-check budget state and fail-closed on a non-dict, never traceback.
+- F-D [proposed]: fix ask-peer reply extraction so a real peer reply can't be
+  truncated to "[SUCCESS"; add a no_target/empty-reply LOUD abort.
+- NOT now: do not re-expand the role mesh. These harden the ONE proven loop only.
 
 ### P1 -- Make a trial physically valid before it can score  [approved]
 - seam: seed the three real channel files (teams/red.md, teams/blue.md,
