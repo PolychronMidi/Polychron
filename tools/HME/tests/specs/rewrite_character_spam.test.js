@@ -18,7 +18,7 @@ function _ctx(overrides = {}) {
   };
 }
 
-test('block-character-spam: rewrite equals-decoration in Write content', async () => {
+test('rewrite-character-spam: rewrite equals-decoration in Write content', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'hello\n// ' + _eq(5) + '\nworld' },
   }));
@@ -27,7 +27,7 @@ test('block-character-spam: rewrite equals-decoration in Write content', async (
   assert.equal(r.updatedInput.content, 'hello\n// \nworld');
 });
 
-test('block-character-spam: rewrite dash-divider in-place', async () => {
+test('rewrite-character-spam: rewrite dash-divider in-place', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'a\nb' + _dash(5) + 'c\n' },
   }));
@@ -35,14 +35,14 @@ test('block-character-spam: rewrite dash-divider in-place', async () => {
   assert.equal(r.updatedInput.content, 'a\nbc\n');
 });
 
-test('block-character-spam: rewrite unicode box-drawing run', async () => {
+test('rewrite-character-spam: rewrite unicode box-drawing run', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: '// ' + _box(8) + '\n' },
   }));
   assert.strictEqual(r.decision, 'rewrite');
 });
 
-test('block-character-spam: rewrite markdown depth-4 heading (4 hashes)', async () => {
+test('rewrite-character-spam: rewrite markdown depth-4 heading (4 hashes)', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: _hash(4) + ' Section\n' },
   }));
@@ -50,35 +50,35 @@ test('block-character-spam: rewrite markdown depth-4 heading (4 hashes)', async 
   assert.equal(r.updatedInput.content, ' Section\n');
 });
 
-test('block-character-spam: allow stacked closing parens (code structure)', async () => {
+test('rewrite-character-spam: allow stacked closing parens (code structure)', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'm.max(1, m.min(2, m.round(x)))))' },
   }));
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('block-character-spam: allow underscore identifier', async () => {
+test('rewrite-character-spam: allow underscore identifier', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'def __init_private__(self): pass' },
   }));
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('block-character-spam: allow hex constant 0xFFFFFFFF', async () => {
+test('rewrite-character-spam: allow hex constant 0xFFFFFFFF', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'const MASK = 0xFFFFFFFF;' },
   }));
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('block-character-spam: per-line opt-out via spam-ok marker', async () => {
+test('rewrite-character-spam: per-line opt-out via spam-ok marker', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'discusses ' + _eq(6) + ' markers // spam-ok\n' },
   }));
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('block-character-spam: rewrite Edit new_string', async () => {
+test('rewrite-character-spam: rewrite Edit new_string', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { new_string: '// ' + _eq(4) + '\n' },
   }));
@@ -86,19 +86,19 @@ test('block-character-spam: rewrite Edit new_string', async () => {
   assert.equal(r.updatedInput.new_string, '// \n');
 });
 
-test('block-character-spam: rewrite MultiEdit edits[]', async () => {
+test('rewrite-character-spam: rewrite MultiEdit edits[]', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { edits: [{ new_string: 'ok' }, { new_string: '// ' + _dash(4) }] },
   }));
   assert.strictEqual(r.decision, 'rewrite');
 });
 
-test('block-character-spam: allow empty content', async () => {
+test('rewrite-character-spam: allow empty content', async () => {
   const r = await policy.fn(_ctx({ toolInput: {} }));
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('block-character-spam: registry registers policy with correct match', () => {
+test('rewrite-character-spam: registry registers policy with correct match', () => {
   registry.loadBuiltins();
   const found = registry.list().find((p) => p.name === 'rewrite-character-spam');
   assert.ok(found, 'policy should be registered');

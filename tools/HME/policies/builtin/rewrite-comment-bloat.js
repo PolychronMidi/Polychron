@@ -1,6 +1,6 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
-// Rewrite (was: block) content with 3+ consecutive non-annotation comment lines.
+// Rewrite content with 3+ consecutive non-annotation comment lines.
 // Truncate long comment lines and emit ultra-terse DDoC notes via rewrite envelope.
 
 const THRESHOLD = parseInt(_hmeRequireEnv('COMMENT_BLOAT_WARN'), 10);

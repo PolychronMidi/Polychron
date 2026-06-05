@@ -1,5 +1,5 @@
 'use strict';
-// Rewrite (was: block) Write/Edit content containing 4+ identical decoration chars.
+// Rewrite Write/Edit content containing 4+ identical decoration chars.
 // Strips the offending runs in-place. Per-line opt-out via the literal token `spam-ok`.
 
 const PATTERN = /([^\w\s()\[\]{}])\1{3,}/g;
