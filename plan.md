@@ -245,6 +245,7 @@ here. Nothing in this file is implemented until the user marks it approved.
 The mesh is a self-evolving review system: driver-FORK peers with FULL tool
 access (real context + live verification), sequential dispatch, adversarial
 cross-exam, with capsule grounding available but not a replacement for context.
-The guard self-checks capsule coverage<->evidence consistency. Next: re-run the
-loop with forked, full-tool peers against a real review target and confirm across
-samples before claiming success.
+The corrected fork/full-tool mesh has now found and fixed concrete ask-peer bugs
+(path confinement, SID validation/preflight, output/parse hardening, stderr
+evidence retention). Next: run a second fork/full-tool round on a different real
+target to confirm the loop generalizes without neutering peers.
