@@ -130,30 +130,86 @@ def _turn_key(raw: str, caller: str) -> tuple[str | None, bool]:
     return None, True
 
 
-def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str) -> tuple[bool, dict[str, Any]]:
-    turn_key, implicit = _turn_key(turn_id, caller)
-    if not turn_key:
-        return False, {"turn_id": "", "limit": budget, "used": 0, "unscoped": True}
-    path = root / BUDGET_REL
-    data = _load_json(path, {"turns": {}})
-    if not isinstance(data, dict):
-        data = {"turns": {}}
-    turns = data.setdefault("turns", {})
-    now = time.time()
+def _load_budget(path: Path) -> tuple[dict[str, Any], bool]:
+    # F-D: distinguish first-run (missing -> fresh, ok) from corruption
+    # (exists but unparseable/wrong-shape -> NOT ok -> caller fails closed,
+    if not path.exists():
+        return {"turns": {}}, True
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {"turns": {}}, False
+    if not isinstance(data, dict) or not isinstance(data.get("turns"), dict):
+        return {"turns": {}}, False
+    return data, True
+
+
+def _prune_turns(turns: dict[str, Any], now: float) -> None:
     for stale_key in list(turns.keys()):
         try:
             if now - float(turns[stale_key].get("ts", 0)) > 24 * 3600:
                 turns.pop(stale_key, None)
         except (AttributeError, TypeError, ValueError):
             turns.pop(stale_key, None)
-    row = turns.setdefault(turn_key, {"count": 0, "ts": now})
-    used = int(row.get("count") or 0)
-    if used >= budget:
-        return False, {"turn_id": turn_key, "limit": budget, "used": used, "implicit": implicit}
-    row["count"] = used + 1
-    row["ts"] = now
-    _write_json_atomic(path, data)
-    return True, {"turn_id": turn_key, "limit": budget, "used": used + 1, "implicit": implicit}
+
+
+def _budget_lock(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock = open(path.with_name(path.name + ".lock"), "w")  # noqa: SIM115 (held by caller)
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    return lock
+
+
+def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str,
+                    max_live: int) -> tuple[bool, dict[str, Any], str | None]:
+    # F-A/F-B/F-D: atomic (flock) reserve. Commits one unit on success; the
+    # caller refunds if the dispatch it gated then fails (reserve-then-refund),
+    turn_key, implicit = _turn_key(turn_id, caller)
+    if not turn_key:
+        return False, {"turn_id": "", "limit": budget, "used": 0, "unscoped": True}, "unscoped"
+    path = root / BUDGET_REL
+    lock = _budget_lock(path)
+    try:
+        data, ok = _load_budget(path)
+        if not ok:
+            return False, {"turn_id": turn_key, "limit": budget, "corrupt": True}, "corrupt_state"
+        turns = data["turns"]
+        now = time.time()
+        _prune_turns(turns, now)
+        if turn_key not in turns and len(turns) >= max_live:
+            return (False, {"turn_id": turn_key, "limit": budget, "live_turns": len(turns),
+                            "max_live": max_live}, "max_live_turns")
+        row = turns.setdefault(turn_key, {"count": 0, "ts": now})
+        used = int(row.get("count") or 0)
+        if used >= budget:
+            return False, {"turn_id": turn_key, "limit": budget, "used": used, "implicit": implicit}, "budget"
+        row["count"] = used + 1
+        row["ts"] = now
+        _write_json_atomic(path, data)
+        return True, {"turn_id": turn_key, "limit": budget, "used": used + 1, "implicit": implicit}, None
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
+
+
+def _refund_budget(root: Path, turn_key: str | None) -> None:
+    if not turn_key:
+        return
+    path = root / BUDGET_REL
+    if not path.exists():
+        return
+    lock = _budget_lock(path)
+    try:
+        data, ok = _load_budget(path)
+        if not ok:
+            return
+        row = data["turns"].get(turn_key)
+        if row:
+            row["count"] = max(0, int(row.get("count") or 0) - 1)
+            _write_json_atomic(path, data)
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
 
 
 def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_env: dict[str, str]) -> str:
