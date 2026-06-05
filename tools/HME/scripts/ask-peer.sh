@@ -156,7 +156,9 @@ else
   if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
   # HME_TEAM_PEER=1 tags the sub-session so HME lifecycle hooks can treat it as
   # an ephemeral peer (avoids the UserPromptSubmit-before-SessionStart misfire).
-  RAW="$(env HME_TEAM_PEER=1 -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER \
+  # NOTE: env -u flags MUST precede NAME=VALUE assignments, else env treats the
+  # first flag after an assignment as the command (-> exit 127).
+  RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
     claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --append-system-prompt "$ROLE_SYSTEM" \
     --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null)"
   RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
