@@ -123,12 +123,15 @@ def _capsule_coverage_gaps(text: str) -> list[str]:
     claimed: list[str] = []
     seen: set[str] = set()
     for m in _COVERAGE_SYMBOL_RE.finditer(inc):
-        tok = (m.group(1) or m.group(2) or "").strip().rstrip("()")
+        backticked = m.group(1) is not None
+        raw = (m.group(1) or m.group(2) or "").strip()
+        parened = raw.endswith("()")
+        tok = raw.rstrip("()")
         if not tok or tok in seen:
             continue
-        # A symbol worth verifying = looks like code: has an underscore or was
-        # explicitly backtick/paren-quoted. Plain words are skipped.
-        is_code = ("_" in tok) or bool(m.group(1)) or m.group(2, ).endswith("()") if m.group(2) else ("_" in tok)
+        # A symbol worth verifying = looks like code: an underscore-bearing
+        # identifier, or one explicitly backtick/paren-quoted. Plain prose words
+        is_code = ("_" in tok) or backticked or parened
         if not (_CODE_SYMBOL_RE.match(tok) and is_code):
             continue
         seen.add(tok)
