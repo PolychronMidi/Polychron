@@ -339,6 +339,7 @@ async function _runUnifiedPolicies(policyEventName, toolName, stdinJson, outputE
     if (stdout) return { stdout, stderr: combinedStderr || ' ', exit_code: 0 };
     return null;
   } catch (err) {
+    // silent-ok: failure is rendered into stdout/stderr and returned to caller.
     return {
       stdout: renderPolicyFailure(`UNIFIED POLICY RUNTIME FAILURE: ${err.message}`, outputEventName),
       stderr: `[unified-policies] crash: ${err.message}\n`,
