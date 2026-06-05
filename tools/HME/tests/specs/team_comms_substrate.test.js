@@ -188,6 +188,16 @@ test('ask-peer rejects roles outside bounded paths, effort ceiling, model-tier s
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /invalid channel/);
 
+    writeRoles(root, { bad: { channel: 'teams/../plan.md', session_file: 'teams/runtime/bad.session', tier: 'E5' } });
+    r = runAsk(root, ['bad', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /invalid channel/);
+
+    writeRoles(root, { bad: { channel: 'teams/driver.md', session_file: 'teams/runtime/../bad.session', tier: 'E5' } });
+    r = runAsk(root, ['bad', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /invalid session_file/);
+
     writeRoles(root, { blue_lead: BAD_EFFORT_ROLE });
     r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
     assert.notEqual(r.status, 0);
