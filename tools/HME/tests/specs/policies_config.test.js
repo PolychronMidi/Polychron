@@ -108,3 +108,26 @@ test('config: customPoliciesPath first-defined-wins', _withSandbox(async (sandbo
   const c = cfg.get();
   assert.strictEqual(c.customPoliciesPath, 'local/path');
 }));
+
+test('config: unknown policy names fail closed with rename hint', _withSandbox(async (sandbox, cfg) => {
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), {
+    enabled: ['known-policy'],
+    disabled: ['block-comment-bloat'],
+    params: { 'missing-policy': { x: 1 } },
+  });
+  cfg.reset();
+  assert.throws(
+    () => cfg.validateKnownPolicyNames(new Set(['known-policy', 'rewrite-comment-bloat'])),
+    /stale disabled policy name 'block-comment-bloat' \(renamed to 'rewrite-comment-bloat'\).*unknown params policy name 'missing-policy'/,
+  );
+}));
+
+test('config: known policy names pass validation', _withSandbox(async (sandbox, cfg) => {
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), {
+    enabled: ['known-policy'],
+    disabled: ['other-policy'],
+    params: { 'known-policy': { x: 1 } },
+  });
+  cfg.reset();
+  assert.strictEqual(cfg.validateKnownPolicyNames(new Set(['known-policy', 'other-policy'])), true);
+}));
