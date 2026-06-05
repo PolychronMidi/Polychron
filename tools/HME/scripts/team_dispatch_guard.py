@@ -86,6 +86,8 @@ def _crew_tier(role: str) -> str | None:
 
 
 def _effective_tier(caller: str, request_tier: str) -> tuple[str | None, str | None]:
+    if request_tier not in TIER_ORDER:  # defensive: never index TIER_ORDER with junk
+        return None, f"invalid request tier {request_tier!r}"
     crew_tier = _crew_tier(caller)
     if not crew_tier:
         return request_tier, None
