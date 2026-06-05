@@ -167,10 +167,17 @@ def _send(root: Path, target: str, leash: dict[str, Any], message: str,
     env = os.environ.copy()
     env.update(child_env)
     env["HME_ASK_PEER_PROJECT_ROOT"] = str(root)
-    proc = subprocess.run(
-        [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
-        cwd=str(root), env=env, text=True, capture_output=True, timeout=leash["max_duration"], check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
+            cwd=str(root), env=env, text=True, capture_output=True, timeout=leash["max_duration"], check=False,
+        )
+    except subprocess.TimeoutExpired as e:
+        # A slow peer must not crash the guard with an unhandled traceback; the
+        # leash already killed the child at max_duration. Report it structured.
+        partial = (e.stdout or "")
+        partial = partial.decode("utf-8", "ignore") if isinstance(partial, bytes) else partial
+        return 124, partial, f"peer timed out after {leash['max_duration']}s (leash max_duration)"
     return proc.returncode, proc.stdout, proc.stderr
 
 
