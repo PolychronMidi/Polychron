@@ -95,7 +95,7 @@ process to pick up the new module.
 
 ## Adding a custom policy
 
-Set `customPoliciesPath` in any of the three config files. Value is
+Set `customPoliciesPath` in either config file. Value is
 either a single `.js` file or a directory containing `.js` files
 (non-underscore-prefixed). Path resolves relative to PROJECT_ROOT if
 not absolute.
