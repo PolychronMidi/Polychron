@@ -102,6 +102,8 @@ json_string() {
 }
 
 cap_channel() {
+  # Self-evolve finding (red_purple): with real newlines, a raw `tail -n` can
+  # bisect a turn and leave a malformed transcript. Cap by line budget BUT
   local cap="${HME_TEAM_CHANNEL_TAIL_LINES:-500}"
   [[ "$cap" =~ ^[0-9]+$ ]] || cap=500
   (( cap > 0 )) || cap=500
@@ -112,7 +114,8 @@ cap_channel() {
   (( lines <= cap )) && return 0
   local tmp
   tmp="$(mktemp "tmp/.team-tail.XXXXXX")"
-  tail -n "$cap" "$CHANNEL" > "$tmp"
+  # keep the header line, then the tail realigned to the first whole turn
+  { head -n 1 "$CHANNEL"; tail -n "$cap" "$CHANNEL" | sed -n '/^<\(driver\|peer\) /,$p'; } > "$tmp"
   mv "$tmp" "$CHANNEL"
 }
 
