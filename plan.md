@@ -215,12 +215,26 @@ here. Nothing in this file is implemented until the user marks it approved.
   (round_v3/run_full/review_fixes) whose value is already recorded above rather
   than force-staging path-marker-laden scratch.
 
+## CORRECTION (standing user directive): peers = driver FORKS with FULL tools
+- The earlier "fresh distinct agent + tools disallowed + cite-or-decline from a
+  capsule" conclusion was WRONG and is overridden. Nuking context (fresh blank
+  sessions) AND blocking tools left peers unable to either see the project or
+  verify anything -> they fabricated. That is the failure mode, not the design.
+- SETTLED model (see teams/capsules/ctx_design.md):
+  - context_mode = fork is the default for every role (ask-peer default +
+    HME_TEAM_DEFAULT_CTX_MODE=fork + all 12 roles.json entries = fork). Each peer
+    forks the driver session and inherits its FULL context.
+  - FULL tool use: the ask-peer `--disallowedTools` / HME_TEAM_DISALLOWED_TOOLS
+    path is REMOVED. Tool filtering, where wanted, is enforced centrally at the
+    proxy via HME_FILTER_TOOLS_DROP -- one mechanism, not two.
+  - context_mode=fork with no resolvable driver session id FAILS CLOSED.
+- The capsule + cite-or-decline machinery remains available for grounding, but it
+  is no longer a substitute for real forked context + live verification.
+
 ## Decision
-The mesh is a PROVEN self-evolving review system: distinct-agent + Context-
-Capsule-grounded + sequential + adversarial cross-exam, and a measured round
-showed it BEATS a single high-effort peer (more unique real bugs + false-positive
-correction, all cited, with honest GAP-flagging). It found 3 real guard bugs that
-are now fixed + tested, and the capsule contract now self-checks coverage<->
-evidence consistency (14/14 substrate, 19 total). Next: point the proven loop
-(done-evidence capsule -> sequential grounded round) at a fresh real review
-target, confirming results across samples before claiming success.
+The mesh is a self-evolving review system: driver-FORK peers with FULL tool
+access (real context + live verification), sequential dispatch, adversarial
+cross-exam, with capsule grounding available but not a replacement for context.
+The guard self-checks capsule coverage<->evidence consistency. Next: re-run the
+loop with forked, full-tool peers against a real review target and confirm across
+samples before claiming success.
