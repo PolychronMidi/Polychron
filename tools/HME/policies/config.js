@@ -24,6 +24,12 @@ const path = require('path');
 const PROJECT_ROOT = process.env.PROJECT_ROOT
   || path.resolve(__dirname, '..', '..', '..');
 
+const RENAMED_POLICIES = Object.freeze({
+  'block-character-spam': 'rewrite-character-spam',
+  'block-comment-bloat': 'rewrite-comment-bloat',
+  'block-comment-ellipsis-stub': 'rewrite-comment-ellipsis-stub',
+});
+
 function _scopeFiles() {
   return [
     path.join(PROJECT_ROOT, 'config', 'policies.local.json'),
