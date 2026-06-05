@@ -178,18 +178,13 @@ else
   else
     MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # context_mode=fresh: blank context + role charter
   fi
-  # Peers FORK the driver and keep FULL tool access by default, so they have the
-  # real context AND can verify against the live tree instead of fabricating. Opt
-  DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS:-}"
-  TOOL_ARGS=()
-  if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
-  # Ephemeral peers must NOT run the HME orchestration hooks: a `-p` peer fires
-  # UserPromptSubmit without a SessionStart, tripping the hook watchdog. The HME
-  # hooks live in USER settings (~/.claude), so peers load ONLY project,local
+  # Peers FORK the driver and keep FULL tool access: they have the real context
+  # AND can verify against the live tree instead of fabricating. Tool filtering,
+  # where wanted, is enforced centrally at the proxy via HME_FILTER_TOOLS_DROP --
   RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
   SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
-    claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --setting-sources "$SETTING_SOURCES" \
+    claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
     --output-format json --effort "$EFFORT" --model default "$MSG" 2>"$ERR_FILE" \
     | head -c "$RAW_CAP")"
