@@ -74,18 +74,19 @@ test('matching: tool filter applies', () => {
 });
 
 test('name-prefix matches decision verb (genome derives from name)', () => {
-  // registry.js genomeInput() classifies fail-open/telemetry from the name
-  // prefix (/^rewrite-|auto-fill/). A block-* policy that only rewrites (or a
   const fs = require('fs');
   const path = require('path');
   const dir = registry.BUILTIN_DIR;
   const mism = [];
   for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.js') && !n.startsWith('_'))) {
-    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    const full = path.join(dir, f);
+    const src = fs.readFileSync(full, 'utf8');
+    const policy = require(full);
+    const name = policy.name || f;
     const canDeny = /ctx\.deny\b/.test(src);
     const canRewrite = /ctx\.rewrite\b/.test(src);
-    if (/^block-/.test(f) && canRewrite && !canDeny) mism.push(`${f}: named block- but only rewrites`);
-    if (/^rewrite-/.test(f) && canDeny && !canRewrite) mism.push(`${f}: named rewrite- but only denies`);
+    if (/^block-/.test(name) && canRewrite && !canDeny) mism.push(`${name}: named block- but only rewrites`);
+    if (/^rewrite-/.test(name) && canDeny && !canRewrite) mism.push(`${name}: named rewrite- but only denies`);
   }
   assert.deepStrictEqual(mism, [], `policy name<->verb drift: ${mism.join('; ')}`);
 });
