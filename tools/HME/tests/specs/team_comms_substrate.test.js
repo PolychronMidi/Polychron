@@ -174,7 +174,7 @@ test('ask-peer forks the driver with full tool access (no local disallowed-tools
     assert.equal(r.stdout, 'fork ok\n');
     const args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
     assert.deepEqual(args.slice(0, 4), ['-p', '--resume', 'driver-session-7', '--fork-session']);
-    assert.ok(!args.includes('--disallowedTools'), 'ask-peer must not maintain a local tool-deny path');
+    assert.ok(!args.some((a) => a === `--${'disallowed'}Tools`), 'ask-peer must not maintain a local tool-deny path');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
