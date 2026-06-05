@@ -135,7 +135,7 @@ for m in pat.finditer(content):
   fi
 fi
 
-# Rule retired: block-character-spam now rewrites in the JS policy framework.
+# Rule retired: rewrite-character-spam now rewrites in the JS policy framework.
 
 # Pre-save pattern lint -- block new_string before it lands if it introduces
 # forbidden patterns. Each block cites the rule + the fix, so the message
