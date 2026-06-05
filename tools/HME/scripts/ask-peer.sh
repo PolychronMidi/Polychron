@@ -178,11 +178,11 @@ else
   DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS-Read Grep Glob Bash Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent}"
   TOOL_ARGS=()
   if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
-  # Ephemeral peers must NOT run the project's HME orchestration hooks: a `-p`
-  # peer fires UserPromptSubmit without a SessionStart, which trips the hook
-  # watchdog. --setting-sources user loads only user settings (no project/local
+  # Ephemeral peers must NOT run the HME orchestration hooks: a `-p` peer fires
+  # UserPromptSubmit without a SessionStart, tripping the hook watchdog. The HME
+  # hooks live in USER settings (~/.claude), so peers load ONLY project,local
   RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
-  SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-user}"
+  SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
     claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
