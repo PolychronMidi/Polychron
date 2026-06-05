@@ -43,9 +43,14 @@ def _load_json(path: Path, default: Any) -> Any:
 
 
 def _write_json_atomic(path: Path, data: Any) -> None:
+    # F-B: durable atomic write (fsync the data + the rename target's dir) so a
+    # crash mid-write can't leave corrupt JSON that later fails open.
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{int(time.time() * 1000)}.tmp")
-    tmp.write_text(json.dumps(data, sort_keys=True))
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, sort_keys=True)
+        f.flush()
+        os.fsync(f.fileno())
     tmp.replace(path)
 
 
