@@ -40,6 +40,17 @@ test('registry: register rejects empty events', () => {
   }), /match\.events/);
 });
 
+test('registry: register rejects missing decisionClass', () => {
+  assert.throws(() => registry.register({
+    name: 'bad-decision-class-' + Date.now(),
+    description: 'x',
+    category: 'test',
+    defaultEnabled: true,
+    match: { events: ['Stop'] },
+    fn: () => registry.allow(),
+  }), /decisionClass as block\|rewrite\|mixed/);
+});
+
 test('registry: register rejects duplicate names', () => {
   const name = 'test-dup-' + Date.now();
   const p = {
