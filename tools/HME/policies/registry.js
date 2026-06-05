@@ -243,6 +243,7 @@ module.exports = {
   list,
   get,
   policyDecisionClass,
+  assertDecisionClassMatchesSource,
   validateConfigNames,
   genomeInput,
   matchingFor,
