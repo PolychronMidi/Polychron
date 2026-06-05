@@ -3,7 +3,8 @@
 ## artifact
 tools/HME/scripts/team_dispatch_guard.py -- the leashed dispatch guard between
 the team router and ask-peer.sh. Enforces depth cap, per-turn budget (flock
-reserve+refund), crew gate, leash, global concurrency bound, killpg-on-timeout.
+reserve+refund), crew gate, leash, global concurrency bound, killpg-on-timeout,
+context/capsule grounding, and driver-session propagation for forked peers.
 
 ## goal
 Find DECISION-CHANGING security/correctness flaws that survive the current
@@ -11,8 +12,9 @@ hardening. Only issues that change what we should ship. Cite the function.
 
 ## constraints
 Usage model today: single-driver, pull-only, sequential dispatch (NOT concurrent
-fan-out). Peers run with tools disallowed and --setting-sources user. The guard
-is the ONLY path from router to peer.
+fan-out). Peers are driver forks with full inherited context and full tool access;
+if any tool filtering is wanted it is centralized at the proxy via
+HME_FILTER_TOOLS_DROP. The guard is the ONLY path from router to peer.
 
 ## rubric
 Classify each finding P0 (ship-blocker) / P1 (should-fix) / P2 (nice). For each:
@@ -20,7 +22,8 @@ name the function, the exact failure, and the one-line fix. Reject vague style n
 
 ## coverage
 included: the full guard source below (reserve/refund/flock, _send/killpg,
-_infer_depth, _effective_tier, _load_budget, main flow).
+_infer_depth, _effective_tier, _load_budget, _load_capsule, _capsule_headings,
+_capsule_coverage_gaps, main flow).
 excluded: ask-peer.sh, team_agent_router.py (assume correct for this review).
 
 ## evidence
@@ -71,8 +74,8 @@ def _load_json(path: Path, default: Any) -> Any:
 
 
 def _write_json_atomic(path: Path, data: Any) -> None:
-    # F-B: durable atomic write (fsync the data + the rename target's dir) so a
-    # crash mid-write can't leave corrupt JSON that later fails open.
+    # F-B + measured-round finding: durable atomic write fsyncs BOTH the data
+    # file AND the rename target's directory, so a crash after the rename can't
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{int(time.time() * 1000)}.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -80,6 +83,14 @@ def _write_json_atomic(path: Path, data: Any) -> None:
         f.flush()
         os.fsync(f.fileno())
     tmp.replace(path)
+    try:
+        dfd = os.open(str(path.parent), os.O_DIRECTORY)
+        try:
+            os.fsync(dfd)
+        finally:
+            os.close(dfd)
+    except OSError:
+        pass  # silent-ok: pending review  # dir fsync best-effort (some filesystems disallow); data fsync already done
 
 
 def _roles(root: Path) -> dict[str, Any]:
@@ -97,9 +108,83 @@ _CAPSULE_HEAD_RE = re.compile(r"^#{1,3}\s+([a-z_]+)\b", re.MULTILINE)
 
 def _load_capsule(path: Path, cap: int) -> tuple[str, list[str]]:
     text = path.read_text(encoding="utf-8", errors="ignore")[:cap]
-    sections = {m.group(1).lower() for m in _CAPSULE_HEAD_RE.finditer(text)}
+    # Fence-aware: a `# goal` line inside a ``` code fence is a code comment, not
+    # a real section heading, so it must not falsely satisfy a required section.
+    sections = {name for _s, _e, name in _capsule_headings(text)}
     missing = [s for s in CAPSULE_REQUIRED if s not in sections]
     return text, missing
+
+
+def _capsule_headings(text: str) -> list[tuple[int, int, str]]:
+    # Heading scan that is FENCE-AWARE: a `#` line inside a ``` code fence is a
+    # code comment (e.g. bash/python `# keep whole turns`), NOT a capsule section
+    out: list[tuple[int, int, str]] = []
+    in_fence = False
+    pos = 0
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+        elif not in_fence:
+            m = _CAPSULE_HEAD_RE.match(line)
+            if m:
+                out.append((pos + m.start(), pos + m.end(), m.group(1).lower()))
+        pos += len(line)
+    return out
+
+
+def _capsule_section_bodies(text: str) -> dict[str, str]:
+    # Split a capsule into {section_name: body_text}, fence-aware, so a
+    # coverage<->evidence consistency check can compare what coverage CLAIMS is
+    bodies: dict[str, str] = {}
+    heads = _capsule_headings(text)
+    for i, (_start, end_h, name) in enumerate(heads):
+        body_end = heads[i + 1][0] if i + 1 < len(heads) else len(text)
+        bodies[name] = text[end_h:body_end]
+    return bodies
+
+
+# A "code symbol" claim worth verifying: backtick-quoted token, an identifier
+# bearing an underscore (e.g. _reserve_budget), or one written with call parens
+_COVERAGE_SYMBOL_RE = re.compile(r"`([^`]+)`|\b([A-Za-z_][A-Za-z0-9_]*(?:\(\))?)")
+_CODE_SYMBOL_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _capsule_coverage_gaps(text: str) -> list[str]:
+    bodies = _capsule_section_bodies(text)
+    coverage = bodies.get("coverage")
+    evidence = bodies.get("evidence")
+    # Only enforce when BOTH sections exist: coverage makes claims, evidence is
+    # where they must be honored. No coverage section -> nothing claimed to check.
+    if not coverage or not evidence:
+        return []
+    # Restrict to the "included:" clause (what coverage asserts IS present); the
+    # "excluded:" clause names things deliberately absent and must not be checked.
+    inc = coverage
+    low = coverage.lower()
+    i = low.find("included:")
+    if i != -1:
+        inc = coverage[i + len("included:"):]
+        x = inc.lower().find("excluded:")
+        if x != -1:
+            inc = inc[:x]
+    claimed: list[str] = []
+    seen: set[str] = set()
+    for m in _COVERAGE_SYMBOL_RE.finditer(inc):
+        backticked = m.group(1) is not None
+        raw = (m.group(1) or m.group(2) or "").strip()
+        parened = raw.endswith("()")
+        tok = raw.rstrip("()")
+        if not tok or tok in seen:
+            continue
+        # A symbol worth verifying = looks like code: an underscore-bearing
+        # identifier, or one explicitly backtick/paren-quoted. Plain prose words
+        is_code = ("_" in tok) or backticked or parened
+        if not (_CODE_SYMBOL_RE.match(tok) and is_code):
+            continue
+        seen.add(tok)
+        claimed.append(tok)
+    return [s for s in claimed if s not in evidence]
 
 
 def _capsule_message(capsule: str, message: str) -> str:
@@ -156,6 +241,11 @@ def _validate_leash(args: argparse.Namespace) -> dict[str, Any] | str:
         return "missing --scope"
     if not args.artifact.strip():
         return "missing --artifact"
+    # Measured-round finding: scope/artifact are interpolated into the
+    # line-oriented leash header in _message_with_leash; a CR/LF/control char
+    for name, val in (("scope", args.scope), ("artifact", args.artifact)):
+        if any(ord(c) < 0x20 for c in val):
+            return f"--{name} contains control characters (header-injection guard)"
     if args.max_duration <= 0:
         return "--max-duration must be positive seconds"
     if args.max_tools <= 0:
@@ -206,6 +296,20 @@ def _prune_turns(turns: dict[str, Any], now: float) -> None:
             turns.pop(stale_key, None)
 
 
+def _valid_turn_row(row: Any) -> bool:
+    # Measured-round finding: a parseable-but-semantically-corrupt row (negative
+    # count, non-int count, non-numeric ts, non-dict) under-enforces the budget
+    if not isinstance(row, dict):
+        return False
+    count = row.get("count")
+    ts = row.get("ts")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        return False
+    if not isinstance(ts, (int, float)) or isinstance(ts, bool):
+        return False
+    return True
+
+
 def _budget_lock(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = open(path.with_name(path.name + ".lock"), "w")  # noqa: SIM115 (held by caller)
@@ -229,6 +333,10 @@ def _reserve_budget(root: Path, turn_id: str, budget: int, caller: str,
         turns = data["turns"]
         now = time.time()
         _prune_turns(turns, now)
+        # fail CLOSED on any surviving semantically-corrupt row (negative/non-int
+        # count etc.) rather than under-enforcing or crashing in int() later.
+        if any(not _valid_turn_row(r) for r in turns.values()):
+            return False, {"turn_id": turn_key, "limit": budget, "corrupt": True}, "corrupt_state"
         if turn_key not in turns and len(turns) >= max_live:
             return (False, {"turn_id": turn_key, "limit": budget, "live_turns": len(turns),
                             "max_live": max_live}, "max_live_turns")
@@ -257,8 +365,10 @@ def _refund_budget(root: Path, turn_key: str | None) -> None:
         if not ok:
             return
         row = data["turns"].get(turn_key)
-        if row:
-            row["count"] = max(0, int(row.get("count") or 0) - 1)
+        # measured-round finding (blue_purple): the same row-shape risk exists on
+        # the refund path; a malformed row must not crash refund. Validate first.
+        if _valid_turn_row(row):
+            row["count"] = max(0, row["count"] - 1)
             _write_json_atomic(path, data)
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)
@@ -285,4 +395,164 @@ def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_
 
 def _send(root: Path, target: str, leash: dict[str, Any], message: str,
           child_env: dict[str, str]) -> tuple[int, str, str]:
+    # Self-evolve finding (red_purple): subprocess timeout kills only ask-peer.sh;
+    # the `claude` grandchild orphans and keeps spending. Run the child in its own
+    env = os.environ.copy()
+    env.update(child_env)
+    env["HME_ASK_PEER_PROJECT_ROOT"] = str(root)
+    proc = subprocess.Popen(
+        [str(SCRIPT_DIR / "ask-peer.sh"), target, _message_with_leash(target, leash, message, child_env)],
+        cwd=str(root), env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = proc.communicate(timeout=leash["max_duration"])
+        return proc.returncode, stdout, stderr
+    except subprocess.TimeoutExpired:
+        _kill_group(proc, signal.SIGTERM)
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc, signal.SIGKILL)
+            stdout, stderr = (proc.stdout.read() if proc.stdout else ""), ""
+        return 124, stdout or "", f"peer group killed after {leash['max_duration']}s (leash max_duration)"
+
+
+def _kill_group(proc: "subprocess.Popen[str]", sig: int) -> None:
+    try:
+        os.killpg(os.getpgid(proc.pid), sig)
+    except (ProcessLookupError, PermissionError):
+        try:
+            proc.send_signal(sig)
+        except ProcessLookupError:
+            pass  # silent-ok: pending review
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description="Leashed team route -> ask-peer handoff")
+    p.add_argument("--caller", default=os.environ.get("HME_TEAM_ROLE", "driver"))
+    p.add_argument("--tier", choices=sorted(TIER_ORDER), required=True)
+    p.add_argument("--depth", type=int, default=None, help="current caller depth; next dispatch increments it")
+    p.add_argument("--max-depth", type=int, default=int(os.environ.get("HME_TEAM_MAX_DEPTH", "2")))
+    p.add_argument("--budget", type=int, default=int(os.environ.get("HME_TEAM_PEER_BUDGET", "3")))
+    p.add_argument("--turn-id", default=os.environ.get("HME_DRIVER_TURN_ID") or os.environ.get("HME_TEAM_TURN_ID") or "")
+    p.add_argument("--scope", default="")
+    p.add_argument("--artifact", default="")
+    p.add_argument("--max-duration", type=int, default=0)
+    p.add_argument("--max-tools", type=int, default=0)
+    p.add_argument("--duration-cap", type=int, default=int(os.environ.get("HME_TEAM_DURATION_CAP", "1200")))
+    p.add_argument("--tool-cap", type=int, default=int(os.environ.get("HME_TEAM_TOOL_CAP", "20")))
+    p.add_argument("--max-live", type=int, default=int(os.environ.get("HME_TEAM_MAX_LIVE_TURNS", "8")))
+    p.add_argument("--send", action="store_true", help="explicitly call ask-peer.sh after checks pass")
+    p.add_argument("--message", default="")
+    p.add_argument("--context-file", default="", help="grounding context (artifact/prior findings) prepended to the task; supplements a forked peer's inherited context")
+    p.add_argument("--context-cap", type=int, default=int(os.environ.get("HME_TEAM_CONTEXT_CAP", "24000")))
+    p.add_argument("--capsule", default="", help="Context Capsule file (markdown with required ## artifact/## goal/## rubric sections). Peers must cite capsule sections, flag GAPs, or decline -- the mechanism that lets grounded independent peers beat one high-effort reviewer.")
+    args = p.parse_args()
+
+    root = PROJECT
+    caller = args.caller.strip().lower()
+    if not caller:
+        return _deny("missing_caller", "caller role is required")
+
+    # F-C: a non-driver caller must carry guard provenance (the token the guard
+    # itself sets on children). Optional strict mode rejects a spoofed
+    if (os.environ.get("HME_TEAM_STRICT_IDENTITY") == "1"
+            and caller != "driver" and os.environ.get("HME_TEAM_DISPATCH_GUARD_OK") != "1"):
+        return _deny("identity", f"non-driver caller {caller} lacks guard provenance token")
+
+    leash = _validate_leash(args)
+    if isinstance(leash, str):
+        return _deny("leash", leash)
+
+    # crew gate before depth so an E1-E2 crew is denied as crew_spawn, not depth.
+    effective_tier, crew_error = _effective_tier(caller, args.tier)
+    if crew_error:
+        return _deny("crew_spawn", crew_error, caller=caller)
+
+    depth = _infer_depth(caller, args.depth)
+    if depth is None:  # F-C: fail closed when depth is unknown for a non-driver
+        return _deny("depth_unknown", f"depth unknown for non-driver caller {caller}; refusing (fail-closed)", caller=caller)
+    next_depth = depth + 1
+    if next_depth > args.max_depth:
+        return _deny("spawn_depth", f"dispatch depth {next_depth} exceeds cap {args.max_depth}", depth=depth, max_depth=args.max_depth)
+
+    target = resolve_target_for_tier(caller, effective_tier or args.tier)
+    if not target:
+        return _deny("no_target", f"no available target for {caller} at {effective_tier or args.tier}")
+    if target == caller:
+        return _deny("self_dispatch", f"router selected caller itself ({caller}); refusing peer loop")
+
+    roles = _roles(root)
+    if target not in roles:
+        return _deny("unregistered_target", f"target {target} is not in teams/roles.json", target=target)
+
+    # F-A: validate the message BEFORE reserving, so a malformed --send can't
+    # consume budget at all.
+    if args.send and not args.message.strip():
+        return _deny("missing_message", "--send requires --message")
+
+    ok, budget_info, bcode = _reserve_budget(root, args.turn_id, args.budget, caller, args.max_live)
+    if not ok:
+        return _deny(bcode or "budget", f"dispatch denied ({bcode or 'budget'})", budget=budget_info)
+
+    child_env = {
+        "HME_TEAM_ROLE": target,
+        "HME_TEAM_CALLER": caller,
+        "HME_TEAM_DEPTH": str(next_depth),
+        "HME_TEAM_MAX_DEPTH": str(args.max_depth),
+        "HME_TEAM_TURN_ROOT": str(budget_info.get("turn_id") or ""),
+        "HME_TEAM_DISPATCH_GUARD_OK": "1",
+        # Pin the root driver session so every routed peer forks from the
+        # driver (inherits full context) rather than minting a blank session.
+        "HME_DRIVER_SESSION_ID": os.environ.get("HME_DRIVER_SESSION_ID") or _driver_sid(root),
+    }
+
+    out: dict[str, Any] = {
+        "allowed": True,
+        "caller": caller,
+        "target": target,
+        "request_tier": args.tier,
+        "effective_tier": effective_tier or args.tier,
+        "depth": {"current": depth, "next": next_depth, "max": args.max_depth},
+        "budget": budget_info,
+        "leash": leash,
+        "sent": False,
+    }
+    if args.send:
+        message = args.message
+        if args.capsule:
+            try:
+                capsule, missing = _load_capsule(Path(args.capsule), args.context_cap)
+            except OSError as e:
+                return _deny("capsule_read", f"could not read --capsule: {e}")
+            if missing:
+                return _deny("capsule_invalid", f"capsule missing required sections: {', '.join(missing)} (need ## " + ", ## ".join(CAPSULE_REQUIRED) + ")")
+            # Measured-round lesson (iter 4): a capsule's ## coverage claimed code
+            # (_send/main) the ## evidence had truncated -> peers grounded on a
+            gaps = _capsule_coverage_gaps(capsule)
+            if gaps:
+                return _deny("capsule_coverage_gap",
+                             "coverage claims symbols missing from ## evidence: " + ", ".join(gaps[:12]),
+                             missing_evidence=gaps[:12])
+            message = _capsule_message(capsule, args.message)
+        elif args.context_file:
+            try:
+                ctx = Path(args.context_file).read_text(encoding="utf-8", errors="ignore")[: args.context_cap]
+                message = f"GROUND YOUR ANSWER IN THIS CONTEXT (do not invent beyond it):\n{ctx}\n\n---\n{args.message}"
+            except OSError as e:
+                return _deny("context_file", f"could not read --context-file: {e}")
+        code, stdout, stderr = _send(root, target, leash, message, child_env)
+        if code != 0:
+            # F-A: the gated dispatch failed -> refund the reserved unit so a
+            # timeout/error never permanently burns the per-turn cap.
+            _refund_budget(root, budget_info.get("turn_id"))
+            budget_info = {**budget_info, "refunded": True}
+            out["budget"] = budget_info
+        out.update({"sent": code == 0, "reply": stdout.strip(), "send_stderr": stderr.strip(), "send_exit": code})
+    return _out(out)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 ```

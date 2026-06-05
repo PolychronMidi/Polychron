@@ -4,8 +4,8 @@
 tools/HME/scripts/ask-peer.sh -- the single comms primitive every team member
 uses. Looks up a role in teams/roles.json, validates it, appends the caller turn
 to the role's channel (real-newline, structural-tag-neutralized, turn-atomic
-tail-capped, flock-serialized), launches a peer `claude -p` (resume own thread /
-fork driver / fresh distinct agent), caps the reply bytes, appends the peer turn.
+tail-capped, flock-serialized), launches a peer `claude -p` (resume own peer
+thread / fork driver / explicitly fresh), caps reply bytes, appends peer turn.
 
 ## goal
 Find DECISION-CHANGING security/correctness flaws that survive the current
@@ -15,8 +15,9 @@ guard (team_dispatch_guard.py) is assumed correct; review ask-peer.sh itself.
 ## constraints
 Usage model: single-driver, pull-only, sequential dispatch (NOT concurrent
 fan-out). Non-driver callers must arrive via the guard (HME_TEAM_DISPATCH_GUARD_OK=1).
-Peers run with tools disallowed and --setting-sources project,local. bash is
-set -euo pipefail. jq + python3 available.
+Default peer context is driver fork (full inherited context). Peers have full tool
+access; any tool filtering is centralized at the proxy via HME_FILTER_TOOLS_DROP,
+not ask-peer. bash is set -euo pipefail. jq + python3 available.
 
 ## rubric
 Classify each finding P0 (ship-blocker) / P1 (should-fix) / P2 (nice). For each:
@@ -27,8 +28,8 @@ style notes. Prefer injection/escaping, race, fail-open, and quota-evasion flaws
 included: the full ask-peer.sh source below -- arg parsing, role lookup +
 validation, tier-drift check, the non-driver dispatch block, FORCE_FAIL/FORCE_HANG
 test injection, ROLE_SYSTEM charter, DRIVER_SID resolution, json_string,
-cap_channel, append_turn_locked, the peer launch (MODE/TOOL_ARGS/RAW), and the
-reply byte-cap.
+cap_channel, append_turn_locked, the peer launch (MODE/RAW), and the reply
+byte-cap.
 excluded: team_dispatch_guard.py, teams/roles.json contents, host_hook_entry.js
 (assume correct for this review).
 
@@ -69,7 +70,7 @@ EFFORT="$(jq -r '.effort // empty' <<<"$ROLE_JSON")"
 ROLE_REPLY_BYTES="$(jq -r '.max_reply_bytes // empty' <<<"$ROLE_JSON")"
 ROLE_SYSTEM="$(jq -r '.system // empty' <<<"$ROLE_JSON")"
 CTX_MODE="$(jq -r '.context_mode // empty' <<<"$ROLE_JSON")"
-[[ -n "$CTX_MODE" ]] || CTX_MODE="${HME_TEAM_DEFAULT_CTX_MODE:-fresh}"
+[[ -n "$CTX_MODE" ]] || CTX_MODE="${HME_TEAM_DEFAULT_CTX_MODE:-fork}"
 CALLER="${HME_TEAM_CALLER:-${HME_TEAM_ROLE:-driver}}"
 CALLER_CHANNEL="$(jq -r --arg caller "$CALLER" '.channel_by_caller[$caller] // empty' <<<"$ROLE_JSON")"
 [[ -n "$CALLER_CHANNEL" ]] && CHANNEL="$CALLER_CHANNEL"
@@ -207,24 +208,20 @@ else
   PEER_SID=""; [[ -s "$SID_FILE" ]] && PEER_SID="$(tr -d '[:space:]' < "$SID_FILE")"
   PEER_TRANSCRIPT="$HOME/.claude/projects/$PROJECT_KEY/$PEER_SID.jsonl"
   if [[ -n "$PEER_SID" && -f "$PEER_TRANSCRIPT" ]]; then
-    MODE=(--resume "$PEER_SID")                    # continue this peer's own distinct thread
-  elif [[ "$CTX_MODE" == "fork" && -n "$DRIVER_SID" ]]; then
-    MODE=(--resume "$DRIVER_SID" --fork-session)   # context_mode=fork: inherit full driver context
+    MODE=(--resume "$PEER_SID")                    # continue this peer's own ongoing thread (forked once, then persists)
+  elif [[ "$CTX_MODE" == "fork" ]]; then
+    [[ -n "$DRIVER_SID" ]] || { echo "context_mode=fork for $ROLE but no driver session id (set HME_DRIVER_SESSION_ID or tmp/hme-transcript-path.txt)" >&2; exit 1; }
+    MODE=(--resume "$DRIVER_SID" --fork-session)   # context_mode=fork (DEFAULT): inherit the driver's FULL context
   else
-    MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # distinct agent: fresh context + role charter
+    MODE=(--session-id "$(python3 -c 'import uuid;print(uuid.uuid4())')")  # context_mode=fresh: blank context + role charter
   fi
-  # Peers are REVIEWERS that answer from the charter + the task (which carries
-  # the artifact); disallow heavy tools so they don't re-explore (slow) and so a
-  DISALLOWED="${HME_TEAM_DISALLOWED_TOOLS-Read Grep Glob Bash Edit Write MultiEdit NotebookEdit WebFetch WebSearch Agent}"
-  TOOL_ARGS=()
-  if [[ -n "$DISALLOWED" ]]; then read -r -a _DIS <<< "$DISALLOWED"; TOOL_ARGS=(--disallowedTools "${_DIS[@]}"); fi
-  # Ephemeral peers must NOT run the HME orchestration hooks: a `-p` peer fires
-  # UserPromptSubmit without a SessionStart, tripping the hook watchdog. The HME
-  # hooks live in USER settings (~/.claude), so peers load ONLY project,local
+  # Peers FORK the driver and keep FULL tool access: they have the real context
+  # AND can verify against the live tree instead of fabricating. Tool filtering,
+  # where wanted, is enforced centrally at the proxy via HME_FILTER_TOOLS_DROP --
   RAW_CAP="${HME_TEAM_MAX_RAW_BYTES:-4000000}"
   SETTING_SOURCES="${HME_TEAM_PEER_SETTING_SOURCES:-project,local}"
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
-    claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --setting-sources "$SETTING_SOURCES" \
+    claude -p "${MODE[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
     --output-format json --effort "$EFFORT" --model default "$MSG" 2>"$ERR_FILE" \
     | head -c "$RAW_CAP")"
