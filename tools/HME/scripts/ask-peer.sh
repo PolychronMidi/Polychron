@@ -95,9 +95,10 @@ LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.
 SAFE_ROLE="$(printf '%s' "$ROLE" | sed 's#[^A-Za-z0-9_.-]#_#g')"
 ERR_FILE="teams/runtime/${SAFE_ROLE}.$$.${EPOCHREALTIME//./}.stderr"
 RAW_CAP_FILE=""
+TRUNC_FILE=""
 RESP_FILE=""
 SID_OUT_FILE=""
-cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"}; }
+cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"}; }
 trap cleanup_tmp EXIT
 
 valid_sid() {
