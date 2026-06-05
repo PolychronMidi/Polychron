@@ -22,4 +22,45 @@ here. Nothing in this file is implemented until the user marks it approved.
 
 ## Proposals (Phase 4 -- prove-or-retire the I3 mesh; awaiting human approve/deny)
 
-(to be filled from conferral)
+Framing (Agent2, skeptic): 3 phases produced single-peer signal, 0 VALID mesh
+signal. Bias strongly toward RETIRE. Give the mesh exactly ONE fair, best-case
+run; if it doesn't clearly win on catch-per-cost, delete the role entries +
+channel files. "Keep, unused" = dead weight = retire. Do not run a 2nd trial.
+
+### P1 -- Make a trial physically valid before it can score  [proposed]
+- seam: seed the three real channel files (teams/red.md, teams/blue.md,
+  teams/purple.md) with a header line so they exist + are tail-cap targets;
+  register the roles the round touches in team-dashboard.json (red_lead,
+  red_purple, blue_lead, blue_purple as status=registered with tier/ctx) so the
+  router selects real entries instead of returning no_target.
+- hard rule: a no_target / failed route ABORTS the trial -- it is never scored
+  as a result (the exact bug that made the last trial invalid).
+- NOT this: no new code; no broadcast; no extra roles beyond the four the round needs.
+
+### P2 -- One real task, both paths, comparable  [proposed]
+- task: a single ADVERSARIAL REVIEW of one real code artifact the single peer has
+  ALREADY reviewed (known-quality baseline). Identical prompt, "return only
+  decision-changing flaws."
+- baseline: Driver <-> one peer, 1 round.
+- mesh: Driver -> red_lead -> (purple handoff) -> blue rebuttal, 1 round, same
+  artifact, same wall budget (<=4 calls/path).
+
+### P3 -- Exact measured comparison + binary kill criterion  [proposed]
+- signal: count DISTINCT decision-changing catches each path makes that the OTHER
+  missed (unique real catches; discard dupes/style).
+- cost: total peer calls, total in+out bytes, channel-line growth.
+- decider: unique-real-catches per call and per byte. Mesh must beat baseline on
+  catch-per-COST, not raw count.
+- RETIRE (delete red/blue/purple role entries + channel files; keep only the I1
+  single-peer substrate + I2 guard): mesh surfaces 0 unique catches the peer
+  missed, OR catch-per-cost worse than baseline.
+- KEEP: mesh surfaces >=1 real flaw the single peer missed AND cost <=~2x baseline.
+
+### Hard NOT-this (so the trial itself can't become noise)
+- 1 round, 1 task, 1 run. No multi-round back-and-forth, no reruns, no purple
+  chatter beyond the single red->purple->blue handoff. Channels tail-capped.
+- If setup+run exceeds ~1 session of effort, ABORT -> retire.
+
+## Decision
+Recommend: run P1+P2+P3 as ONE bounded trial, then act on the binary result
+immediately (KEEP or RETIRE, no dormant middle). Awaiting human approve/deny.
