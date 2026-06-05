@@ -185,6 +185,35 @@ here. Nothing in this file is implemented until the user marks it approved.
   claiming _reserve_budget/_send/main with evidence carrying only _reserve_budget
   is denied (_send in missing_evidence, no peer call); evidence carrying every
   claimed symbol is allowed (no false positive).
+- DOGFOOD CATCH (real bug in iter-5's own code): building a done-evidence capsule
+  for ask-peer.sh, the coverage check false-flagged cap_channel/append_turn_locked
+  -- because the heading regex matched `#` CODE COMMENTS inside the fenced
+  ## evidence block and truncated the body early. Root fix: `_capsule_headings()`
+  is now FENCE-AWARE (a `#` line inside a ``` fence is a code comment, not a
+  section heading); `_load_capsule` + `_capsule_section_bodies` both use it.
+  Regression test added (now 15/15 substrate, 20 total): a # comment in fenced
+  evidence no longer truncates, and a fake `# rubric` inside a fence no longer
+  satisfies the required-section check.
+
+## Team infra moved out of throwaway tmp/ into durable teams/ (build-out, not experiment)
+- The capsules + round runners were living in tmp/i3-full and per-role sessions in
+  tmp/.team-*.session -- tmp/ is wipe-prone scratch. This is a FEATURE build-out,
+  so all team infra now lives under teams/:
+  - teams/capsules/  -- tracked Context Capsules (guard.md, ask-peer.md, ctx_design.md)
+  - teams/rounds/    -- tracked review-round runners (round_measured.sh, round_dialogue.sh)
+  - teams/runtime/   -- ignored ephemeral state (*.session, channel-*.lock, tail.*,
+                        output/); only README.md tracked.
+- Coherent updates across the whole footprint: ask-peer.sh (session_file +
+  LOCK_FILE + tail temp), roles.json (12 session paths), state-files.json (2 path
+  contracts), .gitignore (track capsules/rounds, ignore teams/runtime/*),
+  markdown_invariant (teams/capsules/ is an ALLOWED_PREFIX), and the substrate
+  tests (session/lock paths).
+- Honored two surfaced invariants instead of working around them: dir_intent
+  READMEs added for the 3 new dirs; env-no-fallback FAIL (the moved runners
+  carried `${PROJECT_ROOT:-...}` inline fallbacks that tmp/ had hidden from the
+  scanner) fixed to fail-fast `${PROJECT_ROOT}`. Dropped 3 spent scratch runners
+  (round_v3/run_full/review_fixes) whose value is already recorded above rather
+  than force-staging path-marker-laden scratch.
 
 ## Decision
 The mesh is a PROVEN self-evolving review system: distinct-agent + Context-
