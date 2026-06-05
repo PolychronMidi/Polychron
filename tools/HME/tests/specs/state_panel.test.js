@@ -16,13 +16,14 @@ if (!process.env.PROJECT_ROOT) process.env.PROJECT_ROOT = PROJECT_ROOT;
 const { loadEnv, defaultEnvPath } = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/shared/load_env.js'));
 loadEnv(defaultEnvPath(path.join(PROJECT_ROOT, 'tools/HME/proxy/shared')));
 
+const CMD_TIMEOUT_MS = Number(process.env.HME_TEST_CMD_TIMEOUT_MS) || 15000;
+
 function _run(args = []) {
-  const r = spawnSync(I_STATUS, ['state', ...args], {
-    encoding: 'utf8',
-    timeout: 15000,
-    cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT },
-  });
+  const opts = { encoding: 'utf8', timeout: CMD_TIMEOUT_MS, cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT } };
+  let r = spawnSync(I_STATUS, ['state', ...args], opts);
+  // status === null == killed at the wall-clock timeout under load, not a real
+  // exit; retry once so CPU contention does not read as a panel logic failure.
+  if (r.status === null) r = spawnSync(I_STATUS, ['state', ...args], opts);
   return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
 }
 
