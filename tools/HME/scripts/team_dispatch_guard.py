@@ -44,8 +44,8 @@ def _load_json(path: Path, default: Any) -> Any:
 
 
 def _write_json_atomic(path: Path, data: Any) -> None:
-    # F-B: durable atomic write (fsync the data + the rename target's dir) so a
-    # crash mid-write can't leave corrupt JSON that later fails open.
+    # F-B + measured-round finding: durable atomic write fsyncs BOTH the data
+    # file AND the rename target's directory, so a crash after the rename can't
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{int(time.time() * 1000)}.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -53,6 +53,14 @@ def _write_json_atomic(path: Path, data: Any) -> None:
         f.flush()
         os.fsync(f.fileno())
     tmp.replace(path)
+    try:
+        dfd = os.open(str(path.parent), os.O_DIRECTORY)
+        try:
+            os.fsync(dfd)
+        finally:
+            os.close(dfd)
+    except OSError:
+        pass  # silent-ok: pending review  # dir fsync best-effort (some filesystems disallow); data fsync already done
 
 
 def _roles(root: Path) -> dict[str, Any]:
