@@ -21,7 +21,7 @@ for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md";
 CTX="${CTX:-$REPO/teams/capsules/ctx_design.md}"
 ASK="$REPO/tools/HME/scripts/ask-peer.sh"; GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
 
-# ROUND 1 -- opening positions (fresh distinct agents, grounded by the context file)
+# ROUND 1 -- opening positions (forked peers with full context, grounded by the context f
 timeout 200s "$ASK" red_lead "$(cat "$CTX")
 
 RED LEAD position: argue the STRONGEST case for option A (distinct fresh agents) as default. Decision-changing only, <=1000 chars." > "$OUT/d1_red.txt" 2>>"$OUT/dlg.err"
