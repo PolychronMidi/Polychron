@@ -397,3 +397,25 @@ test('guard hardening: depth fail-closed, reserve-refund-on-failure, corrupt-sta
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('guard kills the whole peer process group on timeout (no orphaned grandchild)', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const t0 = Date.now();
+    // ask-peer backgrounds a `sleep 60` and waits; --max-duration 2 must time out
+    // and killpg the group so the guard returns ~promptly (not after 60s).
+    const r = runDispatch(root, ['--caller', 'driver', '--tier', 'E5', '--scope', 's', '--artifact', 'plan.md',
+      '--max-duration', '2', '--max-tools', '2', '--turn-id', 'thang', '--budget', '2', '--send', '--message', 'go'],
+      { HME_ASK_PEER_FORCE_HANG: '60' });
+    const elapsed = (Date.now() - t0) / 1000;
+    const out = JSON.parse(r.stdout);
+    assert.equal(out.sent, false);
+    assert.equal(out.send_exit, 124, 'timed-out send reports 124');
+    assert.equal(out.budget.refunded, true, 'timeout refunds the budget unit');
+    assert.ok(elapsed < 20, `guard returned promptly after killpg (was ${elapsed}s, not ~60s)`);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
