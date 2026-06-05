@@ -125,23 +125,25 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
   const root = tmpProject();
   try {
     writeRoles(root, { blue_lead: LEAD_ROLE });
-    let r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'reply one', HME_TEAM_CHANNEL_TAIL_LINES: '3' });
+    let r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'reply one', HME_TEAM_CHANNEL_TAIL_LINES: '12' });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(r.stdout, 'reply one\n');
     const sidPath = path.join(root, 'tmp/.team-blue_lead.session');
     const sid1 = fs.readFileSync(sidPath, 'utf8').trim();
     assert.match(sid1, /^[0-9a-f-]{36}$/);
+    // Human-readable format: tag line, content on its own line(s) with REAL
+    // newlines (no JSON-escaped "\n"), close tag.
     let channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
-    assert.match(channel, /<driver role="blue_lead" tier="E5">"hello"<\/driver>/);
-    assert.match(channel, /<peer role="blue_lead" tier="E5">"reply one"<\/peer>/);
+    assert.match(channel, /<driver role="blue_lead" tier="E5">\nhello\n<\/driver>/);
+    assert.match(channel, /<peer role="blue_lead" tier="E5">\nreply one\n<\/peer>/);
+    assert.doesNotMatch(channel, /\\n/, 'no literal backslash-n escapes in the channel');
 
-    r = runAsk(root, ['blue_lead', 'again'], { HME_ASK_PEER_FAKE_REPLY: 'reply two', HME_TEAM_CHANNEL_TAIL_LINES: '3' });
+    r = runAsk(root, ['blue_lead', 'again'], { HME_ASK_PEER_FAKE_REPLY: 'reply two', HME_TEAM_CHANNEL_TAIL_LINES: '4' });
     assert.equal(r.status, 0, r.stderr);
     const sid2 = fs.readFileSync(sidPath, 'utf8').trim();
     assert.equal(sid2, sid1, 'existing session id is reused');
-    channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8').trim();
-    const lines = channel.split('\n');
-    assert.equal(lines.length, 3, 'channel is tail-capped');
+    channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
+    assert.ok(channel.split('\n').length <= 5, 'channel is tail-capped (<=4 lines + trailing)');
     assert.match(channel, /reply two/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
