@@ -19,9 +19,10 @@ export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES=3000
 rm -f "$REPO"/teams/runtime/*.session "$REPO"/tools/HME/runtime/team-dispatch-budget.json
 for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
 CAP="${CAPSULE:-$REPO/teams/capsules/guard.md}"; GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
+DUR="${HME_TEAM_ROUND_MAX_DURATION:-600}"
 gcap(){ # caller tier depth turnid chan msg out  (capsule-grounded guard send)
-  PROJECT_ROOT="$REPO" timeout 220s python3 "$GUARD" --caller "$1" --tier "$2" --depth "$3" --turn-id "$4" --budget 4 --max-live 30 \
-    --scope "measured capsule review" --artifact "teams/$5.md" --max-duration 200 --max-tools 2 \
+  PROJECT_ROOT="$REPO" timeout "$((DUR + 40))s" python3 "$GUARD" --caller "$1" --tier "$2" --depth "$3" --turn-id "$4" --budget 4 --max-live 30 \
+    --scope "measured capsule review" --artifact "teams/$5.md" --max-duration "$DUR" --max-tools 8 \
     --capsule "$CAP" --send --message "$6" > "$OUT/$7" 2>>"$OUT/m.err"; }
 reply(){ python3 -c "import json,sys;print(json.load(open('$OUT/$1')).get('reply',''))" 2>/dev/null; }
 
