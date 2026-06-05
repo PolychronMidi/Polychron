@@ -203,6 +203,8 @@ test('ask-peer fails closed before appending on invalid driver SID and appends e
     const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
     assert.match(channel, /<driver role="blue_lead" tier="E5">\nreview\n<\/driver>/);
     assert.match(channel, /<peer role="blue_lead" tier="E5">\n\[peer-error: invalid peer JSON/);
+    assert.equal(fs.readdirSync(path.join(root, 'teams/runtime')).some((f) => f.startsWith('raw-full.')), false,
+      'raw peer stdout is stream-capped; no unbounded raw-full temp file is created');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
