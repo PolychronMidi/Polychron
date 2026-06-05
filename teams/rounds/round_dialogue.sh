@@ -16,6 +16,8 @@ cat > "$DASH" <<'JSON'
 "blue_purple":{"role":"blue_purple","status":"registered","tier":"E4","ctx_used_pct":22}}}
 JSON
 export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES=2600
+# Multi-turn debate: peers RESUME their own forked thread so they remember prior turns.
+export HME_TEAM_RESUME_PEER_SESSIONS=1
 rm -f "$REPO"/teams/runtime/*.session "$REPO"/tools/HME/runtime/team-dispatch-budget.json
 for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
 CTX="${CTX:-$REPO/teams/capsules/ctx_design.md}"
