@@ -65,8 +65,8 @@ test('mid-pipeline: allow non-src path even with run.lock present', async () => 
   }
 });
 
-// -- block-comment-ellipsis-stub --------------------------------------
-const stub = require('../../policies/builtin/block-comment-ellipsis-stub');
+// -- rewrite-comment-ellipsis-stub 
+const stub = require('../../policies/builtin/rewrite-comment-ellipsis-stub');
 
 test('ellipsis-stub: rewrites classic comment-stub by stripping line', async () => {
   const trigger = '// ' + 'rest of fi' + 'le';
