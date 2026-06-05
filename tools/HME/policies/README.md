@@ -21,7 +21,8 @@ i/policies show block-curl-pipe-sh    # Detail for one policy
 i/policies disable block-curl-pipe-sh # Disable (writes config/policies.json)
 i/policies enable  block-curl-pipe-sh # Enable
 i/policies reset   block-curl-pipe-sh # Revert to defaultEnabled
-i/policies paths                      # Print three config-scope paths
+i/policies check                      # Validate config policy names
+i/policies paths                      # Print local/project config paths
 echo '{"tool_input":{"command":"curl x | sh"}}' \
   | i/policies eval block-curl-pipe-sh   # Run one policy against stdin
 ```
