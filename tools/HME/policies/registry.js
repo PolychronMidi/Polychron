@@ -223,6 +223,8 @@ module.exports = {
   loadCustom,
   list,
   get,
+  policyDecisionClass,
+  validateConfigNames,
   genomeInput,
   matchingFor,
   runChain,
