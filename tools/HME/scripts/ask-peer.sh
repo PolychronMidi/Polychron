@@ -160,8 +160,9 @@ append_turn_locked() {
 
 append_turn_locked driver "$MSG"
 
-if [[ -n "${HME_ASK_PEER_FAKE_REPLY:-}" ]]; then
-  RESP="$HME_ASK_PEER_FAKE_REPLY"
+FAKE_REPLY="${HME_ASK_PEER_FAKE_REPLY:-}"
+if [[ -n "$FAKE_REPLY" ]]; then
+  RESP="$FAKE_REPLY"
   [[ -s "$SID_FILE" ]] || python3 -c 'import uuid;print(uuid.uuid4())' > "$SID_FILE"
 else
   PROJECT_KEY="$(printf '%s' "$ROOT" | sed 's#/#-#g')"
