@@ -128,12 +128,14 @@ ROLE_SYSTEM="$ROLE_SYSTEM You are a DISTINCT agent, NOT the driver. Answer only 
 
 mkdir -p "$(dirname "$CHANNEL")" "$(dirname "$SID_FILE")" teams/runtime
 LOCK_FILE="teams/runtime/channel-$(printf '%s' "$CHANNEL" | sed 's#[^A-Za-z0-9_.-]#_#g').lock"
+ERR_FILE="teams/runtime/$(printf '%s' "$ROLE" | sed 's#[^A-Za-z0-9_.-]#_#g').stderr"
 
 # Driver session that peers FORK from, so every team member inherits the
 # driver's full context instead of starting context-blank. Pinned via env
 # (propagated through dispatch), else the driver's transcript marker.
 DRIVER_SID="${HME_DRIVER_SESSION_ID:-}"
 if [[ -z "$DRIVER_SID" && -f tmp/hme-transcript-path.txt ]]; then
+  # silent-ok: optional driver-session marker; empty SID falls back to fresh/fork mode lo
   DRIVER_SID="$(basename "$(cat tmp/hme-transcript-path.txt 2>/dev/null)" .jsonl 2>/dev/null || true)"
 fi
 
@@ -224,7 +226,7 @@ else
   RAW="$(env -u HME_TEAM_DISPATCH_GUARD_OK -u HME_TEAM_CALLER HME_TEAM_PEER=1 \
     claude -p "${MODE[@]}" "${TOOL_ARGS[@]}" --setting-sources "$SETTING_SOURCES" \
     --append-system-prompt "$ROLE_SYSTEM" \
-    --output-format json --effort "$EFFORT" --model default "$MSG" 2>/dev/null \
+    --output-format json --effort "$EFFORT" --model default "$MSG" 2>"$ERR_FILE" \
     | head -c "$RAW_CAP")"
   RESP="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].result) else .result end' <<<"$RAW")"
   NEW_SID="$(jq -r 'if type=="array" then (map(select(.type=="result"))[0].session_id) else .session_id end' <<<"$RAW")"
