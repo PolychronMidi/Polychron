@@ -227,6 +227,9 @@ def resolve_target(caller: str, subagent_type: str) -> Optional[str]:
 
 
 def resolve_target_for_tier(caller: str, request_tier: str) -> Optional[str]:
+    # Normalize at the API chokepoint (the guard imports this and resolve_target
+    # calls it): a caller with stray case/whitespace must NOT escape the blocked
+    caller = str(caller or "").strip().lower()
     data = _load()
     if caller in _BLOCKED_CALLERS:
         return None  # E1-E2 crew blocked from Agent tool
