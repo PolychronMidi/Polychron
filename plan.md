@@ -48,7 +48,7 @@ boundedness before any role grows. If I1+I2 don't feel tighter than today's
 - bounded cost: low-medium; one guard module + tests. Tests: depth cap blocks 3rd level; budget blocks N+1; crew spawn denied.
 - NOT this: no router-triggered auto-dispatch; no always-on/channel-polling peers (pull-only, strict request-response like today); no cascade past declared depth.
 
-### I3 -- Real roles, incrementally (ONLY after I1+I2 proven)  [proposed]  (rank 3)
+### I3 -- Real roles, incrementally (ONLY after I1+I2 proven)  [done]  (rank 3)
 - intent: add roles one at a time atop the proven substrate -- each role = a roles.json entry + a test, no new code.
 - seam: red team first (lead + purple + 1 crew) on teams/red.md + test; then blue on teams/blue.md; then the purple inter-team channel (teams/purple.md) LAST.
 - net coherence: growth is earned per-role on a substrate already proven bounded; the adversarial value (red challenges blue) appears only once the substrate holds.
