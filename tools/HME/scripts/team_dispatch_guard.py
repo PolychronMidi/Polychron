@@ -352,7 +352,8 @@ def _message_with_leash(target: str, leash: dict[str, Any], message: str, child_
         # tools; the prompt must steer it into the requested team role without
         # nuking that context.
         f"You are {target}, a forked team peer with the driver's full inherited context. {caller} is asking you.\n"
-        f"Answer ONLY in the {target} role; do NOT continue the driver's narration or echo this handoff. Use tools as needed to verify.\n"
+        f"Answer ONLY in the {target} role; do NOT continue the driver's narration or echo this handoff.\n"
+        f"You are a REVIEWER: report each finding as text (cite the section + one-line fix); verify read-only with tools. Do NOT request write/tool permission or wait for approval -- just deliver findings.\n"
         f"Leashed peer handoff for {target}.\n"
         f"scope: {leash['scope']}\n"
         f"artifact: {leash['artifact']}\n"
