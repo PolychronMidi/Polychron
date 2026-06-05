@@ -50,7 +50,7 @@ function runDispatch(root, args, env = {}) {
 
 const LEAD_ROLE = {
   channel: 'teams/driver.md',
-  session_file: 'tmp/.team-blue_lead.session',
+  session_file: 'teams/runtime/blue_lead.session',
   tier: 'E5',
   effort: 'high',
   max_reply_bytes: 12000,
@@ -58,7 +58,7 @@ const LEAD_ROLE = {
 
 const RED_LEAD_ROLE = {
   channel: 'teams/driver.md',
-  session_file: 'tmp/.team-red_lead.session',
+  session_file: 'teams/runtime/red_lead.session',
   tier: 'E5',
   effort: 'high',
   max_reply_bytes: 12000,
@@ -67,7 +67,7 @@ const RED_LEAD_ROLE = {
 const BLUE_PURPLE_ROLE = {
   channel: 'teams/driver.md',
   channel_by_caller: { blue_lead: 'teams/blue.md', red_purple: 'teams/purple.md' },
-  session_file: 'tmp/.team-blue_purple.session',
+  session_file: 'teams/runtime/blue_purple.session',
   tier: 'E4',
   effort: 'medium',
   max_reply_bytes: 10000,
@@ -76,7 +76,7 @@ const BLUE_PURPLE_ROLE = {
 const RED_PURPLE_ROLE = {
   channel: 'teams/driver.md',
   channel_by_caller: { red_lead: 'teams/red.md', blue_purple: 'teams/purple.md' },
-  session_file: 'tmp/.team-red_purple.session',
+  session_file: 'teams/runtime/red_purple.session',
   tier: 'E4',
   effort: 'medium',
   max_reply_bytes: 10000,
@@ -85,7 +85,7 @@ const RED_PURPLE_ROLE = {
 const CREW_ROLE = {
   channel: 'teams/driver.md',
   channel_by_caller: { red_lead: 'teams/red.md', red_purple: 'teams/red.md', blue_lead: 'teams/blue.md', blue_purple: 'teams/blue.md' },
-  session_file: 'tmp/.team-crew_e3_0.session',
+  session_file: 'teams/runtime/crew_e3_0.session',
   tier: 'E3',
   effort: 'medium',
   max_reply_bytes: 8000,
@@ -93,7 +93,7 @@ const CREW_ROLE = {
 
 const CREW_ROLE_1 = {
   ...CREW_ROLE,
-  session_file: 'tmp/.team-crew_e3_1.session',
+  session_file: 'teams/runtime/crew_e3_1.session',
 };
 
 function meshRoles() {
@@ -109,7 +109,7 @@ function meshRoles() {
 
 const BAD_EFFORT_ROLE = {
   channel: 'teams/driver.md',
-  session_file: 'tmp/.team-blue_lead.session',
+  session_file: 'teams/runtime/blue_lead.session',
   tier: 'E5',
   effort: 'max-plus',
 };
@@ -128,7 +128,7 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
     let r = runAsk(root, ['blue_lead', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'reply one', HME_TEAM_CHANNEL_TAIL_LINES: '12' });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(r.stdout, 'reply one\n');
-    const sidPath = path.join(root, 'tmp/.team-blue_lead.session');
+    const sidPath = path.join(root, 'teams/runtime/blue_lead.session');
     const sid1 = fs.readFileSync(sidPath, 'utf8').trim();
     assert.match(sid1, /^[0-9a-f-]{36}$/);
     // Human-readable format: tag line, content on its own line(s) with REAL
@@ -158,7 +158,7 @@ test('ask-peer looks up registry, mints/resumes session, appends channel, and ta
 test('ask-peer rejects roles outside bounded paths, effort ceiling, and model-tier sync', () => {
   const root = tmpProject();
   try {
-    writeRoles(root, { bad: { channel: 'chat.md', session_file: 'tmp/.team-bad.session', tier: 'E5' } });
+    writeRoles(root, { bad: { channel: 'chat.md', session_file: 'teams/runtime/bad.session', tier: 'E5' } });
     let r = runAsk(root, ['bad', 'hello'], { HME_ASK_PEER_FAKE_REPLY: 'nope' });
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /invalid channel/);
@@ -253,7 +253,7 @@ test('dispatch guard can explicitly send through ask-peer with leash text', () =
     assert.equal(out.depth.next, 1);
     assert.equal(out.budget.implicit, true);
     assert.match(out.budget.turn_id, /^driver:/);
-    assert.ok(fs.existsSync(path.join(root, 'tmp/.team-channel-teams_driver.md.lock')));
+    assert.ok(fs.existsSync(path.join(root, 'teams/runtime/channel-teams_driver.md.lock')));
     const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
     assert.match(channel, /Leashed peer handoff for blue_lead/);
     assert.match(channel, /max_tools: 2/);
