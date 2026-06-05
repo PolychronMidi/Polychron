@@ -54,6 +54,15 @@ def _roles(root: Path) -> dict[str, Any]:
     return roles if isinstance(roles, dict) else {}
 
 
+def _driver_sid(root: Path) -> str:
+    """Root driver session id (peers fork it) from the transcript marker."""
+    try:
+        marker = (root / "tmp" / "hme-transcript-path.txt").read_text().strip()
+        return Path(marker).stem if marker else ""
+    except OSError:
+        return ""
+
+
 def _infer_depth(caller: str) -> int:
     try:
         env_depth = int(os.environ.get("HME_TEAM_DEPTH", ""))
