@@ -57,11 +57,13 @@ function load() {
   const enabled = new Set();
   const disabled = new Set();
   const params = {};
+  const rawScopes = [];
   let customPoliciesPath = null;
 
   for (const file of files) {
     const cfg = _readJson(file);
     if (!cfg) continue;
+    rawScopes.push({ file, cfg });
     for (const n of _normalizeArray(cfg.enabled)) enabled.add(n);
     for (const n of _normalizeArray(cfg.disabled)) disabled.add(n);
     // Params: first file that defines a key wins (no merge -- explicit
