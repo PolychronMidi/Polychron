@@ -83,16 +83,32 @@ def _load_capsule(path: Path, cap: int) -> tuple[str, list[str]]:
     return text, missing
 
 
+def _capsule_headings(text: str) -> list[tuple[int, int, str]]:
+    # Heading scan that is FENCE-AWARE: a `#` line inside a ``` code fence is a
+    # code comment (e.g. bash/python `# keep whole turns`), NOT a capsule section
+    out: list[tuple[int, int, str]] = []
+    in_fence = False
+    pos = 0
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+        elif not in_fence:
+            m = _CAPSULE_HEAD_RE.match(line)
+            if m:
+                out.append((pos + m.start(), pos + m.end(), m.group(1).lower()))
+        pos += len(line)
+    return out
+
+
 def _capsule_section_bodies(text: str) -> dict[str, str]:
-    # Split a capsule into {section_name: body_text} using the heading regex so a
+    # Split a capsule into {section_name: body_text}, fence-aware, so a
     # coverage<->evidence consistency check can compare what coverage CLAIMS is
     bodies: dict[str, str] = {}
-    matches = list(_CAPSULE_HEAD_RE.finditer(text))
-    for i, m in enumerate(matches):
-        name = m.group(1).lower()
-        start = m.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        bodies[name] = text[start:end]
+    heads = _capsule_headings(text)
+    for i, (_start, end_h, name) in enumerate(heads):
+        body_end = heads[i + 1][0] if i + 1 < len(heads) else len(text)
+        bodies[name] = text[end_h:body_end]
     return bodies
 
 
