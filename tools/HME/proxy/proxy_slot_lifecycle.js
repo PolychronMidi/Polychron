@@ -168,7 +168,7 @@ let _CACHED_RUNTIME_FINGERPRINT = '';
 function _resolveGitSha(projectRoot) {
   if (_CACHED_GIT_SHA) return _CACHED_GIT_SHA;
   try {
-    _CACHED_GIT_SHA = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf8', timeout: 1000 }).trim().slice(0, 12);
+    _CACHED_GIT_SHA = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).trim().slice(0, 12);
   } catch (_) { _CACHED_GIT_SHA = 'unknown'; }
   return _CACHED_GIT_SHA;
 }

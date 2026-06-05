@@ -29,7 +29,7 @@ const MAX_BODY_BYTES = Number(process.env.HME_CODEX_PROXY_MAX_BODY_BYTES || 64 *
 
 const PROXY_GIT_SHA = (() => {
   try {
-    return require('child_process').execSync('git rev-parse --short HEAD', { cwd: PROJECT_ROOT, encoding: 'utf8', timeout: 1000 }).trim();
+    return require('child_process').execSync('git rev-parse --short HEAD', { cwd: PROJECT_ROOT, encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch (_e) { return 'unknown'; }
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
