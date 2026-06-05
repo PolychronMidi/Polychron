@@ -77,6 +77,22 @@ function register(policy, source = '<external>') {
   return policy;
 }
 
+// Fail closed when a policy's declared decisionClass contradicts the verbs its
+// source can return: a 'block' that only rewrites (or a 'rewrite' that only
+function assertDecisionClassMatchesSource(policy, srcPath) {
+  let src = '';
+  try { src = fs.readFileSync(srcPath, 'utf8'); } catch (_e) { return; }
+  const cls = policyDecisionClass(policy);
+  const canDeny = /ctx\.deny\b/.test(src);
+  const canRewrite = /ctx\.rewrite\b/.test(src);
+  if (cls === 'block' && canRewrite && !canDeny) {
+    throw new Error(`policy '${policy.name}' declares decisionClass 'block' but only rewrites`);
+  }
+  if (cls === 'rewrite' && canDeny && !canRewrite) {
+    throw new Error(`policy '${policy.name}' declares decisionClass 'rewrite' but only denies`);
+  }
+}
+
 let _builtinsLoaded = false;
 function loadBuiltins() {
   if (_builtinsLoaded) return;
