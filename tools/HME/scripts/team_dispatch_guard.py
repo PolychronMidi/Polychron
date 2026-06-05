@@ -217,6 +217,7 @@ def main() -> int:
 
     child_env = {
         "HME_TEAM_ROLE": target,
+        "HME_TEAM_CALLER": caller,
         "HME_TEAM_DEPTH": str(next_depth),
         "HME_TEAM_MAX_DEPTH": str(args.max_depth),
         "HME_TEAM_TURN_ROOT": str(budget_info.get("turn_id") or ""),
