@@ -241,11 +241,23 @@ here. Nothing in this file is implemented until the user marks it approved.
   rejected, invalid driver SID leaves no half-turn, and bad peer JSON appends an
   explicit peer-error turn.
 
+## Self-evolution iteration 7 (DONE -- residual output-cap race closed)
+- Second sequential fork/full-tool mesh round on guard.md produced one actionable
+  ask-peer residual: the stream-cap path used process substitution, which is
+  bounded but does not let the parent `wait` for the capper before reading the cap
+  file/truncation flag. That can race.
+- Fixed: raw stdout now goes through a named FIFO into a capper process; ask-peer
+  preserves the `claude` exit status, waits for the capper PID, drains all output
+  while writing only the capped bytes, and fails closed with an explicit peer-error
+  if the capper fails. No unbounded raw temp file is created.
+- Unit/audit status stayed green (22/22 team tests, env failfast, silent-failure,
+  shell-undefined, state ownership, markdown invariant, opencode host).
+
 ## Decision
 The mesh is a self-evolving review system: driver-FORK peers with FULL tool
 access (real context + live verification), sequential dispatch, adversarial
 cross-exam, with capsule grounding available but not a replacement for context.
 The corrected fork/full-tool mesh has now found and fixed concrete ask-peer bugs
 (path confinement, SID validation/preflight, output/parse hardening, stderr
-evidence retention). Next: run a second fork/full-tool round on a different real
-target to confirm the loop generalizes without neutering peers.
+evidence retention, deterministic FIFO raw-cap). Next: run another fork/full-tool
+round on a new target to keep deepening without neutering peers.
