@@ -285,6 +285,8 @@ def main() -> int:
     p.add_argument("--max-live", type=int, default=int(os.environ.get("HME_TEAM_MAX_LIVE_TURNS", "8")))
     p.add_argument("--send", action="store_true", help="explicitly call ask-peer.sh after checks pass")
     p.add_argument("--message", default="")
+    p.add_argument("--context-file", default="", help="grounding context (artifact/prior findings) prepended to the task; keeps fresh distinct-agent peers grounded instead of inventing")
+    p.add_argument("--context-cap", type=int, default=int(os.environ.get("HME_TEAM_CONTEXT_CAP", "24000")))
     args = p.parse_args()
 
     root = PROJECT
