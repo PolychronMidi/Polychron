@@ -40,7 +40,7 @@ function _rewriteInput(toolInput, hit) {
 }
 
 module.exports = {
-  name: 'block-character-spam',
+  name: 'rewrite-character-spam',
   description: 'Rewrite Write/Edit content containing 4+ identical decoration characters (strip runs in place).',
   category: 'style',
   defaultEnabled: true,

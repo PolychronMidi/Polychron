@@ -81,7 +81,7 @@ function _rewriteInput(toolInput, fp, hit) {
 }
 
 module.exports = {
-  name: 'block-comment-bloat',
+  name: 'rewrite-comment-bloat',
   description: 'Rewrite Edit/Write content with 3+ consecutive non-annotation comment lines (trim/truncate).',
   category: 'style',
   defaultEnabled: true,
