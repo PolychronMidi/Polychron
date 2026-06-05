@@ -28,9 +28,9 @@ style notes. Prefer injection/escaping, race, fail-open, and quota-evasion flaws
 ## coverage
 included: the full ask-peer.sh source below -- arg parsing, role lookup +
 validation, tier-drift check, non-driver dispatch block, FORCE_FAIL/FORCE_HANG,
-ROLE_SYSTEM charter, valid_sid, resolve_driver_sid, cap_channel,
-append_turn_locked, append_exchange, peer launch MODE, FIFO stream raw cap,
-robust JSON parse, SID persistence, and reply byte-cap.
+ROLE_SYSTEM charter, valid_sid, resolve_driver_sid, cap_channel, append_exchange,
+peer launch MODE, FIFO stream raw cap, robust JSON parse, SID persistence, and
+reply byte-cap.
 excluded: team_dispatch_guard.py, teams/roles.json contents, host_hook_entry.js
 (assume correct for this review).
 
@@ -137,7 +137,8 @@ TRUNC_FILE=""
 RESP_FILE=""
 SID_OUT_FILE=""
 RAW_FIFO=""
-cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"} ${RAW_FIFO:+"$RAW_FIFO"}; }
+RAW_FIFO_DIR=""
+cleanup_tmp() { rm -f ${RAW_CAP_FILE:+"$RAW_CAP_FILE"} ${TRUNC_FILE:+"$TRUNC_FILE"} ${RESP_FILE:+"$RESP_FILE"} ${SID_OUT_FILE:+"$SID_OUT_FILE"} ${RAW_FIFO:+"$RAW_FIFO"}; if [[ -n "${RAW_FIFO_DIR:-}" ]]; then rm -rf "$RAW_FIFO_DIR"; fi; return 0; }
 trap cleanup_tmp EXIT
 
 valid_sid() {
@@ -181,24 +182,6 @@ for s in reversed(starts):
 print('\n'.join([header] + rest[keep:]), end='')
 PY
   mv "$tmp" "$CHANNEL"
-}
-
-append_turn_locked() {
-  local who="$1"
-  local text="$2"
-  text="${text//<driver/‹driver}"
-  text="${text//<\/driver/‹/driver}"
-  text="${text//<peer/‹peer}"
-  text="${text//<\/peer/‹/peer}"
-  (
-    flock -x 9
-    {
-      printf '<%s role="%s" tier="%s">\n' "$who" "$ROLE" "$TIER"
-      printf '%s\n' "$text"
-      printf '</%s>\n\n' "$who"
-    } >> "$CHANNEL"
-    cap_channel
-  ) 9>>"$LOCK_FILE"
 }
 
 append_exchange() {
@@ -263,7 +246,8 @@ else
   RESP_FILE="$(mktemp "teams/runtime/reply.${SAFE_ROLE}.XXXXXX")"
   SID_OUT_FILE="$(mktemp "teams/runtime/sid.${SAFE_ROLE}.XXXXXX")"
 
-  RAW_FIFO="$(mktemp -u "teams/runtime/raw-fifo.${SAFE_ROLE}.XXXXXX")"
+  RAW_FIFO_DIR="$(mktemp -d "teams/runtime/raw-fifo.${SAFE_ROLE}.XXXXXX")"
+  RAW_FIFO="$RAW_FIFO_DIR/pipe"
   mkfifo "$RAW_FIFO"
   python3 -c 'import sys
 out_path, cap_s, flag_path = sys.argv[1:4]
