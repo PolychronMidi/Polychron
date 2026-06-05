@@ -73,6 +73,9 @@ fi
 # Test-only failure injection (mirrors HME_ASK_PEER_FAKE_REPLY) so the guard's
 # reserve-refund-on-failure path can be exercised deterministically.
 [[ "${HME_ASK_PEER_FORCE_FAIL:-}" == "1" ]] && { echo "ask-peer: forced failure (test)" >&2; exit 1; }
+# Test-only hang with a backgrounded child, to verify the guard killpg's the
+# WHOLE process group on timeout (no orphaned grandchild survives the leash).
+[[ -n "${HME_ASK_PEER_FORCE_HANG:-}" ]] && { sleep "$HME_ASK_PEER_FORCE_HANG" & wait; exit 0; }
 
 # Role charter: a DISTINCT-agent identity (the self-evolve finding: a pure
 # driver-fork shares the driver's identity and contaminates -- it continues the
