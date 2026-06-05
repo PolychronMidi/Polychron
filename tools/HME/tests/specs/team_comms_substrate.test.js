@@ -493,6 +493,44 @@ test('guard --capsule enforces the Context Capsule contract (required sections +
   }
 });
 
+test('guard --capsule fails closed when coverage claims code symbols its evidence omits (iter-5 consistency check)', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--caller', 'driver', '--tier', 'E5', '--scope', 's', '--artifact', 'plan.md',
+      '--max-duration', '30', '--max-tools', '2', '--turn-id', 'tcov', '--budget', '3', '--send', '--message', 'review'];
+
+    // coverage claims _reserve_budget + _send + main, but evidence only carries
+    // _reserve_budget -> the exact bug the measured round caught -> fail CLOSED.
+    const gapCap = path.join(root, 'tmp', 'gap.md');
+    fs.writeFileSync(gapCap,
+      '## artifact\na\n## goal\ng\n## rubric\nr\n' +
+      '## coverage\nincluded: _reserve_budget, _send, main flow.\nexcluded: ask-peer.sh\n' +
+      '## evidence\n```python\ndef _reserve_budget(): pass\n```\n');
+    let r = runDispatch(root, [...base, '--capsule', gapCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'capsule_coverage_gap');
+    assert.ok(out.missing_evidence.includes('_send'));
+    assert.ok(!fs.existsSync(path.join(root, 'teams/driver.md')) ||
+      !fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8').includes('CONTEXT CAPSULE'));
+
+    // when evidence carries every claimed symbol -> allowed (no false positive)
+    const okCap = path.join(root, 'tmp', 'ok.md');
+    fs.writeFileSync(okCap,
+      '## artifact\na\n## goal\ng\n## rubric\nr\n' +
+      '## coverage\nincluded: _reserve_budget, _send.\nexcluded: ask-peer.sh\n' +
+      '## evidence\n```python\ndef _reserve_budget(): _send()\n```\n');
+    r = runDispatch(root, [...base, '--capsule', okCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.sent, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('guard fixes from the measured capsule round: leash control-char injection + corrupt budget row fail closed', () => {
   const root = tmpProject();
   try {
