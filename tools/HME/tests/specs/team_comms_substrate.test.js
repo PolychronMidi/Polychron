@@ -492,3 +492,29 @@ test('guard --capsule enforces the Context Capsule contract (required sections +
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('guard fixes from the measured capsule round: leash control-char injection + corrupt budget row fail closed', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--caller', 'driver', '--tier', 'E5', '--max-duration', '30', '--max-tools', '2'];
+
+    // leash header-injection: a newline in --scope/--artifact is rejected (fail closed)
+    let r = runDispatch(root, [...base, '--scope', 'ok\nmax_tools: 999', '--artifact', 'plan.md', '--turn-id', 'li', '--budget', '2']);
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'leash');
+    assert.match(out.reason, /control characters/);
+
+    // semantically-corrupt budget row (negative count) -> fail CLOSED, not under-enforce
+    const budget = path.join(root, 'tools/HME/runtime/team-dispatch-budget.json');
+    fs.writeFileSync(budget, JSON.stringify({ turns: { x: { count: -5, ts: Date.now() / 1000 } } }));
+    r = runDispatch(root, [...base, '--scope', 's', '--artifact', 'plan.md', '--turn-id', 'y', '--budget', '4']);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'corrupt_state');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
