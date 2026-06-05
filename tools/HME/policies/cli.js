@@ -242,14 +242,17 @@ async function main() {
     case '--help':
     case '-h':
     case 'help':
-      console.log('Usage: i/policies <list|show|enable|disable|reset|paths|eval> [args] [--scope=local|project]');
+      console.log('Usage: i/policies <list|all|summary|show|enable|disable|reset|paths|check|eval> [args] [--scope=local|project]');
       console.log('');
       console.log('  list              Show every registered policy with status.');
+      console.log('  all               Show every rule from the cross-layer meta-registry.');
+      console.log('  summary           Show rule counts by layer.');
       console.log('  show NAME         Detailed view of one policy.');
       console.log('  enable NAME       Enable a policy (writes to config/policies.json by default).');
       console.log('  disable NAME      Disable a policy.');
       console.log('  reset NAME        Revert to defaultEnabled (remove from both enable/disable lists).');
       console.log('  paths             Print the config-scope file paths.');
+      console.log('  check             Validate registered policy names referenced by config.');
       console.log('  eval NAME         Run one policy against stdin JSON ({tool_input,...}).');
       rc = 0;
       break;
