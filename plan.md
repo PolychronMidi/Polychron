@@ -201,17 +201,17 @@ here. Nothing in this file is implemented until the user marks it approved.
   than force-staging path-marker-laden scratch.
 
 ## CORRECTION (standing user directive): peers = driver FORKS with FULL tools
-- The earlier "fresh distinct agent + tools disallowed + cite-or-decline from a
-  capsule" conclusion was WRONG and is overridden. Nuking context (fresh blank
-  sessions) AND blocking tools left peers unable to either see the project or
-  verify anything -> they fabricated. That is the failure mode, not the design.
+- The earlier context-blank / tool-neutered conclusion was WRONG and is
+  overridden. Nuking context AND blocking tools left peers unable to either see
+  the project or verify anything -> they fabricated. That is the failure mode,
+  not the design.
 - SETTLED model (see teams/capsules/ctx_design.md):
   - context_mode = fork is the default for every role (ask-peer default +
     HME_TEAM_DEFAULT_CTX_MODE=fork + all 12 roles.json entries = fork). Each peer
     forks the driver session and inherits its FULL context.
-  - FULL tool use: the ask-peer `--disallowedTools` / HME_TEAM_DISALLOWED_TOOLS
-    path is REMOVED. Tool filtering, where wanted, is enforced centrally at the
-    proxy via HME_FILTER_TOOLS_DROP -- one mechanism, not two.
+  - FULL tool use: ask-peer's local tool-deny path is REMOVED. Tool filtering,
+    where wanted, is enforced centrally at the proxy via HME_FILTER_TOOLS_DROP --
+    one mechanism, not two.
   - context_mode=fork with no resolvable driver session id FAILS CLOSED.
 - The capsule + cite-or-decline machinery remains available for grounding, but it
   is no longer a substitute for real forked context + live verification.
