@@ -56,6 +56,9 @@ ALLOWED_PREFIXES = (
     "doc/",
     "tools/csv_maestro/doc/",
     "tools/HME/tests/fixtures/",
+    # Durable team-review feature infra (moved out of throwaway tmp/): Context
+    # Capsules are tracked, first-class review inputs (artifact+goal+rubric+
+    "teams/capsules/",
 )
 
 # Single-file exceptions at otherwise non-prefixed locations.
