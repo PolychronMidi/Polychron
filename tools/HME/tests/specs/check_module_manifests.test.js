@@ -20,7 +20,7 @@ function _runVerifier(env = {}) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  return { code: r.status || 0, stdout: r.stdout || '', stderr: r.stderr || '' };
+  return { code: r.status === null ? 1 : r.status, stdout: r.stdout || '', stderr: r.stderr || '' };
 }
 
 test('check-module-manifests: clean tree passes', () => {
