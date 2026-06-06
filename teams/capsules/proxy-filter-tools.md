@@ -35,7 +35,7 @@ excluded: unrelated proxy middleware, ask-peer.sh, team_dispatch_guard.py, and
 upstream Claude tool schema semantics beyond what appears in evidence.
 
 ## evidence
-### tools/HME/proxy/middleware/03_filter_tools.js
+tools/HME/proxy/middleware/03_filter_tools.js
 ```js
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
