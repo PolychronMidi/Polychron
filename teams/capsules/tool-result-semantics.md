@@ -62,7 +62,9 @@ function emptyMarker(isError = false) {
 }
 
 function markEmptyResult(toolResult, isError = false) {
-  if (!toolResult) return false;
+  // Mesh clean-audit P2 hardening (tool-result review): guard a non-object
+  // toolResult so appendText's `toolResult.content = ...` can't throw under
+  if (!toolResult || typeof toolResult !== 'object') return false;
   const text = textOfToolResult(toolResult);
   if (text && text.trim().length > 0) return false;
   if (hasMarker(toolResult)) return false;
