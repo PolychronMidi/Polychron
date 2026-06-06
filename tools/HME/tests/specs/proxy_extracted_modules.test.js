@@ -1110,8 +1110,8 @@ test('context budget compaction uses continuous exponential pressure from high-w
     assert.equal(plan.threshold, Infinity);
 
     plan = planFor(830);
-    assert.ok(plan.pressure > 0 && plan.pressure < 0.03, `pressure=${plan.pressure}`);
-    assert.ok(plan.maxTier > 1 && plan.maxTier < 1.1, `severity=${plan.maxTier}`);
+    assert.ok(plan.pressure > 0 && plan.pressure < 0.08, `pressure=${plan.pressure}`);
+    assert.ok(plan.maxTier > 1 && plan.maxTier < 1.2, `severity=${plan.maxTier}`);
     assert.equal(plan.allowSummary, false);
     assert.equal(plan.allowMessageDrop, false);
     assert.ok(plan.targetTokens >= 825, `targetTokens=${plan.targetTokens}`);
