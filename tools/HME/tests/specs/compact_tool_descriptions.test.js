@@ -88,7 +88,9 @@ test('SSE rewriter preserves TodoWrite tool_use blocks', () => {
 
 test('filter_tools reads current .env drop list and strips task-tool surface', () => {
   const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
   try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
     _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate,TaskGet,TaskList,TaskStop,TaskUpdate,TaskOutput # comment\n');
     const filter = require('../../proxy/middleware/03_filter_tools');
     const payload = { tools: [
@@ -105,6 +107,88 @@ test('filter_tools reads current .env drop list and strips task-tool surface', (
     assert.equal(dirty, true);
     assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'Write']);
   } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools treats missing or blank drop list as no-op', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-empty-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP= # documented no-op\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, false);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TaskCreate']);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools uses shared .env syntax for export, quotes, and comments', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-export-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'export HME_FILTER_TOOLS_DROP="TaskCreate,TaskGet" # comment\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }, { name: 'TaskGet' }, { name: 'Write' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, true);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'Write']);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools parses only the requested key and does not mutate process env', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-side-effect-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'BROKEN=${MISSING}\nHME_FILTER_TOOLS_DROP=TaskCreate\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, true);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read']);
+    assert.equal(process.env.HME_FILTER_TOOLS_DROP, undefined);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools does not fall back to process cwd when PROJECT_ROOT is absent', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-cwd-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  const oldCwd = process.cwd();
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate\n');
+    process.chdir(root);
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, false);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TaskCreate']);
+  } finally {
+    process.chdir(oldCwd);
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
     _fs.rmSync(root, { recursive: true, force: true });
   }
 });
