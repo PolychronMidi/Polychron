@@ -43,3 +43,5 @@ Example:
 #15 0_ F1 deeper policy/governance integration: wire the mesh into permission decisions, write gates, state ownership, and lifecycle hooks so every autonomous action is governable and auditable
 
 #16 0_ G1 internal supervised pilot of myth0s on selected engineering surfaces; success = measurable unique defect discovery, low false-positive burden, stable cost envelope, calibrated dissent surfaced, zero policy-bypass regressions
+
+#17 0_ B1-followup pre_write_check.js deeper hardening (mesh-found, deferred to avoid derailing): (a) move the hard-deny checks OUTSIDE the fail-open policy/_loadPolicies try so a policy-framework throw cannot skip shell-parity/edit-current/kb hard checks; (b) re-validate policy rewrites against the early shape/todo/patch hard gates (a rewrite of file_path/old_string/content currently bypasses them); (c) add a stateClient-injection regression test proving a state-write outage on a deny path still returns deny. Applied already in place: _advisoryWrite (state outage can no longer convert a computed deny to allow) + policy-error ask deferred until after hard checks
