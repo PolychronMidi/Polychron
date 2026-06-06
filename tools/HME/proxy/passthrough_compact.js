@@ -202,7 +202,7 @@ function shrinkForPassthrough(payload, opts = {}) {
   }
   let tailElided = 0;
   serialized = JSON.stringify(payload);
-  if (maxTier >= 3 && serialized.length > threshold) {
+  if (allowMessageDrop && serialized.length > threshold) {
     let underThreshold = false;
     for (const m of msgs) {
       if (underThreshold || !m || !Array.isArray(m.content)) continue;
