@@ -5,6 +5,9 @@ const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 
 const STATE_FILE = path.join(RUNTIME_DIR, 'session-state.json');
 const LEGACY_STATE_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'session-state.json');
+const LOCK_DIR = `${STATE_FILE}.lock`;
+const LOCK_WAIT_MS = 5000;
+const LOCK_STALE_MS = 30000;
 const MAX_EVENTS = 200;
 const MAX_WRITES = 200;
 const MAX_EVIDENCE = 200;
