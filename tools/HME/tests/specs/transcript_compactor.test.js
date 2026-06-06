@@ -80,6 +80,36 @@ test('compactTranscriptLines keeps EVERY line and preserves the recent window by
   assert.match(JSON.stringify(first.toolUseResult), /transcript-compactor/);
 });
 
+test('compactTranscriptLines byte counts include newline separators', () => {
+  const lines = ['{}', '{}', '{}'];
+  const r = compactTranscriptLines(lines, { keepRecent: 0, byteFloor: 4096 });
+  assert.equal(r.beforeBytes, Buffer.byteLength(lines.join('\n'), 'utf8'));
+  assert.equal(r.afterBytes, Buffer.byteLength(r.lines.join('\n'), 'utf8'));
+});
+
+test('hard-limit emergency does not shrink a byte-safe recent window', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
+  try {
+    const f = path.join(dir, 't.jsonl');
+    const old = [];
+    for (let i = 0; i < 40; i += 1) {
+      old.push(JSON.stringify({ uuid: `old${i}`, type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', id: `oldcall${i}`, name: 'Bash', input: { command: 'x'.repeat(3000) } }] } }));
+    }
+    const recent = [];
+    for (let i = 0; i < 80; i += 1) recent.push(JSON.stringify({ uuid: `new${i}`, type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'ok' }] } }));
+    fs.writeFileSync(f, old.concat(recent).join('\n') + '\n');
+    const before = fs.readFileSync(f, 'utf8');
+    const recentBytes = Buffer.byteLength(recent.join('\n'), 'utf8');
+    assert.ok(recentBytes <= 50000, 'fixture recent window fits hard limit');
+    const r = compactTranscriptFile(f, { highWaterBytes: 1, hardLimitBytes: 50000, keepRecent: 80, byteFloor: 4096 });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, 'hard_limit_requires_old_line_emergency');
+    assert.equal(fs.readFileSync(f, 'utf8'), before, 'emergency leaves transcript untouched for coordinated handling');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('compactTranscriptLines never drops unparseable lines', () => {
   const lines = ['{not json', JSON.stringify(bigToolEntry(1, 50000)), '   ', 'also bad'];
   const { lines: out } = compactTranscriptLines(lines, { keepRecent: 0, byteFloor: 4096 });
