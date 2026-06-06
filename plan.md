@@ -309,13 +309,39 @@ here. Nothing in this file is implemented until the user marks it approved.
 - Unit-proven (now 27 team tests): stderr files stay bounded; all prior guarantees
   hold. Env/silent/shell/state/markdown/opencode verifiers green.
 
+## Self-evolution iteration 11 (DONE -- proxy filter_tools middleware)
+- Built a fresh Context Capsule for tools/HME/proxy/middleware/03_filter_tools.js
+  plus the imported load_env.js parser and ran one strictly sequential,
+  fork/full-tool, capsule-grounded mesh round on the central tool-filter path.
+- All peers converged on the same grounded P1 cluster, which was fixed at root:
+  - OPTIONAL CONFIG NO-OP [done]: `_dropSet` no longer calls `requireEnv()` for
+    HME_FILTER_TOOLS_DROP. Missing/blank drop lists now return an empty Set and
+    leave payload.tools unchanged, matching the documented no-op contract.
+  - ROOT-SCOPED + SIDE-EFFECT-FREE [done]: filter_tools no longer invokes the
+    global `.env` loader or mutates process.env while handling a request. It reads
+    only the existing process env value plus the passed `ctx.PROJECT_ROOT/.env`.
+  - SHARED .env SYNTAX [done]: project .env parsing now reuses parseEnvFile, so
+    `export`, quotes, and inline comments behave like the rest of the HME env path
+    instead of failing open via an ad-hoc regex.
+  - NO CWD FALLBACK [done]: when PROJECT_ROOT is absent, the middleware uses only
+    explicit process.env and does not read whatever `.env` happens to be under the
+    proxy process cwd.
+- Regression tests added to compact_tool_descriptions.test.js for blank/missing
+  no-op, exported/quoted values, no process.env mutation under unrelated broken
+  interpolation, and no cwd fallback. Proxy + team tests are green (38/38).
+- Mid-turn Lifesaver caught the live proxy still serving the stale `_hmeRequireEnv`
+  module after the edit; verified the symbol was gone in source, smoke-tested the
+  middleware, and HME health later showed no recent middleware errors.
+
 ## Decision
 The mesh is a PROVEN self-evolving review system: driver-FORK peers with FULL
 tool access (real context + live verification), sequential, capsule-grounded,
-adversarial. Over iterations 6-10 the corrected fork/full-tool mesh found and
+adversarial. Over iterations 6-11 the corrected fork/full-tool mesh found and
 fixed real bugs in ask-peer (path confinement, SID preflight, output/parse
 hardening, FIFO raw-cap, stderr bound), team_agent_router (caller normalization,
-malformed-stdin guard), and its own harness (stale-result leak, dashboard
-snapshot/restore, downstream injection) -- all without neutering peers. The
-reviewer-charter fix is behaviorally confirmed. Next: keep pointing the loop at
-fresh real targets (proxy middleware, event-kernel) under the same discipline.
+malformed-stdin guard), its own harness (stale-result leak, dashboard
+snapshot/restore, downstream injection), and proxy middleware (optional config
+no-op, root-scoped side-effect-free filtering, shared env syntax, no cwd fallback)
+-- all without neutering peers. The reviewer-charter fix is behaviorally
+confirmed. Next: keep pointing the loop at the event-kernel under the same
+discipline.
