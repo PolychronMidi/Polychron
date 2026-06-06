@@ -37,10 +37,13 @@ rm -f "$REPO"/teams/runtime/*.session "$REPO"/tools/HME/runtime/team-dispatch-bu
 for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
 CAP="${CAPSULE:-$REPO/teams/capsules/guard.md}"; GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
 DUR="${HME_TEAM_ROUND_MAX_DURATION:-600}"
+# Opt-in: CLAIM_AUDIT=1 enables the calibrated claim-audit addendum for this
+# high-impact round (structured finding record + contradictory-evidence +
+CA_FLAG=""; [ "${CLAIM_AUDIT:-0}" = "1" ] && CA_FLAG="--claim-audit"
 gcap(){ # caller tier depth turnid chan msg out  (capsule-grounded guard send)
   PROJECT_ROOT="$REPO" timeout "$((DUR + 40))s" python3 "$GUARD" --caller "$1" --tier "$2" --depth "$3" --turn-id "$4" --budget 4 --max-live 30 \
     --scope "measured capsule review" --artifact "teams/$5.md" --max-duration "$DUR" --max-tools 8 \
-    --capsule "$CAP" --send --message "$6" > "$OUT/$7" 2>>"$OUT/m.err"; }
+    --capsule "$CAP" $CA_FLAG --send --message "$6" > "$OUT/$7" 2>>"$OUT/m.err"; }
 reply(){ python3 -c "import json,sys;print(json.load(open('$OUT/$1')).get('reply',''))" 2>/dev/null; }
 # Harness fix (mesh-found P1): neutralize structural markers (## headings, GAP:)
 # in a prior peer's reply before embedding it in the NEXT peer's --message, so a
