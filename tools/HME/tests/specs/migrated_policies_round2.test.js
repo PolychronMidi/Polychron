@@ -164,3 +164,45 @@ test('mkdir-metrics: allow mkdir without metrics/', async () => {
   const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/src/output/runs/abc' } }));
   assert.strictEqual(r.decision, 'allow');
 });
+
+// -- block-doc-spillover ----------------------------------------------
+const docSpillover = require('../../policies/builtin/block-doc-spillover');
+
+test('doc-spillover: deny a new non-canonical top-level doc/*.md', async () => {
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/doc/myth0s-coverage-map.md', content: 'data\n' } }));
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /top level is reserved/);
+});
+
+test('doc-spillover: allow editing a canonical top-level doc', async () => {
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/doc/self-coherence.md', content: 'essay prose\n' } }));
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('doc-spillover: deny a status-tracking table smuggled into doc/theory', async () => {
+  const content = '# essay\n\n| surface | file | status |\n| --- | --- | --- |\n| a | a.js | reviewed |\n| b | b.js | pending |\n';
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/doc/theory/sneaky.md', content } }));
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /status-tracking table/);
+});
+
+test('doc-spillover: deny TODO-tracking grammar in a doc', async () => {
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/doc/theory/tracker.md', content: '#1 0' + '_ do the thing\n' } }));
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /TODO-tracking grammar/);
+});
+
+test('doc-spillover: exempt the canonical doc/templates tracker tree', async () => {
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/doc/templates/notes.md', content: '#1 0' + '_ real todo\n' } }));
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('doc-spillover: allow genuine prose essay in doc/theory', async () => {
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/doc/theory/on-x.md', content: 'Prose mentioning status and a pipe char in passing.\n' } }));
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('doc-spillover: ignore non-doc markdown', async () => {
+  const r = await docSpillover.fn(_ctx({ toolInput: { file_path: '/x/Polychron/src/README.md', content: '#1 0' + '_ x\n' } }));
+  assert.strictEqual(r.decision, 'allow');
+});
