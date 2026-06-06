@@ -79,6 +79,51 @@ def _dashboard_available(row: Any) -> bool:
     return isinstance(row, dict) and row.get("status") not in {"retired", "failed", "done"}
 
 
+def _is_crew_role(role: str) -> bool:
+    return CREW_RE.match(role) is not None
+
+
+def _role_tier(roles: dict[str, Any], role: str) -> str | None:
+    row = roles.get(role)
+    tier = str(row.get("tier") or "").upper() if isinstance(row, dict) else ""
+    return tier if tier in TIER_ORDER else None
+
+
+def _explicit_target_error(caller: str, target: str, roles: dict[str, Any], tier_ceiling: str) -> str | None:
+    """Validate a named-role consult dispatch without letting it bypass topology.
+
+    The router is still the default. This opt-in exists for consults where the
+    driver needs red_lead AND blue_lead (not whichever E5 currently has lower
+    ctx_used_pct). It is an authorization ceiling, not a fan-out path.
+    """
+    if target not in roles:
+        return f"target {target} is not in teams/roles.json"
+    if target == caller:
+        return f"explicit target selected caller itself ({caller})"
+    target_tier = _role_tier(roles, target)
+    if not target_tier:
+        return f"target {target} has invalid or missing tier"
+    if TIER_ORDER[target_tier] > TIER_ORDER[tier_ceiling]:
+        return f"target {target} tier {target_tier} exceeds request ceiling {tier_ceiling}"
+    if caller == "driver":
+        return None
+    if caller in {"red_lead", "blue_lead"}:
+        color = caller.split("_", 1)[0]
+        if target == f"{color}_purple" or _is_crew_role(target):
+            return None
+        return f"{caller} may explicitly target only {color}_purple or crew"
+    if caller in {"red_purple", "blue_purple"}:
+        want = "blue_purple" if caller.startswith("red") else "red_purple"
+        if target == want or _is_crew_role(target):
+            return None
+        return f"{caller} may explicitly target only {want} or crew"
+    if _is_crew_role(caller):
+        if _is_crew_role(target):
+            return None
+        return "crew callers may explicitly target only crew"
+    return f"caller {caller} has no explicit-target topology rule"
+
+
 # Context Capsule contract -- designed by the mesh's own multi-step red/blue
 # dialogue: the mechanism that lets multiple grounded independent peers beat a
 CAPSULE_REQUIRED = ("artifact", "goal", "rubric")
