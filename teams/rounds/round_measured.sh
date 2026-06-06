@@ -53,7 +53,9 @@ if ! PROJECT_ROOT="$REPO" python3 "$REPO/teams/rounds/review_brief.py" compose "
   echo "review_brief compose failed for brief '$BRIEF'" >&2; exit 1
 fi
 DUR="${HME_TEAM_ROUND_MAX_DURATION:-600}"
-CTX_CAP="${HME_TEAM_CONTEXT_CAP:-300000}"
+# Mesh-found P2 (#28): derive the dispatch context cap from review_brief's lint
+# cap (single source of truth) so a brief that lints OK can never be truncated by
+CTX_CAP="${HME_TEAM_CONTEXT_CAP:-$(PROJECT_ROOT="$REPO" python3 -c 'import sys; sys.path.insert(0, "'"$REPO"'/teams/rounds"); import review_brief; print(review_brief._CAP)' 2>/dev/null || echo 300000)}"
 # Opt-in: CLAIM_AUDIT=1 enables the calibrated claim-audit addendum for this
 # high-impact round (structured finding record + contradictory-evidence +
 CA_FLAG=""; [ "${CLAIM_AUDIT:-0}" = "1" ] && CA_FLAG="--claim-audit"
