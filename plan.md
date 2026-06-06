@@ -46,15 +46,16 @@ Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
   artifact/function, failure mode, precondition, supporting evidence,
   contradictory evidence, one-line fix, severity, confidence. Applied to
   high-impact Context Capsules only -- routine reviews stay lightweight.
-- A2 [proposed]: Contradictory-evidence requirement. Every claimed defect must
+- A2 [approved]: Contradictory-evidence requirement. Every claimed defect must
   cite at least one existing guard/test/code path that might already cover it,
   and say why it does or does not. Highest-leverage false-positive reducer.
-- A3 [proposed]: Audit-thoroughness score, separate from severity:
+- A3 [approved]: Audit-thoroughness score, separate from severity:
   source-read-only / source+adjacent-tests-config / source+runtime-repro-or-
   invariant. Lets us distinguish a plausible P1 from a proven one.
-- A4 [proposed]: Decision-impact weight per finding (load-bearing / substantive /
+- A4 [approved]: Decision-impact weight per finding (load-bearing / substantive /
   peripheral) so peer budget is spent on load-bearing issues, not cosmetics.
-- A5 [proposed]: Anti-inflation calibration with a safety caveat. When uncertain
+  Never used to suppress legitimate deep work -- only to focus it (see charter).
+- A5 [approved]: Anti-inflation calibration with a safety caveat. When uncertain
   between two severities, default LOWER -- UNLESS there is executable evidence or
   a fail-open safety consequence, in which case still fail closed.
 - A6 [proposed]: Finding-death framing. A peer that reports "no decision-changing
