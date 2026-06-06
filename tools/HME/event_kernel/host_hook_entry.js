@@ -54,6 +54,8 @@ function readStdinBounded(event, fd = 0) {
     try {
       n = fs.readSync(fd, buf, 0, buf.length, null);
     } catch (err) {
+      // silent-ok: stdin read errors are surfaced immediately as host-hook stderr
+      // and a fail-safe gating denial where applicable.
       exitFailSafe(event, `stdin read failed: ${err.message}`, GATING_EVENTS.has(event) ? 0 : 1);
     }
     if (n === 0) break;
