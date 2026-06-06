@@ -266,7 +266,9 @@ function createContextBudget() {
     lastCompactDecisionKey = key;
     const pct = budgetTokens > 0 ? `${(frac * 100).toFixed(1)}%` : 'unknown';
     const threshold = Number.isFinite(plan.threshold) ? `${plan.threshold}B` : 'none';
-    console.error(`[hme-proxy] compact-decision model=${model || 'unknown'} bytes=${bytes} est_tokens=${usedTokens} budget=${budgetTokens || 'unknown'} used=${pct} gear=${plan.maxTier || 0} threshold=${threshold} explicit_byte_cap=${cappedByBytes ? 'yes' : 'no'} telemetry_limited=${telemetryLimited ? 'yes' : 'no'}`);
+    const pressure = Number.isFinite(plan.pressure) ? plan.pressure.toFixed(3) : '0.000';
+    const severity = Number.isFinite(plan.maxTier) ? plan.maxTier.toFixed(2) : '0.00';
+    console.error(`[hme-proxy] compact-decision model=${model || 'unknown'} bytes=${bytes} est_tokens=${usedTokens} budget=${budgetTokens || 'unknown'} used=${pct} pressure=${pressure} severity=${severity} threshold=${threshold} summary=${plan.allowSummary ? 'yes' : 'no'} drop=${plan.allowMessageDrop ? 'yes' : 'no'} explicit_byte_cap=${cappedByBytes ? 'yes' : 'no'} telemetry_limited=${telemetryLimited ? 'yes' : 'no'}`);
   }
 
   function compactPressureTokens(payload, bytes, opts = {}) {
