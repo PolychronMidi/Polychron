@@ -1585,7 +1585,7 @@ test('OmniRoute preflight uses target payload pressure when statusline usage is 
   }
 });
 
-test('message dropping is disabled until gear three', () => {
+test('message dropping is disabled until destructive CVT/drop permission', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 20; i += 1) {
     const id = `gear-two-tool-${i}`;
