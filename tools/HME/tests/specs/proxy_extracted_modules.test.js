@@ -1618,7 +1618,7 @@ test('high keepTurns prevents stale tool stripping in long GPT-5.5 sessions', ()
   assert.equal(JSON.stringify(payload), before);
 });
 
-test('gear one only elides stale lengthy tool results', () => {
+test('microcompact-only CVT pressure elides stale lengthy tool results without summaries/drops', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 8; i += 1) {
     const id = `gear-tool-${i}`;
