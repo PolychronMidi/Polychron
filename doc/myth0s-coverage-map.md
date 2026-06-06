@@ -26,7 +26,7 @@ pending (not yet reviewed this phase), partial (reviewed in part).
 | --- | --- | --- |
 | review harness | teams/rounds/round_measured.sh | reviewed |
 | state registry | tools/HME/proxy/state_registry.js | reviewed |
-| session-state lifecycle | tools/HME/proxy/session_state.js | pending |
+| session-state lifecycle | tools/HME/proxy/session_state.js | reviewed |
 | todo engine store | tools/HME/todo_engine/store.py | pending |
 
 ## Context-consumption surfaces (stale/incoherent context burn)
