@@ -184,8 +184,10 @@ async function mutateClaudeRequest({
       } catch (err) { console.error(`reminder-provenance failed: ${err.message}`); recordProxyFailure(PROJECT_ROOT, 'reminder-provenance', err); }
       const r = stripHmePrefixOutgoing(payload);
       const n = await injectHmeTools(payload);
-      sanitizePayload(payload);
-      if (iw > 0 || hns.stripped > 0 || common.sanitized > 0 || b > 0 || s > 0 || prov.stripped > 0 || r || n > 0) bodyDirtiedByStrip = true;
+      // Mesh-found P1 (request-mutation review): this early sanitize MUST feed the
+      // dirty flag. Its return was discarded, so if it was the only mutation the
+      const preMwSanitized = sanitizePayload(payload);
+      if (iw > 0 || hns.stripped > 0 || common.sanitized > 0 || b > 0 || s > 0 || prov.stripped > 0 || r || n > 0 || preMwSanitized > 0) bodyDirtiedByStrip = true;
     }
 
     if (isAnthropic) {
