@@ -112,9 +112,12 @@ Governed by the Cost-control charter above. Caps target runaway/incoherence only
   addendum stays an optional high-impact mode.
 
 ### Workstream F -- Policy and governance integration
-- F1 [approved]: Integrate the mesh more deeply with permission decisions, write
-  gates, state ownership, and lifecycle hooks so every autonomous action is
-  governable and auditable -- the control plane, not the prompt, is the boundary.
+- F1 [decided: auditability via TODO, enforcement declined]: Enforcement (live
+  gates consulting review status) was DECLINED with recorded reasons (would
+  fail-closed on legit work or be theater; review status is point-in-time). The
+  separate coverage_status "auditability signal" was retired as a TODO-duplicate
+  (review progress = TODO progress); review coverage is tracked in the work
+  tracker + git history, not a parallel ledger.
 
 ### Workstream G -- Internal supervised pilot
 - G1 [approved]: Run myth0s against selected internal engineering surfaces under
