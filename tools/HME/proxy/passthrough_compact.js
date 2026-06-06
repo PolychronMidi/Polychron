@@ -49,7 +49,7 @@ function shrinkForPassthrough(payload, opts = {}) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const rawPlan = typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold(payload) : opts.threshold || 250000;
   const plan = normalizePlan(rawPlan);
-  const { threshold, maxTier } = plan;
+  const { threshold, maxTier, allowSummary, allowMessageDrop } = plan;
   if (Number.isFinite(plan.keepMin) && plan.keepMin > 0) keepMin = Math.floor(plan.keepMin);
   if (Number.isFinite(plan.maxToolResultAge) && plan.maxToolResultAge >= 0) maxToolResultAge = Math.floor(plan.maxToolResultAge);
   if (Number.isFinite(plan.toolResultByteFloor) && plan.toolResultByteFloor > 0) toolResultByteFloor = Math.floor(plan.toolResultByteFloor);
