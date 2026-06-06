@@ -112,7 +112,14 @@ function read(name, projectRoot = PROJECT_ROOT) {
   try { raw = fs.readFileSync(abs, 'utf8'); }
   catch (_err) { return e.format === 'json' ? null : (e.format === 'jsonl' ? [] : ''); }
   if (e.format === 'json') {
-    try { return JSON.parse(raw); } catch (_err) { return null; }
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (_err) { return null; }
+    // Mesh-found P1 (state-registry review): the registry exists to KILL schema
+    // drift, so a registered schema must gate READS too, not only writes. A
+    if (e.schema) {
+      try { if (e.schema(parsed)) return null; } catch (_err) { return null; }
+    }
+    return parsed;
   }
   if (e.format === 'jsonl') {
     return raw.split('\n').filter(Boolean).map((line) => {
