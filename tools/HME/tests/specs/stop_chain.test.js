@@ -64,6 +64,10 @@ async function _withMockedStopPolicies(overrides, fn, configOverride) {
   }
 }
 
+function writeTranscript(file, entries) {
+  fs.writeFileSync(file, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+}
+
 function _withChainSandbox(fn) {
   return async () => {
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-chain-test-'));
