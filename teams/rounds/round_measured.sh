@@ -61,7 +61,7 @@ gcap(){ # caller tier depth turnid chan target msg out  (capsule-grounded guard 
   progress_result "$8" dispatching "$6" "" "" "" "$1 -> $6 via teams/$5.md"
   PROJECT_ROOT="$REPO" timeout "$((DUR + 40))s" python3 "$GUARD" --caller "$1" --tier "$2" --depth "$3" --turn-id "$4" --budget 4 --max-live 30 \
     --scope "measured capsule review" --artifact "teams/$5.md" --max-duration "$DUR" --max-tools 8 \
-    --target "$6" --capsule "$CAP" $CA_FLAG --send --message "$7" > "$OUT/$8" 2>>"$OUT/m.err"
+    --target "$6" --context-cap "$CTX_CAP" --capsule "$CAP" $CA_FLAG --send --message "$7" > "$OUT/$8" 2>>"$OUT/m.err"
   local rc=$?
   local bytes; bytes="$(reply "$8" | wc -c | tr -d ' ')"
   if [ "$rc" = 0 ] && [ "${bytes:-0}" -gt 2 ]; then progress_result "$8" done "$6" "$rc" "$bytes" "" "reply captured"; else progress_result "$8" failed "$6" "$rc" "$bytes" "teams/runtime/output/m.err" "dispatch failed"; fi
