@@ -56,6 +56,22 @@ class RoundStatusTests(unittest.TestCase):
         rows = round_status.read_ledger(Path(tempfile.gettempdir()) / "definitely-absent-ledger.jsonl")
         self.assertEqual(rows, [])
 
+    def test_typed_failure_state_surfaces_from_ledger(self):
+        with tempfile.TemporaryDirectory() as td:
+            led = Path(td) / "round-progress.jsonl"
+            _ledger(led, [
+                {"ts": "t0", "round": "r", "step": "round", "status": "start", "progress": "0/1"},
+                {"ts": "t1", "round": "r", "step": "peer.json", "status": "dispatching", "target": "red_lead", "progress": "0/1"},
+                {"ts": "t2", "round": "r", "step": "peer.json", "status": "failed", "target": "red_lead", "rc": 124, "reply_bytes": 0, "error_log": "teams/runtime/output/err", "progress": "1/1"},
+            ])
+            rows = round_status.read_ledger(led)
+            failed = rows[-1]
+            self.assertEqual(failed["status"], "failed")
+            self.assertEqual(failed["target"], "red_lead")
+            self.assertEqual(failed["rc"], 124)
+            self.assertEqual(failed["reply_bytes"], 0)
+            self.assertEqual(failed["error_log"], "teams/runtime/output/err")
+
     def test_main_smoke_returns_zero(self):
         # The reader itself must never crash (it is the flying-blind guard).
         self.assertEqual(round_status.main([]), 0)
