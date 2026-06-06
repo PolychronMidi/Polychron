@@ -109,7 +109,7 @@ class VerifierSelfCoverageVerifier(Verifier):
                     "(add a test, or document the gap in the waiver registry)"
                 )
 
-        issues = missing + stale
+        issues = missing + stale + unknown
         if not issues:
             if waivered:
                 return warned(score=max(0.0, 1.0 - len(waivered) / 30.0), summary=f"{covered} verifier module(s) have tests; "
@@ -120,5 +120,6 @@ class VerifierSelfCoverageVerifier(Verifier):
         summary = (
             f"{len(missing)} verifier module(s) lack tests"
             + (f", {len(stale)} stale waiver(s)" if stale else "")
+            + (f", {len(unknown)} unknown waiver(s)" if unknown else "")
         )
         return _result(status, score, summary, issues[:30])
