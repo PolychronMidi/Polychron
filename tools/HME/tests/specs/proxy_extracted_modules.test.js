@@ -1121,7 +1121,7 @@ test('context budget compaction uses continuous exponential pressure from high-w
   }
 }));
 
-test('compaction knobs scale from env baselines per gear without ratcheting', () => withStatuslineUnavailable(() => {
+test('compaction knobs scale continuously from env baselines without ratcheting', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
     process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
@@ -1139,36 +1139,26 @@ test('compaction knobs scale from env baselines per gear without ratcheting', ()
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
 
-    // Below gear 1: no plan, knobs never consulted.
     let plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(750) }] });
     assert.equal(plan.maxTier, 0);
     assert.equal(plan.maxToolResultAge, undefined);
     assert.equal(plan.keepMin, undefined);
     assert.equal(plan.toolResultByteFloor, undefined);
 
-    plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(830) }] });
-    assert.equal(plan.maxTier, 1);
-    assert.equal(plan.maxToolResultAge, 15);
-    assert.equal(plan.keepMin, 75);
-    assert.equal(plan.toolResultByteFloor, 5600);
+    const early = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(830) }] });
+    const mid = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(950) }] });
+    const late = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
 
-    plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(880) }] });
-    assert.equal(plan.maxTier, 2);
-    assert.equal(plan.maxToolResultAge, 10);
-    assert.equal(plan.keepMin, 50);
-    assert.equal(plan.toolResultByteFloor, 3600);
+    assert.ok(early.keepMin > mid.keepMin && mid.keepMin > late.keepMin, `${early.keepMin}/${mid.keepMin}/${late.keepMin}`);
+    assert.ok(early.maxToolResultAge >= mid.maxToolResultAge && mid.maxToolResultAge > late.maxToolResultAge, `${early.maxToolResultAge}/${mid.maxToolResultAge}/${late.maxToolResultAge}`);
+    assert.ok(early.toolResultByteFloor > mid.toolResultByteFloor && mid.toolResultByteFloor > late.toolResultByteFloor, `${early.toolResultByteFloor}/${mid.toolResultByteFloor}/${late.toolResultByteFloor}`);
+    assert.ok(early.keepMin >= 98, `early keepMin=${early.keepMin}`);
+    assert.ok(late.keepMin <= 45, `late keepMin=${late.keepMin}`);
 
-    plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
-    assert.equal(plan.maxTier, 3);
-    assert.equal(plan.maxToolResultAge, 5);
-    assert.equal(plan.keepMin, 30);
-    assert.equal(plan.toolResultByteFloor, 2000);
-
-    // Re-querying gear 3 returns the same env-derived values, not 30% of 30, etc.
     const again = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
-    assert.equal(again.keepMin, 30);
-    assert.equal(again.maxToolResultAge, 5);
-    assert.equal(again.toolResultByteFloor, 2000);
+    assert.equal(again.keepMin, late.keepMin);
+    assert.equal(again.maxToolResultAge, late.maxToolResultAge);
+    assert.equal(again.toolResultByteFloor, late.toolResultByteFloor);
   } finally {
     process.env = oldEnv;
   }
