@@ -388,6 +388,38 @@ test('dispatch guard can explicitly send through ask-peer with leash text', () =
   }
 });
 
+test('dispatch guard --claim-audit appends the calibrated addendum, off by default', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--caller', 'driver', '--tier', 'E5', '--scope', 'audit review', '--artifact', 'plan.md',
+      '--max-duration', '30', '--max-tools', '2', '--send', '--message', 'check it'];
+
+    // With --claim-audit: the structured calibration contract reaches the peer.
+    let r = runDispatch(root, [...base, '--turn-id', 'ca-on', '--claim-audit'], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    assert.equal(r.status, 0, r.stderr);
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.sent, true);
+    let channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
+    assert.match(channel, /CLAIM-AUDIT DISCIPLINE/);
+    assert.match(channel, /contradictory evidence/);
+    assert.match(channel, /FINDING-DEATH IS SUCCESS/);
+    assert.match(channel, /AUDIT-UNCERTAIN/);
+
+    // Default (no flag): routine reviews stay lightweight -- no addendum.
+    fs.writeFileSync(path.join(root, 'teams/driver.md'), '# driver channel\n');
+    r = runDispatch(root, [...base, '--turn-id', 'ca-off'], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    assert.equal(r.status, 0, r.stderr);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.sent, true);
+    channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
+    assert.doesNotMatch(channel, /CLAIM-AUDIT DISCIPLINE/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('I3 roles route to red, blue, and purple channels without broadcast', () => {
   const root = tmpProject();
   try {
