@@ -25,7 +25,7 @@ def _hash(text: str) -> str:
 
 
 def _default_cache_path(capsule_path: Path) -> Path:
-    # teams/capsules/<x>.md -> teams/runtime/capsule-cache.json (ignored runtime)
+    # <repo>/teams/<anything> -> teams/runtime/capsule-cache.json (ignored runtime)
     return capsule_path.resolve().parent.parent / "runtime" / "capsule-cache.json"
 
 
