@@ -41,33 +41,49 @@ here. Nothing in this file is implemented until the user marks it approved.
   (-> lessons recorded; charter binding). F1 enforcement declined (would fail-closed
   on legit work or be theater). Full record: `git log -- plan.md`.
 
-## Phase 14 (proposed) -- Product-slice audit + regressionization
+## Phase 14 (proposed) -- Mesh refinement, then HME self-coherence expansion
 
-Status: `proposed` (awaiting user decision). Mesh consult completed with no genuine
-red/blue disagreement: use the Phase 13 mesh on the actual Polychron product, not on
-more mesh/tooling scaffolding.
+Status: `proposed` (awaiting user decision). User rejected moving to `src/` product
+focus now: the mesh needs more refinement first, and the next expansion target is
+HME's self-coherence suite.
 
-Theme: apply the finished mesh to product value. `src/README.md` defines the real
-product surface as composers, conductor, cross-layer, fx, writer; prior mesh rounds
-mostly reviewed HME/control-plane substrate.
+Theme: harden the red/blue/purple mesh until peer rounds are reliable, observable,
+grounded, and non-bloating; then apply that refined mesh to expand and sharpen the
+HME verifier / self-coherence suite.
 
-### Workstream 1 -- First narrow product-slice audit
-- Scope: one vertical slice, preferably pipeline / conductor -> composer -> writer.
-- First step: compose one review brief from live `src/` references and run the
-  red/blue/purple mesh for P0/P1 product defects only.
-- Guardrail: one slice, one brief-data entry, decision-changing findings only. No
-  coverage maps, capsule directories, scoring demos, or whole-engine archaeology.
+### Workstream 1 -- Mesh round reliability contract
+- Scope: every first-class peer round must expose durable per-step progress, durable
+  per-peer reply capture, stale-output cleanup, and typed failure states.
+- First step: make the progress-ledger/status-reader contract a tested invariant for
+  the round runners that remain in use, not an ad hoc rescue patch.
+- Guardrail: no blind dispatch, no repeated launch spam, no claims of notifications
+  from mechanisms that cannot notify, and no parallel runner framework.
 
-### Workstream 2 -- Regressionize accepted findings
-- Scope: every accepted P0/P1 product finding becomes durable product coverage.
-- First step: land the smallest regression test, snapshot, trace proof, compare, or
-  diff that proves the defect using the existing `src/tests/` and npm-script style.
-- Guardrail: do not invent a new test/eval harness because coverage feels thin;
-  extend existing tests/scripts only when the fix directly needs it.
+### Workstream 2 -- Mesh signal-discipline contract
+- Scope: tighten peer outputs around calibrated, decision-changing findings: grounded
+  evidence, contradiction checks, role/channel discipline, and explicit
+  `audit-uncertain` when evidence is insufficient.
+- First step: audit `team_dispatch_guard.py`, `review_brief.py`, ask-peer routing,
+  and team-channel writes for any remaining path that can create context bloat,
+  bypass channels, or inflate weak findings.
+- Guardrail: do not rebuild capsules, coverage maps, scoring/eval demos, or any
+  duplicate tracker. Refinement must remove dead weight or make existing contracts
+  enforceable.
 
-### Workstream 3 -- Execute through existing ledgers only
+### Workstream 3 -- HME self-coherence suite expansion
+- Scope: after Workstreams 1-2, use the refined mesh on HME self-coherence surfaces:
+  verifier modules, verifier registry, skip/waiver policy, runtime-warning handling,
+  and self-coverage tests.
+- First step: select one HME coherence-suite slice and run the mesh for P0/P1 gaps
+  that would make HCI misleading, stale, noisy, or fail-open.
+- Guardrail: every accepted finding must land as a verifier/test/registry fix using
+  the existing `tools/HME/scripts/verify_coherence/` and `tools/HME/tests/specs/`
+  structure; no new reporting suite unless an existing verifier cannot express it.
+
+### Workstream 4 -- Execute through existing ledgers only
 - Scope: `plan.md` holds user-decision status; TODO holds approved work items;
   team messages stay in team channels; review-brief data stays beside the runner.
-- First step after approval: add TODO items for the chosen slice and accepted peer
-  findings, then implement from the TODO ledger.
-- Guardrail: no parallel tracker, no docs spillover, no process-cleanup project.
+- First step after approval: add TODO items for the mesh-refinement contract and the
+  first HME self-coherence-suite slice.
+- Guardrail: no docs spillover, no process-cleanup project, no self-referential tool
+  growth unless it directly increases coherence signal and reduces future bloat.
