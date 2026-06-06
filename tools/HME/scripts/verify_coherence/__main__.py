@@ -16,6 +16,8 @@ import os
 import sys
 import time
 
+import math
+
 from ._base import METRICS_DIR, PROJECT_METRICS_DIR, _PROJECT, FAIL, ERROR
 from . import REGISTRY
 
@@ -30,7 +32,36 @@ def _kind_for(verifier) -> str:
     return "runtime" if verifier.category in _RUNTIME_CATEGORIES else "static"
 
 
+def _preflight_registry(registry) -> None:
+    """Mesh-found P1 (3-peer): the HCI denominator is sum(v.weight) over the whole
+    REGISTRY while results are keyed by v.name. A duplicate name silently collapses
+    two verifiers' results (one overwrites the other, both weights read the survivor's
+    score); a zero/negative/non-finite weight hides a failing verifier or distorts the
+    average. Either makes the published HCI a lie. Fail CLOSED (engine error, exit 2)
+    rather than emit an untrustworthy number.
+    """
+    seen: dict[str, int] = {}
+    dupes: set[str] = set()
+    bad_weights: list[str] = []
+    for v in registry:
+        name = getattr(v, "name", "") or v.__class__.__name__
+        seen[name] = seen.get(name, 0) + 1
+        if seen[name] > 1:
+            dupes.add(name)
+        w = getattr(v, "weight", None)
+        if not isinstance(w, (int, float)) or isinstance(w, bool) or not math.isfinite(w) or w <= 0:
+            bad_weights.append(f"{name}={w!r}")
+    problems = []
+    if dupes:
+        problems.append("duplicate verifier name(s): " + ", ".join(sorted(dupes)))
+    if bad_weights:
+        problems.append("invalid weight(s) (must be finite and > 0): " + ", ".join(bad_weights))
+    if problems:
+        raise ValueError("HCI registry integrity preflight failed -- " + "; ".join(problems))
+
+
 def run_engine() -> dict:
+    _preflight_registry(REGISTRY)
     results: dict = {}
     by_category: dict = {}
     by_kind: dict = {"static": [], "runtime": []}
