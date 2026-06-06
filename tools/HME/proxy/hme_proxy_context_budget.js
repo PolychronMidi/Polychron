@@ -211,28 +211,28 @@ function createContextBudget() {
     if (diskN > consecutive429s) consecutive429s = diskN;
   }
 
-  function pressureForFraction(usedFraction) {
-    if (usedFraction < compactStartFraction) return 0;
-    if (usedFraction < compactGear1End) return 1;
-    if (usedFraction < compactGear2End) return 2;
-    return 3;
-  }
-
   function planForUsage({ usedTokens, budgetTokens }) {
-    if (!budgetTokens || budgetTokens <= 0) return { threshold: Infinity, maxTier: 0 };
+    if (!budgetTokens || budgetTokens <= 0) return { threshold: Infinity, maxTier: 0, pressure: 0 };
     const usedFraction = usedTokens / budgetTokens;
-    const gear = pressureForFraction(usedFraction);
-    if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
-    const targetFraction = gear === 1 ? compactGear1Target : (gear === 2 ? compactGear2Target : compactGear3Target);
+    const pressure = _compactPressureForFraction({ usedFraction, startFraction: compactStartFraction });
+    if (pressure <= 0) return { threshold: Infinity, maxTier: 0, pressure: 0 };
+    const floorTargetFraction = Math.min(compactStartFraction, compactGear1Target || compactStartFraction);
+    const targetFraction = Math.max(
+      floorTargetFraction,
+      usedFraction - ((usedFraction - floorTargetFraction) * pressure),
+    );
     const targetTokens = Math.max(1, Math.floor(budgetTokens * targetFraction));
     const threshold = Math.max(1, Math.floor(targetTokens * contextBytesPerTokenEst));
-    // All gear knobs derive ONLY from the env baseline loaded for this request.
-    // Never ratchet from a previously compacted/effective value.
+    // Continuous-variable transmission: knobs derive from the env baseline and a
+    // smooth pressure scalar. They never ratchet from prior effective values.
     return {
       threshold,
       targetTokens,
-      maxTier: gear,
-      ..._gearScaledCompactionKnobs({ gear, keepMin, staleToolKeepTurns, toolResultByteFloor }),
+      pressure,
+      maxTier: 1 + (2 * pressure),
+      allowSummary: pressure >= 0.20,
+      allowMessageDrop: pressure >= 0.55 || usedFraction >= 1,
+      ..._cvtScaledCompactionKnobs({ pressure, keepMin, staleToolKeepTurns, toolResultByteFloor }),
     };
   }
 
