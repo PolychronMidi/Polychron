@@ -157,6 +157,66 @@ def _capsule_coverage_gaps(text: str) -> list[str]:
     return [s for s in claimed if s not in evidence]
 
 
+_CAPSULE_LANG = {
+    ".py": "python", ".js": "js", ".mjs": "js", ".cjs": "js", ".ts": "ts",
+    ".sh": "bash", ".bash": "bash", ".json": "json", ".md": "markdown",
+}
+_CAPSULE_REF_RE = re.compile(r"\.[A-Za-z0-9]+$")
+
+
+def _capsule_evidence_refs(text: str) -> list[str]:
+    """Repo-relative file paths referenced (not embedded) in ## evidence -- the
+    mechanism that lets a capsule point at LIVE source so its evidence can never
+    drift into a stale frozen copy. Tokens inside ``` fences are ignored (those
+    are inlined source, not references)."""
+    evidence = _capsule_section_bodies(text).get("evidence")
+    if not evidence:
+        return []
+    refs: list[str] = []
+    seen: set[str] = set()
+    in_fence = False
+    for line in evidence.splitlines():
+        s = line.strip()
+        if s.startswith("```") or s.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+        if in_fence or not s:
+            continue
+        tok = s.lstrip("-*").strip().strip("`")
+        if "/" in tok and " " not in tok and _CAPSULE_REF_RE.search(tok) and tok not in seen:
+            seen.add(tok)
+            refs.append(tok)
+    return refs
+
+
+def _resolve_capsule(text: str, root: Path, cap: int) -> str:
+    """Inline the LIVE content of every ## evidence file reference so the peer is
+    grounded on CURRENT source, never a frozen snapshot. A capsule that still
+    embeds source (no file refs) is returned unchanged -- backward compatible."""
+    refs = _capsule_evidence_refs(text)
+    if not refs:
+        return text
+    blocks: list[str] = []
+    used = 0
+    for ref in refs:
+        path = root / ref
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            blocks.append(f"\n{ref} (live)\nMISSING: referenced source not found at dispatch.\n")
+            continue
+        budget = cap - used
+        if budget <= 0:
+            blocks.append(f"\n{ref} (live)\n(... omitted: context cap reached ...)\n")
+            continue
+        body = content[:budget]
+        used += len(body)
+        lang = _CAPSULE_LANG.get(path.suffix.lower(), "")
+        note = "" if len(body) == len(content) else "\n... truncated to context cap ..."
+        blocks.append(f"\n{ref} (live)\n```{lang}\n{body}{note}\n```\n")
+    return text + "\n" + "".join(blocks)
+
+
 def _capsule_message(capsule: str, message: str) -> str:
     return (
         "CONTEXT CAPSULE -- ground EVERY claim in a capsule section; if the "
