@@ -90,6 +90,7 @@ function main() {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: process.env,
     timeout: ADAPTER_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
   });
 
   if (child.error) {
