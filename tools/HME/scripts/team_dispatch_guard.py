@@ -166,6 +166,33 @@ def _capsule_message(capsule: str, message: str) -> str:
     )
 
 
+# Opt-in calibrated claim-audit addendum (Audit Protocol grammar). Appended to a
+# high-impact review task via --claim-audit so routine reviews stay lightweight.
+CLAIM_AUDIT_ADDENDUM = (
+    "\n\n---\nCLAIM-AUDIT DISCIPLINE (calibrated, anti-inflation). For EACH "
+    "decision-changing finding report: claim (one sentence); where (artifact + "
+    "function/block); failure mode; precondition; supporting evidence (cite "
+    "source lines / tests / logs / verifier output); contradictory evidence "
+    "(name >=1 existing guard/test/code-path that might ALREADY cover this and "
+    "say why it does or does NOT -- required; a finding with no counter-check is "
+    "low confidence); one-line fix; severity (P0/P1/P2); thoroughness "
+    "(read-only | +adjacent-tests/config | +runtime-repro/invariant); "
+    "decision-impact (load-bearing | substantive | peripheral); confidence "
+    "(low/med/high).\nFINDING-DEATH IS SUCCESS: if after auditing you find no "
+    "decision-changing issue, state 'no decision-changing issue found' WITH "
+    "evidence -- never invent or inflate to seem useful.\nANTI-INFLATION: when "
+    "unsure between two severities choose the LOWER, UNLESS there is executable "
+    "evidence or a fail-open safety consequence (then keep the higher / fail "
+    "closed).\nAUDIT-UNCERTAIN: if you materially disagree with a prior peer "
+    "beyond one severity tier on a load-bearing claim, label it 'AUDIT-UNCERTAIN: "
+    "recommend human review' instead of forcing agreement."
+)
+
+
+def _with_claim_audit(message: str, enabled: bool) -> str:
+    return message + CLAIM_AUDIT_ADDENDUM if enabled else message
+
+
 def _driver_sid(root: Path) -> str:
     """Root driver session id (peers fork it) from the transcript marker."""
     try:
