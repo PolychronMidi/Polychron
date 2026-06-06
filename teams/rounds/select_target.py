@@ -1,9 +1,9 @@
 """D1: smarter target selection (run via `python3 teams/rounds/select_target.py`
 or import; intentionally no shebang -- library + thin CLI).
 
-Read doc/myth0s-coverage-map.md and return the next `pending` load-bearing
-surface so the mesh focuses on what has not been reviewed yet, instead of
-re-reviewing already-covered code.
+Read teams/rounds/coverage-map.json (machine-readable review-status DATA, not a
+doc) and return the next `pending` load-bearing surface so the mesh focuses on
+what has not been reviewed yet, instead of re-reviewing already-covered code.
 
 Cost-control charter (binding): selection only FOCUSES effort onto unreviewed
 surfaces. It never caps a peer's depth, never limits how long a review may run,
@@ -11,29 +11,31 @@ and never abridges inter-agent dialogue.
 """
 from __future__ import annotations
 
-import re
+import json
 import sys
 from pathlib import Path
 
-_ROW_RE = re.compile(r"^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*([A-Za-z]+)\s*\|$")
+
+def _rows(map_path: str | Path) -> list[dict]:
+    try:
+        data = json.loads(Path(map_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out: list[dict] = []
+    for section in data.get("sections", []):
+        sect = str(section.get("section", "")).strip()
+        for s in section.get("surfaces", []):
+            out.append({
+                "section": sect,
+                "name": str(s.get("surface", "")).strip(),
+                "file": str(s.get("file", "")).strip(),
+                "status": str(s.get("status", "")).strip().lower(),
+            })
+    return out
 
 
 def pending_targets(map_path: str | Path) -> list[dict]:
-    rows: list[dict] = []
-    try:
-        lines = Path(map_path).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return rows
-    for line in lines:
-        m = _ROW_RE.match(line.strip())
-        if not m:
-            continue
-        name, file, status = m.group(1).strip(), m.group(2).strip(), m.group(3).strip().lower()
-        if name.lower() in ("surface", "---") or file.lower() in ("file", "---"):
-            continue
-        if status == "pending":
-            rows.append({"name": name, "file": file})
-    return rows
+    return [{"name": r["name"], "file": r["file"]} for r in _rows(map_path) if r["status"] == "pending"]
 
 
 def next_target(map_path: str | Path) -> dict | None:
@@ -42,7 +44,7 @@ def next_target(map_path: str | Path) -> dict | None:
 
 
 def _default_map() -> Path:
-    return Path(__file__).resolve().parents[2] / "doc" / "myth0s-coverage-map.md"
+    return Path(__file__).resolve().parent / "coverage-map.json"
 
 
 def main(argv: list) -> int:
