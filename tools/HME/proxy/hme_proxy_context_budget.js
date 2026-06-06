@@ -113,15 +113,29 @@ function _scaledInt(base, ratio, floor) {
   return Math.max(floor, Math.floor(Number(base) * ratio));
 }
 
-function _gearScaledCompactionKnobs({ gear, keepMin, staleToolKeepTurns, toolResultByteFloor }) {
-  if (gear <= 0) return {};
-  const staleRatios = [1, 0.75, 0.50, 0.25];
-  const keepRatios = [1, 0.75, 0.50, 0.30];
-  const floorRatios = [1, 0.70, 0.45, 0.25];
+function _clamp01(n) {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(1, n));
+}
+
+function _compactPressureForFraction({ usedFraction, startFraction }) {
+  if (!Number.isFinite(usedFraction) || !Number.isFinite(startFraction)) return 0;
+  if (usedFraction <= startFraction) return 0;
+  const span = Math.max(0.001, 1 - startFraction);
+  const x = _clamp01((usedFraction - startFraction) / span);
+  // Continuous-variable transmission: barely engage just above the high-water
+  // point, then rise sharply near a full context window.
+  const exponent = 4;
+  return (Math.exp(exponent * x) - 1) / (Math.exp(exponent) - 1);
+}
+
+function _cvtScaledCompactionKnobs({ pressure, keepMin, staleToolKeepTurns, toolResultByteFloor }) {
+  if (pressure <= 0) return {};
+  const p = _clamp01(pressure);
   return {
-    keepMin: _scaledInt(keepMin, keepRatios[gear], 4),
-    maxToolResultAge: _scaledInt(staleToolKeepTurns, staleRatios[gear], 1),
-    toolResultByteFloor: _scaledInt(toolResultByteFloor, floorRatios[gear], 512),
+    keepMin: _scaledInt(keepMin, 1 - (0.70 * p), 4),
+    maxToolResultAge: _scaledInt(staleToolKeepTurns, 1 - (0.75 * p), 1),
+    toolResultByteFloor: _scaledInt(toolResultByteFloor, 1 - (0.75 * p), 512),
     compactionKnobBaselines: {
       keepMin,
       staleToolKeepTurns,
