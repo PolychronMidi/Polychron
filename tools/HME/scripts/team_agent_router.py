@@ -313,18 +313,18 @@ def main() -> int:
         }}))
         return 0
     target = resolve_target_for_tier(caller, request_tier)
-    if target is None and caller in _BLOCKED_CALLERS:
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": (
-                f"Agent tool blocked for {caller}: "
-                f"E1-E2 stage crew may not spawn subagents per team_subagent_routing_rules"
-            ),
-        }}))
-        return 0
     if target is None:
         data = _load()
+        if _is_blocked_stage_crew(caller, data):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": (
+                    f"Agent tool blocked for {caller}: "
+                    f"E1/E2 stage crew may not spawn subagents per team_subagent_routing_rules"
+                ),
+            }}))
+            return 0
         registry_exists = bool(data.get("agents"))
         if not registry_exists:
             # Single-user / no-crew-registered case: native dispatch is the
