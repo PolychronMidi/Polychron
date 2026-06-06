@@ -53,10 +53,13 @@ def generate(source: str | Path, title: str = "") -> str:
     text = p.read_text(encoding="utf-8", errors="ignore")
     lang = _lang(p)
     rel = p.as_posix()
+    try:
+        rel = p.resolve().relative_to(_REPO).as_posix()
+    except ValueError:
+        pass  # silent-ok: source outside repo keeps its given path
     syms = _symbols(text, lang)
-    included = ", ".join(syms[:14]) if syms else "the full source below"
+    included = ", ".join(syms[:14]) if syms else "the full live source"
     name = title or f"review {p.name}"
-    fence = lang or ""
     return (
         f"# Context Capsule: {name}\n\n"
         f"## artifact\n{rel} -- TODO: one-paragraph description of what this code does.\n\n"
@@ -67,7 +70,7 @@ def generate(source: str | Path, title: str = "") -> str:
         f"after checking'), and a one-line fix. A clean audit (no decision-changing issue, with\n"
         f"evidence) is a valid successful result.\n\n"
         f"## coverage\nincluded: {included}.\nexcluded: TODO -- imported helpers' internals and callers (assumed correct here).\n\n"
-        f"## evidence\n{rel}\n```{fence}\n{text}\n```\n"
+        f"## evidence\nLive source (read fresh at dispatch -- never a stale copy):\n- {rel}\n"
     )
 
 
