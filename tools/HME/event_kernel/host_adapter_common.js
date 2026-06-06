@@ -171,6 +171,8 @@ async function runHostAdapter(opts) {
   try {
     rawBody = await readStdin(`${opts.host}_adapter`);
   } catch (err) {
+    // silent-ok: stdin failures are relayed through finalRelay as valid host output
+    // (deny for gating events, diagnostic stderr otherwise).
     const result = err && err.code === 'HME_STDIN_TOO_LARGE'
       ? _stdinTooLargeResult(event, err)
       : { stdout: '', stderr: `[${opts.host}_adapter] stdin read failed: ${err.message || err}`, exit_code: GATING_EVENTS.has(event) ? 0 : 1 };
