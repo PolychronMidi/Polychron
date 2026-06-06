@@ -71,6 +71,47 @@ class CapsuleGenLintTests(unittest.TestCase):
         # The whole capsule library must already pass the lint (regression guard).
         self.assertEqual(capsule_lint.main(["--all"]), 0)
 
+    def test_generated_capsule_references_live_source_not_embedded_copy(self):
+        # The generator must NOT embed a frozen source copy -- it references the
+        # live file so the capsule can never drift into reviewing stale code.
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "sample.py"
+            src.write_text("def _alpha_helper(x):\n    return x\n", encoding="utf-8")
+            capsule_text = capsule_gen.generate(src, title="review sample.py")
+            self.assertIn("Live source (read fresh at dispatch", capsule_text)
+            self.assertNotIn("```", capsule_text, "generated capsule must not embed a fenced source copy")
+
+    def test_resolve_inlines_live_source_and_flags_stale_coverage(self):
+        # _resolve_capsule must inline CURRENT source for an ## evidence reference,
+        # so the coverage<->evidence check runs against live code: a symbol present
+        guard = capsule_lint._guard()
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "pkg").mkdir()
+            (root / "pkg" / "mod.py").write_text("def _present_fn():\n    return 1\n", encoding="utf-8")
+            capsule = (
+                "# Context Capsule: t\n\n## artifact\npkg/mod.py -- thing\n\n"
+                "## goal\ng\n\n## rubric\nr\n\n"
+                "## coverage\nincluded: _present_fn, _absent_fn.\nexcluded: none.\n\n"
+                "## evidence\nLive source (read fresh at dispatch):\n- pkg/mod.py\n"
+            )
+            self.assertEqual(guard._capsule_evidence_refs(capsule), ["pkg/mod.py"])
+            resolved = guard._resolve_capsule(capsule, root, 24000)
+            self.assertIn("def _present_fn", resolved, "live source must be inlined")
+            gaps = guard._capsule_coverage_gaps(resolved)
+            self.assertIn("_absent_fn", gaps, "coverage symbol absent from live source must be flagged")
+            self.assertNotIn("_present_fn", gaps)
+
+    def test_resolve_marks_missing_referenced_source(self):
+        guard = capsule_lint._guard()
+        with tempfile.TemporaryDirectory() as td:
+            capsule = (
+                "# Context Capsule: t\n\n## artifact\ngone.py\n\n## goal\ng\n\n## rubric\nr\n\n"
+                "## evidence\n- pkg/gone.py\n"
+            )
+            resolved = guard._resolve_capsule(capsule, Path(td), 24000)
+            self.assertIn("MISSING", resolved)
+
 
 if __name__ == "__main__":
     unittest.main()
