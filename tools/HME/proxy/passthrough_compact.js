@@ -158,7 +158,7 @@ function shrinkForPassthrough(payload, opts = {}) {
       if (serialized.length <= threshold) break;
     }
   }
-  if (maxTier >= 3) while (msgs.length > keepMin) {
+  if (allowMessageDrop) while (msgs.length > keepMin) {
     const first = msgs[0];
     if (!first || !Array.isArray(first.content)) break;
     const onlyOrphanResults = first.role === 'user'
