@@ -12,19 +12,19 @@ Example:
 
 ### Todo - Set 24
 
-#1 1_ A1 myth0s claim-audit addendum: capsule template + reviewer-charter structured finding record (claim/artifact+fn/failure-mode/precondition/supporting-evidence/contradictory-evidence/one-line-fix/severity/confidence); high-impact capsules only, routine reviews stay lightweight
+#1 5_ A1 myth0s claim-audit addendum: capsule template + reviewer-charter structured finding record (claim/artifact+fn/failure-mode/precondition/supporting-evidence/contradictory-evidence/one-line-fix/severity/confidence); high-impact capsules only, routine reviews stay lightweight
 
-#2 0_ A2 contradictory-evidence requirement in reviewer charter: every claimed defect must cite >=1 existing guard/test/code-path that might already cover it and say why it does/doesnt (false-positive reducer)
+#2 5_ A2 contradictory-evidence requirement in reviewer charter: every claimed defect must cite >=1 existing guard/test/code-path that might already cover it and say why it does/doesnt (false-positive reducer)
 
-#3 0_ A3 audit-thoroughness score separate from severity: source-read-only / source+adjacent-tests-config / source+runtime-repro-or-invariant -- so plausible P1 is distinguished from proven P1
+#3 5_ A3 audit-thoroughness score separate from severity: source-read-only / source+adjacent-tests-config / source+runtime-repro-or-invariant -- so plausible P1 is distinguished from proven P1
 
-#4 0_ A4 decision-impact weight per finding (load-bearing/substantive/peripheral) to focus peer budget; per cost-control charter, never used to suppress legitimate deep work
+#4 5_ A4 decision-impact weight per finding (load-bearing/substantive/peripheral) to focus peer budget; per cost-control charter, never used to suppress legitimate deep work
 
-#5 0_ A5 anti-inflation severity calibration with safety caveat: default to lower severity when uncertain UNLESS executable evidence or fail-open safety consequence (then fail closed)
+#5 5_ A5 anti-inflation severity calibration with safety caveat: default to lower severity when uncertain UNLESS executable evidence or fail-open safety consequence (then fail closed)
 
-#6 0_ A6 finding-death framing in charter: a peer reporting 'no decision-changing issue found, with evidence' has SUCCEEDED (clean audit is a win, not a gap to fill)
+#6 5_ A6 finding-death framing in charter: a peer reporting 'no decision-changing issue found, with evidence' has SUCCEEDED (clean audit is a win, not a gap to fill)
 
-#7 0_ A7 cross-role disagreement as uncertainty signal: red/blue/purple divergence beyond one severity tier on high-impact arch/security claims emits an explicit 'audit-uncertain: recommend human review' artifact
+#7 5_ A7 cross-role disagreement as uncertainty signal: red/blue/purple divergence beyond one severity tier on high-impact arch/security claims emits an explicit 'audit-uncertain: recommend human review' artifact
 
 #8 0_ B1 broaden mesh coverage: run fork/full-tool capsule-grounded rounds on fresh load-bearing surfaces (pre-write gates, state registry, stop-chain policy, session-state lifecycle, transcript compaction, proxy request mutation, tool-result semantics)
 
