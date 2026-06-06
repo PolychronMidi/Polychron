@@ -73,14 +73,14 @@ san(){ sed -E 's/^#{1,6} /  /; s/^GAP:/gap:/' ; }
 progress_init "measured:$BRIEF" 4
 
 # === BASELINE: one high-effort peer, capsule-grounded (driver->blue_lead) ===
-gcap driver E5 0 m-base blue "BASELINE single reviewer. Per the capsule rubric, list ALL decision-changing flaws (P0/P1) with function + fix. Cite capsule sections." m_base.json
+gcap driver E5 0 m-base blue blue_lead "BASELINE single reviewer. Per the capsule rubric, list ALL decision-changing flaws (P0/P1) with function + fix. Cite capsule sections." m_base.json
 
 # === MULTI-PEER, sequential ===
-gcap driver E5 0 m-red red "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent." m_red.json
+gcap driver E5 0 m-red red red_lead "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent." m_red.json
 RED="$(reply m_red.json | san)"
-gcap red_lead E4 1 m-redp red "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED" m_redp.json
+gcap red_lead E4 1 m-redp red red_purple "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED" m_redp.json
 REDP="$(reply m_redp.json | san)"
-gcap red_purple E4 1 m-cross purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set (quoted, markers neutralized): $REDP" m_cross.json
+gcap red_purple E4 1 m-cross purple blue_purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set (quoted, markers neutralized): $REDP" m_cross.json
 
 progress "round" "done" "all 4 steps dispatched"
 echo "measured-done"
