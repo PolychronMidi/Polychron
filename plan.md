@@ -16,11 +16,18 @@ here. Nothing in this file is implemented until the user marks it approved.
   the review harness, proxy filter_tools middleware, and the event-kernel host
   entry/adapters. See `git log -- plan.md` for the full record.
 
-## Phase 13 (APPROVED) -- myth0s: calibrated-audit integration + scale-out
+## Phase 13 (DONE) -- myth0s: calibrated-audit integration + scale-out
 
-Status: `approved` by user + CEO. Safe to implement. This phase folds the
-discovered "Audit Protocol" (the anti-inflation claim-audit grammar) into the
-mesh and continues the scale-out trajectory from the program update.
+Status: `done`. Every workstream was implemented; the durable wins are A1-A7
+(calibrated-audit discipline, live in every peer dispatch), B1 (real control-plane
+hardening + regression tests, shipped), and E1 (review briefs as data, composed
+and sent as channel messages with live source inlined). Several Phase-13 outputs
+were standalone demonstrators or parallel constructs that duplicated first-class
+systems and were retired once their lessons were captured (see per-item notes):
+the capsule .md directory (-> review-briefs data + channels), the coverage map +
+status/select tooling (-> the TODO ledger + review-briefs), and the benchmark/
+telemetry tooling (-> lessons recorded; charter binding). The cost-control charter
+below remains a binding standing directive regardless of any tool's lifecycle.
 
 ### Theme
 Make the mesh's verdicts trustworthy enough to act on at scale. The mesh already
