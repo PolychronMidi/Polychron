@@ -31,6 +31,11 @@ const ESCALATION_TIERS = [
   { keepRecent: 16, byteFloor: 1024 },
   { keepRecent: 4, byteFloor: 256 },
 ];
+const EMERGENCY_TIERS = [
+  { keepRecent: 80, byteFloor: 2048 },
+  { keepRecent: 80, byteFloor: 1024 },
+  { keepRecent: 80, byteFloor: 256 },
+];
 
 function _marker(originalBytes) {
   return `(content elided by hme-proxy transcript-compactor: original was ${originalBytes}B; full output remains in the wire history the model already consumed)`;
