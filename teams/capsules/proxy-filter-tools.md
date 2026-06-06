@@ -29,9 +29,9 @@ and doc/code contract mismatches.
 
 ## coverage
 included: full source for 03_filter_tools.js including _stripInlineComment,
-_projectDropList, _dropSet, onRequest, HME_FILTER_TOOLS_DROP parsing,
-cache_control rescue, ctx.PROJECT_ROOT handling, and the imported load_env.js
-parseEnvFile helper.
+_projectDropList, _optionalProcessDropList, _dropSet, onRequest,
+HME_FILTER_TOOLS_DROP parsing, cache_control rescue, ctx.PROJECT_ROOT handling,
+and the imported load_env.js parseEnvFile helper.
 excluded: unrelated proxy middleware, ask-peer.sh, team_dispatch_guard.py, and
 upstream Claude tool schema semantics beyond what appears in evidence.
 
@@ -82,8 +82,13 @@ function _projectDropList(projectRoot) {
   } catch (_err) { return ''; /* optional config */ }
 }
 
+function _optionalProcessDropList() {
+  if (!Object.prototype.hasOwnProperty.call(process.env, 'HME_FILTER_TOOLS_DROP')) return '';
+  return process.env.HME_FILTER_TOOLS_DROP;
+}
+
 function _dropSet(projectRoot) {
-  const raw = [process.env.HME_FILTER_TOOLS_DROP || '', _projectDropList(projectRoot)];
+  const raw = [_optionalProcessDropList(), _projectDropList(projectRoot)];
   return new Set(raw.flatMap((s) => _stripInlineComment(s).split(',')).map((s) => s.trim()).filter(Boolean));
 }
 
