@@ -81,12 +81,16 @@ Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
   consume context, or enforce policy, so coverage is tracked rather than ad hoc.
 
 ### Workstream C -- Formal evaluation harness
-- C1 [approved]: Turn the measured baseline-vs-mesh round into a repeatable
-  benchmark: single reviewer vs red/blue/purple mesh, scored on unique catches,
-  false-positive reduction, time/cost, and regression impact.
-- C2 [approved]: Treat the A1-A7 calibration layer as a measurable variable in
-  that benchmark (does calibration reduce false positives without hiding real
-  catches?). Convert anecdotal wins into tracked metrics.
+- C1 [done; tool retired, lesson kept]: The baseline-vs-mesh scorer
+  (score_round.py) demonstrated the lesson once -- baseline 6 findings vs mesh 25,
+  ~8 unique-in-mesh -- recorded in the pilot/TODO archive + git. The scorer used a
+  token-overlap heuristic (not ground truth) and nothing wired it into the live
+  flow, so it was retired as shelf-ware; it is cheaply regenerable if a real
+  re-benchmark need arises.
+- C2 [retired, lesson kept]: The CLAIM_AUDIT=0-vs-1 A/B harness (eval_harness.sh)
+  was never run as a recorded experiment; the calibration value (A1-A7 reduces
+  inflation without hiding catches) is held qualitatively from the B1 sweep and is
+  in production. Unrun harness retired rather than kept as shelf-ware.
 
 ### Workstream D -- Cost controls that improve quality, never abridge depth
 Governed by the Cost-control charter above. Caps target runaway/incoherence only.
