@@ -170,8 +170,22 @@ function _isCascadeBreakConditions(stdinJson) {
   const transcript = payload && payload.transcript_path;
   if (!transcript) return false;
   let lines;
-  try { lines = fs.readFileSync(transcript, 'utf8').split('\n'); }
-  catch (_e) { return false; }
+  try {
+    const st = fs.statSync(transcript);
+    if (!st.isFile()) return false;
+    if (st.size > CASCADE_READ_CAP) {
+      // Read only the tail; a split leading line is harmlessly skipped by the
+      // per-line JSON.parse below, and cascade-break only cares about recency.
+      const fd = fs.openSync(transcript, 'r');
+      try {
+        const buf = Buffer.allocUnsafe(CASCADE_READ_CAP);
+        const n = fs.readSync(fd, buf, 0, CASCADE_READ_CAP, st.size - CASCADE_READ_CAP);
+        lines = buf.toString('utf8', 0, n).split('\n');
+      } finally { fs.closeSync(fd); }
+    } else {
+      lines = fs.readFileSync(transcript, 'utf8').split('\n');
+    }
+  } catch (_e) { return false; }
   // Walk events tracking last user text, last assistant text, and the
   let lastUserText = '';
   let lastUserIdx = -1;
