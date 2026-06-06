@@ -42,8 +42,13 @@ function _projectDropList(projectRoot) {
   } catch (_err) { return ''; /* optional config */ }
 }
 
+function _optionalProcessDropList() {
+  if (!Object.prototype.hasOwnProperty.call(process.env, 'HME_FILTER_TOOLS_DROP')) return '';
+  return process.env.HME_FILTER_TOOLS_DROP;
+}
+
 function _dropSet(projectRoot) {
-  const raw = [process.env.HME_FILTER_TOOLS_DROP || '', _projectDropList(projectRoot)];
+  const raw = [_optionalProcessDropList(), _projectDropList(projectRoot)];
   return new Set(raw.flatMap((s) => _stripInlineComment(s).split(',')).map((s) => s.trim()).filter(Boolean));
 }
 
