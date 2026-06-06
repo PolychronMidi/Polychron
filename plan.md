@@ -98,10 +98,14 @@ Governed by the Cost-control charter above. Caps target runaway/incoherence only
   so reasonable in-depth work and necessary multi-turn peer dialogue are never
   cut short. Telemetry observes cost; it does not cap legitimate depth.
 
-### Workstream E -- Productize Context Capsules
-- E1 [approved]: Tooling to generate, lint, diff, and archive capsules
-  automatically (the coverage<->evidence consistency check becomes a reusable
-  linter), with the claim-audit addendum as an optional high-impact mode.
+### Workstream E -- Productize review briefs
+- E1 [approved; reworked]: Per-surface review briefs are DATA
+  (`teams/rounds/review-briefs.json`), composed + linted by `review_brief.py` and
+  SENT as channel messages with live source inlined fresh at dispatch -- never
+  committed capsule files (the old `teams/capsules/*.md` circumvented both the
+  channels and the limited-.md-files invariant; deleted). The coverage<->evidence
+  consistency check runs against live source (a freshness gate). The claim-audit
+  addendum stays an optional high-impact mode.
 
 ### Workstream F -- Policy and governance integration
 - F1 [approved]: Integrate the mesh more deeply with permission decisions, write
