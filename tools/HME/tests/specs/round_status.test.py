@@ -72,6 +72,32 @@ class RoundStatusTests(unittest.TestCase):
             self.assertEqual(failed["reply_bytes"], 0)
             self.assertEqual(failed["error_log"], "teams/runtime/output/err")
 
+    def test_failed_round_is_terminal_not_in_progress(self):
+        # A round whose final record is round/failed is terminal (FAILED), and
+        # must not be reported as still in-progress.
+        import io
+        import contextlib
+        led = Path(round_status._LEDGER)
+        led.parent.mkdir(parents=True, exist_ok=True)
+        backup = led.read_text(encoding="utf-8") if led.exists() else None
+        try:
+            _ledger(led, [
+                {"ts": "t0", "round": "r", "step": "round", "status": "start", "progress": "0/1"},
+                {"ts": "t1", "round": "r", "step": "a", "status": "failed", "target": "red_lead", "rc": 1, "reply_bytes": 0, "progress": "1/1"},
+                {"ts": "t2", "round": "r", "step": "round", "status": "failed", "detail": "1 step(s) failed", "progress": "1/1"},
+            ])
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                round_status.main([])
+            out = buf.getvalue()
+            self.assertIn("state: FAILED", out)
+            self.assertNotIn("in progress", out)
+        finally:
+            if backup is not None:
+                led.write_text(backup, encoding="utf-8")
+            elif led.exists():
+                led.unlink()
+
     def test_main_smoke_returns_zero(self):
         # The reader itself must never crash (it is the flying-blind guard).
         self.assertEqual(round_status.main([]), 0)
