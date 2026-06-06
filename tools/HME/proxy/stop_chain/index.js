@@ -306,6 +306,7 @@ async function runStopChain(stdinJson) {
     let enabled = true;
     try {
       enabled = _isPolicyEnabled(name, true);
+    // silent-ok: enable-check error logs + surfaces; mandatory fails closed, optional co
     } catch (err) {
       const msg = `policy-enable check failed: ${err.message}`;
       combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
