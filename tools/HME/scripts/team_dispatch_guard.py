@@ -542,6 +542,7 @@ def main() -> int:
                 message = f"GROUND YOUR ANSWER IN THIS CONTEXT (do not invent beyond it):\n{ctx}\n\n---\n{args.message}"
             except OSError as e:
                 return _deny("context_file", f"could not read --context-file: {e}")
+        message = _with_claim_audit(message, args.claim_audit)
         code, stdout, stderr = _send(root, target, leash, message, child_env)
         if code != 0:
             # F-A: the gated dispatch failed -> refund the reserved unit so a
