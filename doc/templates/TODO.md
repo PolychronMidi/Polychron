@@ -28,7 +28,7 @@ Example:
 
 #8 1_ B1 broaden mesh coverage: run fork/full-tool capsule-grounded rounds on fresh load-bearing surfaces (pre-write gates, state registry, stop-chain policy, session-state lifecycle, transcript compaction, proxy request mutation, tool-result semantics)
 
-#9 0_ B2 build reviewed coverage map of every place an agent can mutate state, consume context, or enforce policy, so coverage is tracked not ad hoc
+#9 5_ B2 build reviewed coverage map of every place an agent can mutate state, consume context, or enforce policy, so coverage is tracked not ad hoc -- DONE: doc/myth0s-coverage-map.md (policy-enforcement / state-mutation / context-consumption surfaces with review status), parsed by teams/rounds/select_target.py
 
 #10 0_ C1 formal evaluation harness: repeatable baseline-vs-mesh benchmark scored on unique catches, false-positive reduction, time/cost, and regression impact
 
