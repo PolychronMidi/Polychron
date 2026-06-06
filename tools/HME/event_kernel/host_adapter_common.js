@@ -7,32 +7,73 @@ const path = require('path');
 const { createLifecycleGraph } = require('./lifecycle_graph');
 const watchdog = require('./hook_watchdog');
 const { nudgeSupervisors } = require('./supervisors');
+const { renderDeny } = require('./decision_renderer');
 
 const LOOP_EVENTS = new Set(['Stop', 'UserPromptSubmit', 'SessionStart', 'PreCompact', 'PostCompact']);
+const GATING_EVENTS = new Set(['PreToolUse', 'PermissionRequest']);
 const MAX_STDIN_BYTES = 1024 * 1024;
+const MAX_PROXY_RESPONSE_BYTES = 1024 * 1024;
+
+class OversizeStdinError extends Error {
+  constructor(label, maxBytes) {
+    super(`[${label}] stdin exceeded ${maxBytes} bytes`);
+    this.code = 'HME_STDIN_TOO_LARGE';
+  }
+}
+
+function _stdinTooLargeResult(event, err) {
+  const message = err && err.message ? err.message : `stdin exceeded ${MAX_STDIN_BYTES} bytes`;
+  return {
+    stdout: GATING_EVENTS.has(event) ? renderDeny(event, message) : '',
+    stderr: ' ',
+    exit_code: 0,
+  };
+}
 
 function readStdin(label) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let input = '';
+    let bytes = 0;
+    let settled = false;
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      try { process.stdin.pause(); } catch (_e) { /* silent-ok: stdin may be closed */ }
+      reject(err);
+    };
     process.stdin.on('data', (chunk) => {
-      input += chunk.toString('utf8');
-      if (input.length > MAX_STDIN_BYTES) {
-        process.stderr.write(`[${label}] stdin exceeded ${MAX_STDIN_BYTES} bytes\n`);
-        process.exit(0);
+      if (settled) return;
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+      bytes += buf.length;
+      if (bytes > MAX_STDIN_BYTES) {
+        fail(new OversizeStdinError(label, MAX_STDIN_BYTES));
+        return;
       }
+      input += buf.toString('utf8');
     });
-    process.stdin.on('end', () => resolve(input || '{}'));
+    process.stdin.on('error', fail);
+    process.stdin.on('end', () => {
+      if (settled) return;
+      settled = true;
+      resolve(input || '{}');
+    });
   });
+}
+
+function _ancestorCandidates(start) {
+  const out = [];
+  let dir = path.resolve(start);
+  while (dir && dir !== path.dirname(dir)) {
+    out.push(dir);
+    dir = path.dirname(dir);
+  }
+  return out;
 }
 
 function resolveRoot(envKeys = []) {
   const candidates = envKeys.map((k) => process.env[k]).filter(Boolean);
+  candidates.push(..._ancestorCandidates(__dirname));
   candidates.push(process.cwd());
-  let dir = __dirname;
-  while (dir && dir !== path.dirname(dir)) {
-    candidates.push(dir);
-    dir = path.dirname(dir);
-  }
   for (const c of candidates) {
     const root = path.resolve(c);
     if (fs.existsSync(path.join(root, '.git')) && fs.existsSync(path.join(root, 'tools', 'HME'))) return root;
@@ -58,10 +99,24 @@ function maintenanceActive(root) {
   }
 }
 
+function _proxyTransportError(message) {
+  return { stdout: '', stderr: message, exit_code: 1, _hme_proxy_failed: true };
+}
+
+function _proxyFailed(result) {
+  return Boolean(result && result._hme_proxy_failed);
+}
+
 function postLifecycle(port, event, body, host = '', timeoutMs = 60_000) {
   const payload = Buffer.from(body);
   const query = host ? `&host=${encodeURIComponent(host)}` : '';
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
     const req = http.request({
       host: '127.0.0.1',
       port,
@@ -71,18 +126,37 @@ function postLifecycle(port, event, body, host = '', timeoutMs = 60_000) {
       headers: { 'Content-Type': 'application/json', 'Content-Length': payload.length },
     }, (res) => {
       const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300) return resolve(null);
-        try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
-        catch (err) { resolve({ stdout: '', stderr: 'Non-JSON Proxy Response', exit_code: 1 }); }
+      let total = 0;
+      res.on('data', (c) => {
+        total += c.length;
+        if (total > MAX_PROXY_RESPONSE_BYTES) {
+          finish(_proxyTransportError(`Proxy lifecycle response exceeded ${MAX_PROXY_RESPONSE_BYTES} bytes`));
+          req.destroy();
+          res.destroy();
+          return;
+        }
+        chunks.push(c);
       });
+      res.on('end', () => {
+        if (settled) return;
+        if (res.statusCode < 200 || res.statusCode >= 300) return finish(null);
+        try { finish(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
+        catch (err) { finish({ stdout: '', stderr: 'Non-JSON Proxy Response', exit_code: 1 }); }
+      });
+      res.on('error', () => finish(null));
     });
-    req.on('error', () => resolve(null));
-    req.on('timeout', () => req.destroy());
+    req.on('error', () => finish(null));
+    req.on('timeout', () => { finish(null); req.destroy(); });
     req.write(payload);
     req.end();
   });
+}
+
+async function _postLifecycleOrNull(root, port, event, body, host) {
+  const result = await postLifecycle(port, event, body, host);
+  if (!_proxyFailed(result)) return result;
+  append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${new Date().toISOString()}] [host-adapter] proxy transport failure (event=${event}): ${result.stderr || 'unknown'}`);
+  return null;
 }
 
 async function runHostAdapter(opts) {
@@ -93,12 +167,20 @@ async function runHostAdapter(opts) {
   if (opts.hostProjectEnv) process.env[opts.hostProjectEnv] = root;
   const port = Number(_hmeRequireEnv('HME_PROXY_PORT'));
   if (process.env.HME_ADAPTER_NO_NUDGE !== '1') nudgeSupervisors(root);
-  const rawBody = await readStdin(`${opts.host}_adapter`);
+  let rawBody;
+  try {
+    rawBody = await readStdin(`${opts.host}_adapter`);
+  } catch (err) {
+    const result = err && err.code === 'HME_STDIN_TOO_LARGE'
+      ? _stdinTooLargeResult(event, err)
+      : { stdout: '', stderr: `[${opts.host}_adapter] stdin read failed: ${err.message || err}`, exit_code: GATING_EVENTS.has(event) ? 0 : 1 };
+    opts.finalRelay(event, result, '{}');
+    return;
+  }
   const body = opts.buildBody({ event, root, rawBody, cwd: process.cwd() });
   let payload = {};
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
   const lifecycle = createLifecycleGraph({ root, host: opts.host, event, body, payload });
-  const thread_id = lifecycle.thread_id;
   lifecycle.checkpoint('adapter:received', { rawBody }, 'input');
   lifecycle.checkpoint('adapter:normalized', { body });
   const watch = watchdog.begin(root, event, body, { host: opts.host });
@@ -112,10 +194,10 @@ async function runHostAdapter(opts) {
     opts.finalRelay(event, result, body);
     return;
   }
-  let result = await postLifecycle(port, event, body, opts.host === 'codex' ? 'codex' : '');
+  let result = await _postLifecycleOrNull(root, port, event, body, opts.host === 'codex' ? 'codex' : '');
   if (!result) {
     await new Promise((r) => setTimeout(r, 500));
-    result = await postLifecycle(port, event, body, opts.host === 'codex' ? 'codex' : '');
+    result = await _postLifecycleOrNull(root, port, event, body, opts.host === 'codex' ? 'codex' : '');
   }
   const ts = new Date().toISOString();
   if (!result) {
@@ -139,4 +221,16 @@ async function runHostAdapter(opts) {
   opts.finalRelay(event, result, body);
 }
 
-module.exports = { readStdin, resolveRoot, append, maintenanceActive, postLifecycle, runHostAdapter };
+module.exports = {
+  readStdin,
+  resolveRoot,
+  append,
+  maintenanceActive,
+  postLifecycle,
+  runHostAdapter,
+  MAX_STDIN_BYTES,
+  MAX_PROXY_RESPONSE_BYTES,
+  GATING_EVENTS,
+  _stdinTooLargeResult,
+  _proxyFailed,
+};
