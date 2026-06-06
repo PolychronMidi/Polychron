@@ -29,7 +29,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const { PROJECT_ROOT } = require('../shared');
 const { isStrictMode } = require('../strict_mode');
 const { deny, instruct, allow } = require('../../event_kernel/decision');
