@@ -261,7 +261,7 @@ function createContextBudget() {
     if ((plan.maxTier || 0) <= 0 && !compactTrace) return;
     const model = payload && payload.model || '';
     const frac = budgetTokens > 0 ? usedTokens / budgetTokens : 0;
-    const key = [model, usedTokens, budgetTokens || 0, plan.maxTier || 0, Number.isFinite(plan.threshold) ? plan.threshold : 'inf', cappedByBytes ? 1 : 0, telemetryLimited ? 1 : 0].join(':');
+    const key = [model, usedTokens, budgetTokens || 0, plan.pressure || 0, Number.isFinite(plan.threshold) ? plan.threshold : 'inf', cappedByBytes ? 1 : 0, telemetryLimited ? 1 : 0].join(':');
     if (key === lastCompactDecisionKey) return;
     lastCompactDecisionKey = key;
     const pct = budgetTokens > 0 ? `${(frac * 100).toFixed(1)}%` : 'unknown';
