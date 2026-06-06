@@ -369,9 +369,10 @@ function createContextBudget() {
   function shrinkForProxyPassthrough(payload) {
     const plan = effectiveCompactThreshold(payload);
     if ((plan.maxTier || 0) <= 0) return 0;
+    const model = payload && (payload.model || payload.target_model || payload.original_model) || '';
     if (omoPruningBridge) pruneWithOmoSync(payload, {
       route: 'proxy-passthrough',
-      model: payload && (payload.model || payload.target_model || payload.original_model) || '',
+      model,
       protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
     });
     return shrinkForPassthrough(payload, {
@@ -379,8 +380,13 @@ function createContextBudget() {
       keepMin: plan.keepMin,
       maxToolResultAge: plan.maxToolResultAge,
       toolResultByteFloor: plan.toolResultByteFloor,
+      microcompactStop: ({ payload: p }) => {
+        const now = compactPressureTokens(p, serializedBytes(p), { ignoreStatusline: true, model });
+        return now.usedTokens <= plan.targetTokens;
+      },
+      tokenEstimator: (p) => compactPressureTokens(p, serializedBytes(p), { ignoreStatusline: true, model }).usedTokens,
       route: 'proxy-passthrough',
-      model: payload && (payload.model || payload.target_model || payload.original_model) || '',
+      model,
       projectRoot: PROJECT_ROOT,
     });
   }
