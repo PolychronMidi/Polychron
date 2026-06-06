@@ -166,6 +166,91 @@ test('pre-write hardcoded-root: rewrites literal root to $PROJECT_ROOT', async (
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+function replaceConfigSymlink(root) {
+  fs.rmSync(path.join(root, 'config'), { recursive: true, force: true });
+  fs.mkdirSync(path.join(root, 'config'), { recursive: true });
+}
+
+test('pre-write policy framework load error cannot skip hard denies', async () => {
+  const root = _withSandbox('hme-pre-write-policy-load-fail-');
+  replaceConfigSymlink(root);
+  fs.writeFileSync(path.join(root, 'config', 'policies.local.json'), JSON.stringify({ customPoliciesPath: 'missing-policies' }));
+  fresh(root);
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  const decision = await preWriteCheck(JSON.stringify({
+    tool_name: 'Write',
+    session_id: 's-policy-load-fail',
+    tool_input: { file_path: path.join(root, 'id_rsa'), content: 'x\n' },
+  }));
+  assert.strictEqual(decision.permissionDecision, 'deny');
+  assert.match(decision.reason, /credential filename/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('pre-write policy rewrites are rechecked against TODO hard gate', async () => {
+  const root = _withSandbox('hme-pre-write-rewrite-todo-gate-');
+  replaceConfigSymlink(root);
+  fs.mkdirSync(path.join(root, 'doc', 'templates'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'doc', 'templates', 'TODO.md'), [
+    '# File Format Rules',
+    '',
+    '### Todo - Set 1',
+    '',
+    '#1 0_ keep unfinished work',
+    '',
+  ].join('\n'));
+  const customDir = path.join(root, 'custom_policies');
+  fs.mkdirSync(customDir, { recursive: true });
+  fs.writeFileSync(path.join(customDir, 'rewrite-to-todo-drop.js'), [
+    "'use strict';",
+    "const path = require('path');",
+    'module.exports = {',
+    "  name: 'rewrite-to-todo-drop',",
+    "  description: 'test-only rewrite into TODO deletion',",
+    "  category: 'test',",
+    '  defaultEnabled: true,',
+    "  decisionClass: 'rewrite',",
+    "  match: { events: ['PreToolUse'], tools: ['Write'] },",
+    '  async fn(ctx) {',
+    "    return ctx.rewrite({ file_path: path.join(process.env.PROJECT_ROOT, 'doc', 'templates', 'TODO.md'), content: '# File Format Rules\\n\\n### Todo - Set 1\\n\\n' }, 'drop todo');",
+    '  },',
+    '};',
+    '',
+  ].join('\n'));
+  fs.writeFileSync(path.join(root, 'config', 'policies.local.json'), JSON.stringify({ customPoliciesPath: 'custom_policies' }));
+  fresh(root);
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  const decision = await preWriteCheck(JSON.stringify({
+    tool_name: 'Write',
+    session_id: 's-rewrite-todo-gate',
+    tool_input: { file_path: path.join(root, 'safe.txt'), content: 'safe\n' },
+  }));
+  assert.strictEqual(decision.permissionDecision, 'deny');
+  assert.match(decision.reason, /unfinished TODO deletion/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('pre-write state write outage cannot convert deny to allow', async () => {
+  const root = _withSandbox('hme-pre-write-state-outage-');
+  fresh(root);
+  const stateClient = require('../../proxy/session_state_client');
+  const original = stateClient.call;
+  stateClient.call = async () => { throw new Error('state down'); };
+  try {
+    const { preWriteCheck } = require('../../proxy/pre_write_check');
+    const decision = await preWriteCheck(JSON.stringify({
+      tool_name: 'Write',
+      session_id: 's-state-outage',
+      tool_input: { file_path: path.join(root, 'credentials.json'), content: 'x\n' },
+    }));
+    assert.strictEqual(decision.permissionDecision, 'deny');
+    assert.match(decision.reason, /credential filename/);
+  } finally {
+    stateClient.call = original;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('session state records structured verification evidence', () => {
   const root = _withSandbox('hme-session-state-');
   const state = require('../../proxy/session_state');
