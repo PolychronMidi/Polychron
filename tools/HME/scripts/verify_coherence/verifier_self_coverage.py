@@ -84,6 +84,13 @@ class VerifierSelfCoverageVerifier(Verifier):
         modules = _registry_modules()
         missing: list[str] = []
         stale: list[str] = []
+        # Mesh-found P1 (3-peer): a waiver naming a module that is not in the
+        # REGISTRY (typo / retired / pre-seeded future module) must FAIL, not be
+        unknown = [
+            f"{mod} -- waiver names no registered verifier module (typo/retired/"
+            f"pre-seeded); remove from {WAIVERS_REL}"
+            for mod in sorted(waivered - modules)
+        ]
         covered = 0
         for mod in sorted(modules):
             has_test = _has_test(specs_dir, mod)
