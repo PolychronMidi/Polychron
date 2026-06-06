@@ -301,7 +301,7 @@ function createContextBudget() {
     }
     if (consecutive429s > 0) {
       const cap = Math.max(1, Math.floor((budgetTokens || 128000) * 0.5 * contextBytesPerTokenEst / Math.pow(2, consecutive429s)));
-      plan = { ...plan, threshold: Math.min(plan.threshold, cap), maxTier: Math.max(plan.maxTier, 3) };
+      plan = { ...plan, threshold: Math.min(plan.threshold, cap), pressure: Math.max(plan.pressure || 0, 1), maxTier: Math.max(plan.maxTier || 0, 3), allowSummary: true, allowMessageDrop: true };
       cappedByBytes = true;
     }
     compactDecisionTelemetry({ payload: payload && { ...payload, model: payload.model || modelInfo.model }, bytes, usedTokens, budgetTokens, plan, cappedByBytes, telemetryLimited });
