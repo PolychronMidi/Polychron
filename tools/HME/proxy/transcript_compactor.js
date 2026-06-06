@@ -100,35 +100,34 @@ function compactTranscriptLines(rawLines, opts = {}) {
   const lines = rawLines.filter((l) => l !== undefined && l !== null);
   const total = lines.length;
   const cutoff = Math.max(0, total - keepRecent);
-  let beforeBytes = 0;
-  let afterBytes = 0;
   let changedEntries = 0;
   const out = new Array(total);
 
   for (let i = 0; i < total; i += 1) {
     const line = lines[i];
-    beforeBytes += Buffer.byteLength(line, 'utf8');
     // Recent window and blank lines: pass through untouched.
     if (i >= cutoff || !line.trim()) {
       out[i] = line;
-      afterBytes += Buffer.byteLength(line, 'utf8');
       continue;
     }
     let entry;
     try { entry = JSON.parse(line); }
-    catch (_e) { out[i] = line; afterBytes += Buffer.byteLength(line, 'utf8'); continue; }
+    catch (_e) { out[i] = line; continue; }
     const saved = compactEntry(entry, byteFloor);
     if (saved > 0) {
-      const next = JSON.stringify(entry);
-      out[i] = next;
-      afterBytes += Buffer.byteLength(next, 'utf8');
+      out[i] = JSON.stringify(entry);
       changedEntries += 1;
     } else {
       out[i] = line;
-      afterBytes += Buffer.byteLength(line, 'utf8');
     }
   }
-  return { lines: out, beforeBytes, afterBytes, changedEntries, total };
+  return {
+    lines: out,
+    beforeBytes: Buffer.byteLength(lines.join('\n'), 'utf8'),
+    afterBytes: Buffer.byteLength(out.join('\n'), 'utf8'),
+    changedEntries,
+    total,
+  };
 }
 
 // File-level atomic compaction. No-op (returns changed:0) when the file is
