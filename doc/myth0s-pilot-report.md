@@ -60,12 +60,25 @@ proxy-middleware-registry, and dispatcher-route-contract all PASS, and the affec
 test suites (team substrate, state_registry, stop_chain, pre-write/session-state,
 transcript_compactor, proxy extracted modules, tool-result marker) all green.
 
+## Follow-up closure
+The deferred/AUDIT-UNCERTAIN items (TODOs #17-#21) were subsequently worked to
+completion under the same calibrated discipline, each with regression tests:
+pre-write hard-deny ordering outside the fail-open policy frame; state-registry
+durable append + falsy-scalar-safe JSONL; stop-chain subagent escape gated by an
+adapter-minted one-use provenance token and cascade-break restricted to host/meta
+payloads; session-state lock-serialized update + corrupt-state quarantine + atomic
+legacy mirror; transcript-compactor real-byte escalation that never shrinks a
+byte-safe recent window. A LIFESAVER false-positive surfaced during this work (the
+PostToolUse todo-guard ignored the on-disk archive) and was fixed at source so a
+legitimate completion->archival no longer raises a phantom alert.
+
 ## Honest limits
 - The pilot reviewed HME's OWN control plane, not another team's codebase; a
   broader cross-team pilot is the next-phase extension.
 - The unique-in-mesh count is a token-overlap heuristic, not semantic ground truth.
-- Several confirmed-but-reachability-uncertain items were deferred (TODOs #17-#21)
-  rather than fixed in place -- by design, to avoid rushing risky changes.
+- The F1 ENFORCEMENT half (live gates consulting review status) remains parked at
+  TODO #15 (3_) pending a CEO/user design decision -- auditability shipped, but
+  wiring enforcement into the control plane is deliberately not done unilaterally.
 
 ## Conclusion
 On its own control plane, myth0s met all five G1 success criteria: it found real,
