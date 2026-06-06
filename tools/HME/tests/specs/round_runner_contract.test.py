@@ -22,6 +22,14 @@ class RoundRunnerContractTests(unittest.TestCase):
         for field in ('"target"', '"rc"', '"reply_bytes"', '"error_log"'):
             self.assertIn(field, text)
 
+    def test_progress_round_finish_reflects_failures(self):
+        # Mesh-found P1: the final round record must not claim done when a peer
+        # step failed. progress_round_finish emits 'failed' when any step failed.
+        text = PROGRESS.read_text(encoding="utf-8")
+        self.assertIn("progress_round_finish()", text)
+        self.assertIn("_PROGRESS_FAILED", text)
+        self.assertIn('progress "round" "failed"', text)
+
     def test_first_class_runners_use_typed_progress_and_named_targets(self):
         for path in ROUND_RUNNERS:
             text = path.read_text(encoding="utf-8")
