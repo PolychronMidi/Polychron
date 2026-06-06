@@ -298,27 +298,51 @@ async function runStopChain(stdinJson) {
   for (const name of _policyNamesForMode()) {
     appendTrace('enter', name);
 
-    // Honor unified-registry disable: if the user has opted out of this
-    if (!_isPolicyEnabled(name, true)) {
-      appendTrace('exit', `${name} skipped_disabled`);
-      continue;
-    }
-
     let result = null;
-    let policyMod;
+    const mandatory = MANDATORY_POLICIES.has(name);
+
+    // Honor unified-registry disable -- EXCEPT (mesh-found P1, stop-chain review):
+    // a MANDATORY policy can never be disabled away (it must fail closed), and a
+    let enabled = true;
     try {
-      policyMod = loadPolicy(name);
-    // silent-ok: policy load error logs; mandatory policies deny below.
+      enabled = _isPolicyEnabled(name, true);
     } catch (err) {
-      const msg = `failed to load: ${err.message}`;
+      const msg = `policy-enable check failed: ${err.message}`;
       combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
       logError(name, msg);
-      if (MANDATORY_POLICIES.has(name)) {
+      if (mandatory) {
         result = mandatoryPolicyFailure(name, msg);
-        appendTrace('exit', `${name} load_error_mandatory`);
       } else {
-        appendTrace('exit', `${name} load_error_optional`);
+        appendTrace('exit', `${name} enable_check_error_optional`);
         continue;
+      }
+    }
+    if (!result && !enabled) {
+      if (mandatory) {
+        result = mandatoryPolicyFailure(name, 'mandatory policy disabled by config');
+        appendTrace('exit', `${name} mandatory_disable_blocked`);
+      } else {
+        appendTrace('exit', `${name} skipped_disabled`);
+        continue;
+      }
+    }
+
+    let policyMod;
+    if (!result) {
+      try {
+        policyMod = loadPolicy(name);
+      // silent-ok: policy load error logs; mandatory policies deny below.
+      } catch (err) {
+        const msg = `failed to load: ${err.message}`;
+        combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
+        logError(name, msg);
+        if (mandatory) {
+          result = mandatoryPolicyFailure(name, msg);
+          appendTrace('exit', `${name} load_error_mandatory`);
+        } else {
+          appendTrace('exit', `${name} load_error_optional`);
+          continue;
+        }
       }
     }
     if (!result) {
