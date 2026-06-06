@@ -80,12 +80,16 @@ Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
   canonical until each citation is sourced.
 
 ### Workstream B -- Broaden target coverage
-- B1 [approved]: Point the fork/full-tool mesh, under the same sequential,
-  capsule-grounded discipline, at fresh load-bearing surfaces: pre-write gates,
-  state registry, stop-chain policy, session-state lifecycle, transcript
-  compaction, proxy request mutation, and tool-result semantics.
-- B2 [approved]: Build a reviewed map of every place an agent can mutate state,
-  consume context, or enforce policy, so coverage is tracked rather than ad hoc.
+- B1 [done]: The fork/full-tool mesh reviewed the fresh load-bearing surfaces
+  (pre-write gate, state registry, stop-chain, session-state, transcript
+  compaction, proxy request mutation, tool-result semantics) under the calibrated
+  claim-audit discipline; ~10 grounded P1s were fixed in place with regression
+  tests. The deepest durable win of the phase.
+- B2 [done; map retired as a TODO-duplicate]: The reviewed coverage was tracked --
+  then the standalone coverage map was retired because its review status duplicated
+  the TODO ledger and its surface inventory duplicated review-briefs.json. Coverage
+  is now tracked, not ad hoc, via the work tracker (open review work) + the brief
+  set (which surfaces have reviewed briefs) + git history.
 
 ### Workstream C -- Formal evaluation harness
 - C1 [done; tool retired, lesson kept]: The baseline-vs-mesh scorer
