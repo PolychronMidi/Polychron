@@ -596,13 +596,20 @@ def main() -> int:
     if next_depth > args.max_depth:
         return _deny("spawn_depth", f"dispatch depth {next_depth} exceeds cap {args.max_depth}", depth=depth, max_depth=args.max_depth)
 
-    target = resolve_target_for_tier(caller, effective_tier or args.tier)
-    if not target:
-        return _deny("no_target", f"no available target for {caller} at {effective_tier or args.tier}")
-    if target == caller:
-        return _deny("self_dispatch", f"router selected caller itself ({caller}); refusing peer loop")
-
     roles = _roles(root)
+    explicit_target = args.target.strip().lower()
+    if explicit_target:
+        target_error = _explicit_target_error(caller, explicit_target, roles, effective_tier or args.tier)
+        if target_error:
+            return _deny("target", target_error, target=explicit_target)
+        target = explicit_target
+    else:
+        target = resolve_target_for_tier(caller, effective_tier or args.tier)
+        if not target:
+            return _deny("no_target", f"no available target for {caller} at {effective_tier or args.tier}")
+        if target == caller:
+            return _deny("self_dispatch", f"router selected caller itself ({caller}); refusing peer loop")
+
     if target not in roles:
         return _deny("unregistered_target", f"target {target} is not in teams/roles.json", target=target)
     agents = _dashboard_agents(root)
@@ -610,7 +617,7 @@ def main() -> int:
     if not _dashboard_available(target_agent):
         return _deny(
             "stale_route",
-            f"router selected unavailable target {target}; refusing dispatch instead of silently rerouting the role",
+            f"selected unavailable target {target}; refusing dispatch instead of silently rerouting the role",
             target=target,
             target_status=target_agent.get("status") if isinstance(target_agent, dict) else None,
         )
