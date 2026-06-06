@@ -46,7 +46,10 @@ def _default_map() -> Path:
 
 
 def main(argv: list) -> int:
-    map_path = Path(argv[0]) if argv else _default_map()
+    # The map path is the first NON-flag arg; flags like --all must not be
+    # mistaken for a path (self-found bug when dogfooding the CLI).
+    positional = [a for a in argv if not a.startswith("--")]
+    map_path = Path(positional[0]) if positional else _default_map()
     if "--all" in argv:
         for t in pending_targets(map_path):
             print(f"{t['name']}\t{t['file']}")
