@@ -108,7 +108,7 @@ function _proxyFailed(result) {
   return Boolean(result && result._hme_proxy_failed);
 }
 
-function postLifecycle(port, event, body, host = '', timeoutMs = 60_000) {
+function postLifecycle(port, event, body, host = '', timeoutMs = PROXY_ATTEMPT_TIMEOUT_MS) {
   const payload = Buffer.from(body);
   const query = host ? `&host=${encodeURIComponent(host)}` : '';
   return new Promise((resolve) => {
