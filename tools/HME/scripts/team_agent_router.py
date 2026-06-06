@@ -203,12 +203,15 @@ def _route_purple(caller: str, request_tier: str, data: dict) -> Optional[str]:
 
 def _route_crew(caller: str, request_tier: str, data: dict) -> Optional[str]:
     caller_agent = (data.get("agents") or {}).get(caller, {})
-    caller_tier = str(caller_agent.get("tier") or "").upper()
-    cap = caller_tier if caller_tier in {"E3", "E4"} else request_tier
-    if cap not in {"E3", "E4"}:
+    caller_tier = _agent_tier(caller, caller_agent)
+    if caller_tier not in _ALLOWED_STAGE_CREW_SPAWN_TIERS:
         return None
-    capped = request_tier if request_tier <= cap else cap
-    return _crew_fallback(capped, data)
+    requested = _tier_num(request_tier)
+    cap = _tier_num(caller_tier)
+    if requested is None or cap is None:
+        return None
+    capped = _tier_name(min(requested, cap))
+    return _crew_fallback(capped, data, exclude={caller})
 
 
 _ROUTERS: dict[str, callable] = {
