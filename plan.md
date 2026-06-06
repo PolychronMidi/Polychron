@@ -41,12 +41,23 @@ here. Nothing in this file is implemented until the user marks it approved.
   (-> lessons recorded; charter binding). F1 enforcement declined (would fail-closed
   on legit work or be theater). Full record: `git log -- plan.md`.
 
-## Phase 14 (proposed) -- Mesh refinement, then HME self-coherence expansion
+## Phase 14 (done) -- Mesh refinement, then HME self-coherence expansion
 
-Status: `approved` / active. The session goal explicitly directs execution of all of
-`plan.md` through deep mesh consultation, tracked in TODO, for highest-performing
-self-evolvement. User rejected moving to `src/` product focus now: the mesh needs
-more refinement first, and the next expansion target is HME's self-coherence suite.
+Status: `done` (implemented + verified). Executed via deep red/blue/purple mesh
+consultation, tracked in TODO Set 27 (#23-#28, archived to log/todo/set27.md). Every
+workstream landed grounded fixes with regression tests; HCI held ~99 with no FAIL.
+Durable wins: WS1 round-reliability contract (typed durable progress_result records,
+named-role targets, per-peer reply capture, stale-output cleanup, failure-aware
+round-finish, FAILED reader state -- round_status/round_runner_contract tests); WS2
+mesh signal-discipline (guard refunds budget on pre-send capsule/context denies,
+driver->lead channel labeled to roles.json truth, chained-handoff reply cap raised so
+cross-exam dialogue is never truncated); WS3 HCI-integrity hardening (registry
+preflight fails closed on duplicate names / non-finite-or-<=0 weights, central
+status/score normalization so a FAIL can't read green, verifier_self_coverage no
+longer self-exempt, unknown waivers now FAIL -- hci_integrity test). WS4 ran entirely
+through existing ledgers. Native-Agent-fallback finding DECLINED with contradictory
+evidence (#27); cap-divergence resolved via single-source cap (#28). The original
+intent stands: mesh refined first; no `src/` product focus this phase.
 
 Theme: harden the red/blue/purple mesh until peer rounds are reliable, observable,
 grounded, and non-bloating; then apply that refined mesh to expand and sharpen the
