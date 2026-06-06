@@ -22,8 +22,12 @@ TYPE_TIER: dict[str, str] = {
     "statusline-setup": "E1",
 }
 
-# Who cannot spawn subagents at all
-_BLOCKED_CALLERS = frozenset({"crew_e1_0", "crew_e1_1", "crew_e2_0", "crew_e2_1"})
+# Stage-crew roles are named crew_e<tier>_<slot>. Only E3/E4 stage crew may
+# spawn subagents; E1/E2 crew are execution leaves.
+_CREW_ROLE_RE = re.compile(r"^crew_e([1-5])_\d+$")
+_ALLOWED_STAGE_CREW_SPAWN_TIERS = frozenset({"E3", "E4"})
+_BLOCKED_STAGE_CREW_SPAWN_TIERS = frozenset({"E1", "E2"})
+_VALID_TIERS = frozenset({"E1", "E2", "E3", "E4", "E5"})
 
 
 def _load() -> dict:
