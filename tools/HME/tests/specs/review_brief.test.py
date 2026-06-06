@@ -28,7 +28,6 @@ class ReviewBriefTests(unittest.TestCase):
     def test_capsules_directory_is_gone(self):
         # The committed capsule .md directory was the circumvention -- it must
         # stay deleted; briefs live as data, sent as channel messages.
-        self.assertFalseIfExists = (ROOT / "teams" / "capsules")
         self.assertFalse((ROOT / "teams" / "capsules").exists(),
                          "teams/capsules/ must not be reintroduced; briefs are data")
 
