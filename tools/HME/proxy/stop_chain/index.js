@@ -195,6 +195,7 @@ function _isCascadeBreakConditions(stdinJson) {
   // Walk events tracking last user text, last assistant text, and the
   let lastUserText = '';
   let lastUserIdx = -1;
+  let lastUserIsMeta = false;
   let lastAssistantText = '';
   let lastAssistantIdx = -1;
   let lastAssistantHadToolUse = false;
