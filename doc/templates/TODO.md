@@ -38,7 +38,7 @@ Example:
 
 #13 0_ D2 cost control (charter-bound): adaptive effort + per-finding cost telemetry with explicit headroom so reasonable depth and necessary multi-turn peer dialogue are never cut short; telemetry observes, never caps legit depth
 
-#14 0_ E1 productize Context Capsules: tooling to generate/lint/diff/archive capsules (coverage<->evidence consistency check as a reusable linter) with the claim-audit addendum as optional high-impact mode
+#14 5_ E1 productize Context Capsules: tooling to generate/lint/diff/archive capsules (coverage<->evidence consistency check as a reusable linter) with the claim-audit addendum as optional high-impact mode -- DONE: teams/rounds/capsule_lint.py (standalone linter reusing the guard's _load_capsule + _capsule_coverage_gaps so it can't drift; --all lints the whole library) + teams/rounds/capsule_gen.py (generates a lint-passing skeleton from a source file, auto-seeding coverage symbols from embedded evidence) + capsule_tooling.test.py (4 tests); all 14 live capsules lint clean. (claim-audit addendum already shipped as the guard --claim-audit high-impact mode in A1)
 
 #15 0_ F1 deeper policy/governance integration: wire the mesh into permission decisions, write gates, state ownership, and lifecycle hooks so every autonomous action is governable and auditable
 
