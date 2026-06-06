@@ -11,3 +11,8 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 27
+
+#23 1_ Execute Phase 14 Workstream 1 via mesh: make the corrected progress-ledger/status-reader/reply-capture/failure-state contract binding for remaining first-class round runners, with regression tests and HCI verification
+#24 0_ Execute Phase 14 Workstream 2 via mesh: run corrected red/blue/purple consultation on mesh signal discipline (dispatch guard, review_brief.py, ask-peer routing, team-channel writes), accept only decision-changing grounded fixes, and verify regressions
+#25 0_ Execute Phase 14 Workstream 3 via mesh: select one HME self-coherence-suite slice, run corrected consultation for P0/P1 gaps that make HCI misleading/noisy/stale/fail-open, and land verifier/test/registry fixes
+#26 0_ Execute Phase 14 Workstream 4: keep all approved work in TODO, team messages in channels, review-brief data beside runners, and update plan.md status only after implementation + verification
