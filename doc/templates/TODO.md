@@ -34,7 +34,7 @@ Example:
 
 #11 5_ C2 treat the A1-A7 calibration layer as a measurable variable in the benchmark (does calibration cut false positives without hiding real catches) -- DONE: teams/rounds/eval_harness.sh runs the round CLAIM_AUDIT=0 vs =1 and score_round.compare() diffs the two scorecards (calibration-signal delta + severity delta + unique-catch delta); covered by score_round.test.py compare test
 
-#12 0_ D1 cost control (charter-bound): smarter target selection + capsule-evidence caching that reduces redundant re-derivation, never truncates legitimate exploration
+#12 5_ D1 cost control (charter-bound): smarter target selection + capsule-evidence caching that reduces redundant re-derivation, never truncates legitimate exploration -- DONE: teams/rounds/capsule_cache.py (memoize capsule coverage<->evidence validation by content hash; edits invalidate; caches ONLY static validation, never peer exploration) + teams/rounds/select_target.py (next pending surface from the B2 map) + capsule_cache_select.test.py (3 tests); dogfooding the CLI caught + fixed a --all arg-parse bug
 
 #13 0_ D2 cost control (charter-bound): adaptive effort + per-finding cost telemetry with explicit headroom so reasonable depth and necessary multi-turn peer dialogue are never cut short; telemetry observes, never caps legit depth
 
