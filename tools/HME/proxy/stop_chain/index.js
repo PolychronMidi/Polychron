@@ -144,6 +144,12 @@ function tryParseJson(s) {
   try { return JSON.parse(s || '{}'); } catch (_e) { return {}; }
 }
 
+function _trustedSubagentEscape(payload) {
+  if (!payload || payload._hme_subagent !== true) return false;
+  return require('../../event_kernel/subagent_provenance')
+    .verifySubagentToken(PROJECT_ROOT, payload);
+}
+
 function loadPolicy(name) {
   // Hot-reload: policies are small + edited frequently while iterating on
   const policyPath = require.resolve(path.join(__dirname, 'policies', name));
