@@ -75,15 +75,22 @@ function readState(sessionId = '') {
   return _readStateUnlocked(sessionId);
 }
 
-function writeState(state) {
-  const s = normalize(state);
-  s.updated_at = nowIso();
-  const dir = path.dirname(STATE_FILE);
+function _fsyncDir(dir) {
+  let dfd;
+  try {
+    dfd = fs.openSync(dir, 'r');
+    fs.fsyncSync(dfd);
+  } catch (_e) {
+    // silent-ok: directory fsync is best-effort (some platforms/filesystems disallow it)
+  } finally {
+    if (dfd !== undefined) fs.closeSync(dfd);
+  }
+}
+
+function _writeFileDurableAtomic(file, text) {
+  const dir = path.dirname(file);
   fs.mkdirSync(dir, { recursive: true });
-  const text = JSON.stringify(s, null, 2);
-  const tmp = `${STATE_FILE}.${process.pid}.tmp`;
-  // Mesh-found P1 (session-state review): crash-DURABLE atomic write, mirroring
-  // state_registry._writeAtomic. fsync the temp file before rename AND the parent
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
   const fd = fs.openSync(tmp, 'w');
   try {
     fs.writeSync(fd, text);
@@ -91,25 +98,62 @@ function writeState(state) {
   } finally {
     fs.closeSync(fd);
   }
-  fs.renameSync(tmp, STATE_FILE);
-  let dfd;
-  try {
-    dfd = fs.openSync(dir, 'r');
-    fs.fsyncSync(dfd);
-  } catch (_e) {
-    // silent-ok: directory fsync is best-effort (some platforms disallow); the
-    // data fsync above already happened.
-  } finally {
-    if (dfd !== undefined) fs.closeSync(dfd);
-  }
-  try { fs.writeFileSync(LEGACY_STATE_FILE, text); } catch (_e) { /* best-effort mirror */ }
+  fs.renameSync(tmp, file);
+  _fsyncDir(dir);
+}
+
+function writeState(state) {
+  const s = normalize(state);
+  s.updated_at = nowIso();
+  const text = JSON.stringify(s, null, 2);
+  // Mesh-found P1/P2 (session-state review): crash-DURABLE atomic writes for the
+  // canonical state file AND the legacy mirror; no torn full-file mirror writes.
+  _writeFileDurableAtomic(STATE_FILE, text);
+  try { _writeFileDurableAtomic(LEGACY_STATE_FILE, text); } catch (_e) { /* silent-ok: legacy mirror is best-effort. */ }
   return s;
 }
 
+function _sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function _isStaleLock() {
+  try {
+    const st = fs.statSync(LOCK_DIR);
+    return Date.now() - st.mtimeMs > LOCK_STALE_MS;
+  } catch (_e) { return false; }
+}
+
+function _acquireLock() {
+  const started = Date.now();
+  while (true) {
+    try {
+      fs.mkdirSync(LOCK_DIR, { mode: 0o700 });
+      try { fs.writeFileSync(path.join(LOCK_DIR, 'owner'), `${process.pid} ${nowIso()}\n`); }
+      catch (_e) { /* silent-ok: owner file is diagnostic only. */ }
+      return () => { try { fs.rmSync(LOCK_DIR, { recursive: true, force: true }); } catch (_e) { /* silent-ok: lock cleanup best-effort. */ } };
+    } catch (err) {
+      if (!err || err.code !== 'EEXIST') throw err;
+      if (_isStaleLock()) {
+        try { fs.rmSync(LOCK_DIR, { recursive: true, force: true }); }
+        catch (_e) { /* silent-ok: another process may remove stale lock first. */ }
+        continue;
+      }
+      if (Date.now() - started > LOCK_WAIT_MS) throw new Error(`session_state lock timeout at ${LOCK_DIR}`);
+      _sleepMs(25);
+    }
+  }
+}
+
 function update(mutator, sessionId = '') {
-  const s = readState(sessionId);
-  const next = mutator(s) || s;
-  return writeState(next);
+  const release = _acquireLock();
+  try {
+    const s = _readStateUnlocked(sessionId);
+    const next = mutator(s) || s;
+    return writeState(next);
+  } finally {
+    release();
+  }
 }
 
 function _pushBounded(arr, item, max) {
