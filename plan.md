@@ -112,10 +112,12 @@ Governed by the Cost-control charter above. Caps target runaway/incoherence only
   in the ONE work tracker (doc/templates/TODO.md); the round runner takes the
   surface/brief directly. The charter (focus effort, never truncate exploration)
   stays binding on the runners themselves.
-- D2 [approved]: Adaptive effort levels and per-finding cost telemetry, keeping
-  dispatch sequential and bounded against runaway loops -- with explicit headroom
-  so reasonable in-depth work and necessary multi-turn peer dialogue are never
-  cut short. Telemetry observes cost; it does not cap legitimate depth.
+- D2 [retired, lesson kept as the binding charter]: The cost_telemetry tool was
+  never wired into a runner and never recorded a row, so it was retired. Its
+  durable lesson -- observe cost, raise floors not caps, NEVER abridge legitimate
+  depth or needed peer dialogue -- lives in the Cost-control charter above (a
+  binding standing directive) and in sequential bounded dispatch, not in an inert
+  recorder.
 
 ### Workstream E -- Productize review briefs
 - E1 [approved; reworked]: Per-surface review briefs are DATA
