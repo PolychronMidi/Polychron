@@ -218,6 +218,7 @@ function _isCascadeBreakConditions(stdinJson) {
       if (text.trim()) {
         lastUserText = text;
         lastUserIdx = evIdx;
+        lastUserIsMeta = entry.isMeta === true;
       }
     } else if (role === 'assistant') {
       let text = '';
