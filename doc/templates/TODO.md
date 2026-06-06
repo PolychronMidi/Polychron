@@ -11,4 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 28
-#29 1_ ensure custom Agent/subagent routing matches team_subagent_routing_rules exactly, with regression coverage for driver, lead, purple, and stage-crew fallbacks
+#29 5_ ensure custom Agent/subagent routing matches team_subagent_routing_rules exactly, with regression coverage for driver, lead, purple, and stage-crew fallbacks; implemented generalized E1/E2 blocking, E3/E4 stage-crew caps, driver/lead/purple fallback logic, and tests
