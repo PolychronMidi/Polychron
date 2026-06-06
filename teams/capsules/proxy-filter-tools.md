@@ -3,8 +3,8 @@
 ## artifact
 tools/HME/proxy/middleware/03_filter_tools.js -- central proxy middleware that
 removes configured tool definitions from outgoing Anthropic payloads. The capsule
-also includes the imported tools/HME/proxy/shared/load_env.js environment loader
-because _dropSet calls _hmeRequireEnv/requireEnv to load HME_FILTER_TOOLS_DROP.
+also includes tools/HME/proxy/shared/load_env.js because _projectDropList reuses
+its parseEnvFile helper for project .env syntax.
 
 ## goal
 Find decision-changing correctness/safety flaws in the central tool-filter path
@@ -16,7 +16,8 @@ no local tool-deny path and filtering is centralized here. Cite function + fix.
 Peers are driver forks with full inherited context and live tool access; any tool
 filtering is centralized here via HME_FILTER_TOOLS_DROP. Empty/unset drop lists
 are documented as no-op. The middleware may run for current and replayed payloads;
-it must be deterministic, idempotent per payload, and must call ctx.markDirty()
+it must be deterministic, idempotent per payload, root-scoped when PROJECT_ROOT is
+provided, avoid process.cwd fallback for project .env reads, and call ctx.markDirty()
 when payload.tools changes. Review only the source in evidence unless you verify
 extra facts with tools.
 
@@ -28,9 +29,9 @@ and doc/code contract mismatches.
 
 ## coverage
 included: full source for 03_filter_tools.js including _stripInlineComment,
-_dropSet, onRequest, HME_FILTER_TOOLS_DROP parsing, cache_control rescue, and the
-imported load_env.js functions parseEnvFile, expandEnvValues, loadEnv,
-loadDefaultEnvForRequire, requireEnv, and defaultEnvPath.
+_projectDropList, _dropSet, onRequest, HME_FILTER_TOOLS_DROP parsing,
+cache_control rescue, ctx.PROJECT_ROOT handling, and the imported load_env.js
+parseEnvFile helper.
 excluded: unrelated proxy middleware, ask-peer.sh, team_dispatch_guard.py, and
 upstream Claude tool schema semantics beyond what appears in evidence.
 
@@ -38,7 +39,7 @@ upstream Claude tool schema semantics beyond what appears in evidence.
 tools/HME/proxy/middleware/03_filter_tools.js
 ```js
 'use strict';
-const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
+const { parseEnvFile: _parseEnvFile } = require('../shared/load_env.js');
 /**
  * Drop tool definitions you never use from the request before it reaches
  * Anthropic. The `tools` array is ~60KB on every request -- bigger than
@@ -72,14 +73,17 @@ function _stripInlineComment(value) {
   return String(value || '').replace(/\s+#.*$/, '').trim();
 }
 
-function _dropSet(projectRoot) {
-  const raw = [_hmeRequireEnv('HME_FILTER_TOOLS_DROP')];
+function _projectDropList(projectRoot) {
+  const root = typeof projectRoot === 'string' ? projectRoot.trim() : '';
+  if (!root) return '';
   try {
-    const envPath = path.join(projectRoot || process.cwd(), '.env');
-    const text = fs.readFileSync(envPath, 'utf8');
-    const line = text.split(/\r?\n/).find((l) => /^\s*HME_FILTER_TOOLS_DROP\s*=/.test(l));
-    if (line) raw.push(line.replace(/^\s*HME_FILTER_TOOLS_DROP\s*=\s*/, ''));
-  } catch (_err) { /* optional config */ }
+    const values = _parseEnvFile(path.join(root, '.env'));
+    return values.get('HME_FILTER_TOOLS_DROP') || '';
+  } catch (_err) { return ''; /* optional config */ }
+}
+
+function _dropSet(projectRoot) {
+  const raw = [process.env.HME_FILTER_TOOLS_DROP || '', _projectDropList(projectRoot)];
   return new Set(raw.flatMap((s) => _stripInlineComment(s).split(',')).map((s) => s.trim()).filter(Boolean));
 }
 
@@ -110,7 +114,7 @@ module.exports = {
 
 ```
 
-### tools/HME/proxy/shared/load_env.js
+tools/HME/proxy/shared/load_env.js
 ```js
 // Shared root .env loader for Node entrypoints.
 
