@@ -52,10 +52,6 @@ def _run():
             print(f"[FAIL] {name}: expected {expect} got {got}")
         else:
             print(f"[pass] {name}")
-    for name, before, after, expect in cases:
-        got = len(lost(before, after))
-        if got != expect:
-            failures.append(f"{name}: expected {expect} lost, got {got}")
 
     # main() archive rescue: an item dropped from the active file but recorded
     # 5_-done in an on-disk set*.md archive must NOT raise a LIFESAVER (it was
