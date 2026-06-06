@@ -72,6 +72,8 @@ function _readStateUnlocked(sessionId = '') {
   try {
     return normalize(JSON.parse(raw), sessionId);
   } catch (err) {
+    // silent-ok: corrupt state is renamed aside + logged to hme-errors.log by
+    // _quarantineCorruptState, then reset to a writable default (mesh-found #20).
     _quarantineCorruptState(err);
     return defaultState(sessionId);
   }
