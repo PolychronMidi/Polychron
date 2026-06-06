@@ -26,7 +26,7 @@ Example:
 
 #7 5_ A7 cross-role disagreement as uncertainty signal: red/blue/purple divergence beyond one severity tier on high-impact arch/security claims emits an explicit 'audit-uncertain: recommend human review' artifact
 
-#8 0_ B1 broaden mesh coverage: run fork/full-tool capsule-grounded rounds on fresh load-bearing surfaces (pre-write gates, state registry, stop-chain policy, session-state lifecycle, transcript compaction, proxy request mutation, tool-result semantics)
+#8 1_ B1 broaden mesh coverage: run fork/full-tool capsule-grounded rounds on fresh load-bearing surfaces (pre-write gates, state registry, stop-chain policy, session-state lifecycle, transcript compaction, proxy request mutation, tool-result semantics)
 
 #9 0_ B2 build reviewed coverage map of every place an agent can mutate state, consume context, or enforce policy, so coverage is tracked not ad hoc
 
