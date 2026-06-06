@@ -311,30 +311,32 @@ async function preWriteCheck(stdinJson) {
         const { recordPolicyDeny } = require('../event_kernel/hook_decision_log');
         recordPolicyDeny(PROJECT_ROOT, payload, firstDeny.policy, firstDeny.reason);
       } catch (_e) { /* silent-ok: telemetry must never block */ }
-      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
       return out;
     }
-    if (errors.length) return _permission('ask', errors.map((e) => `${e.policy}: ${e.error}`).join('\n'));
+    // Mesh-found P1 (pre-write gate review): a policy-chain error must NOT
+    // preempt the remaining HARD-deny checks with a softer `ask`. Run the hard
     const shellDecision = _shellParityDecision(payload);
     if (shellDecision.permissionDecision !== 'allow') {
       const out = _repeatDeny(payload, shellDecision);
-      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
       return out;
     }
     const editCurrentDecision = _editCurrentFileDecision(payload);
     if (editCurrentDecision) {
       const out = _repeatDeny(payload, editCurrentDecision);
-      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
       return out;
     }
     const kbDecision = await _kbBugfixDecision((payload.tool_input || {}).file_path || '', _content(payload), tool === 'Write' ? 'Write' : 'Edit');
     if (kbDecision) {
       const out = _repeatDeny(payload, kbDecision);
-      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
       return out;
     }
+    if (errors.length) return _permission('ask', errors.map((e) => `${e.policy}: ${e.error}`).join('\n'));
     if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
-    await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
+    await _advisoryWrite(payload.session_id || '', { payload, decision: shellDecision });
     if (rewrites && rewrites.length && shellDecision.permissionDecision === 'allow') {
       return { ...shellDecision, updatedInput: ctx.toolInput };
     }
