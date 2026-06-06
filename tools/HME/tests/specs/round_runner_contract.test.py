@@ -42,6 +42,10 @@ class RoundRunnerContractTests(unittest.TestCase):
                 self.assertIn("reply captured", text)
                 self.assertIn("dispatch failed", text)
                 self.assertIn("reply_bytes", text)
+                # Final round state must go through the failure-aware finisher,
+                # never an unconditional success claim.
+                self.assertIn("progress_round_finish", text)
+                self.assertNotIn('progress "round" "done"', text)
 
     def test_first_class_runners_clean_stale_outputs_without_destroying_channels_or_sessions(self):
         for path in ROUND_RUNNERS:
