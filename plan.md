@@ -16,12 +16,11 @@ here. Nothing in this file is implemented until the user marks it approved.
   the review harness, proxy filter_tools middleware, and the event-kernel host
   entry/adapters. See `git log -- plan.md` for the full record.
 
-## Phase 13 (PROPOSED) -- myth0s: calibrated-audit integration + scale-out
+## Phase 13 (APPROVED) -- myth0s: calibrated-audit integration + scale-out
 
-Status: every item below is `proposed`. Awaiting user + CEO review. Nothing is
-implemented until marked `approved`. This phase folds the discovered "Audit
-Protocol" (the anti-inflation claim-audit grammar) into the mesh and continues
-the scale-out trajectory from the program update.
+Status: `approved` by user + CEO. Safe to implement. This phase folds the
+discovered "Audit Protocol" (the anti-inflation claim-audit grammar) into the
+mesh and continues the scale-out trajectory from the program update.
 
 ### Theme
 Make the mesh's verdicts trustworthy enough to act on at scale. The mesh already
@@ -29,6 +28,16 @@ preserves context, grounds reviews in capsules, and routes peers through hard
 guardrails. This phase adds the missing calibrated-honesty layer and broadens
 coverage, evaluation, cost control, and governance integration -- without ever
 neutering peer context or tools.
+
+### Cost-control charter (CEO directive -- binding on Workstream D and all budgets)
+Cost controls exist ONLY to improve output quality and to prevent runaway /
+incoherent agents. They must NEVER abridge an agent's work when it is reasonable
+for it to go in depth. Inter-agent communication is sometimes necessary --
+including multi-turn back-and-forth -- and budgets must NOT abridge that synergy.
+Concretely: caps/budgets target runaway loops and incoherence, not legitimate
+depth; any budget that would truncate reasonable depth or needed peer dialogue is
+a bug, not a feature. A4 (decision-impact weight) and A5 (anti-inflation) likewise
+must never be used to suppress legitimate deep work -- only to focus and calibrate.
 
 ### Workstream A -- Audit Protocol integration (calibrated honesty)
 Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
