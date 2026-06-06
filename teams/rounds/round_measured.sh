@@ -16,13 +16,14 @@ DASH="$REPO/tools/HME/runtime/team-dashboard.json"
 SNAP="$(mktemp "$OUT/m.snap.XXXXXX")"
 HAD_DASH=0
 if [ -f "$DASH" ]; then HAD_DASH=1; cp "$DASH" "$SNAP"; fi
+CAP=""
 cleanup(){
   if [ "$HAD_DASH" = "1" ]; then
     if ! cp "$SNAP" "$DASH"; then echo "WARN: failed to restore $DASH from $SNAP" >&2; fi
   else
     rm -f "$DASH"
   fi
-  rm -f "$SNAP"
+  rm -f "$SNAP" ${CAP:+"$CAP"}
 }
 trap cleanup EXIT
 cat > "$DASH" <<'JSON'
