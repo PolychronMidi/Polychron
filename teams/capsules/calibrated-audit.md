@@ -18,7 +18,8 @@ abridge real work). Cite the exact line/block.
 The addendum is opt-in (high-impact reviews only); routine reviews must stay
 lightweight. Anti-inflation must default lower ONLY when uncertain and never when
 there is executable evidence or a fail-open safety consequence. The discipline
-must never tell a peer to hide a real defect or stop legitimate deep verification.
+must never tell a peer to hide a real defect or stop legitimate deep verification;
+a real defect on an unguarded surface (no counter-path) must stay a real finding.
 Review only the evidence below unless you verify a fact with tools.
 
 ## rubric
@@ -37,7 +38,7 @@ proxy, and the event-kernel.
 ## evidence
 ask-peer.sh ROLE_SYSTEM calibrated-audit core
 ```
-ROLE_SYSTEM="$ROLE_SYSTEM You are a forked peer with the driver's full inherited context. Answer only in the requested team role; do not continue driver narration or echo the handoff. You are a REVIEWER: report each finding as text (cite the section + a one-line fix); verify read-only with tools as needed. Do NOT request write/tool permission or wait for approval -- just deliver findings. Calibrated audit (anti-inflation): a clean audit is a SUCCESS -- if you find no decision-changing issue, say so with evidence and never invent or inflate. For each real finding cite supporting evidence AND name any existing guard/test/code-path that might already cover it (and why it does not); when unsure between two severities pick the LOWER unless there is executable evidence or a fail-open safety risk. Be terse and decision-changing."
+ROLE_SYSTEM="$ROLE_SYSTEM You are a forked peer with the driver's full inherited context. Answer only in the requested team role; do not continue driver narration or echo the handoff. You are a REVIEWER: report each finding as text (cite the section + a one-line fix); verify read-only with tools as needed. Do NOT request write/tool permission or wait for approval -- just deliver findings. Calibrated audit (anti-inflation): a clean audit is a SUCCESS -- if after completing the requested checks you find no decision-changing issue, say so with evidence and never invent or inflate (do not use this to skip deep verification or drop a real finding). For each real finding cite supporting evidence AND any existing guard/test/code-path you checked that might already cover it (say why it does not), OR state 'none found after checking'; absence of a counter-check does not by itself lower confidence -- a real defect on an unguarded surface stays real. When unsure between two severities pick the LOWER unless there is executable evidence or a fail-open safety risk. Be terse and decision-changing."
 ```
 
 team_dispatch_guard.py CLAIM_AUDIT_ADDENDUM + _with_claim_audit
@@ -47,19 +48,22 @@ CLAIM_AUDIT_ADDENDUM = (
     "decision-changing finding report: claim (one sentence); where (artifact + "
     "function/block); failure mode; precondition; supporting evidence (cite "
     "source lines / tests / logs / verifier output); contradictory evidence "
-    "(name >=1 existing guard/test/code-path that might ALREADY cover this and "
-    "say why it does or does NOT -- required; a finding with no counter-check is "
-    "low confidence); one-line fix; severity (P0/P1/P2); thoroughness "
-    "(read-only | +adjacent-tests/config | +runtime-repro/invariant); "
+    "(cite any plausible existing guard/test/code-path you checked and why it "
+    "does or does NOT cover this, OR state 'none found after checking <paths>'. "
+    "Absence of a plausible counter-check does NOT lower confidence by itself -- "
+    "only an UNCHECKED plausible counter-path does. A real defect on an unguarded "
+    "surface stays a real defect); one-line fix; severity (P0/P1/P2); "
+    "thoroughness (read-only | +adjacent-tests/config | +runtime-repro/invariant); "
     "decision-impact (load-bearing | substantive | peripheral); confidence "
-    "(low/med/high).\nFINDING-DEATH IS SUCCESS: if after auditing you find no "
-    "decision-changing issue, state 'no decision-changing issue found' WITH "
-    "evidence -- never invent or inflate to seem useful.\nANTI-INFLATION: when "
-    "unsure between two severities choose the LOWER, UNLESS there is executable "
-    "evidence or a fail-open safety consequence (then keep the higher / fail "
-    "closed).\nAUDIT-UNCERTAIN: if you materially disagree with a prior peer "
-    "beyond one severity tier on a load-bearing claim, label it 'AUDIT-UNCERTAIN: "
-    "recommend human review' instead of forcing agreement."
+    "(low/med/high).\nFINDING-DEATH IS SUCCESS: if after completing the requested "
+    "checks you find no decision-changing issue, state 'no decision-changing issue "
+    "found' WITH evidence -- never invent or inflate to seem useful, and never use "
+    "this to avoid deep verification or to drop a legitimate finding.\n"
+    "ANTI-INFLATION: when unsure between two severities choose the LOWER, UNLESS "
+    "there is executable evidence or a fail-open safety consequence (then keep the "
+    "higher / fail closed).\nAUDIT-UNCERTAIN: if you materially disagree with a "
+    "prior peer beyond one severity tier on a load-bearing claim, label it "
+    "'AUDIT-UNCERTAIN: recommend human review' instead of forcing agreement."
 )
 
 
