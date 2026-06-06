@@ -26,7 +26,7 @@ Example:
 
 #7 5_ A7 cross-role disagreement as uncertainty signal: red/blue/purple divergence beyond one severity tier on high-impact arch/security claims emits an explicit 'audit-uncertain: recommend human review' artifact
 
-#8 1_ B1 broaden mesh coverage: run fork/full-tool capsule-grounded rounds on fresh load-bearing surfaces (pre-write gates, state registry, stop-chain policy, session-state lifecycle, transcript compaction, proxy request mutation, tool-result semantics)
+#8 5_ B1 broaden mesh coverage: run fork/full-tool capsule-grounded rounds on fresh load-bearing surfaces -- DONE: all 7 listed surfaces reviewed via claim-audit mesh rounds with grounded in-place fixes: pre-write gate (advisory state-write + policy-error-after-hard-checks), state registry (schema-on-read + fsync), stop-chain (mandatory config-disable/throw/telemetry fail-closed + bounded transcript read), session-state (writeState fsync), transcript compaction (rewrite fsync), proxy request mutation (early-sanitize stale-wire-body security P1 + regression), tool-result semantics (clean audit + non-object guard). Deferred/AUDIT-UNCERTAIN items captured as #17-#21. Map: doc/myth0s-coverage-map.md all reviewed
 
 #9 5_ B2 build reviewed coverage map of every place an agent can mutate state, consume context, or enforce policy, so coverage is tracked not ad hoc -- DONE: doc/myth0s-coverage-map.md (policy-enforcement / state-mutation / context-consumption surfaces with review status), parsed by teams/rounds/select_target.py
 
