@@ -261,6 +261,13 @@ function _shellParityDecision(payload) {
   return _permission('allow');
 }
 
+async function _advisoryWrite(sessionId, body) {
+  // Mesh-found P1 (pre-write gate review): the per-decision state write is
+  // ADVISORY telemetry. A state-client outage must NEVER convert an already-
+  try { await stateClient.call('write', sessionId, body); }
+  catch (_e) { /* silent-ok: decision already computed; telemetry is best-effort */ }
+}
+
 async function preWriteCheck(stdinJson) {
   const env = normalize(stdinJson);
   const payload = { ...env.raw, session_id: env.session_id, tool_name: env.tool_name, tool_input: env.tool_input };
