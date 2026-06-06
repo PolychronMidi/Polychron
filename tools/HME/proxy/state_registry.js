@@ -167,7 +167,7 @@ function write(name, value, projectRoot = PROJECT_ROOT) {
   }
   let serialized;
   if (e.format === 'json') serialized = JSON.stringify(value);
-  else if (e.format === 'jsonl') serialized = (value || []).map((v) => JSON.stringify(v)).join('\n') + (value && value.length ? '\n' : '');
+  else if (e.format === 'jsonl') serialized = _serializeJsonlArray(name, value);
   else serialized = String(value || '');
   _writeAtomic(abs, serialized);
 }
