@@ -1,14 +1,16 @@
 """E1: generate a Context Capsule skeleton for a source file (run via `python3`
 or import; no shebang -- library + thin CLI).
 
-Embeds the source file verbatim as the `## evidence` block so the coverage<->
-evidence consistency check can never drift from the real code (the exact pattern
-the B1 sweep used by hand). The author then fills in goal/constraints/rubric and
-narrows `## coverage included:` to the symbols actually under review.
+The `## evidence` block REFERENCES the live source file path; it never embeds a
+frozen copy. The guard (and capsule_lint) inline the current source at dispatch/
+lint time, so a capsule can never drift into reviewing stale code. The author
+then fills in goal/constraints/rubric and narrows `## coverage included:` to the
+symbols actually under review.
 
 The generated capsule passes capsule_lint by construction: every `## coverage
-included:` symbol it lists is auto-extracted from the embedded evidence, so
-`_capsule_coverage_gaps` returns []. Re-run capsule_lint after editing.
+included:` symbol it lists is auto-extracted from the live source, and the linter
+resolves the reference back to that same live source, so `_capsule_coverage_gaps`
+returns []. Re-run capsule_lint after editing.
 
 Usage:
   capsule_gen.py <source-file> [--title "..."] [--out teams/capsules/<name>.md]
