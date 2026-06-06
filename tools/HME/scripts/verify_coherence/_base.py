@@ -242,8 +242,35 @@ class Verifier:
                 ERROR, 0.0, f"verifier crashed: {type(e).__name__}: {e}",
                 [traceback.format_exc()],
             )
+        result = _normalize_verdict(result)
         result.duration_ms = (time.time() - t0) * 1000
         return result
+
+
+_VALID_STATUSES = frozenset({PASS, WARN, FAIL, SKIP, ERROR})
+
+
+def _normalize_verdict(result: VerdictResult) -> VerdictResult:
+    """Mesh-found P1 (3-peer): the HCI aggregates result.score, so a verifier
+    that returns an incoherent status/score (FAIL with score 1.0, an unknown
+    status, an ERROR carrying a high score) could read GREEN in the headline
+    while semantically failing. Enforce status/score coherence centrally before
+    any aggregation -- a misleading score is the one thing the HCI must never
+    produce.
+    """
+    status = result.status
+    score = result.score
+    if status not in _VALID_STATUSES:
+        return _result(ERROR, 0.0, f"invalid verdict status {status!r}: {result.summary}", result.details)
+    if status == ERROR:
+        score = 0.0
+    elif status == SKIP:
+        score = 1.0  # opt-out never docks, by policy
+    elif status == FAIL and score >= 1.0:
+        score = 0.0  # a FAIL can never read as a perfect score
+    if score != result.score:
+        return _result(status, score, result.summary, result.details)
+    return result
 
 
 def _run_subprocess(script, timeout: int = 30) -> tuple:
