@@ -68,6 +68,8 @@ gcap(){ # caller tier depth turnid chan msg out  (capsule-grounded guard send)
 # in a prior peer's reply before embedding it in the NEXT peer's --message, so a
 san(){ sed -E 's/^#{1,6} /  /; s/^GAP:/gap:/' ; }
 
+progress_init "measured:$BRIEF" 4
+
 # === BASELINE: one high-effort peer, capsule-grounded (driver->blue_lead) ===
 gcap driver E5 0 m-base blue "BASELINE single reviewer. Per the capsule rubric, list ALL decision-changing flaws (P0/P1) with function + fix. Cite capsule sections." m_base.json
 
