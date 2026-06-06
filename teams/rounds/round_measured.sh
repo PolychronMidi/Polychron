@@ -36,7 +36,16 @@ JSON
 export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES=3000
 rm -f "$REPO"/teams/runtime/*.session "$REPO"/tools/HME/runtime/team-dispatch-budget.json
 for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
-CAP="${CAPSULE:-$REPO/teams/capsules/guard.md}"; GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
+GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
+# Compose the per-surface review brief (DATA in teams/rounds/review-briefs.json)
+# into a transient grounded review-request capsule that the guard sends as the
+BRIEF="${BRIEF:-}"
+[ -z "$BRIEF" ] && [ -n "${CAPSULE:-}" ] && BRIEF="$(basename "${CAPSULE%.md}")"  # back-compat: CAPSULE=<key|path>
+BRIEF="${BRIEF:-guard}"
+CAP="$(mktemp "$OUT/brief.XXXXXX.md")"
+if ! PROJECT_ROOT="$REPO" python3 "$REPO/teams/rounds/review_brief.py" compose "$BRIEF" --out "$CAP" >/dev/null; then
+  echo "review_brief compose failed for brief '$BRIEF'" >&2; exit 1
+fi
 DUR="${HME_TEAM_ROUND_MAX_DURATION:-600}"
 # Opt-in: CLAIM_AUDIT=1 enables the calibrated claim-audit addendum for this
 # high-impact round (structured finding record + contradictory-evidence +
