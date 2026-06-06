@@ -248,7 +248,7 @@ function _isCascadeBreakConditions(stdinJson) {
     'PreToolUse:',
     'PostToolUse:',
   ].some((m) => lastUserText.includes(m));
-  if (!userIsDeny) return false;
+  if (!userIsDeny || !lastUserIsMeta) return false;
   // Case 1: agent's reply is on disk and is a bare ack -- the original
   // cascade-break shape.
   if (!lastAssistantHadToolUse && lastAssistantIdx > lastUserIdx) {
