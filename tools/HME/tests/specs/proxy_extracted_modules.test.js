@@ -1406,7 +1406,8 @@ test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () =>
     }
     const logText = logs.join('\n');
     assert.match(logText, /compact-decision model=gpt-5\.5-high/);
-    assert.match(logText, /gear=0/);
+    assert.match(logText, /pressure=0\.000/);
+    assert.match(logText, /severity=0\.00/);
     assert.doesNotMatch(logText, /passthrough-compact decision|precompact|content elided|oldest message\(s\) dropped/);
   } finally {
     process.env = oldEnv;
