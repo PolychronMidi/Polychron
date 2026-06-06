@@ -21,7 +21,9 @@ progress_init() {
 # stdout so the launch log shows step-by-step progress too -- never just a final
 progress() {
   local step="$1" status="$2" detail="${3:-}"
-  [ "$status" = "done" ] && _PROGRESS_DONE=$((_PROGRESS_DONE + 1))
+  # Count only completed PEER steps toward N; the "round" start/done meta-step
+  # must not inflate the counter (was showing N+1/N at the end).
+  [ "$status" = "done" ] && [ "$step" != "round" ] && _PROGRESS_DONE=$((_PROGRESS_DONE + 1))
   PROG_FILE="$_PROGRESS_FILE" PROG_ROUND="$_PROGRESS_ROUND" PROG_STEP="$step" \
   PROG_STATUS="$status" PROG_DETAIL="$detail" PROG_DONE="$_PROGRESS_DONE" \
   PROG_TOTAL="$_PROGRESS_TOTAL" python3 - <<'PY'
