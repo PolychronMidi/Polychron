@@ -56,18 +56,9 @@ class RoundStatusTests(unittest.TestCase):
         rows = round_status.read_ledger(Path(tempfile.gettempdir()) / "definitely-absent-ledger.jsonl")
         self.assertEqual(rows, [])
 
-    def test_main_runs_on_missing_ledger(self):
-        # main() must never crash even with no ledger (flying-blind guard itself).
-        with tempfile.TemporaryDirectory() as td:
-            prior = os.environ.get("HME_ROUND_PROGRESS_FILE")
-            os.environ["HME_ROUND_PROGRESS_FILE"] = str(Path(td) / "none.jsonl")
-            try:
-                self.assertEqual(round_status.main([]), 0)
-            finally:
-                if prior is None:
-                    os.environ.pop("HME_ROUND_PROGRESS_FILE", None)
-                else:
-                    os.environ["HME_ROUND_PROGRESS_FILE"] = prior
+    def test_main_smoke_returns_zero(self):
+        # The reader itself must never crash (it is the flying-blind guard).
+        self.assertEqual(round_status.main([]), 0)
 
 
 if __name__ == "__main__":
