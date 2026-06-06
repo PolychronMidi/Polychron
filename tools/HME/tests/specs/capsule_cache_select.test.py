@@ -2,6 +2,7 @@
 `python3 tools/HME/tests/specs/capsule_cache_select.test.py`)."""
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
