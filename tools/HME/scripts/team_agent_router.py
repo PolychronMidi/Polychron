@@ -46,7 +46,30 @@ def _pct(agent: dict) -> float:
 
 
 def _available(agent: dict) -> bool:
-    return agent.get("status") not in {"retired", "failed", "done"}
+    return isinstance(agent, dict) and agent.get("status") not in {"retired", "failed", "done"}
+
+
+def _tier_num(tier: str) -> Optional[int]:
+    tier = str(tier or "").upper()
+    if tier in _VALID_TIERS:
+        return int(tier[1])
+    return None
+
+
+def _tier_name(num: int) -> str:
+    return f"E{num}"
+
+
+def _role_stage_tier(role: str) -> Optional[str]:
+    m = _CREW_ROLE_RE.match(str(role or ""))
+    return f"E{m.group(1)}" if m else None
+
+
+def _agent_tier(role: str, agent: dict) -> Optional[str]:
+    tier = str((agent or {}).get("tier") or "").upper()
+    if tier in _VALID_TIERS:
+        return tier
+    return _role_stage_tier(role)
 
 
 def _pick(candidates: list[tuple[str, dict]], prefer_lowest_ctx: bool = True) -> Optional[str]:
