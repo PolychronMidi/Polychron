@@ -275,7 +275,7 @@ class MarkdownInvariantVerifier(Verifier):
                 try:
                     spill = doc_spillover_reason(rel_str, abs_path.read_text(encoding="utf-8", errors="ignore"))
                 except OSError:
-                    spill = ""
+                    spill = ""  # silent-ok: unreadable doc => no content signal; path-rule already classified it
                 if spill:
                     violations.append(spill)
                     continue
