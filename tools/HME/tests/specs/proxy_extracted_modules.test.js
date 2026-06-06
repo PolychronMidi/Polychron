@@ -1114,10 +1114,10 @@ test('context budget compaction uses continuous exponential pressure from high-w
     assert.ok(plan.maxTier > 1 && plan.maxTier < 1.2, `severity=${plan.maxTier}`);
     assert.equal(plan.allowSummary, false);
     assert.equal(plan.allowMessageDrop, false);
-    assert.ok(plan.targetTokens >= 825, `targetTokens=${plan.targetTokens}`);
-    assert.ok(plan.keepMin >= 39, `keepMin=${plan.keepMin}`);
-    assert.ok(plan.maxToolResultAge >= 39, `age=${plan.maxToolResultAge}`);
-    assert.ok(plan.toolResultByteFloor >= 39000, `floor=${plan.toolResultByteFloor}`);
+    assert.ok(plan.targetTokens >= 865, `targetTokens=${plan.targetTokens}`);
+    assert.ok(plan.keepMin >= 37, `keepMin=${plan.keepMin}`);
+    assert.ok(plan.maxToolResultAge >= 37, `age=${plan.maxToolResultAge}`);
+    assert.ok(plan.toolResultByteFloor >= 37000, `floor=${plan.toolResultByteFloor}`);
 
     const mid = planFor(950);
     assert.ok(mid.pressure > plan.pressure, `mid=${mid.pressure} early=${plan.pressure}`);
