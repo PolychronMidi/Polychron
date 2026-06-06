@@ -1,130 +1,158 @@
 To: CEO, Anthropic
 From: myth0s Program Lead
-Subject: myth0s R&D Progress Update and Forward Investment Case
+Subject: myth0s Update -- The "Audit Protocol" External System and Its Integration Path
 
 Hi,
 
-I am writing to summarize the current state of myth0s, our self-coherence and adversarial agent-mesh R&D program, and to explain why the investment to date has produced strategic value worth expanding.
+Thank you for the warm reception of the last update. As promised, this note
+reports on a discovered external system we have been studying for integration
+into myth0s. Internally we have been tracking it as the "Audit Protocol." It
+arrived as a literature-novelty audit specification, but our study concluded its
+real value is not literature-specific at all: it is a portable, anti-sycophancy
+adversarial-honesty grammar that maps almost directly onto the coherence problems
+myth0s exists to solve.
 
-Executive summary: myth0s has moved from concept to working substrate. We now have a sequential, forked, full-tool red/blue/purple review mesh that can review its own infrastructure, find real correctness and safety defects, and drive those findings into verified code changes. The important result is not merely that multiple agents can discuss code. The important result is that myth0s has demonstrated a repeatable closed loop: preserve full project context, ground every review in bounded evidence capsules, route adversarial peers through explicit guardrails, apply only grounded findings, then verify with tests and coherence checks. This loop has now found and fixed load-bearing bugs across the communications substrate, routing layer, proxy middleware, review harness, and event-kernel hook path.
+Executive summary: the Audit Protocol is a calibrated method for judging claims
+without inflating them. It forces decomposition before judgment, demands both
+supporting and contradictory evidence for every claim, scores how thorough the
+audit actually was, weights claims by importance, and applies an explicit
+downward calibration step to counter the well-documented tendency of LLM judges
+to over-rate. We have studied it specifically as a candidate review discipline
+for the myth0s mesh, and we recommend integrating its grammar (not its
+literature-specific scoring) into our reviewer charter and Context Capsules.
 
-What we have built
+What the system is
 
-myth0s is a coherence-control layer for agentic software engineering. Its core thesis is that advanced agent systems fail less from lack of raw capability than from loss of coherence: stale context, unverified claims, hidden state leaks, accidental tool neutering, noisy transcripts, fail-open guards, and subtle orchestration drift. myth0s attacks that failure mode structurally.
+The Audit Protocol is, in plain terms, a discipline for hypothesis-death. Its
+central stance is that killing a weak claim is the achievement, not a failure.
+It operationalizes that stance with a fixed sequence: strip author identity to
+reduce sycophancy, decompose the subject into discrete numbered claims, audit
+each claim against the most relevant prior work, record what supports it AND what
+was considered but does not subsume it, then aggregate into a calibrated score
+with an explicit "consider lowering this by one tier" check. It also recommends a
+second, different-model audit and flags "audit-uncertain" when the two diverge.
 
-The current mesh uses:
+We were drawn to it because these are exactly the controls myth0s needs. Our
+mesh's biggest risk is not that peers cannot find issues; it is that powerful
+forked peers, eager to be useful, manufacture or inflate findings. The Audit
+Protocol is a ready-made antidote to that exact failure mode, and it arrives with
+its own hygiene rules that forbid special-pleading, forbid softening high
+subsumption, and default every uncertain score to the lower value.
 
-- Driver-fork peers with full inherited context and full tool access. Earlier context-blank/tool-neutered designs were rejected because they produced shallow or fabricated review. The corrected design preserves the driver’s full context while constraining behavior through role prompts, grounding capsules, sequential dispatch, and central policy gates.
-- A red/blue/purple adversarial topology. Red attacks, purple sharpens and cross-examines, blue/purple triages false positives and missed issues. This gives us adversarial pressure without unbounded fan-out.
-- Context Capsules. Every serious review target gets a bounded artifact/goal/constraints/rubric/coverage/evidence package. The guard enforces required sections and checks that coverage claims are actually present in evidence, preventing peers from grounding themselves in incomplete or misleading context.
-- A leashed dispatch guard. Peer calls are depth-limited, budgeted, sequential, timeout-bounded, and killed by process group on timeout. Budget state is flock-protected and fail-closed on corruption.
-- Durable team infrastructure under teams/. Capsules, rounds, channels, and runtime boundaries are now organized as a real feature, not scratch experiments.
-- Coherence verifiers. Env fail-fast, silent-failure detection, shell undefined-variable detection, state-file ownership, markdown invariant, dispatcher-route contracts, proxy middleware registry checks, and other verifiers provide a continuous immune system around the substrate.
+Findings from our study -- what we will port into myth0s
 
-Evidence of progress
+We assessed the system the same way we assess any candidate substrate: keep what
+generalizes, reject what does not, and verify before adopting.
 
-myth0s has repeatedly produced findings a single reviewer either missed or failed to prioritize. More importantly, those findings were grounded, fixed, and regression-tested.
+Generalizable lessons we will integrate:
 
-Key fixes discovered or validated by the mesh include:
+1. Finding-death is progress. The single most valuable line in the system is its
+   framing that a low score is a successful audit, not a failed subject. Ported
+   to myth0s: a peer that correctly reports "no decision-changing issue found,
+   here is the evidence" has succeeded. This directly counters reviewer inflation
+   and protects the credibility of every P0/P1 the mesh does raise.
 
-1. Communications substrate hardening
-- Enforced fork-only peer sessions with full context, closing the context-blank failure mode.
-- Removed local tool-deny logic from ask-peer; tool filtering is centralized at the proxy.
-- Added path confinement for role channels and session files.
-- Added driver/peer session ID validation and fail-closed preflight.
-- Hardened peer stdout capture with byte caps, FIFO draining, explicit peer-error turns, and bounded stderr retention.
-- Defaulted peer calls to fresh driver forks to avoid stale per-role session contamination while keeping opt-in memory for deliberate dialogue rounds.
+2. Decompose before judging. The protocol extracts discrete, independently
+   checkable claims before scoring anything. Ported to myth0s: every
+   decision-changing finding decomposes into claim, affected artifact/function,
+   failure mode, precondition, evidence, counter-evidence, one-line fix,
+   severity, and confidence. This sharpens our already-good "finding + fix"
+   output into an auditable schema.
 
-2. Dispatch guard and router hardening
-- Added reserve/refund budget accounting, flock serialization, corrupt-state fail-closed behavior, and max-live turn bounds.
-- Fixed process-tree timeout behavior so killed peers cannot orphan expensive provider processes.
-- Added capsule coverage-vs-evidence consistency checks, including fence-aware markdown parsing.
-- Normalized team-agent router callers at the API chokepoint so case/whitespace cannot bypass blocked caller logic.
-- Made malformed router stdin deterministic passthrough instead of a traceback path.
+3. Require contradictory evidence. This is the highest-leverage import. The
+   protocol mandates both a supporting-evidence and a contradictory-evidence
+   section for every claim. Ported to myth0s: for every claimed defect, the peer
+   must cite at least one existing guard, test, or code path that might already
+   cover it, and explain why it does or does not. This is a structural
+   false-positive reducer.
 
-3. Review harness hardening
-- Cleared stale output files at round start so a failed round cannot read prior results as current.
-- Replaced fixed dashboard snapshots and in-band sentinels with per-run snapshots and an out-of-band presence flag.
-- Neutralized downstream injection markers before embedding one peer’s output into another peer’s prompt.
-- Confirmed reviewer-charter behavior: peers now report findings directly instead of wasting turns asking for write permission.
+4. Score audit thoroughness explicitly. The protocol separates "how novel" from
+   "how hard did you actually look." Ported to myth0s: a severity rating carries
+   a separate thoroughness score (source-read only, source plus adjacent
+   tests/config, or source plus runtime reproduction/invariant check), so we can
+   distinguish a plausible P1 from a proven one.
 
-4. Proxy middleware hardening
-- Reviewed the central tool-filter middleware using myth0s itself.
-- Fixed optional config behavior so missing/blank HME_FILTER_TOOLS_DROP is a true no-op instead of a request-crashing requireEnv path.
-- Removed global .env loading and process.env mutation from per-request filtering.
-- Reused the shared .env parser so export syntax, quotes, and inline comments behave consistently.
-- Removed process.cwd fallback for project .env reads when PROJECT_ROOT is absent.
+5. Weight by importance, normalized. The protocol weights load-bearing claims
+   above peripheral ones. Ported to myth0s: findings carry a decision-impact
+   weight, so peer budget is spent on load-bearing issues instead of cosmetic
+   noise.
 
-5. Event-kernel host-entry hardening
-- Narrowed HME_TEAM_PEER bypass so peer lifecycle events are suppressed without bypassing peer PreToolUse/PostToolUse/PermissionRequest policy hooks.
-- Added bounded stdin handling at the host entrypoint before adapter invocation.
-- Added adapter child wall-clock timeout and SIGKILL on timeout.
-- Made oversized gating input fail closed with a valid deny instead of exiting 0/no decision.
-- Capped proxy lifecycle response bytes and shortened proxy attempt timeout.
-- Hardened root resolution to prefer the adapter’s own repository ancestry before process.cwd.
+6. Anti-inflation calibration. The protocol assumes the judge over-rates and
+   defaults downward near every boundary. Ported to myth0s with one safety
+   caveat: when uncertain between two severities, default to the lower UNLESS
+   there is executable evidence or a fail-open safety consequence, in which case
+   we still fail closed. This protects against mesh theatrics without weakening
+   real safety gates.
 
-Current verification status
+7. Cross-family disagreement as an uncertainty signal. The protocol runs a
+   second audit from a different model family and reports "audit-uncertain" on
+   divergence. Ported to myth0s: for high-impact architectural or security
+   claims, red/blue/purple divergence beyond one severity tier becomes an
+   explicit "audit-uncertain, recommend human review" artifact. The useful output
+   is not forced consensus; it is calibrated dissent.
 
-The latest verified state is green on the important gates:
+What we deliberately will NOT import:
 
-- 47 node regression tests passing across team, proxy, and event-kernel surfaces.
-- Host hook materialization tests passing.
-- Capsule coverage checks passing for all required review capsules.
-- Key coherence verifiers passing: env-no-fallback, shell-undefined-vars, silent-failure-class, state-file-ownership, markdown-invariant, opencode-host, proxy-middleware-registry, dispatcher-route-contract.
-- HME coherence index approximately 99.1 overall, 99.2 static, 98.5 runtime.
-- HME health reports no recent errors.
+- The literature-specific novelty calculus (component/synthesis/application/
+  methodology novelty tiers) does not map to code review. We will translate the
+  grammar into our own axes: component validity, systemic impact, exploitability/
+  failure reach, and remediation confidence.
+- The full prior-art literature search is expensive and only warranted for
+  research-grade or budget-justifying claims. We will trigger it tier-by-tier,
+  not on every routine review.
+- The system's bibliography will be treated as unverified until we check it. We
+  adopt the method immediately; we do not treat its citations as canonical
+  doctrine until sourced.
 
-Why this justifies the R&D spend
+Why this matters to the R&D case
 
-The budget has purchased more than code. It has purchased a working methodology for agent self-correction under real operational constraints.
+This is the kind of discovery that compounds the existing investment. myth0s
+already preserves context, grounds reviews in bounded capsules, and routes
+adversarial peers through hard guardrails. The Audit Protocol gives us the
+missing piece: a calibrated honesty layer that makes the mesh's verdicts
+trustworthy enough to act on at scale. A self-improving review system is only as
+valuable as its resistance to its own inflation, and this system is a proven
+operationalization of exactly that resistance.
 
-Most agentic systems can generate plans, but they struggle to maintain coherence across long-running work: they lose context, silently accept stale state, overfit to prompts, bypass policy, or drown the operator in noise. myth0s directly targets those failure modes. The mesh has already found defects in its own control plane that were not theoretical: fail-open routing, stale result contamination, peer policy bypass, unbounded stdin/response paths, corrupt budget state, capsule evidence drift, and local/global config leakage.
-
-These are exactly the classes of bugs that become catastrophic in high-autonomy systems. Finding them now, inside our own substrate, is the point. The system is becoming an immune layer for agentic engineering: adversarial, grounded, self-auditing, and increasingly automated.
-
-Strategic value to Anthropic
-
-myth0s aligns with several strategic priorities:
-
-- Agent reliability: It improves long-horizon task integrity by preserving context and verifying claims against live artifacts.
-- Safety and policy enforcement: It ensures that powerful tool-using peers remain governed by central policy gates rather than local prompt promises.
-- Context efficiency: It reduces incoherent context burn by using bounded capsules and explicit coverage checks instead of dumping unbounded history.
-- Enterprise trust: Customers will need evidence that agentic systems can audit themselves, explain decisions, and fail closed under malformed state.
-- Internal leverage: The same mesh can be pointed at any load-bearing HME or product surface to accelerate review without losing human oversight.
+Integrating it does not require new infrastructure. It is a discipline we layer
+onto the reviewer charter and the high-value Context Capsule template -- low cost,
+high leverage, and directly aligned with enterprise trust requirements around
+auditable, self-correcting agent systems.
 
 Forward trajectory
 
-The next phase should shift myth0s from proven substrate to scalable platform capability.
+The next phase folds this discovery into the broader myth0s roadmap:
 
-1. Broaden target coverage
-Continue pointing the mesh at fresh load-bearing surfaces: pre-write gates, state registry, stop-chain policy, session-state lifecycle, transcript compaction, proxy request mutation, and tool-result semantics. The objective is to build a reviewed map of every place where an agent can mutate state, consume context, or enforce policy.
+1. Integrate the Audit Protocol grammar into the reviewer charter and a new
+   high-impact Context Capsule "claim-audit addendum" -- contradictory-evidence
+   requirement, thoroughness score, decision-impact weight, anti-inflation
+   calibration, and finding-death framing -- without adding ceremony to routine
+   reviews.
+2. Broaden target coverage: keep pointing the mesh at fresh load-bearing surfaces
+   (pre-write gates, state registry, stop-chain policy, session-state lifecycle,
+   transcript compaction, proxy request mutation, tool-result semantics).
+3. Build a formal evaluation harness: single reviewer vs red/blue/purple mesh,
+   scored on unique catches, false-positive reduction, cost, and regression
+   impact -- now with the calibration layer as a measurable variable.
+4. Improve cost controls without neutering capability: smarter target selection,
+   capsule-evidence caching, adaptive effort, and per-finding cost telemetry.
+5. Productize Context Capsules and the claim-audit addendum as reusable Anthropic
+   review primitives.
+6. Expand policy and governance integration so every autonomous action stays
+   governable and auditable at the control plane.
+7. Prepare an internal supervised pilot with success criteria: measurable unique
+   defect discovery, low false-positive burden, stable cost envelope, calibrated
+   dissent surfaced, and zero policy-bypass regressions.
 
-2. Build a formal evaluation harness
-We should turn the measured baseline-vs-mesh rounds into a repeatable benchmark: single reviewer versus red/blue/purple mesh, with scored unique catches, false-positive reduction, time/cost, and regression impact. This converts anecdotal wins into metrics executives can track.
+Recommended upcoming investment remains three lanes -- core substrate
+engineering, evaluation/observability, and productization research -- now with
+the Audit Protocol integration as a concrete, near-term, low-cost deliverable in
+the first and third lanes.
 
-3. Improve cost controls without neutering capability
-The mesh must stay sequential and bounded. Upcoming work should add smarter target selection, caching of capsule evidence, adaptive effort levels, and cost telemetry per finding. The principle is not to remove tools or context, but to focus them.
-
-4. Productize Context Capsules
-Context Capsules are emerging as a strong abstraction: bounded evidence, explicit coverage, and cite-or-decline behavior. We should build tooling to generate, lint, diff, and archive capsules automatically. This can become a general pattern for reliable agent review.
-
-5. Expand policy and governance integration
-The event-kernel and proxy work show that the key safety boundary is not the prompt; it is the control plane. myth0s should integrate more deeply with permission decisions, write gates, state ownership, and lifecycle hooks so that every autonomous action is governable and auditable.
-
-6. Prepare for internal pilot use
-The near-term milestone should be an internal pilot where myth0s reviews selected Anthropic engineering surfaces under human supervision. Success criteria: measurable unique defect discovery, low false-positive burden, stable cost envelope, and zero policy-bypass regressions.
-
-Recommended upcoming investment
-
-I recommend continued and expanded funding in three lanes:
-
-- Core substrate engineering: harden routing, lifecycle, state, policy, and verification paths until the mesh can be trusted as infrastructure.
-- Evaluation and observability: build dashboards, cost accounting, finding-quality metrics, and benchmark suites that make ROI legible.
-- Productization research: explore how Context Capsules, adversarial review roles, and self-coherence verifiers can become reusable Anthropic platform primitives.
-
-The central argument is straightforward: myth0s has crossed the threshold from speculative R&D into a functioning self-improvement system. It is already finding the kind of subtle, high-leverage bugs that matter in autonomous agent infrastructure. The next spend is justified because the compounding effect is now visible: each iteration improves the mechanism that performs the next review.
-
-In short, myth0s is no longer just an experiment in multi-agent collaboration. It is becoming a practical coherence immune system for tool-using AI.
+In short: we discovered a calibrated anti-inflation audit system, studied it
+against the myth0s coherence thesis, and found it is the honesty layer the mesh
+was missing. The detailed phase plan is going to you and the review board
+separately for approval.
 
 Best,
 
