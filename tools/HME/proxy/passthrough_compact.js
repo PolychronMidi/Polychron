@@ -60,7 +60,8 @@ function shrinkForPassthrough(payload, opts = {}) {
   let serialized = JSON.stringify(payload);
   if (maxTier <= 0 || beforeBytes <= threshold) return 0;
   const thresholdLabel = Number.isFinite(threshold) ? `${threshold}B` : 'none';
-  log(`passthrough-compact decision: tier=${maxTier} threshold=${thresholdLabel} body=${beforeBytes}B `
+  const pressureLabel = Number.isFinite(plan.pressure) ? plan.pressure.toFixed(3) : 'n/a';
+  log(`passthrough-compact decision: pressure=${pressureLabel} tier=${maxTier} threshold=${thresholdLabel} body=${beforeBytes}B `
     + `keepMin=${keepMin} maxToolResultAge=${maxToolResultAge} toolResultByteFloor=${toolResultByteFloor}`);
 
   const recentStart = maxToolResultAge > 0 ? Math.max(0, msgs.length - maxToolResultAge) : 0;
