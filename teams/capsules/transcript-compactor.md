@@ -211,7 +211,15 @@ function compactTranscriptFile(filePath, opts = {}) {
   const body = result.lines.join('\n') + (hadTrailingNewline ? '\n' : '');
   const tmp = path.join(path.dirname(filePath), `.hme-transcript-compact-${process.pid}-${path.basename(filePath)}.tmp`);
   try {
-    fs.writeFileSync(tmp, body);
+    // Mesh-found P1 (transcript-compactor review): crash-DURABLE write. fsync the
+    // temp file before the rename so a crash/power-loss can't leave a 0-length or
+    const fd = fs.openSync(tmp, 'w');
+    try {
+      fs.writeSync(fd, body);
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
     // Final guard: only rename if the original still matches our snapshot.
     const finalCheck = fs.statSync(filePath);
     if (finalCheck.size !== stat.size || finalCheck.mtimeMs !== stat.mtimeMs) {
@@ -219,6 +227,10 @@ function compactTranscriptFile(filePath, opts = {}) {
       return { ok: false, reason: 'concurrent_write', changedEntries: 0 };
     }
     fs.renameSync(tmp, filePath);
+    let dfd;
+    try { dfd = fs.openSync(path.dirname(filePath), 'r'); fs.fsyncSync(dfd); }
+    catch (_e) { /* silent-ok: dir fsync best-effort; data fsync already done */ }
+    finally { if (dfd !== undefined) fs.closeSync(dfd); }
   } catch (err) {
     try { fs.unlinkSync(tmp); } catch (_e) { /* best-effort */ }
     return { ok: false, reason: `write_failed:${err.message}`, changedEntries: 0 };
