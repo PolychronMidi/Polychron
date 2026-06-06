@@ -116,7 +116,7 @@ test('blocked E1/E2 crew stays blocked even with stray case/whitespace caller', 
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout).hookSpecificOutput;
   assert.equal(out.permissionDecision, 'deny');
-  assert.match(out.permissionDecisionReason, /E1-E2 stage crew may not spawn/);
+  assert.match(out.permissionDecisionReason, /E1\/E2 stage crew may not spawn/);
 });
 
 test('uppercase/whitespace driver still routes to a team lead (no mis-route to crew)', () => {
