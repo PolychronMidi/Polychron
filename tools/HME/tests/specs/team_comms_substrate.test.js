@@ -697,6 +697,35 @@ test('guard --capsule enforces the Context Capsule contract (required sections +
   }
 });
 
+test('guard refunds the reserved budget on a pre-send capsule deny (mesh-found P1: no burned turn without dispatch)', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, { blue_lead: LEAD_ROLE });
+    writeDashboard(root, BASE_AGENTS);
+    const base = ['--caller', 'driver', '--tier', 'E5', '--scope', 's', '--artifact', 'plan.md',
+      '--max-duration', '30', '--max-tools', '2', '--turn-id', 'tref-cap', '--budget', '1', '--send', '--message', 'review'];
+
+    // budget=1: an invalid-capsule deny must REFUND, so a later valid send on the
+    // same turn is still allowed (the malformed capsule never dispatched a peer).
+    const badCap = path.join(root, 'tmp', 'bad.md');
+    fs.writeFileSync(badCap, '## artifact\nx\n');  // missing goal + rubric
+    let r = runDispatch(root, [...base, '--capsule', badCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'capsule_invalid');
+    assert.equal(out.budget.refunded, true, 'pre-send capsule deny must refund the reserved unit');
+
+    const goodCap = path.join(root, 'tmp', 'good.md');
+    fs.writeFileSync(goodCap, '## artifact\nCAP_MARK_OK\n## goal\ng\n## rubric\nr\n');
+    r = runDispatch(root, [...base, '--capsule', goodCap], { HME_ASK_PEER_FAKE_REPLY: 'ok' });
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true, 'refund must free the slot so a real send still fits budget=1');
+    assert.equal(out.sent, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('guard --capsule fails closed when coverage claims code symbols its evidence omits (iter-5 consistency check)', () => {
   const root = tmpProject();
   try {
