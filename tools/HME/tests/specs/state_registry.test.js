@@ -63,6 +63,44 @@ test('jsonl append + read works', () => {
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test('jsonl read preserves valid falsy scalar rows', () => {
+  const root = tmpRoot();
+  try {
+    reg.write('middleware_processed', [false, 0, '', null, { event: 'ok' }], root);
+    assert.deepStrictEqual(reg.read('middleware_processed', root), [false, 0, '', null, { event: 'ok' }]);
+    const { abs } = reg.paths('middleware_processed', root);
+    fs.appendFileSync(abs, 'not-json\n');
+    assert.deepStrictEqual(reg.read('middleware_processed', root), [false, 0, '', null, { event: 'ok' }]);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('jsonl write rejects non-arrays before touching disk', () => {
+  const root = tmpRoot();
+  try {
+    reg.write('middleware_processed', [{ event: 'kept' }], root);
+    const { abs } = reg.paths('middleware_processed', root);
+    const before = fs.readFileSync(abs, 'utf8');
+    assert.throws(() => reg.write('middleware_processed', { event: 'bad' }, root), /jsonl write requires an array/);
+    assert.strictEqual(fs.readFileSync(abs, 'utf8'), before);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('append fsyncs appended state before returning', () => {
+  const root = tmpRoot();
+  try {
+    const calls = [];
+    const original = fs.fsyncSync;
+    fs.fsyncSync = function patched(fd) { calls.push(fd); return original.call(fs, fd); };
+    try {
+      reg.append('middleware_processed', { event: 'durable' }, root);
+    } finally {
+      fs.fsyncSync = original;
+    }
+    assert.ok(calls.length >= 1, 'append should fsync the appended file');
+    assert.deepStrictEqual(reg.read('middleware_processed', root), [{ event: 'durable' }]);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('missing file reads as null/empty for the appropriate format', () => {
   const root = tmpRoot();
   try {
