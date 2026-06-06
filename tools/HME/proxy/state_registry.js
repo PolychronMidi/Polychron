@@ -150,9 +150,10 @@ function read(name, projectRoot = PROJECT_ROOT) {
     return parsed;
   }
   if (e.format === 'jsonl') {
-    return raw.split('\n').filter(Boolean).map((line) => {
-      try { return JSON.parse(line); } catch (_err) { return null; }
-    }).filter(Boolean);
+    return raw.split('\n')
+      .filter((line) => line !== '')
+      .map(_parseJsonlLine)
+      .filter((value) => value !== JSONL_PARSE_FAIL);
   }
   return raw;
 }
