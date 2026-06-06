@@ -31,8 +31,14 @@ async function _withMockedStopPolicies(overrides, fn, configOverride) {
     if (k.startsWith(proxyDir) || k.startsWith(telemetryDir)) delete require.cache[k];
   }
   Module._load = function mockedLoad(request, parent, isMain) {
-    if (String(request).includes(`${path.sep}stop_chain${path.sep}policies${path.sep}`)) {
-      const name = path.basename(String(request), '.js');
+    const req = String(request);
+    // Optional override of the unified policy config overlay (the `policies/config`
+    // require, NOT the stop_chain policy modules) -- lets a test disable/break the
+    if (configOverride && /[\\/]policies[\\/]config$/.test(req) && !req.includes('stop_chain')) {
+      return configOverride;
+    }
+    if (req.includes(`${path.sep}stop_chain${path.sep}policies${path.sep}`)) {
+      const name = path.basename(req, '.js');
       if (Object.prototype.hasOwnProperty.call(overrides, name)) {
         const value = overrides[name];
         if (value instanceof Error) throw value;
