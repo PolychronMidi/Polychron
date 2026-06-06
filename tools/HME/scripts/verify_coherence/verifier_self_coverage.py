@@ -45,7 +45,8 @@ def _registry_modules() -> set[str]:
         if basename in ("__init__", "_base"):
             continue
         mods.add(basename)
-    mods.discard("verifier_self_coverage")
+    # Mesh-found P1 (3-peer): do NOT exempt this module from its own invariant.
+    # If verifier_self_coverage.test.py is ever deleted/renamed, the guard that
     return mods
 
 
