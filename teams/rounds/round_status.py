@@ -69,8 +69,15 @@ def main(argv: list) -> int:
             except (OSError, ValueError):
                 print(f"  {p.name}: (unreadable / not yet complete)")
     last = rows[-1]
-    done = last.get("status") == "done" and last.get("step") == "round"
-    print(f"state: {'COMPLETE' if done else 'in progress / incomplete'}")
+    if last.get("step") == "round" and last.get("status") == "done":
+        state = "COMPLETE"
+    elif last.get("step") == "round" and last.get("status") == "failed":
+        # A failed round is terminal (complete), not in-progress -- surface it as
+        # FAILED so a reader of only the final state is never misled either way.
+        state = "FAILED"
+    else:
+        state = "in progress / incomplete"
+    print(f"state: {state}")
     return 0
 
 
