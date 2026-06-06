@@ -233,6 +233,7 @@ module.exports = {
   runHostAdapter,
   MAX_STDIN_BYTES,
   MAX_PROXY_RESPONSE_BYTES,
+  PROXY_ATTEMPT_TIMEOUT_MS,
   GATING_EVENTS,
   _stdinTooLargeResult,
   _proxyFailed,
