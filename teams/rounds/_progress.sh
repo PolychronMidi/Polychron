@@ -92,3 +92,15 @@ progress() {
 progress_result() {
   _progress_emit "$1" "$2" "${7:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}"
 }
+
+# Mesh-found P1 (red_purple+blue_purple): the final round state must reflect
+# per-step failures, not unconditionally claim "done". A reader of only the final
+progress_round_finish() {
+  local detail="${1:-}"
+  if [ "$_PROGRESS_FAILED" -gt 0 ]; then
+    progress "round" "failed" "${detail:+$detail; }$_PROGRESS_FAILED step(s) failed"
+    return 1
+  fi
+  progress "round" "done" "$detail"
+  return 0
+}
