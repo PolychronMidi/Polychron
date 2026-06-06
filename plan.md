@@ -43,9 +43,10 @@ here. Nothing in this file is implemented until the user marks it approved.
 
 ## Phase 14 (proposed) -- Mesh refinement, then HME self-coherence expansion
 
-Status: `proposed` (awaiting user decision). User rejected moving to `src/` product
-focus now: the mesh needs more refinement first, and the next expansion target is
-HME's self-coherence suite.
+Status: `approved` / active. The session goal explicitly directs execution of all of
+`plan.md` through deep mesh consultation, tracked in TODO, for highest-performing
+self-evolvement. User rejected moving to `src/` product focus now: the mesh needs
+more refinement first, and the next expansion target is HME's self-coherence suite.
 
 Theme: harden the red/blue/purple mesh until peer rounds are reliable, observable,
 grounded, and non-bloating; then apply that refined mesh to expand and sharpen the
