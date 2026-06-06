@@ -122,30 +122,35 @@ function shrinkForPassthrough(payload, opts = {}) {
     }
   }
 
-  if (maxTier >= 2 && env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > keepMin * 2) {
+  let summaryChanged = 0;
+  if (allowSummary && env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > keepMin * 2) {
     const half = Math.floor(msgs.length / 2);
     msgs.splice(0, half, { role: 'user', content: `(hme-proxy local-summary placeholder: ${half} oldest messages compacted)` });
+    summaryChanged += half;
     serialized = JSON.stringify(payload);
-    log(`precompact tier-2 (local-summary): collapsed ${half} oldest msgs into 1 marker, body=${serialized.length}B`);
-    if (serialized.length <= threshold) return elided + half;
+    log(`precompact summary (local-summary): collapsed ${half} oldest msgs into 1 marker, body=${serialized.length}B`);
+    if (serialized.length <= threshold) return elided + summaryChanged;
   }
 
   try {
     const notesPath = path.join(projectRoot, 'tmp', 'hme-session-notes.txt');
-    if (maxTier >= 2 && fs.existsSync(notesPath) && msgs.length > keepMin * 2) {
+    if (allowSummary && fs.existsSync(notesPath) && msgs.length > keepMin * 2) {
       const notes = fs.readFileSync(notesPath, 'utf8');
       if (notes) {
         const half = Math.floor(msgs.length / 2);
         msgs.splice(0, half, { role: 'user', content: `(hme-proxy session-memory compact: ${half} oldest messages summarized)\n\n${notes.slice(0, 8_000)}` });
+        summaryChanged += half;
         serialized = JSON.stringify(payload);
-        log(`precompact tier-3 (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
-        if (serialized.length <= threshold) return elided + half;
+        log(`precompact summary (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
+        if (serialized.length <= threshold) return elided + summaryChanged;
       }
     }
   } catch (_err) { /* best effort */ }
 
+  if (!allowMessageDrop) return elided + summaryChanged;
+
   let dropped = 0;
-  if (maxTier >= 3) {
+  if (allowMessageDrop) {
     while (msgs.length > keepMin) {
       msgs.shift();
       dropped += 1;
