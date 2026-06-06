@@ -7,11 +7,13 @@ _PROGRESS_FILE="${HME_ROUND_PROGRESS_FILE:-$PROJECT_ROOT/teams/runtime/round-pro
 _PROGRESS_ROUND=""
 _PROGRESS_TOTAL="0"
 _PROGRESS_DONE="0"
+_PROGRESS_FAILED="0"
 
 progress_init() {
   _PROGRESS_ROUND="${1:-round}"
   _PROGRESS_TOTAL="${2:-0}"
   _PROGRESS_DONE="0"
+  _PROGRESS_FAILED="0"
   mkdir -p "$(dirname "$_PROGRESS_FILE")"
   : > "$_PROGRESS_FILE"   # fresh ledger per round; per-step replies remain in output files
   progress "round" "start" "$_PROGRESS_ROUND ($_PROGRESS_TOTAL steps)"
@@ -24,6 +26,7 @@ _progress_emit() {
   if { [ "$status" = "done" ] || [ "$status" = "failed" ]; } && [ "$step" != "round" ]; then
     _PROGRESS_DONE=$((_PROGRESS_DONE + 1))
   fi
+  [ "$status" = "failed" ] && [ "$step" != "round" ] && _PROGRESS_FAILED=$((_PROGRESS_FAILED + 1))
   PROG_FILE="$_PROGRESS_FILE" PROG_ROUND="$_PROGRESS_ROUND" PROG_STEP="$step" \
   PROG_STATUS="$status" PROG_DETAIL="$detail" PROG_DONE="$_PROGRESS_DONE" \
   PROG_TOTAL="$_PROGRESS_TOTAL" PROG_TARGET="$target" PROG_RC="$rc" \
