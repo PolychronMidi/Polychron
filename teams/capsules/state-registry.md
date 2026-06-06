@@ -80,8 +80,26 @@ function _writeAtomic(absPath, contents) {
   const dir = path.dirname(absPath);
   fs.mkdirSync(dir, { recursive: true });
   const tmp = path.join(dir, `.${path.basename(absPath)}.${process.pid}.${Date.now()}.tmp`);
-  fs.writeFileSync(tmp, contents);
+  // Mesh-found P1 (state-registry review): crash-DURABLE atomic write, not only
+  // visibility-atomic. fsync the temp file before rename AND fsync the parent dir
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, contents);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
   fs.renameSync(tmp, absPath);
+  let dfd;
+  try {
+    dfd = fs.openSync(dir, 'r');
+    fs.fsyncSync(dfd);
+  } catch (_err) {
+    // silent-ok: directory fsync is best-effort (some platforms/filesystems
+    // disallow it); the data fsync above already happened.
+  } finally {
+    if (dfd !== undefined) fs.closeSync(dfd);
+  }
 }
 
 function register({ name, relPath, format, schema, ttlMs, source }) {
@@ -133,7 +151,14 @@ function read(name, projectRoot = PROJECT_ROOT) {
   try { raw = fs.readFileSync(abs, 'utf8'); }
   catch (_err) { return e.format === 'json' ? null : (e.format === 'jsonl' ? [] : ''); }
   if (e.format === 'json') {
-    try { return JSON.parse(raw); } catch (_err) { return null; }
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (_err) { return null; }
+    // Mesh-found P1 (state-registry review): the registry exists to KILL schema
+    // drift, so a registered schema must gate READS too, not only writes. A
+    if (e.schema) {
+      try { if (e.schema(parsed)) return null; } catch (_err) { return null; }
+    }
+    return parsed;
   }
   if (e.format === 'jsonl') {
     return raw.split('\n').filter(Boolean).map((line) => {
