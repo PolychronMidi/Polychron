@@ -10,6 +10,4 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
-### Todo - Set 25
-
-#15 5_ F1 deeper policy/governance integration -- DONE (CEO/user sign-off to scope F1 to AUDITABILITY, DECLINE enforcement). Shipped: teams/rounds/coverage_status.py turns teams/rounds/coverage-map.json (machine-readable review-status DATA, no longer a doc/*.md spillover) into a governance signal (reviewed/pending counts + which control-plane surfaces lack mesh review; --strict gate; coverage_status.test.py). ENFORCEMENT DECLINED with recorded reasons: gating live autonomous actions on review-status would either fail-closed (block legitimate work on "unreviewed" surfaces, violating the cost-control charter) or fail-open (security theater); review status is point-in-time, so coupling runtime permission to it makes safety depend on map freshness; the mesh's proven value is REVIEW (defect discovery + calibrated dissent), not runtime gatekeeping. Auditability is the right, sufficient F1 scope.
+### Todo - Set 26
