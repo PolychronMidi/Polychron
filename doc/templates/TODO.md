@@ -11,3 +11,5 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 26
+
+#22 0_ Phase 14 mesh-refinement follow-up: decide whether to productize or retire stale ad hoc round runners (especially round_dialogue.sh) so every first-class consult/dialogue runner has the durable progress ledger, per-peer reply capture, named-role target guarantees, stale-output cleanup, and typed failure states required by the corrected consult setup
