@@ -262,10 +262,44 @@ function _shellParityDecision(payload) {
 }
 
 async function _advisoryWrite(sessionId, body) {
-  // Mesh-found P1 (pre-write gate review): the per-decision state write is
-  // ADVISORY telemetry. A state-client outage must NEVER convert an already-
+  // Mesh-found P1: state writes are advisory telemetry only.
   try { await stateClient.call('write', sessionId, body); }
   catch (_e) { /* silent-ok: decision already computed; telemetry is best-effort */ }
+}
+
+function _earlyGateDecision(payload, options = {}) {
+  const patchDecision = applyPatchDecision(payload);
+  if (patchDecision) {
+    if (options.applyPatchShortCircuit || patchDecision.permissionDecision !== 'allow') return patchDecision;
+    return null;
+  }
+  const shapeDecision = _editShapeDecision(payload);
+  if (shapeDecision) return shapeDecision;
+  const todoDecision = todoWriteDecision(payload, PROJECT_ROOT);
+  if (todoDecision) return todoDecision;
+  return null;
+}
+
+async function _runPolicyFramework(payload, tool) {
+  const ctx = {
+    toolInput: payload.tool_input || {},
+    toolName: tool,
+    sessionId: payload.session_id || '',
+    payload,
+    deny: registry.deny,
+    instruct: registry.instruct,
+    allow: registry.allow,
+    rewrite: registry.rewrite,
+    params: {},
+  };
+  try {
+    _loadPolicies();
+    const policies = registry.matchingFor('PreToolUse', tool, config);
+    return { ...(await registry.runChain(policies, ctx)), ctx, degradedContext: '' };
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    return { firstDeny: null, instructs: [], rewrites: [], errors: [], ctx, degradedContext: `pre-write-check degraded: ${msg}` };
+  }
 }
 
 async function preWriteCheck(stdinJson) {
@@ -273,81 +307,67 @@ async function preWriteCheck(stdinJson) {
   const payload = { ...env.raw, session_id: env.session_id, tool_name: env.tool_name, tool_input: env.tool_input };
   const tool = payload.tool_name || '';
   if (!require('./edit_validation').isWriteFamilyTool(tool)) return _permission('allow');
-  const patchDecision = applyPatchDecision(payload);
-  if (patchDecision) {
-    if (patchDecision.permissionDecision !== 'allow') return _repeatDeny(payload, patchDecision);
-    return patchDecision;
+  const earlyDecision = _earlyGateDecision(payload, { applyPatchShortCircuit: true });
+  if (earlyDecision) {
+    if (earlyDecision.permissionDecision !== 'allow') return _repeatDeny(payload, earlyDecision);
+    return earlyDecision;
   }
-  const shapeDecision = _editShapeDecision(payload);
-  if (shapeDecision) return _repeatDeny(payload, shapeDecision);
-  const todoDecision = todoWriteDecision(payload, PROJECT_ROOT);
-  if (todoDecision) return _repeatDeny(payload, todoDecision);
 
-  try {
-    _loadPolicies();
-    const policies = registry.matchingFor('PreToolUse', tool, config);
-    const ctx = {
-      toolInput: payload.tool_input || {},
-      toolName: tool,
-      sessionId: payload.session_id || '',
-      payload,
-      deny: registry.deny,
-      instruct: registry.instruct,
-      allow: registry.allow,
-      rewrite: registry.rewrite,
-      params: {},
-    };
-    const { firstDeny, instructs, rewrites, errors } = await registry.runChain(policies, ctx);
-    if (rewrites && rewrites.length) {
-      payload.tool_input = ctx.toolInput;
-      try {
-        const { recordPolicyRewrite } = require('../event_kernel/hook_decision_log');
-        recordPolicyRewrite(PROJECT_ROOT, payload, rewrites);
-      } catch (_e) { /* silent-ok: telemetry must never block */ }
-    }
-    if (firstDeny) {
-      const out = _repeatDeny(payload, _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`));
-      try {
-        const { recordPolicyDeny } = require('../event_kernel/hook_decision_log');
-        recordPolicyDeny(PROJECT_ROOT, payload, firstDeny.policy, firstDeny.reason);
-      } catch (_e) { /* silent-ok: telemetry must never block */ }
+  const policyResult = await _runPolicyFramework(payload, tool);
+  const { firstDeny, instructs, rewrites, errors, ctx, degradedContext } = policyResult;
+  if (rewrites && rewrites.length) {
+    payload.tool_input = ctx.toolInput;
+    try {
+      const { recordPolicyRewrite } = require('../event_kernel/hook_decision_log');
+      recordPolicyRewrite(PROJECT_ROOT, payload, rewrites);
+    } catch (_e) { /* silent-ok: telemetry must never block */ }
+    const rewrittenEarlyDecision = _earlyGateDecision(payload, { applyPatchShortCircuit: false });
+    if (rewrittenEarlyDecision && rewrittenEarlyDecision.permissionDecision !== 'allow') {
+      const out = _repeatDeny(payload, rewrittenEarlyDecision);
       await _advisoryWrite(payload.session_id || '', { payload, decision: out });
       return out;
     }
-    // Mesh-found P1 (pre-write gate review): a policy-chain error must NOT
-    // preempt the remaining HARD-deny checks with a softer `ask`. Run the hard
-    const shellDecision = _shellParityDecision(payload);
-    if (shellDecision.permissionDecision !== 'allow') {
-      const out = _repeatDeny(payload, shellDecision);
-      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
-      return out;
-    }
-    const editCurrentDecision = _editCurrentFileDecision(payload);
-    if (editCurrentDecision) {
-      const out = _repeatDeny(payload, editCurrentDecision);
-      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
-      return out;
-    }
-    const kbDecision = await _kbBugfixDecision((payload.tool_input || {}).file_path || '', _content(payload), tool === 'Write' ? 'Write' : 'Edit');
-    if (kbDecision) {
-      const out = _repeatDeny(payload, kbDecision);
-      await _advisoryWrite(payload.session_id || '', { payload, decision: out });
-      return out;
-    }
-    if (errors.length) return _permission('ask', errors.map((e) => `${e.policy}: ${e.error}`).join('\n'));
-    if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
-    await _advisoryWrite(payload.session_id || '', { payload, decision: shellDecision });
-    if (rewrites && rewrites.length && shellDecision.permissionDecision === 'allow') {
-      return { ...shellDecision, updatedInput: ctx.toolInput };
-    }
-    return shellDecision;
-  // silent-ok: policy/state outage allows with warning after hard denies.
-  } catch (err) {
-    // Hook reliability must fail open: policy framework/state telemetry outages
-    // should not break basic editing. Hard-deny checks above already ran.
-    const message = `pre-write-check degraded: ${err && err.message ? err.message : String(err)}`;
-    return _permission('allow', '', message);
   }
+  if (firstDeny) {
+    const out = _repeatDeny(payload, _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`));
+    try {
+      const { recordPolicyDeny } = require('../event_kernel/hook_decision_log');
+      recordPolicyDeny(PROJECT_ROOT, payload, firstDeny.policy, firstDeny.reason);
+    } catch (_e) { /* silent-ok: telemetry must never block */ }
+    await _advisoryWrite(payload.session_id || '', { payload, decision: out });
+    return out;
+  }
+
+  const shellDecision = _shellParityDecision(payload);
+  if (shellDecision.permissionDecision !== 'allow') {
+    const out = _repeatDeny(payload, shellDecision);
+    await _advisoryWrite(payload.session_id || '', { payload, decision: out });
+    return out;
+  }
+  const editCurrentDecision = _editCurrentFileDecision(payload);
+  if (editCurrentDecision) {
+    const out = _repeatDeny(payload, editCurrentDecision);
+    await _advisoryWrite(payload.session_id || '', { payload, decision: out });
+    return out;
+  }
+  const kbDecision = await _kbBugfixDecision((payload.tool_input || {}).file_path || '', _content(payload), tool === 'Write' ? 'Write' : 'Edit');
+  if (kbDecision) {
+    const out = _repeatDeny(payload, kbDecision);
+    await _advisoryWrite(payload.session_id || '', { payload, decision: out });
+    return out;
+  }
+  if (errors.length) {
+    const out = _permission('ask', errors.map((e) => `${e.policy}: ${e.error}`).join('\n'));
+    await _advisoryWrite(payload.session_id || '', { payload, decision: out });
+    return out;
+  }
+  if (degradedContext) shellDecision.contextualRules.push(degradedContext);
+  if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
+  await _advisoryWrite(payload.session_id || '', { payload, decision: shellDecision });
+  if (rewrites && rewrites.length && shellDecision.permissionDecision === 'allow') {
+    return { ...shellDecision, updatedInput: ctx.toolInput };
+  }
+  return shellDecision;
 }
 
 function toHookResponse(decision) {
