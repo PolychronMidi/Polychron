@@ -88,6 +88,6 @@ gcap red_lead E4 1 m-redp red red_purple "RED PURPLE: sharpen red's findings; dr
 REDP="$(reply m_redp.json | san)"
 gcap red_purple E4 1 m-cross purple blue_purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set (quoted, markers neutralized): $REDP" m_cross.json
 
-progress "round" "done" "all 4 steps dispatched"
+progress_round_finish "all 4 steps dispatched"
 echo "measured-done"
 for f in m_base m_red m_redp m_cross; do printf '%s reply_bytes=%s\n' "$f" "$(reply $f.json | wc -c)"; done
