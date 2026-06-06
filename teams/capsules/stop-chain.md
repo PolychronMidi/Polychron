@@ -131,6 +131,9 @@ function mandatoryPolicyFailure(name, msg) {
 
 const TRACE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-chain.trace');
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+// Mesh-found P1 (stop-chain review): transcript_path comes from the payload, so a
+// huge/slow file must not stall the Stop hook. Cascade-break only needs the most
+const CASCADE_READ_CAP = 4 * 1024 * 1024;
 
 // Consolidated telemetry surface -- single record() entry that fan-outs
 let _telemetry = null;
@@ -160,8 +163,12 @@ function logError(policyName, message) {
   // Route through the consolidated telemetry module if available; falls
   const t = _getTelemetry();
   if (t) {
-    t.error('stop_chain_policy_error', { policy: policyName, message, ts: nowIso() });
-    return;
+    // Mesh-found P1 (stop-chain review): telemetry is advisory and must NEVER
+    // wedge the chain -- a throwing t.error() inside a mandatory catch would
+    try {
+      t.error('stop_chain_policy_error', { policy: policyName, message, ts: nowIso() });
+      return;
+    } catch (_e) { /* fall through to the guarded file-append fallback below */ }
   }
   // Fallback when telemetry module is missing -- preserves prior behavior.
   try {
@@ -204,8 +211,22 @@ function _isCascadeBreakConditions(stdinJson) {
   const transcript = payload && payload.transcript_path;
   if (!transcript) return false;
   let lines;
-  try { lines = fs.readFileSync(transcript, 'utf8').split('\n'); }
-  catch (_e) { return false; }
+  try {
+    const st = fs.statSync(transcript);
+    if (!st.isFile()) return false;
+    if (st.size > CASCADE_READ_CAP) {
+      // Read only the tail; a split leading line is harmlessly skipped by the
+      // per-line JSON.parse below, and cascade-break only cares about recency.
+      const fd = fs.openSync(transcript, 'r');
+      try {
+        const buf = Buffer.allocUnsafe(CASCADE_READ_CAP);
+        const n = fs.readSync(fd, buf, 0, CASCADE_READ_CAP, st.size - CASCADE_READ_CAP);
+        lines = buf.toString('utf8', 0, n).split('\n');
+      } finally { fs.closeSync(fd); }
+    } else {
+      lines = fs.readFileSync(transcript, 'utf8').split('\n');
+    }
+  } catch (_e) { return false; }
   // Walk events tracking last user text, last assistant text, and the
   let lastUserText = '';
   let lastUserIdx = -1;
@@ -318,27 +339,51 @@ async function runStopChain(stdinJson) {
   for (const name of _policyNamesForMode()) {
     appendTrace('enter', name);
 
-    // Honor unified-registry disable: if the user has opted out of this
-    if (!_isPolicyEnabled(name, true)) {
-      appendTrace('exit', `${name} skipped_disabled`);
-      continue;
-    }
-
     let result = null;
-    let policyMod;
+    const mandatory = MANDATORY_POLICIES.has(name);
+
+    // Honor unified-registry disable -- EXCEPT (mesh-found P1, stop-chain review):
+    // a MANDATORY policy can never be disabled away (it must fail closed), and a
+    let enabled = true;
     try {
-      policyMod = loadPolicy(name);
-    // silent-ok: policy load error logs; mandatory policies deny below.
+      enabled = _isPolicyEnabled(name, true);
     } catch (err) {
-      const msg = `failed to load: ${err.message}`;
+      const msg = `policy-enable check failed: ${err.message}`;
       combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
       logError(name, msg);
-      if (MANDATORY_POLICIES.has(name)) {
+      if (mandatory) {
         result = mandatoryPolicyFailure(name, msg);
-        appendTrace('exit', `${name} load_error_mandatory`);
       } else {
-        appendTrace('exit', `${name} load_error_optional`);
+        appendTrace('exit', `${name} enable_check_error_optional`);
         continue;
+      }
+    }
+    if (!result && !enabled) {
+      if (mandatory) {
+        result = mandatoryPolicyFailure(name, 'mandatory policy disabled by config');
+        appendTrace('exit', `${name} mandatory_disable_blocked`);
+      } else {
+        appendTrace('exit', `${name} skipped_disabled`);
+        continue;
+      }
+    }
+
+    let policyMod;
+    if (!result) {
+      try {
+        policyMod = loadPolicy(name);
+      // silent-ok: policy load error logs; mandatory policies deny below.
+      } catch (err) {
+        const msg = `failed to load: ${err.message}`;
+        combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
+        logError(name, msg);
+        if (mandatory) {
+          result = mandatoryPolicyFailure(name, msg);
+          appendTrace('exit', `${name} load_error_mandatory`);
+        } else {
+          appendTrace('exit', `${name} load_error_optional`);
+          continue;
+        }
       }
     }
     if (!result) {
