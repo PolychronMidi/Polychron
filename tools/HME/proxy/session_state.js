@@ -58,11 +58,30 @@ function readState(sessionId = '') {
 function writeState(state) {
   const s = normalize(state);
   s.updated_at = nowIso();
-  fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
+  const dir = path.dirname(STATE_FILE);
+  fs.mkdirSync(dir, { recursive: true });
   const text = JSON.stringify(s, null, 2);
   const tmp = `${STATE_FILE}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, text);
+  // Mesh-found P1 (session-state review): crash-DURABLE atomic write, mirroring
+  // state_registry._writeAtomic. fsync the temp file before rename AND the parent
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, text);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
   fs.renameSync(tmp, STATE_FILE);
+  let dfd;
+  try {
+    dfd = fs.openSync(dir, 'r');
+    fs.fsyncSync(dfd);
+  } catch (_e) {
+    // silent-ok: directory fsync is best-effort (some platforms disallow); the
+    // data fsync above already happened.
+  } finally {
+    if (dfd !== undefined) fs.closeSync(dfd);
+  }
   try { fs.writeFileSync(LEGACY_STATE_FILE, text); } catch (_e) { /* best-effort mirror */ }
   return s;
 }
