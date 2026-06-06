@@ -11,6 +11,7 @@ const _os = require('os');
 const { PROJECT_ROOT } = require('./shared');
 
 const REGISTRY = new Map();
+const JSONL_PARSE_FAIL = Symbol('jsonl-parse-fail');
 const STATE_FILES_REL = path.join('tools', 'HME', 'config', 'state-files.json');
 const STATE_FILE_FORMAT_HINTS = {
   'tmp/hme-middleware-processed.jsonl': { name: 'statefile_hme_middleware_processed', format: 'jsonl' },
