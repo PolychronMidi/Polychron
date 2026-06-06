@@ -17,7 +17,7 @@ pending (not yet reviewed this phase), partial (reviewed in part).
 | dispatch guard | tools/HME/scripts/team_dispatch_guard.py | reviewed |
 | team router | tools/HME/scripts/team_agent_router.py | reviewed |
 | tool filter | tools/HME/proxy/middleware/03_filter_tools.js | reviewed |
-| stop-chain policy | tools/HME/proxy/stop_chain/ | pending |
+| stop-chain policy | tools/HME/proxy/stop_chain/index.js | reviewed |
 | apply-patch gate | tools/HME/proxy/apply_patch_gate.js | pending |
 | bash command policy | tools/HME/proxy/bash_command_policy.js | pending |
 
