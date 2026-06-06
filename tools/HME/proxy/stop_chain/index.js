@@ -119,8 +119,12 @@ function logError(policyName, message) {
   // Route through the consolidated telemetry module if available; falls
   const t = _getTelemetry();
   if (t) {
-    t.error('stop_chain_policy_error', { policy: policyName, message, ts: nowIso() });
-    return;
+    // Mesh-found P1 (stop-chain review): telemetry is advisory and must NEVER
+    // wedge the chain -- a throwing t.error() inside a mandatory catch would
+    try {
+      t.error('stop_chain_policy_error', { policy: policyName, message, ts: nowIso() });
+      return;
+    } catch (_e) { /* fall through to the guarded file-append fallback below */ }
   }
   // Fallback when telemetry module is missing -- preserves prior behavior.
   try {
