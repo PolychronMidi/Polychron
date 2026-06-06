@@ -36,7 +36,7 @@ pending (not yet reviewed this phase), partial (reviewed in part).
 | event-kernel host entry | tools/HME/event_kernel/host_hook_entry.js | reviewed |
 | event-kernel adapters | tools/HME/event_kernel/host_adapter_common.js | reviewed |
 | transcript compaction | tools/HME/proxy/transcript_compactor.js | reviewed |
-| proxy request mutation | tools/HME/proxy/hme_proxy_request_mutation.js | pending |
+| proxy request mutation | tools/HME/proxy/hme_proxy_request_mutation.js | reviewed |
 | tool-result semantics | tools/HME/proxy/tool_result_semantics.js | pending |
 
 ## Notes
