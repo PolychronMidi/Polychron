@@ -72,6 +72,41 @@ def lost_unfinished(before_text: str, after_text: str) -> list:
     return lost
 
 
+def done_todos_from_text(text: str) -> list:
+    _header, todos = _parsed(text or "")
+    return [t for t in todos if t.code == "5"]
+
+
+def archived_done_todos(root: Path | None = None) -> list:
+    base = root or _root()
+    out = []
+    for path in sorted((base / "log" / "todo").glob("set*.md")):
+        try:
+            out.extend(done_todos_from_text(path.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue  # silent-ok: archive scan is best-effort; active TODO still gates loss.
+    return out
+
+
+def filter_lost_with_done(lost: list, done_todos: list) -> list:
+    archived_norm = {_norm(t.text) for t in done_todos}
+    kept = []
+    for item in lost:
+        if _norm(item.text) in archived_norm:
+            continue
+        item_words = _sig_words(item.text)
+        matched = False
+        for done in done_todos:
+            done_words = _sig_words(done.text)
+            overlap = (len(item_words & done_words) / len(item_words)) if item_words and done_words else 0.0
+            if overlap >= 1 / 3 or (done.id == item.id and overlap >= 0.25):
+                matched = True
+                break
+        if not matched:
+            kept.append(item)
+    return kept
+
+
 def main(argv: list) -> int:
     if len(argv) < 2:
         return 0

@@ -23,7 +23,7 @@ HME_PATH = ROOT / "tools" / "HME"
 if str(HME_PATH) not in sys.path:
     sys.path.insert(0, str(HME_PATH))
 from todo_engine.grammar import parse_document  # noqa: E402
-from todo_guard import lost_unfinished, _norm, _sig_words  # noqa: E402
+from todo_guard import archived_done_todos, done_todos_from_text, filter_lost_with_done, lost_unfinished  # noqa: E402
 
 _CHECK_ENV_FAILFAST_PATH = SCRIPT_DIR / "check-env-failfast.py"
 _CHECK_ENV_FAILFAST_SPEC = importlib.util.spec_from_file_location("check_env_failfast", _CHECK_ENV_FAILFAST_PATH)
@@ -409,45 +409,16 @@ def todo_survivor_check() -> None:
     after_text = after.decode("utf-8", "replace")
     lost = lost_unfinished(before_text, after_text)
     if lost:
-        archived_text = ""
+        # Rescue an item that survived as 5_ in the todo archive. The archive is
+        # the canonical home for completed sets (the guard message itself allows
+        done_todos = list(archived_done_todos(ROOT))
         for staged_path in staged:
             if not staged_path.startswith("log/todo/set") or not staged_path.endswith(".md"):
                 continue
             blob = staged_blob(staged_path)
             if blob:
-                archived_text += "\n" + blob.decode("utf-8", "replace")
-        if archived_text:
-            archived_done = []
-            current_header = []
-            current_body = []
-            for line in archived_text.splitlines():
-                if line.lower().startswith("### todo - set "):
-                    if current_header or current_body:
-                        _h, todos = parse_document("\n".join(current_header + current_body))
-                        archived_done.extend(t for t in todos if t.code == "5")
-                    current_header = [line]
-                    current_body = []
-                elif current_header:
-                    current_body.append(line)
-            if current_header or current_body:
-                _h, todos = parse_document("\n".join(current_header + current_body))
-                archived_done.extend(t for t in todos if t.code == "5")
-            archived_norm = {_norm(t.text) for t in archived_done}
-            kept = []
-            for item in lost:
-                if _norm(item.text) in archived_norm:
-                    continue
-                item_words = _sig_words(item.text)
-                matched = False
-                for done in archived_done:
-                    done_words = _sig_words(done.text)
-                    overlap = (len(item_words & done_words) / len(item_words)) if item_words and done_words else 0.0
-                    if overlap >= 1 / 3 or (done.id == item.id and overlap >= 0.25):
-                        matched = True
-                        break
-                if not matched:
-                    kept.append(item)
-            lost = kept
+                done_todos.extend(done_todos_from_text(blob.decode("utf-8", "replace")))
+        lost = filter_lost_with_done(lost, done_todos)
     if lost:
         detail = " | ".join(f"#{t.id} {t.code}_ {t.text[:120]}" for t in lost[:5])
         failures.append("doc/templates/TODO.md: non-5_ todo(s) removed instead of surviving active set: " + detail)
