@@ -1062,22 +1062,9 @@ test('stop SSE writer includes required Anthropic stream envelope', () => {
   assert.match(body, /"model":"test-model"/);
 });
 
-test('context budget compaction gears start near context high-water and escalate', () => {
+test('context budget compaction uses continuous exponential pressure from high-water to full', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
-  // Pin an isolated statusline so the live Claude session / sibling tests cannot
-  // race the shared runtime file (their real ~200k usage would divide by this
-  const isolatedStatusline = _path.join(_fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-gear-statusline-')), 'statusline.json');
   try {
-    process.env.HME_STATUSLINE_PATH = isolatedStatusline;
-    const writeZeroStatusline = () => {
-      _fs.writeFileSync(isolatedStatusline, JSON.stringify({
-        context_window: {
-          context_window_size: 1000,
-          current_usage: { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
-        },
-      }));
-    };
-    writeZeroStatusline();
     process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
@@ -1085,55 +1072,54 @@ test('context budget compaction gears start near context high-water and escalate
     process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '40000';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    // Legacy gear envs remain declared for compatibility but no longer create
+    // step-function behavior.
     process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
     process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
     process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
     process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
     process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
     const budget = createContextBudget();
-    const model = 'lfm-2.5-1.2b-instruct-openrouter-free';
-    // Re-zero the shared statusline immediately before each read so the live
-    // Claude session's real usage (written cross-process to the same file) can
-    const planFor = (chars) => {
-      writeZeroStatusline();
-      return budget.effectiveCompactThreshold({ model, messages: [{ role: 'user', content: 'x'.repeat(chars) }] });
-    };
+    budget.setLastInputTokensLimit(1000);
+    const planFor = (chars) => budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(chars) }] });
 
-    let plan = planFor(24_500);
+    let plan = planFor(750);
     assert.equal(plan.maxTier, 0);
+    assert.equal(plan.pressure, 0);
     assert.equal(plan.threshold, Infinity);
 
-    plan = planFor(27_000);
-    assert.equal(plan.maxTier, 1);
-    assert.equal(plan.threshold, 26214);
-    // Env baselines trim by gear; never derive from prior effective values.
-    assert.equal(plan.maxToolResultAge, 30);
-    assert.equal(plan.keepMin, 30);
-    assert.equal(plan.toolResultByteFloor, 28000);
+    plan = planFor(830);
+    assert.ok(plan.pressure > 0 && plan.pressure < 0.03, `pressure=${plan.pressure}`);
+    assert.ok(plan.maxTier > 1 && plan.maxTier < 1.1, `severity=${plan.maxTier}`);
+    assert.equal(plan.allowSummary, false);
+    assert.equal(plan.allowMessageDrop, false);
+    assert.ok(plan.targetTokens >= 825, `targetTokens=${plan.targetTokens}`);
+    assert.ok(plan.keepMin >= 39, `keepMin=${plan.keepMin}`);
+    assert.ok(plan.maxToolResultAge >= 39, `age=${plan.maxToolResultAge}`);
+    assert.ok(plan.toolResultByteFloor >= 39000, `floor=${plan.toolResultByteFloor}`);
 
-    plan = planFor(30_000);
-    assert.equal(plan.maxTier, 2);
-    assert.equal(plan.threshold, 29491);
-    assert.equal(plan.maxToolResultAge, 20);
-    assert.equal(plan.keepMin, 20);
-    assert.equal(plan.toolResultByteFloor, 18000);
+    const mid = planFor(950);
+    assert.ok(mid.pressure > plan.pressure, `mid=${mid.pressure} early=${plan.pressure}`);
+    assert.equal(mid.allowSummary, true);
+    assert.equal(mid.allowMessageDrop, false);
+    assert.ok(mid.targetTokens < 930 && mid.targetTokens > 880, `target=${mid.targetTokens}`);
 
-    plan = planFor(32_000);
-    assert.equal(plan.maxTier, 3);
-    assert.equal(plan.threshold, 31784);
-    assert.equal(plan.maxToolResultAge, 10);
-    assert.equal(plan.keepMin, 12);
-    assert.equal(plan.toolResultByteFloor, 10000);
-    assert.deepEqual(plan.compactionKnobBaselines, {
+    const late = planFor(990);
+    assert.ok(late.pressure > mid.pressure, `late=${late.pressure} mid=${mid.pressure}`);
+    assert.equal(late.allowSummary, true);
+    assert.equal(late.allowMessageDrop, true);
+    assert.ok(late.targetTokens <= 850, `late target=${late.targetTokens}`);
+    assert.ok(late.keepMin < mid.keepMin, `late keep=${late.keepMin} mid=${mid.keepMin}`);
+    assert.ok(late.toolResultByteFloor < mid.toolResultByteFloor, `late floor=${late.toolResultByteFloor} mid=${mid.toolResultByteFloor}`);
+    assert.deepEqual(late.compactionKnobBaselines, {
       keepMin: 40,
       staleToolKeepTurns: 40,
       toolResultByteFloor: 40000,
     });
   } finally {
     process.env = oldEnv;
-    try { _fs.rmSync(_path.dirname(isolatedStatusline), { recursive: true, force: true }); } catch { /* silent-ok: tempdir cleanup */ }
   }
-});
+}));
 
 test('compaction knobs scale from env baselines per gear without ratcheting', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
