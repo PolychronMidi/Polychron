@@ -136,11 +136,15 @@ Governed by the Cost-control charter above. Caps target runaway/incoherence only
   (review progress = TODO progress); review coverage is tracked in the work
   tracker + git history, not a parallel ledger.
 
-### Workstream G -- Internal supervised pilot
-- G1 [approved]: Run myth0s against selected internal engineering surfaces under
-  human supervision. Success criteria: measurable unique defect discovery, low
-  false-positive burden, stable cost envelope, calibrated dissent surfaced, and
-  zero policy-bypass regressions.
+- G1 [done]: The B1 sweep WAS the first supervised pilot (HME's own control plane,
+  human-supervised, every round scored). All five success criteria were met --
+  unique defect discovery (incl. a fail-open security P1), low false-positive
+  burden (a genuine clean audit; over-claims demoted), bounded sequential cost,
+  calibrated dissent surfaced (AUDIT-UNCERTAIN -> the #17-21 follow-ups, since
+  resolved), and zero policy-bypass regressions. Evidence lives in the TODO archive
+  (#16) + git; the standalone pilot-report.md was deleted as one-time prose. Honest
+  limit: reviewed our own control plane -- a cross-team pilot is the next-phase
+  extension.
 
 ### Sequencing
 1. A1-A6 first (low cost, high leverage; charter + high-impact capsule template).
