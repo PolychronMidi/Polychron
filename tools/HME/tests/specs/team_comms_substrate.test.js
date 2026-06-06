@@ -406,6 +406,11 @@ test('dispatch guard --claim-audit appends the calibrated addendum, off by defau
     assert.match(channel, /contradictory evidence/);
     assert.match(channel, /FINDING-DEATH IS SUCCESS/);
     assert.match(channel, /AUDIT-UNCERTAIN/);
+    // Cost-control charter alignment (mesh-found P1 fix): calibration must NOT
+    // suppress legitimate findings. The addendum must carry the checked-null
+    assert.match(channel, /none found after checking/);
+    assert.match(channel, /A real defect on an unguarded surface stays a real defect/);
+    assert.match(channel, /never use this to avoid deep verification/);
 
     // Default (no flag): routine reviews stay lightweight -- no addendum.
     fs.writeFileSync(path.join(root, 'teams/driver.md'), '# driver channel\n');
