@@ -591,12 +591,15 @@ def main() -> int:
                 return _deny("capsule_read", f"could not read --capsule: {e}")
             if missing:
                 return _deny("capsule_invalid", f"capsule missing required sections: {', '.join(missing)} (need ## " + ", ## ".join(CAPSULE_REQUIRED) + ")")
+            # Inline the LIVE source for every ## evidence file reference so the
+            # peer is grounded on current code, never a frozen copy that drifts.
+            capsule = _resolve_capsule(capsule, root, args.context_cap)
             # Measured-round lesson (iter 4): a capsule's ## coverage claimed code
-            # (_send/main) the ## evidence had truncated -> peers grounded on a
+            # the ## evidence lacked -> peers grounded on a gap. Now the check runs
             gaps = _capsule_coverage_gaps(capsule)
             if gaps:
                 return _deny("capsule_coverage_gap",
-                             "coverage claims symbols missing from ## evidence: " + ", ".join(gaps[:12]),
+                             "coverage claims symbols missing from live ## evidence source: " + ", ".join(gaps[:12]),
                              missing_evidence=gaps[:12])
             message = _capsule_message(capsule, args.message)
         elif args.context_file:
