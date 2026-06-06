@@ -43,9 +43,20 @@ def main(argv: list) -> int:
     rnd = rows[-1].get("round", "?")
     print(f"round: {rnd}")
     for r in rows:
-        line = f"  [{r.get('progress','?')}] {r.get('step','?'):<10} {r.get('status','?'):<12}"
+        line = f"  [{r.get('progress','?')}] {r.get('step','?'):<18} {r.get('status','?'):<12}"
+        typed = []
+        if r.get("target"):
+            typed.append(f"target={r['target']}")
+        if "rc" in r:
+            typed.append(f"rc={r['rc']}")
+        if "reply_bytes" in r:
+            typed.append(f"reply_bytes={r['reply_bytes']}")
+        if r.get("error_log"):
+            typed.append(f"error_log={r['error_log']}")
+        if typed:
+            line += " " + " ".join(typed)
         if r.get("detail"):
-            line += f" {r['detail']}"
+            line += f" -- {r['detail']}"
         print(line)
     # Reply files captured so far (durable per-step output).
     replies = sorted(_OUTDIR.glob("*.json"))
