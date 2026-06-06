@@ -12,4 +12,4 @@ Example:
 
 ### Todo - Set 26
 
-#22 0_ Phase 14 mesh-refinement follow-up: decide whether to productize or retire stale ad hoc round runners (especially round_dialogue.sh) so every first-class consult/dialogue runner has the durable progress ledger, per-peer reply capture, named-role target guarantees, stale-output cleanup, and typed failure states required by the corrected consult setup
+#22 0_ Phase 14 mesh-refinement follow-up: retire stale ad hoc round runners or bring them up to the corrected consult contract; every remaining first-class consult/dialogue runner must have the durable progress ledger, per-peer reply capture, named-role target guarantees, stale-output cleanup, and typed failure states required by the corrected consult setup
