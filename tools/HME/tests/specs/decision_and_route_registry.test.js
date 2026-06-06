@@ -7,6 +7,8 @@ const fs = require('node:fs');
 const Decision = require('../../event_kernel/decision');
 const Render = require('../../event_kernel/decision_renderer');
 const routes = require('../../event_kernel/route_registry');
+const hostEntry = require('../../event_kernel/host_hook_entry');
+const hostCommon = require('../../event_kernel/host_adapter_common');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const HOOKS_ROOT = path.resolve(__dirname, '..', '..', 'hooks');
