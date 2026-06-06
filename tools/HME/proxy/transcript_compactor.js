@@ -154,14 +154,19 @@ function compactTranscriptFile(filePath, opts = {}) {
   const hadTrailingNewline = raw.endsWith('\n');
   const rawLines = raw.split('\n');
   if (hadTrailingNewline) rawLines.pop();
-  // Baseline pass preserves the caller's recent window. If old-line elision alone
-  // cannot meet the hard limit, shrink the recent window ONLY when that recent
-  // window by itself exceeds the limit; otherwise return an explicit emergency.
+  // Baseline pass preserves the caller's recent window. If OLD entries can still
+  // shrink enough at lower byte floors, exhaust those floors before ever shrinking
+  // recent context. Shrink the recent window ONLY when the preserved recent window
   let result = compactTranscriptLines(rawLines, opts);
   let tier = 0;
+  const baseKeep = Number.isFinite(opts.keepRecent) ? opts.keepRecent : DEFAULTS.keepRecent;
+  for (const emergency of EMERGENCY_TIERS) {
+    if (result.afterBytes <= hardLimitBytes) break;
+    result = compactTranscriptLines(rawLines, { ...emergency, keepRecent: baseKeep });
+  }
   while (result.afterBytes > hardLimitBytes && tier < ESCALATION_TIERS.length) {
     const nextTier = ESCALATION_TIERS[tier];
-    const currentKeep = Number.isFinite(result.keepRecent) ? result.keepRecent : (Number.isFinite(opts.keepRecent) ? opts.keepRecent : DEFAULTS.keepRecent);
+    const currentKeep = result.keepRecent;
     const nextKeep = Number.isFinite(nextTier.keepRecent) ? nextTier.keepRecent : currentKeep;
     if (nextKeep < currentKeep) {
       const recentStart = Math.max(0, rawLines.length - currentKeep);
