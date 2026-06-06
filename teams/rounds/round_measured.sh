@@ -34,7 +34,10 @@ cat > "$DASH" <<'JSON'
 "red_purple":{"role":"red_purple","status":"registered","tier":"E4","ctx_used_pct":18},
 "blue_purple":{"role":"blue_purple","status":"registered","tier":"E4","ctx_used_pct":22}}}
 JSON
-export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES=3000
+# Mesh-found P1 (red_purple+blue_purple): this round CHAINS each peer reply into
+# the next peer's prompt (RED -> red_purple -> blue_purple cross-exam). A small
+# reply cap truncated the handoff ("[truncated: peer reply exceeded byte cap]"),
+export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES="${HME_TEAM_MAX_REPLY_BYTES:-12000}"
 rm -f "$REPO"/tools/HME/runtime/team-dispatch-budget.json
 # Preserve canonical team channels/session files. Rounds append through ask-peer;
 # ask-peer's tail-cap bounds channel size without destroying live dialogue history.
