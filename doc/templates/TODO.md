@@ -30,7 +30,7 @@ Example:
 
 #9 5_ B2 build reviewed coverage map of every place an agent can mutate state, consume context, or enforce policy, so coverage is tracked not ad hoc -- DONE: doc/myth0s-coverage-map.md (policy-enforcement / state-mutation / context-consumption surfaces with review status), parsed by teams/rounds/select_target.py
 
-#10 0_ C1 formal evaluation harness: repeatable baseline-vs-mesh benchmark scored on unique catches, false-positive reduction, time/cost, and regression impact
+#10 5_ C1 formal evaluation harness: repeatable baseline-vs-mesh benchmark scored on unique catches, false-positive reduction, time/cost, and regression impact -- DONE: teams/rounds/score_round.py (severity counts, reply-byte cost proxy, calibration-signal counts, unique-in-mesh heuristic) + score_round.test.py (3 tests); demonstrated on real pre-write round (baseline 6 findings vs mesh 25, unique_in_mesh 8)
 
 #11 0_ C2 treat the A1-A7 calibration layer as a measurable variable in the benchmark (does calibration cut false positives without hiding real catches)
 
