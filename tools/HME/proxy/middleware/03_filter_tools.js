@@ -1,5 +1,5 @@
 'use strict';
-const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
+const { parseEnvFile: _parseEnvFile } = require('../shared/load_env.js');
 /**
  * Drop tool definitions you never use from the request before it reaches
  * Anthropic. The `tools` array is ~60KB on every request -- bigger than
