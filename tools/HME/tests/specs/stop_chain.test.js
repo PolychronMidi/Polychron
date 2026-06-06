@@ -218,10 +218,19 @@ test('stop_chain: runStopChain with empty payload returns shape {stdout, stderr,
     assert.strictEqual(result.exit_code, 0, 'exit_code is always 0 -- chain crashes do not wedge agent');
   }));
 
-test('stop_chain: subagent escape short-circuits when _hme_subagent: true',
+test('stop_chain: untrusted _hme_subagent payload does not short-circuit',
   _withChainSandbox(async (chain) => {
     const result = await chain.runStopChain(JSON.stringify({ _hme_subagent: true }));
-    assert.strictEqual(result.stdout, '', 'subagent escape returns empty stdout (no deny, no instruct)');
+    assert.match(result.stdout, /STOP-CHAIN INTEGRITY FAILURE|missing Stop transcript_path/);
+    assert.strictEqual(result.exit_code, 0);
+  }));
+
+test('stop_chain: trusted subagent escape requires adapter-minted token',
+  _withChainSandbox(async (chain, sandbox) => {
+    const payload = { _hme_subagent: true, _hme_host: 'claude', session_id: 'sub-session' };
+    payload._hme_subagent_token = require('../../event_kernel/subagent_provenance').issueSubagentToken(sandbox, payload);
+    const result = await chain.runStopChain(JSON.stringify(payload));
+    assert.strictEqual(result.stdout, '', 'trusted subagent escape returns empty stdout (no deny, no instruct)');
     assert.strictEqual(result.stderr, '');
     assert.strictEqual(result.exit_code, 0);
   }));
