@@ -62,10 +62,16 @@ function _quarantineCorruptState(err) {
 }
 
 function _readStateUnlocked(sessionId = '') {
+  let raw;
   try {
-    return normalize(JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')), sessionId);
+    raw = fs.readFileSync(STATE_FILE, 'utf8');
   } catch (err) {
     if (err && err.code === 'ENOENT') return defaultState(sessionId);
+    throw new Error(`session state unreadable at ${STATE_FILE}: ${err.message}`);
+  }
+  try {
+    return normalize(JSON.parse(raw), sessionId);
+  } catch (err) {
     _quarantineCorruptState(err);
     return defaultState(sessionId);
   }
