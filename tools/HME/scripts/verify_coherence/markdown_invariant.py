@@ -271,6 +271,15 @@ class MarkdownInvariantVerifier(Verifier):
             except ValueError:
                 continue
             kind, detail = _classify(rel_path)
+            rel_str = str(rel_path).replace(os.sep, "/")
+            if kind in ("allowed_canonical", "allowed_prefix") and rel_str.startswith("doc/"):
+                try:
+                    spill = doc_spillover_reason(rel_str, abs_path.read_text(encoding="utf-8", errors="ignore"))
+                except OSError:
+                    spill = ""
+                if spill:
+                    violations.append(spill)
+                    continue
             if kind == "allowed_canonical":
                 allowed_count += 1
                 continue
