@@ -50,16 +50,45 @@ ALLOWED_FILENAMES = {
     "self-coherence-full.md": "doc/self-coherence-full.md",
 }
 
-# Long-form essays + canonical templates that pre-date the invariant
-# are grandfathered in by directory. New .md files in these trees stay
+# Long-form essays + canonical templates live in declared SUBTREES, not a
+# blanket doc/ grandfather. The doc/ TOP LEVEL is reserved for the four canonical
+# specs (ALLOWED_FILENAMES); a new top-level doc/*.md is a subversion (e.g. a
 ALLOWED_PREFIXES = (
-    "doc/",
+    "doc/theory/",
+    "doc/templates/",
+    "doc/archive/",
     "tools/csv_maestro/doc/",
     "tools/HME/tests/fixtures/",
     # Durable team-review feature infra (moved out of throwaway tmp/): Context
     # Capsules are tracked, first-class review inputs (artifact+goal+rubric+
     "teams/capsules/",
 )
+
+# doc/templates/ holds the canonical TODO tracker (todo-code grammar) + prompt
+# templates, so the spillover content-scan must NOT fire there. Everywhere else
+SPILLOVER_SCAN_EXEMPT_PREFIXES = ("doc/templates/",)
+_TODO_CODE_RE = re.compile(r"^\s*#\d+\s+(?:0|1|2|3|4f|4|5)_(?:\d+)?(?:\s|$)")
+_STATUS_ROW_RE = re.compile(
+    r"^\s*\|.*\|\s*(reviewed|pending|partial|done|blocked|wip|todo|in[ -]progress)\s*\|\s*$",
+    re.IGNORECASE,
+)
+
+
+def doc_spillover_reason(rel_str: str, text: str) -> str:
+    """Return a reason if a doc .md is actually machine-data / TODO-tracking
+    spillover (not prose), else "". Catches the subversion of hiding tracking or
+    a parsed data table under doc/ to dodge the limited-.md-files invariant."""
+    if not rel_str.startswith("doc/"):
+        return ""
+    if any(rel_str.startswith(p) for p in SPILLOVER_SCAN_EXEMPT_PREFIXES):
+        return ""
+    todo_lines = [ln for ln in text.splitlines() if _TODO_CODE_RE.match(ln)]
+    if todo_lines:
+        return f"{rel_str} -- carries TODO-tracking grammar ({len(todo_lines)} todo line(s)); tracking belongs in doc/templates/TODO.md, not a doc"
+    status_rows = [ln for ln in text.splitlines() if _STATUS_ROW_RE.match(ln)]
+    if len(status_rows) >= 2:
+        return f"{rel_str} -- carries a {len(status_rows)}-row status-tracking table; machine-readable status belongs in a data file (.json/.py) beside its consumer, not a doc"
+    return ""
 
 # Single-file exceptions at otherwise non-prefixed locations.
 ALLOWED_PATHS = {
