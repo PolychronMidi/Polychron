@@ -148,6 +148,23 @@
         "tools/HME/scripts/team_agent_router.py"
       ]
     },
+    "mesh-signal-discipline": {
+      "title": "Context Capsule: review mesh signal discipline",
+      "artifact": "The mesh signal path spanning team_dispatch_guard.py, ask-peer.sh, team_agent_router.py, review_brief.py, teams/roles.json, and round_measured.sh. This is the path that primes forked peer roles, routes/targets red-blue-purple dialogue, grounds review briefs in live evidence, writes team-channel messages, and constrains peer findings to decision-changing claims.",
+      "goal": "Find only decision-changing flaws that create context bloat, bypass team channels, route/prime the wrong role, inflate weak findings, suppress real findings, or misuse AUDIT-UNCERTAIN. Do not report generic code quality or broad architecture preferences.",
+      "constraints": "Peers are driver forks with full inherited context/tools; dispatch stays sequential; tool filtering remains centralized at the proxy. Review briefs are DATA composed into channel messages; do not rebuild capsule directories, coverage maps, score/eval demos, or duplicate trackers. A clean audit is successful if grounded. Any accepted finding must reduce bloat or make an existing contract enforceable.",
+      "rubric": "Classify P0/P1/P2. Accept only P0/P1 findings with grounded evidence for one of: context bloat, channel bypass, wrong-role/routing, weak-finding inflation, real-finding suppression, or AUDIT-UNCERTAIN misuse. For each: exact file/function/block, failure mode, contradictory evidence checked, one-line fix. Use AUDIT-UNCERTAIN only for genuine cross-role disagreement on load-bearing claims.",
+      "coverage_included": "_message_with_leash, _capsule_message, CLAIM_AUDIT_ADDENDUM, _with_claim_audit, explicit --target handling in team_dispatch_guard.py, ask-peer ROLE_SYSTEM and append_exchange, team_agent_router routing functions, review_brief compose/lint, teams/roles.json channel_by_caller, and round_measured.sh named-target dispatch/progress wrapper",
+      "coverage_excluded": "proxy middleware internals, product src/, unrelated verifier modules, and historical retired capsule/coverage-map/scoring tools",
+      "evidence": [
+        "tools/HME/scripts/team_dispatch_guard.py",
+        "tools/HME/scripts/ask-peer.sh",
+        "tools/HME/scripts/team_agent_router.py",
+        "teams/rounds/review_brief.py",
+        "teams/roles.json",
+        "teams/rounds/round_measured.sh"
+      ]
+    },
     "tool-result-semantics": {
       "title": "Context Capsule: review tool-result empty-marker semantics",
       "artifact": "tools/HME/proxy/tool_result_semantics.js -- marks an EMPTY tool_result so the model\nnever sees a blank result it could misread. markEmptyResult appends [SUCCESS] (or\n[FAIL] when is_error) only when the result text is empty and no marker already\nexists; appendText handles string/array/null content shapes; hasMarker/textOfToolResult\ninspect content; emptyMarker picks the marker.",
