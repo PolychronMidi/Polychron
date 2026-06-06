@@ -12,7 +12,7 @@ Example:
 
 ### Todo - Set 27
 
-#23 1_ Execute Phase 14 Workstream 1 via mesh: make the corrected progress-ledger/status-reader/reply-capture/failure-state contract binding for remaining first-class round runners, with regression tests and HCI verification
-#24 0_ Execute Phase 14 Workstream 2 via mesh: run corrected red/blue/purple consultation on mesh signal discipline (dispatch guard, review_brief.py, ask-peer routing, team-channel writes), accept only decision-changing grounded fixes, and verify regressions
+#23 5_ Execute Phase 14 Workstream 1 via mesh -- DONE: corrected round contract is binding for remaining first-class tracked runner(s): typed durable progress_result records (target/rc/reply_bytes/error_log), named-role targets, per-peer reply capture, stale-output cleanup, no destructive canonical channel/session reset; regressions added in round_status.test.py and round_runner_contract.test.py; round_measured fake-run + HCI verified
+#24 1_ Execute Phase 14 Workstream 2 via mesh: run corrected red/blue/purple consultation on mesh signal discipline (dispatch guard, review_brief.py, ask-peer routing, team-channel writes), accept only decision-changing grounded fixes, and verify regressions
 #25 0_ Execute Phase 14 Workstream 3 via mesh: select one HME self-coherence-suite slice, run corrected consultation for P0/P1 gaps that make HCI misleading/noisy/stale/fail-open, and land verifier/test/registry fixes
 #26 0_ Execute Phase 14 Workstream 4: keep all approved work in TODO, team messages in channels, review-brief data beside runners, and update plan.md status only after implementation + verification
