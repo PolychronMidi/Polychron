@@ -655,14 +655,20 @@ def main() -> int:
         "sent": False,
     }
     if args.send:
+        # Mesh-found P1 (base+red, 2-peer agreement): a pre-send capsule/context
+        # deny returns AFTER the budget reservation, so a malformed/gap capsule or
+        def _deny_refund(code: str, reason: str, **extra: Any) -> int:
+            _refund_budget(root, budget_info.get("turn_id"))
+            return _deny(code, reason, budget={**budget_info, "refunded": True}, **extra)
+
         message = args.message
         if args.capsule:
             try:
                 capsule, missing = _load_capsule(Path(args.capsule), args.context_cap)
             except OSError as e:
-                return _deny("capsule_read", f"could not read --capsule: {e}")
+                return _deny_refund("capsule_read", f"could not read --capsule: {e}")
             if missing:
-                return _deny("capsule_invalid", f"capsule missing required sections: {', '.join(missing)} (need ## " + ", ## ".join(CAPSULE_REQUIRED) + ")")
+                return _deny_refund("capsule_invalid", f"capsule missing required sections: {', '.join(missing)} (need ## " + ", ## ".join(CAPSULE_REQUIRED) + ")")
             # Inline the LIVE source for every ## evidence file reference so the
             # peer is grounded on current code, never a frozen copy that drifts.
             capsule = _resolve_capsule(capsule, root, args.context_cap)
@@ -670,7 +676,7 @@ def main() -> int:
             # the ## evidence lacked -> peers grounded on a gap. Now the check runs
             gaps = _capsule_coverage_gaps(capsule)
             if gaps:
-                return _deny("capsule_coverage_gap",
+                return _deny_refund("capsule_coverage_gap",
                              "coverage claims symbols missing from live ## evidence source: " + ", ".join(gaps[:12]),
                              missing_evidence=gaps[:12])
             message = _capsule_message(capsule, args.message)
@@ -679,7 +685,7 @@ def main() -> int:
                 ctx = Path(args.context_file).read_text(encoding="utf-8", errors="ignore")[: args.context_cap]
                 message = f"GROUND YOUR ANSWER IN THIS CONTEXT (do not invent beyond it):\n{ctx}\n\n---\n{args.message}"
             except OSError as e:
-                return _deny("context_file", f"could not read --context-file: {e}")
+                return _deny_refund("context_file", f"could not read --context-file: {e}")
         message = _with_claim_audit(message, args.claim_audit)
         code, stdout, stderr = _send(root, target, leash, message, child_env)
         if code != 0:
