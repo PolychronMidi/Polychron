@@ -147,12 +147,23 @@ function compactTranscriptFile(filePath, opts = {}) {
   const hadTrailingNewline = raw.endsWith('\n');
   const rawLines = raw.split('\n');
   if (hadTrailingNewline) rawLines.pop();
-  // Baseline pass (caller's keepRecent/byteFloor), then escalate ONLY if the
-  // result is still over the hard limit -- i.e. the recent-keep window alone is
+  // Baseline pass preserves the caller's recent window. If old-line elision alone
+  // cannot meet the hard limit, shrink the recent window ONLY when that recent
+  // window by itself exceeds the limit; otherwise return an explicit emergency.
   let result = compactTranscriptLines(rawLines, opts);
   let tier = 0;
   while (result.afterBytes > hardLimitBytes && tier < ESCALATION_TIERS.length) {
-    result = compactTranscriptLines(rawLines, ESCALATION_TIERS[tier]);
+    const nextTier = ESCALATION_TIERS[tier];
+    const currentKeep = Number.isFinite(result.keepRecent) ? result.keepRecent : (Number.isFinite(opts.keepRecent) ? opts.keepRecent : DEFAULTS.keepRecent);
+    const nextKeep = Number.isFinite(nextTier.keepRecent) ? nextTier.keepRecent : currentKeep;
+    if (nextKeep < currentKeep) {
+      const recentStart = Math.max(0, rawLines.length - currentKeep);
+      const recentBytes = Buffer.byteLength(rawLines.slice(recentStart).join('\n'), 'utf8');
+      if (recentBytes <= hardLimitBytes) {
+        return { ok: false, reason: 'hard_limit_requires_old_line_emergency', changedEntries: 0, beforeBytes: result.beforeBytes, afterBytes: result.afterBytes, tier, underHardLimit: false };
+      }
+    }
+    result = compactTranscriptLines(rawLines, nextTier);
     tier += 1;
   }
   if (result.changedEntries === 0) {
