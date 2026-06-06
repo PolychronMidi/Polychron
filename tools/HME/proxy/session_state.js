@@ -49,13 +49,30 @@ function normalize(state, sessionId = '') {
   return s;
 }
 
-function readState(sessionId = '') {
+function _quarantineCorruptState(err) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const quarantine = `${STATE_FILE}.corrupt-${stamp}.${process.pid}`;
+  try { fs.renameSync(STATE_FILE, quarantine); }
+  catch (_e) { /* silent-ok: quarantine is best-effort; default reset still proceeds. */ }
+  try {
+    const log = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    fs.appendFileSync(log, `[${nowIso()}] [session_state] corrupt state quarantined: ${err.message}\n`);
+  } catch (_e) { /* silent-ok: corruption log is advisory. */ }
+}
+
+function _readStateUnlocked(sessionId = '') {
   try {
     return normalize(JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')), sessionId);
   } catch (err) {
     if (err && err.code === 'ENOENT') return defaultState(sessionId);
-    throw new Error(`session state unreadable/corrupt at ${STATE_FILE}: ${err.message}`);
+    _quarantineCorruptState(err);
+    return defaultState(sessionId);
   }
+}
+
+function readState(sessionId = '') {
+  return _readStateUnlocked(sessionId);
 }
 
 function writeState(state) {
