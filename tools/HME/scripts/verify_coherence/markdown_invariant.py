@@ -56,7 +56,6 @@ ALLOWED_FILENAMES = {
 ALLOWED_PREFIXES = (
     "doc/theory/",
     "doc/templates/",
-    "doc/archive/",
     "tools/csv_maestro/doc/",
     "tools/HME/tests/fixtures/",
     # Durable team-review feature infra (moved out of throwaway tmp/): Context
