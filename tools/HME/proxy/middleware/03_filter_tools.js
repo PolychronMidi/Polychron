@@ -33,14 +33,17 @@ function _stripInlineComment(value) {
   return String(value || '').replace(/\s+#.*$/, '').trim();
 }
 
-function _dropSet(projectRoot) {
-  const raw = [_hmeRequireEnv('HME_FILTER_TOOLS_DROP')];
+function _projectDropList(projectRoot) {
+  const root = typeof projectRoot === 'string' ? projectRoot.trim() : '';
+  if (!root) return '';
   try {
-    const envPath = path.join(projectRoot || process.cwd(), '.env');
-    const text = fs.readFileSync(envPath, 'utf8');
-    const line = text.split(/\r?\n/).find((l) => /^\s*HME_FILTER_TOOLS_DROP\s*=/.test(l));
-    if (line) raw.push(line.replace(/^\s*HME_FILTER_TOOLS_DROP\s*=\s*/, ''));
-  } catch (_err) { /* optional config */ }
+    const values = _parseEnvFile(path.join(root, '.env'));
+    return values.get('HME_FILTER_TOOLS_DROP') || '';
+  } catch (_err) { return ''; /* optional config */ }
+}
+
+function _dropSet(projectRoot) {
+  const raw = [process.env.HME_FILTER_TOOLS_DROP || '', _projectDropList(projectRoot)];
   return new Set(raw.flatMap((s) => _stripInlineComment(s).split(',')).map((s) => s.trim()).filter(Boolean));
 }
 
