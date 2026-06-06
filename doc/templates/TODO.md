@@ -32,7 +32,7 @@ Example:
 
 #10 5_ C1 formal evaluation harness: repeatable baseline-vs-mesh benchmark scored on unique catches, false-positive reduction, time/cost, and regression impact -- DONE: teams/rounds/score_round.py (severity counts, reply-byte cost proxy, calibration-signal counts, unique-in-mesh heuristic) + score_round.test.py (3 tests); demonstrated on real pre-write round (baseline 6 findings vs mesh 25, unique_in_mesh 8)
 
-#11 0_ C2 treat the A1-A7 calibration layer as a measurable variable in the benchmark (does calibration cut false positives without hiding real catches)
+#11 5_ C2 treat the A1-A7 calibration layer as a measurable variable in the benchmark (does calibration cut false positives without hiding real catches) -- DONE: teams/rounds/eval_harness.sh runs the round CLAIM_AUDIT=0 vs =1 and score_round.compare() diffs the two scorecards (calibration-signal delta + severity delta + unique-catch delta); covered by score_round.test.py compare test
 
 #12 0_ D1 cost control (charter-bound): smarter target selection + capsule-evidence caching that reduces redundant re-derivation, never truncates legitimate exploration
 
