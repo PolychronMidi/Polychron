@@ -178,8 +178,8 @@ function append(name, line, projectRoot = PROJECT_ROOT) {
     throw new Error(`state_registry[${name}]: append only supported on jsonl/text formats`);
   }
   const abs = _absPath(e.relPath, projectRoot);
-  fs.mkdirSync(path.dirname(abs), { recursive: true });
-  fs.appendFileSync(abs, (e.format === 'jsonl' ? JSON.stringify(line) : String(line)) + '\n');
+  const serialized = e.format === 'jsonl' ? JSON.stringify(line) : String(line);
+  _appendDurable(abs, serialized + '\n');
 }
 
 function reset(name, projectRoot = PROJECT_ROOT) {
