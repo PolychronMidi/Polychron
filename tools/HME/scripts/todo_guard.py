@@ -119,6 +119,11 @@ def main(argv: list) -> int:
         lost = lost_unfinished(before, after)
         if not lost:
             return 0
+        # Archive rescue (mirrors precommit_validate.todo_survivor_check): an item
+        # that is GONE from the active file but recorded as 5_-done in an on-disk
+        lost = filter_lost_with_done(lost, list(archived_done_todos()) + done_todos_from_text(after))
+        if not lost:
+            return 0
         detail = " | ".join(f"#{t.id} {t.code}_ {t.text}" for t in lost)
         ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         log = _root() / "log" / "hme-errors.log"
