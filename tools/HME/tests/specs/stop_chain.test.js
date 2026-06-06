@@ -14,7 +14,7 @@ const stopChain = require('../../proxy/stop_chain');
 // Without this, the `runStopChain('not valid json')` test pollutes the
 // production hme-errors.log with the parse-error trace, which then surfaces
 // in the next real Stop hook's LIFESAVER scan.
-async function _withMockedStopPolicies(overrides, fn) {
+async function _withMockedStopPolicies(overrides, fn, configOverride) {
   const originalLoad = Module._load;
   const originalRoot = process.env.PROJECT_ROOT;
   const originalStrict = process.env.strict_mode;
