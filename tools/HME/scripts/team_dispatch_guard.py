@@ -447,6 +447,7 @@ def main() -> int:
     p.add_argument("--context-file", default="", help="grounding context (artifact/prior findings) prepended to the task; supplements a forked peer's inherited context")
     p.add_argument("--context-cap", type=int, default=int(os.environ.get("HME_TEAM_CONTEXT_CAP", "24000")))
     p.add_argument("--capsule", default="", help="Context Capsule file (markdown with required ## artifact/## goal/## rubric sections). Peers must cite capsule sections, flag GAPs, or decline -- the mechanism that lets grounded independent peers beat one high-effort reviewer.")
+    p.add_argument("--claim-audit", action="store_true", help="append the calibrated claim-audit addendum (structured finding record + mandatory contradictory-evidence + anti-inflation + finding-death + audit-uncertain). Opt-in for high-impact reviews; routine reviews stay lightweight.")
     args = p.parse_args()
 
     root = PROJECT
