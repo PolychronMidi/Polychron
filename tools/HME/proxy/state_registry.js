@@ -38,6 +38,18 @@ function _absPath(rel, projectRoot = PROJECT_ROOT) {
 
 // rationale: atomic write via tmp-then-rename; avoids partial-write races
 // readers see either old contents or new, never a half-written file.
+function _fsyncDir(dir) {
+  let dfd;
+  try {
+    dfd = fs.openSync(dir, 'r');
+    fs.fsyncSync(dfd);
+  } catch (_err) {
+    // silent-ok: directory fsync is best-effort (some platforms/filesystems disallow it)
+  } finally {
+    if (dfd !== undefined) fs.closeSync(dfd);
+  }
+}
+
 function _writeAtomic(absPath, contents) {
   const dir = path.dirname(absPath);
   fs.mkdirSync(dir, { recursive: true });
@@ -52,16 +64,21 @@ function _writeAtomic(absPath, contents) {
     fs.closeSync(fd);
   }
   fs.renameSync(tmp, absPath);
-  let dfd;
+  _fsyncDir(dir);
+}
+
+function _appendDurable(absPath, contents) {
+  const dir = path.dirname(absPath);
+  const existed = fs.existsSync(absPath);
+  fs.mkdirSync(dir, { recursive: true });
+  const fd = fs.openSync(absPath, 'a');
   try {
-    dfd = fs.openSync(dir, 'r');
-    fs.fsyncSync(dfd);
-  } catch (_err) {
-    // silent-ok: directory fsync is best-effort (some platforms/filesystems
-    // disallow it); the data fsync above already happened.
+    fs.writeSync(fd, contents);
+    fs.fsyncSync(fd);
   } finally {
-    if (dfd !== undefined) fs.closeSync(dfd);
+    fs.closeSync(fd);
   }
+  if (!existed) _fsyncDir(dir);
 }
 
 function register({ name, relPath, format, schema, ttlMs, source }) {
