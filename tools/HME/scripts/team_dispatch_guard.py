@@ -559,6 +559,15 @@ def main() -> int:
     roles = _roles(root)
     if target not in roles:
         return _deny("unregistered_target", f"target {target} is not in teams/roles.json", target=target)
+    agents = _dashboard_agents(root)
+    target_agent = agents.get(target)
+    if not _dashboard_available(target_agent):
+        return _deny(
+            "stale_route",
+            f"router selected unavailable target {target}; refusing dispatch instead of silently rerouting the role",
+            target=target,
+            target_status=target_agent.get("status") if isinstance(target_agent, dict) else None,
+        )
 
     # F-A: validate the message BEFORE reserving, so a malformed --send can't
     # consume budget at all.
