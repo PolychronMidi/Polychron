@@ -114,6 +114,28 @@ class VerifierSelfCoverageTests(unittest.TestCase):
             r = _with_fake_registry(root, ["alpha"], [], _run_verifier)
             self.assertEqual(r.status, "PASS", msg=f"summary={r.summary}")
 
+    def test_self_coverage_is_not_exempt_from_its_own_invariant(self):
+        # Mesh-found P1: verifier_self_coverage must require its OWN test spec.
+        # If it is in the registry without a test, it must FAIL (no self-exemption).
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_test_spec(root, "alpha")
+            r = _with_fake_registry(root, ["alpha", "verifier_self_coverage"], [], _run_verifier)
+            self.assertEqual(r.status, "FAIL", msg=f"summary={r.summary}")
+            self.assertTrue(any("verifier_self_coverage" in d for d in r.details),
+                            msg=f"details={r.details}")
+
+    def test_unknown_waiver_entry_fails(self):
+        # Mesh-found P1: a waiver naming a module that is not in the registry
+        # (typo / retired / pre-seeded future module) must FAIL, never be ignored.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_test_spec(root, "alpha")
+            r = _with_fake_registry(root, ["alpha"], ["ghost_module"], _run_verifier)
+            self.assertEqual(r.status, "FAIL", msg=f"summary={r.summary}")
+            self.assertTrue(any("ghost_module" in d for d in r.details),
+                            msg=f"details={r.details}")
+
 
 if __name__ == "__main__":
     unittest.main()
