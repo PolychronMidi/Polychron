@@ -136,3 +136,145 @@ test('malformed stdin is a deterministic passthrough (rc 0, no traceback)', () =
   assert.equal(r.stdout.trim(), '');
   assert.doesNotMatch(r.stderr, /Traceback/);
 });
+
+test('driver E5 uses least-context available team lead, then E4 fallback', () => {
+  let root = projectWithDashboard({
+    blue_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 60 },
+    red_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 5 },
+    red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 15 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } })), 'red_lead');
+
+  root = projectWithDashboard({
+    blue_lead: { status: 'retired', tier: 'E5', ctx_used_pct: 1 },
+    red_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 90 },
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 5 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } })), 'red_lead');
+
+  root = projectWithDashboard({
+    blue_lead: { status: 'retired', tier: 'E5', ctx_used_pct: 1 },
+    red_lead: { status: 'failed', tier: 'E5', ctx_used_pct: 2 },
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 40 },
+    red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 7 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } })), 'red_purple');
+});
+
+test('driver E4 uses least-context purple partner, then E4 stage crew without waiting', () => {
+  let root = projectWithDashboard({
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 35 },
+    red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 12 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 1 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 4, prompt: 'hi' } })), 'red_purple');
+
+  root = projectWithDashboard({
+    blue_purple: { status: 'done', tier: 'E4', ctx_used_pct: 1 },
+    red_purple: { status: 'retired', tier: 'E4', ctx_used_pct: 2 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 20 },
+    crew_e4_1: { status: 'registered', tier: 'E4', ctx_used_pct: 8 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 4, prompt: 'hi' } })), 'crew_e4_1');
+});
+
+test('driver E1-E3 routes to same-tier stage crew, falling lower by availability', () => {
+  let root = projectWithDashboard({
+    crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 70 },
+    crew_e3_1: { status: 'registered', tier: 'E3', ctx_used_pct: 20 },
+    crew_e2_0: { status: 'registered', tier: 'E2', ctx_used_pct: 1 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } })), 'crew_e3_1');
+
+  root = projectWithDashboard({
+    crew_e3_0: { status: 'failed', tier: 'E3', ctx_used_pct: 1 },
+    crew_e3_1: { status: 'retired', tier: 'E3', ctx_used_pct: 2 },
+    crew_e2_0: { status: 'registered', tier: 'E2', ctx_used_pct: 50 },
+    crew_e2_1: { status: 'registered', tier: 'E2', ctx_used_pct: 5 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } })), 'crew_e2_1');
+});
+
+test('team lead E4/E5 routes to same-team purple, then E4 stage crew', () => {
+  let root = projectWithDashboard({
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 80 },
+    red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 1 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 2 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } }, 'blue_lead')), 'blue_purple');
+
+  root = projectWithDashboard({
+    blue_purple: { status: 'failed', tier: 'E4', ctx_used_pct: 1 },
+    red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 2 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 9 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 4, prompt: 'hi' } }, 'blue_lead')), 'crew_e4_0');
+});
+
+test('team lead E1-E3 routes to appropriately tiered stage crew with lower fallback', () => {
+  const root = projectWithDashboard({
+    crew_e2_0: { status: 'retired', tier: 'E2', ctx_used_pct: 1 },
+    crew_e1_0: { status: 'registered', tier: 'E1', ctx_used_pct: 9 },
+    crew_e1_1: { status: 'registered', tier: 'E1', ctx_used_pct: 3 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 2, prompt: 'hi' } }, 'red_lead')), 'crew_e1_1');
+});
+
+test('purple E4/E5 routes to opposing purple, then E4 stage crew', () => {
+  let root = projectWithDashboard({
+    red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 1 },
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 99 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 2 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } }, 'blue_purple')), 'red_purple');
+
+  root = projectWithDashboard({
+    red_purple: { status: 'failed', tier: 'E4', ctx_used_pct: 1 },
+    blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 2 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 10 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 4, prompt: 'hi' } }, 'blue_purple')), 'crew_e4_0');
+});
+
+test('purple E1-E3 routes to appropriately tiered stage crew with lower fallback', () => {
+  const root = projectWithDashboard({
+    crew_e3_0: { status: 'failed', tier: 'E3', ctx_used_pct: 1 },
+    crew_e2_0: { status: 'registered', tier: 'E2', ctx_used_pct: 8 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } }, 'red_purple')), 'crew_e2_0');
+});
+
+test('E3/E4 stage crew may spawn only at or below their own tier', () => {
+  let root = projectWithDashboard({
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 70 },
+    crew_e4_1: { status: 'registered', tier: 'E4', ctx_used_pct: 2 },
+    crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 1 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 5, prompt: 'hi' } }, 'crew_e4_0')), 'crew_e4_1');
+
+  root = projectWithDashboard({
+    crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 1 },
+    crew_e3_1: { status: 'registered', tier: 'E3', ctx_used_pct: 9 },
+    crew_e4_0: { status: 'registered', tier: 'E4', ctx_used_pct: 0 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 4, prompt: 'hi' } }, 'crew_e3_1')), 'crew_e3_0');
+});
+
+test('all E1/E2 stage crew role slots are blocked from spawning Agent', () => {
+  const root = projectWithDashboard({
+    crew_e2_7: { status: 'registered', tier: 'E2', ctx_used_pct: 1 },
+    crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 1 },
+  });
+  const out = hookOutput(runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } }, 'crew_e2_7'));
+  assert.equal(out.permissionDecision, 'deny');
+  assert.match(out.permissionDecisionReason, /E1\/E2 stage crew may not spawn/);
+});
+
+test('mis-tagged stage crew dashboard tier is not routed as a valid match', () => {
+  const root = projectWithDashboard({
+    crew_e3_0: { status: 'registered', tier: 'E4', ctx_used_pct: 1 },
+    crew_e2_0: { status: 'registered', tier: 'E2', ctx_used_pct: 5 },
+  });
+  assert.equal(routedTarget(runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } })), 'crew_e2_0');
+});
