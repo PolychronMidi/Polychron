@@ -8,9 +8,13 @@ function normalizePlan(raw) {
   const plan = raw && typeof raw === 'object' ? raw : { threshold: raw };
   const threshold = Number(plan.threshold == null ? 250000 : plan.threshold);
   const maxTier = Number(plan.maxTier == null ? 4 : plan.maxTier);
+  const normalizedMaxTier = Number.isFinite(maxTier) ? maxTier : 4;
   return {
     threshold: threshold === Infinity || Number.isFinite(threshold) ? threshold : 250000,
-    maxTier: Number.isFinite(maxTier) ? maxTier : 4,
+    maxTier: normalizedMaxTier,
+    pressure: Number(plan.pressure),
+    allowSummary: plan.allowSummary == null ? normalizedMaxTier >= 2 : Boolean(plan.allowSummary),
+    allowMessageDrop: plan.allowMessageDrop == null ? normalizedMaxTier >= 3 : Boolean(plan.allowMessageDrop),
     keepMin: Number(plan.keepMin),
     maxToolResultAge: Number(plan.maxToolResultAge),
     toolResultByteFloor: Number(plan.toolResultByteFloor),
