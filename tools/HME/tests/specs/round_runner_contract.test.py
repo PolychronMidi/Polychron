@@ -30,6 +30,7 @@ class RoundRunnerContractTests(unittest.TestCase):
                 self.assertIn("progress_init", text)
                 self.assertIn("progress_result", text)
                 self.assertIn("--target", text)
+                self.assertIn("--context-cap", text)
                 self.assertIn("reply captured", text)
                 self.assertIn("dispatch failed", text)
                 self.assertIn("reply_bytes", text)
