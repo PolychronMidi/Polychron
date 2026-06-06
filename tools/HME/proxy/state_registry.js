@@ -41,8 +41,26 @@ function _writeAtomic(absPath, contents) {
   const dir = path.dirname(absPath);
   fs.mkdirSync(dir, { recursive: true });
   const tmp = path.join(dir, `.${path.basename(absPath)}.${process.pid}.${Date.now()}.tmp`);
-  fs.writeFileSync(tmp, contents);
+  // Mesh-found P1 (state-registry review): crash-DURABLE atomic write, not only
+  // visibility-atomic. fsync the temp file before rename AND fsync the parent dir
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, contents);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
   fs.renameSync(tmp, absPath);
+  let dfd;
+  try {
+    dfd = fs.openSync(dir, 'r');
+    fs.fsyncSync(dfd);
+  } catch (_err) {
+    // silent-ok: directory fsync is best-effort (some platforms/filesystems
+    // disallow it); the data fsync above already happened.
+  } finally {
+    if (dfd !== undefined) fs.closeSync(dfd);
+  }
 }
 
 function register({ name, relPath, format, schema, ttlMs, source }) {
