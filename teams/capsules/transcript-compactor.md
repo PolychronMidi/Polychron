@@ -1,0 +1,284 @@
+# Context Capsule: review the transcript compactor
+
+## artifact
+tools/HME/proxy/transcript_compactor.js -- shrinks Claude Code's append-only .jsonl
+transcript below the ~30MB read limit. compactTranscriptLines never drops a line
+(recent window + unparseable lines pass through byte-exact; only large tool_result/
+toolUseResult/attachment values are elided to a marker). compactTranscriptFile is a
+guarded atomic rewrite: no-op under highWater, escalation tiers if still over the
+hard limit, and size+mtime rechecks before AND after the write to avoid clobbering
+a concurrent Claude append. maybeCompactTranscriptFile is the best-effort entry.
+
+## goal
+Find decision-changing correctness/safety flaws: a path that DROPS or corrupts a
+transcript line, an elision that changes the shape a later reader trusts, a
+concurrent-write guard that can still clobber a live append, an escalation that
+fails to get under the hard limit, or a rewrite that loses data on crash. Cite the
+function + line.
+
+## constraints
+The transcript is Claude Code's own append-only file; the compactor must NEVER drop
+a line or break JSONL framing, and must abort rather than clobber a concurrent
+append. The recent-keep window must stay byte-exact (active task context). The
+whole path is best-effort and must never throw out to the hook. Review only the
+evidence below unless you verify a fact with tools.
+
+## rubric
+Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact
+failure, contradictory evidence (which existing guard/test may already cover it, or
+"none found after checking"), and a one-line fix. Reject style notes. Prefer
+line-drop/framing, concurrent-write race, escalation correctness, and shape bugs.
+
+## coverage
+included: full transcript_compactor.js source below -- _marker, _serializedBytes,
+_elideValue, _elideToolResultContent, compactEntry, compactTranscriptLines,
+compactTranscriptFile, and maybeCompactTranscriptFile.
+excluded: the callers (the claude_adapter Stop/SessionStart/PostToolUse triggers)
+and Claude Code's transcript read internals (assumed as documented constants here).
+
+## evidence
+tools/HME/proxy/transcript_compactor.js
+```js
+'use strict';
+
+// On-disk transcript compactor. Claude Code maintains an append-only .jsonl
+// transcript that the proxy never touches; it grows unbounded and Claude Code
+
+const fs = require('fs');
+const path = require('path');
+
+// Real Claude Code constants (binary 2.1.159): the transcript read path errors
+// at kO4=31457280 (30MB); the load-as-JSON ceiling is 268435456 (256MB). We
+// start compacting at 24MB (highWater) and treat 30MB as the hard limit the
+const HARD_LIMIT_BYTES = 31457280;
+
+const DEFAULTS = {
+  // Don't touch the most recent N entries: current working context stays byte
+  // exact so the active task is never degraded.
+  keepRecent: 80,
+  // Only elide a value whose serialized size exceeds this floor; small results
+  // (decisions, short outputs) are left alone.
+  byteFloor: 4096,
+  // File-level no-op guard: leave files under this size completely untouched.
+  highWaterBytes: 24 * 1024 * 1024,
+  // Ceiling the escalation tiers must drive the file under (30MB).
+  hardLimitBytes: HARD_LIMIT_BYTES,
+};
+
+// Progressive elision tiers. Each shrinks the recent-keep window and byte floor
+// so that even a transcript whose RECENT turns alone exceed the hard limit
+const ESCALATION_TIERS = [
+  { keepRecent: 40, byteFloor: 2048 },
+  { keepRecent: 16, byteFloor: 1024 },
+  { keepRecent: 4, byteFloor: 256 },
+];
+
+function _marker(originalBytes) {
+  return `(content elided by hme-proxy transcript-compactor: original was ${originalBytes}B; full output remains in the wire history the model already consumed)`;
+}
+
+function _serializedBytes(value) {
+  try { return Buffer.byteLength(JSON.stringify(value), 'utf8'); }
+  catch (_e) { return 0; }
+}
+
+// Replace a heavy value with a compact marker, preserving the shape the reader
+// expects: strings -> marker string; arrays of text blocks -> single marker
+function _elideValue(value, originalBytes) {
+  if (typeof value === 'string') return _marker(originalBytes);
+  if (Array.isArray(value)) return [{ type: 'text', text: _marker(originalBytes) }];
+  return { _hme_elided: true, original_bytes: originalBytes, note: _marker(originalBytes) };
+}
+
+function _elideToolResultContent(block, byteFloor) {
+  if (!block || block.type !== 'tool_result') return false;
+  const size = _serializedBytes(block.content);
+  if (size <= byteFloor) return false;
+  block.content = _elideValue(block.content, size);
+  return true;
+}
+
+// Compact a single parsed transcript entry in place. Returns bytes reclaimed.
+function compactEntry(entry, byteFloor) {
+  if (!entry || typeof entry !== 'object') return 0;
+  let saved = 0;
+
+  // Top-level toolUseResult: the raw duplicate of the tool output. The
+  // model-visible copy lives in message.content[].tool_result, so eliding this
+  if (Object.prototype.hasOwnProperty.call(entry, 'toolUseResult')) {
+    const size = _serializedBytes(entry.toolUseResult);
+    if (size > byteFloor) {
+      entry.toolUseResult = _elideValue(entry.toolUseResult, size);
+      saved += size;
+    }
+  }
+
+  // Top-level attachment(s): captured file snapshots, often whole-file dumps.
+  for (const key of ['attachment', 'attachments']) {
+    if (!Object.prototype.hasOwnProperty.call(entry, key)) continue;
+    const size = _serializedBytes(entry[key]);
+    if (size > byteFloor) {
+      entry[key] = _elideValue(entry[key], size);
+      saved += size;
+    }
+  }
+
+  // Old large tool_result blocks inside the message content.
+  const content = entry.message && entry.message.content;
+  if (Array.isArray(content)) {
+    for (const block of content) {
+      if (_elideToolResultContent(block, byteFloor)) saved += 1;
+    }
+  }
+  return saved;
+}
+
+// Compact an array of raw .jsonl line strings. Never drops a line: unparseable
+// lines and recent-window lines pass through byte-exact. Returns the new line
+function compactTranscriptLines(rawLines, opts = {}) {
+  const keepRecent = Number.isFinite(opts.keepRecent) ? opts.keepRecent : DEFAULTS.keepRecent;
+  const byteFloor = Number.isFinite(opts.byteFloor) ? opts.byteFloor : DEFAULTS.byteFloor;
+  const lines = rawLines.filter((l) => l !== undefined && l !== null);
+  const total = lines.length;
+  const cutoff = Math.max(0, total - keepRecent);
+  let beforeBytes = 0;
+  let afterBytes = 0;
+  let changedEntries = 0;
+  const out = new Array(total);
+
+  for (let i = 0; i < total; i += 1) {
+    const line = lines[i];
+    beforeBytes += Buffer.byteLength(line, 'utf8');
+    // Recent window and blank lines: pass through untouched.
+    if (i >= cutoff || !line.trim()) {
+      out[i] = line;
+      afterBytes += Buffer.byteLength(line, 'utf8');
+      continue;
+    }
+    let entry;
+    try { entry = JSON.parse(line); }
+    catch (_e) { out[i] = line; afterBytes += Buffer.byteLength(line, 'utf8'); continue; }
+    const saved = compactEntry(entry, byteFloor);
+    if (saved > 0) {
+      const next = JSON.stringify(entry);
+      out[i] = next;
+      afterBytes += Buffer.byteLength(next, 'utf8');
+      changedEntries += 1;
+    } else {
+      out[i] = line;
+      afterBytes += Buffer.byteLength(line, 'utf8');
+    }
+  }
+  return { lines: out, beforeBytes, afterBytes, changedEntries, total };
+}
+
+// File-level atomic compaction. No-op (returns changed:0) when the file is
+// under highWaterBytes. Re-checks size+mtime immediately before the rename so a
+function compactTranscriptFile(filePath, opts = {}) {
+  const highWater = Number.isFinite(opts.highWaterBytes) ? opts.highWaterBytes : DEFAULTS.highWaterBytes;
+  let stat;
+  try { stat = fs.statSync(filePath); }
+  catch (_e) { return { ok: false, reason: 'missing', changedEntries: 0 }; }
+  if (stat.size < highWater) {
+    return { ok: true, reason: 'under_high_water', changedEntries: 0, beforeBytes: stat.size, afterBytes: stat.size };
+  }
+  let raw;
+  try { raw = fs.readFileSync(filePath, 'utf8'); }
+  catch (_e) { return { ok: false, reason: 'unreadable', changedEntries: 0 }; }
+  const hardLimitBytes = Number.isFinite(opts.hardLimitBytes) ? opts.hardLimitBytes : DEFAULTS.hardLimitBytes;
+  const hadTrailingNewline = raw.endsWith('\n');
+  const rawLines = raw.split('\n');
+  if (hadTrailingNewline) rawLines.pop();
+  // Baseline pass (caller's keepRecent/byteFloor), then escalate ONLY if the
+  // result is still over the hard limit -- i.e. the recent-keep window alone is
+  let result = compactTranscriptLines(rawLines, opts);
+  let tier = 0;
+  while (result.afterBytes > hardLimitBytes && tier < ESCALATION_TIERS.length) {
+    result = compactTranscriptLines(rawLines, ESCALATION_TIERS[tier]);
+    tier += 1;
+  }
+  if (result.changedEntries === 0) {
+    return { ok: true, reason: 'nothing_to_elide', changedEntries: 0, beforeBytes: result.beforeBytes, afterBytes: result.afterBytes, tier };
+  }
+  // Abort if Claude Code appended/changed the file while we were compacting:
+  // never clobber a concurrent write.
+  let recheck;
+  try { recheck = fs.statSync(filePath); }
+  catch (_e) { return { ok: false, reason: 'vanished', changedEntries: 0 }; }
+  if (recheck.size !== stat.size || recheck.mtimeMs !== stat.mtimeMs) {
+    return { ok: false, reason: 'concurrent_write', changedEntries: 0 };
+  }
+  const body = result.lines.join('\n') + (hadTrailingNewline ? '\n' : '');
+  const tmp = path.join(path.dirname(filePath), `.hme-transcript-compact-${process.pid}-${path.basename(filePath)}.tmp`);
+  try {
+    fs.writeFileSync(tmp, body);
+    // Final guard: only rename if the original still matches our snapshot.
+    const finalCheck = fs.statSync(filePath);
+    if (finalCheck.size !== stat.size || finalCheck.mtimeMs !== stat.mtimeMs) {
+      try { fs.unlinkSync(tmp); } catch (_e) { /* best-effort */ }
+      return { ok: false, reason: 'concurrent_write', changedEntries: 0 };
+    }
+    fs.renameSync(tmp, filePath);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch (_e) { /* best-effort */ }
+    return { ok: false, reason: `write_failed:${err.message}`, changedEntries: 0 };
+  }
+  return {
+    ok: true,
+    reason: 'compacted',
+    changedEntries: result.changedEntries,
+    beforeBytes: result.beforeBytes,
+    afterBytes: Buffer.byteLength(body, 'utf8'),
+    tier,
+    underHardLimit: Buffer.byteLength(body, 'utf8') <= hardLimitBytes,
+  };
+}
+
+// Orchestration entry for the Stop-hook lane. Reads the opt-out flag and the
+// high-water override from env, then runs the guarded atomic compaction. Pure
+// best-effort: any failure returns a reason and never throws.
+function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, emit, trigger = 'stop' } = {}) {
+  if (env.HME_TRANSCRIPT_COMPACT === '0') return { ok: true, reason: 'disabled', changedEntries: 0 };
+  if (!transcriptPath || typeof transcriptPath !== 'string') return { ok: false, reason: 'no_path', changedEntries: 0 };
+  // Mid-turn (PostToolUse) is NOT a quiescent point -- Claude may append the
+  // next entry imminently -- so it only fires in the genuine emergency band
+  let highWaterBytes;
+  if (trigger === 'midturn') {
+    const emb = Number(env.HME_TRANSCRIPT_COMPACT_MIDTURN_MB);
+    highWaterBytes = Number.isFinite(emb) && emb > 0 ? Math.floor(emb * 1024 * 1024) : 28 * 1024 * 1024;
+  } else {
+    const mb = Number(env.HME_TRANSCRIPT_COMPACT_HIGH_WATER_MB);
+    highWaterBytes = Number.isFinite(mb) && mb > 0 ? Math.floor(mb * 1024 * 1024) : DEFAULTS.highWaterBytes;
+  }
+  let result;
+  try {
+    result = compactTranscriptFile(transcriptPath, { highWaterBytes });
+  } catch (err) {
+    // silent-ok: failure is recorded in result.reason and surfaced via the transcript_co
+    result = { ok: false, reason: `threw:${err && err.message}`, changedEntries: 0 };
+  }
+  if (result.changedEntries > 0) {
+    const before = Math.round((result.beforeBytes || 0) / 1048576);
+    const after = Math.round((result.afterBytes || 0) / 1048576);
+    if (typeof log === 'function') {
+      log(`[hme] transcript-compactor (${trigger}): ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB tier=${result.tier || 0} (${transcriptPath})`);
+    }
+    if (typeof emit === 'function') {
+      try {
+        emit({ event: 'transcript_compaction', trigger, changed_entries: result.changedEntries, before_mb: before, after_mb: after, tier: result.tier || 0 });
+      } catch (_e) { /* silent-ok: telemetry must never break the hook path */ }
+    }
+  }
+  return result;
+}
+
+module.exports = {
+  DEFAULTS,
+  compactEntry,
+  compactTranscriptLines,
+  compactTranscriptFile,
+  maybeCompactTranscriptFile,
+  _marker,
+};
+
+```
