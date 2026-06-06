@@ -69,6 +69,16 @@ def _roles(root: Path) -> dict[str, Any]:
     return roles if isinstance(roles, dict) else {}
 
 
+def _dashboard_agents(root: Path) -> dict[str, Any]:
+    data = _load_json(root / "tools/HME/runtime/team-dashboard.json", {"agents": {}})
+    agents = data.get("agents") if isinstance(data, dict) else {}
+    return agents if isinstance(agents, dict) else {}
+
+
+def _dashboard_available(row: Any) -> bool:
+    return isinstance(row, dict) and row.get("status") not in {"retired", "failed", "done"}
+
+
 # Context Capsule contract -- designed by the mesh's own multi-step red/blue
 # dialogue: the mechanism that lets multiple grounded independent peers beat a
 CAPSULE_REQUIRED = ("artifact", "goal", "rubric")
