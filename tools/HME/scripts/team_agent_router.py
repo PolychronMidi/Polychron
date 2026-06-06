@@ -81,26 +81,36 @@ def _pick(candidates: list[tuple[str, dict]], prefer_lowest_ctx: bool = True) ->
     return candidates[0][0]
 
 
-def _crew_for_tier(tier: str, data: dict, cap: Optional[str] = None) -> list[tuple[str, dict]]:
-    """Return available crew agents at exactly `tier`, capped if needed."""
+def _crew_for_tier(tier: str, data: dict, exclude: Optional[set[str]] = None) -> list[tuple[str, dict]]:
+    """Return available stage-crew agents at exactly `tier`."""
+    tier = str(tier or "").upper()
+    if tier not in _VALID_TIERS:
+        return []
     agents = data.get("agents") or {}
-    prefix = f"crew_e{tier[1]}_"
     candidates: list[tuple[str, dict]] = []
-    for role, agent in agents.items():
-        if not role.startswith(prefix):
+    for raw_role, agent in agents.items():
+        role = str(raw_role or "").strip().lower()
+        if exclude and role in exclude:
+            continue
+        if _role_stage_tier(role) != tier:
+            continue
+        # Dashboard tier, when present, must agree with the role-name tier. This
+        # keeps a stale/mis-tagged row from being silently routed above/below its
+        if _agent_tier(role, agent) != tier:
             continue
         if not _available(agent):
-            continue
-        if cap and agent.get("tier", "") > cap:
             continue
         candidates.append((role, agent))
     return candidates
 
 
-def _crew_fallback(tier: str, data: dict) -> Optional[str]:
-    """Return best crew agent, falling to lower tiers."""
-    for t in range(int(tier[1]), 0, -1):
-        cs = _crew_for_tier(f"E{t}", data)
+def _crew_fallback(tier: str, data: dict, exclude: Optional[set[str]] = None) -> Optional[str]:
+    """Return best stage-crew agent, falling to lower tiers without waiting."""
+    top = _tier_num(tier)
+    if top is None:
+        return None
+    for t in range(top, 0, -1):
+        cs = _crew_for_tier(_tier_name(t), data, exclude=exclude)
         if cs:
             return _pick(cs)
     return None
