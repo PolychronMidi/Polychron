@@ -4,6 +4,7 @@
 set -uo pipefail
 REPO="${PROJECT_ROOT}"; cd "$REPO"
 OUT="$REPO/teams/runtime/output"; mkdir -p "$OUT"
+source "$REPO/teams/rounds/_progress.sh"
 # Harness fix (mesh-found P1): clear prior round results so a timed-out/failed
 # dispatch can't leave a STALE m_*.json that reply()/the summary reads as current.
 rm -f "$OUT"/m_*.json "$OUT"/m.err
