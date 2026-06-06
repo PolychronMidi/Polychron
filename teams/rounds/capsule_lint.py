@@ -40,7 +40,10 @@ def lint_capsule(path: str | Path, guard=None) -> dict:
     g = guard or _guard()
     p = Path(path)
     text, missing = g._load_capsule(p, _CAP)
-    gaps = g._capsule_coverage_gaps(text)
+    # Resolve ## evidence file references to LIVE source (mirrors what the guard
+    # inlines at dispatch) so the coverage<->evidence check runs against current
+    resolved = g._resolve_capsule(text, _REPO, _CAP)
+    gaps = g._capsule_coverage_gaps(resolved)
     return {"capsule": str(p), "missing_sections": missing, "coverage_gaps": gaps,
             "ok": not missing and not gaps}
 
