@@ -41,8 +41,33 @@ here. Nothing in this file is implemented until the user marks it approved.
   (-> lessons recorded; charter binding). F1 enforcement declined (would fail-closed
   on legit work or be theater). Full record: `git log -- plan.md`.
 
-## Phase 14 (proposed) -- TBD
+## Phase 14 (proposed) -- Product-slice audit + regressionization
 
-Status: `proposed` (drafting). Reset after Phase 13 closed; building the next-phase
-plan from a mesh consult (red/blue propose divergent directions, purple synthesizes).
-Lands here as `proposed` for the user's decision before any implementation.
+Status: `proposed` (awaiting user decision). Mesh consult completed with no genuine
+red/blue disagreement: use the Phase 13 mesh on the actual Polychron product, not on
+more mesh/tooling scaffolding.
+
+Theme: apply the finished mesh to product value. `src/README.md` defines the real
+product surface as composers, conductor, cross-layer, fx, writer; prior mesh rounds
+mostly reviewed HME/control-plane substrate.
+
+### Workstream 1 -- First narrow product-slice audit
+- Scope: one vertical slice, preferably pipeline / conductor -> composer -> writer.
+- First step: compose one review brief from live `src/` references and run the
+  red/blue/purple mesh for P0/P1 product defects only.
+- Guardrail: one slice, one brief-data entry, decision-changing findings only. No
+  coverage maps, capsule directories, scoring demos, or whole-engine archaeology.
+
+### Workstream 2 -- Regressionize accepted findings
+- Scope: every accepted P0/P1 product finding becomes durable product coverage.
+- First step: land the smallest regression test, snapshot, trace proof, compare, or
+  diff that proves the defect using the existing `src/tests/` and npm-script style.
+- Guardrail: do not invent a new test/eval harness because coverage feels thin;
+  extend existing tests/scripts only when the fix directly needs it.
+
+### Workstream 3 -- Execute through existing ledgers only
+- Scope: `plan.md` holds user-decision status; TODO holds approved work items;
+  team messages stay in team channels; review-brief data stays beside the runner.
+- First step after approval: add TODO items for the chosen slice and accepted peer
+  findings, then implement from the TODO ledger.
+- Guardrail: no parallel tracker, no docs spillover, no process-cleanup project.
