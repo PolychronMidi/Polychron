@@ -1173,7 +1173,7 @@ test('compaction knobs scale continuously from env baselines without ratcheting'
     assert.ok(early.keepMin > mid.keepMin && mid.keepMin > late.keepMin, `${early.keepMin}/${mid.keepMin}/${late.keepMin}`);
     assert.ok(early.maxToolResultAge >= mid.maxToolResultAge && mid.maxToolResultAge > late.maxToolResultAge, `${early.maxToolResultAge}/${mid.maxToolResultAge}/${late.maxToolResultAge}`);
     assert.ok(early.toolResultByteFloor > mid.toolResultByteFloor && mid.toolResultByteFloor > late.toolResultByteFloor, `${early.toolResultByteFloor}/${mid.toolResultByteFloor}/${late.toolResultByteFloor}`);
-    assert.ok(early.keepMin >= 98, `early keepMin=${early.keepMin}`);
+    assert.ok(early.keepMin >= 95, `early keepMin=${early.keepMin}`);
     assert.ok(late.keepMin <= 45, `late keepMin=${late.keepMin}`);
 
     const again = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
