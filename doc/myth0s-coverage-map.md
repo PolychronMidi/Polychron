@@ -25,7 +25,7 @@ pending (not yet reviewed this phase), partial (reviewed in part).
 | surface | file | status |
 | --- | --- | --- |
 | review harness | teams/rounds/round_measured.sh | reviewed |
-| state registry | tools/HME/proxy/state_registry.js | pending |
+| state registry | tools/HME/proxy/state_registry.js | reviewed |
 | session-state lifecycle | tools/HME/proxy/session_state.js | pending |
 | todo engine store | tools/HME/todo_engine/store.py | pending |
 
