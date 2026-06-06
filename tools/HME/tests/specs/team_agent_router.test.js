@@ -33,6 +33,20 @@ function projectWithDashboard(agents) {
   return root;
 }
 
+function hookOutput(result) {
+  assert.equal(result.status, 0, result.stderr);
+  return JSON.parse(result.stdout).hookSpecificOutput;
+}
+
+function routedTarget(result) {
+  const out = hookOutput(result);
+  assert.equal(out.permissionDecision, 'allow');
+  assert.ok(out.updatedInput, `expected routed updatedInput, got ${JSON.stringify(out)}`);
+  const m = out.updatedInput.description.match(/^([^ ]+) routed:/);
+  assert.ok(m, `missing routed target in ${out.updatedInput.description}`);
+  return m[1];
+}
+
 const AGENTS = {
   driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
   blue_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
