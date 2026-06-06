@@ -16,6 +16,99 @@ here. Nothing in this file is implemented until the user marks it approved.
   the review harness, proxy filter_tools middleware, and the event-kernel host
   entry/adapters. See `git log -- plan.md` for the full record.
 
-## Next phase
-Cleared for the next phase (myth0s). Proposal authored below once the new-phase
-scope is drafted; awaiting user + CEO review before any implementation.
+## Phase 13 (PROPOSED) -- myth0s: calibrated-audit integration + scale-out
+
+Status: every item below is `proposed`. Awaiting user + CEO review. Nothing is
+implemented until marked `approved`. This phase folds the discovered "Audit
+Protocol" (the anti-inflation claim-audit grammar) into the mesh and continues
+the scale-out trajectory from the program update.
+
+### Theme
+Make the mesh's verdicts trustworthy enough to act on at scale. The mesh already
+preserves context, grounds reviews in capsules, and routes peers through hard
+guardrails. This phase adds the missing calibrated-honesty layer and broadens
+coverage, evaluation, cost control, and governance integration -- without ever
+neutering peer context or tools.
+
+### Workstream A -- Audit Protocol integration (calibrated honesty)
+Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
+- A1 [proposed]: Reviewer-charter + capsule "claim-audit addendum". For each
+  decision-changing finding, require a structured record: claim, affected
+  artifact/function, failure mode, precondition, supporting evidence,
+  contradictory evidence, one-line fix, severity, confidence. Applied to
+  high-impact Context Capsules only -- routine reviews stay lightweight.
+- A2 [proposed]: Contradictory-evidence requirement. Every claimed defect must
+  cite at least one existing guard/test/code path that might already cover it,
+  and say why it does or does not. Highest-leverage false-positive reducer.
+- A3 [proposed]: Audit-thoroughness score, separate from severity:
+  source-read-only / source+adjacent-tests-config / source+runtime-repro-or-
+  invariant. Lets us distinguish a plausible P1 from a proven one.
+- A4 [proposed]: Decision-impact weight per finding (load-bearing / substantive /
+  peripheral) so peer budget is spent on load-bearing issues, not cosmetics.
+- A5 [proposed]: Anti-inflation calibration with a safety caveat. When uncertain
+  between two severities, default LOWER -- UNLESS there is executable evidence or
+  a fail-open safety consequence, in which case still fail closed.
+- A6 [proposed]: Finding-death framing. A peer that reports "no decision-changing
+  issue found, with evidence" has SUCCEEDED. Encode this in the charter so a
+  clean audit is a win, not a gap to fill.
+- A7 [proposed]: Cross-family/role disagreement as an uncertainty signal. For
+  high-impact architectural/security claims, red/blue/purple divergence beyond
+  one severity tier emits an explicit "audit-uncertain: recommend human review"
+  artifact instead of forcing consensus.
+- Explicit non-goals (rejected on study): do NOT import the novelty-tier calculus
+  (translate to component-validity / systemic-impact / failure-reach /
+  remediation-confidence instead); do NOT run full prior-art search on routine
+  reviews (tier-trigger it); do NOT treat the protocol's bibliography as
+  canonical until each citation is sourced.
+
+### Workstream B -- Broaden target coverage
+- B1 [proposed]: Point the fork/full-tool mesh, under the same sequential,
+  capsule-grounded discipline, at fresh load-bearing surfaces: pre-write gates,
+  state registry, stop-chain policy, session-state lifecycle, transcript
+  compaction, proxy request mutation, and tool-result semantics.
+- B2 [proposed]: Build a reviewed map of every place an agent can mutate state,
+  consume context, or enforce policy, so coverage is tracked rather than ad hoc.
+
+### Workstream C -- Formal evaluation harness
+- C1 [proposed]: Turn the measured baseline-vs-mesh round into a repeatable
+  benchmark: single reviewer vs red/blue/purple mesh, scored on unique catches,
+  false-positive reduction, time/cost, and regression impact.
+- C2 [proposed]: Treat the A1-A7 calibration layer as a measurable variable in
+  that benchmark (does calibration reduce false positives without hiding real
+  catches?). Convert anecdotal wins into tracked metrics.
+
+### Workstream D -- Cost controls without neutering
+- D1 [proposed]: Smarter target selection and capsule-evidence caching so the
+  mesh focuses effort instead of removing tools or context.
+- D2 [proposed]: Adaptive effort levels and per-finding cost telemetry, keeping
+  dispatch strictly sequential and bounded.
+
+### Workstream E -- Productize Context Capsules
+- E1 [proposed]: Tooling to generate, lint, diff, and archive capsules
+  automatically (the coverage<->evidence consistency check becomes a reusable
+  linter), with the claim-audit addendum as an optional high-impact mode.
+
+### Workstream F -- Policy and governance integration
+- F1 [proposed]: Integrate the mesh more deeply with permission decisions, write
+  gates, state ownership, and lifecycle hooks so every autonomous action is
+  governable and auditable -- the control plane, not the prompt, is the boundary.
+
+### Workstream G -- Internal supervised pilot
+- G1 [proposed]: Run myth0s against selected internal engineering surfaces under
+  human supervision. Success criteria: measurable unique defect discovery, low
+  false-positive burden, stable cost envelope, calibrated dissent surfaced, and
+  zero policy-bypass regressions.
+
+### Sequencing (proposed)
+1. A1-A6 first (low cost, high leverage; charter + high-impact capsule template).
+2. B1 in parallel (continue proving value on fresh surfaces with the new grammar).
+3. C1-C2 to make ROI legible before scaling spend.
+4. D, E, F as the mesh's verdicts become trustworthy enough to lean on.
+5. G as the capstone milestone gating broader internal rollout.
+
+### Acceptance / review notes
+- This is a proposal for user + CEO review. Expect refinement before approval.
+- Standing constraints carry forward: peers are driver FORKS with FULL context and
+  FULL tools; dispatch stays sequential; tool filtering stays centralized at the
+  proxy; honor every hook/guard at its intent; no context-burn ceremony added to
+  routine reviews.
