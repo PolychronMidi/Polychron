@@ -35,8 +35,10 @@ cat > "$DASH" <<'JSON'
 "blue_purple":{"role":"blue_purple","status":"registered","tier":"E4","ctx_used_pct":22}}}
 JSON
 export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES=3000
-rm -f "$REPO"/teams/runtime/*.session "$REPO"/tools/HME/runtime/team-dispatch-budget.json
-for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
+rm -f "$REPO"/tools/HME/runtime/team-dispatch-budget.json
+# Preserve canonical team channels/session files. Rounds append through ask-peer;
+# ask-peer's tail-cap bounds channel size without destroying live dialogue history.
+for c in red blue purple; do [ -s "$REPO/teams/$c.md" ] || printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
 GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
 # Compose the per-surface review brief (DATA in teams/rounds/review-briefs.json)
 # into a transient grounded review-request capsule that the guard sends as the
