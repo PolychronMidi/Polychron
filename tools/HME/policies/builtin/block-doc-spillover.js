@@ -59,8 +59,8 @@ module.exports = {
         `BLOCKED: ${rel} -- doc/ top level is reserved for the four canonical specs `
         + `(composition[-full], self-coherence[-full]). A new top-level doc/*.md is how `
         + `tracking/data spillover dodges the limited-.md-files invariant. Prose essay -> `
-        + `doc/theory/; work-tracking -> doc/templates/TODO.md; machine-readable data -> a `
-        + `.json/.py beside its consumer (not a doc).`
+        + `doc/theory/; work-tracking -> the canonical TODO tracker under doc/templates/; `
+        + `machine-readable data -> a .json/.py beside its consumer (not a doc).`
       );
     }
 
@@ -69,7 +69,7 @@ module.exports = {
     if (TODO_CODE_RE.test(content)) {
       return ctx.deny(
         `BLOCKED: ${rel} carries TODO-tracking grammar (#<n> <code>_ ...). Tracking belongs `
-        + `in doc/templates/TODO.md, not a doc. Move it there or drop the status codes.`
+        + `in the canonical TODO tracker under doc/templates/, not a doc. Move it there or drop the status codes.`
       );
     }
     const statusRows = (content.match(STATUS_ROW_RE) || []).length;
