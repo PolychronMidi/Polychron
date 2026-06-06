@@ -1,11 +1,11 @@
 """F1 (auditability layer): machine-readable myth0s coverage status (run via
 `python3` or import; no shebang -- library + thin CLI).
 
-Turns doc/myth0s-coverage-map.md into a governable/auditable signal: which
-load-bearing surfaces (policy-enforcement / state-mutation / context-consumption)
-have been mesh-reviewed vs are still pending. The governance/audit layer (CI, a
-coherence verifier, or a human) can consult this so review coverage of the
-control plane is tracked, not assumed.
+Turns teams/rounds/coverage-map.json (machine-readable review-status DATA, not a
+doc) into a governable/auditable signal: which load-bearing surfaces (policy-
+enforcement / state-mutation / context-consumption) have been mesh-reviewed vs are
+still pending. The governance/audit layer (CI, a coherence verifier, or a human)
+can consult this so review coverage of the control plane is tracked, not assumed.
 
 This is the AUDITABLE half of F1. The deeper ENFORCEMENT half -- making permission
 decisions / write gates / lifecycle hooks actually CONSULT review status to gate
@@ -20,37 +20,27 @@ Usage:
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
-_REPO = Path(__file__).resolve().parents[2]
-_MAP = _REPO / "doc" / "myth0s-coverage-map.md"
-_ROW_RE = re.compile(r"^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|$")
-_SECTION_RE = re.compile(r"^##\s+(.*)$")
+_MAP = Path(__file__).resolve().parent / "coverage-map.json"
 
 
 def parse_map(map_path: str | Path = _MAP) -> list[dict]:
     rows: list[dict] = []
-    section = ""
     try:
-        lines = Path(map_path).read_text(encoding="utf-8").splitlines()
-    except OSError:
+        data = json.loads(Path(map_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return rows
-    for line in lines:
-        sm = _SECTION_RE.match(line.strip())
-        if sm:
-            section = sm.group(1).split("(")[0].strip()
-            continue
-        m = _ROW_RE.match(line.strip())
-        if not m:
-            continue
-        name, file, status = (g.strip() for g in m.groups())
-        if name.lower() in ("surface", "---") or file.lower() in ("file", "---"):
-            continue
-        # status cell may carry a parenthetical, e.g. "reviewed (clean audit)".
-        st = status.split("(")[0].strip().lower()
-        rows.append({"section": section, "surface": name, "file": file, "status": st})
+    for section in data.get("sections", []):
+        sect = str(section.get("section", "")).strip()
+        for s in section.get("surfaces", []):
+            rows.append({
+                "section": sect,
+                "surface": str(s.get("surface", "")).strip(),
+                "file": str(s.get("file", "")).strip(),
+                "status": str(s.get("status", "")).strip().lower(),
+            })
     return rows
 
 
