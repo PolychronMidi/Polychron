@@ -52,10 +52,40 @@ def _run():
             print(f"[FAIL] {name}: expected {expect} got {got}")
         else:
             print(f"[pass] {name}")
+    for name, before, after, expect in cases:
+        got = len(lost(before, after))
+        if got != expect:
+            failures.append(f"{name}: expected {expect} lost, got {got}")
+
+    # main() archive rescue: an item dropped from the active file but recorded
+    # 5_-done in an on-disk set*.md archive must NOT raise a LIFESAVER (it was
+    archive_dir = Path(d) / "log" / "todo"
+    (archive_dir / "set9.md").write_text(
+        "### Todo - Set 9\n#7 5_ build the durable guard\n", encoding="utf-8"
+    )
+    before_p = Path(d) / "before.md"
+    after_p = Path(d) / "after.md"
+    before_p.write_text("### Todo - Set 9\n#7 0_ build the durable guard\n", encoding="utf-8")
+    after_p.write_text("### Todo - Set 10\n", encoding="utf-8")
+    rc_archived = g.main([str(before_p), str(after_p)])
+    if rc_archived != 0:
+        failures.append("main archive rescue: archived-5_ item must not fire LIFESAVER")
+        print("[FAIL] main archive rescue (archived-5_ item)")
+    else:
+        print("[pass] main archive rescue (archived-5_ item)")
+
+    before_p.write_text("### Todo - Set 9\n#8 0_ genuinely unrelated lost work\n", encoding="utf-8")
+    rc_lost = g.main([str(before_p), str(after_p)])
+    if rc_lost != 1:
+        failures.append("main archive rescue: genuinely lost non-5_ item must fire LIFESAVER")
+        print("[FAIL] main genuine loss still fires")
+    else:
+        print("[pass] main genuine loss still fires")
+
     if failures:
         print(f"\n{len(failures)} test(s) failed")
         return 1
-    print(f"\nall {len(cases)} tests passed")
+    print(f"\nall {len(cases) + 2} checks passed")
     return 0
 
 
