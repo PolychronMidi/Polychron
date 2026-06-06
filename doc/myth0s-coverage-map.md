@@ -37,7 +37,7 @@ pending (not yet reviewed this phase), partial (reviewed in part).
 | event-kernel adapters | tools/HME/event_kernel/host_adapter_common.js | reviewed |
 | transcript compaction | tools/HME/proxy/transcript_compactor.js | reviewed |
 | proxy request mutation | tools/HME/proxy/hme_proxy_request_mutation.js | reviewed |
-| tool-result semantics | tools/HME/proxy/tool_result_semantics.js | pending |
+| tool-result semantics | tools/HME/proxy/tool_result_semantics.js | reviewed (clean audit) |
 
 ## Notes
 - "reviewed" surfaces carry their grounded fixes in git history (iterations 6-12
