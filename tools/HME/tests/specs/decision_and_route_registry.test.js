@@ -90,6 +90,25 @@ test('policy-path modules do not construct host hook JSON directly', () => {
   }
 });
 
+test('host hook entry bypasses only peer lifecycle events and still gates peer tools', () => {
+  const peerEnv = { HME_TEAM_PEER: '1' };
+  assert.equal(hostEntry.shouldBypassPeerLifecycle('UserPromptSubmit', peerEnv), true);
+  assert.equal(hostEntry.shouldBypassPeerLifecycle('SessionStart', peerEnv), true);
+  assert.equal(hostEntry.shouldBypassPeerLifecycle('PreToolUse', peerEnv), false);
+  assert.equal(hostEntry.shouldBypassPeerLifecycle('PostToolUse', peerEnv), false);
+  assert.match(hostEntry.failSafeStdout('PreToolUse', 'too large'), /permissionDecision":"deny/);
+  assert.equal(hostEntry.failSafeStdout('PostToolUse', 'too large'), '');
+});
+
+test('host adapter common bounds stdin/proxy response and denies oversize gating input', () => {
+  assert.ok(hostCommon.MAX_STDIN_BYTES > 0);
+  assert.ok(hostCommon.MAX_PROXY_RESPONSE_BYTES > 0);
+  assert.ok(hostCommon.PROXY_ATTEMPT_TIMEOUT_MS <= 15_000);
+  const denied = hostCommon._stdinTooLargeResult('PermissionRequest', new Error('oversize'));
+  assert.match(denied.stdout, /permissionDecision":"deny/);
+  assert.equal(hostCommon._stdinTooLargeResult('PostToolUse', new Error('oversize')).stdout, '');
+});
+
 test('route registry exposes executable dispatcher contract', () => {
   assert.equal(routes.policyContext('PermissionRequest'), 'PreToolUse');
   assert.equal(routes.strictMode('SessionStart'), 'strict-only');
