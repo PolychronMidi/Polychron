@@ -86,11 +86,15 @@ Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
   that benchmark (does calibration reduce false positives without hiding real
   catches?). Convert anecdotal wins into tracked metrics.
 
-### Workstream D -- Cost controls without neutering
-- D1 [proposed]: Smarter target selection and capsule-evidence caching so the
-  mesh focuses effort instead of removing tools or context.
-- D2 [proposed]: Adaptive effort levels and per-finding cost telemetry, keeping
-  dispatch strictly sequential and bounded.
+### Workstream D -- Cost controls that improve quality, never abridge depth
+Governed by the Cost-control charter above. Caps target runaway/incoherence only.
+- D1 [approved]: Smarter target selection and capsule-evidence caching so the
+  mesh focuses effort instead of removing tools or context. Caching must reduce
+  redundant re-derivation, never truncate a peer's legitimate exploration.
+- D2 [approved]: Adaptive effort levels and per-finding cost telemetry, keeping
+  dispatch sequential and bounded against runaway loops -- with explicit headroom
+  so reasonable in-depth work and necessary multi-turn peer dialogue are never
+  cut short. Telemetry observes cost; it does not cap legitimate depth.
 
 ### Workstream E -- Productize Context Capsules
 - E1 [proposed]: Tooling to generate, lint, diff, and archive capsules
