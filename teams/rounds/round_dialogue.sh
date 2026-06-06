@@ -20,7 +20,7 @@ export HME_ASK_PEER_PROJECT_ROOT="$REPO" HME_TEAM_MAX_REPLY_BYTES=2600
 export HME_TEAM_RESUME_PEER_SESSIONS=1
 rm -f "$REPO"/teams/runtime/*.session "$REPO"/tools/HME/runtime/team-dispatch-budget.json
 for c in red blue purple; do printf '# %s channel\n' "$c" > "$REPO/teams/$c.md"; done
-CTX="${CTX:-$REPO/teams/capsules/ctx_design.md}"
+CTX="${CTX:?set CTX=<topic-file> -- the open design question this dialogue round debates}"
 ASK="$REPO/tools/HME/scripts/ask-peer.sh"; GUARD="$REPO/tools/HME/scripts/team_dispatch_guard.py"
 
 # ROUND 1 -- opening positions (forked peers with full context, grounded by the context f
