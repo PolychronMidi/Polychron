@@ -277,8 +277,8 @@ def resolve_target_for_tier(caller: str, request_tier: str) -> Optional[str]:
     # calls it): a caller with stray case/whitespace must NOT escape the blocked
     caller = str(caller or "").strip().lower()
     data = _load()
-    if caller in _BLOCKED_CALLERS:
-        return None  # E1-E2 crew blocked from Agent tool
+    if _is_blocked_stage_crew(caller, data):
+        return None  # E1/E2 crew are execution leaves and may not spawn.
     router = _ROUTERS.get(caller)
     if router:
         return router(request_tier, data)
