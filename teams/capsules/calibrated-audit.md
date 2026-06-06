@@ -36,43 +36,7 @@ excluded: unrelated ask-peer/guard logic already reviewed in prior rounds, the
 proxy, and the event-kernel.
 
 ## evidence
-ask-peer.sh ROLE_SYSTEM calibrated-audit core
-```
-ROLE_SYSTEM="$ROLE_SYSTEM You are a forked peer with the driver's full inherited context. Answer only in the requested team role; do not continue driver narration or echo the handoff. You are a REVIEWER: report each finding as text (cite the section + a one-line fix); verify read-only with tools as needed. Do NOT request write/tool permission or wait for approval -- just deliver findings. Calibrated audit (anti-inflation): a clean audit is a SUCCESS -- if after completing the requested checks you find no decision-changing issue, say so with evidence and never invent or inflate (do not use this to skip deep verification or drop a real finding). For each real finding cite supporting evidence AND any existing guard/test/code-path you checked that might already cover it (say why it does not), OR state 'none found after checking'; absence of a counter-check does not by itself lower confidence -- a real defect on an unguarded surface stays real. When unsure between two severities pick the LOWER unless there is executable evidence or a fail-open safety risk. Be terse and decision-changing."
-```
+Live source (read fresh at dispatch -- never a stale copy):
+- tools/HME/scripts/ask-peer.sh
+- tools/HME/scripts/team_dispatch_guard.py
 
-team_dispatch_guard.py CLAIM_AUDIT_ADDENDUM + _with_claim_audit
-```python
-CLAIM_AUDIT_ADDENDUM = (
-    "\n\n---\nCLAIM-AUDIT DISCIPLINE (calibrated, anti-inflation). For EACH "
-    "decision-changing finding report: claim (one sentence); where (artifact + "
-    "function/block); failure mode; precondition; supporting evidence (cite "
-    "source lines / tests / logs / verifier output); contradictory evidence "
-    "(cite any plausible existing guard/test/code-path you checked and why it "
-    "does or does NOT cover this, OR state 'none found after checking <paths>'. "
-    "Absence of a plausible counter-check does NOT lower confidence by itself -- "
-    "only an UNCHECKED plausible counter-path does. A real defect on an unguarded "
-    "surface stays a real defect); one-line fix; severity (P0/P1/P2); "
-    "thoroughness (read-only | +adjacent-tests/config | +runtime-repro/invariant); "
-    "decision-impact (load-bearing | substantive | peripheral); confidence "
-    "(low/med/high).\nFINDING-DEATH IS SUCCESS: if after completing the requested "
-    "checks you find no decision-changing issue, state 'no decision-changing issue "
-    "found' WITH evidence -- never invent or inflate to seem useful, and never use "
-    "this to avoid deep verification or to drop a legitimate finding.\n"
-    "ANTI-INFLATION: when unsure between two severities choose the LOWER, UNLESS "
-    "there is executable evidence or a fail-open safety consequence (then keep the "
-    "higher / fail closed).\nAUDIT-UNCERTAIN: if you materially disagree with a "
-    "prior peer beyond one severity tier on a load-bearing claim, label it "
-    "'AUDIT-UNCERTAIN: recommend human review' instead of forcing agreement."
-)
-
-
-def _with_claim_audit(message: str, enabled: bool) -> str:
-    return message + CLAIM_AUDIT_ADDENDUM if enabled else message
-```
-
-team_dispatch_guard.py --claim-audit flag + send-path apply
-```python
-p.add_argument("--claim-audit", action="store_true", help="append the calibrated claim-audit addendum (structured finding record + mandatory contradictory-evidence + anti-inflation + finding-death + audit-uncertain). Opt-in for high-impact reviews; routine reviews stay lightweight.")
-message = _with_claim_audit(message, args.claim_audit)
-```

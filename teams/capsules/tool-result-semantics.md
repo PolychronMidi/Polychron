@@ -32,46 +32,6 @@ excluded: the imported request_shape blockText helper and the middleware that ca
 markEmptyResult (assumed correct here).
 
 ## evidence
-tools/HME/proxy/tool_result_semantics.js
-```js
-'use strict';
+Live source (read fresh at dispatch -- never a stale copy):
+- tools/HME/proxy/tool_result_semantics.js
 
-const { blockText: _blockText } = require('./request_shape');
-
-const SUCCESS_EMPTY = '[SUCCESS]';
-const FAIL_EMPTY = '[FAIL] tool errored with no error message body';
-const EDIT_SUCCESS = '[SUCCESS] edit applied';
-
-function textOfToolResult(toolResult) {
-  return _blockText({ type: 'tool_result', content: toolResult && toolResult.content }, { toolResults: true });
-}
-
-function appendText(toolResult, text) {
-  if (typeof toolResult.content === 'string') toolResult.content += text;
-  else if (Array.isArray(toolResult.content)) toolResult.content.push({ type: 'text', text });
-  else toolResult.content = text;
-}
-
-function hasMarker(toolResult) {
-  const text = textOfToolResult(toolResult);
-  return text.includes('[SUCCESS]') || text.includes('[FAIL]');
-}
-
-function emptyMarker(isError = false) {
-  return isError ? FAIL_EMPTY : SUCCESS_EMPTY;
-}
-
-function markEmptyResult(toolResult, isError = false) {
-  // Mesh clean-audit P2 hardening (tool-result review): guard a non-object
-  // toolResult so appendText's `toolResult.content = ...` can't throw under
-  if (!toolResult || typeof toolResult !== 'object') return false;
-  const text = textOfToolResult(toolResult);
-  if (text && text.trim().length > 0) return false;
-  if (hasMarker(toolResult)) return false;
-  appendText(toolResult, emptyMarker(isError || toolResult.is_error === true));
-  return true;
-}
-
-module.exports = { SUCCESS_EMPTY, FAIL_EMPTY, EDIT_SUCCESS, textOfToolResult, emptyMarker, markEmptyResult, hasMarker };
-
-```
