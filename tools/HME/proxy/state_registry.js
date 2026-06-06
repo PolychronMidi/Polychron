@@ -123,6 +123,16 @@ function _entry(name) {
   return e;
 }
 
+function _parseJsonlLine(line) {
+  try { return JSON.parse(line); } catch (_err) { return JSONL_PARSE_FAIL; }
+}
+
+function _serializeJsonlArray(name, value) {
+  if (!Array.isArray(value)) throw new Error(`state_registry[${name}]: jsonl write requires an array`);
+  const rows = value.map((v) => JSON.stringify(v));
+  return rows.length ? rows.join('\n') + '\n' : '';
+}
+
 function read(name, projectRoot = PROJECT_ROOT) {
   const e = _entry(name);
   const abs = _absPath(e.relPath, projectRoot);
