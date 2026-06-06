@@ -1621,7 +1621,7 @@ test('high keepTurns prevents stale tool stripping in long GPT-5.5 sessions', ()
 test('microcompact-only CVT pressure elides stale lengthy tool results without summaries/drops', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 8; i += 1) {
-    const id = `gear-tool-${i}`;
+    const id = `cvt-micro-tool-${i}`;
     payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
     payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(60000) }] });
   }
