@@ -152,6 +152,35 @@ test('stop_chain: mandatory detectors load failure fails closed', async () => {
   });
 });
 
+test('stop_chain: a config-DISABLED mandatory policy still fails closed (mesh-found P1)', async () => {
+  await _withMockedStopPolicies(
+    { detectors: { name: 'detectors', run: async (ctx) => ctx.allow() } },
+    async (chain) => {
+      const result = await chain.runStopChain('{}');
+      const decision = JSON.parse(result.stdout);
+      assert.strictEqual(decision.decision, 'block');
+      assert.match(decision.reason, /STOP-CHAIN INTEGRITY FAILURE/);
+      assert.match(decision.reason, /detectors/);
+      assert.match(decision.reason, /disabled by config/);
+    },
+    { isEnabled: (name) => name !== 'detectors' },
+  );
+});
+
+test('stop_chain: a throwing enable-check keeps a mandatory policy enforced (mesh-found P1)', async () => {
+  await _withMockedStopPolicies(
+    { detectors: { name: 'detectors', run: async (ctx) => ctx.allow() } },
+    async (chain) => {
+      const result = await chain.runStopChain('{}');
+      const decision = JSON.parse(result.stdout);
+      assert.strictEqual(decision.decision, 'block');
+      assert.match(decision.reason, /STOP-CHAIN INTEGRITY FAILURE/);
+      assert.match(decision.reason, /detectors/);
+    },
+    { isEnabled: (name) => { if (name === 'detectors') throw new Error('synthetic config crash'); return true; } },
+  );
+});
+
 test('stop_chain: optional post_hooks exception still fails open', async () => {
   await _withMockedStopPolicies({
     post_hooks: { name: 'post_hooks', run: async () => { throw new Error('synthetic optional crash'); } },
