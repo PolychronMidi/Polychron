@@ -24,10 +24,11 @@ mesh and continues the scale-out trajectory from the program update.
 
 ### Theme
 Make the mesh's verdicts trustworthy enough to act on at scale. The mesh already
-preserves context, grounds reviews in capsules, and routes peers through hard
-guardrails. This phase adds the missing calibrated-honesty layer and broadens
-coverage, evaluation, cost control, and governance integration -- without ever
-neutering peer context or tools.
+preserves context, grounds reviews in per-surface briefs (composed from data and
+sent as channel messages with live source inlined at dispatch -- never committed
+capsule files), and routes peers through hard guardrails. This phase adds the
+missing calibrated-honesty layer and broadens coverage, evaluation, cost control,
+and governance integration -- without ever neutering peer context or tools.
 
 ### Cost-control charter (CEO directive -- binding on Workstream D and all budgets)
 Cost controls exist ONLY to improve output quality and to prevent runaway /
