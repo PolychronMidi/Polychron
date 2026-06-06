@@ -1322,6 +1322,50 @@ test('request mutation does not pre-route compact normal OmniRoute Anthropic pay
 });
 
 
+test('request mutation rebuilds outBody when the early sanitize is the ONLY mutation (mesh-found security P1)', async () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.OVERDRIVE_MODE = '1';
+    process.env.HME_PROXY_FORCE_PASSTHROUGH = '0';
+    const payload = { model: 'claude-opus-4-7', messages: [{ role: 'user', content: 'SECRET=abc123 hello' }] };
+    const before = JSON.stringify(payload);
+    // Idempotent redactor: mutates + returns 1 the first time, 0 once already
+    // clean -- the exact shape that exposed the stale-wire-body bug.
+    const sanitizePayload = (p) => {
+      let changed = 0;
+      for (const m of p.messages || []) {
+        if (typeof m.content === 'string' && m.content.includes('SECRET=abc123')) {
+          m.content = m.content.replace('SECRET=abc123', 'SECRET=<redacted>');
+          changed = 1;
+        }
+      }
+      return changed;
+    };
+    const result = await mutateClaudeRequest({
+      payload,
+      outBody: Buffer.from(before, 'utf8'),
+      injected: false,
+      upstream: { provider: 'omniroute' },
+      clientReq: { url: '/v1/messages' },
+      isAnthropic: true,
+      isInteractivePath: false,
+      shrinkForPassthrough: () => 0,
+      stripHmePrefixOutgoing: () => false,
+      injectHmeTools: async () => 0,
+      sanitizePayload,
+      injectStopReminderSystem: () => false,
+      lifecycleInactive: () => false,
+      runInlineFallback: () => {},
+      middleware: { runPipeline: async () => false },
+    });
+    const wire = result.outBody.toString('utf8');
+    assert.doesNotMatch(wire, /SECRET=abc123/, 'the un-sanitized secret must NOT reach the wire body');
+    assert.match(wire, /SECRET=<redacted>/, 'outBody must carry the sanitized payload');
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
 test('explicit compact byte cap does not force emergency tier below high-water', () => withStatuslineUnavailable(() => {
   const oldEnv = { ...process.env };
   try {
