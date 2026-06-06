@@ -1,15 +1,15 @@
-"""D1: capsule-evidence cache (run via `python3` or import; intentionally no
+"""D1: static-validation cache (run via `python3` or import; intentionally no
 shebang -- it is a library, not a standalone executable).
 
-Memoize a Context Capsule's static coverage<->evidence validation by content
-hash so re-running a review round on an UNCHANGED capsule skips redundant
-re-derivation of the same validation.
+Memoize a review brief's / file's static validation result by content hash so
+re-running a review round on an UNCHANGED input skips redundant re-derivation of
+the same validation.
 
-Cost-control charter (binding): this caches ONLY the capsule's own static
-validation result. It NEVER caches, truncates, or short-circuits a peer's
-exploration, dialogue, or depth -- those always run live. The cache lives in
-ignored teams/runtime/ and is keyed by the exact capsule bytes, so any edit to
-the capsule invalidates it (no stale grounding can slip through).
+Cost-control charter (binding): this caches ONLY a static validation result. It
+NEVER caches, truncates, or short-circuits a peer's exploration, dialogue, or
+depth -- those always run live. The cache lives in ignored teams/runtime/ and is
+keyed by the exact input bytes, so any edit invalidates it (no stale grounding
+can slip through).
 """
 from __future__ import annotations
 
