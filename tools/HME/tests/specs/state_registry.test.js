@@ -72,6 +72,35 @@ test('missing file reads as null/empty for the appropriate format', () => {
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test('schema gates READS, not only writes (mesh-found P1)', () => {
+  const root = tmpRoot();
+  try {
+    // A valid write round-trips.
+    reg.write('omni_swap_state', { idx: 1, ts: 1, fail: 0, chain: 'a' }, root);
+    assert.deepStrictEqual(reg.read('omni_swap_state', root), { idx: 1, ts: 1, fail: 0, chain: 'a' });
+    // Corrupt/legacy/external write that violates the registered schema but is
+    // valid JSON must NOT be returned as trusted wrong-shaped state -> null.
+    const { abs } = reg.paths('omni_swap_state', root);
+    fs.writeFileSync(abs, JSON.stringify({ idx: 'not-a-number', ts: 1, fail: 0, chain: 'a' }));
+    assert.strictEqual(reg.read('omni_swap_state', root), null);
+    // Non-JSON garbage still reads as null (unchanged).
+    fs.writeFileSync(abs, 'not json at all');
+    assert.strictEqual(reg.read('omni_swap_state', root), null);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('atomic write leaves no temp file and persists content (durability path)', () => {
+  const root = tmpRoot();
+  try {
+    reg.write('omni_swap_state', { idx: 9, ts: 9, fail: 0, chain: 'z' }, root);
+    const { abs } = reg.paths('omni_swap_state', root);
+    const dir = path.dirname(abs);
+    const leftover = fs.readdirSync(dir).filter((f) => f.includes('.tmp'));
+    assert.deepStrictEqual(leftover, [], 'no temp file should remain after atomic write');
+    assert.deepStrictEqual(reg.read('omni_swap_state', root), { idx: 9, ts: 9, fail: 0, chain: 'z' });
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('reset removes the file', () => {
   const root = tmpRoot();
   try {
