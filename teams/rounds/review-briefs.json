@@ -1,6 +1,22 @@
 {
   "_doc": "Review-brief DATA (not a doc, not committed prose): per-surface review framing the round runner composes into a peer review-request MESSAGE (sent via ask-peer into the red/blue/purple channel) with live source inlined fresh at dispatch. Edit here; never embed source. teams/rounds/review_brief.py composes + lints.",
   "briefs": {
+    "hci-integrity": {
+      "title": "Context Capsule: review HCI integrity (can the score mislead?)",
+      "artifact": "The HME Coherence Index integrity machinery: verify_coherence/__main__.py run_engine score aggregation + static/runtime split + snapshot, verify_coherence/_base.py verdict semantics (skipped score 1.0, errored score 0.0, execute exception handling, walk_tracked_files skip logic, severity_for_status), verify_coherence/verifier_self_coverage.py (every verifier module needs a test or a waiver), and the verifier-skip.json / verifier_test_waivers.json config that decides what is scanned and what test-gaps are tolerated.",
+      "goal": "Find only decision-changing ways the HCI can be MISLEADING (reports green when a real problem exists), fail-OPEN (a verifier that should FAIL instead SKIPs or scores 1.0), STALE (snapshot/skip/waiver drift hides regressions), or NOISY (a WARN/SKIP that should be FAIL or vice versa, inflating the number). Cite the exact function/line. Do not report style or broad redesigns.",
+      "constraints": "SKIP scoring 1.0 (opt-out without docking) and ERROR scoring 0.0 (a crashed verifier docks) are intentional. execute() converting a thrown verifier to ERROR is intentional fail-closed. The static/runtime split is intentional (static blocks, runtime observes). Skip dirs/files and waivers exist to bound scope, but must not silently hide real coverage. Accept a finding only if it shows a concrete path where a genuine defect would NOT dock HCI. A clean grounded audit is a valid success.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, failure mode, contradictory evidence checked (which existing guard/test already covers it, or 'none found after checking'), one-line fix, severity, decision-impact, confidence. Prefer fail-open scoring, skip/waiver scope holes, snapshot staleness, and aggregation math bugs.",
+      "coverage_included": "run_engine, _kind_for, skipped, errored, execute, walk_tracked_files, severity_for_status, CORE_SKIP_DIRS, VerifierSelfCoverageVerifier, _registry_modules, _has_test, skip_files, skip_dirs",
+      "coverage_excluded": "the individual domain verifier modules' internals (docs/code_audits/etc.), the proxy, the event-kernel, and product src/",
+      "evidence": [
+        "tools/HME/scripts/verify_coherence/__main__.py",
+        "tools/HME/scripts/verify_coherence/_base.py",
+        "tools/HME/scripts/verify_coherence/verifier_self_coverage.py",
+        "tools/HME/config/verifier-skip.json",
+        "tools/HME/config/verifier_test_waivers.json"
+      ]
+    },
     "ask-peer": {
       "title": "Context Capsule: review ask-peer.sh (the team comms primitive)",
       "artifact": "tools/HME/scripts/ask-peer.sh -- the single comms primitive every team member\nuses. Looks up a role in teams/roles.json, validates it, appends the caller turn\nto the role's channel (real-newline, structural-tag-neutralized, turn-atomic\ntail-capped, flock-serialized), forks the driver session (or, opt-in, resumes the\nrole thread), stream-caps raw stdout via a FIFO capper, parses reply/session, and\nappends peer turn or explicit peer-error.",
