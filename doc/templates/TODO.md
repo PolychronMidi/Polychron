@@ -12,7 +12,7 @@ Example:
 
 ### Todo - Set 24
 
-#1 0_ A1 myth0s claim-audit addendum: capsule template + reviewer-charter structured finding record (claim/artifact+fn/failure-mode/precondition/supporting-evidence/contradictory-evidence/one-line-fix/severity/confidence); high-impact capsules only, routine reviews stay lightweight
+#1 1_ A1 myth0s claim-audit addendum: capsule template + reviewer-charter structured finding record (claim/artifact+fn/failure-mode/precondition/supporting-evidence/contradictory-evidence/one-line-fix/severity/confidence); high-impact capsules only, routine reviews stay lightweight
 
 #2 0_ A2 contradictory-evidence requirement in reviewer charter: every claimed defect must cite >=1 existing guard/test/code-path that might already cover it and say why it does/doesnt (false-positive reducer)
 
