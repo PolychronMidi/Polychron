@@ -988,6 +988,27 @@ test('microcompaction stop hook prevents below-target over-elision and reports t
   assert.ok(afterTokens > targetTokens - 15_000, `${afterTokens} overshot too far below ${targetTokens}`);
 });
 
+test('passthrough CVT near high-water refuses destructive message drops', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 20; i += 1) payload.messages.push({ role: 'user', content: `msg-${i} ${'x'.repeat(100)}` });
+  const before = JSON.stringify(payload);
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({
+      threshold: Buffer.byteLength(before, 'utf8') - 1,
+      maxTier: 1.02,
+      pressure: 0.01,
+      allowSummary: false,
+      allowMessageDrop: false,
+      keepMin: 3,
+    }),
+    env: {},
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.equal(changed, 0);
+  assert.equal(JSON.stringify(payload), before);
+});
+
 test('passthrough compaction drops oldest messages when microcompaction cannot hit threshold', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 10; i += 1) {
