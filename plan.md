@@ -90,9 +90,13 @@ Port the GRAMMAR of the Audit Protocol, not its literature-specific scoring.
 
 ### Workstream D -- Cost controls that improve quality, never abridge depth
 Governed by the Cost-control charter above. Caps target runaway/incoherence only.
-- D1 [approved]: Smarter target selection and capsule-evidence caching so the
-  mesh focuses effort instead of removing tools or context. Caching must reduce
-  redundant re-derivation, never truncate a peer's legitimate exploration.
+- D1 [approved; target-selection/cache tooling retired]: The standalone
+  select_target/coverage-map/capsule-cache demonstrators were never wired into the
+  live mesh and duplicated first-class systems (review status = the TODO ledger;
+  surface inventory = review-briefs.json), so they were retired. Review work lives
+  in the ONE work tracker (doc/templates/TODO.md); the round runner takes the
+  surface/brief directly. The charter (focus effort, never truncate exploration)
+  stays binding on the runners themselves.
 - D2 [approved]: Adaptive effort levels and per-finding cost telemetry, keeping
   dispatch sequential and bounded against runaway loops -- with explicit headroom
   so reasonable in-depth work and necessary multi-turn peer dialogue are never
