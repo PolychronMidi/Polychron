@@ -333,15 +333,46 @@ here. Nothing in this file is implemented until the user marks it approved.
   module after the edit; verified the symbol was gone in source, smoke-tested the
   middleware, and HME health later showed no recent middleware errors.
 
+## Self-evolution iteration 12 (DONE -- event-kernel host entry/adapters)
+- Built a fresh Context Capsule for tools/HME/event_kernel/host_hook_entry.js and
+  host_adapter_common.js and ran one strictly sequential, fork/full-tool,
+  capsule-grounded mesh round on the host hook entry path.
+- The mesh converged on grounded event-kernel P1s; applied them without weakening
+  peer tools or bypassing policy:
+  - PEER BYPASS NARROWED [done]: HME_TEAM_PEER now bypasses only lifecycle/loop
+    events (SessionStart/UserPromptSubmit/Stop/PreCompact/PostCompact). Peer
+    PreToolUse/PostToolUse/PermissionRequest events still flow through the host
+    adapter, so full-tool peers remain governed and observable.
+  - ENTRY STDIN BOUNDED [done]: host_hook_entry.js no longer readFileSyncs stdin
+    unbounded before the adapter cap can apply. It drains stdin with the same 1MB
+    cap and emits fail-safe deny output for gating events on read/size failure.
+  - ENTRY CHILD TIMEOUT [done]: adapter spawnSync now has a wall-clock timeout and
+    SIGKILL killSignal, with event-appropriate fail-safe output on timeout/error.
+  - ADAPTER OVERSIZE FAIL-CLOSED [done]: host_adapter_common readStdin no longer
+    exits 0/no-decision on oversized input. It relays a valid deny for
+    PreToolUse/PermissionRequest and no-ops only for non-gating events.
+  - PROXY RESPONSE/WAIT BOUNDS [done]: postLifecycle caps proxy response bytes and
+    treats cap overflow as transport failure that falls back/direct-dispatches;
+    per-attempt proxy timeout is bounded at 15s instead of a 60s + retry stall.
+  - ROOT RESOLUTION HARDENING [done]: resolveRoot now prefers the adapter's own
+    repo ancestry before process.cwd, avoiding accidental binding to an unrelated
+    checkout when PROJECT_ROOT is absent.
+- Regression tests added to decision_and_route_registry.test.js for peer lifecycle
+  bypass boundaries, gating fail-safe output, stdin/proxy byte caps, and proxy
+  attempt timeout. Event/materialization tests and the wider team/proxy suite are
+  green (47 node tests + host materialization). Coherence checks green.
+
 ## Decision
 The mesh is a PROVEN self-evolving review system: driver-FORK peers with FULL
 tool access (real context + live verification), sequential, capsule-grounded,
-adversarial. Over iterations 6-11 the corrected fork/full-tool mesh found and
+adversarial. Over iterations 6-12 the corrected fork/full-tool mesh found and
 fixed real bugs in ask-peer (path confinement, SID preflight, output/parse
 hardening, FIFO raw-cap, stderr bound), team_agent_router (caller normalization,
 malformed-stdin guard), its own harness (stale-result leak, dashboard
-snapshot/restore, downstream injection), and proxy middleware (optional config
-no-op, root-scoped side-effect-free filtering, shared env syntax, no cwd fallback)
--- all without neutering peers. The reviewer-charter fix is behaviorally
-confirmed. Next: keep pointing the loop at the event-kernel under the same
-discipline.
+snapshot/restore, downstream injection), proxy middleware (optional config no-op,
+root-scoped side-effect-free filtering, shared env syntax, no cwd fallback), and
+event-kernel host entry/adapters (peer lifecycle bypass narrowing, bounded stdin,
+adapter timeout, oversize fail-closed gating, proxy response/wait bounds, root
+resolution hardening) -- all without neutering peers. The reviewer-charter fix is
+behaviorally confirmed. Next: keep pointing the loop at fresh load-bearing HME
+surfaces under the same discipline.
