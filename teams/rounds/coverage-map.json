@@ -1,0 +1,38 @@
+{
+  "title": "myth0s mesh coverage",
+  "description": "Machine-readable review-status data (NOT a doc): load-bearing surfaces where an agent can mutate state, consume context, or enforce policy. Consumed by teams/rounds/select_target.py (next pending review target) and teams/rounds/coverage_status.py (reviewed/pending governance signal). status: reviewed | pending | partial.",
+  "sections": [
+    {
+      "section": "Policy-enforcement surfaces",
+      "surfaces": [
+        { "surface": "pre-write gate", "file": "tools/HME/proxy/pre_write_check.js", "status": "reviewed" },
+        { "surface": "dispatch guard", "file": "tools/HME/scripts/team_dispatch_guard.py", "status": "reviewed" },
+        { "surface": "team router", "file": "tools/HME/scripts/team_agent_router.py", "status": "reviewed" },
+        { "surface": "tool filter", "file": "tools/HME/proxy/middleware/03_filter_tools.js", "status": "reviewed" },
+        { "surface": "stop-chain policy", "file": "tools/HME/proxy/stop_chain/index.js", "status": "reviewed" },
+        { "surface": "apply-patch gate", "file": "tools/HME/proxy/apply_patch_gate.js", "status": "pending" },
+        { "surface": "bash command policy", "file": "tools/HME/proxy/bash_command_policy.js", "status": "pending" }
+      ]
+    },
+    {
+      "section": "State-mutation surfaces",
+      "surfaces": [
+        { "surface": "review harness", "file": "teams/rounds/round_measured.sh", "status": "reviewed" },
+        { "surface": "state registry", "file": "tools/HME/proxy/state_registry.js", "status": "reviewed" },
+        { "surface": "session-state lifecycle", "file": "tools/HME/proxy/session_state.js", "status": "reviewed" },
+        { "surface": "todo engine store", "file": "tools/HME/todo_engine/store.py", "status": "pending" }
+      ]
+    },
+    {
+      "section": "Context-consumption surfaces",
+      "surfaces": [
+        { "surface": "peer comms", "file": "tools/HME/scripts/ask-peer.sh", "status": "reviewed" },
+        { "surface": "event-kernel host entry", "file": "tools/HME/event_kernel/host_hook_entry.js", "status": "reviewed" },
+        { "surface": "event-kernel adapters", "file": "tools/HME/event_kernel/host_adapter_common.js", "status": "reviewed" },
+        { "surface": "transcript compaction", "file": "tools/HME/proxy/transcript_compactor.js", "status": "reviewed" },
+        { "surface": "proxy request mutation", "file": "tools/HME/proxy/hme_proxy_request_mutation.js", "status": "reviewed" },
+        { "surface": "tool-result semantics", "file": "tools/HME/proxy/tool_result_semantics.js", "status": "reviewed", "detail": "clean audit" }
+      ]
+    }
+  ]
+}
