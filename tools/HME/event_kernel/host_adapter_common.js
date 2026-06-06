@@ -13,6 +13,7 @@ const LOOP_EVENTS = new Set(['Stop', 'UserPromptSubmit', 'SessionStart', 'PreCom
 const GATING_EVENTS = new Set(['PreToolUse', 'PermissionRequest']);
 const MAX_STDIN_BYTES = 1024 * 1024;
 const MAX_PROXY_RESPONSE_BYTES = 1024 * 1024;
+const PROXY_ATTEMPT_TIMEOUT_MS = 15_000;
 
 class OversizeStdinError extends Error {
   constructor(label, maxBytes) {
