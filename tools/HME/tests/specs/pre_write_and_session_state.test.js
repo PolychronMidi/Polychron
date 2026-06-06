@@ -262,6 +262,59 @@ test('session state records structured verification evidence', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('session state update serializes read-mutate-write with a lock', () => {
+  const root = _withSandbox('hme-session-state-lock-');
+  const state = require('../../proxy/session_state');
+  const calls = [];
+  const originalMkdir = fs.mkdirSync;
+  fs.mkdirSync = function patched(target, opts) {
+    if (String(target).endsWith('session-state.json.lock')) calls.push(target);
+    return originalMkdir.call(fs, target, opts);
+  };
+  try {
+    state.recordVerificationEvidence({ session_id: 'lock-test', command: 'node --test a', exit_code: 0 });
+    state.recordVerificationEvidence({ session_id: 'lock-test', command: 'node --test b', exit_code: 0 });
+  } finally {
+    fs.mkdirSync = originalMkdir;
+  }
+  const all = state.readState('lock-test').verification_evidence.map((ev) => ev.command);
+  assert.deepStrictEqual(all, ['node --test a', 'node --test b']);
+  assert.ok(calls.length >= 2, 'updates should acquire the session-state lock');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('session state read quarantines corrupt state and resets writable default', () => {
+  const root = _withSandbox('hme-session-state-corrupt-');
+  const state = require('../../proxy/session_state');
+  fs.mkdirSync(path.dirname(state.STATE_FILE), { recursive: true });
+  fs.writeFileSync(state.STATE_FILE, '{not json');
+  const recovered = state.readState('corrupt-session');
+  assert.strictEqual(recovered.session_id, 'corrupt-session');
+  assert.strictEqual(recovered.current_phase, 'observe');
+  const quarantined = fs.readdirSync(path.dirname(state.STATE_FILE)).filter((f) => f.includes('session-state.json.corrupt-'));
+  assert.strictEqual(quarantined.length, 1);
+  state.recordVerificationEvidence({ session_id: 'corrupt-session', command: 'node --test recovery', exit_code: 0 });
+  assert.strictEqual(state.readState('corrupt-session').verification_evidence[0].command, 'node --test recovery');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('session state legacy mirror write is atomic and fsynced', () => {
+  const root = _withSandbox('hme-session-state-legacy-');
+  const state = require('../../proxy/session_state');
+  const calls = [];
+  const original = fs.fsyncSync;
+  fs.fsyncSync = function patched(fd) { calls.push(fd); return original.call(fs, fd); };
+  try {
+    state.recordVerificationEvidence({ session_id: 'legacy-test', command: 'node --test mirror', exit_code: 0 });
+  } finally {
+    fs.fsyncSync = original;
+  }
+  assert.ok(fs.existsSync(state.LEGACY_STATE_FILE), 'legacy mirror should exist');
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(state.LEGACY_STATE_FILE, 'utf8')).verification_evidence.map((ev) => ev.command), ['node --test mirror']);
+  assert.ok(calls.length >= 2, 'canonical state and legacy mirror should fsync');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('OpenCode TextComplete dispatch applies stream text-block rewrites', async () => {
   const root = _withSandbox('hme-opencode-text-dispatch-');
   const res = await dispatch(root, 'TextComplete', {
