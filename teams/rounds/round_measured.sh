@@ -74,10 +74,12 @@ san(){ sed -E 's/^#{1,6} /  /; s/^GAP:/gap:/' ; }
 progress_init "measured:$BRIEF" 4
 
 # === BASELINE: one high-effort peer, capsule-grounded (driver->blue_lead) ===
-gcap driver E5 0 m-base blue blue_lead "BASELINE single reviewer. Per the capsule rubric, list ALL decision-changing flaws (P0/P1) with function + fix. Cite capsule sections." m_base.json
+# Mesh-found P1 (base+red): driver->lead turns route to teams/driver.md per
+# roles.json (no channel_by_caller.driver override), so the ledger/leash channel
+gcap driver E5 0 m-base driver blue_lead "BASELINE single reviewer. Per the capsule rubric, list ALL decision-changing flaws (P0/P1) with function + fix. Cite capsule sections." m_base.json
 
 # === MULTI-PEER, sequential ===
-gcap driver E5 0 m-red red red_lead "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent." m_red.json
+gcap driver E5 0 m-red driver red_lead "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent." m_red.json
 RED="$(reply m_red.json | san)"
 gcap red_lead E4 1 m-redp red red_purple "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED" m_redp.json
 REDP="$(reply m_redp.json | san)"
