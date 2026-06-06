@@ -451,6 +451,49 @@ test('I3 roles route to red, blue, and purple channels without broadcast', () =>
   }
 });
 
+test('dispatch guard supports explicit consult targets without bypassing topology or availability', () => {
+  const root = tmpProject();
+  try {
+    writeRoles(root, meshRoles());
+    writeDashboard(root, {
+      driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
+      blue_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 1 },
+      red_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 10 },
+      red_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 20 },
+      blue_purple: { status: 'registered', tier: 'E4', ctx_used_pct: 30 },
+      crew_e3_0: { status: 'registered', tier: 'E3', ctx_used_pct: 40 },
+    });
+    const base = ['--caller', 'driver', '--tier', 'E5', '--turn-id', 'consult', '--budget', '4',
+      '--scope', 'structured consult', '--artifact', 'teams/red.md', '--max-duration', '30', '--max-tools', '2'];
+
+    let r = runDispatch(root, [...base, '--target', 'red_lead', '--send', '--message', 'red position'], { HME_ASK_PEER_FAKE_REPLY: 'red ok' });
+    assert.equal(r.status, 0, r.stderr);
+    let out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, true);
+    assert.equal(out.target, 'red_lead');
+    assert.equal(out.sent, true);
+
+    r = runDispatch(root, ['--caller', 'red_lead', '--tier', 'E4', '--depth', '1', '--turn-id', 'consult-red', '--budget', '4',
+      '--scope', 'bad explicit target', '--artifact', 'teams/blue.md', '--max-duration', '30', '--max-tools', '2',
+      '--target', 'blue_lead']);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'target');
+
+    writeDashboard(root, {
+      driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
+      red_lead: { status: 'retired', tier: 'E5', ctx_used_pct: 10 },
+      blue_lead: { status: 'registered', tier: 'E5', ctx_used_pct: 1 },
+    });
+    r = runDispatch(root, [...base, '--target', 'red_lead']);
+    out = JSON.parse(r.stdout);
+    assert.equal(out.allowed, false);
+    assert.equal(out.code, 'stale_route');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('I3 dispatch guard selects real roles and writes caller-specific channels', () => {
   const root = tmpProject();
   try {
