@@ -127,6 +127,8 @@ function compactTranscriptLines(rawLines, opts = {}) {
     afterBytes: Buffer.byteLength(out.join('\n'), 'utf8'),
     changedEntries,
     total,
+    keepRecent,
+    byteFloor,
   };
 }
 
