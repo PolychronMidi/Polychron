@@ -224,7 +224,12 @@ _ROUTERS: dict[str, callable] = {
 
 
 def _is_crew(role: str) -> bool:
-    return role.startswith("crew_e")
+    return _role_stage_tier(role) is not None
+
+
+def _is_blocked_stage_crew(caller: str, data: dict) -> bool:
+    caller_agent = (data.get("agents") or {}).get(caller, {})
+    return _agent_tier(caller, caller_agent) in _BLOCKED_STAGE_CREW_SPAWN_TIERS
 
 
 def _level_tier(value) -> Optional[str]:
