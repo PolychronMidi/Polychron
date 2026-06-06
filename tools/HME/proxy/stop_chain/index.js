@@ -90,7 +90,6 @@ function mandatoryPolicyFailure(name, msg) {
 
 const TRACE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-chain.trace');
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
-const SUBAGENT_TOKEN_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'subagent-stop-tokens');
 // Mesh-found P1 (stop-chain review): transcript_path comes from the payload, so a
 // huge/slow file must not stall the Stop hook. Cascade-break only needs the most
 const CASCADE_READ_CAP = 4 * 1024 * 1024;
