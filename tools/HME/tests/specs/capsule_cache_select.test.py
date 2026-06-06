@@ -45,15 +45,12 @@ class CapsuleCacheTests(unittest.TestCase):
 class SelectTargetTests(unittest.TestCase):
     def test_returns_first_pending_surface(self):
         with tempfile.TemporaryDirectory() as td:
-            m = Path(td) / "map.md"
-            m.write_text(
-                "| surface | file | status |\n"
-                "| --- | --- | --- |\n"
-                "| pre-write gate | tools/HME/proxy/pre_write_check.js | reviewed |\n"
-                "| stop-chain | tools/HME/proxy/stop_chain/ | pending |\n"
-                "| state registry | tools/HME/proxy/state_registry.js | pending |\n",
-                encoding="utf-8",
-            )
+            m = Path(td) / "map.json"
+            m.write_text(json.dumps({"sections": [{"section": "Policy", "surfaces": [
+                {"surface": "pre-write gate", "file": "tools/HME/proxy/pre_write_check.js", "status": "reviewed"},
+                {"surface": "stop-chain", "file": "tools/HME/proxy/stop_chain/", "status": "pending"},
+                {"surface": "state registry", "file": "tools/HME/proxy/state_registry.js", "status": "pending"},
+            ]}]}), encoding="utf-8")
             nxt = select_target.next_target(m)
             self.assertIsNotNone(nxt)
             self.assertEqual(nxt["name"], "stop-chain")
@@ -61,10 +58,11 @@ class SelectTargetTests(unittest.TestCase):
             self.assertEqual(len(allp), 2)
             self.assertTrue(all(t["name"] != "pre-write gate" for t in allp))
 
-    def test_real_coverage_map_parses_and_has_pending(self):
-        nxt = select_target.next_target(ROOT / "doc" / "myth0s-coverage-map.md")
-        self.assertIsNotNone(nxt, "the live coverage map should expose pending targets")
-        self.assertIn("/", nxt["file"])
+    def test_real_coverage_map_parses(self):
+        # The live map is DATA (teams/rounds/coverage-map.json), not a doc.
+        rows = select_target._rows(ROOT / "teams" / "rounds" / "coverage-map.json")
+        self.assertGreater(len(rows), 0, "the live coverage map should parse surfaces")
+        self.assertTrue(all("/" in r["file"] for r in rows))
 
 
 if __name__ == "__main__":
