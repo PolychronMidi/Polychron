@@ -40,7 +40,7 @@ class RoundRunnerContractTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 self.assertIn('rm -f "$OUT"/', text, "runner must clear stale per-round outputs")
                 self.assertNotIn('rm -f "$REPO"/teams/runtime/*.session', text)
-                self.assertNotIn(" > \"$REPO/teams/$c.md\"", text)
+                self.assertIn('[ -s "$REPO/teams/$c.md" ] ||', text)
                 self.assertIn("Preserve canonical team channels/session files", text)
 
 
