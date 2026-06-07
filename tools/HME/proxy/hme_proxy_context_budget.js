@@ -184,6 +184,7 @@ function createContextBudget() {
     compactGear1Target,
     compactGear2Target,
     compactGear3Target,
+    compactMaxReliefFraction,
     compactTrace,
     omoPruningBridge,
     omniLocalSummary,
