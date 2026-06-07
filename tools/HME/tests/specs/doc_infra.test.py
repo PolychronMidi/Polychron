@@ -36,17 +36,12 @@ class DocInfraTests(unittest.TestCase):
         doc = SELF_DOC.read_text(encoding="utf-8")
         self.assertEqual(mod.update_text(doc, ROOT), doc)
         self.assertIn("<!-- doc-infra-generated:start -->", doc)
-        for needle in [
-            "tools/HME/project_boundaries.json",
-            "teams/rounds/depth_policy.json",
-            "config/models.json",
-            "tools/HME/config/services.json",
-            "tools/HME/i_registry.json",
-            "tools/HME/config/adapter-boundaries.json",
-            "tools/HME/event_kernel/dispatcher-routes.json",
-            "tools/HME/config/state-files.json",
-        ]:
+        contract = json.loads((ROOT / "tools/HME/config/generated-doc-sources.json").read_text(encoding="utf-8"))
+        projected = [src["path"].rstrip("/") for src in contract["sources"]]
+        self.assertIn("tools/HME/config/generated-doc-sources.json", doc)
+        for needle in projected:
             self.assertIn(needle, doc)
+        self.assertIn(f"{len(projected)} required source projections", doc)
 
     def test_doc_infra_readme_is_directory_intent_and_points_to_runner(self):
         text = README.read_text(encoding="utf-8")
