@@ -240,7 +240,7 @@ test('responseHasErrorEvent detects SSE and JSON errors', () => {
   assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))), false);
 });
 
-test('tool-result-heavy payload trips OmniRoute size gate before upstream 503/empty/context failure', () => {
+test('tool-result-heavy payload trips OmniRoute size gate before upstream 503/empty/context failure', () => withStatuslineUnavailable(() => {
   const payload = {
     model: 'claude-opus-4-8',
     system: '',
@@ -259,7 +259,7 @@ test('tool-result-heavy payload trips OmniRoute size gate before upstream 503/em
   const est = semanticTokenEstimate(payload, env);
   assert.ok(est > 480000 * 0.95, `estimator must be conservative enough for captured 521k-token class, got ${est}`);
   assert.equal(swapWindowCheck(payload, 'gpt-5.5-xhigh', env).exceeds, true);
-});
+}));
 
 test('Stop fallback omits blank transcript_path so lifecycle resolver can fill it', () => {
   let captured = null;
