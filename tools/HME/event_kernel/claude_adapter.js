@@ -174,34 +174,35 @@ function _normalizeClaudeStdoutObject(event, parsed) {
   }
 
   if (event === 'Stop') {
+    if (typeof out.ok === 'boolean') {
+      if (out.ok === false && !(typeof out.reason === 'string' && out.reason.trim())) out.reason = 'Stop hook blocked without reason';
+      delete out.decision;
+      delete out.hookSpecificOutput;
+      return { parsed: { ok: out.ok, ...(out.reason ? { reason: String(out.reason) } : {}) }, issues, repairs };
+    }
     if (out.hookSpecificOutput) {
       const hso = out.hookSpecificOutput;
       const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
         : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
         : typeof out.reason === 'string' ? out.reason
         : '';
-      delete out.hookSpecificOutput;
-      if (reason) {
-        out.decision = 'block';
-        out.reason = reason;
-      } else {
-        issues.push('Stop hookSpecificOutput is not valid Claude hook JSON; stripped unsupported field');
+      if (reason && reason.trim()) {
+        issues.push('Stop hookSpecificOutput converted to host ok=false schema');
+        return { parsed: { ok: false, reason }, issues, repairs };
       }
+      issues.push('Stop hookSpecificOutput had no reason; converted to ok=true no-decision');
+      return { parsed: { ok: true }, issues, repairs };
     }
-    const stopReasonOk = typeof out.reason === 'string' && out.reason.trim() !== '';
-    if (out.decision === 'block' && !stopReasonOk) {
-      // A Stop block with no usable reason is rejected by the host as invalid
-      // hook JSON. Downgrade to a no-decision result -- valid, and the agent is
-      delete out.decision;
-      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
-    } else if (out.decision && out.decision !== 'block') {
-      issues.push(`Stop root decision=${JSON.stringify(out.decision)} is not valid Claude hook JSON; stripped decision fields`);
-      delete out.decision;
-      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
-    } else if (!out.decision && Object.prototype.hasOwnProperty.call(out, 'reason')) {
-      issues.push('Stop root reason without decision="block" is not valid Claude hook JSON; stripped reason');
-      delete out.reason;
+    if (out.decision === 'block') {
+      const reason = typeof out.reason === 'string' && out.reason.trim() ? out.reason : 'Stop hook blocked without reason';
+      issues.push('Stop decision=block converted to host ok=false schema');
+      return { parsed: { ok: false, reason }, issues, repairs };
     }
+    if (typeof out.reason === 'string' && out.reason.trim()) {
+      issues.push('Stop reason without ok converted to host ok=false schema');
+      return { parsed: { ok: false, reason: out.reason }, issues, repairs };
+    }
+    return { parsed: { ok: true }, issues, repairs };
   }
 
   return { parsed: out, issues, repairs };
