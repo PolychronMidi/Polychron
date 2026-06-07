@@ -49,9 +49,9 @@ function sanitizeHostStdout(event, stdout) {
   } catch (_err) {
     // silent-ok intentional-fail-closed: this is the outer Stop-hook JSON firewall.
     // The adapter already logs hook-output-validation; if malformed stdout still
-    return JSON.stringify({ decision: 'block', reason: 'HME Stop hook produced invalid JSON; fixed to a valid Stop block. See hook-output-validation logs.' });
+    return JSON.stringify({ ok: false, reason: 'HME Stop hook produced invalid JSON; fixed to valid ok=false Stop JSON. See hook-output-validation logs.' });
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return '{}';
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return '{"ok":true}';
   if (parsed.hookSpecificOutput && typeof parsed.hookSpecificOutput === 'object' && !Array.isArray(parsed.hookSpecificOutput)) {
     const hso = parsed.hookSpecificOutput;
     const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
