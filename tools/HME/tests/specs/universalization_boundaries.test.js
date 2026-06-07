@@ -134,6 +134,13 @@ test('Claude adapter converts invalid Stop hookSpecificOutput into valid root bl
   }
 });
 
+test('Claude goal Stop hook schema requires root ok boolean', () => {
+  const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
+  const out = JSON.parse(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: 'keep working' }), repoRoot));
+  assert.equal(typeof out.ok, 'boolean');
+  assert.deepEqual(out, { ok: false, reason: 'keep working' });
+});
+
 test('Claude adapter downgrades a reasonless Stop block to a valid no-decision result', () => {
   // Root cause of "Stop hook error: JSON validation failed": the stop chain
   // emitted decision=block with no/empty reason; the host rejects a block that
