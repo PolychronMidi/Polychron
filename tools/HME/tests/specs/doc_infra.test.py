@@ -35,12 +35,27 @@ class DocInfraTests(unittest.TestCase):
         doc = SELF_DOC.read_text(encoding="utf-8")
         self.assertEqual(mod.update_text(doc, ROOT), doc)
         self.assertIn("<!-- doc-infra-generated:start -->", doc)
-        self.assertIn("tools/HME/project_boundaries.json", doc)
-        self.assertIn("teams/rounds/depth_policy.json", doc)
-        self.assertIn("config/models.json", doc)
+        for needle in [
+            "tools/HME/project_boundaries.json",
+            "teams/rounds/depth_policy.json",
+            "config/models.json",
+            "tools/HME/config/services.json",
+            "tools/HME/i_registry.json",
+            "tools/HME/config/adapter-boundaries.json",
+            "tools/HME/event_kernel/dispatcher-routes.json",
+            "tools/HME/config/state-files.json",
+        ]:
+            self.assertIn(needle, doc)
 
-    def test_self_coherence_generator_check_mode_passes(self):
-        r = subprocess.run([sys.executable, str(UPDATE_SELF), "--check"], cwd=ROOT, text=True, capture_output=True, timeout=30)
+    def test_doc_infra_readme_is_directory_intent_and_points_to_runner(self):
+        text = README.read_text(encoding="utf-8")
+        self.assertIn("directory intent only", text)
+        self.assertIn("canonical docs stay in `doc/self-coherence-full.md`", text)
+        self.assertIn("update.py", text)
+        self.assertIn("update_self_coherence.py", text)
+
+    def test_doc_infra_runner_check_mode_passes(self):
+        r = subprocess.run([sys.executable, str(UPDATE), "--check"], cwd=ROOT, text=True, capture_output=True, timeout=30)
         self.assertEqual(r.returncode, 0, msg=r.stderr + r.stdout)
 
 
