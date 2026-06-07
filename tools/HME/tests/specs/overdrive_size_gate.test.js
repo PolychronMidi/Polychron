@@ -8,7 +8,8 @@ const path = require('node:path');
 const { applyOverdriveRoute, swapWindowCheck } = require('../../proxy/overdrive_route');
 
 // Deterministic estimator env: 4 bytes/token, 0.95 fit fraction.
-const ENV = { HME_OMNI_SWAP_FIT_FRACTION: '0.95', HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' };
+const NO_STATUSLINE = path.join(os.tmpdir(), 'hme-size-gate-no-statusline');
+const ENV = { HME_OMNI_SWAP_FIT_FRACTION: '0.95', HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4', HME_STATUSLINE_PATH: NO_STATUSLINE };
 
 // ~520K input tokens (2.08M chars / 4): over cx/gpt-5.5-xhigh's 480K context
 // window, well under Opus-4-8's 1M context window.
