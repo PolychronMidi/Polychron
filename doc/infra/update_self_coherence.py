@@ -21,7 +21,7 @@ def load_json(path: Path) -> dict:
 
 
 def rel(path: Path, root: Path) -> str:
-    return str(path.relative_to(root))
+    return str(path.relative_to(root)).rstrip("/")
 
 
 def verifier_names(root: Path) -> list[str]:
@@ -34,30 +34,46 @@ def verifier_names(root: Path) -> list[str]:
     return sorted(set(names))
 
 
+def summary_for(root: Path, source: dict) -> str:
+    path = root / source["path"]
+    key = source.get("summary")
+    if key == "project_boundaries":
+        data = load_json(path)
+        return f"{len(data.get('subsystems') or {})} subsystem rows, {len(data.get('canonical_destinations') or {})} canonical destination classes"
+    if key == "depth_policy":
+        data = load_json(path)
+        return f"{len(data.get('escalation_profiles') or {})} depth profiles, {len(data.get('gate_min_depth') or {})} evidence gates"
+    if key == "models":
+        data = load_json(path)
+        providers = (data.get("_meta") or {}).get("providers") or {}
+        skipped = (data.get("providers_to_skip") or {}).get("providers") or []
+        return f"{len(providers)} providers declared, {len(skipped)} currently paused by `providers_to_skip`"
+    if key == "services":
+        data = load_json(path)
+        return f"{len(data.get('services') or {})} service declarations"
+    if key == "i_registry":
+        data = load_json(path)
+        return f"{len(data.get('commands') or {})} command shims, {len(data.get('scripts') or {})} script shims"
+    if key == "adapter_boundaries":
+        data = load_json(path)
+        return f"{len(data.get('boundaries') or {})} boundary classes"
+    if key == "dispatcher_routes":
+        data = load_json(path)
+        return f"{len(data.get('routes') or {})} hook-event routes, {len(data.get('observation_events') or [])} observation events"
+    if key == "state_files":
+        data = load_json(path)
+        return f"{len(data.get('files') or {})} typed state files, {len(data.get('single_owner') or {})} single-owner domains"
+    if key == "verifiers":
+        return f"{len(verifier_names(root))} verifier names discovered from source"
+    return "source declared"
+
+
 def generated_block(root: Path) -> str:
-    boundaries_path = root / "tools/HME/project_boundaries.json"
-    depth_path = root / "teams/rounds/depth_policy.json"
-    models_path = root / "config/models.json"
-    services_path = root / "tools/HME/config/services.json"
-    i_registry_path = root / "tools/HME/i_registry.json"
-    adapter_boundaries_path = root / "tools/HME/config/adapter-boundaries.json"
-    dispatcher_routes_path = root / "tools/HME/event_kernel/dispatcher-routes.json"
-    state_files_path = root / "tools/HME/config/state-files.json"
-    boundaries = load_json(boundaries_path)
-    depth = load_json(depth_path)
-    models = load_json(models_path)
-    services = load_json(services_path)
-    i_registry = load_json(i_registry_path)
-    adapter_boundaries = load_json(adapter_boundaries_path)
-    dispatcher_routes = load_json(dispatcher_routes_path)
-    state_files = load_json(state_files_path)
-    subsystems = boundaries.get("subsystems") or {}
+    source_contract_path = root / "tools/HME/config/generated-doc-sources.json"
+    source_contract = load_json(source_contract_path)
+    sources = source_contract.get("sources") or []
+    boundaries = load_json(root / "tools/HME/project_boundaries.json")
     canonical = boundaries.get("canonical_destinations") or {}
-    profiles = depth.get("escalation_profiles") or {}
-    gates = depth.get("gate_min_depth") or {}
-    skipped = (models.get("providers_to_skip") or {}).get("providers") or []
-    providers = (models.get("_meta") or {}).get("providers") or {}
-    verifiers = verifier_names(root)
 
     lines = [
         START,
@@ -66,18 +82,13 @@ def generated_block(root: Path) -> str:
         "",
         "### Machine-derived coherence sources",
         "",
-        f"- Project boundary map: [`{rel(boundaries_path, root)}`](../{rel(boundaries_path, root)}) -- {len(subsystems)} subsystem rows, {len(canonical)} canonical destination classes.",
-        f"- Mesh depth policy: [`{rel(depth_path, root)}`](../{rel(depth_path, root)}) -- {len(profiles)} depth profiles, {len(gates)} evidence gates.",
-        f"- Model/provider registry: [`{rel(models_path, root)}`](../{rel(models_path, root)}) -- {len(providers)} providers declared, {len(skipped)} currently paused by `providers_to_skip`.",
-        f"- Service registry: [`{rel(services_path, root)}`](../{rel(services_path, root)}) -- {len(services.get('services') or {})} service declarations.",
-        f"- Public i/ command registry: [`{rel(i_registry_path, root)}`](../{rel(i_registry_path, root)}) -- {len(i_registry.get('commands') or {})} command shims, {len(i_registry.get('scripts') or {})} script shims.",
-        f"- Adapter boundary registry: [`{rel(adapter_boundaries_path, root)}`](../{rel(adapter_boundaries_path, root)}) -- {len(adapter_boundaries.get('boundaries') or {})} boundary classes.",
-        f"- Dispatcher route contract: [`{rel(dispatcher_routes_path, root)}`](../{rel(dispatcher_routes_path, root)}) -- {len(dispatcher_routes.get('routes') or {})} hook-event routes, {len(dispatcher_routes.get('observation_events') or [])} observation events.",
-        f"- State-file registry: [`{rel(state_files_path, root)}`](../{rel(state_files_path, root)}) -- {len(state_files.get('files') or {})} typed state files, {len(state_files.get('single_owner') or {})} single-owner domains.",
-        f"- HCI verifier registry: [`tools/HME/scripts/verify_coherence/`](../tools/HME/scripts/verify_coherence/) -- {len(verifiers)} verifier names discovered from source.",
-        "",
-        "Canonical destination summary:",
+        f"- Generated-source contract: [`{rel(source_contract_path, root)}`](../{rel(source_contract_path, root)}) -- {len(sources)} required source projections.",
     ]
+    for src in sources:
+        src_path = root / src["path"]
+        link = rel(src_path, root)
+        lines.append(f"- {src['label']}: [`{link}`](../{link}) -- {summary_for(root, src)}.")
+    lines.extend(["", "Canonical destination summary:"])
     for key in sorted(canonical):
         value = canonical[key]
         if isinstance(value, list):
