@@ -75,7 +75,7 @@ test('size gate never falls back direct to a provider listed in providers_to_ski
   try {
     assert.equal(result.applied, true);
     assert.equal(result.isOmniRoute, true);
-    assert.match(payload.model, /^codex\/gpt-5\.5-xhigh/);
+    assert.match(payload.model, /^cx\/gpt-5\.5-xhigh/);
     assert.ok(clientReq.headers['x-hme-upstream'], 'must route through OmniRoute, not direct Anthropic');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
