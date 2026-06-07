@@ -138,7 +138,7 @@ class SelfCoherenceGeneratedDocsVerifier(Verifier):
         script = os.path.join(_PROJECT, "doc", "infra", "update_self_coherence.py")
         if not os.path.isfile(script):
             return skipped(summary="doc infra generator missing", details=[script])
-        rc, out, err = _run_subprocess([sys.executable, script, "--check"])
+        rc, out, err = _run_subprocess([script, "--check"])
         if rc == 0:
             return passed(summary="self-coherence-full generated section matches live project data")
         return failed(summary="self-coherence-full generated section is stale", details=[out.strip(), err.strip()])
