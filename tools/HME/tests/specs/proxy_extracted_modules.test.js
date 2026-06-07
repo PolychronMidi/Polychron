@@ -1100,6 +1100,7 @@ test('context budget compaction uses continuous exponential pressure from high-w
     process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
     process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
     process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    process.env.HME_PROXY_COMPACT_MAX_RELIEF_FRACTION = '0.05';
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
     const planFor = (chars) => budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(chars) }] });
@@ -1157,6 +1158,7 @@ test('compaction knobs scale continuously from env baselines without ratcheting'
     process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
     process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
     process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    process.env.HME_PROXY_COMPACT_MAX_RELIEF_FRACTION = '0.05';
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
 
