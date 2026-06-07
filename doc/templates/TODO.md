@@ -11,3 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 33
+#34 1_ fix passthrough compact CVT relief math so usage is not pinned near 80-85% and can ride toward max_input_tokens with bounded exponential relief
