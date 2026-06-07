@@ -218,10 +218,10 @@ function createContextBudget() {
     const usedFraction = usedTokens / budgetTokens;
     const pressure = _compactPressureForFraction({ usedFraction, startFraction: compactStartFraction });
     if (pressure <= 0) return { threshold: Infinity, maxTier: 0, pressure: 0 };
-    const floorTargetFraction = Math.min(compactStartFraction, compactGear1Target || compactStartFraction);
+    const maxReliefFraction = Math.max(0.001, Math.min(0.25, compactMaxReliefFraction || 0.05));
     const targetFraction = Math.max(
-      floorTargetFraction,
-      usedFraction - ((usedFraction - floorTargetFraction) * pressure),
+      compactStartFraction,
+      Math.min(1, usedFraction - (maxReliefFraction * pressure)),
     );
     const targetTokens = Math.max(1, Math.floor(budgetTokens * targetFraction));
     const threshold = Math.max(1, Math.floor(targetTokens * contextBytesPerTokenEst));
