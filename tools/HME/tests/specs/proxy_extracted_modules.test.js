@@ -687,7 +687,7 @@ test('mode 1 same-chain fallback index advances even when chain has a manual top
   } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
-test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch', () => quiet(() => {
+test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch', () => withStatuslineUnavailable(() => quiet(() => {
   // Stale signature mismatch resets idx=0; manual top fronting still applies.
   const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
   try {
@@ -713,7 +713,7 @@ test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch
     assert.equal(result.swapMeta.api_model || result.swapMeta.id, 'claude-sonnet-4-6');
     assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
   } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
-}));
+})));
 
 test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
   const cfg = {
