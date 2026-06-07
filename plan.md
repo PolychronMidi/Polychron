@@ -99,3 +99,76 @@ HME verifier / self-coherence suite.
   first HME self-coherence-suite slice.
 - Guardrail: no docs spillover, no process-cleanup project, no self-referential tool
   growth unless it directly increases coherence signal and reduces future bloat.
+
+## Phase 15 (proposed) -- Project boundary map + hot/cold path minimalism
+
+Status: `proposed`. Drafted from a six-turn mesh consultation with driver ->
+red/blue leads, intra-team red/blue sharpening, inter-team purple cross-exam, and
+final synthesis (`teams/runtime/output/project-design-consult/`). Nothing here is
+implemented until the user approves this phase.
+
+Theme: make the project easier to navigate and harder to bloat by encoding a
+compact ownership/non-ownership map, canonical destination rules, and objective
+hot/cold path boundaries. If approved, the deliverable is intentionally small:
+one boundary data file plus one conservative verifier/test set. This is not a
+compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
+
+### Workstream 1 -- Canonical destination map
+- Scope: turn the existing anti-duplication rule into a small machine-readable
+  routing table for future artifacts.
+- Delivery if approved: add `tools/HME/project_boundaries.json` with a
+  `canonical_destinations` section mapping: work state -> `doc/templates/TODO.md`;
+  phase intent -> `plan.md`; peer dialogue -> `teams/*.md`; machine policy data ->
+  beside the consumer; runtime evidence -> `teams/runtime/output/` or
+  `tools/HME/runtime/`; objective invariants ->
+  `tools/HME/scripts/verify_coherence/`; product behavior -> `src/`.
+- Guardrail: no new ledger system, dashboard, docs tree, tracker, glossary, or
+  manifesto.
+
+### Workstream 2 -- Subsystem ownership and non-ownership
+- Scope: define first-class subsystem boundaries in compact data form.
+- Required rows: `product_src`, `proxy`, `event_kernel_hooks`, `mesh_teams`,
+  `hci_verifiers`, `todo_plan_ledgers`, `runtime_state_logs`, `docs_templates`,
+  and `config_policy`.
+- Each row must define `owns`, `does_not_own`, `entrypoints`, `path_class`, and
+  `canonical_outputs`.
+- Guardrail: data file only, not prose capsules. `does_not_own` is mandatory;
+  ownership without non-ownership is too permissive. Include `product_src` so HME
+  coherence machinery does not absorb product strategy. No `src/` product refactor
+  in this phase.
+
+### Workstream 3 -- Hot/cold path guardrails
+- Scope: keep request-time / hook-time code boring and fast while cold paths retain
+  rich coherence machinery.
+- Initial hot-path examples: `tools/HME/proxy/`, `tools/HME/event_kernel/`.
+- Initial cold-path examples: `teams/rounds/`,
+  `tools/HME/scripts/verify_coherence/`, `log/todo/`.
+- Verifier should check objective violations only: hot paths must not directly
+  invoke mesh rounds, directly invoke HCI verification, shell out unless
+  whitelisted, broad-scan repo/runtime, or create a new ledger/output class without
+  a declared owner.
+- Guardrail: no micro-optimization campaign, runtime dashboard, subjective
+  performance score, or rewrite of existing proxy/hook internals unless a tiny
+  boundary violation is directly found.
+
+### Workstream 4 -- Minimal boundary verifier
+- Scope: add one conservative HCI verifier and tests for objective boundary
+  regressions.
+- Deliveries if approved: `tools/HME/scripts/verify_coherence/project_boundaries.py`,
+  `tools/HME/tests/specs/project_boundaries.test.py`, registry import, and
+  self-coverage kept green.
+- Initial FAIL conditions: missing required subsystem row; missing `owns`; missing
+  `does_not_own`; invalid `path_class`; declared entrypoint missing; hot path
+  directly imports/calls a known cold-path system.
+- Initial WARN / `AUDIT-UNCERTAIN` conditions: possible new ledger-like file without
+  owner; ambiguous ownership overlap; possible broad scan not clearly hot-path
+  reachable.
+- Guardrail: no subjective style checks, naming-preference checks, or architecture
+  taste scoring. Ambiguous cases warn; only mechanical violations fail.
+
+### Explicit non-goals
+- No compaction work, route telemetry work, dashboards, broad docs rewrite, new mesh
+  machinery, product `src/` refactor, style-policing verifier,
+  process-cleanup-only project, new ledger system, rename campaign,
+  project-wide architecture manifesto, or per-subsystem prose capsules.
+- No setup until the user approves this proposed phase.
