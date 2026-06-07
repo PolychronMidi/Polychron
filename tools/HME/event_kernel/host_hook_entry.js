@@ -52,21 +52,25 @@ function sanitizeHostStdout(event, stdout) {
     return JSON.stringify({ ok: false, reason: 'HME Stop hook produced invalid JSON; fixed to valid ok=false Stop JSON. See hook-output-validation logs.' });
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return '{"ok":true}';
+  if (typeof parsed.ok === 'boolean') {
+    if (parsed.ok === false) return JSON.stringify({ ok: false, reason: String(parsed.reason || 'Stop hook blocked without reason') });
+    return JSON.stringify({ ok: true });
+  }
   if (parsed.hookSpecificOutput && typeof parsed.hookSpecificOutput === 'object' && !Array.isArray(parsed.hookSpecificOutput)) {
     const hso = parsed.hookSpecificOutput;
     const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
       : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
       : typeof parsed.reason === 'string' ? parsed.reason
       : '';
-    if (reason.trim()) return JSON.stringify({ decision: 'block', reason });
-    return '{}';
+    if (reason.trim()) return JSON.stringify({ ok: false, reason });
+    return '{"ok":true}';
   }
   if (parsed.decision === 'block') {
     const reason = typeof parsed.reason === 'string' ? parsed.reason.trim() : '';
-    return reason ? JSON.stringify({ decision: 'block', reason }) : '{}';
+    return reason ? JSON.stringify({ ok: false, reason }) : '{"ok":true}';
   }
-  if (parsed.decision || parsed.reason) return '{}';
-  return JSON.stringify(parsed);
+  if (parsed.decision || parsed.reason) return '{"ok":true}';
+  return JSON.stringify({ ok: true });
 }
 
 function exitFailSafe(event, message, code = 0) {
