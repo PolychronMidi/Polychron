@@ -42,7 +42,7 @@ test('decision normalizer keeps protocol rendering separate from shared decision
 
   const claudeStop = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: '', exit_code: 0 });
   assert.equal(claudeStop.exit_code, 0);
-  assert.equal(claudeStop.stdout, JSON.stringify({ decision: 'block', reason }));
+  assert.equal(claudeStop.stdout, JSON.stringify({ ok: false, reason }));
   assert.equal(claudeStop.stderr, ' ');
 });
 
