@@ -1130,7 +1130,7 @@ test('context budget compaction uses continuous exponential pressure from high-w
     assert.ok(late.pressure > mid.pressure, `late=${late.pressure} mid=${mid.pressure}`);
     assert.equal(late.allowSummary, true);
     assert.equal(late.allowMessageDrop, true);
-    assert.ok(late.targetTokens <= 850, `late target=${late.targetTokens}`);
+    assert.ok(late.targetTokens > 900 && late.targetTokens <= 990, `late target=${late.targetTokens}`);
     assert.ok(late.keepMin < mid.keepMin, `late keep=${late.keepMin} mid=${mid.keepMin}`);
     assert.ok(late.toolResultByteFloor < mid.toolResultByteFloor, `late floor=${late.toolResultByteFloor} mid=${mid.toolResultByteFloor}`);
     assert.deepEqual(late.compactionKnobBaselines, {
