@@ -39,7 +39,9 @@ function flushHeldEvents(holds, trailingEvent = null) {
 }
 
 function _shouldBypass(state, enableGuard) {
-  return enableGuard !== false && shouldBypassResponseTextRewrite(state && state.text);
+  if (enableGuard === false) return false;
+  const text = state && state.text;
+  return couldBeStructuredJsonText(text) || shouldBypassResponseTextRewrite(text);
 }
 
 function _applyDecision(decision, env) {
