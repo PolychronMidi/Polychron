@@ -178,7 +178,7 @@ test('Claude adapter emits a single JSON document when stdout carries a trailing
     const relayed = validateClaudeStdout('Stop', multiDoc, tmp);
     // Must be exactly one parseable JSON document (no trailing junk).
     const out = JSON.parse(relayed);
-    assert.deepEqual(out, { decision: 'block', reason: 'real' });
+    assert.deepEqual(out, { ok: false, reason: 'real' });
     assert.equal(relayed.trim(), JSON.stringify(out));
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
