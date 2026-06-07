@@ -1,4 +1,4 @@
-const { shouldBypassResponseTextRewrite } = require('../structured_output_guard');
+const { couldBeStructuredJsonText, shouldBypassResponseTextRewrite } = require('../structured_output_guard');
 
 function _holdsFor(ctx, key) {
   let holds = ctx.get(key);
