@@ -227,6 +227,7 @@ def normalize_vote(vote: dict[str, Any], current_depth: int, current_evidence_ep
         "evidence": evidence if evidence else "",
         "grounded": grounded,
         "stale": stale,
+        "evidence_epoch": vote_epoch,
         "weight": round(weight, 4),
         "gates": sorted(gates),
         "advisory_only": not grounded,
