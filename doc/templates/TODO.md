@@ -10,9 +10,4 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
-### Todo - Set 42
-#1 5_ Phase 16 WS1: added phase-evidence.json shape with Phase 15 seed proof refs and closed inference firewall fields
-#2 5_ Phase 16 WS2: added phase_evidence tests and HCI verifier/import for plan/TODO/artifact/test/HCI reference validation
-#3 5_ Phase 16 WS3: added touch-only verifier purpose metadata to recent/touched/new verifiers
-#4 5_ Phase 16 WS4: hardened doc_infra test so generated source projection exactly matches generated-doc-sources.json
-#5 5_ Phase 16 completion: updated plan.md to done/executed, ran tests/HCI, and marked TODO set complete
+### Todo - Set 43
