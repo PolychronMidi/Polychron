@@ -62,7 +62,9 @@ class ProjectBoundariesVerifier(Verifier):
                     errors.append(f"subsystem {name} entrypoint missing: {entry}")
 
         forbidden = data.get("hot_path_forbidden_markers") or []
+        forbidden_import_prefixes = data.get("hot_path_forbidden_import_prefixes") or []
         allowed = set(data.get("hot_path_allowed_files") or [])
+        import_re = re.compile(r"(?:require\(|from\s+|import\s+).*?['\"]([^'\"]+)['\"]")
         for hot_root in ((data.get("path_classes") or {}).get("hot") or []):
             root = Path(_PROJECT) / str(hot_root)
             if not root.exists():
@@ -80,6 +82,15 @@ class ProjectBoundariesVerifier(Verifier):
                 for marker in forbidden:
                     if marker and marker in text:
                         errors.append(f"hot path {rel} references cold-path marker {marker}")
+                for spec in import_re.findall(text):
+                    resolved = (file.parent / spec).resolve() if spec.startswith(".") else (Path(_PROJECT) / spec).resolve()
+                    try:
+                        target_rel = str(resolved.relative_to(_PROJECT)).replace("\\", "/")
+                    except ValueError:
+                        continue
+                    for prefix in forbidden_import_prefixes:
+                        if target_rel.startswith(prefix):
+                            errors.append(f"hot path {rel} imports cold path {target_rel}")
 
         # Conservative warning: obvious new ledger-like roots should be owned.
         known_roots = {str(x).split("/")[0] for row in subsystems.values() if isinstance(row, dict) for x in row.get("entrypoints", [])}
