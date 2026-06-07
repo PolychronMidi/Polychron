@@ -52,6 +52,8 @@ test('fresh statusline usage grounds swap size gate and prevents false semantic 
     const wc = swapWindowCheck(BIG, 'gpt-5.5-xhigh', { ...ENV, HME_STATUSLINE_PATH: statusline }, dir);
     assert.equal(wc.source, 'statusline');
     assert.equal(wc.estTokens, 1000);
+    assert.equal(wc.statuslineTokens, 1000);
+    assert.ok(wc.semanticTokens > wc.budget, `semantic estimate should be the false-positive pressure, got ${wc.semanticTokens}`);
     assert.equal(wc.exceeds, false, 'real under-window usage must not be overruled by semantic estimate');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
