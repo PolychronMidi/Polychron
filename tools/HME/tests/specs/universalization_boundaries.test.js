@@ -128,7 +128,7 @@ test('Claude adapter converts invalid Stop hookSpecificOutput into valid root bl
   try {
     const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
     const out = JSON.parse(validateClaudeStdout('Stop', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: 'STOP REASON' } }), tmp));
-    assert.deepEqual(out, { decision: 'block', reason: 'STOP REASON' });
+    assert.deepEqual(out, { ok: false, reason: 'STOP REASON' });
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
