@@ -190,7 +190,7 @@ test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSO
   try {
     const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
     const out = JSON.parse(validateClaudeStdout('Stop', '{bad json', tmp));
-    assert.equal(out.decision, 'block');
+    assert.equal(out.ok, false);
     assert.match(out.reason, /JSON validation failed/);
     assert.match(fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8'), /hook-output-validation/);
     assert.match(fs.readFileSync(path.join(tmp, 'log', 'hme.log'), 'utf8'), /ERROR hook-output-validation/);
