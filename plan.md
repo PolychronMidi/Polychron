@@ -192,3 +192,49 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
   process-cleanup-only project, new ledger system, rename campaign,
   project-wide architecture manifesto, or per-subsystem prose capsules.
 - Executed under the session goal; no further setup remains in this phase.
+
+## Phase 16 (proposed) -- Evidence-closed self-evolution loop
+
+Status: `proposed`. Drafted from a six-turn next-coherence mesh consultation:
+red/blue leads, intra-team red/blue sharpening, inter-team purple cross-exam, and
+final synthesis (`teams/runtime/output/next-coherence-consult/`). Nothing here is
+implemented until the user approves this phase.
+
+Theme: close the repeated ambiguity class between planned, executed, verified, and
+merely narrated work. Done phases should be provable from compact machine-checkable
+references without transcript archaeology and without creating a second TODO/status
+ledger.
+
+### Workstream 1 -- Phase evidence proof index
+- Scope: add `tools/HME/config/phase-evidence.json` as proof references only.
+- Allowed row fields: `phase`, `plan_anchor`, `todo_refs`, `artifacts`, `tests`,
+  and `hci`.
+- Forbidden row fields: `status`, `summary`, `description`, `rationale`, `owner`,
+  and `next_actions`, because those duplicate `plan.md`, TODO, or boundary data.
+- Initial seed: Phase 15 only, proving the boundary-map/hot-cold-path/inverted-docs
+  execution via existing plan anchors, TODO archive refs, artifact paths, tests, and
+  HCI verifier names.
+
+### Workstream 2 -- `phase-evidence` verifier and tests
+- Verify `plan_anchor` exists in `plan.md`; every TODO ref resolves in current TODO
+  or `log/todo/set*.md`; every artifact/test path exists; every listed HCI verifier
+  name exists; and no forbidden fields appear.
+- Delivery if approved: `tools/HME/scripts/verify_coherence/phase_evidence.py`,
+  registry import, and `tools/HME/tests/specs/phase_evidence.test.py`.
+
+### Workstream 3 -- Touch-only verifier purpose metadata
+- Apply explicit `invariant`, `false_positive_policy`, `sources_checked`, and
+  `does_not_enforce` metadata only to recent/touched/new verifiers:
+  `ProjectBoundariesVerifier`, `SelfCoherenceGeneratedDocsVerifier`,
+  `VerifierPurposeContractVerifier`, and the future `PhaseEvidenceVerifier`.
+- Guardrail: no broad legacy verifier migration and no low-signal boilerplate.
+
+### Workstream 4 -- Exact generated-doc source projection
+- Harden `doc_infra.test.py` so the generated machine-source links in
+  `doc/self-coherence-full.md` exactly equal `tools/HME/config/generated-doc-sources.json`
+  plus the contract file itself, and the displayed source count matches the contract.
+
+### Explicit non-goals
+- No dashboards, new `.md` files, global legacy verifier metadata migration, broad
+  `plan.md` rewrite, mesh machinery expansion, compaction/routing work, style
+  policing, coherence-laws registry, or second TODO/status ledger.
