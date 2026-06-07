@@ -171,4 +171,4 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
   machinery, product `src/` refactor, style-policing verifier,
   process-cleanup-only project, new ledger system, rename campaign,
   project-wide architecture manifesto, or per-subsystem prose capsules.
-- No setup until the user approves this proposed phase.
+- Executed under the session goal; no further setup remains in this phase.
