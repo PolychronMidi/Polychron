@@ -1,8 +1,11 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
-const { swapWindowCheck } = require('../../proxy/overdrive_route');
+const { applyOverdriveRoute, swapWindowCheck } = require('../../proxy/overdrive_route');
 
 // Deterministic estimator env: 4 bytes/token, 0.95 fit fraction.
 const ENV = { HME_OMNI_SWAP_FIT_FRACTION: '0.95', HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' };
