@@ -11,6 +11,8 @@ from pathlib import Path
 
 START = "<!-- doc-infra-nav:start -->"
 END = "<!-- doc-infra-nav:end -->"
+GEN_START = "<!-- doc-infra-generated:start -->"
+GEN_END = "<!-- doc-infra-generated:end -->"
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 
 
