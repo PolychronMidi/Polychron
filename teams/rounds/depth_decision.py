@@ -246,6 +246,68 @@ def _decision_name(current_depth: int, next_depth: int, reason: str = "") -> str
     return "hold_depth"
 
 
+DEPTH_VOTE_CONTRACT = """\
+\nMesh depth vote (required when asked): append one compact JSON object after token MESH_DEPTH_VOTE.\nVotes decide whether to buy more debate depth, never whether a finding is true.\nUse evidence or write AUDIT-UNCERTAIN; unsupported votes are advisory only.\nSchema: MESH_DEPTH_VOTE {\"depth_delta\":\"-1|0|+1|+2\",\"confidence\":\"low|medium|high\",\"reason_code\":\"risk|uncertainty|contradiction|failing-test|architecture|security|hook/guard-surface|scope-bloat|enough-evidence\",\"evidence\":\"file:line/test/channel or AUDIT-UNCERTAIN\",\"evidence_epoch\":\"optional current patch/test id\"}\n"""
+
+
+def prompt_contract() -> str:
+    return DEPTH_VOTE_CONTRACT
+
+
+def profile_for_depth(depth: int) -> dict[str, Any]:
+    depth = _clamp_depth(depth, 0)
+    raw = ESCALATION_PROFILES.get(str(depth), {})
+    profile = dict(raw) if isinstance(raw, dict) else {}
+    profile.setdefault("label", DEPTH_LABELS[depth])
+    profile.setdefault("max_tools", 8 if depth >= 2 else 4 if depth == 1 else 0)
+    profile.setdefault("max_duration", 600 if depth >= 2 else 300 if depth == 1 else 0)
+    profile.setdefault("reply_cap", 12000 if depth >= 2 else 6000 if depth == 1 else 0)
+    profile.setdefault("next_action", f"run_{DEPTH_LABELS[depth]}")
+    return profile
+
+
+def extract_vote(text: str, role: str, current_evidence_epoch: str | None = None) -> dict[str, Any] | None:
+    """Extract the last MESH_DEPTH_VOTE JSON object from a peer reply."""
+    if not text:
+        return None
+    matches = list(re.finditer(r"MESH_DEPTH_VOTE\s*(\{.*?\})(?=\s*$|\s*[`\n])", text, flags=re.DOTALL))
+    if not matches:
+        return None
+    raw = matches[-1].group(1)
+    try:
+        vote = json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "role": role,
+            "depth_delta": "0",
+            "confidence": "low",
+            "reason_code": "malformed-vote",
+            "evidence": "AUDIT-UNCERTAIN: malformed MESH_DEPTH_VOTE JSON",
+            "evidence_epoch": current_evidence_epoch or "",
+        }
+    if not isinstance(vote, dict):
+        return None
+    vote = dict(vote)
+    vote["role"] = str(vote.get("role") or role)
+    if current_evidence_epoch and not vote.get("evidence_epoch"):
+        vote["evidence_epoch"] = current_evidence_epoch
+    return vote
+
+
+def collect_votes_from_reply_files(role_to_file: dict[str, str], current_evidence_epoch: str | None = None) -> list[dict[str, Any]]:
+    votes: list[dict[str, Any]] = []
+    for role, file_name in role_to_file.items():
+        try:
+            data = json.loads(Path(file_name).read_text(encoding="utf-8"))
+            reply = str(data.get("reply") or "")
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+        vote = extract_vote(reply, role, current_evidence_epoch)
+        if vote is not None:
+            votes.append(vote)
+    return votes
+
+
 def compute_depth_decision(
     *,
     current_depth: int,
