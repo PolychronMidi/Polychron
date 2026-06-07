@@ -18,6 +18,10 @@ class VerifierPurposeContractVerifier(Verifier):
     category = "coverage"
     subtag = "interface-contract"
     weight = 1.0
+    invariant = "HCI verifiers have an explicit purpose contract before strict metadata enforcement tightens."
+    false_positive_policy = "Warn legacy missing metadata by default; fail only malformed contract or explicit strict mode violations."
+    sources_checked = ["tools/HME/config/verifier-purpose-contract.json", "tools/HME/scripts/verify_coherence"]
+    does_not_enforce = ["broad legacy metadata migration", "style scoring", "runtime behavior"]
 
     def run(self) -> VerdictResult:
         root = Path(_PROJECT)
