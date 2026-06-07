@@ -308,13 +308,36 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.swapModel = upstreamModelId(result.swapModel);
   if (env.HME_OMNIROUTE_PROVIDER) result.omniProvider = env.HME_OMNIROUTE_PROVIDER;
 
-  // Size gate: if the request won't fit the swap model, don't swap -- leave the
-  // requested Claude model so it routes DIRECT (full Claude window) instead of
+  // Size gate: if the request won't fit the selected swap model, first try a
+  // larger-window NON-skipped chain model; only fall back to the requested Claude
+  // model DIRECT when Claude is NOT in providers_to_skip. A paused Claude must
   const _wc = swapWindowCheck(payload, result.swapModel, env);
   if (_wc.exceeds) {
-    payload.model = requestedClaudeModel || claudeModel || payload.model;
-    console.error(`[hme-proxy] MODE=1 size-gate: ~${_wc.estTokens}tok exceeds ${result.swapModel} input window ${_wc.budget} (*${_wc.fitFraction}); staying on ${payload.model} direct (no swap)`);
-    return result;
+    const fit = largestFittingChainModel(result.swapChain, _wc.estTokens, _wc.fitFraction, env);
+    if (fit && upstreamModelId(fit.model) !== result.swapModel) {
+      result.swapModel = upstreamModelId(fit.model);
+      result.omniProvider = omniProviderForConfigProvider(fit.model.provider || '', env);
+      result.swapMeta = fit.model;
+      console.error(`[hme-proxy] MODE=1 size-gate: ~${_wc.estTokens}tok (src=${_wc.source}) > prior swap window; re-selected ${result.swapModel} (window ${fit.budget}) which fits -- staying on OmniRoute`);
+    } else if (fit) {
+      console.error(`[hme-proxy] MODE=1 size-gate: ~${_wc.estTokens}tok (src=${_wc.source}) fits ${result.swapModel} window ${fit.budget}; staying on OmniRoute`);
+    } else if (!primarySkipped) {
+      payload.model = requestedClaudeModel || claudeModel || payload.model;
+      console.error(`[hme-proxy] MODE=1 size-gate: ~${_wc.estTokens}tok (src=${_wc.source}) exceeds every swap window; staying on ${payload.model} direct (no swap)`);
+      try { require('./shared').emit({ event: 'swap_size_gate_direct', model: payload.model, est_tokens: _wc.estTokens, source: _wc.source, reason: 'no_fitting_swap_model' }); } catch (_e) { /* silent-ok: telemetry must not break routing */ }
+      return result;
+    } else {
+      // Claude paused AND nothing fits: route to the largest-window non-skipped
+      // chain model and let a genuine upstream context-window error drive the
+      const fallback = largestWindowChainModel(result.swapChain);
+      if (fallback) {
+        result.swapModel = upstreamModelId(fallback.model);
+        result.omniProvider = omniProviderForConfigProvider(fallback.model.provider || '', env);
+        result.swapMeta = fallback.model;
+      }
+      console.error(`[hme-proxy] LIFESAVER -- routing: ~${_wc.estTokens}tok (src=${_wc.source}) fits no swap window and requested ${requestedClaudeModel} is in providers_to_skip; routing OmniRoute ${result.omniProvider}/${result.swapModel} (largest non-skipped) -- run /compact or un-pause a larger provider.`);
+      try { require('./shared').emit({ event: 'swap_size_gate_skipped_primary', requested: requestedClaudeModel, est_tokens: _wc.estTokens, source: _wc.source, fallback_model: result.swapModel, fallback_provider: result.omniProvider }); } catch (_e) { /* silent-ok */ }
+    }
   }
 
   if (env.HME_OMNIROUTE_OFF !== '1') {
