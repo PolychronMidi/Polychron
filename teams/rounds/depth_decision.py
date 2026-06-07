@@ -203,7 +203,10 @@ def normalize_vote(vote: dict[str, Any], current_depth: int, current_evidence_ep
     evidence = str(vote.get("evidence") or "").strip()
     delta = _parse_delta(vote.get("depth_delta", vote.get("delta", 0)))
     confidence = str(vote.get("confidence") or "medium").strip().lower()
+    vote_epoch = str(vote.get("evidence_epoch") or "").strip()
     stale = bool(vote.get("stale") or vote.get("expired"))
+    if current_evidence_epoch and vote_epoch and vote_epoch != current_evidence_epoch:
+        stale = True
     grounded = _has_evidence(evidence) and not stale
     target = vote.get("recommended_depth", vote.get("target_depth", None))
     if target is None:
