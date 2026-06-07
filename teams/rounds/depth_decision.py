@@ -143,8 +143,8 @@ def _extract_gates(reason: str, evidence: str) -> set[str]:
     text = f"{reason} {evidence}".lower()
     gates: set[str] = set()
     probes = {
-        "p0": r"\bp0\b",
-        "p1": r"\bp1\b",
+        "p0": r"(?<![a-z0-9])p0(?![a-z0-9])",
+        "p1": r"(?<![a-z0-9])p1(?![a-z0-9])",
         "fail_open": r"fail[-_ ]open",
         "security": r"security|secret|credential|api[-_ ]?key",
         "data_loss": r"data[-_ ]loss",
