@@ -253,9 +253,10 @@ def compute_depth_decision(
     evidence_gates: list[str] | None = None,
     override: dict[str, Any] | None = None,
     round_name: str = "round",
+    current_evidence_epoch: str | None = None,
 ) -> dict[str, Any]:
     current_depth = _clamp_depth(current_depth, 0)
-    normalized = [normalize_vote(v, current_depth) for v in votes]
+    normalized = [normalize_vote(v, current_depth, current_evidence_epoch) for v in votes]
     external_gates = {_normalize_reason(g) for g in (evidence_gates or []) if str(g or "").strip()}
     vote_gates = {g for v in normalized for g in v["gates"]}
     all_gates = external_gates | vote_gates
