@@ -312,6 +312,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   // larger-window NON-skipped chain model; only fall back to the requested Claude
   // model DIRECT when Claude is NOT in providers_to_skip. A paused Claude must
   const _wc = swapWindowCheck(payload, result.swapModel, env);
+  const _wcTrace = `src=${_wc.source} semantic=${_wc.semanticTokens || 0} statusline=${_wc.statuslineTokens || 0}`;
   if (_wc.exceeds) {
     const fit = largestFittingChainModel(result.swapChain, _wc.estTokens, _wc.fitFraction, env);
     if (fit && upstreamModelId(fit.model) !== result.swapModel) {
