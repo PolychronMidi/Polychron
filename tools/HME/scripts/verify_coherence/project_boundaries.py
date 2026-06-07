@@ -22,6 +22,10 @@ class ProjectBoundariesVerifier(Verifier):
     category = "coverage"
     subtag = "interface-contract"
     weight = 2.0
+    invariant = "Project-wide ownership/non-ownership and hot/cold path boundaries remain explicit and machine-checkable."
+    false_positive_policy = "Fail only on missing required rows, invalid fields, missing declared entrypoints, or objective hot-path cold imports/markers."
+    sources_checked = ["tools/HME/project_boundaries.json", "tools/HME/proxy", "tools/HME/event_kernel"]
+    does_not_enforce = ["style preferences", "runtime performance", "product architecture rewrites"]
 
     def run(self) -> VerdictResult:
         path = Path(_PROJECT) / "tools/HME/project_boundaries.json"
