@@ -176,9 +176,15 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
 - Delivered: `self-coherence-generated-docs` HCI verifier plus
   `tools/HME/tests/specs/doc_infra.test.py`; checks cover generated-section drift,
   broader source coverage, directory-intent README wiring, and full-doc index drift.
-- Source coverage currently includes project boundaries, mesh depth policy, model
-  registry, services, public `i/` registry, adapter boundaries, dispatcher routes,
-  state-file registry, and HCI verifier names.
+- Source coverage is declared in `tools/HME/config/generated-doc-sources.json` and
+  currently includes project boundaries, mesh depth policy, model registry, services,
+  public `i/` registry, adapter boundaries, dispatcher routes, state-file registry,
+  and HCI verifier names.
+- Follow-up hardening delivered from the same design push: `verifier-purpose-contract`
+  HCI coverage via `tools/HME/config/verifier-purpose-contract.json`, refined hot/cold
+  path import-prefix checks in `project-boundaries`, canonical `doc/infra/update.py`
+  runner coverage, and named Claude goal Stop-hook schema regression for root
+  `ok: boolean` output.
 
 ### Explicit non-goals
 - No compaction work, route telemetry work, dashboards, broad docs rewrite, new mesh
