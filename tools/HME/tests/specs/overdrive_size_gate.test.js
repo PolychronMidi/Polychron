@@ -36,3 +36,48 @@ test('unknown model (budget 0) never gates', () => {
   assert.equal(wc.budget, 0);
   assert.equal(wc.exceeds, false);
 });
+
+test('fresh statusline usage grounds swap size gate and prevents false semantic bailout', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-size-statusline-'));
+  const statusline = path.join(dir, 'statusline.json');
+  fs.writeFileSync(statusline, JSON.stringify({
+    model: { id: 'gpt-5.5-xhigh' },
+    context_window: {
+      context_window_size: 480000,
+      current_usage: { input_tokens: 1000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+    },
+  }));
+  try {
+    const wc = swapWindowCheck(BIG, 'gpt-5.5-xhigh', { ...ENV, HME_STATUSLINE_PATH: statusline }, dir);
+    assert.equal(wc.source, 'statusline');
+    assert.equal(wc.estTokens, 1000);
+    assert.equal(wc.exceeds, false, 'real under-window usage must not be overruled by semantic estimate');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('size gate never falls back direct to a provider listed in providers_to_skip', () => {
+  const cfg = {
+    providers_to_skip: { providers: ['anthropic', 'claude'] },
+    ranking_rules: { cost_order: ['free'] },
+    team_role_models: { driver: { tier: 'E5', source: 'ranking_rules' } },
+    manually_toprank: { E5: [] },
+    tiers: { E5: { models: [
+      { id: 'gpt-5.5-xhigh', api_model: 'gpt-5.5-xhigh', provider: 'codex', cost: 'free', tier_score: 10 },
+    ] } },
+  };
+  const payload = { model: 'claude-sonnet-4-6', system: '', tools: [], stream: true, messages: BIG.messages };
+  const clientReq = { headers: {}, url: '/v1/messages' };
+  const clientRes = { writeHead() {}, end() {} };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-size-root-'));
+  const result = applyOverdriveRoute({ payload, clientReq, clientRes, outBody: Buffer.from('{}'), env: { ...ENV, OVERDRIVE_MODE: '1' }, cfg, projectRoot: root });
+  try {
+    assert.equal(result.applied, true);
+    assert.equal(result.isOmniRoute, true);
+    assert.match(payload.model, /^codex\/gpt-5\.5-xhigh/);
+    assert.ok(clientReq.headers['x-hme-upstream'], 'must route through OmniRoute, not direct Anthropic');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
