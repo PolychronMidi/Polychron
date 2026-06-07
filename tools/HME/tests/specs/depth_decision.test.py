@@ -108,6 +108,40 @@ class MeshDepthDecisionTests(unittest.TestCase):
         self.assertEqual(rows[0]["round"], "ledger")
         self.assertEqual(rows[0]["anti_bloat_check"], row["anti_bloat_check"])
 
+    def test_extract_vote_from_peer_reply_and_attach_role_epoch(self):
+        reply = 'analysis\nMESH_DEPTH_VOTE {"depth_delta":"+1","confidence":"high","reason_code":"contradiction","evidence":"teams/red.md:12"}\n'
+        vote = depth_decision.extract_vote(reply, "red_lead", current_evidence_epoch="patch-a")
+        self.assertEqual(vote["role"], "red_lead")
+        self.assertEqual(vote["evidence_epoch"], "patch-a")
+        row = depth_decision.compute_depth_decision(current_depth=2, votes=[vote], current_evidence_epoch="patch-a")
+        self.assertIn("contradiction", row["evidence_gates"])
+
+    def test_stale_vote_epoch_zeroes_weight(self):
+        row = depth_decision.compute_depth_decision(
+            current_depth=2,
+            current_evidence_epoch="new-patch",
+            votes=[{"role": "red", "delta": "+2", "confidence": "high", "reason": "P1 fail-open", "evidence": "old.js:1", "evidence_epoch": "old-patch"}],
+        )
+        self.assertEqual(row["next_depth"], 2)
+        self.assertEqual(row["votes"][0]["stale"], True)
+        self.assertEqual(row["votes"][0]["weight"], 0.0)
+
+    def test_profile_and_prompt_contract_are_available_to_runners(self):
+        contract = depth_decision.prompt_contract()
+        self.assertIn("MESH_DEPTH_VOTE", contract)
+        profile = depth_decision.profile_for_depth(4)
+        self.assertEqual(profile["next_action"], "run_debate_hall")
+        self.assertGreaterEqual(profile["max_tools"], 14)
+
+    def test_collect_votes_from_reply_files(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "peer.json"
+            p.write_text(json.dumps({"reply": "ok\nMESH_DEPTH_VOTE {\"depth_delta\":\"+1\",\"confidence\":\"medium\",\"reason_code\":\"security\",\"evidence\":\"guard.py:2\"}"}), encoding="utf-8")
+            votes = depth_decision.collect_votes_from_reply_files({"blue_purple": str(p)}, "epoch")
+        self.assertEqual(len(votes), 1)
+        self.assertEqual(votes[0]["role"], "blue_purple")
+        self.assertEqual(votes[0]["evidence_epoch"], "epoch")
+
 
 if __name__ == "__main__":
     unittest.main()
