@@ -664,7 +664,7 @@ test('role detection still honors explicit live team lead prompts', () => {
   assert.equal(roleFromPayload({ messages: [{ role: 'user', content: 'You are Blue Lead\nRun this check.' }] }, {}), 'blue_lead');
 });
 
-test('mode 1 same-chain fallback index advances even when chain has a manual top', () => quiet(() => {
+test('mode 1 same-chain fallback index advances even when chain has a manual top', () => withStatuslineUnavailable(() => quiet(() => {
   // manually_toprank only fronts the chain; failover still progresses through it.
   const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
   try {
@@ -685,7 +685,7 @@ test('mode 1 same-chain fallback index advances even when chain has a manual top
     });
     assert.equal(result.swapMeta.id, result.swapChain[1].id, 'fallback index 1 selects swapChain[1] of the effective Claude-primary chain');
   } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
-}));
+})));
 
 test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch', () => withStatuslineUnavailable(() => quiet(() => {
   // Stale signature mismatch resets idx=0; manual top fronting still applies.
