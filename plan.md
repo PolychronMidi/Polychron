@@ -193,14 +193,13 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
   project-wide architecture manifesto, or per-subsystem prose capsules.
 - Executed under the session goal; no further setup remains in this phase.
 
-## Phase 16 (proposed) -- Phase-inference firewall
+## Phase 16 (done) -- Phase-inference firewall
 
-Status: `proposed`. Drafted from a six-turn next-coherence mesh consultation and
-then sharpened by a six-turn bar-frame mesh consultation: red/blue leads,
-intra-team red/blue sharpening, inter-team purple cross-exam, and final synthesis
-(`teams/runtime/output/next-coherence-consult/`,
-`teams/runtime/output/bar-coherence-consult/`). Nothing here is implemented until
-the user approves this phase.
+Status: `done` (implemented + verified). Drafted from a six-turn next-coherence mesh
+consultation and then sharpened by a six-turn bar-frame mesh consultation: red/blue
+leads, intra-team red/blue sharpening, inter-team purple cross-exam, and final
+synthesis (`teams/runtime/output/next-coherence-consult/`,
+`teams/runtime/output/bar-coherence-consult/`). Executed after user approval.
 
 Theme: done is not a sentence. Done is a traversable proof path across existing
 truth surfaces, with explicit limits on what that proof does not imply. The phase
