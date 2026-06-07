@@ -110,8 +110,8 @@ test('SseTransform preserves streamed structured JSON for Claude Code Stop goal 
   ];
   const out = parseSse(await runSse(raw, rewriters));
   const text = out.filter(([name]) => name === 'content_block_delta').map(([, data]) => data.delta.text).join('');
-  assert.equal(text, rawJson);
-  assert.deepEqual(JSON.parse(text), { continue: false, reason: 'execute all of plan.md via deep mesh consultation' });
+  assert.equal(text, '{"ok":true,"reason":"execute all of plan.md via deep mesh consultation"}');
+  assert.deepEqual(JSON.parse(text), { ok: true, reason: 'execute all of plan.md via deep mesh consultation' });
 });
 
 test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wolf error', async () => {
