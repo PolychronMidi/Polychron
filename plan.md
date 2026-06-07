@@ -248,7 +248,7 @@ Jurisdictions:
 - Apply explicit `invariant`, `false_positive_policy`, `sources_checked`, and
   `does_not_enforce` metadata only to recent/touched/new verifiers:
   `ProjectBoundariesVerifier`, `SelfCoherenceGeneratedDocsVerifier`,
-  `VerifierPurposeContractVerifier`, and the future `PhaseEvidenceVerifier`.
+  `VerifierPurposeContractVerifier`, and `PhaseEvidenceVerifier`.
 - Guardrail: no broad legacy verifier migration and no low-signal boilerplate.
 
 ### Workstream 5 -- Exact generated-doc source projection
