@@ -22,9 +22,9 @@ function swapWindowCheck(payload, swapModel, env = process.env, projectRoot = PR
   const { contextPressure } = require('./context_pressure');
   // Ground the swap decision in real statusline usage when available so the gate
   // does not false-bail a turn that genuinely fits (the user's symptom: never went
-  const { usedTokens: estTokens, budget, source } = contextPressure({ payload, modelId: swapModel, env, projectRoot, preferStatusline: true });
+  const { usedTokens: estTokens, budget, source, semanticTokens, statuslineTokens, statuslineModel } = contextPressure({ payload, modelId: swapModel, env, projectRoot, preferStatusline: true });
   const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
-  return { exceeds, estTokens, budget, fitFraction, source };
+  return { exceeds, estTokens, budget, fitFraction, source, semanticTokens, statuslineTokens, statuslineModel };
 }
 
 // Largest-window chain model whose window holds estTokens (with fit headroom).
