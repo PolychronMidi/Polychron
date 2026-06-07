@@ -71,7 +71,7 @@
     "1": { "label": "one_peer_check", "max_tools": 4, "max_duration": 300, "reply_cap": 6000, "next_action": "run_one_peer_check" },
     "2": { "label": "red_blue_purple_one_pass", "max_tools": 8, "max_duration": 600, "reply_cap": 12000, "next_action": "run_rbp_one_pass" },
     "3": { "label": "cross_exam", "max_tools": 10, "max_duration": 900, "reply_cap": 16000, "next_action": "run_cross_exam" },
-    "4": { "label": "debate_hall", "max_tools": 14, "max_duration": 1200, "reply_cap": 24000, "next_action": "run_debate_hall" },
-    "5": { "label": "post_patch_audit", "max_tools": 18, "max_duration": 1800, "reply_cap": 32000, "next_action": "run_post_patch_audit" }
+    "4": { "label": "debate_hall", "max_tools": 14, "max_duration": 1100, "reply_cap": 24000, "next_action": "run_debate_hall" },
+    "5": { "label": "post_patch_audit", "max_tools": 18, "max_duration": 1200, "reply_cap": 32000, "next_action": "run_post_patch_audit" }
   }
 }
