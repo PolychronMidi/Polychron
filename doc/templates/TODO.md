@@ -10,5 +10,4 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
-### Todo - Set 31
-#32 5_ fully wire evidence-weighted mesh depth voting into runners, peer vote contracts, adaptive escalation execution, freshness, HCI/self-coverage, and tests; added depth_policy.json, peer MESH_DEPTH_VOTE contract, vote extraction/freshness, adaptive profiles clamped to guard caps, round_measured auto-escalation (debate-hall/post-audit), progress helpers, mesh-depth verifier, and smoke-verified all three paths
+### Todo - Set 32
