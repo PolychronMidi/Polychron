@@ -154,7 +154,7 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
 ### Workstream 4 -- Minimal boundary verifier
 - Scope: add one conservative HCI verifier and tests for objective boundary
   regressions.
-- Deliveries if approved: `tools/HME/scripts/verify_coherence/project_boundaries.py`,
+- Delivered: `tools/HME/scripts/verify_coherence/project_boundaries.py`,
   `tools/HME/tests/specs/project_boundaries.test.py`, registry import, and
   self-coverage kept green.
 - Initial FAIL conditions: missing required subsystem row; missing `owns`; missing
