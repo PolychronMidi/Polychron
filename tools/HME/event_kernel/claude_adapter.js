@@ -123,6 +123,7 @@ function _lifesaverBlock(event, message) {
       },
     });
   }
+  if (event === 'Stop') return JSON.stringify({ ok: false, reason: alert });
   const out = { decision: 'block', reason: alert };
   if (event === 'UserPromptSubmit') {
     out.hookSpecificOutput = { hookEventName: event, additionalContext: alert };
