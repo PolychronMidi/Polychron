@@ -38,6 +38,35 @@ function failSafeStdout(event, message) {
   return GATING_EVENTS.has(event) ? renderDeny(event, message) : '';
 }
 
+function sanitizeHostStdout(event, stdout) {
+  const text = String(stdout || '').trim();
+  if (!text) return '';
+  if (event !== 'Stop') return stdout;
+  const { extractFirstJsonDocument } = require('./decision_normalizer');
+  let parsed;
+  try {
+    parsed = JSON.parse(extractFirstJsonDocument(text) || text);
+  } catch (_err) {
+    return JSON.stringify({ decision: 'block', reason: 'HME Stop hook produced invalid JSON; fixed to a valid Stop block. See hook-output-validation logs.' });
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return '{}';
+  if (parsed.hookSpecificOutput && typeof parsed.hookSpecificOutput === 'object' && !Array.isArray(parsed.hookSpecificOutput)) {
+    const hso = parsed.hookSpecificOutput;
+    const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
+      : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
+      : typeof parsed.reason === 'string' ? parsed.reason
+      : '';
+    if (reason.trim()) return JSON.stringify({ decision: 'block', reason });
+    return '{}';
+  }
+  if (parsed.decision === 'block') {
+    const reason = typeof parsed.reason === 'string' ? parsed.reason.trim() : '';
+    return reason ? JSON.stringify({ decision: 'block', reason }) : '{}';
+  }
+  if (parsed.decision || parsed.reason) return '{}';
+  return JSON.stringify(parsed);
+}
+
 function exitFailSafe(event, message, code = 0) {
   const stdout = failSafeStdout(event, message);
   if (stdout) process.stdout.write(stdout);
