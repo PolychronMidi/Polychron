@@ -197,7 +197,7 @@ def _weighted_median(items: list[tuple[int, float]]) -> int | None:
     return usable[-1][0]
 
 
-def normalize_vote(vote: dict[str, Any], current_depth: int) -> dict[str, Any]:
+def normalize_vote(vote: dict[str, Any], current_depth: int, current_evidence_epoch: str | None = None) -> dict[str, Any]:
     role = str(vote.get("role") or "unknown").strip().lower()
     reason = _normalize_reason(vote.get("reason_code", vote.get("reason", "")))
     evidence = str(vote.get("evidence") or "").strip()
