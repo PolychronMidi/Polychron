@@ -193,43 +193,66 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
   project-wide architecture manifesto, or per-subsystem prose capsules.
 - Executed under the session goal; no further setup remains in this phase.
 
-## Phase 16 (proposed) -- Evidence-closed self-evolution loop
+## Phase 16 (proposed) -- Phase-inference firewall
 
-Status: `proposed`. Drafted from a six-turn next-coherence mesh consultation:
-red/blue leads, intra-team red/blue sharpening, inter-team purple cross-exam, and
-final synthesis (`teams/runtime/output/next-coherence-consult/`). Nothing here is
-implemented until the user approves this phase.
+Status: `proposed`. Drafted from a six-turn next-coherence mesh consultation and
+then sharpened by a six-turn bar-frame mesh consultation: red/blue leads,
+intra-team red/blue sharpening, inter-team purple cross-exam, and final synthesis
+(`teams/runtime/output/next-coherence-consult/`,
+`teams/runtime/output/bar-coherence-consult/`). Nothing here is implemented until
+the user approves this phase.
 
-Theme: close the repeated ambiguity class between planned, executed, verified, and
-merely narrated work. Done phases should be provable from compact machine-checkable
-references without transcript archaeology and without creating a second TODO/status
-ledger.
+Theme: done is not a sentence. Done is a traversable proof path across existing
+truth surfaces, with explicit limits on what that proof does not imply. The phase
+is not adding evidence; it is bounding inference from evidence so agents stop
+turning green checks, files, TODO rows, or plan prose into overclaims.
 
-### Workstream 1 -- Phase evidence proof index
+Jurisdictions:
+- `plan.md` owns intent and phase status.
+- TODO / `log/todo/` own work-state evidence.
+- artifacts own implementation evidence.
+- tests own behavior/invariant evidence.
+- HCI owns coherence signal evidence.
+- `phase-evidence.json` owns no truth; it is an adapter/firewall that proves a
+  connected path through the owners and states what that path does not prove.
+
+### Workstream 1 -- Phase evidence adapter shape
 - Scope: add `tools/HME/config/phase-evidence.json` as proof references only.
-- Allowed row fields: `phase`, `plan_anchor`, `todo_refs`, `artifacts`, `tests`,
-  and `hci`.
+- Allowed row fields: `phase`, `plan_anchor`, `todo_refs`, `closes`, `artifacts`,
+  `tests`, `hci`, and `does_not_prove`.
 - Forbidden row fields: `status`, `summary`, `description`, `rationale`, `owner`,
-  and `next_actions`, because those duplicate `plan.md`, TODO, or boundary data.
+  `next_actions`, `notes`, `lessons`, `risk`, and `decision`, because those create
+  a second ledger or duplicate `plan.md`, TODO, or boundary data.
 - Initial seed: Phase 15 only, proving the boundary-map/hot-cold-path/inverted-docs
   execution via existing plan anchors, TODO archive refs, artifact paths, tests, and
   HCI verifier names.
 
-### Workstream 2 -- `phase-evidence` verifier and tests
-- Verify `plan_anchor` exists in `plan.md`; every TODO ref resolves in current TODO
-  or `log/todo/set*.md`; every artifact/test path exists; every listed HCI verifier
-  name exists; and no forbidden fields appear.
-- Delivery if approved: `tools/HME/scripts/verify_coherence/phase_evidence.py`,
-  registry import, and `tools/HME/tests/specs/phase_evidence.test.py`.
+### Workstream 2 -- Closed enum proof classes
+- `closes` starts as a small enum: `planned_vs_executed`,
+  `docs_vs_machine_truth`, `boundary_ownership`, `host_schema`, `hot_vs_cold_path`.
+- `does_not_prove` starts as a small enum: `future_phase_done`, `runtime_perf`,
+  `user_approval_for_new_scope`, `all_possible_regressions`, `mesh_consensus`,
+  `production_behavior`.
+- Guardrail: fog terms such as `coherence`, `quality`, `architecture`, `safety`,
+  and `all_regressions` are rejected; they are story labels, not guarded classes.
 
-### Workstream 3 -- Touch-only verifier purpose metadata
+### Workstream 3 -- Shape-first tests, then HCI verifier
+- First delivery if approved: `tools/HME/config/phase-evidence.json` and
+  `tools/HME/tests/specs/phase_evidence.test.py` only.
+- Tests must prove: allowed fields only, forbidden fields absent, `closes` enum
+  valid, `does_not_prove` enum valid, Phase 15 plan anchor exists, TODO refs resolve
+  in current TODO or `log/todo/set*.md`, artifacts/tests exist, and HCI names exist.
+- Only after the shape is clean: add `tools/HME/scripts/verify_coherence/phase_evidence.py`
+  and registry import.
+
+### Workstream 4 -- Touch-only verifier purpose metadata
 - Apply explicit `invariant`, `false_positive_policy`, `sources_checked`, and
   `does_not_enforce` metadata only to recent/touched/new verifiers:
   `ProjectBoundariesVerifier`, `SelfCoherenceGeneratedDocsVerifier`,
   `VerifierPurposeContractVerifier`, and the future `PhaseEvidenceVerifier`.
 - Guardrail: no broad legacy verifier migration and no low-signal boilerplate.
 
-### Workstream 4 -- Exact generated-doc source projection
+### Workstream 5 -- Exact generated-doc source projection
 - Harden `doc_infra.test.py` so the generated machine-source links in
   `doc/self-coherence-full.md` exactly equal `tools/HME/config/generated-doc-sources.json`
   plus the contract file itself, and the displayed source count matches the contract.
@@ -237,4 +260,5 @@ ledger.
 ### Explicit non-goals
 - No dashboards, new `.md` files, global legacy verifier metadata migration, broad
   `plan.md` rewrite, mesh machinery expansion, compaction/routing work, style
-  policing, coherence-laws registry, or second TODO/status ledger.
+  policing, coherence-laws registry, proof-carrying-change framework, commit-level
+  proof objects, prose capsules, or second TODO/status ledger.
