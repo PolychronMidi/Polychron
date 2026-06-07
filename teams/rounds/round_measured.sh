@@ -112,18 +112,19 @@ if [ "${HME_MESH_AUTO_ESCALATE:-0}" = "1" ] && [ "${NEXT_DEPTH:-3}" -ge 4 ]; the
   DURATION_CAP="${HME_TEAM_DURATION_CAP:-1200}"; TOOL_CAP="${HME_TEAM_TOOL_CAP:-20}"
   HME_MESH_ACTIVE_MAX_TOOLS="$(python3 -c 'import json,sys; print(min(int(sys.argv[2]), json.loads(sys.argv[1]).get("max_tools",14)))' "$PROFILE" "$TOOL_CAP" 2>/dev/null || echo 14)"
   HME_MESH_ACTIVE_MAX_DURATION="$(python3 -c 'import json,sys; print(min(int(sys.argv[2]), json.loads(sys.argv[1]).get("max_duration",1100)))' "$PROFILE" "$DURATION_CAP" 2>/dev/null || echo 1100)"
-  export HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION
+  export HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION HME_MESH_ACTIVE_MAX_DEPTH=3
   progress_set_total 5
   gcap blue_purple E4 2 m-debate purple red_purple "DEBATE HALL escalation authorized by mesh_depth_decision. Resolve only remaining grounded contradictions/P0/P1 risks; no new ceremony. Prior cross-exam: $(reply m_cross.json | san)
 $DEPTH_CONTRACT" m_debate.json
 fi
 if [ "${HME_MESH_AUTO_ESCALATE:-0}" = "1" ] && [ "${NEXT_DEPTH:-3}" -ge 5 ]; then
+  export HME_MESH_ACTIVE_MAX_DEPTH=3
   progress_set_total 6
   DEBATE="$(reply m_debate.json | san)"
   gcap red_purple E4 2 m-post purple blue_purple "POST-PATCH/P0-P1 audit escalation authorized by mesh_depth_decision. Verify whether any grounded high-severity claim remains after debate; cite evidence or decline. Debate said: $DEBATE
 $DEPTH_CONTRACT" m_post.json
 fi
-unset HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION
+unset HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION HME_MESH_ACTIVE_MAX_DEPTH
 
 progress_round_finish "all dispatched steps complete; adaptive depth decision recorded"
 echo "measured-done"
