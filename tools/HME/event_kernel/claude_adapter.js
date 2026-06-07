@@ -194,7 +194,8 @@ function _normalizeClaudeStdoutObject(event, parsed) {
       return { parsed: { ok: true }, issues, repairs };
     }
     if (out.decision === 'block') {
-      const reason = typeof out.reason === 'string' && out.reason.trim() ? out.reason : 'Stop hook blocked without reason';
+      const reason = typeof out.reason === 'string' && out.reason.trim() ? out.reason : '';
+      if (!reason) return { parsed: { ok: true }, issues, repairs };
       issues.push('Stop decision=block converted to host ok=false schema');
       return { parsed: { ok: false, reason }, issues, repairs };
     }
