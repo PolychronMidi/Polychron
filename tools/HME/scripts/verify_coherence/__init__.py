@@ -160,6 +160,9 @@ from .project_boundaries import (  # noqa: F401
 from .verifier_purpose import (  # noqa: F401
     VerifierPurposeContractVerifier,
 )
+from .phase_evidence import (  # noqa: F401
+    PhaseEvidenceVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
