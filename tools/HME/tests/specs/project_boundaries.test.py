@@ -31,6 +31,8 @@ class ProjectBoundariesTests(unittest.TestCase):
         self.assertEqual(data["canonical_destinations"]["work_state"], "doc/templates/TODO.md")
         self.assertEqual(data["canonical_destinations"]["phase_intent"], "plan.md")
         self.assertEqual(data["canonical_destinations"]["product_behavior"], "src/")
+        self.assertIn("tools/HME/scripts/verify_coherence/", data["hot_path_forbidden_import_prefixes"])
+        self.assertIn("verify-coherence.py", data["hot_path_forbidden_markers"])
 
     def test_project_boundaries_verifier_passes_current_tree(self):
         r = ProjectBoundariesVerifier().run()
