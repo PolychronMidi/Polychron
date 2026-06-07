@@ -20,9 +20,37 @@ const {
 function swapWindowCheck(payload, swapModel, env = process.env, projectRoot = PROJECT_ROOT) {
   const fitFraction = Number(env.HME_OMNI_SWAP_FIT_FRACTION || '0.95');
   const { contextPressure } = require('./context_pressure');
-  const { usedTokens: estTokens, budget } = contextPressure({ payload, modelId: swapModel, env, projectRoot });
+  // Ground the swap decision in real statusline usage when available so the gate
+  // does not false-bail a turn that genuinely fits (the user's symptom: never went
+  const { usedTokens: estTokens, budget, source } = contextPressure({ payload, modelId: swapModel, env, projectRoot, preferStatusline: true });
   const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
-  return { exceeds, estTokens, budget, fitFraction };
+  return { exceeds, estTokens, budget, fitFraction, source };
+}
+
+// Largest-window chain model whose window holds estTokens (with fit headroom).
+// The chain is already providers_to_skip-filtered, so every candidate is allowed.
+function largestFittingChainModel(chain, estTokens, fitFraction, env = process.env) {
+  const { inputBudgetFor } = require('./context_pressure');
+  let best = null;
+  for (const model of chain || []) {
+    const budget = inputBudgetFor(upstreamModelId(model));
+    if (!(budget > 0)) continue;
+    if (estTokens > budget * fitFraction) continue;
+    if (!best || budget > best.budget) best = { model, budget };
+  }
+  return best;
+}
+
+// Largest-window chain model regardless of fit -- used as the least-bad target
+// when nothing fits and the requested Claude primary is paused (so we never route
+function largestWindowChainModel(chain) {
+  const { inputBudgetFor } = require('./context_pressure');
+  let best = null;
+  for (const model of chain || []) {
+    const budget = inputBudgetFor(upstreamModelId(model));
+    if (!best || budget > (best.budget || 0)) best = { model, budget };
+  }
+  return best;
 }
 
 function effectiveMode(env = process.env) {
