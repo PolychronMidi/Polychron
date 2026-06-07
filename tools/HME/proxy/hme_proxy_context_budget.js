@@ -219,9 +219,13 @@ function createContextBudget() {
     const pressure = _compactPressureForFraction({ usedFraction, startFraction: compactStartFraction });
     if (pressure <= 0) return { threshold: Infinity, maxTier: 0, pressure: 0 };
     const maxReliefFraction = Math.max(0.001, Math.min(0.25, compactMaxReliefFraction || 0.05));
+    const reliefFraction = maxReliefFraction * pressure;
+    // CVT must not pin near 80-85%, but it also must not permit a target at or
+    // above 100% of max_input_tokens. As pressure rises, the ceiling itself moves
+    const pressureCeilingFraction = Math.max(compactStartFraction, 1 - reliefFraction);
     const targetFraction = Math.max(
       compactStartFraction,
-      Math.min(1, usedFraction - (maxReliefFraction * pressure)),
+      Math.min(pressureCeilingFraction, usedFraction - reliefFraction),
     );
     const targetTokens = Math.max(1, Math.floor(budgetTokens * targetFraction));
     const threshold = Math.max(1, Math.floor(targetTokens * contextBytesPerTokenEst));
