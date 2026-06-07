@@ -157,6 +157,9 @@ from .mesh_depth import (  # noqa: F401
 from .project_boundaries import (  # noqa: F401
     ProjectBoundariesVerifier,
 )
+from .verifier_purpose import (  # noqa: F401
+    VerifierPurposeContractVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
