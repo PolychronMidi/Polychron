@@ -11,4 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 34
-#35 1_ make passthrough compact CVT increase relief before/at 100% so it prevents max_input_tokens breach instead of allowing targets at or above 100%
+#35 5_ make passthrough compact CVT increase relief before/at 100% so it prevents max_input_tokens breach instead of allowing targets at or above 100%; added pressure ceiling below 100%, over-full regression test, and refreshed intentional env baseline
