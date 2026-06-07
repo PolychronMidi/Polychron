@@ -393,6 +393,8 @@ def compute_depth_decision(
         "decision": _decision_name(current_depth, next_depth),
         "depth_pressure": depth_pressure,
         "weighted_median_depth": weighted_vote_depth,
+        "evidence_epoch": current_evidence_epoch or "",
+        "adaptive_profile": profile_for_depth(next_depth),
         "driver_vote": driver_vote,
         "votes": normalized,
         "evidence_gates": sorted(all_gates),
