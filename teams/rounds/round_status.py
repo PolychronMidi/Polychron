@@ -43,6 +43,19 @@ def main(argv: list) -> int:
     rnd = rows[-1].get("round", "?")
     print(f"round: {rnd}")
     for r in rows:
+        if r.get("event") == "mesh_depth_decision":
+            line = (
+                f"  [depth] mesh_depth_decision {r.get('current_depth','?')}->{r.get('next_depth','?')} "
+                f"{r.get('decision','?')}"
+            )
+            if r.get("depth_pressure") is not None:
+                line += f" pressure={r['depth_pressure']}"
+            if r.get("evidence_gates"):
+                line += f" gates={','.join(map(str, r['evidence_gates']))}"
+            if r.get("anti_bloat_check"):
+                line += f" -- {r['anti_bloat_check']}"
+            print(line)
+            continue
         line = f"  [{r.get('progress','?')}] {r.get('step','?'):<18} {r.get('status','?'):<12}"
         typed = []
         if r.get("target"):
