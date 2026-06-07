@@ -339,6 +339,28 @@ without a declared owner is a coherence failure.
 
 ## Registries
 
+<!-- doc-infra-generated:start -->
+
+Generated from machine-readable sources by `python3 doc/infra/update_self_coherence.py`. Do not hand-edit inside this block.
+
+### Machine-derived coherence sources
+
+- Project boundary map: [`tools/HME/project_boundaries.json`](../tools/HME/project_boundaries.json) -- 9 subsystem rows, 7 canonical destination classes.
+- Mesh depth policy: [`teams/rounds/depth_policy.json`](../teams/rounds/depth_policy.json) -- 6 depth profiles, 28 evidence gates.
+- Model/provider registry: [`config/models.json`](../config/models.json) -- 6 providers declared, 3 currently paused by `providers_to_skip`.
+- HCI verifier registry: [`tools/HME/scripts/verify_coherence/`](../tools/HME/scripts/verify_coherence/) -- 87 verifier names discovered from source.
+
+Canonical destination summary:
+- `machine_policy_data` -> `beside_consumer`
+- `objective_invariants` -> `tools/HME/scripts/verify_coherence/`
+- `peer_dialogue` -> `teams/*.md`
+- `phase_intent` -> `plan.md`
+- `product_behavior` -> `src/`
+- `runtime_evidence` -> `teams/runtime/output/, tools/HME/runtime/`
+- `work_state` -> `doc/templates/TODO.md`
+
+<!-- doc-infra-generated:end -->
+
 - Services: [`tools/HME/config/services.json`](../tools/HME/config/services.json); Python, JS, and shell helpers
   derive ports, health URLs, supervision edges, PID labels, process patterns,
   logs, and starts from it.
