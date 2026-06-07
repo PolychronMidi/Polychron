@@ -873,9 +873,17 @@ function _emitHeldTextEvents(state, index) {
 
   let hits = [];
   if (assembled && shouldBypassResponseTextRewrite(assembled)) {
-    // Structured-JSON response (e.g. Claude Code's /goal Stop-hook verdict
-    // {"continue":false,"rsn":"..."}). Caveman compression abbreviates keys and
-    for (const d of state.deltas || []) events.push(['content_block_delta', d]);
+    // Structured-JSON response (e.g. Claude Code's /goal Stop-hook verdict). Keep
+    // JSON parseable and normalize legacy continue/rsn verdicts to ok/reason.
+    const normalizedJson = normalizeStructuredJsonText(assembled);
+    if (normalizedJson !== assembled) {
+      const delta = state.blockType === 'thinking'
+        ? { type: 'thinking_delta', thinking: normalizedJson }
+        : { type: 'text_delta', text: normalizedJson };
+      events.push(['content_block_delta', { type: 'content_block_delta', index, delta }]);
+    } else {
+      for (const d of state.deltas || []) events.push(['content_block_delta', d]);
+    }
   } else if (assembled) {
     const stripped = _stripSlop(assembled);
     hits = stripped.hits;
