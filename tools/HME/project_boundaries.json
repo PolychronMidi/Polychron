@@ -80,10 +80,12 @@
       "canonical_outputs": ["config/", ".env", "tools/HME/*.json"]
     }
   },
+  "hot_path_forbidden_import_prefixes": [
+    "teams/rounds/",
+    "tools/HME/scripts/verify_coherence/"
+  ],
   "hot_path_forbidden_markers": [
-    "teams/rounds/round_",
     "verify-coherence.py",
-    "verify_coherence/",
     "HME_ROUND_PROGRESS_FILE"
   ],
   "hot_path_allowed_files": [
