@@ -201,6 +201,15 @@ test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSO
   }
 });
 
+test('host hook entry has a final Stop stdout JSON firewall', () => {
+  const { sanitizeHostStdout } = require('../../event_kernel/host_hook_entry');
+  const bad = JSON.parse(sanitizeHostStdout('Stop', 'not json'));
+  assert.equal(bad.decision, 'block');
+  assert.match(bad.reason, /valid Stop block/);
+  assert.equal(sanitizeHostStdout('Stop', JSON.stringify({ decision: 'block' })), '{}');
+  assert.deepEqual(JSON.parse(sanitizeHostStdout('Stop', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: 'real reason' } }))), { decision: 'block', reason: 'real reason' });
+});
+
 test('Claude adapter logs and repairs UserPromptSubmit JSON rejected by host schema', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-userprompt-invalid-shape-'));
   try {
