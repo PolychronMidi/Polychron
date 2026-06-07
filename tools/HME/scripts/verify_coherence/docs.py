@@ -133,6 +133,10 @@ class SelfCoherenceGeneratedDocsVerifier(Verifier):
     category = "doc"
     subtag = "drift-detection"
     weight = 1.0
+    invariant = "Generated sections in self-coherence-full remain projections of live machine-readable sources."
+    false_positive_policy = "Fail only when doc/infra update/check output differs from checked-in documentation."
+    sources_checked = ["doc/infra/update.py", "doc/infra/update_self_coherence.py", "doc/self-coherence-full.md", "tools/HME/config/generated-doc-sources.json"]
+    does_not_enforce = ["manual prose quality", "new documentation topics", "runtime behavior"]
 
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "doc", "infra", "update.py")
