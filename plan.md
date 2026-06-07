@@ -236,8 +236,8 @@ Jurisdictions:
   and `all_regressions` are rejected; they are story labels, not guarded classes.
 
 ### Workstream 3 -- Shape-first tests, then HCI verifier
-- First delivery if approved: `tools/HME/config/phase-evidence.json` and
-  `tools/HME/tests/specs/phase_evidence.test.py` only.
+- Delivered shape-first: `tools/HME/config/phase-evidence.json` and
+  `tools/HME/tests/specs/phase_evidence.test.py` landed before verifier wiring.
 - Tests must prove: allowed fields only, forbidden fields absent, `closes` enum
   valid, `does_not_prove` enum valid, Phase 15 plan anchor exists, TODO refs resolve
   in current TODO or `log/todo/set*.md`, artifacts/tests exist, and HCI names exist.
