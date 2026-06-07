@@ -166,6 +166,20 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
 - Guardrail: no subjective style checks, naming-preference checks, or architecture
   taste scoring. Ambiguous cases warn; only mechanical violations fail.
 
+### Workstream 5 -- Inverted docs inside existing doc framework
+- Delivered: `doc/infra/update_self_coherence.py` generates a machine-derived
+  section inside `doc/self-coherence-full.md` from live project data; no new
+  Markdown files were added.
+- Delivered: `doc/infra/update.py` runs/checks all doc-infra maintenance while
+  `doc/infra/update_full_indexes.py` remains single-purpose for navigation indexes
+  and autolinks.
+- Delivered: `self-coherence-generated-docs` HCI verifier plus
+  `tools/HME/tests/specs/doc_infra.test.py`; checks cover generated-section drift,
+  broader source coverage, directory-intent README wiring, and full-doc index drift.
+- Source coverage currently includes project boundaries, mesh depth policy, model
+  registry, services, public `i/` registry, adapter boundaries, dispatcher routes,
+  state-file registry, and HCI verifier names.
+
 ### Explicit non-goals
 - No compaction work, route telemetry work, dashboards, broad docs rewrite, new mesh
   machinery, product `src/` refactor, style-policing verifier,
