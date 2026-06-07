@@ -100,12 +100,12 @@ HME verifier / self-coherence suite.
 - Guardrail: no docs spillover, no process-cleanup project, no self-referential tool
   growth unless it directly increases coherence signal and reduces future bloat.
 
-## Phase 15 (proposed) -- Project boundary map + hot/cold path minimalism
+## Phase 15 (executed) -- Project boundary map + hot/cold path minimalism
 
-Status: `proposed`. Drafted from a six-turn mesh consultation with driver ->
+Status: `executed`. Drafted from a six-turn mesh consultation with driver ->
 red/blue leads, intra-team red/blue sharpening, inter-team purple cross-exam, and
-final synthesis (`teams/runtime/output/project-design-consult/`). Nothing here is
-implemented until the user approves this phase.
+final synthesis (`teams/runtime/output/project-design-consult/`), then executed
+under the session goal.
 
 Theme: make the project easier to navigate and harder to bloat by encoding a
 compact ownership/non-ownership map, canonical destination rules, and objective
