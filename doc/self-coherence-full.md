@@ -351,7 +351,7 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 - Adapter boundary registry: [`tools/HME/config/adapter-boundaries.json`](../tools/HME/config/adapter-boundaries.json) -- 7 boundary classes.
 - Dispatcher route contract: [`tools/HME/event_kernel/dispatcher-routes.json`](../tools/HME/event_kernel/dispatcher-routes.json) -- 8 hook-event routes, 6 observation events.
 - State-file registry: [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) -- 0 typed state files, 37 single-owner domains.
-- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 89 verifier names discovered from source.
+- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 90 verifier names discovered from source.
 
 Canonical destination summary:
 - `machine_policy_data` -> `beside_consumer`
