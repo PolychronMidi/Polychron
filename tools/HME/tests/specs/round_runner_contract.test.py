@@ -37,6 +37,8 @@ class RoundRunnerContractTests(unittest.TestCase):
                 self.assertIn('source "$REPO/teams/rounds/_progress.sh"', text)
                 self.assertIn("progress_init", text)
                 self.assertIn("progress_result", text)
+                self.assertIn("progress_depth_decision_from_files", text)
+                self.assertIn("MESH_DEPTH", text)
                 self.assertIn("--target", text)
                 self.assertIn("--context-cap", text)
                 self.assertIn("reply captured", text)
