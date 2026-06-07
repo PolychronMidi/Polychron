@@ -96,6 +96,28 @@ REDP="$(reply m_redp.json | san)"
 gcap red_purple E4 1 m-cross purple blue_purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set (quoted, markers neutralized): $REDP
 $DEPTH_CONTRACT" m_cross.json
 
-progress_round_finish "all 4 steps dispatched"
+# Adaptive mesh-depth decision: peers vote in their replies; the runner records one
+# evidence-weighted depth row. If explicitly enabled, it executes bounded extra
+progress_depth_decision_from_files 3 \
+  blue_lead="$OUT/m_base.json" red_lead="$OUT/m_red.json" red_purple="$OUT/m_redp.json" blue_purple="$OUT/m_cross.json" >/dev/null || true
+NEXT_DEPTH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("next_depth",3))' "$OUT/depth_decision.json" 2>/dev/null || echo 3)"
+if [ "${HME_MESH_AUTO_ESCALATE:-0}" = "1" ] && [ "${NEXT_DEPTH:-3}" -ge 4 ]; then
+  PROFILE="$(PROJECT_ROOT="$REPO" python3 "$REPO/teams/rounds/depth_decision.py" --print-profile "$NEXT_DEPTH" 2>/dev/null || echo '{}')"
+  HME_MESH_ACTIVE_MAX_TOOLS="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("max_tools",14))' "$PROFILE" 2>/dev/null || echo 14)"
+  HME_MESH_ACTIVE_MAX_DURATION="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("max_duration",1200))' "$PROFILE" 2>/dev/null || echo 1200)"
+  export HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION
+  progress_set_total 5
+  gcap blue_purple E4 2 m-debate purple red_purple "DEBATE HALL escalation authorized by mesh_depth_decision. Resolve only remaining grounded contradictions/P0/P1 risks; no new ceremony. Prior cross-exam: $(reply m_cross.json | san)
+$DEPTH_CONTRACT" m_debate.json
+fi
+if [ "${HME_MESH_AUTO_ESCALATE:-0}" = "1" ] && [ "${NEXT_DEPTH:-3}" -ge 5 ]; then
+  progress_set_total 6
+  DEBATE="$(reply m_debate.json | san)"
+  gcap red_purple E4 2 m-post purple blue_purple "POST-PATCH/P0-P1 audit escalation authorized by mesh_depth_decision. Verify whether any grounded high-severity claim remains after debate; cite evidence or decline. Debate said: $DEBATE
+$DEPTH_CONTRACT" m_post.json
+fi
+unset HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION
+
+progress_round_finish "all dispatched steps complete; adaptive depth decision recorded"
 echo "measured-done"
 for f in m_base m_red m_redp m_cross; do printf '%s reply_bytes=%s\n' "$f" "$(reply $f.json | wc -c)"; done
