@@ -289,7 +289,7 @@ test('Claude Stop root block stays structured stdout and never surfaces policy s
   const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'EXHAUST PROTOCOL VIOLATION: fix work';
   const fields = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: 'FAIL: detectors policy blocked', exit_code: 0 });
-  assert.deepEqual(JSON.parse(fields.stdout), { decision: 'block', reason });
+  assert.deepEqual(JSON.parse(fields.stdout), { ok: false, reason });
   assert.equal(fields.stderr, ' ');
   assert.equal(fields.exit_code, 0);
 });
