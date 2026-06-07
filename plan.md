@@ -109,8 +109,8 @@ under the session goal.
 
 Theme: make the project easier to navigate and harder to bloat by encoding a
 compact ownership/non-ownership map, canonical destination rules, and objective
-hot/cold path boundaries. If approved, the deliverable is intentionally small:
-one boundary data file plus one conservative verifier/test set. This is not a
+hot/cold path boundaries. Executed deliverable is intentionally small: one
+boundary data file plus one conservative verifier/test set. This is not a
 compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
 
 ### Workstream 1 -- Canonical destination map
