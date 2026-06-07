@@ -76,6 +76,7 @@ gcap(){ # caller tier depth turnid chan target msg out  (capsule-grounded guard 
 # Harness fix (mesh-found P1): neutralize structural markers (## headings, GAP:)
 # in a prior peer's reply before embedding it in the NEXT peer's --message, so a
 san(){ sed -E 's/^#{1,6} /  /; s/^GAP:/gap:/' ; }
+# MESH_DEPTH_VOTE contract is injected into every peer prompt.
 DEPTH_CONTRACT="$(PROJECT_ROOT="$REPO" python3 "$REPO/teams/rounds/depth_decision.py" --emit-prompt-contract 2>/dev/null || true)"
 
 progress_init "measured:$BRIEF" 4
