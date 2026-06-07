@@ -47,6 +47,8 @@ function sanitizeHostStdout(event, stdout) {
   try {
     parsed = JSON.parse(extractFirstJsonDocument(text) || text);
   } catch (_err) {
+    // intentional-fail-closed: this is the outer Stop-hook JSON firewall. The
+    // adapter already logs hook-output-validation; if stdout still reaches here
     return JSON.stringify({ decision: 'block', reason: 'HME Stop hook produced invalid JSON; fixed to a valid Stop block. See hook-output-validation logs.' });
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return '{}';
