@@ -140,13 +140,13 @@ test('Claude adapter downgrades a reasonless Stop block to a valid no-decision r
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-stop-reasonless-'));
   try {
     const { validateClaudeStdout } = require('../../event_kernel/claude_adapter');
-    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block' }), tmp), '{}');
-    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: '' }), tmp), '{}');
-    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: '   ' }), tmp), '{}');
-    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: '' } }), tmp), '{}');
-    // a real block with a non-empty reason is preserved unchanged
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block' }), tmp), '{"ok":true}');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: '' }), tmp), '{"ok":true}');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: '   ' }), tmp), '{"ok":true}');
+    assert.equal(validateClaudeStdout('Stop', JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', additionalContext: '' } }), tmp), '{"ok":true}');
+    // a real block with a non-empty reason is converted to Claude Code's ok=false schema
     const real = validateClaudeStdout('Stop', JSON.stringify({ decision: 'block', reason: 'do X first' }), tmp);
-    assert.deepEqual(JSON.parse(real), { decision: 'block', reason: 'do X first' });
+    assert.deepEqual(JSON.parse(real), { ok: false, reason: 'do X first' });
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
