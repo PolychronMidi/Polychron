@@ -425,23 +425,40 @@ def _json_arg(value: str | None, default: Any) -> Any:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Compute a mesh depth escalation decision")
     parser.add_argument("--round", default=os.environ.get("HME_ROUND_NAME", "round"))
-    parser.add_argument("--current-depth", type=int, required=True)
-    parser.add_argument("--votes-json", required=True, help="JSON array or path to a JSON file")
+    parser.add_argument("--current-depth", type=int)
+    parser.add_argument("--votes-json", default="[]", help="JSON array or path to a JSON file")
+    parser.add_argument("--votes-from-files-json", default="{}", help="JSON object role->reply-json-file")
     parser.add_argument("--evidence-gates-json", default="[]", help="JSON array or path to a JSON file")
     parser.add_argument("--override-json", default="null", help="JSON object/null or path to a JSON file")
+    parser.add_argument("--current-evidence-epoch", default=os.environ.get("HME_MESH_EVIDENCE_EPOCH", ""))
     parser.add_argument("--ledger", default=os.environ.get("HME_ROUND_PROGRESS_FILE", ""))
     parser.add_argument("--append", action="store_true")
+    parser.add_argument("--emit-prompt-contract", action="store_true")
+    parser.add_argument("--print-profile", type=int)
     ns = parser.parse_args(argv)
 
+    if ns.emit_prompt_contract:
+        print(prompt_contract())
+        return 0
+    if ns.print_profile is not None:
+        print(json.dumps(profile_for_depth(ns.print_profile), sort_keys=True))
+        return 0
+    if ns.current_depth is None:
+        raise SystemExit("--current-depth required unless --emit-prompt-contract/--print-profile is used")
+
     votes = _json_arg(ns.votes_json, [])
+    files = _json_arg(ns.votes_from_files_json, {})
     gates = _json_arg(ns.evidence_gates_json, [])
     override = _json_arg(ns.override_json, None)
     if not isinstance(votes, list):
         raise SystemExit("--votes-json must decode to a list")
+    if not isinstance(files, dict):
+        raise SystemExit("--votes-from-files-json must decode to an object")
     if not isinstance(gates, list):
         raise SystemExit("--evidence-gates-json must decode to a list")
     if override is not None and not isinstance(override, dict):
         raise SystemExit("--override-json must decode to object or null")
+    votes = votes + collect_votes_from_reply_files({str(k): str(v) for k, v in files.items()}, ns.current_evidence_epoch or None)
 
     row = compute_depth_decision(
         current_depth=ns.current_depth,
@@ -449,6 +466,7 @@ def main(argv: list[str]) -> int:
         evidence_gates=gates,
         override=override,
         round_name=ns.round,
+        current_evidence_epoch=ns.current_evidence_epoch or None,
     )
     if ns.append:
         if not ns.ledger:
