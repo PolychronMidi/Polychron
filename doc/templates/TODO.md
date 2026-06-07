@@ -11,4 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 30
-#31 1_ implement evidence-weighted cumulative mesh depth voting with durable decision ledger rows and regression tests
+#31 5_ implement evidence-weighted cumulative mesh depth voting with durable decision ledger rows and regression tests; added depth_decision.py, round_status rendering, docs, and tests for unsupported-vote anti-bloat, grounded vetoes, driver overrides, de-escalation, and durable append
