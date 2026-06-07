@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 
 from ._base import VerdictResult, Verifier, _PROJECT, failed, passed, register, warned
