@@ -11,4 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 32
-#33 1_ make swap size-gate skip-aware and statusline-grounded: never bail to a providers_to_skip provider, pick largest-window non-skipped chain model that fits, ground gate in real statusline usage (not inflated estimate) so it stops false-bailing under-window turns, add fail-loud telemetry, with regression tests
+#33 5_ make swap size-gate skip-aware and statusline-grounded: never bail to a providers_to_skip provider, pick largest-window non-skipped chain model that fits, ground gate in real statusline usage (not inflated estimate) so it stops false-bailing under-window turns, add fail-loud telemetry, with regression tests; fixed split-brain statusline/semantic pressure, skip-aware size-gate reroute, LIFESAVER telemetry, and regression coverage
