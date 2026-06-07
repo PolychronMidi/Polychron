@@ -264,7 +264,7 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000, eventName = 'hoo
     combinedStderr += r.stderr;
     if (r.exit_code !== 0 && firstNonZeroCode === 0) firstNonZeroCode = r.exit_code;
     // Early-exit on block decision (stop/pretooluse hooks may emit JSON block).
-    if (/\"decision\"\s*:\s*\"block\"/.test(r.stdout)) break;
+    if (/\"decision\"\s*:\s*\"block\"/.test(r.stdout) || /\"ok\"\s*:\s*false/.test(r.stdout)) break;
   }
   // prevent Claude Code from displaying empty stderr as a hook error
   if (!combinedStderr && firstNonZeroCode === 0) combinedStderr = ' ';
