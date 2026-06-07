@@ -98,6 +98,30 @@ class RoundStatusTests(unittest.TestCase):
             elif led.exists():
                 led.unlink()
 
+    def test_depth_decision_rows_render_without_progress_fields(self):
+        import io
+        import contextlib
+        led = Path(round_status._LEDGER)
+        led.parent.mkdir(parents=True, exist_ok=True)
+        backup = led.read_text(encoding="utf-8") if led.exists() else None
+        try:
+            _ledger(led, [
+                {"ts": "t0", "round": "r", "step": "round", "status": "start", "progress": "0/1"},
+                {"event": "mesh_depth_decision", "round": "r", "current_depth": 2, "next_depth": 3, "decision": "escalate_to_cross_exam", "depth_pressure": 1.25, "evidence_gates": ["contradiction"], "anti_bloat_check": "new evidence required next turn"},
+            ])
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                round_status.main([])
+            out = buf.getvalue()
+            self.assertIn("mesh_depth_decision 2->3", out)
+            self.assertIn("pressure=1.25", out)
+            self.assertIn("gates=contradiction", out)
+        finally:
+            if backup is not None:
+                led.write_text(backup, encoding="utf-8")
+            elif led.exists():
+                led.unlink()
+
     def test_main_smoke_returns_zero(self):
         # The reader itself must never crash (it is the flying-blind guard).
         self.assertEqual(round_status.main([]), 0)
