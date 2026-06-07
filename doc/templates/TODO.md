@@ -11,4 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 36
-#37 1_ execute plan.md Phase 15 via prior deep mesh consultation: add project boundary data, hot/cold path verifier, tests, HCI self-coverage, update plan status and TODO
+#37 5_ execute plan.md Phase 15 via prior deep mesh consultation: added project_boundaries.json, project-boundaries HCI verifier, tests, self-coverage import, updated plan status to executed, and fixed Stop-hook ok schema/SSE normalization blockers
