@@ -100,6 +100,24 @@ OVERRIDE_REASONS = {
 }
 
 _BLANK_EVIDENCE = {"", "none", "n/a", "na", "null", "no", "uncited"}
+_POLICY_PATH = Path(__file__).with_name("depth_policy.json")
+
+
+def _load_policy() -> dict[str, Any]:
+    try:
+        data = json.loads(_POLICY_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+_POLICY = _load_policy()
+ROLE_WEIGHTS = {**ROLE_WEIGHTS, **(_POLICY.get("role_weights") or {})}
+CONFIDENCE_WEIGHTS = {**CONFIDENCE_WEIGHTS, **(_POLICY.get("confidence_weights") or {})}
+GATE_MIN_DEPTH = {**GATE_MIN_DEPTH, **(_POLICY.get("gate_min_depth") or {})}
+DEESCALATE_REASONS = set(_POLICY.get("deescalate_reasons") or DEESCALATE_REASONS)
+OVERRIDE_REASONS = set(_POLICY.get("override_reasons") or OVERRIDE_REASONS)
+ESCALATION_PROFILES = _POLICY.get("escalation_profiles") or {}
 
 
 def _clamp_depth(value: Any, default: int = 0) -> int:
