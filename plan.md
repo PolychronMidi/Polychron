@@ -116,7 +116,7 @@ compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
 ### Workstream 1 -- Canonical destination map
 - Scope: turn the existing anti-duplication rule into a small machine-readable
   routing table for future artifacts.
-- Delivery if approved: add `tools/HME/project_boundaries.json` with a
+- Delivered: `tools/HME/project_boundaries.json` with a
   `canonical_destinations` section mapping: work state -> `doc/templates/TODO.md`;
   phase intent -> `plan.md`; peer dialogue -> `teams/*.md`; machine policy data ->
   beside the consumer; runtime evidence -> `teams/runtime/output/` or
