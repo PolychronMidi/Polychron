@@ -282,11 +282,12 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   try { chainInfo = buildMode1Chain(payload, env, cfg, { projectRoot }); }
   catch (err) { console.error(`[hme-proxy] MODE=1 chain build failed: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(payload.model) }; }
   result.swapChain = chainInfo.chain || [];
+  let primarySkipped = false;
   if (requestedClaudeModel) {
     const primary = findAnthropicModelByApiId(cfg, requestedClaudeModel) || { id: requestedClaudeModel, api_model: requestedClaudeModel, provider: 'anthropic' };
     const skipSet = providerSkipSet(cfg, env);
     const primaryOmni = omniProviderForConfigProvider(primary.provider || '', env).replace(/_/g, '-');
-    const primarySkipped = skipSet.has(primaryOmni)
+    primarySkipped = skipSet.has(primaryOmni)
       || skipSet.has(String(primary.provider || ''))
       || (primary.provider === 'anthropic' && (skipSet.has('claude') || skipSet.has('anthropic')))
       || (primary.provider === 'claude' && (skipSet.has('claude') || skipSet.has('anthropic')));
