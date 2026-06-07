@@ -9,6 +9,11 @@ const { PROJECT_ROOT } = require('./shared');
 
 const _STATUSLINE_STALE_MS = 5 * 60 * 1000;
 
+function positiveNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function _statuslineFile(env = process.env, projectRoot = PROJECT_ROOT) {
   return (env && env.HME_STATUSLINE_PATH)
     || path.join(projectRoot || process.cwd(), 'tools', 'HME', 'runtime', 'claude-statusline-raw.json');
