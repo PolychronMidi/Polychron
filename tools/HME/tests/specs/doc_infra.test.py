@@ -8,8 +8,10 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
+UPDATE = ROOT / "doc/infra/update.py"
 UPDATE_SELF = ROOT / "doc/infra/update_self_coherence.py"
 UPDATE_INDEX = ROOT / "doc/infra/update_full_indexes.py"
+README = ROOT / "doc/infra/README.md"
 SELF_DOC = ROOT / "doc/self-coherence-full.md"
 
 
