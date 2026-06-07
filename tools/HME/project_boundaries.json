@@ -10,7 +10,7 @@
     "product_behavior": "src/"
   },
   "path_classes": {
-    "hot": ["tools/HME/proxy/", "tools/HME/event_kernel/", "src/"],
+    "hot": ["tools/HME/proxy/", "tools/HME/event_kernel/"],
     "cold": ["teams/rounds/", "tools/HME/scripts/verify_coherence/", "log/todo/", "doc/"],
     "state": ["tools/HME/runtime/", "teams/runtime/", "tmp/"],
     "policy": ["config/", "tools/HME/*.json", ".env"]
