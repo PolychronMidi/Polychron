@@ -309,26 +309,11 @@ function createContextBudget() {
   }
 
   function statuslineContextUsage() {
-    try {
-      // HME_STATUSLINE_PATH is an optional relocation override (default: the
-      // canonical runtime path). Lets tests pin an isolated statusline so a
-      const file = process.env.HME_STATUSLINE_PATH
-        || path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'claude-statusline-raw.json');
-      const stat = fs.statSync(file);
-      if ((Date.now() - stat.mtimeMs) > 5 * 60 * 1000) return { used: 0, size: 0 };
-      const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-      const ctx = data && data.context_window || {};
-      const usage = ctx.current_usage || {};
-      const used = positiveNumber(usage.input_tokens)
-          + positiveNumber(usage.cache_read_input_tokens)
-          + positiveNumber(usage.cache_creation_input_tokens)
-        || positiveNumber(ctx.total_input_tokens);
-      const rawSize = positiveNumber(ctx.context_window_size);
-      const modelId = String((data && data.model && (data.model.id || data.model.api_model)) || '');
-      const registrySize = modelId ? resolveModelCtx(modelId) : 0;
-      const size = (registrySize && registrySize !== 1000000 ? registrySize : 0) || rawSize;
-      return { used, size };
-    } catch (_e) { return { used: 0, size: 0 }; }
+    const { statuslineUsage } = require('./context_pressure');
+    const sl = statuslineUsage(process.env, PROJECT_ROOT);
+    const registrySize = sl.modelId ? resolveModelCtx(sl.modelId) : 0;
+    const size = (registrySize && registrySize !== 1000000 ? registrySize : 0) || sl.size;
+    return { used: sl.used, size };
   }
 
   function omniContextThresholdBytes(swapModel) {
