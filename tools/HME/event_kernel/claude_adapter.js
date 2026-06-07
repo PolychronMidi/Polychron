@@ -213,27 +213,6 @@ function validateClaudeStdout(event, stdout, root) {
   // Whitespace-only stdout (' ', '\n') is "no decision" -- it MUST relay as the
   // empty string. Returning the raw whitespace makes the host parse ' ' as JSON
   if (!text) return '';
-  if (event === 'Stop') {
-    try {
-      const stopParsed = JSON.parse(text);
-      if (stopParsed && stopParsed.hookSpecificOutput && typeof stopParsed.hookSpecificOutput === 'object' && !Array.isArray(stopParsed.hookSpecificOutput)) {
-        const hso = stopParsed.hookSpecificOutput;
-        const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
-          : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
-          : typeof stopParsed.reason === 'string' ? stopParsed.reason
-          : '';
-        if (reason && reason.trim()) {
-          const repaired = { ...stopParsed };
-          delete repaired.hookSpecificOutput;
-          repaired.decision = 'block';
-          repaired.reason = reason;
-          return JSON.stringify(repaired);
-        }
-        // empty/whitespace reason: fall through to normalize, which downgrades
-        // a reasonless Stop block to a valid no-decision result.
-      }
-    } catch (_e) { /* normal JSON validation below logs the malformed Stop payload */ }
-  }
   let parsed;
   try {
     parsed = JSON.parse(extractFirstJsonDocument(text) || text);
