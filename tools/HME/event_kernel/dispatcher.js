@@ -200,6 +200,7 @@ function _finishHook(eventName, scriptPath, startedAt, result) {
 
 function _policyDecisionOutput(stdout) {
   return /"decision"\s*:\s*"block"/.test(stdout)
+    || /"ok"\s*:\s*false/.test(stdout)
     || /"permissionDecision"\s*:\s*"deny"/.test(stdout);
 }
 
