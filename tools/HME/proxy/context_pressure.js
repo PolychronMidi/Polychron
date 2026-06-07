@@ -60,17 +60,25 @@ function estimateTokens(payload, env = process.env, projectRoot = PROJECT_ROOT, 
 }
 
 // Unified pressure reading against a target model window.
-//   { usedTokens, budget, fraction, headroom }
-function contextPressure({ payload, modelId, env = process.env, projectRoot = PROJECT_ROOT } = {}) {
+//   { usedTokens, budget, source, fraction, headroom }
+// preferStatusline: when true and the statusline truth file is fresh with real
+function contextPressure({ payload, modelId, env = process.env, projectRoot = PROJECT_ROOT, preferStatusline = false } = {}) {
   const budget = inputBudgetFor(modelId);
-  const usedTokens = estimateTokens(payload, env, projectRoot, modelId);
+  let usedTokens = null;
+  let source = 'semantic';
+  if (preferStatusline) {
+    const sl = statuslineUsage(env, projectRoot);
+    if (sl.used > 0) { usedTokens = sl.used; source = 'statusline'; }
+  }
+  if (usedTokens == null) usedTokens = estimateTokens(payload, env, projectRoot, modelId);
   const known = budget > 0;
   return {
     usedTokens,
     budget,
+    source,
     fraction: known ? usedTokens / budget : null,
     headroom: known ? Math.max(0, budget - usedTokens) : null,
   };
 }
 
-module.exports = { inputBudgetFor, estimateTokens, contextPressure };
+module.exports = { inputBudgetFor, estimateTokens, contextPressure, statuslineUsage };
