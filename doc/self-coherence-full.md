@@ -1,9 +1,6 @@
 # HME Full Reference
 
-Detailed reference for [`tools/HME/`](../tools/HME/), distilled from the former per-topic docs.
-Keep this as the single source of truth for HME architecture, lifecycle
-behavior, state ownership, local inference, self-coherence, and operational
-runbooks.
+Detailed reference for [`tools/HME/`](../tools/HME/).
 
 <!-- doc-infra-nav:start -->
 ## Navigation
