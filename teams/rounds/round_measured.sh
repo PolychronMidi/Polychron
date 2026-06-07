@@ -87,7 +87,8 @@ gcap driver E5 0 m-base driver blue_lead "BASELINE single reviewer. Per the caps
 $DEPTH_CONTRACT" m_base.json
 
 # === MULTI-PEER, sequential ===
-gcap driver E5 0 m-red driver red_lead "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent." m_red.json
+gcap driver E5 0 m-red driver red_lead "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent.
+$DEPTH_CONTRACT" m_red.json
 RED="$(reply m_red.json | san)"
 gcap red_lead E4 1 m-redp red red_purple "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED" m_redp.json
 REDP="$(reply m_redp.json | san)"
