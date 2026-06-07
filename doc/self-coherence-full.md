@@ -345,6 +345,11 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 - Project boundary map: [`tools/HME/project_boundaries.json`](../tools/HME/project_boundaries.json) -- 9 subsystem rows, 7 canonical destination classes.
 - Mesh depth policy: [`teams/rounds/depth_policy.json`](../teams/rounds/depth_policy.json) -- 6 depth profiles, 28 evidence gates.
 - Model/provider registry: [`config/models.json`](../config/models.json) -- 6 providers declared, 3 currently paused by `providers_to_skip`.
+- Service registry: [`tools/HME/config/services.json`](../tools/HME/config/services.json) -- 8 service declarations.
+- Public i/ command registry: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json) -- 10 command shims, 0 script shims.
+- Adapter boundary registry: [`tools/HME/config/adapter-boundaries.json`](../tools/HME/config/adapter-boundaries.json) -- 7 boundary classes.
+- Dispatcher route contract: [`tools/HME/event_kernel/dispatcher-routes.json`](../tools/HME/event_kernel/dispatcher-routes.json) -- 8 hook-event routes, 6 observation events.
+- State-file registry: [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) -- 0 typed state files, 37 single-owner domains.
 - HCI verifier registry: [`tools/HME/scripts/verify_coherence/`](../tools/HME/scripts/verify_coherence/) -- 88 verifier names discovered from source.
 
 Canonical destination summary:
