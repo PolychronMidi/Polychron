@@ -214,7 +214,20 @@ function isBenignHookStderr(stderr) {
 const CLAUDE_RELAY_STRATEGIES = {
   Stop: {
     apply(ctx) {
-      if (ctx.code === 0 && ctx.stdout) ctx.stderr = ' ';
+      if (ctx.code !== 0 || !ctx.stdout) return;
+      const parsed = parseJson(ctx.stdout);
+      if (parsed && typeof parsed.ok === 'boolean') {
+        ctx.stdout = parsed.ok ? JSON.stringify({ ok: true }) : JSON.stringify({ ok: false, reason: String(parsed.reason || 'Stop hook blocked without reason') });
+      } else if (parsed && parsed.decision === 'block' && parsed.reason) {
+        ctx.stdout = JSON.stringify({ ok: false, reason: String(parsed.reason) });
+      } else if (parsed && parsed.hookSpecificOutput && typeof parsed.hookSpecificOutput === 'object') {
+        const hso = parsed.hookSpecificOutput;
+        const reason = String(hso.additionalContext || hso.permissionDecisionReason || parsed.reason || '').trim();
+        ctx.stdout = reason ? JSON.stringify({ ok: false, reason }) : JSON.stringify({ ok: true });
+      } else if (parsed) {
+        ctx.stdout = JSON.stringify({ ok: true });
+      }
+      if (ctx.stdout) ctx.stderr = ' ';
     },
   },
   PreToolUse: {
