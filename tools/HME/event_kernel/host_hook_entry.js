@@ -144,4 +144,5 @@ module.exports = {
   adapterForHost,
   shouldBypassPeerLifecycle,
   failSafeStdout,
+  sanitizeHostStdout,
 };
