@@ -126,7 +126,8 @@ function main() {
     const timedOut = child.error.code === 'ETIMEDOUT';
     exitFailSafe(event, `adapter ${timedOut ? 'timed out' : 'failed'} for ${event}: ${child.error.message}`);
   }
-  if (child.stdout) process.stdout.write(child.stdout);
+  const safeStdout = sanitizeHostStdout(event, child.stdout || '');
+  if (safeStdout) process.stdout.write(safeStdout);
   if (child.stderr) process.stderr.write(child.stderr);
   process.exit(child.status == null ? 1 : child.status);
 }
