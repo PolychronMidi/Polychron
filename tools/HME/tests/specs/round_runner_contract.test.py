@@ -30,6 +30,13 @@ class RoundRunnerContractTests(unittest.TestCase):
         self.assertIn("_PROGRESS_FAILED", text)
         self.assertIn('progress "round" "failed"', text)
 
+    def test_progress_helper_exposes_depth_decision_contract(self):
+        text = PROGRESS.read_text(encoding="utf-8")
+        self.assertIn("progress_depth_decision()", text)
+        self.assertIn("progress_depth_decision_from_files()", text)
+        self.assertIn("depth_decision.py", text)
+        self.assertIn("HME_MESH_DRIVER_VOTE_JSON", text)
+
     def test_first_class_runners_use_typed_progress_and_named_targets(self):
         for path in ROUND_RUNNERS:
             text = path.read_text(encoding="utf-8")
