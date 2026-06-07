@@ -348,7 +348,7 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 - Project boundary map: [`tools/HME/project_boundaries.json`](../tools/HME/project_boundaries.json) -- 9 subsystem rows, 7 canonical destination classes.
 - Mesh depth policy: [`teams/rounds/depth_policy.json`](../teams/rounds/depth_policy.json) -- 6 depth profiles, 28 evidence gates.
 - Model/provider registry: [`config/models.json`](../config/models.json) -- 6 providers declared, 3 currently paused by `providers_to_skip`.
-- HCI verifier registry: [`tools/HME/scripts/verify_coherence/`](../tools/HME/scripts/verify_coherence/) -- 87 verifier names discovered from source.
+- HCI verifier registry: [`tools/HME/scripts/verify_coherence/`](../tools/HME/scripts/verify_coherence/) -- 88 verifier names discovered from source.
 
 Canonical destination summary:
 - `machine_policy_data` -> `beside_consumer`
