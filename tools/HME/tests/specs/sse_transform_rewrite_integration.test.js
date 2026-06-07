@@ -92,6 +92,28 @@ test('SseTransform applies full slop stripping to normal assistant text without 
   assert.equal(out[1][1].delta.text, 'K. Fix & test');
 });
 
+test('SseTransform preserves streamed structured JSON for Claude Code Stop goal verdicts', async () => {
+  purgeProxyModules();
+  const { slopStripRewrite, stopHookRewritersForSlot } = require('../../proxy/sse_rewriters');
+  const rawJson = '{"continue":false,"reason":"execute all of plan.md via deep mesh consultation"}';
+  const raw = [
+    event('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }),
+    event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: rawJson.slice(0, 20) } }),
+    event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: rawJson.slice(20) } }),
+    event('content_block_stop', { type: 'content_block_stop', index: 0 }),
+  ].join('');
+  const rewriters = [
+    ...stopHookRewritersForSlot('pre-tool'),
+    ...stopHookRewritersForSlot('post-tool-pre-slop'),
+    slopStripRewrite,
+    ...stopHookRewritersForSlot('post-slop'),
+  ];
+  const out = parseSse(await runSse(raw, rewriters));
+  const text = out.filter(([name]) => name === 'content_block_delta').map(([, data]) => data.delta.text).join('');
+  assert.equal(text, rawJson);
+  assert.deepEqual(JSON.parse(text), { continue: false, reason: 'execute all of plan.md via deep mesh consultation' });
+});
+
 test('SseTransform strips assistant-emitted hook UI echoes and writes crying_wolf error', async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-sse-hook-ui-'));
   const oldRoot = process.env.PROJECT_ROOT;
