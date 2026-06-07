@@ -119,7 +119,7 @@ test('Claude Stop policy feedback relays as root block stdout', () => {
   });
   assert.equal(relayed.exit_code, 0);
   assert.equal(relayed.stderr, ' ');
-  assert.deepEqual(JSON.parse(relayed.stdout), { decision: 'block', reason });
+  assert.deepEqual(JSON.parse(relayed.stdout), { ok: false, reason });
 });
 
 
