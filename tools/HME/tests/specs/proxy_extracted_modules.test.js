@@ -866,7 +866,7 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
   } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
-test('mode 1 provider override applies capability matrix request overrides', () => quiet(() => {
+test('mode 1 provider override applies capability matrix request overrides', () => withStatuslineUnavailable(() => quiet(() => {
   for (const provider of ['aihubmix', 'kilo-gateway']) {
     const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
     try {
@@ -892,7 +892,7 @@ test('mode 1 provider override applies capability matrix request overrides', () 
       assert.equal(clientReq.headers['x-api-key'], undefined);
     } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
   }
-}));
+})));
 
 test('passthrough compaction keeps Claude payload coherent after shrinking', () => {
   const logs = [];
