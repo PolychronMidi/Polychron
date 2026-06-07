@@ -1133,6 +1133,10 @@ test('context budget compaction uses continuous exponential pressure from high-w
     assert.ok(late.targetTokens > 900 && late.targetTokens <= 990, `late target=${late.targetTokens}`);
     assert.ok(late.keepMin < mid.keepMin, `late keep=${late.keepMin} mid=${mid.keepMin}`);
     assert.ok(late.toolResultByteFloor < mid.toolResultByteFloor, `late floor=${late.toolResultByteFloor} mid=${mid.toolResultByteFloor}`);
+    const overFull = planFor(1050);
+    assert.equal(overFull.allowMessageDrop, true);
+    assert.ok(overFull.targetTokens < 1000, `over-full target must be below max_input_tokens, got ${overFull.targetTokens}`);
+    assert.ok(overFull.targetTokens >= 900, `over-full target should not pin back near 80-85%, got ${overFull.targetTokens}`);
     assert.deepEqual(late.compactionKnobBaselines, {
       keepMin: 40,
       staleToolKeepTurns: 40,
