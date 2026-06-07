@@ -104,8 +104,11 @@ progress_depth_decision_from_files 3 \
 NEXT_DEPTH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("next_depth",3))' "$OUT/depth_decision.json" 2>/dev/null || echo 3)"
 if [ "${HME_MESH_AUTO_ESCALATE:-0}" = "1" ] && [ "${NEXT_DEPTH:-3}" -ge 4 ]; then
   PROFILE="$(PROJECT_ROOT="$REPO" python3 "$REPO/teams/rounds/depth_decision.py" --print-profile "$NEXT_DEPTH" 2>/dev/null || echo '{}')"
-  HME_MESH_ACTIVE_MAX_TOOLS="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("max_tools",14))' "$PROFILE" 2>/dev/null || echo 14)"
-  HME_MESH_ACTIVE_MAX_DURATION="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("max_duration",1200))' "$PROFILE" 2>/dev/null || echo 1200)"
+  # Honor the dispatch guard leash at its intent: the adaptive budget can never
+  # exceed the guard's own duration/tool caps (it denies anything larger).
+  DURATION_CAP="${HME_TEAM_DURATION_CAP:-1200}"; TOOL_CAP="${HME_TEAM_TOOL_CAP:-20}"
+  HME_MESH_ACTIVE_MAX_TOOLS="$(python3 -c 'import json,sys; print(min(int(sys.argv[2]), json.loads(sys.argv[1]).get("max_tools",14)))' "$PROFILE" "$TOOL_CAP" 2>/dev/null || echo 14)"
+  HME_MESH_ACTIVE_MAX_DURATION="$(python3 -c 'import json,sys; print(min(int(sys.argv[2]), json.loads(sys.argv[1]).get("max_duration",1100)))' "$PROFILE" "$DURATION_CAP" 2>/dev/null || echo 1100)"
   export HME_MESH_ACTIVE_MAX_TOOLS HME_MESH_ACTIVE_MAX_DURATION
   progress_set_total 5
   gcap blue_purple E4 2 m-debate purple red_purple "DEBATE HALL escalation authorized by mesh_depth_decision. Resolve only remaining grounded contradictions/P0/P1 risks; no new ceremony. Prior cross-exam: $(reply m_cross.json | san)
