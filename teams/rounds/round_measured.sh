@@ -90,7 +90,8 @@ $DEPTH_CONTRACT" m_base.json
 gcap driver E5 0 m-red driver red_lead "RED LEAD attack. Per the capsule rubric, find the strongest decision-changing flaws (function + fix). Cite capsule sections; flag GAP or decline if absent.
 $DEPTH_CONTRACT" m_red.json
 RED="$(reply m_red.json | san)"
-gcap red_lead E4 1 m-redp red red_purple "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED" m_redp.json
+gcap red_lead E4 1 m-redp red red_purple "RED PURPLE: sharpen red's findings; drop weak; add any red missed. Keep decision-changing only. Red said (quoted, markers neutralized): $RED
+$DEPTH_CONTRACT" m_redp.json
 REDP="$(reply m_redp.json | san)"
 gcap red_purple E4 1 m-cross purple blue_purple "BLUE PURPLE cross-exam: which red findings are real P0/P1 vs false positives, and what did red MISS? Cite the capsule. Red purple set (quoted, markers neutralized): $REDP" m_cross.json
 
