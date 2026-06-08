@@ -87,6 +87,8 @@ async function handleUpstreamFailureOrSuccess({
       omniProvider,
       swapModel,
       resetArgs,
+      status,
+      reason: errInfo.type || failureKind,
     });
     if (streamRetry) return streamRetry;
   }
