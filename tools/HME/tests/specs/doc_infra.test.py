@@ -43,6 +43,16 @@ class DocInfraTests(unittest.TestCase):
             self.assertIn(needle, doc)
         self.assertIn(f"{len(projected)} required source projections", doc)
 
+    def test_generated_block_replacement_preserves_surrounding_prose(self):
+        mod = _load(UPDATE_SELF)
+        original = "# X\n\npre\n\n<!-- doc-infra-generated:start -->\nstale\n<!-- doc-infra-generated:end -->\n\npost\n"
+        updated = mod.update_text(original, ROOT)
+        self.assertIn("pre", updated)
+        self.assertIn("post", updated)
+        self.assertNotIn("stale", updated)
+        self.assertEqual(updated.count("<!-- doc-infra-generated:start -->"), 1)
+        self.assertIn("tools/HME/config/generated-doc-sources.json", updated)
+
     def test_doc_infra_readme_is_directory_intent_and_points_to_runner(self):
         text = README.read_text(encoding="utf-8")
         self.assertIn("directory intent only", text)
