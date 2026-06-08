@@ -144,7 +144,8 @@ it directly.
 - Add shared behavior to the event kernel, proxy middleware, policies, or
   worker modules.
 - Use filesystem IPC at process boundaries.
-- Prefer fail-loud behavior over silent fallback.
+- Prefer fail-loud behavior over silent fallback; no fallback across policy
+  boundaries may masquerade as mercy.
 - Keep direct mode and proxy mode using the same dispatcher path.
 
 ## Command Surface
