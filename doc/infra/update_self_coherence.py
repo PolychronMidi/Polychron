@@ -63,6 +63,9 @@ def summary_for(root: Path, source: dict) -> str:
     if key == "state_files":
         data = load_json(path)
         return f"{len(data.get('files') or {})} typed state files, {len(data.get('single_owner') or {})} single-owner domains"
+    if key == "phase_evidence":
+        data = load_json(path)
+        return f"{len(data.get('phases') or [])} phase proof rows, {len(data.get('closes_enum') or [])} closes classes, {len(data.get('does_not_prove_enum') or [])} non-proof bounds"
     if key == "verifiers":
         return f"{len(verifier_names(root))} verifier names discovered from source"
     return "source declared"
