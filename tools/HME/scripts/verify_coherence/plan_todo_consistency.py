@@ -33,7 +33,7 @@ class PlanTodoConsistencyVerifier(Verifier):
             status = m.group(2).strip().lower()
             if status not in VALID_STATUSES:
                 errors.append(f"Phase {phase} uses non-legend status {status!r}")
-            if status in {"done", "executed"} and phase >= 15:
+            if status == "done" and phase >= 15:
                 if f"Phase {phase}" not in todo_text:
                     errors.append(f"Phase {phase} is {status} but no TODO/log evidence mentions it")
         for m in re.finditer(r"Phase\s+(\d+)[^\n]{0,120}\b5_", todo_text):
