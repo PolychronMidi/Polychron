@@ -254,7 +254,8 @@ Telemetry lands in `src/output/metrics/detector-stats.jsonl`.
 
 [`tools/HME/scripts/verify-coherence.py`](../tools/HME/scripts/verify-coherence.py) scores the HME Coherence Index from
 weighted verifiers across documentation, code, state, coverage, runtime,
-topology, and interface contracts.
+topology, and interface contracts. HCI fights drift with evidence, not
+righteousness itself; it must not overclaim what checks do not prove.
 
 Useful commands:
 
