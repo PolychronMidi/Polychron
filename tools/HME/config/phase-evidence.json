@@ -31,7 +31,7 @@
   "phases": [
     {
       "phase": 15,
-      "plan_anchor": "## Phase 15 (executed) -- Project boundary map + hot/cold path minimalism",
+      "plan_anchor": "## Phase 15 (done) -- Project boundary map + hot/cold path minimalism",
       "todo_refs": [
         "log/todo/set36.md#37",
         "log/todo/set38.md#1",
