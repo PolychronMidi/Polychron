@@ -172,8 +172,10 @@ automatically.
 2. Edit through native tools; HME enriches context automatically.
 3. `i/review mode=forget` after changes.
 4. Run the project pipeline for behavioral changes.
-5. Accept or write a KB entry with [`i/learn`](../tools/HME/i/learn).
-6. For HME substrate changes, run `i/hme admin action=selftest`.
+5. When failure appears, name it, fix the root cause narrowly, verify
+   concretely, and report completion only after evidence.
+6. Accept or write a KB entry with [`i/learn`](../tools/HME/i/learn).
+7. For HME substrate changes, run `i/hme admin action=selftest`.
 
 The onboarding walkthrough in [templates/ONBOARDING.md](templates/ONBOARDING.md)
 is the detailed first-session state machine.
