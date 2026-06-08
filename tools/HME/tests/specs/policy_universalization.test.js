@@ -239,6 +239,14 @@ test('proxy supervisor restart reloads live proxy child semantics', () => {
   assert.doesNotMatch(restart, /still responding after listener cleanup -- aborting/);
 });
 
+test('proxy supervisor only LIFESAVERs failed shuffler auto-heal', () => {
+  const script = fs.readFileSync(path.join(root, 'tools/HME/hooks/direct/proxy-supervisor.sh'), 'utf8');
+  assert.match(script, /_sv_shuffler_proc_alive/);
+  assert.match(script, /respawned dead shuffler proc \$\{name\}; replacement alive/);
+  assert.match(script, /LIFESAVER \$\{name\} was dead and respawn failed/);
+  assert.doesNotMatch(script, /was dead; respawned by proxy-supervisor \(auto-heal had stopped\)/);
+});
+
 test('proxy supervisor clears reload markers from slot health git sha', () => {
   const script = fs.readFileSync(path.join(root, 'tools/HME/hooks/direct/proxy-supervisor.sh'), 'utf8');
   assert.match(script, /_SV_SLOT_HEALTH_A/);
