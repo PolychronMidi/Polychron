@@ -58,6 +58,20 @@ test('incident registry can suppress resolver-proven historical lines', () => {
   }
 });
 
+test('incident registry can suppress resolver-proven transient upstream 200 api_error lines', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-upstream-200-'));
+  try {
+    fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'tmp/payload.json'), JSON.stringify({ model: 'cx/gpt-5.5-xhigh', messages: [] }));
+    fs.writeFileSync(path.join(root, 'tmp/payload.response'), 'event: error\ndata: {"type":"error","error":{"type":"api_error","message":"An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID abc in your message."}}\n\n');
+    fs.writeFileSync(path.join(root, 'tmp/payload.headers.json'), JSON.stringify({ 'content-type': 'text/event-stream' }));
+    const line = '[T] UPSTREAM_200_INTERACTIVE: omniroute 200 api_error [interactive]: An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID abc in your message. (request_id=?, snapshot=tmp/payload.json)';
+    assert.equal(incidents.unresolvedLines(root, [line]).length, 0);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('incident ontology separates observations from unresolved agent debt', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-observation-'));
   try {
