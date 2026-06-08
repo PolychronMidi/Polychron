@@ -163,8 +163,8 @@ async function retryOmniCredentialFailure({
   return null;
 }
 
-async function retryStreamTimeout({ outBody, upstreamOpts, upstreamHeaders, transport, sessionForTelemetry, pathLabel, omniProvider, swapModel, resetArgs }) {
-  console.error(`omniroute 502 stream_timeout -- same-target retry on ${omniProvider}/${swapModel} before chain advance`);
+async function retryStreamTimeout({ outBody, upstreamOpts, upstreamHeaders, transport, sessionForTelemetry, pathLabel, omniProvider, swapModel, resetArgs, status = '?', reason = 'stream_timeout' }) {
+  console.error(`omniroute ${status} ${reason} -- same-target retry on ${omniProvider}/${swapModel} before chain advance`);
   const retryHeaders = { ...upstreamHeaders, 'content-length': String(outBody.length) };
   const retryOpts = { ...upstreamOpts, headers: retryHeaders };
   try {
