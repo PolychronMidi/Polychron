@@ -9,6 +9,7 @@
     { "label": "Adapter boundary registry", "path": "tools/HME/config/adapter-boundaries.json", "summary": "adapter_boundaries" },
     { "label": "Dispatcher route contract", "path": "tools/HME/event_kernel/dispatcher-routes.json", "summary": "dispatcher_routes" },
     { "label": "State-file registry", "path": "tools/HME/config/state-files.json", "summary": "state_files" },
+    { "label": "Phase evidence firewall", "path": "tools/HME/config/phase-evidence.json", "summary": "phase_evidence" },
     { "label": "HCI verifier registry", "path": "tools/HME/scripts/verify_coherence/", "summary": "verifiers" }
   ]
 }
