@@ -58,6 +58,43 @@ function _upstreamContextWindow(line, root) {
   };
 }
 
+function _upstreamTransient200ApiError(line, root) {
+  if (!/UPSTREAM_200_INTERACTIVE:\s*omniroute 200 api_error \[interactive\]/i.test(line)) return null;
+  if (/context window/i.test(line)) return null;
+  const m = /snapshot=([^\s)]+)/.exec(line);
+  const snapshotRel = m && m[1] ? m[1] : '';
+  const snapshot = snapshotRel ? path.join(root, snapshotRel) : '';
+  const response = snapshot ? _readBuf(snapshot.replace(/\.json$/, '.response')) : null;
+  const headers = snapshot ? (_readJson(snapshot.replace(/\.json$/, '.headers.json')) || {}) : {};
+  let errInfo = null;
+  try {
+    if (response) {
+      const { detectUpstreamFailure } = require('./contexts/failure_policy/failure_classification');
+      errInfo = detectUpstreamFailure(200, headers, response);
+    }
+  } catch (_e) { /* resolver proof falls back to the line text below */ }
+  if (!errInfo) {
+    const msg = (/api_error \[interactive\]:\s*(.*?)\s*\(request_id=/.exec(line) || [])[1] || '';
+    errInfo = { type: 'api_error', message: msg };
+  }
+  const { classifyFailure } = require('./contexts/failure_policy/omni_failure_policy');
+  const failureKind = classifyFailure(200, errInfo);
+  const resolved = failureKind === 'stream_timeout';
+  return {
+    resolved,
+    kind: 'upstream_transient_200_api_error',
+    resolver: 'omni_failure_policy.classifyFailure + retryStreamTimeout',
+    snapshot: snapshotRel,
+    proof: { failureKind, type: errInfo.type || '', message: String(errInfo.message || '').slice(0, 220) },
+    reason: resolved
+      ? 'generic status-200 OmniRoute api_error is now treated as a retryable stream interruption/external upstream observation, not open agent repair debt'
+      : 'status-200 OmniRoute api_error is not covered by the retryable-transient policy',
+    invariant: 'status-200 SSE api_error must retry same target before surfacing as unresolved agent debt',
+    runtimeState: `snapshot=${snapshotRel || '(none)'}`,
+    recurrenceTest: 'tools/HME/tests/specs/omni_failure_policy.test.js; tools/HME/tests/specs/omniroute_stream_timeout_retry.test.js; tools/HME/tests/specs/incident_registry.test.js',
+  };
+}
+
 function _staleRuntime(line, root) {
   if (!/\[stale_runtime\]|slot [ab] stranded on stale code|proxy is NOT serving current code/i.test(line)) return null;
   const head = _shortSha(root);
