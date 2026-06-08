@@ -530,22 +530,32 @@ _sv_fire_crashloop_lifesaver() {
 
 # Keep the shuffler helper procs (router + file-watcher + slot-watchdog) alive.
 # Nothing else respawns them: polychron-launch starts them once with nohup, so
+_sv_shuffler_proc_alive() {
+  local name="$1"
+  pgrep -f "shuffler/${name}\.js" >/dev/null 2>&1
+}
+
 _sv_ensure_shuffler_procs() {
   _sv_is_maintenance_active && return 0
   local sdir="$_SV_ROOT/tools/HME/proxy/shuffler"
-  local name script logf
+  local name script logf ts
   for name in shuffler file_watcher slot_watchdog; do
     script="$sdir/${name}.js"
     [ -f "$script" ] || continue
-    if ! pgrep -f "shuffler/${name}\.js" >/dev/null 2>&1; then
+    if ! _sv_shuffler_proc_alive "$name"; then
       logf="$_SV_ROOT/log/hme-${name//_/-}.out"
       PROJECT_ROOT="$_SV_ROOT" setsid nohup node "$script" >> "$logf" 2>&1 < /dev/null 200>&- &
       disown 2>/dev/null || true
-      local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-      # silent-ok: advisory state/log write; failure cannot certify success.
-      echo "[$ts] [shuffler] LIFESAVER ${name} was dead; respawned by proxy-supervisor (auto-heal had stopped)" \
-        >> "$_SV_ERROR_LOG" 2>/dev/null
-      _sv_log "respawned dead shuffler proc ${name}"
+      sleep 0.5
+      ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+      if _sv_shuffler_proc_alive "$name"; then
+        _sv_log "respawned dead shuffler proc ${name}; replacement alive"
+      else
+        # silent-ok: LIFESAVER is reserved for failed recovery, not successful auto-heal.
+        echo "[$ts] [shuffler] LIFESAVER ${name} was dead and respawn failed; auto-heal still stopped" \
+          >> "$_SV_ERROR_LOG" 2>/dev/null
+        _sv_log "respawn FAILED for dead shuffler proc ${name}; replacement not alive"
+      fi
     fi
   done
 }
