@@ -10,5 +10,4 @@
 Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
-### Todo - Set 43
-#1 5_ close Phase 16 self-evidence gaps: added Phase 16 to phase-evidence, enforced done phases from 15 onward have rows, projected phase-evidence into generated docs, added plan/TODO consistency verifier, and ran final HCI/git checks
+### Todo - Set 44
