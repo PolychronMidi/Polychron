@@ -41,6 +41,34 @@ class ProjectBoundariesTests(unittest.TestCase):
         self.assertEqual(r.status, "PASS", msg=f"summary={r.summary} details={r.details}")
         self.assertIn("project boundary map valid", r.summary)
 
+    def test_hot_path_import_prefix_fixture_fails(self):
+        old_project = project_boundaries_module._PROJECT
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            data = json.loads((ROOT / "tools/HME/project_boundaries.json").read_text(encoding="utf-8"))
+            for row in data["subsystems"].values():
+                for entry in row.get("entrypoints", []):
+                    if "*" not in entry:
+                        p = root / entry
+                        if Path(entry).suffix:
+                            p.parent.mkdir(parents=True, exist_ok=True)
+                            p.write_text("x", encoding="utf-8")
+                        else:
+                            p.mkdir(parents=True, exist_ok=True)
+            (root / "tools/HME/scripts/verify_coherence").mkdir(parents=True, exist_ok=True)
+            (root / "tools/HME/scripts/verify_coherence/cold.py").write_text("x", encoding="utf-8")
+            (root / "tools/HME/proxy").mkdir(parents=True, exist_ok=True)
+            (root / "tools/HME/proxy/hot.js").write_text("const cold = require('../scripts/verify_coherence/cold');\n", encoding="utf-8")
+            (root / "tools/HME/project_boundaries.json").parent.mkdir(parents=True, exist_ok=True)
+            (root / "tools/HME/project_boundaries.json").write_text(json.dumps(data), encoding="utf-8")
+            project_boundaries_module._PROJECT = str(root)
+            try:
+                r = ProjectBoundariesVerifier().run()
+            finally:
+                project_boundaries_module._PROJECT = old_project
+            self.assertEqual(r.status, "FAIL")
+            self.assertIn("imports cold path", "\n".join(r.details))
+
 
 if __name__ == "__main__":
     unittest.main()
