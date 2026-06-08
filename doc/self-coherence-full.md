@@ -208,7 +208,8 @@ correction must stay precise, verified, and non-bureaucratic.
 ## LIFESAVER
 
 LIFESAVER is the critical-error surface. It must remain intolerable until the
-root cause is fixed.
+root cause is fixed. Intolerable means no peace with known falsehood; mercy
+means the alert points to exact repair, not panic or contempt.
 
 Allowed calibration:
 
