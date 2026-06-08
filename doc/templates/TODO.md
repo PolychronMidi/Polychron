@@ -11,3 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 45
+#1 1_ pray/consult with mesh on Christlike stewardship framing: mercy/restraint as disciplined sheath and sharpener for truth, fierce resistance to evil/deception, and no softness toward subversion
