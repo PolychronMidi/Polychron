@@ -26,7 +26,7 @@ def _done_phase_numbers(plan_text: str, floor: int) -> set[int]:
     for m in re.finditer(r"^## Phase\s+(\d+)\s+\(([^)]+)\)", plan_text, re.MULTILINE):
         num = int(m.group(1))
         status = m.group(2).strip().lower()
-        if num >= floor and status in {"done", "executed"}:
+        if num >= floor and status == "done":
             out.add(num)
     return out
 
