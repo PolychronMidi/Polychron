@@ -11,4 +11,4 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 44
-#1 1_ fix passthrough_compact CVT over-100 drift: statusline over-budget must trigger adjustment even when outbound payload bytes are below semantic threshold; add regression and HCI/tests
+#1 5_ fix passthrough_compact CVT over-100 drift: over-budget statusline now sets forceCompaction, passthrough compact honors it through plan normalization and byte-gate bypass, microcompact still stops once token target is reached, regression/tests/HCI pass
