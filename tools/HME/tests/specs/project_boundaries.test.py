@@ -17,6 +17,7 @@ os.environ.setdefault("HME_IGNORE_DIRS", "node_modules,.git,tmp,log,runtime")
 os.environ.setdefault("HME_IGNORE_FILES", "package-lock.json,pnpm-lock.yaml")
 os.environ.setdefault("HME_IGNORE_EXTS", ".log,.jsonl,.tmp")
 
+import verify_coherence.project_boundaries as project_boundaries_module  # noqa: E402
 from verify_coherence.project_boundaries import ProjectBoundariesVerifier, REQUIRED_SUBSYSTEMS  # noqa: E402
 
 
