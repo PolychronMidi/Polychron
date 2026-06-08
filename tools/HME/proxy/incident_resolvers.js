@@ -95,20 +95,42 @@ function _upstreamTransient200ApiError(line, root) {
   };
 }
 
+function _slotHealthSummary(root) {
+  const out = {};
+  for (const slot of ['a', 'b']) {
+    const h = _readJson(path.join(root, 'tools/HME/runtime', `proxy-${slot}.health`));
+    const alive = h && Number.isInteger(Number(h.pid)) ? (() => { try { process.kill(Number(h.pid), 0); return true; } catch (_e) { return false; } })() : false;
+    out[slot] = h ? {
+      pid: h.pid,
+      alive,
+      ready: Boolean(h.ready),
+      draining: Boolean(h.draining),
+      age_ms: Date.now() - Number(h.ts || 0),
+      runtime_fingerprint: String(h.runtime_fingerprint || ''),
+      git_sha: String(h.git_sha || ''),
+    } : { missing: true };
+  }
+  return out;
+}
+
 function _staleRuntime(line, root) {
   if (!/\[stale_runtime\]|slot [ab] stranded on stale code|proxy is NOT serving current code/i.test(line)) return null;
   const head = _shortSha(root);
   const runtime = _readJson(path.join(root, 'tools/HME/runtime/proxy-runtime.json'));
   const live = runtime && String(runtime.git_sha || '');
+  const liveShort = live ? live.slice(0, head.length || 12) : '';
+  const slots = _slotHealthSummary(root);
+  const slotHealthy = Object.values(slots).some((h) => h && h.alive && h.ready && !h.draining && Number(h.age_ms) <= 120000 && (!head || String(h.git_sha || '').startsWith(head)));
+  const resolved = Boolean(head && ((live && (live === head || live.startsWith(head) || head.startsWith(liveShort))) || slotHealthy));
   return {
-    resolved: Boolean(head && live && head === live),
+    resolved,
     kind: 'runtime_convergence',
-    resolver: 'proxy-runtime.git_sha == HEAD',
-    proof: { head, live },
-    reason: head && live && head === live ? 'runtime fingerprint matches current HEAD' : 'runtime fingerprint not proven current',
+    resolver: 'proxy-runtime.git_sha/slot health == HEAD',
+    proof: { head, live, slots },
+    reason: resolved ? 'live proxy slot/runtime now serves current HEAD' : 'runtime fingerprint not proven current',
     invariant: 'proxy runtime serves current HEAD code',
-    runtimeState: `head=${head || '?'} live=${live || '?'}`,
-    recurrenceTest: 'tools/HME/tests/specs/polychron_restart_contract.test.js',
+    runtimeState: `head=${head || '?'} live=${live || '?'} slots=${JSON.stringify(slots).slice(0, 500)}`,
+    recurrenceTest: 'tools/HME/tests/specs/polychron_restart_contract.test.js; tools/HME/tests/specs/incident_registry.test.js',
   };
 }
 
