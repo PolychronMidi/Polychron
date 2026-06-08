@@ -96,7 +96,7 @@ function shrinkForPassthrough(payload, opts = {}) {
     if (targetTokens > 0 && afterTokens > 0 && afterTokens < targetTokens * 0.95) {
       log(`microcompact target underrun: after=${afterTokens} target=${targetTokens} before=${beforeTokens}`);
     }
-    if (afterBytes <= threshold) {
+    if (!forceCompaction && afterBytes <= threshold) {
       log('microcompact reached threshold; no message drops needed');
       _emitCompaction({
         route,
