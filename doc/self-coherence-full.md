@@ -342,7 +342,7 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 
 ### Machine-derived coherence sources
 
-- Generated-source contract: [`tools/HME/config/generated-doc-sources.json`](../tools/HME/config/generated-doc-sources.json) -- 9 required source projections.
+- Generated-source contract: [`tools/HME/config/generated-doc-sources.json`](../tools/HME/config/generated-doc-sources.json) -- 10 required source projections.
 - Project boundary map: [`tools/HME/project_boundaries.json`](../tools/HME/project_boundaries.json) -- 9 subsystem rows, 7 canonical destination classes.
 - Mesh depth policy: [`teams/rounds/depth_policy.json`](../teams/rounds/depth_policy.json) -- 6 depth profiles, 28 evidence gates.
 - Model/provider registry: [`config/models.json`](../config/models.json) -- 6 providers declared, 3 currently paused by `providers_to_skip`.
@@ -351,7 +351,8 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 - Adapter boundary registry: [`tools/HME/config/adapter-boundaries.json`](../tools/HME/config/adapter-boundaries.json) -- 7 boundary classes.
 - Dispatcher route contract: [`tools/HME/event_kernel/dispatcher-routes.json`](../tools/HME/event_kernel/dispatcher-routes.json) -- 8 hook-event routes, 6 observation events.
 - State-file registry: [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) -- 0 typed state files, 37 single-owner domains.
-- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 90 verifier names discovered from source.
+- Phase evidence firewall: [`tools/HME/config/phase-evidence.json`](../tools/HME/config/phase-evidence.json) -- 2 phase proof rows, 5 closes classes, 6 non-proof bounds.
+- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 91 verifier names discovered from source.
 
 Canonical destination summary:
 - `machine_policy_data` -> `beside_consumer`
