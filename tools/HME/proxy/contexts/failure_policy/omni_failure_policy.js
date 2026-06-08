@@ -21,6 +21,7 @@ function classifyFailure(status, errInfo) {
   if (type === 'stream_timeout' || code === 'stream_readiness_timeout' || /STREAM_READINESS_TIMEOUT|stream_timeout/i.test(text)) return 'stream_timeout';
   if (status >= 200 && status < 300 && type === 'api_error' && /^terminated$/i.test(message.trim())) return 'stream_timeout';
   if (isContextWindowMessage(message)) return 'context_window';
+  if (isTransientStatus200ApiError(status, type, message)) return 'stream_timeout';
   if ([400, 401, 403].includes(status) && CREDENTIAL_KEYWORDS.test(text)) return 'credential_failure';
   if (status >= 500 && status < 600) return 'upstream_5xx';
   if (status >= 400 && status < 500) return 'client_4xx';
