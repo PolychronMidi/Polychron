@@ -73,6 +73,8 @@ module.exports = {
   policyFor,
   actionsFor,
   isContextWindowMessage,
+  isTransientStatus200ApiError,
   CONTEXT_WINDOW_RE,
+  TRANSIENT_STATUS_200_API_ERROR_RE,
   POLICY_TABLE,
 };
