@@ -113,6 +113,25 @@ function _slotHealthSummary(root) {
   return out;
 }
 
+function _shufflerAutoHeal(line, root) {
+  if (!/\[shuffler\]\s+LIFESAVER\s+(?:shuffler|file_watcher|slot_watchdog) was dead; respawned by proxy-supervisor \(auto-heal had stopped\)/i.test(line)) return null;
+  const procMap = { shuffler: 'shuffler.js', file_watcher: 'file_watcher.js', slot_watchdog: 'slot_watchdog.js' };
+  const m = /LIFESAVER\s+(shuffler|file_watcher|slot_watchdog) was dead/i.exec(line);
+  const name = m && m[1] ? m[1] : '';
+  const script = procMap[name] || '';
+  const alive = script ? (() => { try { require('child_process').execFileSync('pgrep', ['-f', `shuffler/${script}`], { timeout: 1000, stdio: ['ignore', 'ignore', 'ignore'] }); return true; } catch (_e) { return false; } })() : false;
+  return {
+    resolved: alive,
+    kind: 'shuffler_auto_heal',
+    resolver: 'proxy-supervisor verified replacement process alive',
+    proof: { name, script, alive },
+    reason: alive ? 'helper process was auto-healed and is currently alive' : 'helper process is not alive after attempted auto-heal',
+    invariant: 'shuffler helper procs remain supervised and alive',
+    runtimeState: `${name || 'unknown'} alive=${alive}`,
+    recurrenceTest: 'tools/HME/tests/specs/policy_universalization.test.js; tools/HME/tests/specs/incident_registry.test.js',
+  };
+}
+
 function _staleRuntime(line, root) {
   if (!/\[stale_runtime\]|slot [ab] stranded on stale code|proxy is NOT serving current code/i.test(line)) return null;
   const head = _shortSha(root);
