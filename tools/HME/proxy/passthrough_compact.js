@@ -13,6 +13,7 @@ function normalizePlan(raw) {
     threshold: threshold === Infinity || Number.isFinite(threshold) ? threshold : 250000,
     maxTier: normalizedMaxTier,
     pressure: Number(plan.pressure),
+    forceCompaction: plan.forceCompaction === true,
     allowSummary: plan.allowSummary == null ? normalizedMaxTier >= 2 : Boolean(plan.allowSummary),
     allowMessageDrop: plan.allowMessageDrop == null ? normalizedMaxTier >= 3 : Boolean(plan.allowMessageDrop),
     keepMin: Number(plan.keepMin),
