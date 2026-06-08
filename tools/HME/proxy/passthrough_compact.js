@@ -58,7 +58,8 @@ function shrinkForPassthrough(payload, opts = {}) {
   const beforeMessages = msgs.length;
   const beforeBytes = _serializedBytes(payload);
   let serialized = JSON.stringify(payload);
-  if (maxTier <= 0 || beforeBytes <= threshold) return 0;
+  const forceCompaction = plan.forceCompaction === true;
+  if (maxTier <= 0 || (!forceCompaction && beforeBytes <= threshold)) return 0;
   const thresholdLabel = Number.isFinite(threshold) ? `${threshold}B` : 'none';
   const pressureLabel = Number.isFinite(plan.pressure) ? plan.pressure.toFixed(3) : 'n/a';
   log(`passthrough-compact decision: pressure=${pressureLabel} tier=${maxTier} threshold=${thresholdLabel} body=${beforeBytes}B `
