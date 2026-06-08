@@ -235,6 +235,7 @@ function createContextBudget() {
       threshold,
       targetTokens,
       pressure,
+      forceCompaction: usedFraction >= 1,
       maxTier: 1 + (2 * pressure),
       allowSummary: pressure >= 0.20,
       allowMessageDrop: pressure >= 0.55 || usedFraction >= 1,
