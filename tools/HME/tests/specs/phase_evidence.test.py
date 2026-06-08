@@ -18,6 +18,7 @@ os.environ.setdefault("HME_IGNORE_DIRS", "node_modules,.git,tmp,log,runtime")
 os.environ.setdefault("HME_IGNORE_FILES", "package-lock.json,pnpm-lock.yaml")
 os.environ.setdefault("HME_IGNORE_EXTS", ".log,.jsonl,.tmp")
 
+import verify_coherence.phase_evidence as phase_evidence_module  # noqa: E402
 from verify_coherence.phase_evidence import (  # noqa: E402
     ALLOWED_ROW_FIELDS,
     FOGGY_CLOSES,
