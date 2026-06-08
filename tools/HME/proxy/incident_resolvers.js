@@ -132,23 +132,33 @@ function _shufflerAutoHeal(line, root) {
   };
 }
 
+function _currentRuntimeFingerprint(root) {
+  try { return require('./proxy_runtime_fingerprint').currentRuntimeFingerprint(root); }
+  catch (_e) { return ''; }
+}
+
 function _staleRuntime(line, root) {
   if (!/\[stale_runtime\]|slot [ab] stranded on stale code|proxy is NOT serving current code/i.test(line)) return null;
   const head = _shortSha(root);
+  const wantedFingerprint = _currentRuntimeFingerprint(root);
   const runtime = _readJson(path.join(root, 'tools/HME/runtime/proxy-runtime.json'));
   const live = runtime && String(runtime.git_sha || '');
+  const liveFingerprint = runtime && String(runtime.runtime_fingerprint || '');
   const liveShort = live ? live.slice(0, head.length || 12) : '';
   const slots = _slotHealthSummary(root);
-  const slotHealthy = Object.values(slots).some((h) => h && h.alive && h.ready && !h.draining && Number(h.age_ms) <= 120000 && (!head || String(h.git_sha || '').startsWith(head)));
-  const resolved = Boolean(head && ((live && (live === head || live.startsWith(head) || head.startsWith(liveShort))) || slotHealthy));
+  const slotHealthy = Object.values(slots).some((h) => h && h.alive && h.ready && !h.draining && Number(h.age_ms) <= 120000
+    && (!wantedFingerprint || String(h.runtime_fingerprint || '') === wantedFingerprint));
+  const runtimeHealthy = Boolean(wantedFingerprint && liveFingerprint === wantedFingerprint);
+  const gitHealthy = Boolean(head && live && (live === head || live.startsWith(head) || head.startsWith(liveShort)));
+  const resolved = Boolean(runtimeHealthy || slotHealthy || gitHealthy);
   return {
     resolved,
     kind: 'runtime_convergence',
-    resolver: 'proxy-runtime.git_sha/slot health == HEAD',
-    proof: { head, live, slots },
-    reason: resolved ? 'live proxy slot/runtime now serves current HEAD' : 'runtime fingerprint not proven current',
-    invariant: 'proxy runtime serves current HEAD code',
-    runtimeState: `head=${head || '?'} live=${live || '?'} slots=${JSON.stringify(slots).slice(0, 500)}`,
+    resolver: 'proxy runtime fingerprint/slot health matches current code',
+    proof: { head, live, wantedFingerprint, liveFingerprint, slots },
+    reason: resolved ? 'live proxy slot/runtime now serves current runtime fingerprint' : 'runtime fingerprint not proven current',
+    invariant: 'proxy runtime serves current code',
+    runtimeState: `head=${head || '?'} live=${live || '?'} wantedFingerprint=${wantedFingerprint || '?'} liveFingerprint=${liveFingerprint || '?'} slots=${JSON.stringify(slots).slice(0, 500)}`,
     recurrenceTest: 'tools/HME/tests/specs/polychron_restart_contract.test.js; tools/HME/tests/specs/incident_registry.test.js',
   };
 }
