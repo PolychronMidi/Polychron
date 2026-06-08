@@ -31,10 +31,13 @@ class PhaseEvidenceTests(unittest.TestCase):
         self.assertFalse(set(data["closes_enum"]) & FOGGY_CLOSES)
         self.assertIn("planned_vs_executed", data["closes_enum"])
         self.assertIn("future_phase_done", data["does_not_prove_enum"])
-        row = data["phases"][0]
-        self.assertEqual(row["phase"], 15)
-        self.assertEqual(set(row), ALLOWED_ROW_FIELDS)
-        self.assertIn("future_phase_done", row["does_not_prove"])
+        rows = {row["phase"]: row for row in data["phases"]}
+        self.assertLessEqual({15, 16}, set(rows))
+        self.assertEqual(data["enforce_done_from_phase"], 15)
+        for row in rows.values():
+            self.assertEqual(set(row), ALLOWED_ROW_FIELDS)
+            self.assertIn("future_phase_done", row["does_not_prove"])
+        self.assertIn("phase-evidence", rows[16]["hci"])
 
     def test_phase_evidence_verifier_passes_current_tree(self):
         r = PhaseEvidenceVerifier().run()
