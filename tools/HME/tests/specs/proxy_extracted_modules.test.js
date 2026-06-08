@@ -1611,6 +1611,21 @@ test('message dropping is disabled until destructive CVT/drop permission', () =>
   assert.doesNotMatch(JSON.stringify(payload), /passthrough-compact: .*oldest message/);
 });
 
+test('over-budget statusline forceCompaction bypasses byte gate and trims even when outbound bytes are under threshold', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 6; i += 1) payload.messages.push({ role: 'user', content: `turn-${i}` });
+  const beforeCount = payload.messages.length;
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({ threshold: 1_000_000, maxTier: 3, allowMessageDrop: true, forceCompaction: true, keepMin: 2 }),
+    keepMin: 2,
+    env: { HME_PROXY_LOCAL_SUMMARY: '0' },
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(payload.messages.length < beforeCount);
+});
+
 
 test('high keepTurns prevents stale tool stripping in long GPT-5.5 sessions', () => {
   const payload = { model: 'gpt-5.5-high', messages: [] };
