@@ -6,6 +6,9 @@ const path = require('path');
 function _readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_e) { return null; }
 }
+function _readBuf(file) {
+  try { return fs.readFileSync(file); } catch (_e) { return null; }
+}
 
 function _shortSha(root) {
   try { return require('child_process').execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch (_e) { return ''; }
