@@ -17,6 +17,13 @@ test('OmniRoute 200 api_error terminated -> stream_timeout', () => {
   assert.equal(classifyFailure(200, { type: 'api_error', message: 'terminated' }), 'stream_timeout');
 });
 
+test('OmniRoute 200 generic api_error -> stream_timeout', () => {
+  assert.equal(classifyFailure(200, {
+    type: 'api_error',
+    message: 'An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID abc in your message.',
+  }), 'stream_timeout');
+});
+
 test('SSE context-window message -> context_window', () => {
   assert.equal(classifyFailure(200, { message: 'input exceeds the context window' }), 'context_window');
   assert.equal(classifyFailure(200, { type: 'api_error', message: 'Your input exceeds the context window of this model. Please adjust your input and try again.' }), 'context_window');
