@@ -82,6 +82,11 @@ class PhaseEvidenceVerifier(Verifier):
         phases = cfg.get("phases") or []
         if not isinstance(phases, list) or not phases:
             errors.append("phases must be non-empty list")
+        enforce_from = int(cfg.get("enforce_done_from_phase") or 15)
+        listed_phases = {int(row.get("phase")) for row in phases if isinstance(row, dict) and isinstance(row.get("phase"), int)} if isinstance(phases, list) else set()
+        missing_done = sorted(_done_phase_numbers(plan_text, enforce_from) - listed_phases)
+        if missing_done:
+            errors.append("done phases missing phase-evidence rows: " + ", ".join(map(str, missing_done)))
         for row in phases if isinstance(phases, list) else []:
             if not isinstance(row, dict):
                 errors.append("phase row must be object")
