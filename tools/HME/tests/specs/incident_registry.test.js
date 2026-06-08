@@ -76,6 +76,10 @@ test('incident registry suppresses stale slot outage after live slots converge',
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-runtime-converged-'));
   try {
     fs.mkdirSync(path.join(root, 'tools/HME/runtime'), { recursive: true });
+    fs.mkdirSync(path.join(root, '.git/refs/heads'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.git/HEAD'), 'ref: refs/heads/main\n');
+    fs.writeFileSync(path.join(root, '.git/refs/heads/main'), 'abc123456789abcdef0000000000000000000000\n');
+    fs.writeFileSync(path.join(root, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: 'abc123456789' }));
     const health = { pid: process.pid, ts: Date.now(), ready: true, draining: false, git_sha: 'abc123456789', runtime_fingerprint: 'fp' };
     fs.writeFileSync(path.join(root, 'tools/HME/runtime/proxy-a.health'), JSON.stringify(health));
     const line = '[T] [proxy-liveness] LIFESAVER -- proxy is NOT serving current code: slot a missing (health file missing/unreadable); slot b dead (pid 9321 not alive). Requests bypass all rewriters until slots converge.';
@@ -83,6 +87,12 @@ test('incident registry suppresses stale slot outage after live slots converge',
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('incident registry suppresses successful shuffler auto-heal when helper is alive', () => {
+  const line = '[T] [shuffler] LIFESAVER file_watcher was dead; respawned by proxy-supervisor (auto-heal had stopped)';
+  const out = require('../../proxy/incident_resolvers').RESOLVERS.find((fn) => fn(line, process.cwd())?.kind === 'shuffler_auto_heal');
+  assert.ok(out, 'shuffler auto-heal resolver is registered');
 });
 
 test('incident ontology separates observations from unresolved agent debt', () => {
