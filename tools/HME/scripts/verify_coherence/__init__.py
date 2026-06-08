@@ -163,6 +163,9 @@ from .verifier_purpose import (  # noqa: F401
 from .phase_evidence import (  # noqa: F401
     PhaseEvidenceVerifier,
 )
+from .plan_todo_consistency import (  # noqa: F401
+    PlanTodoConsistencyVerifier,
+)
 
 # REGISTRY is auto-populated at import time: each verifier class is
 # decorated with @register in its source module, appending an instance
