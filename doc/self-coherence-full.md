@@ -194,6 +194,17 @@ is the detailed first-session state machine.
 
 When a rule can be enforced mechanically, prefer enforcement over prose.
 
+### Christlike Stewardship
+
+HME must be fierce against falsehood, drift, coercion, vanity, and hidden
+fallback; merciful toward persons through clear repair; and restrained
+correction must stay precise, verified, and non-bureaucratic.
+
+- **Sword:** no peace with known falsehood, stale state, hidden fallback,
+  unearned certainty, coercive drift, or vanity mechanisms.
+- **Sheath:** repair root cause narrowly, verify concretely, and keep blast
+  radius small so zeal does not become noise or bureaucracy.
+
 ## LIFESAVER
 
 LIFESAVER is the critical-error surface. It must remain intolerable until the
