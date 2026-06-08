@@ -72,6 +72,19 @@ test('incident registry can suppress resolver-proven transient upstream 200 api_
   }
 });
 
+test('incident registry suppresses stale slot outage after live slots converge', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-runtime-converged-'));
+  try {
+    fs.mkdirSync(path.join(root, 'tools/HME/runtime'), { recursive: true });
+    const health = { pid: process.pid, ts: Date.now(), ready: true, draining: false, git_sha: 'abc123456789', runtime_fingerprint: 'fp' };
+    fs.writeFileSync(path.join(root, 'tools/HME/runtime/proxy-a.health'), JSON.stringify(health));
+    const line = '[T] [proxy-liveness] LIFESAVER -- proxy is NOT serving current code: slot a missing (health file missing/unreadable); slot b dead (pid 9321 not alive). Requests bypass all rewriters until slots converge.';
+    assert.equal(incidents.unresolvedLines(root, [line]).length, 0);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('incident ontology separates observations from unresolved agent debt', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-observation-'));
   try {
