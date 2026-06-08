@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ._base import VerdictResult, Verifier, _PROJECT, failed, passed, register
 
-VALID_STATUSES = {"proposed", "approved", "denied", "done", "executed"}
+VALID_STATUSES = {"proposed", "approved", "denied", "done"}
 
 
 @register
