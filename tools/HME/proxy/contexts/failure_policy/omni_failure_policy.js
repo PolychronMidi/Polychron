@@ -2,8 +2,14 @@
 
 const CREDENTIAL_KEYWORDS = /auth|credential|api[_ -]?key|invalid[_ -]?key|no credentials|forbidden|unauthorized/i;
 const CONTEXT_WINDOW_RE = /(?:input|context)\s+(?:exceeds|exceeded|too\s+large|over)\s+(?:the\s+)?(?:model\s+)?context\s+window|context\s+window\s+of\s+this\s+model|maximum\s+context\s+length/i;
+const TRANSIENT_STATUS_200_API_ERROR_RE = /(?:an error occurred while processing your request|you can retry your request|please include the request id)/i;
 function isContextWindowMessage(message) {
   return CONTEXT_WINDOW_RE.test(String(message || ''));
+}
+function isTransientStatus200ApiError(status, type, message) {
+  return status >= 200 && status < 300
+    && String(type || '').toLowerCase() === 'api_error'
+    && TRANSIENT_STATUS_200_API_ERROR_RE.test(String(message || ''));
 }
 
 function classifyFailure(status, errInfo) {
