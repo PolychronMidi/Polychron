@@ -190,6 +190,7 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
       const text = lastUserText(payload);
       const denyHit = Boolean(text && DENY_MARKERS.some((m) => text.includes(m)));
       if (denyHit) xform._ctx.set('priorUserWasDeny', true);
+      if (isGoalStopVerifierPayload(payload)) xform._ctx.set('goalVerifier', true);
       try {
         fs.appendFileSync(
           path.join(PROJECT_ROOT, 'log', 'hme-proxy-ackstrip.log'),
