@@ -32,6 +32,11 @@
       "mode": "prefix",
       "steps": ["/compact", "$prompt"],
       "description": "Dynamic compact shortcut. A prompt like c&continue compacts the live Claude Code session, then types the text after c& as the next live prompt. The c& prefix is local-session only and never becomes an API message."
+    },
+    "readq": {
+      "lane": "local-session",
+      "steps": ["Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n$prompt"],
+      "description": "PTY-bridge consult follow-up: forces the live Claude Code REPL to request native Read tool calls for the generated consult read queue."
     }
   }
 }
