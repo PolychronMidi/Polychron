@@ -35,7 +35,7 @@ class ConsultFromContextTests(unittest.TestCase):
             consult_from_context.write_completion(manifest, ctx, out, True)
             data = json.loads((out / "_consult-complete.json").read_text(encoding="utf-8"))
         self.assertTrue(data["complete"])
-        self.assertEqual(data["must_read_before_report"], ["final.json"])
+        self.assertEqual(data["must_read_before_report"], [str(out / "final.json")])
         self.assertIn("Do not report", data["premature_report_guard"])
         self.assertIn("Do not poll", data["polling_guard"])
 
