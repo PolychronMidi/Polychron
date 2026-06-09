@@ -222,6 +222,25 @@ test('legacy hook UI leak alerts are stripped from request text', () => {
 });
 
 
+test('rendered tool-call/result echo leaks are stripped from assistant text', () => {
+  const { stripHookUiEchoText } = require('../../proxy/hook_ui_echo_guard');
+  const stats = {};
+  const text = stripHookUiEchoText([
+    'before',
+    'Called Edit tool with the following input:{"file_path":"$PROJECT_ROOT/x.py","old_string":"a","new_string":"b","replace_all":false}',
+    'Result of calling Edit tool',
+    'File $PROJECT_ROOT/x.py has been updated successfully.',
+    'after',
+  ].join('\n'), stats, { projectRoot: root, source: 'response-json' });
+  assert.match(text, /before/);
+  assert.match(text, /after/);
+  assert.doesNotMatch(text, /Called Edit tool/);
+  assert.doesNotMatch(text, /Result of calling Edit tool/);
+  assert.doesNotMatch(text, /updated successfully/);
+  assert.ok((stats.categories || {})['hook-ui-echo-leak'] >= 1);
+});
+
+
 test('Codex exec_command responses pass through shared Bash policy', () => {
   const rewritten = rewriteCodexResponseObject({ output: [{ type: 'function_call', name: 'exec_command', arguments: JSON.stringify({ cmd: pipeShell }) }] });
   const call = rewritten.body.output[0];
