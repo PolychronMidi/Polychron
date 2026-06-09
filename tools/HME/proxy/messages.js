@@ -308,6 +308,7 @@ function stripSemanticRedundancy(payload) {
       // Host-internal file-change reminders are control-plane metadata. Drop them
       // before any content-plane dedupe/rewrite path can preserve or mutate them.
       txt = txt.replace(HOST_FILE_MODIFIED_REMINDER_RE, () => { bump('host_file_modified_reminder_stripped'); return ''; });
+      txt = txt.replace(HOST_FILE_MODIFIED_BARE_RE, () => { bump('host_file_modified_reminder_stripped'); return ''; });
 
       // K runs first: strip task-notifications entirely (wrapped form, then bare).
       txt = txt.replace(TASK_NOTIFICATION_WRAPPED_RE, () => { bump('task_notification_stripped'); return ''; });
