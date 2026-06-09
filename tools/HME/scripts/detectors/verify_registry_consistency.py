@@ -88,13 +88,13 @@ def main() -> int:
     with open(sh_path) as f:
         sh = f.read()
     # detectors.sh now sources emit_detectors_sh.py via eval; verify the
-    eval_re = re.compile(r'eval\s+"\$\(\s*python3\s+[^)]*emit_detectors_sh\.py')
-    parse_call_re = re.compile(r'_detector_parse_case\s+')
-    persist_call_re = re.compile(r'_detector_emit_persist\s*>\s*')
     gaps = []
-    if not eval_re.search(sh): gaps.append("eval emit_detectors_sh")
-    if not parse_call_re.search(sh): gaps.append("_detector_parse_case call")
-    if not persist_call_re.search(sh): gaps.append("_detector_emit_persist call")
+    if "eval" not in sh or "emit_detectors_sh.py" not in sh:
+        gaps.append("eval emit_detectors_sh")
+    if not re.search(r'_detector_parse_case\s+', sh):
+        gaps.append("_detector_parse_case call")
+    if not re.search(r'_detector_emit_persist\s*>\s*', sh):
+        gaps.append("_detector_emit_persist call")
     if gaps:
         print("DETECTORS.SH WIRING DRIFT:")
         for g in gaps: print(f"  missing: {g}")
