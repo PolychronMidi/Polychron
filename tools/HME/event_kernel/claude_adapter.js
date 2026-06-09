@@ -306,6 +306,13 @@ function _handleCcShortcut(result, body) {
   };
 }
 
+function _handlePostCompactContinue(result, body) {
+  let payload = {};
+  try { payload = JSON.parse(body || '{}'); } catch (_e) { payload = {}; }
+  _writeCcToken(payload._hme_project_root || requireEnv('PROJECT_ROOT'), 'postcompact-continue');
+  return result;
+}
+
 function finalRelay(event, result, body = '{}') {
   const fields = claudeRelayFields(event, result);
   let payload = {};
