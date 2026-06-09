@@ -238,6 +238,7 @@ function _autoReadConsultBundleFromTaskNotification(notification) {
   if (!bundleAbs) return '';
   let bundle = '';
   try { bundle = fs.readFileSync(bundleAbs, 'utf8'); } catch (_e) { return ''; }
+  _consumeLatestConsultBundle(latest);
   return `<system-reminder>\n[HME background task auto-read]\nThe completed mesh consultation auto-read bundle is below. Treat it as the relevant file evidence; do not poll task output.\n${bundle}\n</system-reminder>`;
 }
 
