@@ -122,6 +122,26 @@ test('success path: writes the matched key token and emits the bridge-matching b
   }
 });
 
+test('LOCAL LANE ENVELOPE PARITY: mid-turn typed shortcuts survive host wrapping', () => {
+  // Regression: the wire lane (00a_shortcuts_rewriter) strips <system-reminder>
+  // and the "[Request interrupted by user]" envelope and matches a shortcut alone
+  const exact = (t, key) => {
+    const m = cfg.multiStepMatch(t);
+    assert.ok(m, `expected match for ${JSON.stringify(t)}`);
+    assert.equal(m.key, key);
+  };
+  exact('[Request interrupted by user]\ncc', 'cc');
+  exact('[Request interrupted by user]\nreadq', 'readq');
+  exact('<system-reminder>noise</system-reminder>\ncc', 'cc');
+  exact('please do it\ncc', 'cc');
+  const pref = cfg.multiStepMatch('[Request interrupted by user]\nc&continue now');
+  assert.equal(pref.key, 'c&');
+  assert.equal(pref.prompt, 'continue now');
+  assert.equal(pref.mode, 'prefix');
+  // Non-shortcut prose must NOT match.
+  assert.equal(cfg.multiStepMatch('why didnt you finish?'), null);
+});
+
 test('dynamic c& success path writes key plus encoded next prompt', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'c-amp-bridge-'));
   const fifo = path.join(root, 'tmp', 'hme-cc-control.fifo');
