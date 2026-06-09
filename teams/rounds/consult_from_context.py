@@ -262,6 +262,25 @@ def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
     return out_path
 
 
+def submit_read_queue_to_pty(files: list[str]) -> bool:
+    if not files:
+        return False
+    fifo = ROOT / "tmp" / "hme-cc-control.fifo"
+    prompt = "\n".join(files)
+    encoded = base64.b64encode(prompt.encode("utf-8")).decode("ascii")
+    try:
+        fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
+    except OSError:
+        print("PTY_READ_QUEUE_SUBMIT unavailable", flush=True)
+        return False
+    try:
+        os.write(fd, f"readq\t{encoded}\n".encode("utf-8"))
+        print("PTY_READ_QUEUE_SUBMIT submitted", flush=True)
+        return True
+    finally:
+        os.close(fd)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Run mesh consultation from a context-file manifest")
     ap.add_argument("context_file")
