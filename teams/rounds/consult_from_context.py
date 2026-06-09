@@ -233,51 +233,22 @@ def write_completion(manifest: dict[str, Any], ctx: Path, out_dir: Path, ok: boo
     (out_dir / "_consult-complete.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def proxy_read_file(path_: Path) -> dict[str, Any]:
-    rel_file = rel(path_)
-    cmd = ["node", str(ROOT / "tools/HME/scripts/codex_structured_tool.js"), "read", rel_file]
-    env = os.environ.copy()
-    env.update({"PROJECT_ROOT": str(ROOT), "HME_SESSION_ID": f"mesh-consult-auto-read-{os.getpid()}"})
-    proc = subprocess.run(cmd, cwd=ROOT, env=env, text=True, capture_output=True, timeout=60, check=False)
-    return {
-        "path": rel_file,
-        "via": "codex_structured_tool.js read",
-        "rc": proc.returncode,
-        "stdout": proc.stdout,
-        "stderr": proc.stderr,
-    }
-
-
-def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> tuple[Path, bool]:
-    files = relevant_output_paths(manifest, out_dir)
-    rows = [proxy_read_file(p) for p in files]
-    ok = all(row.get("rc") == 0 for row in rows)
+def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
+    files = [rel(p) for p in relevant_output_paths(manifest, out_dir)]
     payload = {
         "schema": 1,
         "round": manifest["round"],
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "source": "consult_from_context.auto_read_relevant_outputs",
-        "guard": "These files were read by proxy middleware commands after the consultation completed; reporting may use this bundle without polling task output.",
-        "complete": ok,
-        "files": rows,
+        "source": "consult_from_context.write_native_read_queue",
+        "guard": "These paths must be read with Claude's native Read tool before reporting. This file is a queue, not evidence that reads happened.",
+        "native_read_before_report": files,
     }
-    out_path = out_dir / "_consult-auto-read.json"
+    out_path = out_dir / "_consult-read-queue.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    latest_path = ROOT / "tools/HME/runtime/latest-consult-auto-read.json"
-    latest_path.parent.mkdir(parents=True, exist_ok=True)
-    latest_path.write_text(json.dumps({
-        "schema": 1,
-        "round": manifest["round"],
-        "nonce": secrets.token_hex(8),
-        "auto_read_bundle": rel(out_path),
-        "generated_at": payload["generated_at"],
-        "expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 900)),
-        "consumed": False,
-    }, indent=2) + "\n", encoding="utf-8")
-    print(f"AUTO_READ_BUNDLE {rel(out_path)}", flush=True)
-    for row in rows:
-        print(f"AUTO_READ {row['path']} rc={row['rc']}", flush=True)
-    return out_path, ok
+    print(f"NATIVE_READ_QUEUE {rel(out_path)}", flush=True)
+    for item in files:
+        print(f"NATIVE_READ_REQUIRED {item}", flush=True)
+    return out_path
 
 
 def main(argv: list[str] | None = None) -> int:
