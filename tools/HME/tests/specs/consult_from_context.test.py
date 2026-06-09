@@ -113,6 +113,54 @@ class ConsultFromContextTests(unittest.TestCase):
         self.assertFalse(proof["verified"])
         self.assertIn("no Claude transcript", proof["failure"])
 
+    def _write_transcript(self, path: Path, required: list[str], cover: list[str]) -> None:
+        events = []
+        ts = "2026-06-09T00:00:01Z"
+        use_blocks = [{"type": "tool_use", "id": f"call_{i}", "name": "Read", "input": {"file_path": fp}} for i, fp in enumerate(cover)]
+        res_blocks = [{"type": "tool_result", "tool_use_id": f"call_{i}", "content": "1\\t{}"} for i, _ in enumerate(cover)]
+        if use_blocks:
+            events.append({"type": "assistant", "timestamp": ts, "message": {"content": use_blocks}})
+            events.append({"type": "user", "timestamp": ts, "message": {"content": res_blocks}})
+        path.write_text("\n".join(json.dumps(e) for e in events) + ("\n" if events else ""), encoding="utf-8")
+
+    def _run_proof(self, out: Path, required: list[str], cover: list[str], timeout: str):
+        trans = out / "session.jsonl"
+        self._write_transcript(trans, required, cover)
+        old = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT")}
+        try:
+            os.environ["HME_TRANSCRIPT_PATH"] = str(trans)
+            os.environ["HME_CONSULT_NATIVE_READ_PROOF_DRIVER"] = "off"
+            os.environ["HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT"] = timeout
+            return consult_from_context.prove_native_reads({"round": "unit-e2e"}, out, required)
+        finally:
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+    def test_proof_gate_passes_only_with_full_transcript_coverage(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            required = [str(out / "red_final.json"), str(out / "blue_final.json")]
+            for fp in required:
+                Path(fp).write_text("{}", encoding="utf-8")
+            self.assertTrue(self._run_proof(out, required, required, timeout="20"))
+            proof = json.loads((out / "_consult-native-read-proof.json").read_text(encoding="utf-8"))
+        self.assertTrue(proof["verified"])
+        self.assertEqual(proof["missing"], [])
+
+    def test_proof_gate_fails_on_partial_transcript_coverage(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            required = [str(out / "red_final.json"), str(out / "blue_final.json")]
+            for fp in required:
+                Path(fp).write_text("{}", encoding="utf-8")
+            self.assertFalse(self._run_proof(out, required, required[:1], timeout="1"))
+            proof = json.loads((out / "_consult-native-read-proof.json").read_text(encoding="utf-8"))
+        self.assertFalse(proof["verified"])
+        self.assertIn(str(Path(required[1])), [str(Path(m)) for m in proof["missing"]] + proof["missing"])
+
     def test_runtime_consult_scripts_are_thin_wrappers(self):
         for script in (ROOT / "teams/runtime").glob("*consult.sh"):
             text = script.read_text(encoding="utf-8")
