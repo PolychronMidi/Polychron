@@ -261,3 +261,82 @@ Jurisdictions:
   `plan.md` rewrite, mesh machinery expansion, compaction/routing work, style
   policing, coherence-laws registry, proof-carrying-change framework, commit-level
   proof objects, prose capsules, or second TODO/status ledger.
+
+## Phase 17 (proposed) -- Staleness detector for mtime-backed data-plane reads
+
+Status: `proposed` (drafted from a seven-step adversarial mesh consultation:
+red/blue leads, independent red/blue purples, purple crossfire both directions,
+final red/blue votes -- `teams/runtime/output/coherence-primitive-consult/`).
+Awaiting user decision. Nothing here is implemented until marked `approved`.
+
+Theme: one narrow primitive, not a universal law. A read-after-write is stale when
+the consumer's bind-time predates the change-time of the artifact it relied on:
+`bind_time >= change_time` => fresh. The session evidence that motivated this
+(stale proxy module, stale PTY bridge) shares exactly this shape, and the project
+already encodes it in exactly one place -- `teams/rounds/consult_from_context.py:294`
+(`p.stat().st_mtime >= shortcuts_mtime`). This phase names that check once, as a pure
+function, and proves it can earn its keep at a single site before any generalization.
+
+Scope discipline (the mesh narrowed the thesis hard, did not rubber-stamp it):
+- IN scope: mtime-backed read-after-write freshness on the data plane (local
+  filesystem, single clock domain).
+- OUT of scope, explicitly NOT staleness (different primitives wearing the same
+  costume): stop-hook control timing (observation granularity), green-tests-vs-live
+  breakage (representation mismatch), stash/pop conflict-marker races (concurrency
+  control). The earlier "one universal coherence law" framing is deleted.
+
+### Workstream 1 -- One pure function
+- Add `tools/HME/proxy/staleness.js` exporting `staleBind({ artifactMtime, bindTime })
+  -> { stale, lagMs }`. Pure, no IO.
+- Falsifiability by construction: throw on missing `artifactMtime`; refuse
+  cross-clock-domain comparison (both stamps must be the same local-fs clock).
+- `stale` is `true` when `bindTime < artifactMtime`; `lagMs` is the subtraction, so
+  the result is a measured number, never a narrative guess.
+
+### Workstream 2 -- Wire exactly one site (refactor-in-place)
+- Refactor `consult_from_context.py:294`'s inline `p.stat().st_mtime >= shortcuts_mtime`
+  into a named staleness check with identical behavior.
+- Detect + log only. Do NOT change guard semantics: the site already skips a stale
+  fd; keep that behavior, just name it. No new refuse/reload paths.
+- Do NOT greenfield the proxy-module staleness guard in this phase.
+
+### Workstream 3 -- One ledger event, zero schema change
+- Emit a single `appendEvent(root, { kind: 'invariant', proof_class: 'stale', ... })`.
+- Both `invariant` and `stale` are already frozen members of
+  `coherence_events.js` KINDS / PROOF_CLASSES (verified) -- no new kind, no schema change.
+- `meta` carries `{ artifactMtime, bindTime, lagMs }`: subtractable, not prose.
+
+### Workstream 4 -- Shape-first test + standing disproof list
+- Add a unit test proving: fresh returns `stale:false`; stale returns `stale:true`
+  with positive `lagMs`; missing `artifactMtime` throws; the refactored `:294` site
+  preserves its prior skip behavior.
+- Standing disproof list (what is NOT staleness, recorded in the test and this phase):
+  fresh, wrong-content, bad-config, concurrency-race, semantic-disagreement,
+  representation-mismatch.
+
+### Decay rule
+- Self-clearing by re-evaluation, no daemon: the next `staleBind` call with
+  `bindTime >= artifactMtime` returns `stale:false`. Freshness is recomputed each
+  read; no stale fact is remembered. The event schema's existing `expires` field is
+  NOT wired here (no TTL, no daemon).
+
+### Acceptance / falsification gate
+- One site, one function, one event, one test. If the named check cannot earn its
+  keep at this single site, the unifying thesis is falsified cheaply -- that is the
+  designed outcome, not a failure. Generalization to a second consumer requires a
+  separate, later approval.
+
+### Honesty caveats (carried from the mesh, not hidden)
+- Some peer tool-reads were garbled mid-consult; only two anchors were cleanly
+  re-verified before this draft: the `:294` mtime check and the
+  `coherence_events.js:5-6` frozen KIND/PROOF_CLASS sets. Both confirmed present.
+- Whether the ledger event persists end-to-end is a precondition to confirm during
+  implementation, not an asserted fact.
+- Consistent with Phase 16's standing non-goal against a coherence-laws registry:
+  this is a staleness detector, not a law framework.
+
+### Explicit non-goals
+- No universal `bind_time` on every consumer, no control-plane unification, no
+  attention/turn self-stamping, no second site, no new ledger or event kind, no
+  daemon or TTL, no "coherence field," no prediction/surprise engine, and no
+  fake-precision line counts. The unifying-law framing is explicitly dropped.
