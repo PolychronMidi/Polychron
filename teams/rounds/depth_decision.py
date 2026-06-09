@@ -259,7 +259,7 @@ def profile_for_depth(depth: int) -> dict[str, Any]:
     raw = ESCALATION_PROFILES.get(str(depth), {})
     profile = dict(raw) if isinstance(raw, dict) else {}
     profile.setdefault("label", DEPTH_LABELS[depth])
-    profile.setdefault("max_tools", 8 if depth >= 2 else 4 if depth == 1 else 0)
+    profile.setdefault("max_tools", 20 if depth >= 1 else 0)
     profile.setdefault("max_duration", 600 if depth >= 2 else 300 if depth == 1 else 0)
     profile.setdefault("reply_cap", 12000 if depth >= 2 else 6000 if depth == 1 else 0)
     profile.setdefault("next_action", f"run_{DEPTH_LABELS[depth]}")
