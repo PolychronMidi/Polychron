@@ -29,6 +29,7 @@ const CRYING_WOLF_ALERT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const STRIPPED_MARKER_RE = /(?:^|\n)\s*\[HME stripped host Stop-hook UI echo: hook-ui-echo-leak fp=[0-9a-f]+\]\s*(?:(?:\n\s*(?:SPIRALLING_PETULANCE|EXHAUST PROTOCOL VIOLATION|MULTI-FLAG STOP|Address all of them|enumerated item|nothing left|silence is the correct response)[^\n]*){0,8})/gi;
 const VERBOSE_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED\s*\nHost-rendered Stop-hook UI reached model-visible context and was stripped before inference\.[^\n]*fingerprints=[^\n]*Raw hook text omitted[^\n]*(?=\n|$)/gi;
 const COMPACT_HOOK_UI_ALERT_RE = /(?:^|\n)\s*(?:\[lifesaver inject from proxy\]\s*)?\[ALERT\] LIFESAVER - HOOK UI ECHO LEAK STRIPPED: host Stop-hook UI echo stripped; raw omitted; see runtime diagnostics\.\s*(?=\n|$)/gi;
+const TOOL_RENDER_ECHO_RE = /(?:^|\n)\s*(?:Called|Calld)\s+(?:the\s+)?(?:Read|Edit|Write|Bash|Agent|WebFetch|WebSearch|MultiEdit)\s+tool\s+w(?:ith)?\s+(?:the\s+)?(?:following\s+)?input:\s*\{[\s\S]{0,20000}?(?:Result\s+of\s+(?:calling|calln)\s+(?:the\s+)?(?:Read|Edit|Write|Bash|Agent|WebFetch|WebSearch|MultiEdit)\s+tool|File\s+\/[^\n]+\s+(?:has\s+been\s+updated\s+successfully|been\s+updatd\s+succssfly)|Successfully\s+wrote|Succssfly\s+wrote)[\s\S]{0,4000}?(?=\n\s*(?:[A-Z][^\n]{0,80}|#\d+\s|[-*]\s|```|$)|$)/gi;
 
 function fingerprint(text) {
   const normalized = String(text || '')
