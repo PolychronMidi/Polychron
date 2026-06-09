@@ -93,6 +93,9 @@ function evaluateReadInput(input = {}, opts = {}) {
   const file = input.file_path || input.path || '';
   if (!file) return { decision: 'allow' };
   const rel = relPath(file, root);
+  if (isBackgroundTaskOutputPath(rel)) {
+    return { decision: 'deny', reason: 'BLOCKED: background task-output polling is context-burn. Wait for the host task-completion notification; for mesh consults, read teams/runtime/output/<round>/_consult-complete.json and final artifacts after completion.' };
+  }
   // verify-landed antipattern: fires only when the Read window actually
   // overlaps an edited line range. Reads of different regions, or reads of
   if (opts.verifyLanded !== false) {
