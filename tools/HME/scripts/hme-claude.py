@@ -134,7 +134,7 @@ class ExactOutputFilter:
         return tail
 
 
-DEFAULT_MULTISTEP = {"cc": ["/compact", "continue"], "c&": ["/compact", "$prompt"]}
+DEFAULT_MULTISTEP = {"cc": ["/compact", "continue"], "c&": ["/compact", "$prompt"], "postcompact-continue": ["continue"]}
 
 
 def load_multistep(root):
