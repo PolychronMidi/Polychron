@@ -148,4 +148,4 @@ function toHookResponse(result, event = 'PreToolUse') {
   return JSON.stringify({ hookSpecificOutput: hso, systemMessage: result.reason || '' });
 }
 
-module.exports = { evaluateReadInput, toHookResponse };
+module.exports = { evaluateReadInput, toHookResponse, isBackgroundTaskOutputPath };
