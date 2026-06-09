@@ -257,6 +257,7 @@ def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> tuple
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "source": "consult_from_context.auto_read_relevant_outputs",
         "guard": "These files were read by proxy middleware commands after the consultation completed; reporting may use this bundle without polling task output.",
+        "complete": ok,
         "files": rows,
     }
     out_path = out_dir / "_consult-auto-read.json"
