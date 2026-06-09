@@ -275,6 +275,16 @@ def _read_prompt(files: list[str], nonce: str = "") -> str:
     return tag + "Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n" + "\n".join(abs_files)
 
 
+def _proc_belongs_to_root(p: Path) -> bool:
+    # PROJECT-ROOT INVARIANT: a /proc scan can otherwise select an hme-claude.py
+    # bridge from ANY worktree/session on the host and force-write its PTY -- work
+    try:
+        cwd = os.path.realpath(os.readlink(p / "cwd"))
+    except OSError:
+        return False
+    return cwd == str(ROOT)
+
+
 def _stale_bridge_master_fd() -> str | None:
     shortcuts = ROOT / "tools/HME/config/shortcuts.json"
     try:
@@ -290,6 +300,9 @@ def _stale_bridge_master_fd() -> str | None:
         except OSError:
             continue
         if "tools/HME/scripts/hme-claude.py" not in cmdline and "scripts/hme-claude.py" not in cmdline:
+            continue
+        # Refuse any bridge that is not rooted in THIS project root.
+        if not _proc_belongs_to_root(p):
             continue
         try:
             if p.stat().st_mtime >= shortcuts_mtime:
