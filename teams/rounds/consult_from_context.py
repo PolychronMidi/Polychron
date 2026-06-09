@@ -273,7 +273,7 @@ def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> tuple
     print(f"AUTO_READ_BUNDLE {rel(out_path)}", flush=True)
     for row in rows:
         print(f"AUTO_READ {row['path']} rc={row['rc']}", flush=True)
-    return out_path
+    return out_path, ok
 
 
 def main(argv: list[str] | None = None) -> int:
