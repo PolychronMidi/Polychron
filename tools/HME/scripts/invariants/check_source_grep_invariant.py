@@ -46,6 +46,14 @@ RULES = {
     "index-directory-zero-args": [{"paths": ["tools/HME/service/rag_engine/engine_indexing.py"], "pattern": r"def index_directory\(self,|def _index_directory_locked\(self,|def _collect_files\(self,"}],
     "no-direct-gpu-model-load-in-indexing": [{"paths": ["tools/HME/service/indexing_mode.py", "tools/HME/service/server/tools_index.py"], "pattern": r"from sentence_transformers|import torch|SentenceTransformer"}],
     "event-kernel-subprocesses-use-fs-ipc": [{"roots": ["tools/HME/event_kernel", "tools/HME/proxy/stop_chain"], "include": [".js"], "pattern": r"child\.stdin|stdin\.write|spawnSync\([^\n]*input"}],
+    "no-foreign-proc-fd-poke": [
+        {
+            "roots": ["tools/HME", "teams", "src"],
+            "include": [".py", ".js", ".sh"],
+            "pattern": r"/proc/\d|/proc[\"']?\s*\)|Path\([\"']/proc|proc\.iterdir|/dev/ptmx|/proc/.*\bfd\b|readlink\([^)]*\bfd\b",
+            "exclude": r"__pycache__|node_modules/|tools/HME/tests/|tools/HME/KB/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# proc-read-ok",
+        },
+    ],
     "overdrive-no-stale-mode6": [
         {
             "roots": [
