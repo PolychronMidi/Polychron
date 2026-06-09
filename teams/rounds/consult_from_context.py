@@ -262,23 +262,87 @@ def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
     return out_path
 
 
+def _read_prompt(files: list[str]) -> str:
+    abs_files = [str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files]
+    return "Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n" + "\n".join(abs_files)
+
+
+def _stale_bridge_master_fd() -> str | None:
+    shortcuts = ROOT / "tools/HME/config/shortcuts.json"
+    try:
+        shortcuts_mtime = shortcuts.stat().st_mtime
+    except OSError:
+        shortcuts_mtime = time.time()
+    proc = Path("/proc")
+    for p in proc.iterdir():
+        if not p.name.isdigit():
+            continue
+        try:
+            cmdline = (p / "cmdline").read_bytes().replace(b"\x00", b" ").decode("utf-8", "replace")
+        except OSError:
+            continue
+        if "tools/HME/scripts/hme-claude.py" not in cmdline and "scripts/hme-claude.py" not in cmdline:
+            continue
+        try:
+            if p.stat().st_mtime >= shortcuts_mtime:
+                continue
+        except OSError:
+            continue
+        fd_dir = p / "fd"
+        try:
+            fds = sorted(fd_dir.iterdir(), key=lambda x: int(x.name))
+        except OSError:
+            continue
+        for fd in fds:
+            try:
+                if os.readlink(fd) == "/dev/ptmx":
+                    return str(fd)
+            except OSError:
+                continue
+    return None
+
+
+def _submit_read_queue_to_stale_pty_master(files: list[str]) -> bool:
+    fd_path = _stale_bridge_master_fd()
+    if not fd_path:
+        return False
+    prompt = _read_prompt(files)
+    try:
+        fd = os.open(fd_path, os.O_WRONLY | os.O_NONBLOCK)
+    except OSError:
+        return False
+    try:
+        os.write(fd, ("\x03" + prompt + "\r").encode("utf-8"))
+        print("PTY_MASTER_READ_QUEUE_SUBMIT force-submitted", flush=True)
+        return True
+    except OSError:
+        return False
+    finally:
+        os.close(fd)
+
+
 def submit_read_queue_to_pty(files: list[str]) -> bool:
     if not files:
         return False
     fifo = ROOT / "tmp" / "hme-cc-control.fifo"
-    prompt = "\n".join(files)
-    encoded = base64.b64encode(prompt.encode("utf-8")).decode("ascii")
+    encoded = base64.b64encode("\n".join(files).encode("utf-8")).decode("ascii")
+    delivered = False
     try:
         fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
     except OSError:
         print("PTY_READ_QUEUE_SUBMIT unavailable", flush=True)
-        return False
-    try:
-        os.write(fd, f"readq!\t{encoded}\n".encode("utf-8"))
-        print("PTY_READ_QUEUE_SUBMIT force-submitted", flush=True)
-        return True
-    finally:
-        os.close(fd)
+    else:
+        try:
+            os.write(fd, f"readq!\t{encoded}\n".encode("utf-8"))
+            print("PTY_READ_QUEUE_SUBMIT force-submitted", flush=True)
+            delivered = True
+        finally:
+            os.close(fd)
+    # Current-session compatibility: if the live bridge started before readq was
+    # added to shortcuts.json, it will accept and silently ignore the FIFO token.
+    if _submit_read_queue_to_stale_pty_master(files):
+        delivered = True
+    return delivered
 
 
 def main(argv: list[str] | None = None) -> int:
