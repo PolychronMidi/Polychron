@@ -35,7 +35,7 @@
     },
     "readq": {
       "lane": "local-session",
-      "steps": ["Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n$prompt"],
+      "steps": ["Use the native Read tool for each of these file paths before any prose response; do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes: $prompt"],
       "description": "PTY-bridge consult follow-up: forces the live Claude Code REPL to request native Read tool calls for the generated consult read queue."
     }
   }
