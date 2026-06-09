@@ -340,11 +340,14 @@ finally:
         return False
 
 
-def submit_read_queue_to_pty(files: list[str]) -> bool:
+def submit_read_queue_to_pty(files: list[str], nonce: str = "") -> bool:
     if not files:
         return False
     fifo = ROOT / "tmp" / "hme-cc-control.fifo"
-    encoded = base64.b64encode(" ; ".join(str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files).encode("utf-8")).decode("ascii")
+    payload = " ; ".join(str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files)
+    if nonce:
+        payload = f"[HME_CONSULT_READQ {nonce}] {payload}"
+    encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
     delivered = False
     try:
         fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
@@ -359,7 +362,7 @@ def submit_read_queue_to_pty(files: list[str]) -> bool:
             os.close(fd)
     # Current-session compatibility: if the live bridge started before readq was
     # added to shortcuts.json, it will accept and silently ignore the FIFO token.
-    if _submit_read_queue_to_stale_pty_master(files):
+    if _submit_read_queue_to_stale_pty_master(files, nonce):
         delivered = True
     return delivered
 
