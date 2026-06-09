@@ -316,4 +316,4 @@ async function mutateClaudeRequest({
   return { outBody, injected, passthrough };
 }
 
-module.exports = { mutateClaudeRequest, applyExplicitOtpmCap, compactLargeInteractiveAnthropicPayload, modelOutputInfo: _modelOutputInfo };
+module.exports = { mutateClaudeRequest, applyExplicitOtpmCap, compactLargeInteractiveAnthropicPayload, injectConsultNativeReadResults, modelOutputInfo: _modelOutputInfo };
