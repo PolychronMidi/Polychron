@@ -28,8 +28,12 @@ test('completed task notification injects provider-agnostic native Read tool_use
   assert.equal(payload.messages[0].role, 'assistant');
   assert.equal(payload.messages[0].content[0].type, 'tool_use');
   assert.equal(payload.messages[0].content[0].name, 'Read');
+  assert.match(payload.messages[0].content[0].id, /^hme_consult_auto_read_unit-native-read-consult_/);
   assert.equal(payload.messages[1].role, 'user');
   assert.equal(payload.messages[1].content[0].type, 'tool_result');
+  assert.match(payload.messages[1].content[0].content, /HME_CONSULT_AUTO_READ_INJECTED round=unit-native-read-consult/);
   assert.match(payload.messages[1].content[0].content, /red evidence/);
-  assert.equal(JSON.parse(fs.readFileSync(marker, 'utf8')).consumed, true);
+  const consumed = JSON.parse(fs.readFileSync(marker, 'utf8'));
+  assert.equal(consumed.consumed, true);
+  assert.deepEqual(consumed.injected_tool_use_ids, [payload.messages[0].content[0].id]);
 });
