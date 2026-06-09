@@ -113,26 +113,48 @@ class ConsultFromContextTests(unittest.TestCase):
         self.assertFalse(proof["verified"])
         self.assertIn("no Claude transcript", proof["failure"])
 
-    def _write_transcript(self, path: Path, required: list[str], cover: list[str]) -> None:
-        events = []
+    def _transcript_reads_block(self, cover: list[str]) -> str:
         ts = "2026-06-09T00:00:01Z"
         use_blocks = [{"type": "tool_use", "id": f"call_{i}", "name": "Read", "input": {"file_path": fp}} for i, fp in enumerate(cover)]
         res_blocks = [{"type": "tool_result", "tool_use_id": f"call_{i}", "content": "1\\t{}"} for i, _ in enumerate(cover)]
-        if use_blocks:
-            events.append({"type": "assistant", "timestamp": ts, "message": {"content": use_blocks}})
-            events.append({"type": "user", "timestamp": ts, "message": {"content": res_blocks}})
-        path.write_text("\n".join(json.dumps(e) for e in events) + ("\n" if events else ""), encoding="utf-8")
+        if not use_blocks:
+            return ""
+        events = [
+            {"type": "assistant", "timestamp": ts, "message": {"content": use_blocks}},
+            {"type": "user", "timestamp": ts, "message": {"content": res_blocks}},
+        ]
+        return "\n".join(json.dumps(e) for e in events) + "\n"
 
-    def _run_proof(self, out: Path, required: list[str], cover: list[str], timeout: str):
+    def _run_proof(self, out: Path, required: list[str], cover: list[str], timeout: str, *, append_after: bool):
+        # The live bridge appends native Read rows AFTER prove_native_reads captures
+        # its start_line. Simulate that with a background appender so the proof loop
+        import threading
         trans = out / "session.jsonl"
-        self._write_transcript(trans, required, cover)
+        trans.write_text(json.dumps({"type": "user", "timestamp": "2026-06-09T00:00:00Z", "message": {"content": "consult done"}}) + "\n", encoding="utf-8")
+        block = self._transcript_reads_block(cover)
+        stop = threading.Event()
+
+        def appender():
+            if not block:
+                return
+            if stop.wait(0.5):
+                return
+            with trans.open("a", encoding="utf-8") as fh:
+                fh.write(block)
+
+        thread = threading.Thread(target=appender, daemon=True) if append_after else None
         old = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT")}
         try:
             os.environ["HME_TRANSCRIPT_PATH"] = str(trans)
             os.environ["HME_CONSULT_NATIVE_READ_PROOF_DRIVER"] = "off"
             os.environ["HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT"] = timeout
+            if thread:
+                thread.start()
             return consult_from_context.prove_native_reads({"round": "unit-e2e"}, out, required)
         finally:
+            stop.set()
+            if thread:
+                thread.join(timeout=2)
             for k, v in old.items():
                 if v is None:
                     os.environ.pop(k, None)
@@ -145,7 +167,7 @@ class ConsultFromContextTests(unittest.TestCase):
             required = [str(out / "red_final.json"), str(out / "blue_final.json")]
             for fp in required:
                 Path(fp).write_text("{}", encoding="utf-8")
-            self.assertTrue(self._run_proof(out, required, required, timeout="20"))
+            self.assertTrue(self._run_proof(out, required, required, timeout="20", append_after=True))
             proof = json.loads((out / "_consult-native-read-proof.json").read_text(encoding="utf-8"))
         self.assertTrue(proof["verified"])
         self.assertEqual(proof["missing"], [])
@@ -156,10 +178,10 @@ class ConsultFromContextTests(unittest.TestCase):
             required = [str(out / "red_final.json"), str(out / "blue_final.json")]
             for fp in required:
                 Path(fp).write_text("{}", encoding="utf-8")
-            self.assertFalse(self._run_proof(out, required, required[:1], timeout="1"))
+            self.assertFalse(self._run_proof(out, required, required[:1], timeout="2", append_after=True))
             proof = json.loads((out / "_consult-native-read-proof.json").read_text(encoding="utf-8"))
         self.assertFalse(proof["verified"])
-        self.assertIn(str(Path(required[1])), [str(Path(m)) for m in proof["missing"]] + proof["missing"])
+        self.assertIn(str(Path(required[1])), [str(Path(m)) for m in proof["missing"]])
 
     def test_runtime_consult_scripts_are_thin_wrappers(self):
         for script in (ROOT / "teams/runtime").glob("*consult.sh"):
