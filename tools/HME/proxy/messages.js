@@ -2,6 +2,8 @@
 // Message processing: boilerplate strip, semantic-redundancy strip, scan.
 
 const fs = require('fs');
+const os = require('os');
+const fsRealPath = fs.realpathSync;
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
 const { isJurisdictionFile } = require('./context');
