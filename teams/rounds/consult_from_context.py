@@ -268,8 +268,11 @@ def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> tuple
     latest_path.write_text(json.dumps({
         "schema": 1,
         "round": manifest["round"],
+        "nonce": secrets.token_hex(8),
         "auto_read_bundle": rel(out_path),
         "generated_at": payload["generated_at"],
+        "expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 900)),
+        "consumed": False,
     }, indent=2) + "\n", encoding="utf-8")
     print(f"AUTO_READ_BUNDLE {rel(out_path)}", flush=True)
     for row in rows:
