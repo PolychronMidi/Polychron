@@ -12,3 +12,8 @@ Example:
 
 ### Todo - Set 46
 #1 1_ replace per-consult runtime shell spam with generated mesh consultation runner from context manifests; ban premature final reports and background polling for consult tasks
+#2 0_ make `teams/rounds/consult_from_context.py <ctx>` proof-carrying: after a successful consult, do not return success until required post-completion native Read tool_use rows are observed in the Claude transcript
+#3 0_ add a standard-run proof verifier for consults that records `completed_at`, transcript path/session id, required artifact list, Read tool_use line numbers, tool ids, timestamps, and path coverage in `_consult-native-read-proof.json`
+#4 0_ make consult runner exit nonzero when native Read proof is missing, stale, manual/substitute-only, or incomplete; reject queue-only, manual Read, proxy synthetic injection, and external PTY harness proofs as success evidence
+#5 0_ wire the existing readq/PTY submission into the proof loop so the standard bare invocation itself waits for or triggers the native Read chain, with bounded timeout and clear failure diagnostics
+#6 0_ add tests/smokes proving standard bare `python3 teams/rounds/consult_from_context.py <ctx>` succeeds only when transcript-native post-completion Read rows cover every required artifact and fails otherwise
