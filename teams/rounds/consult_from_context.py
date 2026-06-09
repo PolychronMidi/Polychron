@@ -419,10 +419,28 @@ def _rel_or_abs(path_: str) -> str:
         return str(path_)
 
 
-def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _event_text(event: dict[str, Any]) -> str:
+    msg = event.get("message") or {}
+    content = msg.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(str(block.get("text") or ""))
+        return "\n".join(parts)
+    return ""
+
+
+def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0, provenance_nonce: str = "") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    # PROVENANCE GATE: a Read row only counts if it appears AFTER a transcript
+    # USER turn carrying the bridge-injected readq nonce. A bridge-driven read is
     required_abs = {_abs_path(f) for f in required_files}
     rows_by_id: dict[str, dict[str, Any]] = {}
     rejected: list[dict[str, Any]] = []
+    nonce = str(provenance_nonce or "")
+    bridge_prompt_seen = not nonce  # no nonce => provenance disabled (legacy/test)
     try:
         lines = transcript.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
@@ -434,6 +452,9 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
+        role = event.get("type") or (event.get("message") or {}).get("role")
+        if nonce and role == "user" and nonce in _event_text(event):
+            bridge_prompt_seen = True
         msg = event.get("message") or {}
         content = msg.get("content")
         if not isinstance(content, list):
@@ -449,6 +470,9 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
                     continue
                 if tool_id.startswith("hme_consult_auto_read_"):
                     rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "proxy-synthetic-auto-read-id"})
+                    continue
+                if not bridge_prompt_seen:
+                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "no-bridge-provenance (read precedes injected readq nonce; likely manual)"})
                     continue
                 rows_by_id[tool_id] = {
                     "line": line_no,
