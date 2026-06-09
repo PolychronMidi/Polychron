@@ -288,6 +288,9 @@ def main(argv: list[str] | None = None) -> int:
             ok = False
             progress.emit(str(step["id"]), "failed", "dispatch failed", target=str(step["target"]), rc=rc, reply_bytes=bytes_, error_log=rel(err))
     write_completion(manifest, ctx, out_dir, ok)
+    if ok:
+        auto_read_relevant_outputs(manifest, out_dir)
+        write_completion(manifest, ctx, out_dir, ok)
     rc = progress.finish(f"{manifest['round']} consultation complete" if ok else f"{manifest['round']} consultation incomplete")
     print(rel(out_dir), flush=True)
     return rc
