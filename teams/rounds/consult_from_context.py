@@ -371,13 +371,13 @@ def _event_text(event: dict[str, Any]) -> str:
 
 
 def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0, provenance_nonce: str = "") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    # PROVENANCE GATE: a Read row only counts if it appears AFTER a transcript
-    # USER turn carrying the bridge-injected readq nonce. A bridge-driven read is
+    # PROVENANCE GATE. Two accepted provenances, strongest first:
+    #   1. read-chain: a Read tool_use whose id begins `hme_read_chain__` can ONLY
     required_abs = {_abs_path(f) for f in required_files}
     rows_by_id: dict[str, dict[str, Any]] = {}
     rejected: list[dict[str, Any]] = []
     nonce = str(provenance_nonce or "")
-    bridge_prompt_seen = not nonce  # no nonce => provenance disabled (legacy/test)
+    bridge_prompt_seen = not nonce  # no nonce => nonce-gate disabled (legacy/test)
     try:
         lines = transcript.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
