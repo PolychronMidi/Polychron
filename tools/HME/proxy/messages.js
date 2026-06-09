@@ -210,10 +210,22 @@ function _latestConsultBundle() {
   if (!latest) return null;
   try {
     const data = JSON.parse(fs.readFileSync(latest, 'utf8'));
-    const generated = Date.parse(String(data.generated_at || ''));
-    if (!Number.isFinite(generated) || (Date.now() - generated) > 15 * 60 * 1000) return null;
+    if (data.consumed === true) return null;
+    const expires = Date.parse(String(data.expires_at || ''));
+    if (!Number.isFinite(expires) || Date.now() > expires) return null;
+    data._marker_path = latest;
     return data;
   } catch (_e) { return null; }
+}
+
+function _consumeLatestConsultBundle(latest) {
+  const marker = latest && latest._marker_path;
+  if (!marker) return;
+  try {
+    const next = { ...latest, consumed: true, consumed_at: new Date().toISOString() };
+    delete next._marker_path;
+    fs.writeFileSync(marker, JSON.stringify(next, null, 2) + '\n');
+  } catch (_e) { /* silent-ok: marker consumption is best-effort; expiry still bounds replay. */ }
 }
 
 function _autoReadConsultBundleFromTaskNotification(notification) {
