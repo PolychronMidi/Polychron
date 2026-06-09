@@ -508,7 +508,7 @@ def _proof_prompt(files: list[str], nonce: str = "") -> str:
     )
 
 
-def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, timeout: int) -> subprocess.Popen[bytes] | None:
+def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, timeout: int, nonce: str = "") -> subprocess.Popen[bytes] | None:
     # Default is live-PTY/readq only: the running Claude Code bridge consumes the
     # readq token (submit_read_queue_to_pty) and issues native Read calls in-session.
     driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
@@ -521,7 +521,7 @@ def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, 
         os.environ.get("HME_CLAUDE_BIN", "claude"), "-p", "--resume", session_id,
         "--permission-mode", "bypassPermissions", "--tools", "Read", "--effort", "low",
         "--model", os.environ.get("HME_CONSULT_READ_PROOF_MODEL", "default"),
-        "--output-format", "json", _proof_prompt(files),
+        "--output-format", "json", _proof_prompt(files, nonce),
     ]
     log = out_dir / "_consult-native-read-proof-driver.log"
     try:
