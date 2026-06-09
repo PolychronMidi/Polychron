@@ -174,14 +174,14 @@ async function mutateClaudeRequest({
       const common = applyAnthropicCommonTransforms(payload);
       const iw = common.i.command_rewrites + common.i.text_rewrites;
       const hns = common.hook_noise;
-      const b = stripBoilerplate(payload);
-      const s = stripSemanticRedundancy(payload);
-      // Narrative-control gate: strip every <system-reminder>/<ide_selection>
-      // block that is not of HME origin (binary -- ours or gone).
+      // Control-plane firewall runs before content-plane cleaners. Host/internal
+      // <system-reminder>/<ide_selection> blocks are metadata, not prose, and must
       let prov = { stripped: 0 };
       try {
         prov = enforceReminderProvenance(payload, { ledger: loadLedger(PROJECT_ROOT) });
       } catch (err) { console.error(`reminder-provenance failed: ${err.message}`); recordProxyFailure(PROJECT_ROOT, 'reminder-provenance', err); }
+      const b = stripBoilerplate(payload);
+      const s = stripSemanticRedundancy(payload);
       const r = stripHmePrefixOutgoing(payload);
       const n = await injectHmeTools(payload);
       // Mesh-found P1 (request-mutation review): this early sanitize MUST feed the
