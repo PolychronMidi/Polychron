@@ -42,7 +42,14 @@ function _loadOutputRegistry() {
       if (!out) continue;
       const info = { maxOutput: out, maxInput: input, context: ctx };
       if (m.id) map.set(String(m.id), info);
-      if (m.api_model) map.set(String(m.api_model), info);
+      if (m.api_model) {
+        const api = String(m.api_model);
+        map.set(api, info);
+        // api_model carries a context annotation, e.g. "claude-opus-4-8[1m]".
+        // Register the bare base too so a plain "claude-opus-4-8" lookup resolves
+        const bare = api.replace(/\[[^\]]*\]\s*$/, '').trim();
+        if (bare && bare !== api && !map.has(bare)) map.set(bare, info);
+      }
     }
   }
   _outputRegistry = { mtimeMs: stat.mtimeMs, map };
