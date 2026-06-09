@@ -375,4 +375,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout, shouldLogHookStderr, _isCcShortcut, _handleCcShortcut };
+module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout, shouldLogHookStderr, _isCcShortcut, _handleCcShortcut, _handlePostCompactContinue };
