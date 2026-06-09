@@ -102,8 +102,7 @@ function createProxyRouteDispatcher({
       if (handleOpenAIModelsRoute(clientReq, clientRes)) return true;
     }
     if (url.startsWith('/hme/spawn')) {
-      const handler = handleSpawnRoute || require('./routes_admin').handleSpawnRoute;
-      handler(clientReq, clientRes);
+      json(clientRes, 410, { error: 'gone', reason: '/hme/spawn disabled; run the owning project script directly under PROJECT_ROOT' });
       return true;
     }
     if (url.startsWith('/hme/lifecycle')) {
