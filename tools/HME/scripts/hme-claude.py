@@ -355,6 +355,10 @@ def main():
                     while b"\n" in ctrl_buf:
                         line, ctrl_buf = ctrl_buf.split(b"\n", 1)
                         token, prompt, interrupt = decode_control_line(line)
+                        # Reload on each control token. The live bridge may outlive
+                        # shortcut edits (e.g. adding readq); a stale in-memory
+                        multistep = load_multistep(root)
+                        output_filter = ExactOutputFilter(success_banner_patterns(multistep))
                         steps = resolve_steps(multistep, token, prompt)
                         steps = [step for step in (steps or []) if step]
                         if steps and (interrupt or not pending_steps):
