@@ -53,18 +53,6 @@ function largestWindowChainModel(chain) {
   return best;
 }
 
-// swapWindowCheck: does the request's estimated input exceed the swap model's
-// input cap (with HME_OMNI_SWAP_FIT_FRACTION headroom)? budget 0 => unknown => no gate.
-function swapWindowCheck(payload, swapModel, env = process.env) {
-  const fitFraction = Number(env.HME_OMNI_SWAP_FIT_FRACTION || '0.95');
-  const { modelInputBudget } = require('./hme_proxy_context_budget');
-  const { semanticTokenEstimate } = require('./context_token_estimate');
-  const budget = modelInputBudget(swapModel);
-  const estTokens = semanticTokenEstimate(payload, env);
-  const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
-  return { exceeds, estTokens, budget, fitFraction };
-}
-
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
   return mode === '1' ? '1' : '0';
