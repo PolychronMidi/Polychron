@@ -103,6 +103,9 @@ function _readAsNativeReadText(rel) {
     return `AUTO-READ ERROR: ${err.message}`;
   }
 }
+function _safeToolIdPart(value) {
+  return String(value || 'consult').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80) || 'consult';
+}
 function injectConsultNativeReadResults(payload) {
   if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return 0;
   const last = payload.messages[payload.messages.length - 1];
@@ -115,14 +118,20 @@ function injectConsultNativeReadResults(payload) {
   if (!Number.isFinite(expires) || Date.now() > expires) return 0;
   const files = Array.isArray(marker.native_read_before_report) ? marker.native_read_before_report.map(String).filter(Boolean) : [];
   if (!files.length) return 0;
-  const nonce = String(marker.nonce || Date.now().toString(36));
-  const toolUses = files.map((file, i) => ({ type: 'tool_use', id: `hme_auto_read_${nonce}_${i}`, name: 'Read', input: { file_path: _safeProjectPath(file) || file } }));
-  const toolResults = files.map((file, i) => ({ type: 'tool_result', tool_use_id: `hme_auto_read_${nonce}_${i}`, content: _readAsNativeReadText(file) }));
+  const nonce = _safeToolIdPart(marker.nonce || Date.now().toString(36));
+  const round = _safeToolIdPart(marker.round || 'consult');
+  const idFor = (i) => `hme_consult_auto_read_${round}_${nonce}_${i}`;
+  const toolUses = files.map((file, i) => ({ type: 'tool_use', id: idFor(i), name: 'Read', input: { file_path: _safeProjectPath(file) || file } }));
+  const toolResults = files.map((file, i) => ({
+    type: 'tool_result',
+    tool_use_id: idFor(i),
+    content: `HME_CONSULT_AUTO_READ_INJECTED round=${marker.round || ''} file=${file} source=${path.relative(PROJECT_ROOT, markerPath)}\n${_readAsNativeReadText(file)}`,
+  }));
   payload.messages.splice(payload.messages.length - 1, 0,
     { role: 'assistant', content: toolUses },
     { role: 'user', content: toolResults },
   );
-  try { fs.writeFileSync(markerPath, JSON.stringify({ ...marker, consumed: true, consumed_at: new Date().toISOString() }, null, 2) + '\n'); } catch (_e) { /* best-effort */ }
+  try { fs.writeFileSync(markerPath, JSON.stringify({ ...marker, consumed: true, consumed_at: new Date().toISOString(), injected_tool_use_ids: toolUses.map((b) => b.id) }, null, 2) + '\n'); } catch (_e) { /* best-effort */ }
   return files.length;
 }
 
