@@ -29,7 +29,7 @@
   "providers_to_skip": {
     "description": "Pause provider usage in case of credit shortage.",
     "providers": [
-      "opencode-go","claude","anthropic"
+      "opencode-go"
     ]
   },
   "provider_capabilities": {
@@ -121,6 +121,21 @@
       "description": "Complex multi-file agentic tasks, architectural design, deep reasoning.",
       "models": [
         {
+          "id": "claude-fable-5-max-e5",
+          "name": "Claude Fable (max)",
+          "maker": "Anthropic",
+          "provider": "anthropic",
+          "api_model": "claude-fable-5",
+          "effort_level": "max",
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "Anthropic Claude Fable via OmniRoute/direct Anthropic; max effort variant.",
+          "tier_score": 10,
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "max_input_tokens": 872000
+        },
+        {
           "id": "claude-opus-4-8-max-e5",
           "name": "Claude Opus (max)",
           "maker": "Anthropic",
@@ -130,7 +145,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; max effort variant.",
-          "tier_score": 10,
+          "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
           "max_input_tokens": 872000
