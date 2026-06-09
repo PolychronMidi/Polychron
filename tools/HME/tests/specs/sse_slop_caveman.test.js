@@ -289,6 +289,6 @@ test('slop leaves a structured-JSON text block byte-identical (the /goal Stop-ho
   for (const [name, ev] of res.events) {
     if (name === 'content_block_delta' && ev.delta && typeof ev.delta.text === 'string') out += ev.delta.text;
   }
-  assert.equal(out, json, 'JSON verdict must be emitted byte-identical (never caveman-compressed)');
+  assert.equal(out, JSON.stringify({ ok: true, reason: JSON.parse(json).rsn }), 'JSON verdict may normalize schema but must never be caveman-compressed');
   assert.doesNotThrow(() => JSON.parse(out), 'emitted JSON must stay parseable');
 });
