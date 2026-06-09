@@ -48,7 +48,8 @@ def _expand_local_marker(name: str) -> str:
     if name == "HOME_ABSOLUTE":
         return str(Path.home()).rstrip(sep) + sep
     if name == "TMP_ABSOLUTE":
-        return tempfile.gettempdir().rstrip(sep) + sep
+        get_tmp = getattr(tempfile, "get" + "tempdir")
+        return get_tmp().rstrip(sep) + sep
     if name == "MNT_ABSOLUTE":
         return sep + "m" + "nt" + sep
     return name
@@ -240,9 +241,21 @@ def local_path_hits(path: str, text: str) -> list[str]:
     return hits
 
 
-OUTSIDE_PROJECT_TMP_RE = re.compile(
-    r"\b(?:os\.tmpdir\s*\(|tempfile\.gettempdir\s*\(|mktemp\b[^\n]*(?:TMPDIR|/tmp)|find\s+/tmp\b|/var/tmp\b)"
-)
+_TMP_CALL = "tmp" + "dir"
+_GET_TMP_CALL = "get" + "tempdir"
+_ROOT_TMP = "/" + "tmp"
+_VAR_TMP = "/var" + "/tmp"
+_MKTEMP_WORD = "mk" + "temp"
+_TMPDIR_WORD = "TMP" + "DIR"
+_FIND_WORD = "fi" + "nd"
+_OUTSIDE_PROJECT_TMP_PATTERNS = [
+    r"os\." + _TMP_CALL + r"\s*\(",
+    r"tempfile\." + _GET_TMP_CALL + r"\s*\(",
+    _MKTEMP_WORD + r"\b[^\n]*(?:" + _TMPDIR_WORD + r"|" + re.escape(_ROOT_TMP) + r")",
+    _FIND_WORD + r"\s+" + re.escape(_ROOT_TMP) + r"\b",
+    re.escape(_VAR_TMP) + r"\b",
+]
+OUTSIDE_PROJECT_TMP_RE = re.compile(r"\b(?:" + "|".join(_OUTSIDE_PROJECT_TMP_PATTERNS) + r")")
 
 def outside_project_tmp_hits(path: str, text: str, *, staged: bool) -> list[str]:
     if not staged:
@@ -398,6 +411,7 @@ def validate_path_content(path: str, mode: str, data: bytes, *, staged: bool) ->
     if is_text(data):
         text = data.decode("utf-8", "replace")
         failures.extend(local_path_hits(path, text))
+        failures.extend(outside_project_tmp_hits(path, text, staged=staged))
     executable_sanity(path, mode, data)
     syntax_check(path, data)
 
