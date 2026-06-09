@@ -310,11 +310,11 @@ def _stale_bridge_master_fd() -> str | None:
     return None
 
 
-def _submit_read_queue_to_stale_pty_master(files: list[str]) -> bool:
+def _submit_read_queue_to_stale_pty_master(files: list[str], nonce: str = "") -> bool:
     fd_path = _stale_bridge_master_fd()
     if not fd_path:
         return False
-    prompt = _read_prompt(files)
+    prompt = _read_prompt(files, nonce)
     code = """
 import os, sys, time
 fd_path, prompt = sys.argv[1], sys.argv[2]
