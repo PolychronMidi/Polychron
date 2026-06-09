@@ -16,7 +16,8 @@
     "t": "use the todo system described in the header of TODO.md to do the todos therein",
     "te": "Describe in text what you were going to do next without using any tools",
     "y": "why refuse to continue?",
-    "ye": "why psychopathically spam empty commands?"
+    "ye": "why psychopathically spam empty commands?",
+    "rr": "[HME_READ_CHAIN] README.md; package.json"
   },
   "two-step": {
     "11": { "first": "reply only with 'hi'", "second": "reply only with 'high'" }
