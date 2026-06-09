@@ -195,7 +195,7 @@ async function mutateClaudeRequest({
     emit({ event: 'unparsed_tool_call_recovered', session: sessionKey(payload) });
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
-  if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
+  if (isInteractivePath && payload && Array.isArray(payload.messages)) {
     const injectedReads = injectConsultNativeReadResults(payload);
     if (injectedReads > 0) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
