@@ -496,10 +496,12 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
     return rows, rejected
 
 
-def _proof_prompt(files: list[str]) -> str:
+def _proof_prompt(files: list[str], nonce: str = "") -> str:
     abs_files = [_abs_path(f) for f in files]
+    tag = f"[HME_CONSULT_READQ {nonce}] " if nonce else ""
     return (
-        "Use the native Read tool on every file path below before any prose response. "
+        tag
+        + "Use the native Read tool on every file path below before any prose response. "
         "Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes. "
         "After every Read tool call has completed, reply only: CONSULT_NATIVE_READ_PROOF_DONE\n"
         + "\n".join(abs_files)
