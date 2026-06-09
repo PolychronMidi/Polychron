@@ -195,10 +195,25 @@ def run_step(step: dict[str, Any], manifest: dict[str, Any], ctx: Path, out_dir:
     return rc, len(reply_text(out_dir, str(step["id"])).encode("utf-8"))
 
 
+def relevant_output_paths(manifest: dict[str, Any], out_dir: Path) -> list[Path]:
+    paths = [out_dir / "_consult-complete.json", out_dir / "round-progress.jsonl", out_dir / "consult.err"]
+    paths.extend(out_dir / str(step["id"]) for step in manifest["steps"])
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for p in paths:
+        if p in seen:
+            continue
+        seen.add(p)
+        if p.exists():
+            out.append(p)
+    return out
+
+
 def write_completion(manifest: dict[str, Any], ctx: Path, out_dir: Path, ok: bool) -> None:
     finals = [str(f) for f in manifest["final_outputs"]]
     required = [str(s["id"]) for s in manifest["steps"]]
     complete = ok and all(reply_text(out_dir, f) for f in finals)
+    auto_read = [rel(p) for p in relevant_output_paths(manifest, out_dir)]
     payload = {
         "schema": 1,
         "complete": complete,
@@ -208,11 +223,47 @@ def write_completion(manifest: dict[str, Any], ctx: Path, out_dir: Path, ok: boo
         "required_outputs": [rel(out_dir / s) for s in required],
         "final_outputs": [rel(out_dir / f) for f in finals],
         "must_read_before_report": [rel(out_dir / f) for f in finals],
+        "auto_read_files": auto_read,
+        "auto_read_bundle": rel(out_dir / "_consult-auto-read.json"),
         "completed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) if complete else "",
         "premature_report_guard": "Do not report mesh conclusions until every must_read_before_report file has been read after completion notification.",
-        "polling_guard": "Do not poll task output/progress; wait for the completion notification, then read final output artifacts.",
+        "polling_guard": "Do not poll task output/progress; wait for the completion notification, then read _consult-auto-read.json or the declared artifacts.",
     }
     (out_dir / "_consult-complete.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def proxy_read_file(path_: Path) -> dict[str, Any]:
+    rel_file = rel(path_)
+    cmd = ["node", str(ROOT / "tools/HME/scripts/codex_structured_tool.js"), "read", rel_file]
+    env = os.environ.copy()
+    env.update({"PROJECT_ROOT": str(ROOT), "HME_SESSION_ID": f"mesh-consult-auto-read-{os.getpid()}"})
+    proc = subprocess.run(cmd, cwd=ROOT, env=env, text=True, capture_output=True, timeout=60, check=False)
+    return {
+        "path": rel_file,
+        "via": "codex_structured_tool.js read",
+        "rc": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+    }
+
+
+def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> Path:
+    files = relevant_output_paths(manifest, out_dir)
+    rows = [proxy_read_file(p) for p in files]
+    payload = {
+        "schema": 1,
+        "round": manifest["round"],
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "source": "consult_from_context.auto_read_relevant_outputs",
+        "guard": "These files were read by proxy middleware commands after the consultation completed; reporting may use this bundle without polling task output.",
+        "files": rows,
+    }
+    out_path = out_dir / "_consult-auto-read.json"
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"AUTO_READ_BUNDLE {rel(out_path)}", flush=True)
+    for row in rows:
+        print(f"AUTO_READ {row['path']} rc={row['rc']}", flush=True)
+    return out_path
 
 
 def main(argv: list[str] | None = None) -> int:
