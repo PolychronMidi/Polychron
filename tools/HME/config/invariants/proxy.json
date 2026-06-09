@@ -26,6 +26,18 @@
       "capture_stderr": true
     },
     {
+      "id": "no-foreign-proc-fd-poke",
+      "description": "No HME/teams/src source may reach into another process's /proc/<pid>/fd table or acquire a /dev/ptmx master fd to write into a foreign process. Cross-process control must use the sanctioned filesystem IPC (tmp/hme-cc-control.fifo) or the in-band read_chain, never raw fd injection -- which escapes the project-root work boundary by poking a foreign session's PTY and is invisible to every path guard.",
+      "born_from": "2026-06-09 consult PTY foreign-fd-poke subversion (work leaking outside ROOT into another worktree's bridge)",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-foreign-proc-fd-poke",
+      "severity": "error",
+      "finding_label": "foreign-fd-poke finding",
+      "success_detail": "no foreign /proc fd poking",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "hme-py-no-fallback-infra-imports",
       "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback.",
       "type": "shell_output_empty",
