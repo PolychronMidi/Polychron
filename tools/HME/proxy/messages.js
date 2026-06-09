@@ -1,7 +1,9 @@
 'use strict';
 // Message processing: boilerplate strip, semantic-redundancy strip, scan.
 
-const { emit } = require('./shared');
+const fs = require('fs');
+const path = require('path');
+const { emit, PROJECT_ROOT } = require('./shared');
 const { isJurisdictionFile } = require('./context');
 const { normalizeICommandsInValue } = require('./i_command_text');
 const { blockText: _sharedBlockText } = require('./request_shape');
