@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { sessionKey, PROJECT_ROOT } = require('./shared');
 const { recordProxyFailure } = require('./contexts/request_mutation');
+const { isGoalStopVerifierPayload, goalVerifierSseRewrite, goalVerifierSseFlush } = require('./goal_verifier_response');
 
 const DENY_MARKERS = [
   'Stop hook feedback:',
