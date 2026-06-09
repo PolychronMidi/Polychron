@@ -286,6 +286,20 @@
       "outage_link": null
     },
     {
+      "name": "consult_premature_report",
+      "module": "consult_premature_report",
+      "fires_when": "consult_premature_report",
+      "bash_var": "CONSULT_PREMATURE_REPORT",
+      "deny": true,
+      "reason_key": "CONSULT_PREMATURE_REPORT",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "mesh consultation evidence discipline",
+      "fixture_path": "tools/HME/tests/specs/consult_premature_report.test.py",
+      "why": "Blocks mesh-consult final reports before the declared final peer artifacts have been read.",
+      "outage_link": null
+    },
+    {
       "name": "fix_without_investigation",
       "module": "fix_without_investigation",
       "fires_when": "fix_without_investigation",
