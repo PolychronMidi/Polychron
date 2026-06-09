@@ -102,6 +102,7 @@ function createClaudeHandler(deps) {
       if (maybeBlockEarlyClaudeRequest({ clientReq, clientRes, payload })) return;
       captureNoopReminderLeak({ clientReq, payload });
       if (maybeBlockLateClaudeProbeRequest({ clientReq, clientRes, payload })) return;
+      if (maybeDriveReadChain({ clientRes, payload })) return;
 
       let outBody = bodyBuf;
       let injected = false;
