@@ -274,8 +274,8 @@ def submit_read_queue_to_pty(files: list[str]) -> bool:
         print("PTY_READ_QUEUE_SUBMIT unavailable", flush=True)
         return False
     try:
-        os.write(fd, f"readq\t{encoded}\n".encode("utf-8"))
-        print("PTY_READ_QUEUE_SUBMIT submitted", flush=True)
+        os.write(fd, f"readq!\t{encoded}\n".encode("utf-8"))
+        print("PTY_READ_QUEUE_SUBMIT force-submitted", flush=True)
         return True
     finally:
         os.close(fd)
