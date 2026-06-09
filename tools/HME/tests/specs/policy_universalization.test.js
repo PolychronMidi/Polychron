@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { evaluateBashInput } = require('../../proxy/bash_command_policy');
 const { evaluateReadInput } = require('../../proxy/read_policy');
@@ -76,6 +77,12 @@ test('shared Read policy blocks guarded paths before execution', () => {
   const out = evaluateReadInput({ file_path: path.join(root, 'doc/theory/secret.md') }, { projectRoot: root });
   assert.equal(out.decision, 'deny');
   assert.match(out.reason, /guarded path/);
+});
+
+test('shared Read policy blocks background task output polling', () => {
+  const out = evaluateReadInput({ file_path: path.join(os.tmpdir(), 'claude-1000', 'x', 'session', 'tasks', 'abc.output'), limit: 80 }, { projectRoot: root });
+  assert.equal(out.decision, 'deny');
+  assert.match(out.reason, /task-completion notification/);
 });
 
 test('hook noise stripper removes duplicate hook/status spam', () => {
