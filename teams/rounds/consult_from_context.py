@@ -247,9 +247,10 @@ def proxy_read_file(path_: Path) -> dict[str, Any]:
     }
 
 
-def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> Path:
+def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> tuple[Path, bool]:
     files = relevant_output_paths(manifest, out_dir)
     rows = [proxy_read_file(p) for p in files]
+    ok = all(row.get("rc") == 0 for row in rows)
     payload = {
         "schema": 1,
         "round": manifest["round"],
