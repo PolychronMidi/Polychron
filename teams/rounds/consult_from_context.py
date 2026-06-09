@@ -561,6 +561,10 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
         return False
     start_line = _line_count(transcript)
     proof["start_line"] = start_line
+    # Provenance nonce: only Read rows that appear AFTER the bridge-injected readq
+    # prompt carrying this nonce count. A manual Read (no preceding injected prompt)
+    nonce = f"{manifest['round']}-{int(time.time())}-{os.getpid()}"
+    proof["provenance_nonce"] = nonce
     driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
     # The readq token reaches the LIVE Claude Code bridge (tmp/hme-cc-control.fifo).
     # It must never fire from tests/offline checks, or it injects a Read prompt
@@ -568,8 +572,8 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
         pty_submitted = False
         proc = None
     else:
-        pty_submitted = submit_read_queue_to_pty(files)
-        proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout)
+        pty_submitted = submit_read_queue_to_pty(files, nonce)
+        proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout, nonce)
     proof["pty_submitted"] = pty_submitted
     proof["proof_driver"] = "claude-print" if proc else driver
     if not pty_submitted and not proc:
@@ -578,7 +582,7 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
     required = {_rel_or_abs(f) for f in files}
     try:
         while time.time() < deadline:
-            rows, rejected = collect_native_read_rows(transcript, files, start_line)
+            rows, rejected = collect_native_read_rows(transcript, files, start_line, nonce)
             covered = {str(r.get("relative_path")) for r in rows if int(r.get("result_line") or 0) > 0}
             missing = sorted(required - covered)
             proof.update({
