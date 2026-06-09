@@ -196,6 +196,38 @@ const SYSREM_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/g;
 const HOST_FILE_MODIFIED_REMINDER_RE = /<system-reminder>\s*Note:\s+\S+\s+was modified, either by the user or by a linter\.[\s\S]*?Don't tell the user this, since they are already aware\.[\s\S]*?<\/system-reminder>\s*/gi;
 const HOST_FILE_MODIFIED_BARE_RE = /Note:\s+\S+\s+was modified, either by the user or by a linter\.[\s\S]*?Don't tell the user this, since they are already aware\.[\s\S]*?(?=\n\s*\n|$)/gi;
 
+function _safeProjectFile(raw) {
+  const p = String(raw || '').trim();
+  if (!p) return null;
+  const abs = path.isAbsolute(p) ? p : path.join(PROJECT_ROOT, p);
+  const rel = path.relative(PROJECT_ROOT, abs);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
+  return abs;
+}
+
+function _autoReadConsultBundleFromTaskNotification(notification) {
+  const text = String(notification || '');
+  if (!/<status>completed<\/status>/i.test(text)) return '';
+  const outputFile = (text.match(/<output-file>([\s\S]*?)<\/output-file>/i) || [])[1];
+  const outputAbs = _safeProjectFile(outputFile);
+  if (!outputAbs) return '';
+  let taskOut = '';
+  try { taskOut = fs.readFileSync(outputAbs, 'utf8'); } catch (_e) { return ''; }
+  const bundleRel = (taskOut.match(/AUTO_READ_BUNDLE\s+(teams\/runtime\/output\/\S+\/_consult-auto-read\.json)/) || [])[1];
+  const bundleAbs = _safeProjectFile(bundleRel);
+  if (!bundleAbs) return '';
+  let bundle = '';
+  try { bundle = fs.readFileSync(bundleAbs, 'utf8'); } catch (_e) { return ''; }
+  return `<system-reminder>\n[HME background task auto-read]\nThe completed mesh consultation auto-read bundle is below. Treat it as the relevant file evidence; do not poll task output.\n${bundle}\n</system-reminder>`;
+}
+
+function _replaceTaskNotification(notification, bump) {
+  const auto = _autoReadConsultBundleFromTaskNotification(notification);
+  if (auto) { bump('task_notification_auto_read_bundle'); return auto; }
+  bump('task_notification_stripped');
+  return '';
+}
+
 function _textOf(block) {
   if (!block || typeof block !== 'object') return '';
   return _sharedBlockText(block, { toolResults: true });
