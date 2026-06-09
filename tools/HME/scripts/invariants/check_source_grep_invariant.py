@@ -45,7 +45,10 @@ RULES = {
     "hme-py-valueerror-coverage": [{"paths": ["tools/HME/service/server/operational_state.py"], "pattern": r"except \(OSError", "exclude": r"ValueError"}],
     "index-directory-zero-args": [{"paths": ["tools/HME/service/rag_engine/engine_indexing.py"], "pattern": r"def index_directory\(self,|def _index_directory_locked\(self,|def _collect_files\(self,"}],
     "no-direct-gpu-model-load-in-indexing": [{"paths": ["tools/HME/service/indexing_mode.py", "tools/HME/service/server/tools_index.py"], "pattern": r"from sentence_transformers|import torch|SentenceTransformer"}],
-    "event-kernel-subprocesses-use-fs-ipc": [{"roots": ["tools/HME/event_kernel", "tools/HME/proxy/stop_chain"], "include": [".js"], "pattern": r"child\.stdin|stdin\.write|spawnSync\([^\n]*input"}],
+    "event-kernel-subprocesses-use-fs-ipc": [
+        {"roots": ["tools/HME/event_kernel", "tools/HME/proxy/stop_chain"], "include": [".js"], "pattern": r"child\.stdin|stdin\.write|spawnSync\([^\n]*input"},
+        {"roots": ["tools/HME/event_kernel", "tools/HME/proxy/stop_chain", "teams/rounds"], "include": [".py"], "pattern": r"stdin\s*=\s*subprocess\.PIPE|\.stdin\.write\(|\.communicate\(\s*input|Popen\([^\n]*input\s*=|run\([^\n]*input\s*=", "exclude": r"# fs-ipc-ok"},
+    ],
     "no-foreign-proc-fd-poke": [
         {
             "roots": ["tools/HME", "teams", "src"],
