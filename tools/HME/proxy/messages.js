@@ -205,27 +205,20 @@ function _safeProjectFile(raw) {
   return abs;
 }
 
-function _safeCompletedTaskOutputFile(raw) {
-  const p = String(raw || '').trim();
-  if (!p || !path.isAbsolute(p)) return null;
-  let real;
-  try { real = fsRealPath(p); } catch (_e) { return null; }
-  const tmpReal = fsRealPath(os.tmpdir());
-  const projectTmp = path.join(PROJECT_ROOT, 'tmp');
-  const inOsTmp = real.startsWith(tmpReal + path.sep) && /\/tasks\/[^/]+\.output$/.test(real);
-  const inProjectTmp = real.startsWith(projectTmp + path.sep) && /\/tasks\/[^/]+\.output$/.test(real);
-  return inOsTmp || inProjectTmp ? real : null;
+function _latestConsultBundleRel() {
+  const latest = _safeProjectFile('tools/HME/runtime/latest-consult-auto-read.json');
+  if (!latest) return '';
+  try {
+    const data = JSON.parse(fs.readFileSync(latest, 'utf8'));
+    return String(data.auto_read_bundle || '');
+  } catch (_e) { return ''; }
 }
 
 function _autoReadConsultBundleFromTaskNotification(notification) {
   const text = String(notification || '');
   if (!/<status>completed<\/status>/i.test(text)) return '';
-  const outputFile = (text.match(/<output-file>([\s\S]*?)<\/output-file>/i) || [])[1];
-  const outputAbs = _safeCompletedTaskOutputFile(outputFile);
-  if (!outputAbs) return '';
-  let taskOut = '';
-  try { taskOut = fs.readFileSync(outputAbs, 'utf8'); } catch (_e) { return ''; }
-  const bundleRel = (taskOut.match(/AUTO_READ_BUNDLE\s+(teams\/runtime\/output\/\S+\/_consult-auto-read\.json)/) || [])[1];
+  if (!/consult|mesh|Run_actual_short_consult|hypermeta|auto-read-proof/i.test(text)) return '';
+  const bundleRel = _latestConsultBundleRel();
   const bundleAbs = _safeProjectFile(bundleRel);
   if (!bundleAbs) return '';
   let bundle = '';
