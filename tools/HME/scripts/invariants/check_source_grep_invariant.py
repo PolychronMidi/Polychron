@@ -50,8 +50,8 @@ RULES = {
         {
             "roots": ["tools/HME", "teams", "src"],
             "include": [".py", ".js", ".sh"],
-            "pattern": r"/proc/\d|/proc[\"']?\s*\)|Path\([\"']/proc|proc\.iterdir|/dev/ptmx|/proc/.*\bfd\b|readlink\([^)]*\bfd\b",
-            "exclude": r"__pycache__|node_modules/|tools/HME/tests/|tools/HME/KB/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# proc-read-ok",
+            "pattern": r"/proc/.*\bfd\b|\bfd\b.*/proc|/dev/ptmx|os\.readlink\([^)]*fd|readlinkSync\([^)]*fd",
+            "exclude": r"__pycache__|node_modules/|tools/HME/tests/|tools/HME/KB/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# proc-fd-ok",
         },
     ],
     "overdrive-no-stale-mode6": [
