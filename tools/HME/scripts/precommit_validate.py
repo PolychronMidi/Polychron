@@ -240,6 +240,24 @@ def local_path_hits(path: str, text: str) -> list[str]:
     return hits
 
 
+OUTSIDE_PROJECT_TMP_RE = re.compile(
+    r"\b(?:os\.tmpdir\s*\(|tempfile\.gettempdir\s*\(|mktemp\b[^\n]*(?:TMPDIR|/tmp)|find\s+/tmp\b|/var/tmp\b)"
+)
+
+def outside_project_tmp_hits(path: str, text: str, *, staged: bool) -> list[str]:
+    if not staged:
+        return []
+    # Test sandboxes may use OS tmp. Runtime/proxy/hooks/round code may not:
+    # completed-task evidence and all HME scratch state must flow through
+    if path.startswith("tools/HME/tests/") or path.startswith("tools/HME/scripts/detectors/test"):
+        return []
+    hits = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if OUTSIDE_PROJECT_TMP_RE.search(line):
+            hits.append(f"{q(path)}:{lineno} uses OS tmp/outside-project temp path; use PROJECT_ROOT/tmp or PROJECT_ROOT-owned runtime artifacts")
+    return hits
+
+
 def syntax_check(path: str, data: bytes) -> None:
     if skip_syntax(path, POLICY):
         return
