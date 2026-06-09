@@ -73,6 +73,14 @@ test('shared Bash anti-wait only requires Claude run_in_background when host sup
   assert.equal(claudeBackground.decision, 'allow');
 });
 
+test('request mutation firewalls system-reminders before content-plane cleaners', () => {
+  const text = fs.readFileSync(path.join(root, 'tools/HME/proxy/hme_proxy_request_mutation.js'), 'utf8');
+  const prov = text.indexOf('enforceReminderProvenance(payload');
+  const boiler = text.indexOf('stripBoilerplate(payload)');
+  const semantic = text.indexOf('stripSemanticRedundancy(payload)');
+  assert.ok(prov > 0 && boiler > prov && semantic > boiler);
+});
+
 test('shared Read policy blocks guarded paths before execution', () => {
   const out = evaluateReadInput({ file_path: path.join(root, 'doc/theory/secret.md') }, { projectRoot: root });
   assert.equal(out.decision, 'deny');
