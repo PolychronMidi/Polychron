@@ -357,6 +357,10 @@ def main():
                         token, prompt, interrupt = decode_control_line(line)
                         steps = resolve_steps(multistep, token, prompt)
                         steps = [step for step in (steps or []) if step]
+                        if token == "postcompact-continue" and pending_steps and steps == ["continue"] and pending_steps[0:1] == ["continue"]:
+                            # cc already queued /compact -> continue. Native PostCompact
+                            # also asks for continue; ignore that duplicate so compact
+                            steps = []
                         if steps and (interrupt or not pending_steps):
                             if interrupt:
                                 # Ctrl-C aborts active request; defer /compact until idle
