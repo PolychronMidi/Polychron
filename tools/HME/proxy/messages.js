@@ -205,20 +205,23 @@ function _safeProjectFile(raw) {
   return abs;
 }
 
-function _latestConsultBundleRel() {
+function _latestConsultBundle() {
   const latest = _safeProjectFile('tools/HME/runtime/latest-consult-auto-read.json');
-  if (!latest) return '';
+  if (!latest) return null;
   try {
     const data = JSON.parse(fs.readFileSync(latest, 'utf8'));
-    return String(data.auto_read_bundle || '');
-  } catch (_e) { return ''; }
+    const generated = Date.parse(String(data.generated_at || ''));
+    if (!Number.isFinite(generated) || (Date.now() - generated) > 15 * 60 * 1000) return null;
+    return data;
+  } catch (_e) { return null; }
 }
 
 function _autoReadConsultBundleFromTaskNotification(notification) {
   const text = String(notification || '');
   if (!/<status>completed<\/status>/i.test(text)) return '';
-  if (!/consult|mesh|Run_actual_short_consult|hypermeta|auto-read-proof/i.test(text)) return '';
-  const bundleRel = _latestConsultBundleRel();
+  const latest = _latestConsultBundle();
+  if (!latest) return '';
+  const bundleRel = String(latest.auto_read_bundle || '');
   const bundleAbs = _safeProjectFile(bundleRel);
   if (!bundleAbs) return '';
   let bundle = '';
