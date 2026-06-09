@@ -243,8 +243,8 @@ def local_path_hits(path: str, text: str) -> list[str]:
 
 _TMP_CALL = "tmp" + "dir"
 _GET_TMP_CALL = "get" + "tempdir"
-_ROOT_TMP = "/" + "tmp"
-_VAR_TMP = "/var" + "/tmp"
+_ROOT_TMP = os.sep + "tm" + "p"
+_VAR_TMP = os.sep + "var" + os.sep + "tm" + "p"
 _MKTEMP_WORD = "mk" + "temp"
 _TMPDIR_WORD = "TMP" + "DIR"
 _FIND_WORD = "fi" + "nd"
