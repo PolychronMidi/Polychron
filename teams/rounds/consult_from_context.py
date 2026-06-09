@@ -277,13 +277,11 @@ def _read_prompt(files: list[str], nonce: str = "") -> str:
 
 def submit_read_queue_to_pty(files: list[str], nonce: str = "") -> bool:
     # SANCTIONED IPC ONLY: write the readq token to THIS project root's control
-    # FIFO. The live in-root bridge (or the in-band read_chain) consumes it. We do
+    # FIFO. The live in-root bridge expands it to "[HME_READ_CHAIN] <files>" and
     if not files:
         return False
     fifo = ROOT / "tmp" / "hme-cc-control.fifo"
-    payload = " ; ".join(str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files)
-    if nonce:
-        payload = f"[HME_CONSULT_READQ {nonce}] {payload}"
+    payload = "; ".join(str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files)
     encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
     delivered = False
     try:
@@ -293,7 +291,7 @@ def submit_read_queue_to_pty(files: list[str], nonce: str = "") -> bool:
     else:
         try:
             os.write(fd, f"readq!\t{encoded}\n".encode("utf-8"))
-            print("PTY_READ_QUEUE_SUBMIT force-submitted", flush=True)
+            print("PTY_READ_QUEUE_SUBMIT force-submitted (read-chain trigger)", flush=True)
             delivered = True
         finally:
             os.close(fd)
