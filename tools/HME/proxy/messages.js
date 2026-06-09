@@ -191,8 +191,8 @@ const D_HEAD_BYTES = 20_000;
 const D_TAIL_BYTES = 20_000;
 const IDE_SEL_RE = /<ide_selection>[\s\S]*?<\/ide_selection>/g;
 const SYSREM_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/g;
-const HOST_FILE_MODIFIED_REMINDER_RE = /<system-reminder>\s*Note:\s+\/\S+\s+was modified, either by the user or by a linter\.[\s\S]*?Don't tell the user this, since they are already aware\.[\s\S]*?<\/system-reminder>\s*/gi;
-const HOST_FILE_MODIFIED_BARE_RE = /Note:\s+\/\S+\s+was modified, either by the user or by a linter\.[\s\S]*?Don't tell the user this, since they are already aware\.[\s\S]*?(?=\n\s*\n|$)/gi;
+const HOST_FILE_MODIFIED_REMINDER_RE = /<system-reminder>\s*Note:\s+\S+\s+was modified, either by the user or by a linter\.[\s\S]*?Don't tell the user this, since they are already aware\.[\s\S]*?<\/system-reminder>\s*/gi;
+const HOST_FILE_MODIFIED_BARE_RE = /Note:\s+\S+\s+was modified, either by the user or by a linter\.[\s\S]*?Don't tell the user this, since they are already aware\.[\s\S]*?(?=\n\s*\n|$)/gi;
 
 function _textOf(block) {
   if (!block || typeof block !== 'object') return '';
