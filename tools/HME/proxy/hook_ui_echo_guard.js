@@ -148,6 +148,7 @@ function stripHookUiEchoText(text, stats = {}, opts = {}) {
     return kept.join('\n');
   }
   out = stripRenderedStopHookLines(out);
+  out = out.replace(TOOL_RENDER_ECHO_RE, (block) => removeBlock(block, true));
   out = out.replace(STRIPPED_MARKER_RE, (block) => removeBlock(block, true));
   out = out.replace(HOST_STOP_ECHO_RE, (block) => removeBlock(block, true));
   out = out.replace(HOST_NATIVE_TOOL_ERROR_RE, (block) => (NATIVE_EDIT_ERROR_PHRASE_RE.test(block) ? removeBlock(block, true) : block));
