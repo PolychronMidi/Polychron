@@ -71,6 +71,48 @@ class ConsultFromContextTests(unittest.TestCase):
             else:
                 latest.write_text(old_latest, encoding="utf-8")
 
+    def test_collect_native_read_rows_requires_real_read_results(self):
+        with tempfile.TemporaryDirectory() as td:
+            trans = Path(td) / "session.jsonl"
+            required = str(Path(td) / "final.json")
+            rows = [
+                {"type": "assistant", "timestamp": "2026-06-09T00:00:01Z", "message": {"content": [
+                    {"type": "tool_use", "id": "call_real", "name": "Read", "input": {"file_path": required}},
+                    {"type": "tool_use", "id": "hme_consult_auto_read_round_nonce_0", "name": "Read", "input": {"file_path": required}},
+                ]}},
+                {"type": "user", "timestamp": "2026-06-09T00:00:02Z", "message": {"content": [
+                    {"type": "tool_result", "tool_use_id": "call_real", "content": "1\\t{}"},
+                    {"type": "tool_result", "tool_use_id": "hme_consult_auto_read_round_nonce_0", "content": "synthetic"},
+                ]}},
+            ]
+            trans.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
+            read_rows, rejected = consult_from_context.collect_native_read_rows(trans, [required])
+        self.assertEqual(len(read_rows), 1)
+        self.assertEqual(read_rows[0]["tool_use_id"], "call_real")
+        self.assertGreater(read_rows[0]["result_line"], 0)
+        self.assertEqual(rejected[0]["reason"], "proxy-synthetic-auto-read-id")
+
+    def test_prove_native_reads_fails_without_transcript(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            manifest = {"round": "unit-proof-fail"}
+            old_env = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "CLAUDE_PROJECT_DIR", "HME_CONSULT_NATIVE_READ_PROOF_DRIVER")}
+            try:
+                os.environ["HME_TRANSCRIPT_PATH"] = str(out / "missing.jsonl")
+                os.environ["CLAUDE_PROJECT_DIR"] = str(out / "no-projects")
+                os.environ["HME_CONSULT_NATIVE_READ_PROOF_DRIVER"] = "off"
+                ok = consult_from_context.prove_native_reads(manifest, out, ["final.json"])
+            finally:
+                for k, v in old_env.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
+            proof = json.loads((out / "_consult-native-read-proof.json").read_text(encoding="utf-8"))
+        self.assertFalse(ok)
+        self.assertFalse(proof["verified"])
+        self.assertIn("no Claude transcript", proof["failure"])
+
     def test_runtime_consult_scripts_are_thin_wrappers(self):
         for script in (ROOT / "teams/runtime").glob("*consult.sh"):
             text = script.read_text(encoding="utf-8")
