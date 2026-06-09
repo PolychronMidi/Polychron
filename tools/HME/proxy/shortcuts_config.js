@@ -45,12 +45,32 @@ function shortcutDisplay(text) {
   return null;
 }
 
+// The host wraps mid-turn typing in envelopes the typed shortcut must survive:
+// <system-reminder>...</system-reminder> blocks and a leading
+// "[Request interrupted by user]" line. The wire lane (00a_shortcuts_rewriter)
+const _SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
+const _INTERRUPT_ENVELOPE_RE = /^\s*\[Request interrupted by user[^\]]*\]\s*/i;
+
+function _normalizeShortcutInput(text) {
+  let raw = String(text == null ? '' : text).replace(_SYSTEM_REMINDER_RE, '');
+  raw = raw.replace(_INTERRUPT_ENVELOPE_RE, '');
+  return raw.trim();
+}
+
 function multiStepMatch(text) {
-  const raw = String(text == null ? '' : text).trim();
+  const raw = _normalizeShortcutInput(text);
   const keyText = raw.toLowerCase();
   if (!keyText) return null;
   if (Object.prototype.hasOwnProperty.call(MULTI_STEP_SHORTCUTS, keyText)) {
     return { key: keyText, prompt: '', mode: MULTI_STEP_SHORTCUTS[keyText].mode || 'exact' };
+  }
+  // Exact key alone on the final line (host split the prompt across lines).
+  const lastLine = raw.split('\n').pop().trim();
+  const lastKey = lastLine.toLowerCase();
+  if (lastKey !== keyText
+    && Object.prototype.hasOwnProperty.call(MULTI_STEP_SHORTCUTS, lastKey)
+    && (MULTI_STEP_SHORTCUTS[lastKey].mode || 'exact') !== 'prefix') {
+    return { key: lastKey, prompt: '', mode: MULTI_STEP_SHORTCUTS[lastKey].mode || 'exact' };
   }
   const prefixKeys = Object.keys(MULTI_STEP_SHORTCUTS)
     .filter((k) => (MULTI_STEP_SHORTCUTS[k].mode || 'exact') === 'prefix')
