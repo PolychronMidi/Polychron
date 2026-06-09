@@ -76,6 +76,56 @@ function _anthropicTransportMaxBytes(_payload) {
   return _positiveNumber(process.env.HME_PROXY_INTERACTIVE_MAX_BYTES);
 }
 
+function _msgText(msg) {
+  const c = msg && msg.content;
+  if (typeof c === 'string') return c;
+  if (!Array.isArray(c)) return '';
+  return c.map((b) => (b && typeof b.text === 'string' ? b.text : '')).join('\n');
+}
+function _readJsonSafe(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_e) { return null; }
+}
+function _safeProjectPath(rel) {
+  const raw = String(rel || '').trim();
+  if (!raw) return null;
+  const abs = path.isAbsolute(raw) ? raw : path.join(PROJECT_ROOT, raw);
+  const r = path.relative(PROJECT_ROOT, abs);
+  if (r.startsWith('..') || path.isAbsolute(r)) return null;
+  return abs;
+}
+function _readAsNativeReadText(rel) {
+  const abs = _safeProjectPath(rel);
+  if (!abs) return `AUTO-READ ERROR: path outside PROJECT_ROOT: ${rel}`;
+  try {
+    const text = fs.readFileSync(abs, 'utf8');
+    return text.split(/\r?\n/).map((line, i) => `${i + 1}\t${line}`).join('\n');
+  } catch (err) {
+    return `AUTO-READ ERROR: ${err.message}`;
+  }
+}
+function injectConsultNativeReadResults(payload) {
+  if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return 0;
+  const last = payload.messages[payload.messages.length - 1];
+  const lastText = _msgText(last);
+  if (!/<task-notification>[\s\S]*?<status>completed<\/status>[\s\S]*?<\/task-notification>/i.test(lastText)) return 0;
+  const markerPath = path.join(PROJECT_ROOT, 'tools/HME/runtime/latest-consult-read-queue.json');
+  const marker = _readJsonSafe(markerPath);
+  if (!marker || marker.consumed === true) return 0;
+  const expires = Date.parse(String(marker.expires_at || ''));
+  if (!Number.isFinite(expires) || Date.now() > expires) return 0;
+  const files = Array.isArray(marker.native_read_before_report) ? marker.native_read_before_report.map(String).filter(Boolean) : [];
+  if (!files.length) return 0;
+  const nonce = String(marker.nonce || Date.now().toString(36));
+  const toolUses = files.map((file, i) => ({ type: 'tool_use', id: `hme_auto_read_${nonce}_${i}`, name: 'Read', input: { file_path: _safeProjectPath(file) || file } }));
+  const toolResults = files.map((file, i) => ({ type: 'tool_result', tool_use_id: `hme_auto_read_${nonce}_${i}`, content: _readAsNativeReadText(file) }));
+  payload.messages.splice(payload.messages.length - 1, 0,
+    { role: 'assistant', content: toolUses },
+    { role: 'user', content: toolResults },
+  );
+  try { fs.writeFileSync(markerPath, JSON.stringify({ ...marker, consumed: true, consumed_at: new Date().toISOString() }, null, 2) + '\n'); } catch (_e) { /* best-effort */ }
+  return files.length;
+}
+
 function compactLargeInteractiveAnthropicPayload(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const threshold = _anthropicTransportMaxBytes(payload);
