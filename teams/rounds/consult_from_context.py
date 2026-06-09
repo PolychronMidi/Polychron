@@ -244,6 +244,17 @@ def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
     }
     out_path = out_dir / "_consult-read-queue.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    latest_path = ROOT / "tools/HME/runtime/latest-consult-read-queue.json"
+    latest_path.parent.mkdir(parents=True, exist_ok=True)
+    latest_path.write_text(json.dumps({
+        "schema": 1,
+        "round": manifest["round"],
+        "read_queue": rel(out_path),
+        "native_read_before_report": files,
+        "generated_at": payload["generated_at"],
+        "expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 900)),
+        "consumed": False,
+    }, indent=2) + "\n", encoding="utf-8")
     print(f"NATIVE_READ_QUEUE {rel(out_path)}", flush=True)
     for item in files:
         print(f"NATIVE_READ_REQUIRED {item}", flush=True)
