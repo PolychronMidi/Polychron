@@ -224,11 +224,11 @@ def write_completion(manifest: dict[str, Any], ctx: Path, out_dir: Path, ok: boo
         "required_outputs": [rel(out_dir / s) for s in required],
         "final_outputs": [rel(out_dir / f) for f in finals],
         "must_read_before_report": [rel(out_dir / f) for f in finals],
-        "auto_read_files": auto_read,
-        "auto_read_bundle": rel(out_dir / "_consult-auto-read.json"),
+        "native_read_before_report": auto_read,
+        "read_queue": rel(out_dir / "_consult-read-queue.json"),
         "completed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) if complete else "",
-        "premature_report_guard": "Do not report mesh conclusions until every must_read_before_report file has been read after completion notification.",
-        "polling_guard": "Do not poll task output/progress; wait for the completion notification, then read _consult-auto-read.json or the declared artifacts.",
+        "premature_report_guard": "Do not report mesh conclusions until every native_read_before_report file has been read through Claude's native Read tool after completion.",
+        "polling_guard": "Do not poll task output/progress. After completion, issue native Read calls for every native_read_before_report path.",
     }
     (out_dir / "_consult-complete.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
