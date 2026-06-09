@@ -304,7 +304,9 @@ def main(argv: list[str] | None = None) -> int:
             progress.emit(str(step["id"]), "failed", "dispatch failed", target=str(step["target"]), rc=rc, reply_bytes=bytes_, error_log=rel(err))
     write_completion(manifest, ctx, out_dir, ok)
     if ok:
+        files = [rel(p) for p in relevant_output_paths(manifest, out_dir)]
         write_native_read_queue(manifest, out_dir)
+        submit_read_queue_to_pty(files)
         write_completion(manifest, ctx, out_dir, ok)
     rc = progress.finish(f"{manifest['round']} consultation complete" if ok else f"{manifest['round']} consultation incomplete")
     print(rel(out_dir), flush=True)
