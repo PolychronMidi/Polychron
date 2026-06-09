@@ -275,85 +275,9 @@ def _read_prompt(files: list[str], nonce: str = "") -> str:
     return tag + "Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n" + "\n".join(abs_files)
 
 
-def _proc_belongs_to_root(p: Path) -> bool:
-    # PROJECT-ROOT INVARIANT: a /proc scan can otherwise select an hme-claude.py
-    # bridge from ANY worktree/session on the host and force-write its PTY -- work
-    try:
-        cwd = os.path.realpath(os.readlink(p / "cwd"))
-    except OSError:
-        return False
-    return cwd == str(ROOT)
-
-
-def _stale_bridge_master_fd() -> str | None:
-    shortcuts = ROOT / "tools/HME/config/shortcuts.json"
-    try:
-        shortcuts_mtime = shortcuts.stat().st_mtime
-    except OSError:
-        shortcuts_mtime = time.time()
-    proc = Path("/proc")
-    for p in proc.iterdir():
-        if not p.name.isdigit():
-            continue
-        try:
-            cmdline = (p / "cmdline").read_bytes().replace(b"\x00", b" ").decode("utf-8", "replace")
-        except OSError:
-            continue
-        if "tools/HME/scripts/hme-claude.py" not in cmdline and "scripts/hme-claude.py" not in cmdline:
-            continue
-        # Refuse any bridge that is not rooted in THIS project root.
-        if not _proc_belongs_to_root(p):
-            continue
-        try:
-            if p.stat().st_mtime >= shortcuts_mtime:
-                continue
-        except OSError:
-            continue
-        fd_dir = p / "fd"
-        try:
-            fds = sorted(fd_dir.iterdir(), key=lambda x: int(x.name))
-        except OSError:
-            continue
-        for fd in fds:
-            try:
-                if os.readlink(fd) == "/dev/ptmx":
-                    return str(fd)
-            except OSError:
-                continue
-    return None
-
-
-def _submit_read_queue_to_stale_pty_master(files: list[str], nonce: str = "") -> bool:
-    fd_path = _stale_bridge_master_fd()
-    if not fd_path:
-        return False
-    prompt = _read_prompt(files, nonce)
-    code = """
-import os, sys, time
-fd_path, prompt = sys.argv[1], sys.argv[2]
-time.sleep(float(os.environ.get('HME_CONSULT_PTY_MASTER_DELAY', '2.0')))
-fd = os.open(fd_path, os.O_WRONLY | os.O_NONBLOCK)
-try:
-    os.write(fd, (prompt + '\\r').encode('utf-8'))
-finally:
-    os.close(fd)
-""".strip()
-    try:
-        subprocess.Popen(
-            [sys.executable, "-c", code, fd_path, prompt],
-            cwd=ROOT,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        print("PTY_MASTER_READ_QUEUE_SUBMIT delayed-force-submitted", flush=True)
-        return True
-    except OSError:
-        return False
-
-
 def submit_read_queue_to_pty(files: list[str], nonce: str = "") -> bool:
+    # SANCTIONED IPC ONLY: write the readq token to THIS project root's control
+    # FIFO. The live in-root bridge (or the in-band read_chain) consumes it. We do
     if not files:
         return False
     fifo = ROOT / "tmp" / "hme-cc-control.fifo"
@@ -373,10 +297,6 @@ def submit_read_queue_to_pty(files: list[str], nonce: str = "") -> bool:
             delivered = True
         finally:
             os.close(fd)
-    # Current-session compatibility: if the live bridge started before readq was
-    # added to shortcuts.json, it will accept and silently ignore the FIFO token.
-    if _submit_read_queue_to_stale_pty_master(files, nonce):
-        delivered = True
     return delivered
 
 
