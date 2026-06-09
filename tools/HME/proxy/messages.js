@@ -223,7 +223,7 @@ function _autoReadConsultBundleFromTaskNotification(notification) {
   const text = String(notification || '');
   if (!/<status>completed<\/status>/i.test(text)) return '';
   const outputFile = (text.match(/<output-file>([\s\S]*?)<\/output-file>/i) || [])[1];
-  const outputAbs = _safeProjectFile(outputFile);
+  const outputAbs = _safeCompletedTaskOutputFile(outputFile);
   if (!outputAbs) return '';
   let taskOut = '';
   try { taskOut = fs.readFileSync(outputAbs, 'utf8'); } catch (_e) { return ''; }
