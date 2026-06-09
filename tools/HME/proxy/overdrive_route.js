@@ -306,7 +306,15 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     result.swapMeta = result.swapChain[idx];
   }
   result.swapModel = upstreamModelId(result.swapModel);
-  if (env.HME_OMNIROUTE_PROVIDER) result.omniProvider = env.HME_OMNIROUTE_PROVIDER;
+  if (env.HME_OMNIROUTE_PROVIDER) {
+    const forcedProvider = String(env.HME_OMNIROUTE_PROVIDER).replace(/_/g, '-').toLowerCase();
+    const skipSet = providerSkipSet(cfg, env);
+    if (skipSet.has(forcedProvider)) {
+      console.error(`[hme-proxy] MODE=1 ignoring HME_OMNIROUTE_PROVIDER=${forcedProvider}: provider is in providers_to_skip`);
+    } else {
+      result.omniProvider = forcedProvider;
+    }
+  }
 
   // Size gate: if the request won't fit the selected swap model, first try a
   // larger-window NON-skipped chain model; only fall back to the requested Claude
