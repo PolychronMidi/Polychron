@@ -171,6 +171,8 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
         editFallbackToReadRewrite,
         readInputNormalizeRewrite,
         providerReasoningToThinkingRewrite,
+        goalVerifierSseRewrite,
+        goalVerifierSseFlush,
         asciiStripRewrite,
         ...stopHookRewritersForSlot('pre-tool'),
         bashPolicyRewrite,
