@@ -124,11 +124,16 @@ function _lifesaverBlock(event, message) {
     });
   }
   if (event === 'Stop') return JSON.stringify({ ok: false, reason: alert });
-  const out = { decision: 'block', reason: alert };
   if (event === 'UserPromptSubmit') {
-    out.hookSpecificOutput = { hookEventName: event, additionalContext: alert };
+    return JSON.stringify({
+      decision: 'block',
+      reason: alert,
+      hookSpecificOutput: { hookEventName: event, additionalContext: alert },
+    });
   }
-  return JSON.stringify(out);
+  // PostToolUse/SessionStart/Compact hooks cannot block with a root
+  // decision/reason shape. On validator failure, preserve the alert only through
+  return JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: alert } });
 }
 
 function _normalizeClaudeStdoutObject(event, parsed) {
