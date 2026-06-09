@@ -229,6 +229,9 @@ def project_root():
 
 
 def fifo_path(root):
+    override = os.environ.get("HME_CC_CONTROL_FIFO")
+    if override:
+        return override
     return os.path.join(root, "tmp", "hme-cc-control.fifo")
 
 
