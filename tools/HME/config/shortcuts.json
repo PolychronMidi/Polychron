@@ -36,8 +36,8 @@
     },
     "readq": {
       "lane": "local-session",
-      "steps": ["Use the native Read tool for each of these file paths before any prose response; do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes: $prompt"],
-      "description": "PTY-bridge consult follow-up: forces the live Claude Code REPL to request native Read tool calls for the generated consult read queue."
+      "steps": ["[HME_READ_CHAIN] $prompt"],
+      "description": "PTY-bridge consult follow-up: types the read-chain trigger into the live REPL. The proxy (maybeDriveReadChain in hme_proxy_claude.js) intercepts it and emits real Read tool_use blocks with unforgeable hme_read_chain__ ids -- the reads are automatic and the model never decides to read. Replaces the old prose directive that merely ASKED the model to read."
     }
   }
 }
