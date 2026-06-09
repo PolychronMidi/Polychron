@@ -408,7 +408,9 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
                 if tool_id.startswith("hme_consult_auto_read_"):
                     rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "proxy-synthetic-auto-read-id"})
                     continue
-                if not bridge_prompt_seen:
+                # Unforgeable read-chain provenance bypasses the nonce gate.
+                is_read_chain = tool_id.startswith("hme_read_chain__")
+                if not is_read_chain and not bridge_prompt_seen:
                     rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "no-bridge-provenance (read precedes injected readq nonce; likely manual)"})
                     continue
                 rows_by_id[tool_id] = {
