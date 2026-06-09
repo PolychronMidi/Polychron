@@ -37,11 +37,6 @@
       "lane": "local-session",
       "steps": ["Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n$prompt"],
       "description": "PTY-bridge consult follow-up: forces the live Claude Code REPL to request native Read tool calls for the generated consult read queue."
-    },
-    "postcompact-continue": {
-      "lane": "local-session",
-      "steps": ["continue"],
-      "description": "PostCompact PTY follow-up: after a real Claude Code compact completes, submit exactly one live continue prompt. If a cc shortcut already has a pending continue, the PTY bridge ignores this duplicate token."
     }
   }
 }
