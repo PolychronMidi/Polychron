@@ -58,6 +58,12 @@ test('shared Bash policy blocks dangerous shell and lock deletion', () => {
   assert.match(out.reason, /Never delete/);
 });
 
+test('shared Bash policy blocks hme spawn route consult bypass', () => {
+  const out = evaluateBashInput({ command: "curl -sf -X POST http://127.0.0.1:9099/hme/spawn -d '{}'" }, { projectRoot: root });
+  assert.equal(out.decision, 'deny');
+  assert.match(out.reason, /spawn is disabled/);
+});
+
 test('shared Bash anti-wait only requires Claude run_in_background when host supports it', () => {
   const codex = evaluateBashInput({ command: 'npm run main' }, { projectRoot: root, supportsRunInBackground: false });
   assert.equal(codex.decision, 'allow');
