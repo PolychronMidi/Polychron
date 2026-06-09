@@ -32,6 +32,11 @@ function autoTailRewrite(input, file) {
 }
 
 function _permission(decision, reason = '') { return { decision, reason }; }
+function isBackgroundTaskOutputPath(file) {
+  const norm = String(file || '').replace(/^\/+/, '');
+  return /^tmp\/claude[^/]*\/.*\/tasks\/[^/]+\.output$/.test(norm)
+    || /^\.claude\/projects\/.*\/tasks\/[^/]+\.output$/.test(norm);
+}
 function relPath(file, root = PROJECT_ROOT) {
   const f = String(file || '');
   return root && f.startsWith(root + '/') ? f.slice(root.length + 1) : f.replace(/^\.\//, '');
