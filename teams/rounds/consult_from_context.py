@@ -235,10 +235,15 @@ def write_completion(manifest: dict[str, Any], ctx: Path, out_dir: Path, ok: boo
 
 def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
     files = [rel(p) for p in relevant_output_paths(manifest, out_dir)]
+    generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    nonce = f"{manifest['round']}-{int(time.time())}-{os.getpid()}"
+    session_id = os.environ.get("CLAUDE_CODE_SESSION_ID") or os.environ.get("HME_SESSION_ID") or ""
+    ttl = int(os.environ.get("HME_CONSULT_READ_QUEUE_TTL", "3600"))
     payload = {
         "schema": 1,
         "round": manifest["round"],
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "generated_at": generated_at,
+        "nonce": nonce,
         "source": "consult_from_context.write_native_read_queue",
         "guard": "These paths must be read with Claude's native Read tool before reporting. This file is a queue, not evidence that reads happened.",
         "native_read_before_report": files,
@@ -252,8 +257,10 @@ def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
         "round": manifest["round"],
         "read_queue": rel(out_path),
         "native_read_before_report": files,
-        "generated_at": payload["generated_at"],
-        "expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 900)),
+        "generated_at": generated_at,
+        "nonce": nonce,
+        "session_id": session_id,
+        "expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + ttl)),
         "consumed": False,
     }, indent=2) + "\n", encoding="utf-8")
     print(f"NATIVE_READ_QUEUE {rel(out_path)}", flush=True)
