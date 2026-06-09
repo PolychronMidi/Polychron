@@ -1,7 +1,11 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { stripSemanticRedundancy } = require('../../proxy/messages');
+
+const root = path.resolve(__dirname, '..', '..', '..', '..');
 
 test('host file-modified reminders are stripped before content-plane processing', () => {
   const payload = { messages: [{ role: 'user', content: [{ type: 'text', text: [
