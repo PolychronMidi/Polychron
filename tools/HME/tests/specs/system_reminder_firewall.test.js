@@ -24,7 +24,7 @@ test('host file-modified reminders are stripped before content-plane processing'
 test('completed mesh task notification injects auto-read bundle instead of disappearing', () => {
   const outDir = path.join(root, 'teams', 'runtime', 'output', 'unit-auto-read-consult');
   fs.mkdirSync(outDir, { recursive: true });
-  const taskDir = path.join(root, 'tmp', 'unit-auto-read-task', 'tasks');
+  const taskDir = path.join(os.tmpdir(), 'unit-auto-read-task', 'tasks');
   fs.mkdirSync(taskDir, { recursive: true });
   const bundleRel = 'teams/runtime/output/unit-auto-read-consult/_consult-auto-read.json';
   const bundleAbs = path.join(root, bundleRel);
