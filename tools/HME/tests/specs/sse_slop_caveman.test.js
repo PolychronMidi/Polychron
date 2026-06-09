@@ -9,6 +9,13 @@ test('slop caveman compression deletes requested glue words case-insensitively',
   assert.equal(result.out, '1; rdy; fix; ship');
 });
 
+test('slop never caveman-mutates system-reminder control-plane text', () => {
+  const reminder = '<system-reminder>\nNote: /x/file.js was modified, either by the user or by a linter. This change was intentional, so make sure to take it into account as you proceed.\n</system-reminder>';
+  const result = _stripSlop(reminder);
+  assert.equal(result.out, reminder);
+  assert.deepEqual(result.hits, []);
+});
+
 test('slop rewriter never erases a non-empty response (fail-safe replays originals)', () => {
   // Over-compression of a short/glue-only block must NOT yield an empty assistant
   // turn -- that reads as a blank response and can trip blank-retry cascades.
