@@ -534,6 +534,9 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
     pty_submitted = submit_read_queue_to_pty(files)
     proof["pty_submitted"] = pty_submitted
     proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout)
+    proof["proof_driver"] = "claude-print" if proc else os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
+    if not pty_submitted and not proc:
+        print("NATIVE_READ_PROOF_NO_BRIDGE no live readq PTY bridge and no print driver; relying on existing transcript reads only", flush=True)
     deadline = time.time() + timeout
     required = {_rel_or_abs(f) for f in files}
     try:
