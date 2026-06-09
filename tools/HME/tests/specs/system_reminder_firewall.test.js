@@ -27,7 +27,8 @@ test('completed mesh task notification injects auto-read bundle instead of disap
   const bundleAbs = path.join(root, bundleRel);
   fs.writeFileSync(bundleAbs, JSON.stringify({ schema: 1, files: [{ path: 'x', stdout: 'peer final' }] }));
   fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'latest-consult-auto-read.json'), JSON.stringify({ schema: 1, auto_read_bundle: bundleRel, generated_at: new Date().toISOString() }));
+  const latestPath = path.join(root, 'tools', 'HME', 'runtime', 'latest-consult-auto-read.json');
+  fs.writeFileSync(latestPath, JSON.stringify({ schema: 1, auto_read_bundle: bundleRel, generated_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60000).toISOString(), consumed: false }));
   const payload = { messages: [{ role: 'user', content: [{ type: 'text', text: [
     '<task-notification>',
     '<status>completed</status>',
