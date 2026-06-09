@@ -260,6 +260,14 @@ def auto_read_relevant_outputs(manifest: dict[str, Any], out_dir: Path) -> Path:
     }
     out_path = out_dir / "_consult-auto-read.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    latest_path = ROOT / "tools/HME/runtime/latest-consult-auto-read.json"
+    latest_path.parent.mkdir(parents=True, exist_ok=True)
+    latest_path.write_text(json.dumps({
+        "schema": 1,
+        "round": manifest["round"],
+        "auto_read_bundle": rel(out_path),
+        "generated_at": payload["generated_at"],
+    }, indent=2) + "\n", encoding="utf-8")
     print(f"AUTO_READ_BUNDLE {rel(out_path)}", flush=True)
     for row in rows:
         print(f"AUTO_READ {row['path']} rc={row['rc']}", flush=True)
