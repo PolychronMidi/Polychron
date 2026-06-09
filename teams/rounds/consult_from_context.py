@@ -307,18 +307,29 @@ def _submit_read_queue_to_stale_pty_master(files: list[str]) -> bool:
     if not fd_path:
         return False
     prompt = _read_prompt(files)
+    code = """
+import os, sys, time
+fd_path, prompt = sys.argv[1], sys.argv[2]
+time.sleep(float(os.environ.get('HME_CONSULT_PTY_MASTER_DELAY', '2.0')))
+fd = os.open(fd_path, os.O_WRONLY | os.O_NONBLOCK)
+try:
+    os.write(fd, (prompt + '\\r').encode('utf-8'))
+finally:
+    os.close(fd)
+""".strip()
     try:
-        fd = os.open(fd_path, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError:
-        return False
-    try:
-        os.write(fd, ("\x03" + prompt + "\r").encode("utf-8"))
-        print("PTY_MASTER_READ_QUEUE_SUBMIT force-submitted", flush=True)
+        subprocess.Popen(
+            [sys.executable, "-c", code, fd_path, prompt],
+            cwd=ROOT,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        print("PTY_MASTER_READ_QUEUE_SUBMIT delayed-force-submitted", flush=True)
         return True
     except OSError:
         return False
-    finally:
-        os.close(fd)
 
 
 def submit_read_queue_to_pty(files: list[str]) -> bool:
