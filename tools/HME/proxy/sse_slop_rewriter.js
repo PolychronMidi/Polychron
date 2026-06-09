@@ -805,8 +805,13 @@ function _applyPatternOutsideCode(text, pattern) {
   return _replaceOutsideCode(text, pattern.re, pattern.repl);
 }
 
+function _isControlPlaneText(text) {
+  return /<system-reminder[\s>][\s\S]*?<\/system-reminder>/i.test(String(text || ''));
+}
+
 function _stripSlop(text) {
   if (typeof text !== 'string' || !text) return { out: text, hits: [] };
+  if (_isControlPlaneText(text)) return { out: text, hits: [] };
   let out = text;
   const hits = [];
 
