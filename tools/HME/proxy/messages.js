@@ -344,9 +344,11 @@ function stripSemanticRedundancy(payload) {
       txt = txt.replace(HOST_FILE_MODIFIED_REMINDER_RE, () => { bump('host_file_modified_reminder_stripped'); return ''; });
       txt = txt.replace(HOST_FILE_MODIFIED_BARE_RE, () => { bump('host_file_modified_reminder_stripped'); return ''; });
 
-      // K runs first: strip task-notifications entirely (wrapped form, then bare).
-      txt = txt.replace(TASK_NOTIFICATION_WRAPPED_RE, () => { bump('task_notification_stripped'); return ''; });
-      txt = txt.replace(TASK_NOTIFICATION_RE, () => { bump('task_notification_stripped'); return ''; });
+      // K runs first: task-notifications are control-plane. For completed mesh
+      // consult tasks, replace the notification with the runner's auto-read bundle;
+      // otherwise strip the notification entirely.
+      txt = txt.replace(TASK_NOTIFICATION_WRAPPED_RE, (m) => _replaceTaskNotification(m, bump));
+      txt = txt.replace(TASK_NOTIFICATION_RE, (m) => _replaceTaskNotification(m, bump));
 
       txt = txt.replace(COMPACTION_NOTE_RE, (m) => {
         if (compactionNoteSeen) { bump('dup_compaction_note'); return ''; }
