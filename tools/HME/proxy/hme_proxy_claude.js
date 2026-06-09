@@ -370,4 +370,4 @@ function createClaudeHandler(deps) {
   return handleRequest;
 }
 
-module.exports = { createClaudeHandler, routeOpenAICompatibleThroughHme };
+module.exports = { createClaudeHandler, routeOpenAICompatibleThroughHme, maybeDriveReadChain };
