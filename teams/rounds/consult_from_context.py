@@ -336,7 +336,7 @@ def submit_read_queue_to_pty(files: list[str]) -> bool:
     if not files:
         return False
     fifo = ROOT / "tmp" / "hme-cc-control.fifo"
-    encoded = base64.b64encode("\n".join(files).encode("utf-8")).decode("ascii")
+    encoded = base64.b64encode(" ; ".join(str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files).encode("utf-8")).decode("ascii")
     delivered = False
     try:
         fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
