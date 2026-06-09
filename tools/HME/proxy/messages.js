@@ -207,6 +207,18 @@ function _safeProjectFile(raw) {
   return abs;
 }
 
+function _safeCompletedTaskOutputFile(raw) {
+  const p = String(raw || '').trim();
+  if (!p || !path.isAbsolute(p)) return null;
+  let real;
+  try { real = fsRealPath(p); } catch (_e) { return null; }
+  const tmpReal = fsRealPath(os.tmpdir());
+  const projectTmp = path.join(PROJECT_ROOT, 'tmp');
+  const inOsTmp = real.startsWith(tmpReal + path.sep) && /\/tasks\/[^/]+\.output$/.test(real);
+  const inProjectTmp = real.startsWith(projectTmp + path.sep) && /\/tasks\/[^/]+\.output$/.test(real);
+  return inOsTmp || inProjectTmp ? real : null;
+}
+
 function _autoReadConsultBundleFromTaskNotification(notification) {
   const text = String(notification || '');
   if (!/<status>completed<\/status>/i.test(text)) return '';
