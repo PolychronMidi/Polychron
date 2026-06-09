@@ -205,8 +205,8 @@ function _safeProjectFile(raw) {
   return abs;
 }
 
-function _latestConsultBundle() {
-  const latest = _safeProjectFile('tools/HME/runtime/latest-consult-auto-read.json');
+function _latestConsultReadQueue() {
+  const latest = _safeProjectFile('tools/HME/runtime/latest-consult-read-queue.json');
   if (!latest) return null;
   try {
     const data = JSON.parse(fs.readFileSync(latest, 'utf8'));
@@ -218,7 +218,7 @@ function _latestConsultBundle() {
   } catch (_e) { return null; }
 }
 
-function _consumeLatestConsultBundle(latest) {
+function _consumeLatestConsultReadQueue(latest) {
   const marker = latest && latest._marker_path;
   if (!marker) return;
   try {
@@ -228,22 +228,19 @@ function _consumeLatestConsultBundle(latest) {
   } catch (_e) { /* silent-ok: marker consumption is best-effort; expiry still bounds replay. */ }
 }
 
-function _autoReadConsultBundleFromTaskNotification(notification) {
+function _nativeReadQueueFromTaskNotification(notification) {
   const text = String(notification || '');
   if (!/<status>completed<\/status>/i.test(text)) return '';
-  const latest = _latestConsultBundle();
+  const latest = _latestConsultReadQueue();
   if (!latest) return '';
-  const bundleRel = String(latest.auto_read_bundle || '');
-  const bundleAbs = _safeProjectFile(bundleRel);
-  if (!bundleAbs) return '';
-  let bundle = '';
-  try { bundle = fs.readFileSync(bundleAbs, 'utf8'); } catch (_e) { return ''; }
-  _consumeLatestConsultBundle(latest);
-  return `<system-reminder>\n[HME background task auto-read]\nThe completed mesh consultation auto-read bundle is below. Treat it as the relevant file evidence; do not poll task output.\n${bundle}\n</system-reminder>`;
+  const files = Array.isArray(latest.native_read_before_report) ? latest.native_read_before_report : [];
+  if (!files.length) return '';
+  _consumeLatestConsultReadQueue(latest);
+  return `<system-reminder>\n[HME consult native-read queue]\nThe completed mesh consultation has not been read yet. Before reporting, issue Claude native Read calls for every path below; stdout labels do not count as reads.\n${files.map((f) => `- ${f}`).join('\n')}\n</system-reminder>`;
 }
 
 function _replaceTaskNotification(notification, bump) {
-  const auto = _autoReadConsultBundleFromTaskNotification(notification);
+  const auto = _nativeReadQueueFromTaskNotification(notification);
   if (auto) { bump('task_notification_auto_read_bundle'); return auto; }
   bump('task_notification_stripped');
   return '';
