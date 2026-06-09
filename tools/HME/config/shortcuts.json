@@ -19,8 +19,7 @@
     "ye": "why psychopathically spam empty commands?"
   },
   "two-step": {
-    "11": { "first": "reply only with 'hi'", "second": "reply only with 'high'" },
-    "rr": { "first": "Use the native Read tool to read exactly this one file and nothing else, then stop: README.md", "second": "Now use the native Read tool to read exactly this one file and nothing else, then stop: package.json" }
+    "11": { "first": "reply only with 'hi'", "second": "reply only with 'high'" }
   },
   "multi-step": {
     "cc": {
