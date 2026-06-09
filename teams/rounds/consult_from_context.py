@@ -479,7 +479,11 @@ def _proof_prompt(files: list[str]) -> str:
 
 
 def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, timeout: int) -> subprocess.Popen[bytes] | None:
-    if os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "claude-print") == "off":
+    # Default is live-PTY/readq only: the running Claude Code bridge consumes the
+    # readq token (submit_read_queue_to_pty) and issues native Read calls in-session.
+    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
+    if driver != "claude-print":
+        print(f"NATIVE_READ_PROOF_DRIVER {driver} (live readq bridge; no side session)", flush=True)
         return None
     if not session_id:
         return None
@@ -491,8 +495,8 @@ def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, 
     ]
     log = out_dir / "_consult-native-read-proof-driver.log"
     try:
-        fh = log.open("ab")
-        proc = subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
+        with log.open("ab") as fh:
+            proc = subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
         print(f"NATIVE_READ_PROOF_DRIVER claude-print pid={proc.pid} timeout={timeout}s", flush=True)
         return proc
     except OSError as exc:
