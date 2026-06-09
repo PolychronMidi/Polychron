@@ -23,17 +23,15 @@ test('host file-modified reminders are stripped before content-plane processing'
 test('completed mesh task notification injects auto-read bundle instead of disappearing', () => {
   const outDir = path.join(root, 'teams', 'runtime', 'output', 'unit-auto-read-consult');
   fs.mkdirSync(outDir, { recursive: true });
-  const taskDir = path.join(os.tmpdir(), 'unit-auto-read-task', 'tasks');
-  fs.mkdirSync(taskDir, { recursive: true });
   const bundleRel = 'teams/runtime/output/unit-auto-read-consult/_consult-auto-read.json';
   const bundleAbs = path.join(root, bundleRel);
   fs.writeFileSync(bundleAbs, JSON.stringify({ schema: 1, files: [{ path: 'x', stdout: 'peer final' }] }));
-  const taskOut = path.join(taskDir, 'abc.output');
-  fs.writeFileSync(taskOut, `done\nAUTO_READ_BUNDLE ${bundleRel}\n`);
+  fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'latest-consult-auto-read.json'), JSON.stringify({ schema: 1, auto_read_bundle: bundleRel }));
   const payload = { messages: [{ role: 'user', content: [{ type: 'text', text: [
     '<task-notification>',
     '<status>completed</status>',
-    `<output-file>${taskOut}</output-file>`,
+    '<summary>Background command "Rerun hypermeta consult" completed (exit code 0)</summary>',
     '</task-notification>',
   ].join('\n') }] }] };
   const count = stripSemanticRedundancy(payload);
