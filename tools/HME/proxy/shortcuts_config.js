@@ -101,4 +101,5 @@ module.exports = {
   multiStepMatch,
   multiStepKey,
   multiStepSteps,
+  _normalizeShortcutInput,
 };
