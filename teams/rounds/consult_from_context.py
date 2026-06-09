@@ -363,6 +363,209 @@ def submit_read_queue_to_pty(files: list[str]) -> bool:
     return delivered
 
 
+def _project_slug(root: Path = ROOT) -> str:
+    return str(root.resolve()).replace("/", "-")
+
+
+def _session_id() -> str:
+    for key in ("CLAUDE_CODE_SESSION_ID", "HME_SESSION_ID", "CLAUDE_SESSION_ID"):
+        val = os.environ.get(key)
+        if val:
+            return val
+    return ""
+
+
+def _claude_projects_dir() -> Path:
+    return Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path.home() / ".claude" / "projects")
+
+
+def resolve_transcript_path(session_id: str = "") -> Path | None:
+    explicit = os.environ.get("HME_TRANSCRIPT_PATH") or os.environ.get("CLAUDE_TRANSCRIPT_PATH")
+    if explicit:
+        p = Path(explicit)
+        if p.exists():
+            return p
+    projects = _claude_projects_dir()
+    if not projects.exists():
+        return None
+    if session_id:
+        matches = sorted(projects.rglob(f"{session_id}.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if matches:
+            return matches[0]
+    slug_dir = projects / _project_slug(ROOT)
+    search_dir = slug_dir if slug_dir.exists() else projects
+    matches = sorted(search_dir.rglob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return matches[0] if matches else None
+
+
+def _line_count(path_: Path) -> int:
+    try:
+        with path_.open("r", encoding="utf-8", errors="ignore") as f:
+            return sum(1 for _ in f)
+    except OSError:
+        return 0
+
+
+def _abs_path(path_: str) -> str:
+    p = Path(path_)
+    return str((p if p.is_absolute() else ROOT / p).resolve())
+
+
+def _rel_or_abs(path_: str) -> str:
+    p = Path(path_)
+    try:
+        return str(p.resolve().relative_to(ROOT)) if p.is_absolute() else str(p)
+    except ValueError:
+        return str(path_)
+
+
+def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    required_abs = {_abs_path(f) for f in required_files}
+    rows_by_id: dict[str, dict[str, Any]] = {}
+    rejected: list[dict[str, Any]] = []
+    try:
+        lines = transcript.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return [], []
+    for line_no, line in enumerate(lines, 1):
+        if line_no <= start_line:
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        msg = event.get("message") or {}
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "Read":
+                tool_id = str(block.get("id") or "")
+                raw_path = str((block.get("input") or {}).get("file_path") or "")
+                abs_path = _abs_path(raw_path) if raw_path else ""
+                if abs_path not in required_abs:
+                    continue
+                if tool_id.startswith("hme_consult_auto_read_"):
+                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "proxy-synthetic-auto-read-id"})
+                    continue
+                rows_by_id[tool_id] = {
+                    "line": line_no,
+                    "timestamp": event.get("timestamp") or "",
+                    "tool_use_id": tool_id,
+                    "file_path": raw_path,
+                    "relative_path": _rel_or_abs(raw_path),
+                    "result_line": 0,
+                    "result_timestamp": "",
+                }
+            elif block.get("type") == "tool_result":
+                tool_id = str(block.get("tool_use_id") or "")
+                if tool_id in rows_by_id and not rows_by_id[tool_id].get("result_line"):
+                    rows_by_id[tool_id]["result_line"] = line_no
+                    rows_by_id[tool_id]["result_timestamp"] = event.get("timestamp") or ""
+    rows = sorted(rows_by_id.values(), key=lambda r: (str(r.get("relative_path")), int(r.get("line") or 0)))
+    return rows, rejected
+
+
+def _proof_prompt(files: list[str]) -> str:
+    abs_files = [_abs_path(f) for f in files]
+    return (
+        "Use the native Read tool on every file path below before any prose response. "
+        "Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes. "
+        "After every Read tool call has completed, reply only: CONSULT_NATIVE_READ_PROOF_DONE\n"
+        + "\n".join(abs_files)
+    )
+
+
+def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, timeout: int) -> subprocess.Popen[bytes] | None:
+    if os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "claude-print") == "off":
+        return None
+    if not session_id:
+        return None
+    cmd = [
+        os.environ.get("HME_CLAUDE_BIN", "claude"), "-p", "--resume", session_id,
+        "--permission-mode", "bypassPermissions", "--tools", "Read", "--effort", "low",
+        "--model", os.environ.get("HME_CONSULT_READ_PROOF_MODEL", "default"),
+        "--output-format", "json", _proof_prompt(files),
+    ]
+    log = out_dir / "_consult-native-read-proof-driver.log"
+    try:
+        fh = log.open("ab")
+        proc = subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
+        print(f"NATIVE_READ_PROOF_DRIVER claude-print pid={proc.pid} timeout={timeout}s", flush=True)
+        return proc
+    except OSError as exc:
+        print(f"NATIVE_READ_PROOF_DRIVER unavailable: {exc}", flush=True)
+        return None
+
+
+def write_native_read_proof(out_dir: Path, proof: dict[str, Any]) -> None:
+    (out_dir / "_consult-native-read-proof.json").write_text(json.dumps(proof, indent=2) + "\n", encoding="utf-8")
+
+
+def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]) -> bool:
+    timeout = int(os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT", "180"))
+    session_id = _session_id()
+    transcript = resolve_transcript_path(session_id)
+    proof: dict[str, Any] = {
+        "schema": 1,
+        "round": manifest["round"],
+        "verified": False,
+        "session_id": session_id,
+        "transcript_path": str(transcript or ""),
+        "required_reads": [_rel_or_abs(f) for f in files],
+        "read_rows": [],
+        "missing": [_rel_or_abs(f) for f in files],
+        "rejected_rows": [],
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    if not transcript:
+        proof["failure"] = "no Claude transcript resolved; cannot prove native Read tool execution"
+        write_native_read_proof(out_dir, proof)
+        print("NATIVE_READ_PROOF_FAILED no-transcript", flush=True)
+        return False
+    start_line = _line_count(transcript)
+    proof["start_line"] = start_line
+    pty_submitted = submit_read_queue_to_pty(files)
+    proof["pty_submitted"] = pty_submitted
+    proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout)
+    deadline = time.time() + timeout
+    required = {_rel_or_abs(f) for f in files}
+    try:
+        while time.time() < deadline:
+            rows, rejected = collect_native_read_rows(transcript, files, start_line)
+            covered = {str(r.get("relative_path")) for r in rows if int(r.get("result_line") or 0) > 0}
+            missing = sorted(required - covered)
+            proof.update({
+                "read_rows": rows,
+                "rejected_rows": rejected,
+                "missing": missing,
+                "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            })
+            if not missing:
+                proof["verified"] = True
+                write_native_read_proof(out_dir, proof)
+                print(f"NATIVE_READ_PROOF_OK {rel(out_dir / '_consult-native-read-proof.json')}", flush=True)
+                for row in rows:
+                    if row.get("relative_path") in required:
+                        print(f"NATIVE_READ_PROOF_ROW line={row.get('line')} result_line={row.get('result_line')} id={row.get('tool_use_id')} path={row.get('relative_path')}", flush=True)
+                return True
+            if proc and proc.poll() is not None and time.time() > deadline - max(5, timeout // 4):
+                break
+            time.sleep(1.0)
+    finally:
+        if proc and proc.poll() is None:
+            try:
+                proc.terminate()
+            except OSError:
+                pass  # silent-ok: pending review
+    proof["failure"] = "missing native Read tool_use/tool_result rows after consult completion"
+    write_native_read_proof(out_dir, proof)
+    print(f"NATIVE_READ_PROOF_FAILED missing={','.join(proof['missing'])}", flush=True)
+    return False
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Run mesh consultation from a context-file manifest")
     ap.add_argument("context_file")
