@@ -41,4 +41,9 @@ test('completed mesh task notification injects auto-read bundle instead of disap
   assert.match(text, /HME background task auto-read/);
   assert.match(text, /peer final/);
   assert.doesNotMatch(text, /<task-notification>/);
+  assert.equal(JSON.parse(fs.readFileSync(latestPath, 'utf8')).consumed, true);
+
+  const payload2 = { messages: [{ role: 'user', content: [{ type: 'text', text: '<task-notification>\n<status>completed</status>\n</task-notification>' }] }] };
+  stripSemanticRedundancy(payload2);
+  assert.equal(payload2.messages[0].content[0].text.trim(), '(content stripped by hme-proxy boilerplate filter)');
 });
