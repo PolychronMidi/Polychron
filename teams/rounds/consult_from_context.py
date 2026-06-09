@@ -509,13 +509,17 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
         proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout, nonce)
     proof["pty_submitted"] = pty_submitted
     proof["proof_driver"] = "claude-print" if proc else driver
+    # Provenance gating only applies when we actually injected the nonce-tagged
+    # prompt. If nothing was submitted (driver=off / no bridge), there is no
+    gate_nonce = nonce if (pty_submitted or proc) else ""
+    proof["provenance_gated"] = bool(gate_nonce)
     if not pty_submitted and not proc:
         print("NATIVE_READ_PROOF_NO_BRIDGE no live readq PTY bridge and no print driver; relying on existing transcript reads only", flush=True)
     deadline = time.time() + timeout
     required = {_rel_or_abs(f) for f in files}
     try:
         while time.time() < deadline:
-            rows, rejected = collect_native_read_rows(transcript, files, start_line, nonce)
+            rows, rejected = collect_native_read_rows(transcript, files, start_line, gate_nonce)
             covered = {str(r.get("relative_path")) for r in rows if int(r.get("result_line") or 0) > 0}
             missing = sorted(required - covered)
             proof.update({
