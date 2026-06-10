@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "nodes": {
+    "source-grep-rules-fully-enforced": {
+      "intent": "ensure every source-grep rule is actually wired to an invariant shard",
+      "scope": ["tools/HME/scripts/invariants/check_source_grep_invariant.py", "tools/HME/config/invariants/*.json"],
+      "watched_class": "orphan or dangling source-grep guards",
+      "watcher_of": ["no-foreign-proc-fd-poke", "no-retired-consult-readchain-routes"],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["define a RULES key but never reference it", "reference a misspelled RULES key"],
+      "negative_control": "check_source_grep_bijection.py fires on synthetic orphan rule"
+    },
+    "no-retired-consult-readchain-routes": {
+      "intent": "block retired FIFO/readq/input-field consult read-chain routes",
+      "scope": ["teams/rounds", "tools/HME/config", "tools/HME/proxy", "tools/HME/scripts"],
+      "watched_class": "control-plane marker typed into live input instead of proxy-emitted Read tool_use",
+      "watcher_of": ["causal-paths-valid"],
+      "watched_by": ["source-grep-rules-fully-enforced", "invariant-topology-valid"],
+      "known_escape_vectors": ["reintroduce readq! FIFO write", "restore submit_read_queue_to_pty", "type [HME_READ_CHAIN] from local-session shortcut"],
+      "negative_control": "synthetic readq! source line is reported by check_source_grep_invariant.py no-retired-consult-readchain-routes"
+    },
+    "causal-paths-valid": {
+      "intent": "make shortcuts and proxy route transitions typed and lane-checked",
+      "scope": ["tools/HME/config/causal-paths.json", "tools/HME/config/shortcuts.json"],
+      "watched_class": "wire/local-session/host-task-notification lane confusion",
+      "watcher_of": ["no-retired-consult-readchain-routes"],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["wire shortcut declared only as string with no forbidden emitters", "local-session shortcut leaks into API payload"],
+      "negative_control": "readq key in multi-step shortcuts makes check_causal_paths.py fail"
+    },
+    "coherence-proof-schema-and-sample-valid": {
+      "intent": "ensure compact proof traces carry causal fields instead of prose-only claims",
+      "scope": ["tools/HME/config/coherence-proof.schema.json", "tools/HME/tests/fixtures/coherence-trace.sample.json"],
+      "watched_class": "unstructured proof claims with no causal path or verifier IDs",
+      "watcher_of": [],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["claim success without proof_artifacts", "omit forbidden_paths_checked"],
+      "negative_control": "check_coherence_proof.py fails when required causal fields are removed"
+    }
+  }
+}
