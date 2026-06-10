@@ -75,6 +75,12 @@ function maybeDriveReadChain({ clientRes, payload }) {
   const model = (payload && payload.model) || 'claude-read-chain';
   const body = readChain.buildReadToolUseMessage(files, nextIndex, { model })
     || readChain.buildDoneMessage(files.length, { model });
+  if (payload && payload.stream === true) {
+    const sse = Buffer.from(readChain.toAnthropicSse(body), 'utf8');
+    clientRes.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8' });
+    clientRes.end(sse);
+    return true;
+  }
   const json = Buffer.from(JSON.stringify(body), 'utf8');
   clientRes.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': String(json.length) });
   clientRes.end(json);
