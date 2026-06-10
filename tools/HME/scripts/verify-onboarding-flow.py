@@ -63,7 +63,7 @@ def main() -> int:
     tmp_project = tempfile.mkdtemp(prefix="hme-onb-verify-")
     os.makedirs(os.path.join(tmp_project, "tools", "HME", "service", "server"), exist_ok=True)
     os.makedirs(os.path.join(tmp_project, "tools", "HME", "service", "server", "tools_analysis"), exist_ok=True)
-    os.makedirs(os.path.join(tmp_project, "metrics"), exist_ok=True)
+    os.makedirs(os.path.join(tmp_project, "src", "output", "metrics"), exist_ok=True)
     os.makedirs(os.path.join(tmp_project, "tmp"), exist_ok=True)
 
     # Copy Python source into tmp_project so relative paths resolve.
