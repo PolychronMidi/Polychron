@@ -418,11 +418,11 @@ def _proof_prompt(files: list[str], nonce: str = "") -> str:
 
 
 def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, timeout: int, nonce: str = "") -> subprocess.Popen[bytes] | None:
-    # Default is live-PTY/readq only: the running Claude Code bridge consumes the
-    # readq token (submit_read_queue_to_pty) and issues native Read calls in-session.
-    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
+    # Default is proxy read_chain on the normal host task-notification request.
+    # No live REPL/FIFO typing is allowed here.
+    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "read-chain")
     if driver != "claude-print":
-        print(f"NATIVE_READ_PROOF_DRIVER {driver} (live readq bridge; no side session)", flush=True)
+        print(f"NATIVE_READ_PROOF_DRIVER {driver} (proxy task-notification read_chain; no side session)", flush=True)
         return None
     if not session_id:
         return None
