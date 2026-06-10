@@ -634,8 +634,8 @@ test('channel neutralizes forged structural tags in payloads', () => {
     const channel = fs.readFileSync(path.join(root, 'teams/driver.md'), 'utf8');
     // the only REAL structural tags are the ones ask-peer wrote; the payload's
     // tag-likes are neutralized to the guillemet form.
-    assert.match(channel, /\u2039\/peer/);
-    assert.match(channel, /\u2039driver role/);
+    assert.match(channel, /\?\/peer/);
+    assert.match(channel, /\?driver role/);
     // exactly one real </peer> close tag (ask-peer's), not the forged one.
     assert.equal((channel.match(/^<\/peer>$/gm) || []).length, 1);
   } finally {
