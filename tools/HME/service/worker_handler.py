@@ -103,7 +103,8 @@ class _Handler(BaseHTTPRequestHandler):
             from server import worker_code_fingerprint as _wcf
             from repo_root import resolve as _resolve_root
             return _wcf.current(_resolve_root())
-        except Exception:
+        except Exception as exc:
+            logger.debug(f"worker code fingerprint unavailable: {type(exc).__name__}: {exc}")
             return ""
 
     def _get_health(self):
