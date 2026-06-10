@@ -378,12 +378,12 @@
     },
     {
       "id": "lab-sketches-patches-array",
-      "description": "Every sketch in lab/sketches.js must declare a patches: [] array listing globals it monkey-patches in postBoot(). Enforced by lab/run.js at sketch load time.",
+      "description": "Every sketch in src/lab/sketches.js must declare a patches: [] array listing globals it monkey-patches in postBoot(). Enforced by src/lab/run.js at sketch load time.",
       "type": "pattern_in_file",
-      "path": "lab/sketches.js",
+      "path": "src/lab/sketches.js",
       "pattern": "patches:",
       "severity": "warning",
-      "context": "Every sketch in lab/sketches.js must declare a patches: [] array listing globals it monkey-patches in postBoot(). Enforced by lab/run.js at sketch load time. Ensures patches are declared, auditable, and cleaned up between sketches."
+      "context": "Every sketch in src/lab/sketches.js must declare a patches: [] array listing globals it monkey-patches in postBoot(). Enforced by src/lab/run.js at sketch load time. Ensures patches are declared, auditable, and cleaned up between sketches."
     },
     {
       "id": "invariant-born-from-migration",
