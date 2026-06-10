@@ -57,6 +57,14 @@ RULES = {
             "exclude": r"__pycache__|node_modules/|tools/HME/tests/|tools/HME/KB/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# proc-fd-ok",
         },
     ],
+    "no-retired-consult-readchain-routes": [
+        {
+            "roots": ["teams/rounds", "tools/HME/config", "tools/HME/proxy", "tools/HME/scripts"],
+            "include": [".py", ".js", ".json", ".md", ".sh"],
+            "pattern": r"submit_read_queue_to_pty|PTY_READ_QUEUE_SUBMIT|readq!|HME_CONSULT_READQ|\[HME_READ_CHAIN\]\s*\$prompt",
+            "exclude": r"tools/HME/tests/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# retired-consult-route-fixture",
+        },
+    ],
     "overdrive-no-stale-mode6": [
         {
             "roots": [
