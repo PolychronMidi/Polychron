@@ -3,7 +3,11 @@
 // hme_proxy_claude.js) -- not just the read_chain primitives -- drives a complete
 const assert = require('node:assert');
 const { test } = require('node:test');
+const fs = require('node:fs');
+const path = require('node:path');
 
+const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+process.env.PROJECT_ROOT ||= PROJECT_ROOT;
 const { maybeDriveReadChain } = require('../../proxy/hme_proxy_claude.js');
 
 // Minimal clientRes capturing what the proxy wrote back.
