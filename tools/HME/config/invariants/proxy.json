@@ -38,6 +38,18 @@
       "capture_stderr": true
     },
     {
+      "id": "no-retired-consult-readchain-routes",
+      "description": "Retired consult/read-chain control paths must not re-enter source or config: no FIFO/readq live input typing, no submit_read_queue_to_pty helper, no HME_CONSULT_READQ nonce prompt, and no local-session [HME_READ_CHAIN] $prompt bridge expansion. The only accepted consult read path is host task-notification -> proxy read_chain_driver -> native Read tool_use with hme_read_chain__ id.",
+      "born_from": "2026-06-10 input-field spam regression: consult proof typed [HME_READ_CHAIN] into the live REPL via readq/FIFO instead of letting proxy read_chain emit native Read tool_use blocks",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-retired-consult-readchain-routes",
+      "severity": "error",
+      "finding_label": "retired consult/read-chain route finding",
+      "success_detail": "no retired consult/read-chain control routes",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "source-grep-rules-fully-enforced",
       "description": "Every rule key defined in check_source_grep_invariant.py RULES must be referenced by an invariant shard, and every shard reference must name a real RULES key. Closes the recurring seam where a guard exists but observes nothing (orphan rule, silently inert ban) or a reference points at a guard that does not exist (dangling ref, enforces nothing). This is the meta-guard: it watches the watchers for the letter/intent gap.",
       "born_from": "2026-06-09 recursive-seam lesson: letter observed != intent meant; bans must actually run",
