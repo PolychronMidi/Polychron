@@ -299,7 +299,7 @@
       "description": "learn_unified must dispatch action='ground_truth'",
       "type": "pattern_in_file",
       "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
-      "pattern": "action == \"ground_truth\"",
+      "pattern": "\"ground_truth\":",
       "severity": "error"
     },
     {
