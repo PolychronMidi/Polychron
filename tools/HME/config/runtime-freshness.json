@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "freshness_windows_sec": {
+    "proxy_log_current": 1800,
+    "autocommit_error_current": 1800,
+    "consult_queue_current": 3600
+  },
+  "context_entropy": {
+    "forbidden_task_output_path_pattern": "TMP_CLAUDE_TASK_OUTPUT_GLOB",
+    "max_duplicate_hook_banner": 1,
+    "stale_log_requires_label": true
+  }
+}
