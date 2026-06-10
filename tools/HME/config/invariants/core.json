@@ -325,6 +325,18 @@
       "capture_stderr": true
     },
     {
+      "id": "invariant-topology-valid",
+      "description": "Phase Omega invariant topology must declare intent, scope, watched class, watcher edges, known escape vectors, and negative controls for seed invariants, with edges resolving to real invariant IDs.",
+      "born_from": "2026-06-10 Phase Omega mesh consult workstream 4: invariants must form a watcher graph, not a flat alarm list",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_invariant_topology.py",
+      "severity": "error",
+      "finding_label": "invariant topology finding",
+      "success_detail": "invariant topology valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "env-failfast-no-unclassified-fallbacks",
       "description": "Declared .env keys must not gain unclassified inline fallbacks; legacy fallbacks require audited hash waivers and stale waivers fail.",
       "born_from": "2026-06-09 env-failfast invariant output-contract repair: shell_output_empty checks must be silent on success, and env fallback waivers must stay classified.",
