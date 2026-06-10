@@ -102,10 +102,10 @@
     },
     {
       "id": "hooks-json-points-to-event-kernel-adapter",
-      "description": "hooks.json must route every Claude event through event_kernel/claude_adapter.js -- the single adapter for proxy-up and direct fallback dispatch",
+      "description": "hooks.json must route every Claude event through event_kernel/host_hook_entry.js; host_hook_entry chooses event_kernel/claude_adapter.js for Claude and preserves one adapter boundary.",
       "type": "pattern_in_file",
       "path": "tools/HME/hooks/hooks.json",
-      "pattern": "event_kernel/claude_adapter\\.js",
+      "pattern": "event_kernel/host_hook_entry\\.js",
       "severity": "error"
     },
     {
