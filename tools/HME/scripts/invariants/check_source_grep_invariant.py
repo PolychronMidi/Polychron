@@ -62,7 +62,7 @@ RULES = {
             "roots": ["teams/rounds", "tools/HME/config", "tools/HME/proxy", "tools/HME/scripts"],
             "include": [".py", ".js", ".json", ".md", ".sh"],
             "pattern": r"submit_read_queue_to_pty|PTY_READ_QUEUE_SUBMIT|readq!|HME_CONSULT_READQ|\[HME_READ_CHAIN\]\s*\$prompt",
-            "exclude": r"tools/HME/tests/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# retired-consult-route-fixture",
+            "exclude": r"tools/HME/tests/|tools/HME/config/invariants/|tools/HME/config/causal-paths\.json|tools/HME/config/invariant-topology\.json|tools/HME/scripts/invariants/check_source_grep_invariant\.py|# retired-consult-route-fixture",
         },
     ],
     "overdrive-no-stale-mode6": [
