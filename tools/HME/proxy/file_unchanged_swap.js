@@ -1,7 +1,7 @@
 'use strict';
 
 // Cooperative rewrite for Claude Code's `file_unchanged` short-circuit.
-// When the CLI emits `Wasted call — file unchanged since your last Read` (or
+// When the CLI emits `Wasted call -- file unchanged since your last Read` (or
 
 const { contentText } = require('./request_shape');
 

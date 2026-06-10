@@ -219,7 +219,7 @@ _ac_do_commit() {
   fi
 
   # Detect empty-tree HEAD: use --no-verify so the recovery commit can bypass
-  # the precommit check that would otherwise deadlock (HEAD empty → precommit
+  # the precommit check that would otherwise deadlock (HEAD empty -> precommit
   local _commit_flags=""
   local _head_tree
   # silent-ok: git metadata is diagnostic; rc/state checks remain authoritative.

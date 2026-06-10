@@ -1,4 +1,4 @@
-"""Round-trip + edge tests for todo_engine.grammar. Run: python3 -m pytest (or直接)."""
+"""Round-trip + edge tests for todo_engine.grammar. Run: python3 -m pytest (or??)."""
 import os
 import sys
 

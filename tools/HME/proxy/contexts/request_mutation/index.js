@@ -1,6 +1,6 @@
 'use strict';
 
-// Bounded-context façade per doc/self-coherence-full.md#hme-proxy-bounded-contexts.
+// Bounded-context fa?ade per doc/self-coherence-full.md#hme-proxy-bounded-contexts.
 // Transforms the inbound client request before dispatch.
 
 const {

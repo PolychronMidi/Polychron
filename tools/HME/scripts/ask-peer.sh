@@ -157,14 +157,14 @@ PY
 append_exchange() {
   local peer_text="$1"
   local driver_text="$MSG"
-  driver_text="${driver_text//<driver/‹driver}"
-  driver_text="${driver_text//<\/driver/‹/driver}"
-  driver_text="${driver_text//<peer/‹peer}"
-  driver_text="${driver_text//<\/peer/‹/peer}"
-  peer_text="${peer_text//<driver/‹driver}"
-  peer_text="${peer_text//<\/driver/‹/driver}"
-  peer_text="${peer_text//<peer/‹peer}"
-  peer_text="${peer_text//<\/peer/‹/peer}"
+  driver_text="${driver_text//<driver/?driver}"
+  driver_text="${driver_text//<\/driver/?/driver}"
+  driver_text="${driver_text//<peer/?peer}"
+  driver_text="${driver_text//<\/peer/?/peer}"
+  peer_text="${peer_text//<driver/?driver}"
+  peer_text="${peer_text//<\/driver/?/driver}"
+  peer_text="${peer_text//<peer/?peer}"
+  peer_text="${peer_text//<\/peer/?/peer}"
   (
     flock -x 9
     {

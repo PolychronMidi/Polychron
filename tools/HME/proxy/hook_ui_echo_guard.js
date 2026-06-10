@@ -4,14 +4,14 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const HOST_STOP_ECHO_RE = /(?:^|\n)\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook[\s\S]{0,4000}?(?=(?:\n\s*(?:[●•]\s*)?Ran\s+\d+\s+\w+\s+hook\b)|\n\s*\S(?![⎿-]|node\b|Stop hook error:)|$)/gi;
-const STOP_ERROR_BLOCK_RE = /(?:^|\n)\s*(?:[⎿│>-]*\s*)?Stop hook error:\s*[\s\S]{0,4000}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t]|---\s*\[\d+\/\d+\])|$)/gi;
+const HOST_STOP_ECHO_RE = /(?:^|\n)\s*(?:[*-]\s*)?Ran\s+\d+\s+stop\s+hook[\s\S]{0,4000}?(?=(?:\n\s*(?:[*-]\s*)?Ran\s+\d+\s+\w+\s+hook\b)|\n\s*\S(?![`-]|node\b|Stop hook error:)|$)/gi;
+const STOP_ERROR_BLOCK_RE = /(?:^|\n)\s*(?:[`|>-]*\s*)?Stop hook error:\s*[\s\S]{0,4000}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t]|---\s*\[\d+\/\d+\])|$)/gi;
 const STOP_SECTION_RE = /\n?\s*---\s*\[\d+\/\d+\]\s+[A-Z_ -]+\s*---[\s\S]{0,2500}?(?=(?:\n\s*---\s*\[\d+\/\d+\])|\n\s*\S(?![ \t])|$)/g;
 const STOP_POLICY_RE = /\b(?:MULTI-FLAG STOP|EXHAUST PROTOCOL VIOLATION|SPIRALLING_PETULANCE|AUTO-COMPLETENESS CHECK|UNFINISHED TASK-LIST VIOLATION|PLAN-ABANDONMENT DETECTED|STOP-WORK ANTIPATTERN)\b/i;
 const STOP_DIRECTIVE_RE = /\b(?:Stop answering the gate|concrete corrective action|repeated failed Reads|modify the target file\/state|verify it, then stop|enumerated item must be fixed|silence is the correct response|Resume and implement)\b/i;
-const RAN_STOP_HOOK_LINE_RE = /^\s*(?:[●•]\s*)?Ran\s+\d+\s+stop\s+hook\s*$/i;
-const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[⎿│>-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
-const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[⎿│>-]*\s*)?Stop hook error:/i;
+const RAN_STOP_HOOK_LINE_RE = /^\s*(?:[*-]\s*)?Ran\s+\d+\s+stop\s+hook\s*$/i;
+const STOP_HOOK_COMMAND_LINE_RE = /^\s*(?:[`|>-]*\s*)?node\s+\S*tools\/HME\/event_kernel\/claude_adapter\.js\s+Stop\b/i;
+const STOP_HOOK_ERROR_LINE_RE = /^\s*(?:[`|>-]*\s*)?Stop hook error:/i;
 const NATIVE_EDIT_ERROR_PHRASE_RE = new RegExp([
   ['File has not', 'been read yet'].join(' '),
   ['Read it first', 'before writing to it'].join(' '),
@@ -20,8 +20,8 @@ const NATIVE_EDIT_ERROR_PHRASE_RE = new RegExp([
   ['old_string not', 'found'].join(' '),
   ['old_string is', 'not unique'].join(' '),
 ].map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'));
-const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[●•]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[⎿│> -]*\s*)?(?:Error:\s*)?[^\n]*(?:\n[^\n]*){0,6}/gi;
-const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[⎿│> -]*\s*)?(?:Error:\s*)?[^\n]*(?:old_string|File|Read)[^\n]*/gi;
+const HOST_NATIVE_TOOL_ERROR_RE = /(?:^|\n)\s*(?:[*-]\s*)?(?:Update|Edit|MultiEdit|Write)\([^\n]*\)\s*\n\s*(?:[`|> -]*\s*)?(?:Error:\s*)?[^\n]*(?:\n[^\n]*){0,6}/gi;
+const HOST_NATIVE_TOOL_ERROR_LINE_RE = /(?:^|\n)\s*(?:[`|> -]*\s*)?(?:Error:\s*)?[^\n]*(?:old_string|File|Read)[^\n]*/gi;
 const ECHO_LOG = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-leaks.jsonl');
 const ERROR_LOG = path.join('log', 'hme-errors.log');
 const SEEN_FILE = path.join('tools', 'HME', 'runtime', 'hook-ui-echo-seen.json');

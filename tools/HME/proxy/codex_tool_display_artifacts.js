@@ -1,7 +1,7 @@
 'use strict';
 
 function cleanLine(line) {
-  return String(line || '').replace(/^\s*(?:[│|]\s*)?/, '');
+  return String(line || '').replace(/^\s*(?:[||]\s*)?/, '');
 }
 
 function markerFromBrokenRead(line) {
