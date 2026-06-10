@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "intent": "prove task-notification read-chain emits native Read without input-field marker spam",
+  "artifacts_touched": [
+    "tools/HME/proxy/read_chain_driver.js",
+    "tools/HME/tests/specs/read_chain_e2e.test.js"
+  ],
+  "causal_path_ids": [
+    "host-task-notification->proxy-read-chain-driver->native-read-tool-use"
+  ],
+  "verifier_ids": [
+    "read_chain_e2e:task-notification-consumes-consult-queue"
+  ],
+  "proof_artifacts": [
+    {
+      "path": "tools/HME/tests/specs/read_chain_e2e.test.js",
+      "kind": "fixture"
+    }
+  ],
+  "forbidden_paths_checked": [
+    "tmp/hme-cc-control.fifo",
+    "readq!",
+    "submit_read_queue_to_pty",
+    "/proc/<pid>/fd"
+  ],
+  "open_risks": []
+}
