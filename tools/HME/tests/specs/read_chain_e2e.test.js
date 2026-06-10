@@ -101,3 +101,28 @@ test('read-chain tool_use ids are accepted as unforgeable provenance by the cons
   assert.match(id, /^hme_read_chain__/);
   assert.deepEqual(rc._parseToolId(id), { index: 0, files: ['/x/final.json'] });
 });
+
+test('task-notification consumes consult queue and emits Read without typing a marker', () => {
+  const runtime = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
+  fs.mkdirSync(runtime, { recursive: true });
+  const marker = path.join(runtime, 'latest-consult-read-queue.json');
+  fs.writeFileSync(marker, JSON.stringify({
+    schema: 2,
+    native_read_before_report: ['teams/runtime/output/unit/red_final.json', 'teams/runtime/output/unit/blue_final.json'],
+    expires_at: new Date(Date.now() + 60_000).toISOString(),
+    consumed: false,
+  }));
+
+  const res = fakeRes();
+  const handled = maybeDriveReadChain({
+    clientRes: res,
+    payload: { model: 'm', messages: [{ role: 'user', content: [{ type: 'text', text: '<task-notification>\n<status>completed</status>\n</task-notification>' }] }] },
+  });
+  assert.equal(handled, true);
+  const use = readToolUse(res);
+  assert.equal(use.name, 'Read');
+  assert.equal(use.input.file_path, path.join(PROJECT_ROOT, 'teams/runtime/output/unit/red_final.json'));
+  assert.match(use.id, /^hme_read_chain__/);
+  assert.equal(JSON.parse(fs.readFileSync(marker, 'utf8')).consumed, true);
+});
+
