@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const METRICS_DIR = path.join(__dirname, '..', '..', 'output', 'metrics');
+const METRICS_DIR = path.join(__dirname, '..', '..', 'output', 'metrics'); // metrics-ok canonical output root
 const HISTORY_DIR = path.join(METRICS_DIR, 'run-history');
 const MODEL_PATH = path.join(METRICS_DIR, 'verdict-model.json');
 const MIN_LABELED = 10;
