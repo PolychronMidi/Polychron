@@ -367,7 +367,7 @@ function _buildAbbreviationRegExp(map) {
 
   // The closing \b fixes partial matches like complete -> completed + "d".
   // Spaces are not consumed by single-word entries, so keys like "in" work.
-  return new RegExp(`\\b(${pattern})\\b(?!['’])([.!?,;:]?)`, 'gi');
+  return new RegExp(`\\b(${pattern})\\b(?![''])([.!?,;:]?)`, 'gi');
 }
 
 const _ABBREVIATION_RE = _buildAbbreviationRegExp(_ABBREVIATION_MAP);
@@ -410,7 +410,7 @@ function _suffixRule(name, suffix, minStem, replacementSuffix, { minOutput = 5, 
 }
 
 function _dropContractionApostrophesSegment(text) {
-  return String(text || '').replace(/\b([A-Za-z]+)['’]([A-Za-z]+)\b/g, '$1$2');
+  return String(text || '').replace(/\b([A-Za-z]+)['']([A-Za-z]+)\b/g, '$1$2');
 }
 
 function _stripMarkdownFormattingSegment(text) {
@@ -486,10 +486,10 @@ function _stripLineDashAndTerminalPunctuation(text) {
   const masked = _segmentByCode(text).map((seg) => {
     if (!seg.code) return seg.s;
     protectedParts.push(seg.s);
-    return `${protectedParts.length - 1}`;
+    return `__HME_PROT_${protectedParts.length - 1}__`;
   }).join('');
   return _stripLineDashAndTerminalPunctuationSegment(masked)
-    .replace(/(\d+)/g, (_m, idx) => protectedParts[Number(idx)] || '');
+    .replace(/__HME_PROT_(\d+)__/g, (_m, idx) => protectedParts[Number(idx)] || '');
 }
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
@@ -612,7 +612,7 @@ const _SLOP_PATTERNS = [
   // sides. The apostrophe guard is critical: without it, bare `i` followed by
   // "'" matches the "i" in "i'm" and deletes ONLY the letter, leaving "'m".
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_'’])(?:i\s+am|i\s+will|i['’]m|im|i['’]ll|ill|i['’]ve|ive|i['’]d|id|i\s+would|i\s+have|my|me|now|you\s+are|you['’]re|youre|you['’]ll|youll|we['’]ll|well|we['’]re|were|we|i|s|t|m|u|a|an|as|our|right|okay|ok|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['’]s|so|wait|be|the|that|that['’]s|thats|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_'’])\s*/gi,
+    re: /(?<![A-Za-z0-9_''])(?:i\s+am|i\s+will|i['']m|im|i['']ll|ill|i['']ve|ive|i['']d|id|i\s+would|i\s+have|my|me|now|you\s+are|you['']re|youre|you['']ll|youll|we['']ll|well|we['']re|were|we|i|s|t|m|u|a|an|as|our|right|okay|ok|hmm|let\s+me|them|they|was|has|need|too|also|needs|is|it|its|it['']s|so|wait|be|the|that|that['']s|thats|this|then|agreed|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really|cleanly)(?![A-Za-z0-9_''])\s*/gi,
     repl: '' },
 
   // Caveman -ing suffix pass. minOutput blocks short false positives; plural

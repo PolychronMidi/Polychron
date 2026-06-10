@@ -242,7 +242,7 @@ function bridgeCommand(text) {
 
 function trunc(text, n = 96) {
   const s = String(text || '');
-  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+  return s.length > n ? `${s.slice(0, n - 1)}...` : s;
 }
 
 function displayRead(input) {
