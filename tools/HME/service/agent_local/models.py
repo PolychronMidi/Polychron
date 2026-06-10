@@ -69,8 +69,8 @@ def _infer_directories(prompt: str) -> list[str]:
         if "doc/" not in dirs:
             dirs.append("doc/")
     if "metrics" in lower or "journal" in lower:
-        if "metrics/" not in dirs:
-            dirs.append("metrics/")
+        if "src/output/metrics/" not in dirs:
+            dirs.append("src/output/metrics/")
     # Default fallback: if nothing matched, search src AND tools/HME so we
     # never accidentally scope away the audit target
     if not dirs:
