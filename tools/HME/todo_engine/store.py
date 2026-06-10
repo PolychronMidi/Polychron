@@ -19,7 +19,7 @@ from .lifecycle import apply_timers, set_is_archivable
 
 
 def _root() -> Path:
-    return Path(os.environ.get("PROJECT_ROOT") or Path.cwd())  # env-ok: runtime root
+    return Path(os.environ.get("PROJECT_ROOT") or Path.cwd())  # env-ok: sandbox/root runtime root
 
 
 def todo_path() -> Path:
