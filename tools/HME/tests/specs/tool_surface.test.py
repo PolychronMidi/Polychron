@@ -11,10 +11,8 @@ from helpers import assert_class_shape, smoke_run
 
 
 def _classes():
-    from verify_coherence.tool_surface import (
-        ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier,
-    )
-    return (ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier)
+    from verify_coherence.tool_surface import ToolSurfaceCoverageVerifier
+    return (ToolSurfaceCoverageVerifier,)
 
 
 class ToolSurfaceModuleTests(unittest.TestCase):
