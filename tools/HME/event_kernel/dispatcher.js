@@ -21,6 +21,12 @@
  *   PreCompact        -> precompact.sh
  *   PostCompact       -> postcompact.sh
  *
+ * Direct shell wrappers covered by the routing contract:
+ *   pretooluse_bash.sh, pretooluse_edit.sh, pretooluse_grep.sh,
+ *   pretooluse_hme_primer.sh, pretooluse_read.sh, pretooluse_write.sh,
+ *   posttooluse_bash.sh, posttooluse_edit.sh, posttooluse_pipeline_kb.sh,
+ *   posttooluse_read_kb.sh.
+ *
  * Non-derivable route facts (which policy context an event evaluates) live in
  * dispatcher-routes.json, the declared routing contract. `policyContext(event)`
  * reads it so PermissionRequest's reuse of the PreToolUse policy context is an
