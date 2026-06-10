@@ -262,7 +262,8 @@ def _substrate_brief_key() -> str:
                 con = _json.load(f) or {}
         top = (na.get("actions") or [{}])[0].get("id", "")
         return f"{na.get('total_actions', 0)}|{con.get('stdev')}|{con.get('divergence')}|{top}"
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"onboarding substrate brief unavailable: {type(exc).__name__}: {exc}")
         return ""
 
 
