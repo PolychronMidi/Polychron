@@ -325,6 +325,18 @@
       "capture_stderr": true
     },
     {
+      "id": "artifact-lifecycle-valid",
+      "description": "Phase Omega artifact lifecycle lattice must classify tracked paths as source/generated/runtime/metric/proof/transcript/ephemeral/fixture/migration-baseline/retired and reject unclassified or unallowlisted tracked runtime paths.",
+      "born_from": "2026-06-10 Phase Omega workstream 5: every artifact must have lifecycle and commit policy",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_artifact_lifecycle.py",
+      "severity": "error",
+      "finding_label": "artifact lifecycle finding",
+      "success_detail": "artifact lifecycle lattice valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "invariant-topology-valid",
       "description": "Phase Omega invariant topology must declare intent, scope, watched class, watcher edges, known escape vectors, and negative controls for seed invariants, with edges resolving to real invariant IDs.",
       "born_from": "2026-06-10 Phase Omega mesh consult workstream 4: invariants must form a watcher graph, not a flat alarm list",
