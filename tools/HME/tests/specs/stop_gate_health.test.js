@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 
-const repo = process.env.PROJECT_ROOT;
+const repo = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
 
 function clearProxyCache() {
   for (const k of Object.keys(require.cache)) {
