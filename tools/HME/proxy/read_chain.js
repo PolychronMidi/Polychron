@@ -78,6 +78,27 @@ function buildDoneMessage(count, { model = 'claude-read-chain' } = {}) {
   };
 }
 
+function toAnthropicSse(message) {
+  const events = [];
+  const base = { ...message, content: [] };
+  events.push(['message_start', { type: 'message_start', message: base }]);
+  for (let i = 0; i < message.content.length; i += 1) {
+    const block = message.content[i];
+    events.push(['content_block_start', { type: 'content_block_start', index: i, content_block: block.type === 'tool_use'
+      ? { type: 'tool_use', id: block.id, name: block.name, input: {} }
+      : block }]);
+    if (block.type === 'tool_use') {
+      events.push(['content_block_delta', { type: 'content_block_delta', index: i, delta: { type: 'input_json_delta', partial_json: JSON.stringify(block.input || {}) } }]);
+    } else if (block.type === 'text' && block.text) {
+      events.push(['content_block_delta', { type: 'content_block_delta', index: i, delta: { type: 'text_delta', text: block.text } }]);
+    }
+    events.push(['content_block_stop', { type: 'content_block_stop', index: i }]);
+  }
+  events.push(['message_delta', { type: 'message_delta', delta: { stop_reason: message.stop_reason, stop_sequence: null }, usage: { output_tokens: 0 } }]);
+  events.push(['message_stop', { type: 'message_stop' }]);
+  return events.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}\n`).join('\n') + '\n';
+}
+
 // Inspect an inbound request payload. If the LAST user message is a tool_result
 // echoing one of our read-chain tool_use ids, return the next-step descriptor so
 function nextStepFromToolResult(payload) {
