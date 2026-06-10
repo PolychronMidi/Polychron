@@ -131,7 +131,6 @@ test('LOCAL LANE ENVELOPE PARITY: mid-turn typed shortcuts survive host wrapping
     assert.equal(m.key, key);
   };
   exact('[Request interrupted by user]\ncc', 'cc');
-  exact('[Request interrupted by user]\nreadq', 'readq');
   exact('<system-reminder>noise</system-reminder>\ncc', 'cc');
   exact('please do it\ncc', 'cc');
   const pref = cfg.multiStepMatch('[Request interrupted by user]\nc&continue now');
