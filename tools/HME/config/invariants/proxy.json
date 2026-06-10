@@ -142,15 +142,15 @@
     },
     {
       "id": "proxy-version-endpoint",
-      "description": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version.",
+      "description": "Proxy route dispatcher must expose GET /version using PROXY_VERSION.",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/proxy/hme_proxy.js",
+      "path": "tools/HME/proxy/hme_proxy_routes.js",
       "patterns": [
         "PROXY_VERSION",
         "'/version'"
       ],
       "severity": "error",
-      "context": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version`  a stale proxy between a new CLI and new worker is otherwise invisible."
+      "context": "hme_proxy.js declares PROXY_VERSION and passes it into hme_proxy_routes.js; the route dispatcher must expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version` -- a stale proxy between a new CLI and new worker is otherwise invisible."
     }
   ]
 }
