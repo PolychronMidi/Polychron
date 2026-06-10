@@ -50,6 +50,7 @@
     "tools/HME/runtime/metrics/hme-dir-intent.json",
     "tools/HME/runtime/metrics/hme-prediction-accuracy.json",
     "tools/HME/runtime/metrics/hme-suspected-upstreams.json",
+    "tools/HME/runtime/INVENTORY.md",
     "teams/runtime/README.md"
   ]
 }
