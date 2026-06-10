@@ -25,7 +25,7 @@ test('completed mesh task notification injects auto-read bundle instead of disap
   const outDir = path.join(root, 'teams', 'runtime', 'output', 'unit-auto-read-consult');
   fs.mkdirSync(outDir, { recursive: true });
   fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
-  const latestPath = path.join(root, 'tools', 'HME', 'runtime', 'latest-consult-auto-read.json');
+  const latestPath = path.join(root, 'tools', 'HME', 'runtime', 'latest-consult-read-queue.json');
   fs.writeFileSync(latestPath, JSON.stringify({
     schema: 2,
     native_read_before_report: ['teams/runtime/output/unit-auto-read-consult/red_final.json'],
