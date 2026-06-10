@@ -470,23 +470,16 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
         return False
     start_line = _line_count(transcript)
     proof["start_line"] = start_line
-    # Provenance nonce: only Read rows that appear AFTER the bridge-injected readq
-    # prompt carrying this nonce count. A manual Read (no preceding injected prompt)
-    nonce = f"{manifest['round']}-{int(time.time())}-{os.getpid()}"
-    proof["provenance_nonce"] = nonce
-    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
-    # Do NOT write to the live REPL/control FIFO. The read-chain is automatic in
-    # the proxy: when the host later sends the normal task-notification request,
-    pty_submitted = False
+    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "read-chain")
+    nonce = f"{manifest['round']}-{int(time.time())}-{os.getpid()}" if driver == "claude-print" else ""
     proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout, nonce) if driver == "claude-print" else None
-    proof["pty_submitted"] = pty_submitted
-    proof["proof_driver"] = "claude-print" if proc else "read-chain-on-task-notification"
-    # Provenance gating only applies when we actually injected the nonce-tagged
-    # prompt. If nothing was submitted (driver=off / no bridge), there is no
-    gate_nonce = nonce if (pty_submitted or proc) else ""
+    proof["proof_mode"] = "proxy-task-notification-read-chain" if not proc else "claude-print"
+    proof["queued"] = True
+    proof["failure"] = None
+    gate_nonce = nonce if proc else ""
     proof["provenance_gated"] = bool(gate_nonce)
-    if not pty_submitted and not proc:
-        print("NATIVE_READ_PROOF_NO_BRIDGE no live readq PTY bridge and no print driver; relying on existing transcript reads only", flush=True)
+    if not proc:
+        print("NATIVE_READ_PROOF_QUEUED proxy read_chain will run on host task-notification", flush=True)
     deadline = time.time() + timeout
     required = {_rel_or_abs(f) for f in files}
     try:
