@@ -390,7 +390,8 @@ def hme_selftest(verbose: bool = False) -> str:
                 with open(_reload_marker, encoding="utf-8") as _rf:
                     _resolved_after = float(json.load(_rf).get("ts", 0) or 0)
             # silent-ok: tool output returns/logs failure; service stays available.
-            except Exception:
+            except Exception as _reload_marker_err:
+                logger.debug(f"reload marker unavailable: {type(_reload_marker_err).__name__}: {_reload_marker_err}")
                 _resolved_after = 0.0
             _stale_err_count = 0
             _stale_warn_count = 0
