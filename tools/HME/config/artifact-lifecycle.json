@@ -6,7 +6,7 @@
       "policy": "reviewed, tested, invariant-covered"
     },
     "config": {
-      "patterns": ["tools/HME/config/**", "doc/templates/**", ".env.example", "doc/**"],
+      "patterns": ["tools/HME/config/**", "doc/templates/**", "doc/**"],
       "policy": "schema-checked or documented"
     },
     "fixture": {
