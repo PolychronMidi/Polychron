@@ -21,6 +21,18 @@
       "patterns": ["tools/HME/runtime/**", "teams/runtime/**", "tmp/**", "log/**"],
       "policy": "not committed unless explicitly allowed as canonical runtime metric/proof"
     },
+    "generated": {
+      "patterns": ["package-lock.json", "dist/**", "build/**"],
+      "policy": "reproducible from source or package manager"
+    },
+    "transcript": {
+      "patterns": ["**/*.jsonl", "teams/runtime/output/**/round-progress.jsonl"],
+      "policy": "append-only evidence; only canonical metrics/proof transcripts may be tracked"
+    },
+    "ephemeral": {
+      "patterns": ["tmp/**", "*.tmp", "*.lock"],
+      "policy": "never committed"
+    },
     "proof": {
       "patterns": ["teams/runtime/output/**/_consult-*.json", "tools/HME/tests/fixtures/coherence-trace.sample.json"],
       "policy": "must link to verifier and causal path"
