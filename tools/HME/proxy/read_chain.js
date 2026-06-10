@@ -144,6 +144,7 @@ module.exports = {
   MARKER,
   buildReadToolUseMessage,
   buildDoneMessage,
+  toAnthropicSse,
   nextStepFromToolResult,
   startFilesFromTrigger,
   _toolId,
