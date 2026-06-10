@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "classes": {
+    "source": {
+      "patterns": ["src/**", "tools/HME/**/*.py", "tools/HME/**/*.js", "teams/rounds/**", "config/**", "*.js", "*.json", "*.md"],
+      "policy": "reviewed, tested, invariant-covered"
+    },
+    "config": {
+      "patterns": ["tools/HME/config/**", "doc/templates/**", ".env.example", "doc/**"],
+      "policy": "schema-checked or documented"
+    },
+    "fixture": {
+      "patterns": ["tools/HME/tests/**", "test/**", "tests/**"],
+      "policy": "explicit test fixture or spec"
+    },
+    "metric": {
+      "patterns": ["src/output/metrics/**", "tools/HME/runtime/metrics/*.json", "tools/HME/runtime/metrics/*.jsonl"],
+      "policy": "schema or freshness owner required when used as proof"
+    },
+    "runtime": {
+      "patterns": ["tools/HME/runtime/**", "teams/runtime/**", "tmp/**", "log/**"],
+      "policy": "not committed unless explicitly allowed as canonical runtime metric/proof"
+    },
+    "proof": {
+      "patterns": ["teams/runtime/output/**/_consult-*.json", "tools/HME/tests/fixtures/coherence-trace.sample.json"],
+      "policy": "must link to verifier and causal path"
+    },
+    "migration-baseline": {
+      "patterns": ["tools/HME/config/invariants/*baseline*.json"],
+      "policy": "temporary; only shrinks"
+    },
+    "retired": {
+      "patterns": ["**/*readq*retired*"],
+      "policy": "must not be referenced outside explicit regression fixtures"
+    }
+  },
+  "tracked_runtime_allowlist": [
+    "tools/HME/runtime/metrics/hme-dir-intent.json",
+    "tools/HME/runtime/metrics/hme-prediction-accuracy.json",
+    "tools/HME/runtime/metrics/hme-suspected-upstreams.json"
+  ]
+}
