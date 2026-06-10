@@ -22,9 +22,9 @@ test('thinking deltas are buffered (nothing emitted until stop)', () => {
 test('contaminated thinking: WHOLE block collapses to ONE banner, no pre-banner skeleton leak, signature kept', () => {
   const c = ctx();
   tstart(c, 0);
-  tdelta(c, 0, '? B');     // early 1-foreign-char delta (would have leaked per-delta)
+  tdelta(c, 0, '√ B');     // early 1-foreign-char delta (would have leaked per-delta)
   tdelta(c, 0, 'Th mc');         // ascii skeleton
-  tdelta(c, 0, 'Ng??i d?ng');  // dense foreign later
+  tdelta(c, 0, 'Người dùng');  // dense foreign later
   tsig(c, 0);
   const out = tstop(c, 0).events;
   const s = JSON.stringify(out);
