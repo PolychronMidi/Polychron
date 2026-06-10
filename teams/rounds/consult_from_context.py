@@ -499,16 +499,12 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
     nonce = f"{manifest['round']}-{int(time.time())}-{os.getpid()}"
     proof["provenance_nonce"] = nonce
     driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "readq")
-    # The readq token reaches the LIVE Claude Code bridge (tmp/hme-cc-control.fifo).
-    # It must never fire from tests/offline checks, or it injects a Read prompt
-    if driver == "off":
-        pty_submitted = False
-        proc = None
-    else:
-        pty_submitted = submit_read_queue_to_pty(files, nonce)
-        proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout, nonce)
+    # Do NOT write to the live REPL/control FIFO. The read-chain is automatic in
+    # the proxy: when the host later sends the normal task-notification request,
+    pty_submitted = False
+    proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout, nonce) if driver == "claude-print" else None
     proof["pty_submitted"] = pty_submitted
-    proof["proof_driver"] = "claude-print" if proc else driver
+    proof["proof_driver"] = "claude-print" if proc else "read-chain-on-task-notification"
     # Provenance gating only applies when we actually injected the nonce-tagged
     # prompt. If nothing was submitted (driver=off / no bridge), there is no
     gate_nonce = nonce if (pty_submitted or proc) else ""
