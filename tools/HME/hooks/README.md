@@ -58,6 +58,16 @@ Both paths use the same dispatcher and policy order. Proxy HTTP middleware is ab
 - `_signals.sh` -- append-only event bus in `tools/HME/runtime/metrics/`.
 - `_resolve_bg_stub.sh` -- resolves Claude Code background-command stubs.
 
+### Direct shell script inventory
+
+Referenced directly or through dispatcher/native fallback:
+`autocommit-direct.sh`, `canary.sh`, `proxy-maintenance.sh`, `proxy-watchdog.sh`,
+`pretooluse_bash.sh`, `pretooluse_check_pipeline.sh`, `pretooluse_edit.sh`,
+`pretooluse_grep.sh`, `pretooluse_hme_primer.sh`, `pretooluse_read.sh`,
+`pretooluse_write.sh`, `posttooluse_addknowledge.sh`, `posttooluse_bash.sh`,
+`posttooluse_edit.sh`, `posttooluse_hme_review.sh`, `posttooluse_pipeline_kb.sh`,
+`posttooluse_read_kb.sh`, `posttooluse_write.sh`.
+
 ### Supervisors (`direct/`)
 
 Service metadata lives in `tools/HME/config/services.json`; doctors and pulse probes read that registry.
