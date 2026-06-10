@@ -18,3 +18,11 @@ Example:
 #5 5_ wire the existing readq/PTY submission into the proof loop so the standard bare invocation itself waits for or triggers the native Read chain, with bounded timeout and clear failure diagnostics; default driver=readq (live bridge only), claude-print opt-in, driver=off blocks ALL live FIFO side effects so tests never inject into the operator session
 #6 5_ add tests/smokes proving standard bare `python3 teams/rounds/consult_from_context.py <ctx>` succeeds only when transcript-native post-completion Read rows cover every required artifact and fails otherwise (8 passing; proof-gate pass-on-full-coverage and fail-on-partial-coverage smokes with background appender simulating live post-start reads)
 #7 5_ strip rendered tool-call/result echo leaks (Called/Calld <Tool> tool ... / Result of calling ... / File ... updated successfully) from model-visible text in hook_ui_echo_guard with regression coverage in policy_universalization.test.js
+#8 0_ Phase Omega workstream 1: add compact causal proof schema, validator, and sample coherence trace fixture
+#9 0_ Phase Omega workstream 2: add dead-mechanism reaper invariant for retired consult/read-chain routes (FIFO/readq typing, submit_read_queue_to_pty, readq!, local-session [HME_READ_CHAIN] expansion, stale PTY/nonce proof wording, foreign /proc fd pokes)
+#10 0_ Phase Omega workstream 3: add typed shortcut and route causal-path metadata plus tests for rr, cc, task-notification read-chain, and retired readq
+#11 0_ Phase Omega workstream 4: add executable invariant topology graph and validator with watcher edges, escape vectors, and negative controls
+#12 0_ Phase Omega workstream 5: add artifact lifecycle lattice and tracked-path lifecycle check for source/generated/runtime/metric/proof/transcript/ephemeral/fixture/baseline/retired paths
+#13 0_ Phase Omega workstream 6: add runtime freshness helper and context thermodynamics checks for stale logs, task-output paths, duplicate hook banners, and context-burn noise
+#14 0_ Phase Omega workstream 7: add failure-alchemy workflow guard enforcing diagnose -> smallest patch -> syntax -> targeted test -> invariant/test/deletion -> broad suite -> proof trace
+#15 0_ produce final compact coherence trace for Phase Omega implementation and verify battery, JS specs, Python specs, read-chain no-input-spam path, and runtime freshness
