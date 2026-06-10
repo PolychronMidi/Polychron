@@ -215,7 +215,7 @@
       "description": "learn_unified must dispatch action='crystallize'",
       "type": "pattern_in_file",
       "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
-      "pattern": "action == \"crystallize\"",
+      "pattern": "\"crystallize\":",
       "severity": "error"
     },
     {
