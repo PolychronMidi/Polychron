@@ -268,12 +268,6 @@ def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
     return out_path
 
 
-def _read_prompt(files: list[str], nonce: str = "") -> str:
-    abs_files = [str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files]
-    tag = f"[HME_CONSULT_READQ {nonce}] " if nonce else ""
-    return tag + "Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n" + "\n".join(abs_files)
-
-
 def _project_slug(root: Path = ROOT) -> str:
     return str(root.resolve()).replace("/", "-")
 
