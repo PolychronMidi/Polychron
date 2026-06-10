@@ -349,6 +349,18 @@
       "capture_stderr": true
     },
     {
+      "id": "failure-alchemy-valid",
+      "description": "Phase Omega failure-alchemy workflow must encode the only allowed failure outcomes (fix, regression test, invariant, dead-mechanism deletion), the repair order, forbidden excuse labels, and broad-change green precondition.",
+      "born_from": "2026-06-10 Phase Omega workstream 7: every failure must become a fix, test, invariant, or deletion; no preexisting/probably/noted/later bucket",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_failure_alchemy.py",
+      "severity": "error",
+      "finding_label": "failure alchemy finding",
+      "success_detail": "failure alchemy workflow valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "invariant-topology-valid",
       "description": "Phase Omega invariant topology must declare intent, scope, watched class, watcher edges, known escape vectors, and negative controls for seed invariants, with edges resolving to real invariant IDs.",
       "born_from": "2026-06-10 Phase Omega mesh consult workstream 4: invariants must form a watcher graph, not a flat alarm list",
