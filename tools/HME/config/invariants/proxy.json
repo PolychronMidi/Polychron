@@ -50,6 +50,18 @@
       "capture_stderr": true
     },
     {
+      "id": "causal-paths-valid",
+      "description": "Shortcut and proxy route causal paths must declare intent, lane, allowed emitter, forbidden emitters, proof ID shape, and negative controls. Wire shortcuts must not become local-session input, and local-session shortcuts must not become API payloads.",
+      "born_from": "2026-06-10 Phase Omega workstream 3: shortcut/route strings must become typed causal transitions with forbidden-path checks",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_causal_paths.py",
+      "severity": "error",
+      "finding_label": "causal path finding",
+      "success_detail": "causal path metadata valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "source-grep-rules-fully-enforced",
       "description": "Every rule key defined in check_source_grep_invariant.py RULES must be referenced by an invariant shard, and every shard reference must name a real RULES key. Closes the recurring seam where a guard exists but observes nothing (orphan rule, silently inert ban) or a reference points at a guard that does not exist (dangling ref, enforces nothing). This is the meta-guard: it watches the watchers for the letter/intent gap.",
       "born_from": "2026-06-09 recursive-seam lesson: letter observed != intent meant; bans must actually run",
