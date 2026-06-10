@@ -274,29 +274,6 @@ def _read_prompt(files: list[str], nonce: str = "") -> str:
     return tag + "Use the native Read tool on every file path below before any prose response. Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes.\n" + "\n".join(abs_files)
 
 
-def submit_read_queue_to_pty(files: list[str], nonce: str = "") -> bool:
-    # SANCTIONED IPC ONLY: write the readq token to THIS project root's control
-    # FIFO. The live in-root bridge expands it to "[HME_READ_CHAIN] <files>" and
-    if not files:
-        return False
-    fifo = ROOT / "tmp" / "hme-cc-control.fifo"
-    payload = "; ".join(str((ROOT / f).resolve()) if not Path(f).is_absolute() else f for f in files)
-    encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
-    delivered = False
-    try:
-        fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError:
-        print("PTY_READ_QUEUE_SUBMIT unavailable", flush=True)
-    else:
-        try:
-            os.write(fd, f"readq!\t{encoded}\n".encode("utf-8"))
-            print("PTY_READ_QUEUE_SUBMIT force-submitted (read-chain trigger)", flush=True)
-            delivered = True
-        finally:
-            os.close(fd)
-    return delivered
-
-
 def _project_slug(root: Path = ROOT) -> str:
     return str(root.resolve()).replace("/", "-")
 
