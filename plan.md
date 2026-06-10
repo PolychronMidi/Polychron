@@ -1,342 +1,245 @@
 # Plan
 
-Driver (orchestrator) + peers confer; durable, user-approvable proposals land
-here. Nothing in this file is implemented until the user marks it approved.
+Driver + peers confer here; durable, user-approvable proposals land here. Nothing in
+this file is implemented until the user marks it approved.
 
 ## Status legend
+
 - proposed: drafted from conferral, awaiting user decision
 - approved: user approved; safe to implement
 - denied: user rejected; do not implement
-- done: implemented + verified
+- done: implemented and verified
 
-## Standing constraints (binding across all phases)
-- Cost-control charter (CEO directive): cost controls exist ONLY to improve output
-  quality and prevent runaway/incoherent agents. They must NEVER abridge an agent's
-  work when it is reasonable to go in depth. Inter-agent communication -- including
-  multi-turn back-and-forth -- is sometimes necessary; budgets must NOT abridge that
-  synergy. Any cap that would truncate reasonable depth or needed peer dialogue is a
-  bug, not a feature; calibration (decision-impact weight, anti-inflation) focuses
-  work, never suppresses legitimate deep work.
-- Mesh model: peers are driver FORKS with FULL inherited context and FULL tools;
-  dispatch stays sequential (no fan-out); tool filtering, where wanted, is
-  centralized at the proxy (HME_FILTER_TOOLS_DROP). Honor every hook/guard at its
-  intent -- never workaround-appease. No context-burn ceremony on routine reviews.
-- Anti-duplication: a new construct must not duplicate or circumvent a first-class
-  system (work -> TODO; messages -> channels; data -> data files beside consumers;
-  prose -> the limited canonical docs). Lesson from Phase 13's retirements.
+## Standing constraints
 
-## History
-- Phases 1-12 (git history): coherence organs/policy/immune fixes, the I1-I3 comms
-  substrate, and the fork/full-tool red/blue/purple mesh build-out (iterations
-  6-12) -- ask-peer, dispatch guard, team_agent_router, review harness, proxy
-  filter_tools middleware, event-kernel host entry/adapters.
-- Phase 13 (myth0s: calibrated-audit integration + scale-out) -- DONE. Durable
-  wins: A1-A7 calibrated-audit discipline (live in every peer dispatch), B1
-  control-plane hardening (~10 grounded P1 fixes + regression tests across pre-write
-  gate, state registry, stop-chain, session-state, transcript compaction, proxy
-  request mutation, tool-result semantics), E1 review-briefs-as-data composed into
-  channel messages with live source inlined. Retired once lessons were captured:
-  the capsule .md directory (-> briefs + channels), the coverage map + status/select
-  tooling (-> TODO ledger + briefs), the score/eval/telemetry demonstrators
-  (-> lessons recorded; charter binding). F1 enforcement declined (would fail-closed
-  on legit work or be theater). Full record: `git log -- plan.md`.
+- No surface compliance: only intent-equivalent causal behavior counts.
+- Local deterministic verification runs inline. Do not use mesh or background agents
+  for checks that can be run directly.
+- Every accepted failure becomes one of: fix, regression test, invariant, or dead
+  mechanism deletion. No "preexisting" bucket.
+- Proof artifacts must be compact, machine-checkable, and link to files, hashes,
+  verifier IDs, and runtime evidence. No giant narrative ledgers.
+- Control-plane tokens must not leak into user-visible input. Read-chain proof must
+  be proxy-emitted native Read tool_use blocks, not typed prompts, PTY pokes, or
+  FIFO/readq bridge text.
+- Runtime health evidence must carry freshness windows. Stale log lines are history,
+  not current proof.
+- Broad multi-file transformations are forbidden while the repo is red. Repair order
+  is: diagnose exact failure, smallest patch, syntax check, targeted test,
+  regression/invariant, broad suite, compact proof trace.
 
-## Phase 14 (done) -- Mesh refinement, then HME self-coherence expansion
+## Phase Omega (proposed) -- Causal Self-Coherence Field
 
-Status: `done` (implemented + verified). Executed via deep red/blue/purple mesh
-consultation, tracked in TODO Set 27 (#23-#28, archived to log/todo/set27.md). Every
-workstream landed grounded fixes with regression tests; HCI held ~99 with no FAIL.
-Durable wins: WS1 round-reliability contract (typed durable progress_result records,
-named-role targets, per-peer reply capture, stale-output cleanup, failure-aware
-round-finish, FAILED reader state -- round_status/round_runner_contract tests); WS2
-mesh signal-discipline (guard refunds budget on pre-send capsule/context denies,
-driver->lead channel labeled to roles.json truth, chained-handoff reply cap raised so
-cross-exam dialogue is never truncated); WS3 HCI-integrity hardening (registry
-preflight fails closed on duplicate names / non-finite-or-<=0 weights, central
-status/score normalization so a FAIL can't read green, verifier_self_coverage no
-longer self-exempt, unknown waivers now FAIL -- hci_integrity test). WS4 ran entirely
-through existing ledgers. Native-Agent-fallback finding DECLINED with contradictory
-evidence (#27); cap-divergence resolved via single-source cap (#28). The original
-intent stands: mesh refined first; no `src/` product focus this phase.
+Consult source: `teams/runtime/output/omega-causal-self-coherence-1781113894/`.
+Red, blue, and synthesis converged on seven workstreams. This phase turns
+self-coherence from a list of alarms into a causal field: every action, shortcut,
+route, proof, artifact, invariant, and final report must be tied to the route that
+actually caused it.
 
-Theme: harden the red/blue/purple mesh until peer rounds are reliable, observable,
-grounded, and non-bloating; then apply that refined mesh to expand and sharpen the
-HME verifier / self-coherence suite.
+### Workstream 1 -- Causal proof schema and compact coherence trace
 
-### Workstream 1 -- Mesh round reliability contract
-- Scope: every first-class peer round must expose durable per-step progress, durable
-  per-peer reply capture, stale-output cleanup, and typed failure states.
-- First step: make the progress-ledger/status-reader contract a tested invariant for
-  the round runners that remain in use, not an ad hoc rescue patch.
-- Guardrail: no blind dispatch, no repeated launch spam, no claims of notifications
-  from mechanisms that cannot notify, and no parallel runner framework.
+Scope: define one minimal proof shape before adding more guard machinery.
 
-### Workstream 2 -- Mesh signal-discipline contract
-- Scope: tighten peer outputs around calibrated, decision-changing findings: grounded
-  evidence, contradiction checks, role/channel discipline, and explicit
-  `audit-uncertain` when evidence is insufficient.
-- First step: audit `team_dispatch_guard.py`, `review_brief.py`, ask-peer routing,
-  and team-channel writes for any remaining path that can create context bloat,
-  bypass channels, or inflate weak findings.
-- Guardrail: do not rebuild capsules, coverage maps, scoring/eval demos, or any
-  duplicate tracker. Refinement must remove dead weight or make existing contracts
-  enforceable.
+Deliver:
 
-### Workstream 3 -- HME self-coherence suite expansion
-- Scope: after Workstreams 1-2, use the refined mesh on HME self-coherence surfaces:
-  verifier modules, verifier registry, skip/waiver policy, runtime-warning handling,
-  and self-coverage tests.
-- First step: select one HME coherence-suite slice and run the mesh for P0/P1 gaps
-  that would make HCI misleading, stale, noisy, or fail-open.
-- Guardrail: every accepted finding must land as a verifier/test/registry fix using
-  the existing `tools/HME/scripts/verify_coherence/` and `tools/HME/tests/specs/`
-  structure; no new reporting suite unless an existing verifier cannot express it.
+- `tools/HME/config/coherence-proof.schema.json`
+- a tiny validator for the schema
+- one sample `_coherence-trace.json` fixture
 
-### Workstream 4 -- Execute through existing ledgers only
-- Scope: `plan.md` holds user-decision status; TODO holds approved work items;
-  team messages stay in team channels; review-brief data stays beside the runner.
-- First step after approval: add TODO items for the mesh-refinement contract and the
-  first HME self-coherence-suite slice.
-- Guardrail: no docs spillover, no process-cleanup project, no self-referential tool
-  growth unless it directly increases coherence signal and reduces future bloat.
+Required proof fields:
 
-## Phase 15 (done) -- Project boundary map + hot/cold path minimalism
+- intent
+- artifacts touched
+- causal path IDs
+- verifier IDs
+- proof artifacts
+- forbidden paths checked
+- open risks
 
-Status: `done` (implemented + verified). Drafted from a six-turn mesh consultation with driver ->
-red/blue leads, intra-team red/blue sharpening, inter-team purple cross-exam, and
-final synthesis (`teams/runtime/output/project-design-consult/`), then executed
-under the session goal.
+Acceptance:
 
-Theme: make the project easier to navigate and harder to bloat by encoding a
-compact ownership/non-ownership map, canonical destination rules, and objective
-hot/cold path boundaries. Executed deliverable is intentionally small: one
-boundary data file plus one conservative verifier/test set. This is not a
-compaction, routing, dashboard, docs, mesh-machinery, or product-refactor phase.
+- Schema test passes.
+- Sample trace validates.
+- Trace uses paths, hashes, IDs, and artifact links, not prose dumps.
+- A proof claim with free-text provenance but no machine-checkable route fails.
 
-### Workstream 1 -- Canonical destination map
-- Scope: turn the existing anti-duplication rule into a small machine-readable
-  routing table for future artifacts.
-- Delivered: `tools/HME/project_boundaries.json` with a
-  `canonical_destinations` section mapping: work state -> `doc/templates/TODO.md`;
-  phase intent -> `plan.md`; peer dialogue -> `teams/*.md`; machine policy data ->
-  beside the consumer; runtime evidence -> `teams/runtime/output/` or
-  `tools/HME/runtime/`; objective invariants ->
-  `tools/HME/scripts/verify_coherence/`; product behavior -> `src/`.
-- Guardrail: no new ledger system, dashboard, docs tree, tracker, glossary, or
-  manifesto.
+### Workstream 2 -- Dead mechanism reaper
 
-### Workstream 2 -- Subsystem ownership and non-ownership
-- Scope: define first-class subsystem boundaries in compact data form.
-- Required rows: `product_src`, `proxy`, `event_kernel_hooks`, `mesh_teams`,
-  `hci_verifiers`, `todo_plan_ledgers`, `runtime_state_logs`, `docs_templates`,
-  and `config_policy`.
-- Each row must define `owns`, `does_not_own`, `entrypoints`, `path_class`, and
-  `canonical_outputs`.
-- Guardrail: data file only, not prose capsules. `does_not_own` is mandatory;
-  ownership without non-ownership is too permissive. Include `product_src` so HME
-  coherence machinery does not absorb product strategy. No `src/` product refactor
-  in this phase.
+Scope: remove or block retired mechanisms across code, config, tests, and docs so
+they cannot re-enter through stale compatibility paths.
 
-### Workstream 3 -- Hot/cold path guardrails
-- Scope: keep request-time / hook-time code boring and fast while cold paths retain
-  rich coherence machinery.
-- Initial hot-path examples: `tools/HME/proxy/`, `tools/HME/event_kernel/`.
-- Initial cold-path examples: `teams/rounds/`,
-  `tools/HME/scripts/verify_coherence/`, `log/todo/`.
-- Verifier should check objective violations only: hot paths must not directly
-  invoke mesh rounds, directly invoke HCI verification, shell out unless
-  whitelisted, broad-scan repo/runtime, or create a new ledger/output class without
-  a declared owner.
-- Guardrail: no micro-optimization campaign, runtime dashboard, subjective
-  performance score, or rewrite of existing proxy/hook internals unless a tiny
-  boundary violation is directly found.
+Initial retired paths:
 
-### Workstream 4 -- Minimal boundary verifier
-- Scope: add one conservative HCI verifier and tests for objective boundary
-  regressions.
-- Delivered: `tools/HME/scripts/verify_coherence/project_boundaries.py`,
-  `tools/HME/tests/specs/project_boundaries.test.py`, registry import, and
-  self-coverage kept green.
-- Initial FAIL conditions: missing required subsystem row; missing `owns`; missing
-  `does_not_own`; invalid `path_class`; declared entrypoint missing; hot path
-  directly imports/calls a known cold-path system.
-- Initial WARN / `AUDIT-UNCERTAIN` conditions: possible new ledger-like file without
-  owner; ambiguous ownership overlap; possible broad scan not clearly hot-path
-  reachable.
-- Guardrail: no subjective style checks, naming-preference checks, or architecture
-  taste scoring. Ambiguous cases warn; only mechanical violations fail.
+- consult FIFO/readq typing
+- `submit_read_queue_to_pty`
+- `readq!`
+- `[HME_READ_CHAIN] $prompt` local-session bridge expansion
+- stale PTY/nonce proof wording except explicit historical fixtures
+- foreign `/proc/<pid>/fd` or `/dev/ptmx` poke paths
 
-### Workstream 5 -- Inverted docs inside existing doc framework
-- Delivered: `doc/infra/update_self_coherence.py` generates a machine-derived
-  section inside `doc/self-coherence-full.md` from live project data; no new
-  Markdown files were added.
-- Delivered: `doc/infra/update.py` runs/checks all doc-infra maintenance while
-  `doc/infra/update_full_indexes.py` remains single-purpose for navigation indexes
-  and autolinks.
-- Delivered: `self-coherence-generated-docs` HCI verifier plus
-  `tools/HME/tests/specs/doc_infra.test.py`; checks cover generated-section drift,
-  broader source coverage, directory-intent README wiring, and full-doc index drift.
-- Source coverage is declared in `tools/HME/config/generated-doc-sources.json` and
-  currently includes project boundaries, mesh depth policy, model registry, services,
-  public `i/` registry, adapter boundaries, dispatcher routes, state-file registry,
-  and HCI verifier names.
-- Follow-up hardening delivered from the same design push: `verifier-purpose-contract`
-  HCI coverage via `tools/HME/config/verifier-purpose-contract.json`, refined hot/cold
-  path import-prefix checks in `project-boundaries`, canonical `doc/infra/update.py`
-  runner coverage, and named Claude goal Stop-hook schema regression for root
-  `ok: boolean` output.
+Acceptance:
 
-### Explicit non-goals
-- No compaction work, route telemetry work, dashboards, broad docs rewrite, new mesh
-  machinery, product `src/` refactor, style-policing verifier,
-  process-cleanup-only project, new ledger system, rename campaign,
-  project-wide architecture manifesto, or per-subsystem prose capsules.
-- Executed under the session goal; no further setup remains in this phase.
+- Source invariant forbids retired consult/read-chain routes outside explicit test
+  fixtures.
+- `shortcuts.json` has no `readq` local-session shortcut.
+- Task-notification read-chain emits `hme_read_chain__...` Read tool_use IDs without
+  typing control tokens into user input.
+- Deletion requires replacement causal proof or an invariant proving the route is
+  unreachable.
 
-## Phase 16 (done) -- Phase-inference firewall
+### Workstream 3 -- Typed shortcut and route causal paths
 
-Status: `done` (implemented + verified). Drafted from a six-turn next-coherence mesh
-consultation and then sharpened by a six-turn bar-frame mesh consultation: red/blue
-leads, intra-team red/blue sharpening, inter-team purple cross-exam, and final
-synthesis (`teams/runtime/output/next-coherence-consult/`,
-`teams/runtime/output/bar-coherence-consult/`). Executed after user approval.
+Scope: shortcuts and routes are not string expansions; they are typed causal
+transitions with allowed and forbidden emitters.
 
-Theme: done is not a sentence. Done is a traversable proof path across existing
-truth surfaces, with explicit limits on what that proof does not imply. The phase
-is not adding evidence; it is bounding inference from evidence so agents stop
-turning green checks, files, TODO rows, or plan prose into overclaims.
+Extend shortcut/route metadata with:
 
-Jurisdictions:
-- `plan.md` owns intent and phase status.
-- TODO / `log/todo/` own work-state evidence.
-- artifacts own implementation evidence.
-- tests own behavior/invariant evidence.
-- HCI owns coherence signal evidence.
-- `phase-evidence.json` owns no truth; it is an adapter/firewall that proves a
-  connected path through the owners and states what that path does not prove.
+- intent
+- lane
+- allowed emitter
+- forbidden emitters
+- proof ID shape
+- negative control
 
-### Workstream 1 -- Phase evidence adapter shape
-- Scope: add `tools/HME/config/phase-evidence.json` as proof references only.
-- Allowed row fields: `phase`, `plan_anchor`, `todo_refs`, `closes`, `artifacts`,
-  `tests`, `hci`, and `does_not_prove`.
-- Forbidden row fields: `status`, `summary`, `description`, `rationale`, `owner`,
-  `next_actions`, `notes`, `lessons`, `risk`, and `decision`, because those create
-  a second ledger or duplicate `plan.md`, TODO, or boundary data.
-- Initial seed: Phase 15 only, proving the boundary-map/hot-cold-path/inverted-docs
-  execution via existing plan anchors, TODO archive refs, artifact paths, tests, and
-  HCI verifier names.
+Initial coverage:
 
-### Workstream 2 -- Closed enum proof classes
-- `closes` starts as a small enum: `planned_vs_executed`,
-  `docs_vs_machine_truth`, `boundary_ownership`, `host_schema`, `hot_vs_cold_path`.
-- `does_not_prove` starts as a small enum: `future_phase_done`, `runtime_perf`,
-  `user_approval_for_new_scope`, `all_possible_regressions`, `mesh_consensus`,
-  `production_behavior`.
-- Guardrail: fog terms such as `coherence`, `quality`, `architecture`, `safety`,
-  and `all_regressions` are rejected; they are story labels, not guarded classes.
+- `rr`: wire lane, proxy emits native Read chain, proof ID `hme_read_chain__...`
+- `cc`: local-session lane, REPL-local `/compact`, never API payload mutation
+- task-notification consult queue: host task-notification request, proxy consumes
+  `latest-consult-read-queue.json`, emits Read tool_use directly
 
-### Workstream 3 -- Shape-first tests, then HCI verifier
-- Delivered shape-first: `tools/HME/config/phase-evidence.json` and
-  `tools/HME/tests/specs/phase_evidence.test.py` landed before verifier wiring.
-- Tests must prove: allowed fields only, forbidden fields absent, `closes` enum
-  valid, `does_not_prove` enum valid, Phase 15 plan anchor exists, TODO refs resolve
-  in current TODO or `log/todo/set*.md`, artifacts/tests exist, and HCI names exist.
-- Only after the shape is clean: add `tools/HME/scripts/verify_coherence/phase_evidence.py`
-  and registry import.
+Acceptance:
 
-### Workstream 4 -- Touch-only verifier purpose metadata
-- Apply explicit `invariant`, `false_positive_policy`, `sources_checked`, and
-  `does_not_enforce` metadata only to recent/touched/new verifiers:
-  `ProjectBoundariesVerifier`, `SelfCoherenceGeneratedDocsVerifier`,
-  `VerifierPurposeContractVerifier`, and `PhaseEvidenceVerifier`.
-- Guardrail: no broad legacy verifier migration and no low-signal boilerplate.
+- Wire shortcuts never type local-session input.
+- Local-session shortcuts never become API payloads.
+- Task-notification read-chain works without user-visible control markers.
+- Negative controls prove forbidden lanes fail.
 
-### Workstream 5 -- Exact generated-doc source projection
-- Harden `doc_infra.test.py` so the generated machine-source links in
-  `doc/self-coherence-full.md` exactly equal `tools/HME/config/generated-doc-sources.json`
-  plus the contract file itself, and the displayed source count matches the contract.
+### Workstream 4 -- Executable invariant topology
 
-### Explicit non-goals
-- No dashboards, new `.md` files, global legacy verifier metadata migration, broad
-  `plan.md` rewrite, mesh machinery expansion, compaction/routing work, style
-  policing, coherence-laws registry, proof-carrying-change framework, commit-level
-  proof objects, prose capsules, or second TODO/status ledger.
+Scope: make invariant relationships executable, not decorative.
 
-## Phase 17 (proposed) -- Staleness detector for mtime-backed data-plane reads
+Deliver:
 
-Status: `proposed` (drafted from a seven-step adversarial mesh consultation:
-red/blue leads, independent red/blue purples, purple crossfire both directions,
-final red/blue votes -- `teams/runtime/output/coherence-primitive-consult/`).
-Awaiting user decision. Nothing here is implemented until marked `approved`.
+- `tools/HME/config/invariant-topology.json`
+- topology validator
 
-Theme: one narrow primitive, not a universal law. A read-after-write is stale when
-the consumer's bind-time predates the change-time of the artifact it relied on:
-`bind_time >= change_time` => fresh. The session evidence that motivated this
-(stale proxy module, stale PTY bridge) shares exactly this shape, and the project
-already encodes it in exactly one place -- `teams/rounds/consult_from_context.py:294`
-(`p.stat().st_mtime >= shortcuts_mtime`). This phase names that check once, as a pure
-function, and proves it can earn its keep at a single site before any generalization.
+Each invariant entry must declare:
 
-Scope discipline (the mesh narrowed the thesis hard, did not rubber-stamp it):
-- IN scope: mtime-backed read-after-write freshness on the data plane (local
-  filesystem, single clock domain).
-- OUT of scope, explicitly NOT staleness (different primitives wearing the same
-  costume): stop-hook control timing (observation granularity), green-tests-vs-live
-  breakage (representation mismatch), stash/pop conflict-marker races (concurrency
-  control). The earlier "one universal coherence law" framing is deleted.
+- intent
+- scope
+- watched class
+- watcher of
+- watched by
+- known escape vectors
+- negative-control fixture
 
-### Workstream 1 -- One pure function
-- Add `tools/HME/proxy/staleness.js` exporting `staleBind({ artifactMtime, bindTime })
-  -> { stale, lagMs }`. Pure, no IO.
-- Falsifiability by construction: throw on missing `artifactMtime`; refuse
-  cross-clock-domain comparison (both stamps must be the same local-fs clock).
-- `stale` is `true` when `bindTime < artifactMtime`; `lagMs` is the subtraction, so
-  the result is a measured number, never a narrative guess.
+Acceptance:
 
-### Workstream 2 -- Wire exactly one site (refactor-in-place)
-- Refactor `consult_from_context.py:294`'s inline `p.stat().st_mtime >= shortcuts_mtime`
-  into a named staleness check with identical behavior.
-- Detect + log only. Do NOT change guard semantics: the site already skips a stale
-  fd; keep that behavior, just name it. No new refuse/reload paths.
-- Do NOT greenfield the proxy-module staleness guard in this phase.
+- Validator fails on orphan topology nodes.
+- Validator fails on unresolved watcher edges.
+- Validator fails on source-grep rules without invariant shards.
+- Validator fails on topology entries that lack runnable checks or negative
+  controls.
 
-### Workstream 3 -- One ledger event, zero schema change
-- Emit a single `appendEvent(root, { kind: 'invariant', proof_class: 'stale', ... })`.
-- Both `invariant` and `stale` are already frozen members of
-  `coherence_events.js` KINDS / PROOF_CLASSES (verified) -- no new kind, no schema change.
-- `meta` carries `{ artifactMtime, bindTime, lagMs }`: subtractable, not prose.
+### Workstream 5 -- Artifact lifecycle lattice
 
-### Workstream 4 -- Shape-first test + standing disproof list
-- Add a unit test proving: fresh returns `stale:false`; stale returns `stale:true`
-  with positive `lagMs`; missing `artifactMtime` throws; the refactored `:294` site
-  preserves its prior skip behavior.
-- Standing disproof list (what is NOT staleness, recorded in the test and this phase):
-  fresh, wrong-content, bad-config, concurrency-race, semantic-disagreement,
-  representation-mismatch.
+Scope: every path class has a lifecycle and commit policy.
 
-### Decay rule
-- Self-clearing by re-evaluation, no daemon: the next `staleBind` call with
-  `bindTime >= artifactMtime` returns `stale:false`. Freshness is recomputed each
-  read; no stale fact is remembered. The event schema's existing `expires` field is
-  NOT wired here (no TTL, no daemon).
+Deliver:
 
-### Acceptance / falsification gate
-- One site, one function, one event, one test. If the named check cannot earn its
-  keep at this single site, the unifying thesis is falsified cheaply -- that is the
-  designed outcome, not a failure. Generalization to a second consumer requires a
-  separate, later approval.
+- `tools/HME/config/artifact-lifecycle.json`
+- invariant/pre-commit check for unknown or misplaced tracked paths
 
-### Honesty caveats (carried from the mesh, not hidden)
-- Some peer tool-reads were garbled mid-consult; only two anchors were cleanly
-  re-verified before this draft: the `:294` mtime check and the
-  `coherence_events.js:5-6` frozen KIND/PROOF_CLASS sets. Both confirmed present.
-- Whether the ledger event persists end-to-end is a precondition to confirm during
-  implementation, not an asserted fact.
-- Consistent with Phase 16's standing non-goal against a coherence-laws registry:
-  this is a staleness detector, not a law framework.
+Lifecycle classes:
 
-### Explicit non-goals
-- No universal `bind_time` on every consumer, no control-plane unification, no
-  attention/turn self-stamping, no second site, no new ledger or event kind, no
-  daemon or TTL, no "coherence field," no prediction/surprise engine, and no
-  fake-precision line counts. The unifying-law framing is explicitly dropped.
+- source
+- generated
+- runtime
+- metric
+- proof
+- transcript
+- ephemeral
+- fixture
+- migration-baseline
+- retired
+
+Acceptance:
+
+- Newly tracked paths must match a lifecycle rule.
+- Runtime artifacts cannot be committed without an explicit allowlist.
+- Proof and metric artifacts must declare schema and freshness or TTL policy.
+- Retired artifacts cannot still be referenced outside explicit regression fixtures.
+
+### Workstream 6 -- Runtime freshness and context thermodynamics
+
+Scope: runtime and context evidence must be fresh, bounded, and not censor current
+failures.
+
+Deliver:
+
+- runtime freshness helper
+- first-pass context entropy checks
+
+Measure and bound:
+
+- duplicate boilerplate
+- stale task-output paths
+- repeated hook banners
+- oversized historical logs
+- stale runtime errors reused as current proof
+
+Acceptance:
+
+- Runtime health proof cites timestamp and freshness window.
+- Stale errors are labeled historical.
+- Current failures remain visible until fixed.
+- Task-output polling remains blocked by regression tests.
+- Context redaction is lifecycle-aware and cannot hide current failing evidence.
+
+### Workstream 7 -- Failure alchemy workflow
+
+Scope: encode the repair discipline so green tests cannot be produced through broad,
+blind damage.
+
+Required repair order:
+
+1. diagnose exact failure
+2. make the smallest patch
+3. run syntax check
+4. run targeted test
+5. add regression test or invariant, or delete the dead mechanism
+6. run broad suite
+7. emit compact proof trace
+
+Acceptance:
+
+- A workflow test or invariant rejects broad multi-file transformations while syntax
+  or targeted tests are red.
+- Every resolved failure cites one of: fix, test, invariant, deletion.
+- Final answers cite exact proof artifacts and commands, not vibes.
+
+## Immediate commits after approval
+
+1. Add coherence proof schema, validator, and sample trace fixture.
+2. Add dead-mechanism reaper invariant for consult/read-chain paths.
+3. Extend shortcut/route metadata and tests for `rr`, `cc`, task-notification
+   read-chain, and retired `readq`.
+4. Seed invariant topology from existing invariant shards and source-grep bijection.
+5. Add artifact lifecycle lattice and tracked-path lifecycle check.
+6. Add runtime freshness helper and first context-entropy tests.
+7. Add failure-alchemy workflow guard and produce a final compact proof trace.
+
+## Global acceptance criteria for Phase Omega
+
+- `run-invariant-battery` passes 173/173.
+- Full JS and Python spec suites pass.
+- No forbidden read-chain/control-plane grep hits remain.
+- Live task-notification read-chain proof emits `hme_read_chain__...` Read tool_use
+  IDs and consumes the queue without typing into user input.
+- Runtime-health proof includes freshness windows.
+- Every new mechanism has at least one negative control.
+- Every retired mechanism disappears from code, config, tests, and docs except
+  explicit regression fixtures.
+- No dashboards, giant narrative traces, duplicate ledgers, broad rewrite campaigns,
+  aesthetic-only verifiers, or agent fan-out for local checks.
