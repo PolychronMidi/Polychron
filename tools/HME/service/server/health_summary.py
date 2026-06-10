@@ -133,7 +133,8 @@ def _recent_errors(log_path: str, minutes: int = 10) -> list[str]:
 def _read_json(path: Path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        print(f"health_summary: failed to read json {path}: {exc}")
         return {}
 
 
