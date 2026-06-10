@@ -313,6 +313,18 @@
       "capture_stderr": true
     },
     {
+      "id": "coherence-proof-schema-and-sample-valid",
+      "description": "Phase Omega compact causal proof schema and sample trace must exist and validate. Proof claims must carry intent, touched artifacts, causal path IDs, verifier IDs, proof artifacts, forbidden paths checked, and open risks.",
+      "born_from": "2026-06-10 Phase Omega mesh consult workstream 1: causal proof schema before more guard machinery",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_coherence_proof.py tools/HME/tests/fixtures/coherence-trace.sample.json",
+      "severity": "error",
+      "finding_label": "coherence proof finding",
+      "success_detail": "coherence proof schema/sample valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "env-failfast-no-unclassified-fallbacks",
       "description": "Declared .env keys must not gain unclassified inline fallbacks; legacy fallbacks require audited hash waivers and stale waivers fail.",
       "born_from": "2026-06-09 env-failfast invariant output-contract repair: shell_output_empty checks must be silent on success, and env fallback waivers must stay classified.",
