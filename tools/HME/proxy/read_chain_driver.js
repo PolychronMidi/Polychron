@@ -46,7 +46,7 @@ function maybeDriveReadChain({ clientRes, payload }) {
     files = cont.files;
     nextIndex = cont.nextIndex;
   } else {
-    const start = readChain.startFilesFromTrigger(payload);
+    const start = readChain.startFilesFromTrigger(payload) || _startFromTaskNotification(payload);
     if (!start) return false;
     files = start;
     nextIndex = 0;
