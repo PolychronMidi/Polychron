@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..', '..', '..', '..');
-process.env.PROJECT_ROOT ||= root;
+if (!process.env.PROJECT_ROOT) process.env.PROJECT_ROOT = root;
 const { stripSemanticRedundancy } = require('../../proxy/messages');
 
 test('host file-modified reminders are stripped before content-plane processing', () => {
