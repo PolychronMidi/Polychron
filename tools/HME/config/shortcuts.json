@@ -36,8 +36,8 @@
     },
     "readq": {
       "lane": "local-session",
-      "steps": ["[HME_READ_CHAIN] $prompt"],
-      "description": "PTY-bridge consult follow-up: types the read-chain trigger into the live REPL. The proxy (maybeDriveReadChain in hme_proxy_claude.js) intercepts it and emits real Read tool_use blocks with unforgeable hme_read_chain__ ids -- the reads are automatic and the model never decides to read. Replaces the old prose directive that merely ASKED the model to read."
+      "steps": [],
+      "description": "Retired no-op. Consult read queues are consumed by the proxy read_chain_driver on the host task-notification request; the bridge must not type [HME_READ_CHAIN] into the live input field."
     }
   }
 }
