@@ -63,9 +63,9 @@ def get_context_budget() -> str:
     Returns 'greedy', 'moderate', 'conservative', or 'minimal'.
     Audit sessions get a budget boost (more data density desired).
     Editing sessions get a budget reduction (concise output preferred)."""
-    context_file = os.environ.get("HME_CLAUDE_CONTEXT_FILE") or os.environ.get("HME_CTX_FILE")
+    context_file = os.environ.get("HME_CLAUDE_CONTEXT_FILE") or os.environ.get("HME_CTX_FILE")  # env-ok: interactive context-file bridge
     if context_file and not os.path.exists(context_file):
-        fallback = os.environ.get("HME_CTX_FILE")
+        fallback = os.environ.get("HME_CTX_FILE")  # env-ok: interactive legacy context-file bridge
         if fallback and os.path.exists(fallback):
             context_file = fallback
     if context_file and os.path.exists(context_file):

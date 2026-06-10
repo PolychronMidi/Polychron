@@ -45,7 +45,7 @@ _MAX_ROWS = 1000  # hard cap; older rows trimmed on write
 
 
 def _timeseries_path(project_root: str) -> Path:
-    metrics_dir = os.environ.get("HME_METRICS_DIR")
+    metrics_dir = os.environ.get("HME_METRICS_DIR")  # env-ok: scoped metrics override
     if metrics_dir:
         return Path(metrics_dir) / "hme-coherence-timeseries.jsonl"
     return Path(project_root) / "tools" / "HME" / "runtime" / "metrics" / "hme-coherence-timeseries.jsonl"

@@ -25,8 +25,8 @@ _warm_ctx_incr_latency: dict = {}
 # Disk persistence config
 # Prefer tmpfs buffer (instant I/O) -> fallback to project disk.
 _TMPFS_PATHS = [
-    os.environ["HME_LLAMACPP_BUFFER_GPU0"],
-    os.environ["HME_LLAMACPP_BUFFER_GPU1"],
+    os.environ["HME_LLAMACPP_BUFFER_GPU0"],  # env-ok: scoped warm-disk buffer source
+    os.environ["HME_LLAMACPP_BUFFER_GPU1"],  # env-ok: scoped warm-disk buffer source
 ]
 _DISK_CACHE_DIR = None  # lazily initialized
 _MODEL_CACHE_NAMES = {}  # model -> cache file stem, set after model constants load
@@ -40,7 +40,7 @@ def _cache_dir() -> str:
             return tp
     if _DISK_CACHE_DIR is None:
         root = getattr(ctx, "PROJECT_ROOT", "")
-        _DISK_CACHE_DIR = os.path.join(root, "tools", "HME", "warm-context-cache") if root else os.environ["HME_WARM_CACHE_FALLBACK_DIR"]
+        _DISK_CACHE_DIR = os.path.join(root, "tools", "HME", "warm-context-cache") if root else os.environ["HME_WARM_CACHE_FALLBACK_DIR"]  # env-ok: scoped warm-cache fallback
     os.makedirs(_DISK_CACHE_DIR, exist_ok=True)
     return _DISK_CACHE_DIR
 

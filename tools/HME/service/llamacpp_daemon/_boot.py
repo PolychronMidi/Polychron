@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %
 logger = logging.getLogger("HME.llamacpp")
 logger.setLevel(logging.INFO)
 
-PID_FILE = str(Path(os.environ['PROJECT_ROOT']) / 'tools' / 'HME' / 'runtime' / 'hme-llamacpp-daemon.pid')
+PID_FILE = str(Path(os.environ['PROJECT_ROOT']) / 'tools' / 'HME' / 'runtime' / 'hme-llamacpp-daemon.pid')  # env-ok: bootstrap project root
 TRAINING_LOCK = ENV.require("HME_TRAINING_LOCK")
 
 _DEFAULT_WALL_TIMEOUT = 45  # hard wall-clock cap for /generate proxy

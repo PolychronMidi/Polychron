@@ -61,7 +61,7 @@ _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
 
 
 def _count_file() -> str | None:
-    root = os.environ['PROJECT_ROOT']
+    root = os.environ['PROJECT_ROOT']  # env-ok: scoped project root
     return os.path.join(root, "tmp", "hme-thread-call-count") if root else None
 
 
@@ -130,9 +130,9 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
     dedupes the second).
     """
     global _DISPATCH_THREAD_CALL_COUNT
-    if os.environ.get("HME_LEGACY_THREAD_DISPATCH") != "1":
+    if os.environ.get("HME_LEGACY_THREAD_DISPATCH") != "1":  # env-ok: feature flag
         return None
-    project_root = os.environ['PROJECT_ROOT']
+    project_root = os.environ['PROJECT_ROOT']  # env-ok: scoped project root
     if not project_root:
         return None
     sid_file = os.path.join(project_root, "tmp", "hme-thread.sid")

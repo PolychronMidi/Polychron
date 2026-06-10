@@ -20,7 +20,7 @@ logger = logging.getLogger("HME")
 
 
 def _get_wav_path() -> str:
-    output_dir = os.environ.get("COMPOSITION_OUTPUT_DIR") or os.path.join(ctx.PROJECT_ROOT, "src", "output")
+    output_dir = os.environ.get("COMPOSITION_OUTPUT_DIR") or os.path.join(ctx.PROJECT_ROOT, "src", "output")  # env-ok: scoped output override
     return os.path.join(output_dir, "combined.wav")
 
 

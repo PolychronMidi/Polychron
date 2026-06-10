@@ -251,7 +251,7 @@ def startup_status_snapshot() -> dict[str, object]:
         return {"ready": False, "loading": False, "failed": True, "error": str(exc)}
 
 def ensure_ready_sync(timeout: float = 5.0) -> None:
-    if os.environ.get("HME_ALLOW_LONG_READY_WAIT") != "1":
+    if os.environ.get("HME_ALLOW_LONG_READY_WAIT") != "1":  # env-ok: feature flag
         timeout = min(timeout, 5.0)
     """Block until background model/engine initialization completes.
 
