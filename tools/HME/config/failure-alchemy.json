@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "allowed_outcomes": ["fix", "regression-test", "invariant", "dead-mechanism-deletion"],
+  "repair_order": [
+    "diagnose-exact-failure",
+    "smallest-patch",
+    "syntax-check",
+    "targeted-test",
+    "test-invariant-or-deletion",
+    "broad-suite",
+    "compact-proof-trace"
+  ],
+  "forbidden_labels": ["preexisting", "probably", "noted", "later"],
+  "broad_change_requires_green": true
+}
