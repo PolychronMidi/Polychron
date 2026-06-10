@@ -62,6 +62,23 @@ test('wired handler drives the full read chain with no model decision', () => {
   assert.equal(done.content.some((b) => b.type === 'tool_use'), false, 'queue exhausted -> no more reads');
 });
 
+test('wired handler returns Anthropic SSE when payload.stream is true', () => {
+  const res = fakeRes();
+  const handled = maybeDriveReadChain({
+    clientRes: res,
+    payload: { model: 'm', stream: true, messages: [{ role: 'user', content: [{ type: 'text', text: '[HME_READ_CHAIN] /a/one.json' }] }] },
+  });
+  assert.equal(handled, true);
+  assert.equal(res.statusCode, 200);
+  assert.match(String(res.headers['Content-Type'] || ''), /text\/event-stream/);
+  assert.match(res.body, /^event: message_start/m);
+  assert.match(res.body, /event: content_block_start/);
+  assert.match(res.body, /"type":"tool_use"/);
+  assert.match(res.body, /event: content_block_delta/);
+  assert.match(res.body, /"type":"input_json_delta"/);
+  assert.doesNotMatch(res.body.trimStart(), /^\{/);
+});
+
 test('wired handler ignores ordinary requests (no false drive)', () => {
   const res = fakeRes();
   const handled = maybeDriveReadChain({
