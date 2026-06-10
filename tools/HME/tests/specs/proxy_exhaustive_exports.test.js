@@ -62,7 +62,7 @@ for (const { rel, full } of modules) {
     }
   // silent-ok: test records/cleans up failure and continues remaining cases.
   } catch (err) {
-    failures.push(rel + ': ' + (err.code || 'THREW') + ' — ' + err.message);
+    failures.push(rel + ': ' + (err.code || 'THREW') + ' -- ' + err.message);
   }
 }
 process.stdout.write(JSON.stringify(failures));
@@ -79,9 +79,9 @@ process.exit(failures.length ? 1 : 0);
     return [`proxy export checker timed out; last modules:\n${tail}`];
   }
   if (r.status !== 0) {
-    return [`proxy export checker ${r.status === null ? 'SIGNAL' : `exit ${r.status}`} — ${(r.stderr || r.stdout || '').trim().slice(0, 800)}`];
+    return [`proxy export checker ${r.status === null ? 'SIGNAL' : `exit ${r.status}`} -- ${(r.stderr || r.stdout || '').trim().slice(0, 800)}`];
   }
-  try { return JSON.parse(r.stdout || '[]'); } catch (err) { return [`proxy export checker bad output — ${err.message}`]; }
+  try { return JSON.parse(r.stdout || '[]'); } catch (err) { return [`proxy export checker bad output -- ${err.message}`]; }
 }
 
 test('every proxy module export is defined', () => {

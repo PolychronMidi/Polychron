@@ -59,6 +59,6 @@ module.exports = {
     if (!hits.length) return ctx.allow();
     const newContent = _rewriteContent(content, PROJECT_ROOT);
     const updated = _rewriteToolInput(ti, newContent);
-    return ctx.rewrite(updated, `DDoC stripped: hardcoded project root → $PROJECT_ROOT (lines [${hits.join(',')}])`);
+    return ctx.rewrite(updated, `DDoC stripped: hardcoded project root -> $PROJECT_ROOT (lines [${hits.join(',')}])`);
   },
 };

@@ -3,7 +3,7 @@
 doc/self-coherence-full.md#hme-proxy-bounded-contexts declares five contexts (request_mutation,
 upstream_dispatch, response_transform, failure_policy,
 lifecycle_bridge). Rule 1: cross-context calls must go through the
-declared façade module under proxy/contexts/<name>/. Reaching into a
+declared fa?ade module under proxy/contexts/<name>/. Reaching into a
 different context's internal helper file is a refactor smell.
 
 This verifier:
@@ -11,7 +11,7 @@ This verifier:
      belongs to which context.
   2. Walks proxy/*.js, parses each require() target.
   3. For an importer in context A requiring a file in context B != A:
-     -- if the require path resolves to B's façade, allow it.
+     -- if the require path resolves to B's fa?ade, allow it.
      -- otherwise, flag as a cross-context internal reach.
 
 Files not registered in any context default to "infra" (shared
@@ -116,7 +116,7 @@ def _context_of(rel: str, membership: dict[str, str]) -> str:
 
 @register
 class CrossContextIsolationVerifier(Verifier):
-    """Detect cross-context require() calls that bypass the declared façade."""
+    """Detect cross-context require() calls that bypass the declared fa?ade."""
 
     name = "cross-context-isolation"
     category = "code"
@@ -196,7 +196,7 @@ class CrossContextIsolationVerifier(Verifier):
             return passed(summary="no cross-context internal reaches detected")
         score = max(0.0, 1.0 - len(violations) / 50.0)
         return warned(
-            summary=f"{len(violations)} cross-context internal reach(es) bypass façade",
+            summary=f"{len(violations)} cross-context internal reach(es) bypass fa?ade",
             score=score,
             details=violations[:30],
         )

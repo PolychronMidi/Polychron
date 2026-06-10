@@ -22,9 +22,9 @@ def _classes():
 def _seed_tree(root: Path, facade_a_target: str = "../../alpha_main.js",
                beta_uses_alpha_facade: bool = True) -> None:
     """Build a tiny fake proxy tree with two contexts (alpha, beta) and
-    one infra file. `facade_a_target` controls what alpha's façade
+    one infra file. `facade_a_target` controls what alpha's fa?ade
     re-exports from; `beta_uses_alpha_facade` toggles whether beta's
-    file reaches into alpha via the façade (compliant) or directly
+    file reaches into alpha via the fa?ade (compliant) or directly
     (violation)."""
     write_file(root, "tools/HME/config/proxy-contexts.json", json.dumps({
         "contexts": {

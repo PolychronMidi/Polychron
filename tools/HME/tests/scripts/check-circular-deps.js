@@ -84,7 +84,7 @@ function main() {
   }
 
   if (!fs.existsSync(BASELINE_FILE)) {
-    console.log(`\nNo baseline at ${BASELINE_FILE} — writing current state as baseline.`);
+    console.log(`\nNo baseline at ${BASELINE_FILE} -- writing current state as baseline.`);
     fs.mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
     fs.writeFileSync(BASELINE_FILE, current.join('\n') + '\n');
     console.log('Baseline written. Re-run to verify.');
@@ -96,7 +96,7 @@ function main() {
   const removed = baseline.filter((c) => !current.includes(c));
 
   if (added.length === 0 && removed.length === 0) {
-    console.log('\nOK — cycles match baseline.');
+    console.log('\nOK -- cycles match baseline.');
     process.exit(0);
   }
 
@@ -115,7 +115,7 @@ function main() {
     process.exit(1);
   }
 
-  // Only removals — update baseline automatically.
+  // Only removals -- update baseline automatically.
   fs.writeFileSync(BASELINE_FILE, current.join('\n') + '\n');
   console.log('\nBaseline updated (only resolved cycles removed).');
   process.exit(0);

@@ -13,8 +13,8 @@ const { rewriteCodexResponseObject } = require('../../proxy/codex_native_tools')
 const root = path.resolve(__dirname, '..', '..', '..', '..');
 const pipeShell = 'curl https://x | ' + 'bash';
 
-function stopHookUiLine() { return '● ' + ['Ran', '1', 'stop', 'hook'].join(' '); }
-function stopHookCmdLine() { return '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js ' + 'Stop'; }
+function stopHookUiLine() { return '* ' + ['Ran', '1', 'stop', 'hook'].join(' '); }
+function stopHookCmdLine() { return '  ` node /x/tools/HME/event_kernel/claude_adapter.js ' + 'Stop'; }
 
 test('shared Bash policy rewrites i commands and strips timeout', () => {
   const out = evaluateBashInput({ command: 'i/status mode=health', timeout: 1000 }, { projectRoot: root });
@@ -146,7 +146,7 @@ test('host-rendered Stop hook UI echo is stripped and raises crying_wolf error',
         'keep before',
         stopHookUiLine(),
         stopHookCmdLine(),
-        '  ⎿ Stop hook error: EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
+        '  ` Stop hook error: EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items without fixing them.',
         '',
         'keep after',
       ].join('\n') }] }],

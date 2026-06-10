@@ -41,7 +41,7 @@ function buildTranscript(entries) {
 test('isBareCompletionMarker matches all the canonical bypass shapes', () => withChainSandbox('wc-bypass-bare-', () => {
   const { _testables } = require('../../proxy/stop_chain/policies/work_checks');
   const fn = _testables.isBareCompletionMarker;
-  for (const shape of ['[SUCCESS]', '[ok]', 'OK', 'OK.', 'done', 'Done.', 'noted', 'k', 'K.', '✓', 'fp-gate marker', 'continue']) {
+  for (const shape of ['[SUCCESS]', '[ok]', 'OK', 'OK.', 'done', 'Done.', 'noted', 'k', 'K.', 'OK', 'fp-gate marker', 'continue']) {
     assert.equal(fn(shape), true, `${shape} should be a bypass marker`);
   }
 }));

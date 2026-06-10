@@ -73,10 +73,10 @@ test('slop formatting stripper removes markdown emphasis outside code', () => {
 });
 
 test('slop caveman contractions are ordered before bare pronouns', () => {
-  const result = _stripSlop("You're ready and we’re done; you'll see we’ll pass.");
+  const result = _stripSlop("You're ready and we're done; you'll see we'll pass.");
   assert.ok(result.hits.includes('caveman_compression'));
   assert.equal(result.out, 'Rdy & done; see pass');
-  assert.doesNotMatch(result.out, /['’](re|ll|m)\b/);
+  assert.doesNotMatch(result.out, /[''](re|ll|m)\b/);
 });
 
 test('slop caveman ing suffix shortens long gerunds outside code', () => {

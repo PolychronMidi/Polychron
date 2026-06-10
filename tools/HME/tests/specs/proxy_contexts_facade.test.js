@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 
-// Each entry: context dir + the exports the façade must expose. These
+// Each entry: context dir + the exports the fa?ade must expose. These
 // are the public surfaces declared in doc/self-coherence-full.md#hme-proxy-bounded-contexts. If any
 
 const CONTEXTS = {
@@ -44,7 +44,7 @@ const CONTEXTS = {
 };
 
 for (const [name, exports] of Object.entries(CONTEXTS)) {
-  test(`proxy/contexts/${name}/ façade exposes documented exports`, () => {
+  test(`proxy/contexts/${name}/ fa?ade exposes documented exports`, () => {
     const ctx = require(path.resolve(__dirname,
       '..', '..', 'proxy', 'contexts', name));
     for (const key of exports) {

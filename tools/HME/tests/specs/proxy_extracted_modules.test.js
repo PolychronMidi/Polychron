@@ -1,4 +1,4 @@
-// CONVENTIONS: see doc/self-coherence-full.md (Proxy module conventions) — import from source files,
+// CONVENTIONS: see doc/self-coherence-full.md (Proxy module conventions) -- import from source files,
 // never from barrel index.js re-exports. This test asserts every import
 // resolves to a function; circular dependencies manifest as `undefined`.
 'use strict';
@@ -99,7 +99,7 @@ test('no circular dependency nullifies imported bindings', () => {
   ];
   for (const [name, value, expect] of checks) {
     assert.equal(typeof value, expect,
-      `${name} resolved as ${typeof value} instead of ${expect} — circular dependency?`);
+      `${name} resolved as ${typeof value} instead of ${expect} -- circular dependency?`);
   }
 });
 

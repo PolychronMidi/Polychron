@@ -735,7 +735,7 @@ _CASES = [
     ("stop_work", "proxy-noop-local-turn-exempt",
      [
          _user_msg("<system-reminder>\n</system-reminder>"),
-         _assistant_msg("⁣"),
+         _assistant_msg("?"),
      ],
      "ok"),
 

@@ -22,7 +22,7 @@ function isBareCompletionMarker(text) {
   if (!text) return false;
   const trimmed = text.trim().replace(/\s+/g, ' ');
   if (trimmed.length > 32) return false;
-  return /^(\[?(success|ok|done|complete|completed|noted|acknowledged|continue)\.?\]?|k\.?|✓|✔|fp[-_ ]?gate(\s+marker)?)$/i.test(trimmed);
+  return /^(\[?(success|ok|done|complete|completed|noted|acknowledged|continue)\.?\]?|k\.?|OK|\u2713|\u2714|fp[-_ ]?gate(\s+marker)?)$/i.test(trimmed);
 }
 
 // anti-fork-begin: speculation-regexes min=6

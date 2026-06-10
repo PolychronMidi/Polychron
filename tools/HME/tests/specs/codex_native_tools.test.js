@@ -324,7 +324,7 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
     assert.equal(upstreamBodies[1].input[0].call_id, 'call_read_proxy_loop');
     assert.match(upstreamBodies[1].input[0].output, /# Rules/);
     assert.match(response.body, /response.output_text.delta/);
-    assert.match(response.body, /• Read doc\/templates\/AGENTS\.md/);
+    assert.match(response.body, /- Read doc\/templates\/AGENTS\.md/);
     assert.match(response.body, /result forwarded upstream/);
     assert.match(response.body, /done/);
     assert.match(response.body, /data: \[DONE\]/);
@@ -393,7 +393,7 @@ test('Codex proxy diagnoses tool-only streamed completion instead of silently re
     const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: true });
     assert.equal(response.status, 200);
     assert.equal(upstreamBodies.length, 2);
-    assert.match(response.body, /• Read doc\/templates\/AGENTS\.md/);
+    assert.match(response.body, /- Read doc\/templates\/AGENTS\.md/);
     assert.match(response.body, /result forwarded upstream/);
     assert.doesNotMatch(response.body, /Render pipeline error/);
     assert.match(response.body, /data: \[DONE\]/);

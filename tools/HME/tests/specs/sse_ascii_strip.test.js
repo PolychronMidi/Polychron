@@ -22,14 +22,14 @@ test('thinking deltas are buffered (nothing emitted until stop)', () => {
 test('contaminated thinking: WHOLE block collapses to ONE banner, no pre-banner skeleton leak, signature kept', () => {
   const c = ctx();
   tstart(c, 0);
-  tdelta(c, 0, '∴ B');     // early 1-foreign-char delta (would have leaked per-delta)
+  tdelta(c, 0, '? B');     // early 1-foreign-char delta (would have leaked per-delta)
   tdelta(c, 0, 'Th mc');         // ascii skeleton
-  tdelta(c, 0, 'Người dùng');  // dense foreign later
+  tdelta(c, 0, 'Ng??i d?ng');  // dense foreign later
   tsig(c, 0);
   const out = tstop(c, 0).events;
   const s = JSON.stringify(out);
   assert.equal((s.match(/devil-possessed/g) || []).length, 1);   // exactly one banner
-  assert.ok(!s.includes('∴'));                              // no leaked symbol
+  assert.ok(!s.includes('?'));                              // no leaked symbol
   assert.ok(!s.includes('Th mc'));                              // no leaked skeleton
   assert.ok(s.includes('SEAL'));                                // signature kept
   // structure: start, banner thinking_delta, signature, stop
@@ -50,9 +50,9 @@ test('clean thinking flushes verbatim (typography folded) with signature', () =>
 
 test('text: typography folds; sparse stray stripped; dense foreign -> banner once', () => {
   const c = ctx();
-  assert.equal(text(c, 5, 'it’s—x').delta.text, "it's--x");
-  assert.equal(text(c, 5, 'runs∴ ok').delta.text, 'runs ok');
+  assert.equal(text(c, 5, 'it\u2019s\u2014x').delta.text, "it's--x");
+  assert.equal(text(c, 5, 'runs\u2234 ok').delta.text, 'runs ok');
   const c2 = ctx();
-  assert.equal(text(c2, 6, 'Người dùng').delta.text, BANNER);
-  assert.equal(text(c2, 6, 'рас'), null);
+  assert.equal(text(c2, 6, 'Ng\u01b0\u1eddi d\u00f9ng').delta.text, BANNER);
+  assert.equal(text(c2, 6, '\u0440\u0430\u0441'), null);
 });

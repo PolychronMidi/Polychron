@@ -1,4 +1,4 @@
-// CONVENTIONS: see doc/self-coherence-full.md (Proxy module conventions) — import from source files,
+// CONVENTIONS: see doc/self-coherence-full.md (Proxy module conventions) -- import from source files,
 // never from barrel index.js re-exports.
 //
 'use strict';

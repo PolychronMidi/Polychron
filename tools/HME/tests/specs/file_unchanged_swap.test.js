@@ -20,7 +20,7 @@ test('swap moves earlier Read content into the Wasted-call slot', () => {
     { role: 'assistant', content: [{ type: 'text', text: 'thinking' }] },
     { role: 'user', content: [{ type: 'text', text: 'continue' }] },
     { role: 'assistant', content: [readUse('r2', '/x/foo.js')] },
-    { role: 'user', content: [readResult('r2', 'Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.')] },
+    { role: 'user', content: [readResult('r2', 'Wasted call -- file unchanged since your last Read. Refer to that earlier tool_result instead.')] },
   ];
   const swaps = swapFileUnchanged(messages);
   assert.equal(swaps, 1);
@@ -33,7 +33,7 @@ test('swap moves earlier Read content into the Wasted-call slot', () => {
 test('Wasted call with no earlier Read content is left alone', () => {
   const messages = [
     { role: 'assistant', content: [readUse('r1', '/x/foo.js')] },
-    { role: 'user', content: [readResult('r1', 'Wasted call — file unchanged since your last Read.')] },
+    { role: 'user', content: [readResult('r1', 'Wasted call -- file unchanged since your last Read.')] },
   ];
   const before = JSON.stringify(messages);
   const swaps = swapFileUnchanged(messages);
@@ -46,7 +46,7 @@ test('Wasted call for file A does not pull content from a Read of file B', () =>
     { role: 'assistant', content: [readUse('r1', '/x/B.js')] },
     { role: 'user', content: [readResult('r1', 'content of B')] },
     { role: 'assistant', content: [readUse('r2', '/x/A.js')] },
-    { role: 'user', content: [readResult('r2', 'Wasted call — file unchanged since your last Read.')] },
+    { role: 'user', content: [readResult('r2', 'Wasted call -- file unchanged since your last Read.')] },
   ];
   const swaps = swapFileUnchanged(messages);
   assert.equal(swaps, 0, 'cross-file pull is forbidden');
@@ -58,9 +58,9 @@ test('chain of two Wasted calls each pulls from the most recent good content for
     { role: 'assistant', content: [readUse('r1', '/x/foo.js')] },
     { role: 'user', content: [readResult('r1', 'real content v1')] },
     { role: 'assistant', content: [readUse('r2', '/x/foo.js')] },
-    { role: 'user', content: [readResult('r2', 'Wasted call — file unchanged since your last Read.')] },
+    { role: 'user', content: [readResult('r2', 'Wasted call -- file unchanged since your last Read.')] },
     { role: 'assistant', content: [readUse('r3', '/x/foo.js')] },
-    { role: 'user', content: [readResult('r3', 'Wasted call — file unchanged since your last Read.')] },
+    { role: 'user', content: [readResult('r3', 'Wasted call -- file unchanged since your last Read.')] },
   ];
   const swaps = swapFileUnchanged(messages);
   assert.equal(swaps, 2, 'both wasted slots get filled');
@@ -76,7 +76,7 @@ test('string-shaped tool_result content (not array) also gets swapped', () => {
     { role: 'assistant', content: [readUse('r1', '/x/foo.js')] },
     { role: 'user', content: [readResultStr('r1', '1\tline one\n')] },
     { role: 'assistant', content: [readUse('r2', '/x/foo.js')] },
-    { role: 'user', content: [readResultStr('r2', 'Wasted call — file unchanged since your last Read.')] },
+    { role: 'user', content: [readResultStr('r2', 'Wasted call -- file unchanged since your last Read.')] },
   ];
   const swaps = swapFileUnchanged(messages);
   assert.equal(swaps, 1);
@@ -91,7 +91,7 @@ test('non-Read tool_use results are not eligible (e.g. Grep)', () => {
     { role: 'assistant', content: [grepUse] },
     { role: 'user', content: [readResult('g1', 'some match output')] },
     { role: 'assistant', content: [grepUse] },
-    { role: 'user', content: [readResult('g1', 'Wasted call — file unchanged since your last Read.')] },
+    { role: 'user', content: [readResult('g1', 'Wasted call -- file unchanged since your last Read.')] },
   ];
   // Wasted-call response is only emitted for Read; even if some other tool's
   // result looked similar, the policy only acts on Read tool_uses.
@@ -104,7 +104,7 @@ test('Fs$ variant of the unchanged message also triggers the swap', () => {
     { role: 'assistant', content: [readUse('r1', '/x/foo.js')] },
     { role: 'user', content: [readResult('r1', 'real content')] },
     { role: 'assistant', content: [readUse('r2', '/x/foo.js')] },
-    { role: 'user', content: [readResult('r2', 'File unchanged since last read. The content from the earlier Read tool_result in this conversation is still current — refer to that instead of re-reading.')] },
+    { role: 'user', content: [readResult('r2', 'File unchanged since last read. The content from the earlier Read tool_result in this conversation is still current -- refer to that instead of re-reading.')] },
   ];
   const swaps = swapFileUnchanged(messages);
   assert.equal(swaps, 1);

@@ -72,7 +72,7 @@ class RepoMermaidFreshnessTests(unittest.TestCase):
     def test_warn_when_block_is_stale(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            # Empty block — definitely doesn't match the freshly-generated one.
+            # Empty block -- definitely doesn't match the freshly-generated one.
             _seed_repo(root, readme_extra="")
             r = with_project_root(root, _run)
             self.assertEqual(r.status, "WARN", msg=f"summary={r.summary}")

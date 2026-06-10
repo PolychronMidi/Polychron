@@ -30,8 +30,8 @@ async function runSse(raw, rewriters, sessionId = '', extraCtx = {}) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-function stopHookUiLine() { return '● ' + ['Ran', '1', 'stop', 'hook'].join(' '); }
-function stopHookCmdLine() { return '  ⎿ node /x/tools/HME/event_kernel/claude_adapter.js ' + 'Stop'; }
+function stopHookUiLine() { return '* ' + ['Ran', '1', 'stop', 'hook'].join(' '); }
+function stopHookCmdLine() { return '  ` node /x/tools/HME/event_kernel/claude_adapter.js ' + 'Stop'; }
 
 function event(name, data) {
   return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
