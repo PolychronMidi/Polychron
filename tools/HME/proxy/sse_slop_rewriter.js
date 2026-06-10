@@ -486,10 +486,10 @@ function _stripLineDashAndTerminalPunctuation(text) {
   const masked = _segmentByCode(text).map((seg) => {
     if (!seg.code) return seg.s;
     protectedParts.push(seg.s);
-    return `__HME_PROT_${protectedParts.length - 1}__`;
+    return `HMEPROT${protectedParts.length - 1}TOKEN`;
   }).join('');
   return _stripLineDashAndTerminalPunctuationSegment(masked)
-    .replace(/__HME_PROT_(\d+)__/g, (_m, idx) => protectedParts[Number(idx)] || '');
+    .replace(/HMEPROT(\d+)TOKEN/g, (_m, idx) => protectedParts[Number(idx)] || '');
 }
 
 // Anti-slop strip; entries define regex, replacement, and stat label.
