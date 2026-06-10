@@ -166,9 +166,9 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                 ["git", "-C", _root, "rev-parse", "HEAD"],
                 text=True, stderr=subprocess.DEVNULL, timeout=2,
             ).strip()
-        # silent-ok: failure is returned/logged in tool output; service stays available.
-        except Exception:
-            head = ""
+        # silent-ok: failure is returned/logged in marker; service stays available.
+        except Exception as exc:
+            head = f"unavailable:{type(exc).__name__}"
         payload = {
             "ts": _time.time(),
             "trigger": _trigger,
