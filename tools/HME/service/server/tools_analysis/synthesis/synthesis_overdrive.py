@@ -227,6 +227,8 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     _api_model = str(_meta.get("api_model") or model_id)
     if _api_model.endswith("-go"):
         _api_model = _api_model[:-3]
+    if _api_model.endswith("]") and "[" in _api_model:
+        _api_model = _api_model.rsplit("[", 1)[0]
     # Prefix with OmniRoute provider (codex uses "cx" alias, others match)
     if _provider == "codex":
         _omni_prefix = "cx"
