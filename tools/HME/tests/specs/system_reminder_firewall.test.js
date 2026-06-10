@@ -24,12 +24,15 @@ test('host file-modified reminders are stripped before content-plane processing'
 test('completed mesh task notification injects auto-read bundle instead of disappearing', () => {
   const outDir = path.join(root, 'teams', 'runtime', 'output', 'unit-auto-read-consult');
   fs.mkdirSync(outDir, { recursive: true });
-  const bundleRel = 'teams/runtime/output/unit-auto-read-consult/_consult-auto-read.json';
-  const bundleAbs = path.join(root, bundleRel);
-  fs.writeFileSync(bundleAbs, JSON.stringify({ schema: 1, files: [{ path: 'x', stdout: 'peer final' }] }));
   fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
   const latestPath = path.join(root, 'tools', 'HME', 'runtime', 'latest-consult-auto-read.json');
-  fs.writeFileSync(latestPath, JSON.stringify({ schema: 1, auto_read_bundle: bundleRel, generated_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60000).toISOString(), consumed: false }));
+  fs.writeFileSync(latestPath, JSON.stringify({
+    schema: 2,
+    native_read_before_report: ['teams/runtime/output/unit-auto-read-consult/red_final.json'],
+    generated_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 60000).toISOString(),
+    consumed: false,
+  }));
   const payload = { messages: [{ role: 'user', content: [{ type: 'text', text: [
     '<task-notification>',
     '<status>completed</status>',
