@@ -1,7 +1,7 @@
 'use strict';
 // Train lightweight verdict regressor from labeled run-history snapshots.
 // Uses Python/sklearn LogisticRegression (L2, C=0.5) on numeric features.
-// Saves weights to metrics/verdict-model.json for prediction in snapshot-run.js.
+// Saves weights to src/output/metrics/verdict-model.json for prediction in snapshot-run.
 // Skips if fewer than MIN_LABELED labeled snapshots exist.
 // Usage: node src/scripts/pipeline/train-verdict-predictor.js
 
