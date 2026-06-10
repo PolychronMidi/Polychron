@@ -2,7 +2,7 @@
   "schema": 1,
   "classes": {
     "source": {
-      "patterns": ["src/**", "tools/HME/**/*.py", "tools/HME/**/*.js", "teams/rounds/**", "config/**", "*.js", "*.json", "*.md"],
+      "patterns": ["src/**", "tools/HME/**", "teams/rounds/**", "config/**", "*.js", "*.mjs", "*.json", "*.md", ".editorconfig", ".gitignore", ".env.sha256", "package.json", "package-lock.json", "tsconfig.json", "README.md", "plan.md"],
       "policy": "reviewed, tested, invariant-covered"
     },
     "config": {
@@ -34,7 +34,7 @@
       "policy": "never committed"
     },
     "proof": {
-      "patterns": ["teams/runtime/output/**/_consult-*.json", "tools/HME/tests/fixtures/coherence-trace.sample.json"],
+      "patterns": ["teams/runtime/output/**/_consult-*.json", "teams/runtime/output/**", "tools/HME/tests/fixtures/coherence-trace.sample.json", "log/todo/*.md"],
       "policy": "must link to verifier and causal path"
     },
     "migration-baseline": {
@@ -49,6 +49,7 @@
   "tracked_runtime_allowlist": [
     "tools/HME/runtime/metrics/hme-dir-intent.json",
     "tools/HME/runtime/metrics/hme-prediction-accuracy.json",
-    "tools/HME/runtime/metrics/hme-suspected-upstreams.json"
+    "tools/HME/runtime/metrics/hme-suspected-upstreams.json",
+    "teams/runtime/README.md"
   ]
 }
