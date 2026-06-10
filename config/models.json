@@ -129,8 +129,8 @@
           "effort_level": "max",
           "cost": "subscription",
           "cost_amt": 0,
-          "notes": "Anthropic Claude Fable via OmniRoute/direct Anthropic; max effort variant.",
-          "tier_score": 10,
+          "notes": "Anthropic Claude Fable via OmniRoute/direct Anthropic; experimental max effort variant below canonical Opus/GPT E5 chain.",
+          "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
           "max_input_tokens": 872000
