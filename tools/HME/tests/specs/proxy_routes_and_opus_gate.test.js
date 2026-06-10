@@ -143,8 +143,12 @@ test('admin route handlers are injectable and lazy', () => {
     handleSessionStateRoute: handler('session'),
     handleMcpRequest: handler('mcp'),
   });
+  {
+    const res = fakeRes();
+    assert.equal(dispatch(fakeReq('/hme/spawn', 'POST'), res), true);
+    assert.equal(JSON.parse(res.body).error, 'gone');
+  }
   for (const [url, name] of [
-    ['/hme/spawn', 'spawn'],
     ['/hme/lifecycle?event=SessionStart', 'lifecycle'],
     ['/hme/pre-write-check', 'prewrite'],
     ['/hme/session/state', 'session'],
@@ -154,7 +158,7 @@ test('admin route handlers are injectable and lazy', () => {
     assert.equal(dispatch(fakeReq(url, 'POST'), res), true);
     assert.equal(JSON.parse(res.body).name, name);
   }
-  assert.deepEqual(calls, ['spawn', 'lifecycle', 'prewrite', 'session', 'mcp']);
+  assert.deepEqual(calls, ['lifecycle', 'prewrite', 'session', 'mcp']);
 });
 
 test('Opus gate disabled returns an idempotent release immediately', async () => {
