@@ -29,7 +29,7 @@ from todo_engine.grammar import parse_document  # noqa: E402
 
 
 def _root() -> Path:
-    return Path(os.environ.get("PROJECT_ROOT") or _HME.parent.parent)  # env-ok: runtime root
+    return Path(os.environ.get("PROJECT_ROOT") or _HME.parent.parent)  # env-ok: sandbox/root runtime root
 
 
 def _norm(text: str) -> str:
