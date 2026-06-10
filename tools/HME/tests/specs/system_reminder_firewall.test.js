@@ -42,8 +42,8 @@ test('completed mesh task notification injects auto-read bundle instead of disap
   const count = stripSemanticRedundancy(payload);
   assert.ok(count >= 1);
   const text = payload.messages[0].content[0].text;
-  assert.match(text, /HME background task auto-read/);
-  assert.match(text, /peer final/);
+  assert.match(text, /HME consult native-read queue/);
+  assert.match(text, /red_final\.json/);
   assert.doesNotMatch(text, /<task-notification>/);
   assert.equal(JSON.parse(fs.readFileSync(latestPath, 'utf8')).consumed, true);
 
