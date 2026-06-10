@@ -198,8 +198,8 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
       "patterns": [
-        "action == \"hypothesize\"",
-        "action == \"hypothesis_test\""
+        "\"hypothesize\":",
+        "\"hypothesis_test\":"
       ],
       "severity": "error"
     },
