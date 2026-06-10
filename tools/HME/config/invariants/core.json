@@ -337,6 +337,18 @@
       "capture_stderr": true
     },
     {
+      "id": "runtime-freshness-and-context-thermodynamics-valid",
+      "description": "Phase Omega runtime freshness/context thermodynamics config must define bounded freshness windows, tokenized task-output path guard metadata, duplicate hook banner budget, stale-log labeling, and read-policy task-output polling guard coverage.",
+      "born_from": "2026-06-10 Phase Omega workstream 6: stale logs and task-output polling are context-burn unless freshness and guard coverage are explicit",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_runtime_freshness.py",
+      "severity": "error",
+      "finding_label": "runtime freshness finding",
+      "success_detail": "runtime freshness/context thermodynamics valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
       "id": "invariant-topology-valid",
       "description": "Phase Omega invariant topology must declare intent, scope, watched class, watcher edges, known escape vectors, and negative controls for seed invariants, with edges resolving to real invariant IDs.",
       "born_from": "2026-06-10 Phase Omega mesh consult workstream 4: invariants must form a watcher graph, not a flat alarm list",
