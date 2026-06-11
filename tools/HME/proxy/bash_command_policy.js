@@ -186,6 +186,28 @@ function feedbackKbSpam(cmd) {
     : null;
 }
 
+const FORBIDDEN_SPAWN_ATTEMPT_STATE = 'tools/HME/runtime/forbidden-spawn-attempts.json';
+const FORBIDDEN_SPAWN_ATTEMPT_TTL_MS = 60 * 60 * 1000;
+
+function forbiddenSpawnAttempt(cmd, root) {
+  if (!/\b(?:curl|wget|fetch)\b[\s\S]*\/hme\/spawn\b/.test(cmd)) return null;
+  const file = path.join(root, FORBIDDEN_SPAWN_ATTEMPT_STATE);
+  const now = Date.now();
+  let state = { count: 0, first_seen_ms: now, last_seen_ms: 0 };
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (parsed && Number.isFinite(parsed.last_seen_ms) && now - parsed.last_seen_ms <= FORBIDDEN_SPAWN_ATTEMPT_TTL_MS) state = parsed;
+  } catch (_e) { /* silent-ok: absent/malformed counter starts fresh */ }
+  state.count = (Number(state.count) || 0) + 1;
+  state.last_seen_ms = now;
+  if (!Number.isFinite(state.first_seen_ms)) state.first_seen_ms = now;
+  try { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(state, null, 2) + '\n'); } catch (_e) { /* silent-ok: denial still fires */ }
+  if (state.count > 1) {
+    return deny(`BLOCKED: repeated forbidden /hme/spawn attempt #${state.count}. Stop retrying the denied proxy-spawn route; run the owning PROJECT_ROOT script directly with Bash instead.`);
+  }
+  return deny('BLOCKED: /hme/spawn is disabled. Run the owning PROJECT_ROOT script directly; do not route consults through spawn/curl.');
+}
+
 const LIFESAVER_ESCALATION_STATE = 'tools/HME/runtime/lifesaver-escalation-since.ts';
 const LIFESAVER_ESCALATION_THRESHOLD_S = 300;
 
