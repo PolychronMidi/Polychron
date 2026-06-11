@@ -84,7 +84,7 @@ from .onboarding import (  # noqa: F401
     OnboardingStateIntegrityVerifier, OnboardingChainImportVerifier,
 )
 from .tool_surface import (  # noqa: F401
-    ToolSurfaceCoverageVerifier,
+    ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier,
 )
 from .meta_observers import (  # noqa: F401
     MetaObserverCoherenceVerifier,
