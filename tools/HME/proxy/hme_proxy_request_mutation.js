@@ -89,59 +89,6 @@ function _msgText(msg) {
   if (!Array.isArray(c)) return '';
   return c.map((b) => (b && typeof b.text === 'string' ? b.text : '')).join('\n');
 }
-function _readJsonSafe(file) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_e) { return null; }
-}
-function _safeProjectPath(rel) {
-  const raw = String(rel || '').trim();
-  if (!raw) return null;
-  const abs = path.isAbsolute(raw) ? raw : path.join(PROJECT_ROOT, raw);
-  const r = path.relative(PROJECT_ROOT, abs);
-  if (r.startsWith('..') || path.isAbsolute(r)) return null;
-  return abs;
-}
-function _readAsNativeReadText(rel) {
-  const abs = _safeProjectPath(rel);
-  if (!abs) return `AUTO-READ ERROR: path outside PROJECT_ROOT: ${rel}`;
-  try {
-    const text = fs.readFileSync(abs, 'utf8');
-    return text.split(/\r?\n/).map((line, i) => `${i + 1}\t${line}`).join('\n');
-  } catch (err) {
-    return `AUTO-READ ERROR: ${err.message}`;
-  }
-}
-function _safeToolIdPart(value) {
-  return String(value || 'consult').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80) || 'consult';
-}
-function injectConsultNativeReadResults(payload) {
-  if (!payload || !Array.isArray(payload.messages) || payload.messages.length === 0) return 0;
-  const last = payload.messages[payload.messages.length - 1];
-  const lastText = _msgText(last);
-  if (!/<task-notification>[\s\S]*?<status>completed<\/status>[\s\S]*?<\/task-notification>/i.test(lastText)) return 0;
-  const markerPath = path.join(PROJECT_ROOT, 'tools/HME/runtime/latest-consult-read-queue.json');
-  const marker = _readJsonSafe(markerPath);
-  if (!marker || marker.consumed === true) return 0;
-  const expires = Date.parse(String(marker.expires_at || ''));
-  if (!Number.isFinite(expires) || Date.now() > expires) return 0;
-  const files = Array.isArray(marker.native_read_before_report) ? marker.native_read_before_report.map(String).filter(Boolean) : [];
-  if (!files.length) return 0;
-  const nonce = _safeToolIdPart(marker.nonce || Date.now().toString(36));
-  const round = _safeToolIdPart(marker.round || 'consult');
-  const idFor = (i) => `hme_consult_auto_read_${round}_${nonce}_${i}`;
-  const toolUses = files.map((file, i) => ({ type: 'tool_use', id: idFor(i), name: 'Read', input: { file_path: _safeProjectPath(file) || file } }));
-  const toolResults = files.map((file, i) => ({
-    type: 'tool_result',
-    tool_use_id: idFor(i),
-    content: `HME_CONSULT_AUTO_READ_INJECTED round=${marker.round || ''} file=${file} source=${path.relative(PROJECT_ROOT, markerPath)}\n${_readAsNativeReadText(file)}`,
-  }));
-  payload.messages.splice(payload.messages.length - 1, 0,
-    { role: 'assistant', content: toolUses },
-    { role: 'user', content: toolResults },
-  );
-  try { fs.writeFileSync(markerPath, JSON.stringify({ ...marker, consumed: true, consumed_at: new Date().toISOString(), injected_tool_use_ids: toolUses.map((b) => b.id) }, null, 2) + '\n'); } catch (_e) { /* best-effort */ }
-  return files.length;
-}
-
 function compactLargeInteractiveAnthropicPayload(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const threshold = _anthropicTransportMaxBytes(payload);
