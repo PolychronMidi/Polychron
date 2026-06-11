@@ -50,6 +50,14 @@
       "policy": "must not be referenced outside explicit regression fixtures"
     }
   },
+  "metric_schema_required": [
+    "tools/HME/runtime/metrics/hme-dir-intent.json",
+    "tools/HME/runtime/metrics/hme-prediction-accuracy.json",
+    "tools/HME/runtime/metrics/hme-suspected-upstreams.json"
+  ],
+  "metric_freshness_required": [
+    "tools/HME/runtime/metrics/hme-dir-intent.json"
+  ],
   "tracked_runtime_allowlist": [
     "tools/HME/runtime/metrics/hme-dir-intent.json",
     "tools/HME/runtime/metrics/hme-prediction-accuracy.json",
