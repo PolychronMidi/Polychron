@@ -24,3 +24,4 @@ Example:
 #24 0_ expand invariant topology coverage beyond seed nodes with coverage threshold for env failfast, source-grep bijection, artifact lifecycle, runtime freshness, and failure alchemy
 #25 0_ add autocommit-error freshness check distinguishing current blocking errors from historical alert text using timestamps/freshness windows
 #26 0_ audit and either restore or explicitly retire the missing TodoMergeHookConsistencyVerifier that was removed from tool_surface.test.py during the repair spiral; avoid fake-green by proving equivalent coverage exists
+#27 0_ add a guard or workflow check for repeated forbidden /hme/spawn attempts after the first block; the agent loop repeatedly retried the same denied route while claiming it was switching to direct Bash
