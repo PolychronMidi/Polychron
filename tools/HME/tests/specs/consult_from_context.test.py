@@ -122,8 +122,9 @@ class ConsultFromContextTests(unittest.TestCase):
 
     def _transcript_reads_block(self, cover: list[str]) -> str:
         ts = "2026-06-09T00:00:01Z"
-        use_blocks = [{"type": "tool_use", "id": f"call_{i}", "name": "Read", "input": {"file_path": fp}} for i, fp in enumerate(cover)]
-        res_blocks = [{"type": "tool_result", "tool_use_id": f"call_{i}", "content": "1\\t{}"} for i, _ in enumerate(cover)]
+        ids = [f"hme_read_chain__{i}__fixture" for i, _ in enumerate(cover)]
+        use_blocks = [{"type": "tool_use", "id": ids[i], "name": "Read", "input": {"file_path": fp}} for i, fp in enumerate(cover)]
+        res_blocks = [{"type": "tool_result", "tool_use_id": ids[i], "content": "1\\t{}"} for i, _ in enumerate(cover)]
         if not use_blocks:
             return ""
         events = [
