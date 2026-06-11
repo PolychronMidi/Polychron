@@ -148,6 +148,8 @@ verifier IDs, forbidden paths checked, and open risks.
 - `TodoMergeHookConsistencyVerifier` restored as `todowrite-hook-consistency`:
   `python3 tools/HME/tests/specs/tool_surface.test.py` passed 4 tests and
   `python3 -m verify_coherence --score --threshold 0` returned 95.
+- Repeated forbidden `/hme/spawn` attempts now escalate through shared Bash
+  policy after the first block: policy/lifesaver tests passed 29 tests.
 
 ### Remaining refinements
 
