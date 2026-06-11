@@ -93,9 +93,9 @@ test('wired handler ignores ordinary requests (no false drive)', () => {
   assert.equal(res.statusCode, 0, 'handler must not write anything');
 });
 
-test('read-chain tool_use ids are accepted as unforgeable provenance by the consult proof', () => {
-  // Cross-check: the python proof collector accepts hme_read_chain__ ids without a
-  // nonce. We assert the id SHAPE the proof depends on, locking the contract.
+test('read-chain tool_use ids are accepted as required provenance by the consult proof', () => {
+  // Cross-check: the proof collector accepts the hme_read_chain__ id shape and
+  // rejects unrelated Read calls. Lock the causal contract at the proxy boundary.
   const rc = require('../../proxy/read_chain.js');
   const id = rc._toolId(0, ['/x/final.json']);
   assert.match(id, /^hme_read_chain__/);
