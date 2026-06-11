@@ -404,57 +404,40 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
         return False
     start_line = _line_count(transcript)
     proof["start_line"] = start_line
-    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "read-chain")
-    nonce = f"{manifest['round']}-{int(time.time())}-{os.getpid()}" if driver == "claude-print" else ""
-    proc = _spawn_claude_read_driver(session_id or transcript.stem, files, out_dir, timeout, nonce) if driver == "claude-print" else None
-    proof["proof_mode"] = "proxy-task-notification-read-chain" if not proc else "claude-print"
+    proof["proof_mode"] = "proxy-task-notification-read-chain"
     proof["queued"] = True
     proof["failure"] = None
-    gate_nonce = nonce if proc else ""
-    proof["provenance_gated"] = bool(gate_nonce)
-    if not proc:
-        print("NATIVE_READ_PROOF_QUEUED proxy read_chain will run on host task-notification", flush=True)
+    print("NATIVE_READ_PROOF_QUEUED proxy read_chain will run on host task-notification", flush=True)
     deadline = time.time() + timeout
     required = {_rel_or_abs(f) for f in files}
-    try:
-        while time.time() < deadline:
-            rows, rejected = collect_native_read_rows(transcript, files, start_line, gate_nonce)
-            covered = {str(r.get("relative_path")) for r in rows if int(r.get("result_line") or 0) > 0}
-            missing = sorted(required - covered)
-            proof.update({
-                "read_rows": rows,
-                "rejected_rows": rejected,
-                "missing": missing,
-                "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            })
-            if not missing:
-                proof["verified"] = True
-                write_native_read_proof(out_dir, proof)
-                print(f"NATIVE_READ_PROOF_OK {rel(out_dir / '_consult-native-read-proof.json')}", flush=True)
-                for row in rows:
-                    if row.get("relative_path") in required:
-                        print(f"NATIVE_READ_PROOF_ROW line={row.get('line')} result_line={row.get('result_line')} id={row.get('tool_use_id')} path={row.get('relative_path')}", flush=True)
-                return True
-            if proc and proc.poll() is not None and time.time() > deadline - max(5, timeout // 4):
-                break
-            time.sleep(1.0)
-    finally:
-        if proc and proc.poll() is None:
-            try:
-                proc.terminate()
-            except OSError:
-                pass  # silent-ok: pending review
+    while time.time() < deadline:
+        rows, rejected = collect_native_read_rows(transcript, files, start_line)
+        covered = {str(r.get("relative_path")) for r in rows if int(r.get("result_line") or 0) > 0}
+        missing = sorted(required - covered)
+        proof.update({
+            "read_rows": rows,
+            "rejected_rows": rejected,
+            "missing": missing,
+            "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+        if not missing:
+            proof["verified"] = True
+            write_native_read_proof(out_dir, proof)
+            print(f"NATIVE_READ_PROOF_OK {rel(out_dir / '_consult-native-read-proof.json')}", flush=True)
+            for row in rows:
+                if row.get("relative_path") in required:
+                    print(f"NATIVE_READ_PROOF_ROW line={row.get('line')} result_line={row.get('result_line')} id={row.get('tool_use_id')} path={row.get('relative_path')}", flush=True)
+            return True
+        time.sleep(1.0)
     if proof.get("read_rows"):
-        proof["failure"] = "native Read proof incomplete after observed post-completion Read rows"
-        proof["pending_read_chain_on_task_notification"] = False
+        proof["failure"] = "native Read proof incomplete after observed post-completion read-chain rows"
         write_native_read_proof(out_dir, proof)
         print(f"NATIVE_READ_PROOF_FAILED missing={','.join(proof['missing'])}", flush=True)
         return False
-    proof["failure"] = None
-    proof["pending_read_chain_on_task_notification"] = True
+    proof["failure"] = "no post-completion hme_read_chain__ Read rows observed before timeout"
     write_native_read_proof(out_dir, proof)
-    print(f"NATIVE_READ_PROOF_PENDING missing={','.join(proof['missing'])}", flush=True)
-    return True
+    print(f"NATIVE_READ_PROOF_FAILED no-read-chain-rows missing={','.join(proof['missing'])}", flush=True)
+    return False
 
 
 def main(argv: list[str] | None = None) -> int:
