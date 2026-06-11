@@ -502,7 +502,13 @@ def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]
                 proc.terminate()
             except OSError:
                 pass  # silent-ok: pending review
-    proof["failure"] = "native Read proof pending until host task-notification triggers proxy read_chain"
+    if proof.get("read_rows"):
+        proof["failure"] = "native Read proof incomplete after observed post-completion Read rows"
+        proof["pending_read_chain_on_task_notification"] = False
+        write_native_read_proof(out_dir, proof)
+        print(f"NATIVE_READ_PROOF_FAILED missing={','.join(proof['missing'])}", flush=True)
+        return False
+    proof["failure"] = None
     proof["pending_read_chain_on_task_notification"] = True
     write_native_read_proof(out_dir, proof)
     print(f"NATIVE_READ_PROOF_PENDING missing={','.join(proof['missing'])}", flush=True)
