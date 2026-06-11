@@ -9,8 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "scripts" / "invariants"))
+HME_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(HME_ROOT / "scripts" / "invariants"))
 
 import check_artifact_lifecycle as artifact_lifecycle  # noqa: E402
 import check_causal_paths as causal_paths  # noqa: E402
