@@ -350,9 +350,6 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
                 abs_path = _abs_path(raw_path) if raw_path else ""
                 if abs_path not in required_abs:
                     continue
-                if tool_id.startswith("hme_consult_auto_read_"):
-                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "retired-synthetic-auto-read-id"})
-                    continue
                 if not tool_id.startswith("hme_read_chain__"):
                     rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "missing-read-chain-provenance"})
                     continue
