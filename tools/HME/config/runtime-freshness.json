@@ -5,6 +5,16 @@
     "autocommit_error_current": 1800,
     "consult_queue_current": 3600
   },
+  "autocommit_error_freshness": {
+    "window_key": "autocommit_error_current",
+    "current_label": "CURRENT_AUTOCOMMIT_BLOCKER",
+    "historical_label": "HISTORICAL_AUTOCOMMIT_ALERT",
+    "timestamp_sources": ["fail-flag-body-iso8601", "fail-flag-mtime"],
+    "live_alert_modules": [
+      "tools/HME/proxy/lifesaver_alerts.js",
+      "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
+    ]
+  },
   "context_entropy": {
     "forbidden_task_output_path_pattern": "TMP_CLAUDE_TASK_OUTPUT_GLOB",
     "max_duplicate_hook_banner": 1,
