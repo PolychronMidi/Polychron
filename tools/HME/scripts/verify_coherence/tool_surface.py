@@ -87,3 +87,54 @@ class ToolSurfaceCoverageVerifier(Verifier):
 # Verifiers -- RUNTIME category
 
 
+@register
+class TodoMergeHookConsistencyVerifier(Verifier):
+    """TodoWrite native-hook policy must not fake-green by freezing TodoWrite.
+
+    Historical context: this verifier originally required a native TodoWrite
+    hook to merge updatedInput and return allow(...). The current architecture
+    retired the native TodoWrite mirror, with doc/templates/TODO.md as the
+    canonical todo surface. Both states are acceptable; the forbidden middle is
+    a reintroduced TodoWrite hook that blocks or fails to pass merged
+    updatedInput through.
+    """
+    name = "todowrite-hook-consistency"
+    category = "code"
+    subtag = "structural-integrity"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        hook_dir = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "native_hooks")
+        hook = os.path.join(hook_dir, "todo.js")
+        index = os.path.join(hook_dir, "index.js")
+        index_src = ""
+        if os.path.isfile(index):
+            try:
+                with open(index, encoding="utf-8") as f:
+                    index_src = f.read()
+            except OSError as exc:
+                return errored(summary=f"read error: {exc}")
+        if not os.path.isfile(hook):
+            if "TodoWrite" in index_src and "Native TodoWrite mirror retired" not in index_src:
+                return failed(summary="TodoWrite native hook referenced but todo.js is absent",
+                              details=["either restore nonblocking todo.js or retire the index.js TodoWrite reference"])
+            return passed(summary="native TodoWrite mirror retired; TODO.md is canonical")
+        try:
+            with open(hook, encoding="utf-8") as f:
+                src = f.read()
+        except OSError as exc:
+            return errored(summary=f"read error: {exc}")
+        m = re.search(r"async function pretoolTodoWrite\(.*?\n}\n\nasync function posttoolTodoWrite", src, re.DOTALL)
+        if not m:
+            return failed(summary="pretoolTodoWrite handler not found")
+        body = m.group(0)
+        if "hookBlock(" in body or '"decision":"block"' in body or "'decision':'block'" in body:
+            return failed(summary="TodoWrite handler has a blocking decision -- native TodoWrite will be frozen",
+                          details=["return allow(...updatedInput...) so native TodoWrite proceeds"])
+        if "updatedInput" not in body or "return allow" not in body:
+            return failed(score=0.5,
+                          summary="TodoWrite handler does not visibly return allow(...updatedInput...)",
+                          details=["preserve native TodoWrite with a merged updatedInput payload"])
+        return passed(summary="TodoWrite hook allows native TodoWrite to proceed with merged updatedInput")
+
+
