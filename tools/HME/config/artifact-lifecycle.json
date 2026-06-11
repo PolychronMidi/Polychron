@@ -23,7 +23,11 @@
     },
     "generated": {
       "patterns": ["package-lock.json", "dist/**", "build/**"],
-      "policy": "reproducible from source or package manager"
+      "policy": "reproducible from source or package manager, not hand-written source"
+    },
+    "vendored": {
+      "patterns": ["tools/csv_maestro/**"],
+      "policy": "third-party vendored code; changes require separate provenance review"
     },
     "transcript": {
       "patterns": ["**/*.jsonl", "teams/runtime/output/**/round-progress.jsonl"],
