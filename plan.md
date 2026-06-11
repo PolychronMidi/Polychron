@@ -38,218 +38,126 @@ phase-evidence verification can bind plan claims to machine-readable artifacts.
 Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
 phase-evidence verification can bind plan claims to machine-readable artifacts.
 
-## Phase Omega (proposed) -- Causal Self-Coherence Field
+## Phase Omega (done) -- Causal Self-Coherence Field
 
 Consult source: `teams/runtime/output/omega-causal-self-coherence-1781113894/`.
-Red, blue, and synthesis converged on seven workstreams. This phase turns
-self-coherence from a list of alarms into a causal field: every action, shortcut,
-route, proof, artifact, invariant, and final report must be tied to the route that
-actually caused it.
+Implementation trace: `teams/runtime/output/phase-omega-implementation/_coherence-trace.json`.
+The shipped subset turns self-coherence from a list of alarms into causal,
+machine-checkable routes: every proof claim must identify artifacts, causal paths,
+verifier IDs, forbidden paths checked, and open risks.
 
-### Workstream 1 -- Causal proof schema and compact coherence trace
+### Shipped subset
 
-Scope: define one minimal proof shape before adding more guard machinery.
+1. **Causal proof schema and compact trace (done).**
+   - Artifacts: `tools/HME/config/coherence-proof.schema.json`,
+     `tools/HME/scripts/invariants/check_coherence_proof.py`,
+     `tools/HME/tests/fixtures/coherence-trace.sample.json`,
+     `teams/runtime/output/phase-omega-implementation/_coherence-trace.json`.
+   - Proof: schema/sample validation, negative control for missing
+     `causal_path_ids`, and hash-backed trace validation with
+     `check_coherence_proof.py --verify-hashes`.
 
-Deliver:
+2. **Dead mechanism reaper (done).**
+   - Artifacts: `tools/HME/config/invariants/proxy.json`,
+     `tools/HME/scripts/invariants/check_source_grep_invariant.py`,
+     `teams/rounds/consult_from_context.py`,
+     `tools/HME/proxy/read_chain_driver.js`,
+     `tools/HME/proxy/hme_proxy_request_mutation.js`,
+     `tools/HME/tests/specs/read_chain_e2e.test.js`,
+     `tools/HME/tests/specs/consult_from_context.test.py`.
+   - Retired paths: consult FIFO/readq typing, `submit_read_queue_to_pty`,
+     `readq!`, local-session `[HME_READ_CHAIN] $prompt`, stale PTY/provenance
+     prompt proof, side-session `claude -p` proof driver, and synthetic
+     `hme_consult_auto_read_*` request mutation.
+   - Accepted route: host task-notification -> proxy `read_chain_driver` ->
+     native `Read` tool_use with `hme_read_chain__...` ID. The current proof
+     collector accepts only that causal ID shape for consult read proof.
 
-- `tools/HME/config/coherence-proof.schema.json`
-- a tiny validator for the schema
-- one sample `_coherence-trace.json` fixture
+3. **Typed shortcut and route causal paths (done).**
+   - Artifacts: `tools/HME/config/causal-paths.json`,
+     `tools/HME/scripts/invariants/check_causal_paths.py`,
+     `tools/HME/config/shortcuts.json`.
+   - Covered lanes: `rr` wire read-chain, `cc` local-session compact, and
+     consult task-notification read-chain.
+   - Negative controls reject restored `readq` shortcuts and local-session
+     read-chain marker typing.
 
-Required proof fields:
+4. **Executable invariant topology seed (done).**
+   - Artifacts: `tools/HME/config/invariant-topology.json`,
+     `tools/HME/scripts/invariants/check_invariant_topology.py`,
+     `tools/HME/scripts/invariants/check_source_grep_bijection.py`.
+   - Seed nodes bind source-grep enforcement, retired consult/read-chain routes,
+     causal paths, and proof schema into a watcher graph.
+   - Remaining refinement #24 will expand this from seed coverage to thresholded
+     coverage for more invariant classes.
 
-- intent
-- artifacts touched
-- causal path IDs
-- verifier IDs
-- proof artifacts
-- forbidden paths checked
-- open risks
+5. **Artifact lifecycle lattice (done).**
+   - Artifacts: `tools/HME/config/artifact-lifecycle.json`,
+     `tools/HME/scripts/invariants/check_artifact_lifecycle.py`.
+   - Classes include source, config, generated, vendored, runtime, metric, proof,
+     transcript, ephemeral, fixture, migration-baseline, and retired.
+   - The checker rejects unclassified tracked paths and unallowlisted tracked
+     runtime paths; metric schema/freshness requirements are explicit.
 
-Acceptance:
+6. **Runtime freshness and context thermodynamics seed (done).**
+   - Artifacts: `tools/HME/config/runtime-freshness.json`,
+     `tools/HME/scripts/invariants/check_runtime_freshness.py`.
+   - The shipped config defines freshness windows, task-output polling guard
+     metadata, duplicate hook-banner budgets, stale-log labeling, and bounded
+     context-evidence rules.
+   - Remaining refinement #25 will distinguish current blocking autocommit
+     errors from historical alert text with timestamp windows.
 
-- Schema test passes.
-- Sample trace validates.
-- Trace uses paths, hashes, IDs, and artifact links, not prose dumps.
-- A proof claim with free-text provenance but no machine-checkable route fails.
+7. **Failure alchemy workflow (done).**
+   - Artifacts: `tools/HME/config/failure-alchemy.json`,
+     `tools/HME/scripts/invariants/check_failure_alchemy.py`,
+     `tools/HME/tests/specs/phase_omega_validators.test.py`.
+   - The workflow encodes the accepted outcomes for failures: fix, regression
+     test, invariant, or dead-mechanism deletion. Labels such as
+     "preexisting/probably/noted/later" are forbidden.
+   - Negative controls reject missing forbidden labels and missing Phase Omega
+     causal proof fields.
 
-### Workstream 2 -- Dead mechanism reaper
+### Verification snapshot
 
-Scope: remove or block retired mechanisms across code, config, tests, and docs so
-they cannot re-enter through stale compatibility paths.
+- `python3 tools/HME/scripts/pipeline/hme/run-invariant-battery.py`:
+  `Invariant Battery: 180/180 passed`.
+- Focused consult/read-chain proof cleanup:
+  `python3 tools/HME/tests/specs/consult_from_context.test.py` passed 8 tests;
+  `node --test tools/HME/tests/specs/read_chain_e2e.test.js` passed 5 tests.
+- Stale live-path proof references outside explicit tests/runtime: no matches for
+  nonce provenance, `claude-print`, PTY proof, proof-pending wording,
+  `HME_CONSULT_NATIVE_READ_PROOF_DRIVER`, or synthetic consult auto-read
+  injection.
+- Python spec sweep previously recorded in TODO #17: `PY_FILES=50 PY_FAILS=0`.
+- Phase Omega validator negative controls recorded in TODO #19: 4 tests OK.
 
-Initial retired paths:
+### Remaining refinements
 
-- consult FIFO/readq typing
-- `submit_read_queue_to_pty`
-- `readq!`
-- `[HME_READ_CHAIN] $prompt` local-session bridge expansion
-- stale PTY/provenance-prompt proof wording except explicit historical fixtures
-- foreign `/proc/<pid>/fd` or `/dev/ptmx` poke paths
+- `#18` remains blocked on host/client transcript behavior: queue consumption is
+  observed, but recent Claude transcripts still contain zero actual
+  `hme_read_chain__` tool_use/tool_result rows. Do not replace this with manual
+  Reads, FIFO/readq, `/hme/spawn`, or task-output polling.
+- `#24` expand invariant topology from seed nodes to thresholded coverage for
+  env failfast, source-grep bijection, artifact lifecycle, runtime freshness, and
+  failure alchemy.
+- `#25` add autocommit-error freshness checks so historical hook alerts are not
+  reused as current blocking evidence.
+- `#26` audit and either restore or explicitly retire
+  `TodoMergeHookConsistencyVerifier` without fake-green coverage loss.
+- `#27` add a guard/workflow check for repeated forbidden `/hme/spawn` attempts
+  after the first block.
 
-Acceptance:
+### Global acceptance criteria for the shipped subset
 
-- Source invariant forbids retired consult/read-chain routes outside explicit test
-  fixtures.
-- `shortcuts.json` has no `readq` local-session shortcut.
-- Task-notification read-chain emits `hme_read_chain__...` Read tool_use IDs without
-  typing control tokens into user input.
-- Deletion requires replacement causal proof or an invariant proving the route is
-  unreachable.
-
-### Workstream 3 -- Typed shortcut and route causal paths
-
-Scope: shortcuts and routes are not string expansions; they are typed causal
-transitions with allowed and forbidden emitters.
-
-Extend shortcut/route metadata with:
-
-- intent
-- lane
-- allowed emitter
-- forbidden emitters
-- proof ID shape
-- negative control
-
-Initial coverage:
-
-- `rr`: wire lane, proxy emits native Read chain, proof ID `hme_read_chain__...`
-- `cc`: local-session lane, REPL-local `/compact`, never API payload mutation
-- task-notification consult queue: host task-notification request, proxy consumes
-  `latest-consult-read-queue.json`, emits Read tool_use directly
-
-Acceptance:
-
-- Wire shortcuts never type local-session input.
-- Local-session shortcuts never become API payloads.
-- Task-notification read-chain works without user-visible control markers.
-- Negative controls prove forbidden lanes fail.
-
-### Workstream 4 -- Executable invariant topology
-
-Scope: make invariant relationships executable, not decorative.
-
-Deliver:
-
-- `tools/HME/config/invariant-topology.json`
-- topology validator
-
-Each invariant entry must declare:
-
-- intent
-- scope
-- watched class
-- watcher of
-- watched by
-- known escape vectors
-- negative-control fixture
-
-Acceptance:
-
-- Validator fails on orphan topology nodes.
-- Validator fails on unresolved watcher edges.
-- Validator fails on source-grep rules without invariant shards.
-- Validator fails on topology entries that lack runnable checks or negative
-  controls.
-
-### Workstream 5 -- Artifact lifecycle lattice
-
-Scope: every path class has a lifecycle and commit policy.
-
-Deliver:
-
-- `tools/HME/config/artifact-lifecycle.json`
-- invariant/pre-commit check for unknown or misplaced tracked paths
-
-Lifecycle classes:
-
-- source
-- generated
-- runtime
-- metric
-- proof
-- transcript
-- ephemeral
-- fixture
-- migration-baseline
-- retired
-
-Acceptance:
-
-- Newly tracked paths must match a lifecycle rule.
-- Runtime artifacts cannot be committed without an explicit allowlist.
-- Proof and metric artifacts must declare schema and freshness or TTL policy.
-- Retired artifacts cannot still be referenced outside explicit regression fixtures.
-
-### Workstream 6 -- Runtime freshness and context thermodynamics
-
-Scope: runtime and context evidence must be fresh, bounded, and not censor current
-failures.
-
-Deliver:
-
-- runtime freshness helper
-- first-pass context entropy checks
-
-Measure and bound:
-
-- duplicate boilerplate
-- stale task-output paths
-- repeated hook banners
-- oversized historical logs
-- stale runtime errors reused as current proof
-
-Acceptance:
-
-- Runtime health proof cites timestamp and freshness window.
-- Stale errors are labeled historical.
-- Current failures remain visible until fixed.
-- Task-output polling remains blocked by regression tests.
-- Context redaction is lifecycle-aware and cannot hide current failing evidence.
-
-### Workstream 7 -- Failure alchemy workflow
-
-Scope: encode the repair discipline so green tests cannot be produced through broad,
-blind damage.
-
-Required repair order:
-
-1. diagnose exact failure
-2. make the smallest patch
-3. run syntax check
-4. run targeted test
-5. add regression test or invariant, or delete the dead mechanism
-6. run broad suite
-7. emit compact proof trace
-
-Acceptance:
-
-- A workflow test or invariant rejects broad multi-file transformations while syntax
-  or targeted tests are red.
-- Every resolved failure cites one of: fix, test, invariant, deletion.
-- Final answers cite exact proof artifacts and commands, not vibes.
-
-## Immediate commits after approval
-
-1. Add coherence proof schema, validator, and sample trace fixture.
-2. Add dead-mechanism reaper invariant for consult/read-chain paths.
-3. Extend shortcut/route metadata and tests for `rr`, `cc`, task-notification
-   read-chain, and retired `readq`.
-4. Seed invariant topology from existing invariant shards and source-grep bijection.
-5. Add artifact lifecycle lattice and tracked-path lifecycle check.
-6. Add runtime freshness helper and first context-entropy tests.
-7. Add failure-alchemy workflow guard and produce a final compact proof trace.
-
-## Global acceptance criteria for Phase Omega
-
-- `run-invariant-battery` passes 173/173.
-- Full JS and Python spec suites pass.
-- No forbidden read-chain/control-plane grep hits remain.
-- Live task-notification read-chain proof emits `hme_read_chain__...` Read tool_use
-  IDs and consumes the queue without typing into user input.
-- Runtime-health proof includes freshness windows.
-- Every new mechanism has at least one negative control.
-- Every retired mechanism disappears from code, config, tests, and docs except
-  explicit regression fixtures.
-- No dashboards, giant narrative traces, duplicate ledgers, broad rewrite campaigns,
-  aesthetic-only verifiers, or agent fan-out for local checks.
+- `run-invariant-battery` passes 180/180.
+- Proof traces are compact, hash-backed, and schema-checked.
+- No forbidden read-chain/control-plane live-path grep hits remain outside
+  explicit fixtures/tests/runtime evidence.
+- Task-notification consult read-chain emits `hme_read_chain__...` Read tool_use
+  IDs and consumes the queue without typing control tokens into user input.
+- Runtime-health proof metadata includes freshness windows.
+- Every new validator has at least one negative control or a tracked follow-up.
+- Retired mechanisms are deleted or blocked outside explicit regression fixtures.
+- No dashboards, giant narrative traces, duplicate ledgers, broad rewrite
+  campaigns, aesthetic-only verifiers, or agent fan-out for local checks.
