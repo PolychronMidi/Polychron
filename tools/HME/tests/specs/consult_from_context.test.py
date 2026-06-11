@@ -79,16 +79,13 @@ class ConsultFromContextTests(unittest.TestCase):
             trans = Path(td) / "session.jsonl"
             required = str(Path(td) / "final.json")
             read_chain_id = "hme_read_chain__0__fixture"
-            retired_id = "hme_consult_auto_read_retired_0"
             rows = [
                 {"type": "assistant", "timestamp": "2026-06-09T00:00:01Z", "message": {"content": [
                     {"type": "tool_use", "id": "call_manual", "name": "Read", "input": {"file_path": required}},
-                    {"type": "tool_use", "id": retired_id, "name": "Read", "input": {"file_path": required}},
                     {"type": "tool_use", "id": read_chain_id, "name": "Read", "input": {"file_path": required}},
                 ]}},
                 {"type": "user", "timestamp": "2026-06-09T00:00:02Z", "message": {"content": [
                     {"type": "tool_result", "tool_use_id": "call_manual", "content": "1\\t{}"},
-                    {"type": "tool_result", "tool_use_id": retired_id, "content": "synthetic"},
                     {"type": "tool_result", "tool_use_id": read_chain_id, "content": "1\\t{}"},
                 ]}},
             ]
