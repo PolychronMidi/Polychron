@@ -11,3 +11,5 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 47
+
+#15 0_ F1 deeper policy/governance integration: wire the mesh into permission decisions, write gates, state ownership, and lifecycle hooks so every autonomous action is governable and auditable. AUDITABILITY HALF SHIPPED: teams/rounds/coverage_status.py turns doc/myth0s-coverage-map.md into a machine-readable governance signal (reviewed/pending counts + which control-plane surfaces lack mesh review; --strict gate; coverage_status.test.py 3 tests). ENFORCEMENT HALF NEEDS EXPLICIT CONFIRMATION (3_): making the live permission/write/lifecycle gates CONSULT review status to gate autonomous actions is a high-risk control-plane change -- needs a design decision (which surfaces gate which actions, fail-open vs fail-closed, override path) and CEO/user sign-off before implementation.
