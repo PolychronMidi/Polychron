@@ -134,7 +134,8 @@ verifier IDs, forbidden paths checked, and open risks.
   `HME_CONSULT_NATIVE_READ_PROOF_DRIVER`, or synthetic consult auto-read
   injection.
 - Python spec sweep previously recorded in TODO #17: `PY_FILES=50 PY_FAILS=0`.
-- Phase Omega validator negative controls recorded in TODO #19: 4 tests OK.
+- Phase Omega validator negative controls now cover proof schema, causal paths,
+  artifact lifecycle, failure alchemy, and topology coverage: 5 tests OK.
 
 ### Remaining refinements
 
