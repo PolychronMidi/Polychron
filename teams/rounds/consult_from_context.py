@@ -324,20 +324,6 @@ def _rel_or_abs(path_: str) -> str:
         return str(path_)
 
 
-def _event_text(event: dict[str, Any]) -> str:
-    msg = event.get("message") or {}
-    content = msg.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts = []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                parts.append(str(block.get("text") or ""))
-        return "\n".join(parts)
-    return ""
-
-
 def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0, provenance_nonce: str = "") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     # PROVENANCE GATE. Two accepted provenances, strongest first:
     #   1. read-chain: a Read tool_use whose id begins `hme_read_chain__` can ONLY
