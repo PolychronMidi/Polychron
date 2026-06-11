@@ -157,8 +157,6 @@ verifier IDs, forbidden paths checked, and open risks.
   observed, but recent Claude transcripts still contain zero actual
   `hme_read_chain__` tool_use/tool_result rows. Do not replace this with manual
   Reads, FIFO/readq, `/hme/spawn`, or task-output polling.
-- `#27` add a guard/workflow check for repeated forbidden `/hme/spawn` attempts
-  after the first block.
 
 ### Global acceptance criteria for the shipped subset
 
