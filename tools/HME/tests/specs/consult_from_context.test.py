@@ -39,7 +39,7 @@ class ConsultFromContextTests(unittest.TestCase):
         self.assertIn("Do not report", data["premature_report_guard"])
         self.assertIn("Do not poll", data["polling_guard"])
 
-    def test_native_read_queue_marker_has_stable_nonce_and_long_ttl(self):
+    def test_native_read_queue_marker_has_schema2_and_long_ttl(self):
         manifest = {
             "round": "unit-consult-queue",
             "final_outputs": ["final.json"],
@@ -54,9 +54,12 @@ class ConsultFromContextTests(unittest.TestCase):
                 consult_from_context.write_completion(manifest, out / "ctx.md", out, True)
                 consult_from_context.write_native_read_queue(manifest, out)
                 marker = json.loads(latest.read_text(encoding="utf-8"))
+                queue = json.loads((out / "_consult-read-queue.json").read_text(encoding="utf-8"))
+            self.assertEqual(marker["schema"], 2)
+            self.assertEqual(queue["schema"], 2)
             self.assertEqual(marker["round"], "unit-consult-queue")
-            self.assertIn("nonce", marker)
-            self.assertIn("unit-consult-queue", marker["nonce"])
+            self.assertNotIn("nonce", marker)
+            self.assertNotIn("nonce", queue)
             self.assertGreaterEqual(
                 __import__("datetime").datetime.fromisoformat(marker["expires_at"].replace("Z", "+00:00")).timestamp()
                 - __import__("datetime").datetime.fromisoformat(marker["generated_at"].replace("Z", "+00:00")).timestamp(),
