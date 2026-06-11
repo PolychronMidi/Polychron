@@ -15,6 +15,9 @@ ROOT = Path(__file__).resolve().parents[4]
 os.environ.setdefault("PROJECT_ROOT", str(ROOT))
 os.environ.setdefault("HME_METRICS_DIR", str(ROOT / "tools/HME/runtime/metrics"))
 os.environ.setdefault("METRICS_DIR", str(ROOT / "src/output/metrics"))
+os.environ.setdefault("HME_IGNORE_DIRS", "node_modules,.git,tmp,log,runtime")
+os.environ.setdefault("HME_IGNORE_FILES", "package-lock.json,pnpm-lock.yaml")
+os.environ.setdefault("HME_IGNORE_EXTS", ".log,.jsonl,.tmp")
 
 
 def _classes():
