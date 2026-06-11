@@ -83,12 +83,6 @@ function _anthropicTransportMaxBytes(_payload) {
   return _positiveNumber(process.env.HME_PROXY_INTERACTIVE_MAX_BYTES);
 }
 
-function _msgText(msg) {
-  const c = msg && msg.content;
-  if (typeof c === 'string') return c;
-  if (!Array.isArray(c)) return '';
-  return c.map((b) => (b && typeof b.text === 'string' ? b.text : '')).join('\n');
-}
 function compactLargeInteractiveAnthropicPayload(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const threshold = _anthropicTransportMaxBytes(payload);
