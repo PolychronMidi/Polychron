@@ -28,6 +28,16 @@ this file is implemented until the user marks it approved.
   is: diagnose exact failure, smallest patch, syntax check, targeted test,
   regression/invariant, broad suite, compact proof trace.
 
+## Phase 15 (done) -- Project boundary map + hot/cold path minimalism
+
+Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
+phase-evidence verification can bind plan claims to machine-readable artifacts.
+
+## Phase 16 (done) -- Phase-inference firewall
+
+Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
+phase-evidence verification can bind plan claims to machine-readable artifacts.
+
 ## Phase Omega (proposed) -- Causal Self-Coherence Field
 
 Consult source: `teams/runtime/output/omega-causal-self-coherence-1781113894/`.
