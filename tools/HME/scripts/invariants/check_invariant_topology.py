@@ -37,11 +37,27 @@ def main() -> int:
     topo = json.loads(TOPOLOGY.read_text(encoding="utf-8"))
     inv_ids = {i.get("id") for i in _load_doc(CONFIG).get("invariants") or [] if i.get("id")}
     nodes = topo.get("nodes") if isinstance(topo, dict) else None
+    coverage = topo.get("coverage") if isinstance(topo, dict) else None
     if topo.get("schema") != 1:
         findings.append("invariant-topology schema must be 1")
     if not isinstance(nodes, dict) or not nodes:
         findings.append("invariant-topology nodes must be nonempty object")
         nodes = {}
+    if not isinstance(coverage, dict):
+        findings.append("coverage must be object")
+        coverage = {}
+    minimum_nodes = coverage.get("minimum_nodes")
+    if not isinstance(minimum_nodes, int) or minimum_nodes < 1:
+        findings.append("coverage.minimum_nodes must be positive integer")
+    elif len(nodes) < minimum_nodes:
+        findings.append(f"coverage below minimum_nodes: {len(nodes)} < {minimum_nodes}")
+    required_nodes = coverage.get("required_nodes")
+    if not _str_list(required_nodes):
+        findings.append("coverage.required_nodes must be nonempty string list")
+        required_nodes = []
+    for node_id in required_nodes or []:
+        if node_id not in nodes:
+            findings.append(f"coverage.required_nodes missing node {node_id}")
     for node_id, row in sorted(nodes.items()):
         if node_id not in inv_ids:
             findings.append(f"{node_id}: no matching invariant id")
