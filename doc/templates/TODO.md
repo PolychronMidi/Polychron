@@ -19,7 +19,7 @@ Example:
 #19 5_ add negative-control tests for Phase Omega validators: coherence proof missing causal_path_ids, causal paths with readq restored, artifact lifecycle unclassified tracked path, failure alchemy forbidden labels (phase_omega_validators.test.py: 4 tests OK)
 #20 5_ tighten artifact lifecycle lattice: distinguish vendored tools from first-party source, generated locks from hand-written source, runtime allowlist from metrics/proof fixtures, and require schema/freshness for tracked metrics
 #21 5_ make final coherence traces hash-backed and validate with check_coherence_proof.py --verify-hashes
-#22 1_ retire or mark historical stale consult proof language: nonce provenance, claude-print driver, PTY proof, and proof-pending wording outside explicit fixtures
+#22 5_ retired stale consult proof routes/language outside explicit fixtures: removed live nonce/provenance-prompt path, claude-print driver, side-session proof prompt, proof-pending field, and synthetic auto-read request mutation; proof now accepts only hme_read_chain__ Read rows; focused tests + read-chain e2e + retired-route invariant + 180/180 invariant battery pass
 #23 0_ update plan.md with Phase Omega shipped subset, exact artifacts, and remaining refinement suggestions
 #24 0_ expand invariant topology coverage beyond seed nodes with coverage threshold for env failfast, source-grep bijection, artifact lifecycle, runtime freshness, and failure alchemy
 #25 0_ add autocommit-error freshness check distinguishing current blocking errors from historical alert text using timestamps/freshness windows
