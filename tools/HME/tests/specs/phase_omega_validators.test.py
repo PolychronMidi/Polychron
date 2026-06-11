@@ -102,6 +102,16 @@ class PhaseOmegaValidatorNegativeControls(unittest.TestCase):
             self.assertIn("coverage.required_nodes missing node artifact-lifecycle-valid", out)
             self.assertIn("coverage below minimum_nodes", out)
 
+    def test_runtime_freshness_requires_autocommit_current_historical_labels(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = Path(td) / "runtime.json"
+            doc = json.loads((HME_ROOT / "config/runtime-freshness.json").read_text())
+            doc["autocommit_error_freshness"]["historical_label"] = doc["autocommit_error_freshness"]["current_label"]
+            cfg.write_text(json.dumps(doc))
+            with patched(runtime_freshness, CONFIG=cfg):
+                _rc, out = capture(runtime_freshness.main)
+            self.assertIn("autocommit current/historical labels must differ", out)
+
 
 if __name__ == "__main__":
     unittest.main()
