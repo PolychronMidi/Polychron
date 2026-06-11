@@ -324,14 +324,11 @@ def _rel_or_abs(path_: str) -> str:
         return str(path_)
 
 
-def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0, provenance_nonce: str = "") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    # PROVENANCE GATE. Two accepted provenances, strongest first:
-    #   1. read-chain: a Read tool_use whose id begins `hme_read_chain__` can ONLY
+def collect_native_read_rows(transcript: Path, required_files: list[str], start_line: int = 0) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Collect post-completion native Read rows with accepted read-chain provenance."""
     required_abs = {_abs_path(f) for f in required_files}
     rows_by_id: dict[str, dict[str, Any]] = {}
     rejected: list[dict[str, Any]] = []
-    nonce = str(provenance_nonce or "")
-    bridge_prompt_seen = not nonce  # no nonce => nonce-gate disabled (legacy/test)
     try:
         lines = transcript.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
@@ -343,9 +340,6 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
-        role = event.get("type") or (event.get("message") or {}).get("role")
-        if nonce and role == "user" and nonce in _event_text(event):
-            bridge_prompt_seen = True
         msg = event.get("message") or {}
         content = msg.get("content")
         if not isinstance(content, list):
@@ -360,12 +354,10 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
                 if abs_path not in required_abs:
                     continue
                 if tool_id.startswith("hme_consult_auto_read_"):
-                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "proxy-synthetic-auto-read-id"})
+                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "retired-synthetic-auto-read-id"})
                     continue
-                # Unforgeable read-chain provenance bypasses the nonce gate.
-                is_read_chain = tool_id.startswith("hme_read_chain__")
-                if not is_read_chain and not bridge_prompt_seen:
-                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "no-bridge-provenance (read precedes injected readq nonce; likely manual)"})
+                if not tool_id.startswith("hme_read_chain__"):
+                    rejected.append({"line": line_no, "tool_use_id": tool_id, "file_path": raw_path, "reason": "missing-read-chain-provenance"})
                     continue
                 rows_by_id[tool_id] = {
                     "line": line_no,
@@ -383,42 +375,6 @@ def collect_native_read_rows(transcript: Path, required_files: list[str], start_
                     rows_by_id[tool_id]["result_timestamp"] = event.get("timestamp") or ""
     rows = sorted(rows_by_id.values(), key=lambda r: (str(r.get("relative_path")), int(r.get("line") or 0)))
     return rows, rejected
-
-
-def _proof_prompt(files: list[str], nonce: str = "") -> str:
-    abs_files = [_abs_path(f) for f in files]
-    return (
-        "Use the native Read tool on every file path below before any prose response. "
-        "Do not use Bash, cat, sed, grep, task-output polling, or summaries as substitutes. "
-        "After every Read tool call has completed, reply only: CONSULT_NATIVE_READ_PROOF_DONE\n"
-        + "\n".join(abs_files)
-    )
-
-
-def _spawn_claude_read_driver(session_id: str, files: list[str], out_dir: Path, timeout: int, nonce: str = "") -> subprocess.Popen[bytes] | None:
-    # Default is proxy read_chain on the normal host task-notification request.
-    # No live REPL/FIFO typing is allowed here.
-    driver = os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "read-chain")
-    if driver != "claude-print":
-        print(f"NATIVE_READ_PROOF_DRIVER {driver} (proxy task-notification read_chain; no side session)", flush=True)
-        return None
-    if not session_id:
-        return None
-    cmd = [
-        os.environ.get("HME_CLAUDE_BIN", "claude"), "-p", "--resume", session_id,
-        "--permission-mode", "bypassPermissions", "--tools", "Read", "--effort", "low",
-        "--model", os.environ.get("HME_CONSULT_READ_PROOF_MODEL", "default"),
-        "--output-format", "json", _proof_prompt(files, nonce),
-    ]
-    log = out_dir / "_consult-native-read-proof-driver.log"
-    try:
-        with log.open("ab") as fh:
-            proc = subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
-        print(f"NATIVE_READ_PROOF_DRIVER claude-print pid={proc.pid} timeout={timeout}s", flush=True)
-        return proc
-    except OSError as exc:
-        print(f"NATIVE_READ_PROOF_DRIVER unavailable: {exc}", flush=True)
-        return None
 
 
 def write_native_read_proof(out_dir: Path, proof: dict[str, Any]) -> None:
