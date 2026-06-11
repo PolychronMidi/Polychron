@@ -90,6 +90,17 @@ class PhaseOmegaValidatorNegativeControls(unittest.TestCase):
                 _rc, out = capture(failure_alchemy.main)
             self.assertIn("forbidden_labels", out)
 
+    def test_invariant_topology_rejects_missing_required_coverage_node(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = Path(td) / "topology.json"
+            doc = json.loads((HME_ROOT / "config/invariant-topology.json").read_text())
+            del doc["nodes"]["artifact-lifecycle-valid"]
+            cfg.write_text(json.dumps(doc))
+            with patched(invariant_topology, TOPOLOGY=cfg):
+                _rc, out = capture(invariant_topology.main)
+            self.assertIn("coverage.required_nodes missing node artifact-lifecycle-valid", out)
+            self.assertIn("coverage below minimum_nodes", out)
+
 
 if __name__ == "__main__":
     unittest.main()
