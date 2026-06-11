@@ -103,14 +103,19 @@ verifier IDs, forbidden paths checked, and open risks.
    - The checker rejects unclassified tracked paths and unallowlisted tracked
      runtime paths; metric schema/freshness requirements are explicit.
 
-6. **Runtime freshness and context thermodynamics seed (done).**
+6. **Runtime freshness and context thermodynamics (done).**
    - Artifacts: `tools/HME/config/runtime-freshness.json`,
-     `tools/HME/scripts/invariants/check_runtime_freshness.py`.
+     `tools/HME/scripts/invariants/check_runtime_freshness.py`,
+     `tools/HME/proxy/lifesaver_alerts.js`,
+     `tools/HME/hooks/lifecycle/userpromptsubmit.sh`,
+     `tools/HME/tests/specs/health_and_lifesaver_infra.test.js`.
    - The shipped config defines freshness windows, task-output polling guard
      metadata, duplicate hook-banner budgets, stale-log labeling, and bounded
      context-evidence rules.
-   - Remaining refinement #25 will distinguish current blocking autocommit
-     errors from historical alert text with timestamp windows.
+   - Autocommit fail banners now label `CURRENT_AUTOCOMMIT_BLOCKER` versus
+     `HISTORICAL_AUTOCOMMIT_ALERT` from fail-flag body timestamps or mtime,
+     using the configured freshness window, so stale hook text is not reused as
+     current proof.
 
 7. **Failure alchemy workflow (done).**
    - Artifacts: `tools/HME/config/failure-alchemy.json`,
