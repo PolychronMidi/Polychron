@@ -2,7 +2,7 @@
   "schema": 1,
   "classes": {
     "source": {
-      "patterns": ["src/**", "tools/HME/**", "tools/csv_maestro/**", "tools/omniroute/**", "tools/update/**", "teams/rounds/**", "config/**", "*.js", "*.mjs", "*.json", "*.md", ".editorconfig", ".gitignore", ".env.sha256", "package.json", "package-lock.json", "tsconfig.json", "README.md", "plan.md"],
+      "patterns": ["src/**", "tools/HME/**", "tools/omniroute/**", "tools/update/**", "teams/rounds/**", "config/**", "*.js", "*.mjs", "*.json", "*.md", ".editorconfig", ".gitignore", ".env.sha256", "package.json", "tsconfig.json", "README.md", "plan.md"],
       "policy": "reviewed, tested, invariant-covered"
     },
     "config": {
