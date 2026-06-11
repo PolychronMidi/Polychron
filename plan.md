@@ -140,7 +140,11 @@ verifier IDs, forbidden paths checked, and open risks.
   injection.
 - Python spec sweep previously recorded in TODO #17: `PY_FILES=50 PY_FAILS=0`.
 - Phase Omega validator negative controls now cover proof schema, causal paths,
-  artifact lifecycle, failure alchemy, and topology coverage: 5 tests OK.
+  artifact lifecycle, failure alchemy, topology coverage, and runtime freshness
+  autocommit labels: 6 tests OK.
+- Autocommit freshness tests:
+  `node --test tools/HME/tests/specs/health_and_lifesaver_infra.test.js tools/HME/tests/specs/autocommit_lifesaver.test.js tools/HME/tests/specs/codex_proxy.test.js`
+  passed 23 tests.
 
 ### Remaining refinements
 
