@@ -150,10 +150,9 @@ class ConsultFromContextTests(unittest.TestCase):
                 fh.write(block)
 
         thread = threading.Thread(target=appender, daemon=True) if append_after else None
-        old = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "HME_CONSULT_NATIVE_READ_PROOF_DRIVER", "HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT")}
+        old = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT")}
         try:
             os.environ["HME_TRANSCRIPT_PATH"] = str(trans)
-            os.environ["HME_CONSULT_NATIVE_READ_PROOF_DRIVER"] = "off"
             os.environ["HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT"] = timeout
             if thread:
                 thread.start()
