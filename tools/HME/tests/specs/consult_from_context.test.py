@@ -94,7 +94,7 @@ class ConsultFromContextTests(unittest.TestCase):
         self.assertEqual(len(read_rows), 1)
         self.assertEqual(read_rows[0]["tool_use_id"], read_chain_id)
         self.assertGreater(read_rows[0]["result_line"], 0)
-        self.assertEqual({row["reason"] for row in rejected}, {"missing-read-chain-provenance", "retired-synthetic-auto-read-id"})
+        self.assertEqual({row["reason"] for row in rejected}, {"missing-read-chain-provenance"})
 
     def test_prove_native_reads_fails_without_transcript(self):
         with tempfile.TemporaryDirectory() as td:
