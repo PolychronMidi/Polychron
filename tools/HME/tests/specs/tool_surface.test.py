@@ -2,6 +2,7 @@
 """Smoke + class-shape tests for verify_coherence.tool_surface."""
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
