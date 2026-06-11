@@ -145,6 +145,9 @@ verifier IDs, forbidden paths checked, and open risks.
 - Autocommit freshness tests:
   `node --test tools/HME/tests/specs/health_and_lifesaver_infra.test.js tools/HME/tests/specs/autocommit_lifesaver.test.js tools/HME/tests/specs/codex_proxy.test.js`
   passed 23 tests.
+- `TodoMergeHookConsistencyVerifier` restored as `todowrite-hook-consistency`:
+  `python3 tools/HME/tests/specs/tool_surface.test.py` passed 4 tests and
+  `python3 -m verify_coherence --score --threshold 0` returned 95.
 
 ### Remaining refinements
 
