@@ -143,9 +143,6 @@ verifier IDs, forbidden paths checked, and open risks.
   observed, but recent Claude transcripts still contain zero actual
   `hme_read_chain__` tool_use/tool_result rows. Do not replace this with manual
   Reads, FIFO/readq, `/hme/spawn`, or task-output polling.
-- `#24` expand invariant topology from seed nodes to thresholded coverage for
-  env failfast, source-grep bijection, artifact lifecycle, runtime freshness, and
-  failure alchemy.
 - `#25` add autocommit-error freshness checks so historical hook alerts are not
   reused as current blocking evidence.
 - `#26` audit and either restore or explicitly retire
