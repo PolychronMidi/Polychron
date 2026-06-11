@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[4])
 CONFIG = ROOT / "tools/HME/config/artifact-lifecycle.json"
-REQUIRED_CLASSES = {"source", "generated", "runtime", "metric", "proof", "transcript", "ephemeral", "fixture", "migration-baseline", "retired"}
+REQUIRED_CLASSES = {"source", "generated", "runtime", "metric", "proof", "transcript", "ephemeral", "fixture", "migration-baseline", "retired", "vendored"}
 
 
 def _match(pattern: str, rel: str) -> bool:
