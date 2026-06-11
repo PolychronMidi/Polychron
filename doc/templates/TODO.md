@@ -17,8 +17,8 @@ Example:
 #17 5_ rerun full Python suite with a bounded foreground-safe runner that prints only counts and fails nonzero on any Python spec failure (PY_FILES=50 PY_FAILS=0)
 #18 3_ prove read-chain through actual host/Claude Code transcript path, not only proxy HTTP: task-notification must lead to native Read tool_use/tool_result rows with hme_read_chain__ provenance. BLOCKED: latest-consult-read-queue.json is consumed by proxy, but parsing recent Claude transcripts found zero actual hme_read_chain__ tool_use/tool_result rows; completing this requires host/client behavior investigation without FIFO/readq, /hme/spawn, or task-output polling.
 #19 5_ add negative-control tests for Phase Omega validators: coherence proof missing causal_path_ids, causal paths with readq restored, artifact lifecycle unclassified tracked path, failure alchemy forbidden labels (phase_omega_validators.test.py: 4 tests OK)
-#20 1_ tighten artifact lifecycle lattice: distinguish vendored tools from first-party source, generated locks from hand-written source, runtime allowlist from metrics/proof fixtures, and require schema/freshness for tracked metrics
-#21 0_ make final coherence traces hash-backed and validate with check_coherence_proof.py --verify-hashes
+#20 5_ tighten artifact lifecycle lattice: distinguish vendored tools from first-party source, generated locks from hand-written source, runtime allowlist from metrics/proof fixtures, and require schema/freshness for tracked metrics
+#21 1_ make final coherence traces hash-backed and validate with check_coherence_proof.py --verify-hashes
 #22 0_ retire or mark historical stale consult proof language: nonce provenance, claude-print driver, PTY proof, and proof-pending wording outside explicit fixtures
 #23 0_ update plan.md with Phase Omega shipped subset, exact artifacts, and remaining refinement suggestions
 #24 0_ expand invariant topology coverage beyond seed nodes with coverage threshold for env failfast, source-grep bijection, artifact lifecycle, runtime freshness, and failure alchemy
