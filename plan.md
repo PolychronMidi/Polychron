@@ -8,7 +8,7 @@ this file is implemented until the user marks it approved.
 - proposed: drafted from conferral, awaiting user decision
 - approved: user approved; safe to implement
 - denied: user rejected; do not implement
-- done: implemented and verified
+- done: implemented + verified
 
 ## Standing constraints
 
