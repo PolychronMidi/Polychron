@@ -82,14 +82,18 @@ verifier IDs, forbidden paths checked, and open risks.
    - Negative controls reject restored `readq` shortcuts and local-session
      read-chain marker typing.
 
-4. **Executable invariant topology seed (done).**
+4. **Executable invariant topology with thresholded coverage (done).**
    - Artifacts: `tools/HME/config/invariant-topology.json`,
      `tools/HME/scripts/invariants/check_invariant_topology.py`,
      `tools/HME/scripts/invariants/check_source_grep_bijection.py`.
-   - Seed nodes bind source-grep enforcement, retired consult/read-chain routes,
-     causal paths, and proof schema into a watcher graph.
-   - Remaining refinement #24 will expand this from seed coverage to thresholded
-     coverage for more invariant classes.
+   - Topology now covers source-grep bijection, env failfast, retired
+     consult/read-chain routes, causal paths, proof schema, artifact lifecycle,
+     runtime freshness, failure alchemy, and the topology validator itself.
+   - Coverage metadata requires at least nine nodes and explicitly requires
+     source-grep bijection, env failfast, artifact lifecycle, runtime freshness,
+     and failure alchemy nodes.
+   - Negative control: removing a required topology node reports both missing
+     required coverage and below-threshold coverage.
 
 5. **Artifact lifecycle lattice (done).**
    - Artifacts: `tools/HME/config/artifact-lifecycle.json`,
