@@ -17,6 +17,7 @@ import check_causal_paths as causal_paths  # noqa: E402
 import check_coherence_proof as coherence_proof  # noqa: E402
 import check_failure_alchemy as failure_alchemy  # noqa: E402
 import check_invariant_topology as invariant_topology  # noqa: E402
+import check_runtime_freshness as runtime_freshness  # noqa: E402
 
 
 @contextlib.contextmanager
