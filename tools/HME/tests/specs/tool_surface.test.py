@@ -11,6 +11,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
 from helpers import assert_class_shape, smoke_run
 
+ROOT = Path(__file__).resolve().parents[4]
+os.environ.setdefault("PROJECT_ROOT", str(ROOT))
+os.environ.setdefault("HME_METRICS_DIR", str(ROOT / "tools/HME/runtime/metrics"))
+os.environ.setdefault("METRICS_DIR", str(ROOT / "src/output/metrics"))
+
 
 def _classes():
     from verify_coherence.tool_surface import ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier
