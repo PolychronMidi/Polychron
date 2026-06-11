@@ -151,6 +151,26 @@ module.exports.lifesaverInjectionWritesContractArtifacts = async function () {
   }
 };
 
+module.exports.autocommitFailureBannersLabelCurrentVsHistoricalByTimestamp = async function () {
+  const { readAutocommitFailure, CURRENT_AUTOCOMMIT_LABEL, HISTORICAL_AUTOCOMMIT_LABEL } = require('../../proxy/lifesaver_alerts');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-autocommit-freshness-'));
+  try {
+    const runtime = path.join(root, 'tools/HME/runtime');
+    fs.mkdirSync(runtime, { recursive: true });
+    const flag = path.join(runtime, 'autocommit.fail');
+    fs.writeFileSync(flag, `[${new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')}] [test] current failure\n`);
+    let failure = readAutocommitFailure(root);
+    assert.equal(failure.freshness.label, CURRENT_AUTOCOMMIT_LABEL);
+    assert.match(failure.banner, /CURRENT_AUTOCOMMIT_BLOCKER/);
+    fs.writeFileSync(flag, '[2026-01-01T00:00:00Z] [test] historical failure\n');
+    failure = readAutocommitFailure(root);
+    assert.equal(failure.freshness.label, HISTORICAL_AUTOCOMMIT_LABEL);
+    assert.match(failure.banner, /HISTORICAL_AUTOCOMMIT_ALERT/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+};
+
 
 
 for (const [name, fn] of Object.entries(module.exports)) test(name, fn);
