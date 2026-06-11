@@ -103,11 +103,10 @@ class ConsultFromContextTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
             manifest = {"round": "unit-proof-fail"}
-            old_env = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "CLAUDE_PROJECT_DIR", "HME_CONSULT_NATIVE_READ_PROOF_DRIVER")}
+            old_env = {k: os.environ.get(k) for k in ("HME_TRANSCRIPT_PATH", "CLAUDE_PROJECT_DIR")}
             try:
                 os.environ["HME_TRANSCRIPT_PATH"] = str(out / "missing.jsonl")
                 os.environ["CLAUDE_PROJECT_DIR"] = str(out / "no-projects")
-                os.environ["HME_CONSULT_NATIVE_READ_PROOF_DRIVER"] = "off"
                 ok = consult_from_context.prove_native_reads(manifest, out, ["final.json"])
             finally:
                 for k, v in old_env.items():
