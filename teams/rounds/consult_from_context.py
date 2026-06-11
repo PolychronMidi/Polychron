@@ -250,12 +250,11 @@ def write_native_read_queue(manifest: dict[str, Any], out_dir: Path) -> Path:
     latest_path = ROOT / "tools/HME/runtime/latest-consult-read-queue.json"
     latest_path.parent.mkdir(parents=True, exist_ok=True)
     latest_path.write_text(json.dumps({
-        "schema": 1,
+        "schema": 2,
         "round": manifest["round"],
         "read_queue": rel(out_path),
         "native_read_before_report": files,
         "generated_at": generated_at,
-        "nonce": nonce,
         "session_id": session_id,
         "expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + ttl)),
         "consumed": False,
