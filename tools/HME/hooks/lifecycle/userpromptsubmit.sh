@@ -70,7 +70,24 @@ _ups_mark bg_spawns
 _AC_FAIL_FLAG="${PROJECT_ROOT}/tools/HME/runtime/autocommit.fail"
 if [ -f "$_AC_FAIL_FLAG" ]; then
   _AC_FLAG_BODY=$(cat "$_AC_FAIL_FLAG" 2>/dev/null)
+  _AC_WINDOW_SEC=1800
+  _AC_TS=$(printf '%s\n' "$_AC_FLAG_BODY" | sed -n 's/^\[\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z\)\].*/\1/p' | head -n 1)
+  _AC_TS_EPOCH=0
+  if [ -n "$_AC_TS" ]; then
+    _AC_TS_EPOCH=$(date -u -d "$_AC_TS" +%s 2>/dev/null || echo 0)
+  fi
+  if [ "$_AC_TS_EPOCH" = "0" ]; then
+    _AC_TS_EPOCH=$(stat -c %Y "$_AC_FAIL_FLAG" 2>/dev/null || echo 0)
+    _AC_TS=$(date -u -d "@$_AC_TS_EPOCH" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  fi
+  _AC_NOW=$(date -u +%s 2>/dev/null || echo 0)
+  _AC_AGE=$(( _AC_NOW > _AC_TS_EPOCH ? _AC_NOW - _AC_TS_EPOCH : 0 ))
+  _AC_LABEL="CURRENT_AUTOCOMMIT_BLOCKER"
+  if [ "$_AC_AGE" -gt "$_AC_WINDOW_SEC" ]; then
+    _AC_LABEL="HISTORICAL_AUTOCOMMIT_ALERT"
+  fi
   _AC_BANNER="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
+[$_AC_LABEL] timestamp=$_AC_TS age_sec=$_AC_AGE window_sec=$_AC_WINDOW_SEC
 
 $_AC_FLAG_BODY
 
@@ -78,6 +95,8 @@ The autocommit helper left this flag behind. Last attempt did not
 succeed, which means working-tree changes have NOT been committed.
 Diagnose: check git status in the project root; read log/hme-errors.log;
 inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
+Freshness label distinguishes a current blocker from historical alert text;
+do not cite stale historical autocommit text as current proof.
 Fix the root cause. Do not silence the alert -- the flag clears automatically
 on the next successful proxy autocommit."
   echo "" >&2
