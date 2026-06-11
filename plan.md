@@ -84,7 +84,7 @@ Initial retired paths:
 - `submit_read_queue_to_pty`
 - `readq!`
 - `[HME_READ_CHAIN] $prompt` local-session bridge expansion
-- stale PTY/nonce proof wording except explicit historical fixtures
+- stale PTY/provenance-prompt proof wording except explicit historical fixtures
 - foreign `/proc/<pid>/fd` or `/dev/ptmx` poke paths
 
 Acceptance:
