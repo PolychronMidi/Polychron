@@ -74,26 +74,30 @@ class ConsultFromContextTests(unittest.TestCase):
             else:
                 latest.write_text(old_latest, encoding="utf-8")
 
-    def test_collect_native_read_rows_requires_real_read_results(self):
+    def test_collect_native_read_rows_requires_read_chain_provenance(self):
         with tempfile.TemporaryDirectory() as td:
             trans = Path(td) / "session.jsonl"
             required = str(Path(td) / "final.json")
+            read_chain_id = "hme_read_chain__0__fixture"
+            retired_id = "hme_consult_auto_read_retired_0"
             rows = [
                 {"type": "assistant", "timestamp": "2026-06-09T00:00:01Z", "message": {"content": [
-                    {"type": "tool_use", "id": "call_real", "name": "Read", "input": {"file_path": required}},
-                    {"type": "tool_use", "id": "hme_consult_auto_read_round_nonce_0", "name": "Read", "input": {"file_path": required}},
+                    {"type": "tool_use", "id": "call_manual", "name": "Read", "input": {"file_path": required}},
+                    {"type": "tool_use", "id": retired_id, "name": "Read", "input": {"file_path": required}},
+                    {"type": "tool_use", "id": read_chain_id, "name": "Read", "input": {"file_path": required}},
                 ]}},
                 {"type": "user", "timestamp": "2026-06-09T00:00:02Z", "message": {"content": [
-                    {"type": "tool_result", "tool_use_id": "call_real", "content": "1\\t{}"},
-                    {"type": "tool_result", "tool_use_id": "hme_consult_auto_read_round_nonce_0", "content": "synthetic"},
+                    {"type": "tool_result", "tool_use_id": "call_manual", "content": "1\\t{}"},
+                    {"type": "tool_result", "tool_use_id": retired_id, "content": "synthetic"},
+                    {"type": "tool_result", "tool_use_id": read_chain_id, "content": "1\\t{}"},
                 ]}},
             ]
             trans.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
             read_rows, rejected = consult_from_context.collect_native_read_rows(trans, [required])
         self.assertEqual(len(read_rows), 1)
-        self.assertEqual(read_rows[0]["tool_use_id"], "call_real")
+        self.assertEqual(read_rows[0]["tool_use_id"], read_chain_id)
         self.assertGreater(read_rows[0]["result_line"], 0)
-        self.assertEqual(rejected[0]["reason"], "proxy-synthetic-auto-read-id")
+        self.assertEqual({row["reason"] for row in rejected}, {"missing-read-chain-provenance", "retired-synthetic-auto-read-id"})
 
     def test_prove_native_reads_fails_without_transcript(self):
         with tempfile.TemporaryDirectory() as td:
