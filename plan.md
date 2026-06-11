@@ -155,8 +155,6 @@ verifier IDs, forbidden paths checked, and open risks.
   observed, but recent Claude transcripts still contain zero actual
   `hme_read_chain__` tool_use/tool_result rows. Do not replace this with manual
   Reads, FIFO/readq, `/hme/spawn`, or task-output polling.
-- `#26` audit and either restore or explicitly retire
-  `TodoMergeHookConsistencyVerifier` without fake-green coverage loss.
 - `#27` add a guard/workflow check for repeated forbidden `/hme/spawn` attempts
   after the first block.
 
