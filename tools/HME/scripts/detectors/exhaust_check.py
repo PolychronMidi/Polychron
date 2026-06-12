@@ -33,6 +33,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from _base import emit_stats as _emit_stats, load_turn, transcript_arg  # noqa: E402
 from _transcript import is_user, event_content, iter_tool_uses, load_full_turn_with_user  # noqa: E402
+from _transcript import last_assistant_text_in as _last_assistant_text  # noqa: E402
 from _rescue_clauses import b_clause_within_window  # noqa: E402
 
 
@@ -194,35 +195,6 @@ def _is_assistant(event: dict) -> bool:
         return True
     # Back-compat: some synthetic test fixtures use `role` at top level.
     return event.get("role") == "assistant" and bool(event.get("content"))
-
-
-def _last_assistant_text(events: list) -> str:
-    last = None
-    for ev in events:
-        if _is_assistant(ev):
-            last = ev
-    if last is None:
-        return ""
-    # Content lives in one of two places depending on transcript shape:
-    #   Real Claude Code: event.message.content = [{type:"text",text:"..."}]
-    #   Test fixtures  : event.content = [{type:"text",text:"..."}]
-    content = []
-    msg = last.get("message")
-    if isinstance(msg, dict):
-        maybe = msg.get("content")
-        if isinstance(maybe, list):
-            content = maybe
-    if not content:
-        maybe = last.get("content")
-        if isinstance(maybe, list):
-            content = maybe
-    parts = []
-    for block in content:
-        if isinstance(block, dict) and block.get("type") == "text":
-            t = block.get("text", "")
-            if isinstance(t, str):
-                parts.append(t)
-    return "\n".join(parts)
 
 
 _LIST_ITEM_RE = re.compile(r"^\s*(?:\d+[.)]\s+\S|[-*]\s+\S)", re.MULTILINE)
