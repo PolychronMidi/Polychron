@@ -40,7 +40,7 @@ from pathlib import Path
 _env = os.environ.get("PROJECT_ROOT")
 PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parents[3]
 
-STATES_JSON = PROJECT_ROOT / "config" / "onboarding_states.json"
+STATES_JSON = PROJECT_ROOT / "tools" / "HME" / "config" / "onboarding_states.json"
 HOOKS_DIR = PROJECT_ROOT / "tools" / "HME" / "hooks"
 DISPATCH_PY = (
     PROJECT_ROOT / "tools" / "HME" / "service" / "server" / "onboarding_chain_dispatch.py"
