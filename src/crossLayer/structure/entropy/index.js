@@ -1,4 +1,0 @@
-
-require('./entropyMetrics');
-
-require('./entropyRegulator');
