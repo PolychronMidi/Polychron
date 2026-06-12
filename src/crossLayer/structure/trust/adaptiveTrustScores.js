@@ -276,16 +276,7 @@ moduleLifecycle.declare({
     }
 
     // Structural fix: Compute universal trust floor from population mean
-    let adaptiveTrustScoresUniversalDecayFloor = 0.05;
-    if (scoreBySystem.size > 2) {
-      const adaptiveTrustScoresDScores = [];
-      for (const s of scoreBySystem.values()) adaptiveTrustScoresDScores.push(s.score);
-      const adaptiveTrustScoresDMean = adaptiveTrustScoresDScores.reduce((a, b) => a + b, 0) / adaptiveTrustScoresDScores.length;
-      const adaptiveTrustScoresDVariance = adaptiveTrustScoresDScores.reduce((a, b) => a + (b - adaptiveTrustScoresDMean) * (b - adaptiveTrustScoresDMean), 0) / adaptiveTrustScoresDScores.length;
-      const adaptiveTrustScoresDStddev = m.sqrt(adaptiveTrustScoresDVariance);
-      const adaptiveTrustScoresDCoeff = clamp(0.30 + adaptiveTrustScoresDStddev * 1.8, 0.30, 0.60);
-      adaptiveTrustScoresUniversalDecayFloor = m.max(0.05, adaptiveTrustScoresDMean * adaptiveTrustScoresDCoeff);
-    }
+    const adaptiveTrustScoresUniversalDecayFloor = adaptiveTrustScoresHelpers.computeUniversalTrustFloor(scoreBySystem);
 
     for (const [, state] of scoreBySystem.entries()) {
       state.score *= (1 - decayRate);
