@@ -80,7 +80,9 @@ function buildDoneMessage(count, { model = 'claude-read-chain' } = {}) {
 
 function toAnthropicSse(message) {
   const events = [];
-  const base = { ...message, content: [] };
+  // Anthropic streaming contract: message_start carries an OPEN message --
+  // stop_reason/stop_sequence are null here and only resolve in message_delta;
+  const base = { ...message, content: [], stop_reason: null, stop_sequence: null, usage: { ...(message.usage || {}), output_tokens: 1 } };
   events.push(['message_start', { type: 'message_start', message: base }]);
   for (let i = 0; i < message.content.length; i += 1) {
     const block = message.content[i];
