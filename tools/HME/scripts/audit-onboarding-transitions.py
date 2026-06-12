@@ -211,7 +211,8 @@ def main() -> int:
 
     print(
         f"audit-onboarding-transitions: FAIL "
-        f"({len(dead)} dead transition(s), {len(ghosts)} ghost-state claim(s))"
+        f"({len(dead)} dead transition(s), {len(ghosts)} ghost-state claim(s), "
+        f"{len(unguarded)} unguarded advancer(s))"
     )
     for earlier, later in dead:
         print(f"  DEAD-EDGE: {earlier} -> {later}")
@@ -220,6 +221,9 @@ def main() -> int:
     for src, claim, tok in ghosts:
         print(f"  GHOST-STATE: {claim}  (in {src})")
         print(f"    '{tok}' is not a canonical state -- prose claims a transition that cannot exist")
+    for src, line_no, later in unguarded:
+        print(f"  UNGUARDED: _onb_advance_to {later}  ({src}:{line_no})")
+        print(f"    no `_onb_state == <predecessor>` guard nearby -- can skip-ahead into '{later}'")
     return 1
 
 
