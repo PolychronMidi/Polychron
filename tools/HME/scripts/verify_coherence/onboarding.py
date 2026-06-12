@@ -81,6 +81,42 @@ class OnboardingFlowVerifier(Verifier):
 
 
 @register
+class OnboardingShellHooksVerifier(Verifier):
+    """Dynamic proof that the REAL shell-hook advancers fire on their trigger.
+
+    OnboardingFlowVerifier drives the PYTHON chain but never invokes the shell
+    hooks -- so the targeted->edited advancer (which lives in
+    posttooluse_edit.sh) would have passed it while stranding every agent. This
+    verifier runs the actual hook against an isolated PROJECT_ROOT and asserts
+    the shell-side transition fires on a clean src/ edit, holds its predecessor
+    guard, and ignores failed edits. Weight 2.0 -- the shell side is where the
+    original trap lived and where static analysis cannot reach."""
+    name = "onboarding-shell-hooks"
+    category = "state"
+    subtag = "structural-integrity"
+    weight = 2.0
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_SCRIPTS_DIR, "verify-onboarding-shell-hooks.py")
+        if not os.path.isfile(script):
+            return skipped(summary="verifier script not found")
+        rc, out, _err = _run_subprocess(script)
+        n_passed = sum(1 for ln in out.splitlines() if ln.lstrip().startswith("PASS:"))
+        n_failed = sum(1 for ln in out.splitlines() if ln.lstrip().startswith("FAIL:"))
+        total = n_passed + n_failed
+        if rc == 0:
+            if total == 0:
+                return errored(summary="verifier produced no PASS/FAIL output")
+            return passed(score=1.0, summary=f"all {total} shell-hook advancer cases pass")
+        score = (n_passed / total) if total else 0.0
+        return failed(
+            score=score,
+            summary=f"{n_failed}/{total or '?'} shell-hook advancer cases failed (rc={rc})",
+            details=[ln for ln in out.splitlines() if ln.lstrip().startswith("FAIL:")] or out.splitlines()[:15],
+        )
+
+
+@register
 class OnboardingStateIntegrityVerifier(Verifier):
     """If state file exists, its value must be in STATES."""
     name = "onboarding-state-integrity"
