@@ -317,7 +317,11 @@ const BASH_POLICIES = [
       ? deny('BLOCKED: proxy/worker auto-restart liveness is already tested and guaranteed (file_watcher + slot_watchdog auto-heal to current code, routable_count never drops below 1 -- zero downtime). Manual restart scripts are redundant churn; just edit code and let the supervisors converge.')
       : null;
   } },
-  { name: 'spawn-route-ban', evaluate(ctx) { return forbiddenSpawnAttempt(ctx.cmd, ctx.root); } },
+  { name: 'spawn-route-ban', evaluate(ctx) {
+    const r = forbiddenSpawnAttempt(ctx.cmd, ctx.root);
+    if (r && r.rewrite) return allow(setCommandInput(ctx.next, r.rewrite), 'rewrote /hme/spawn payload to its canonical direct PROJECT_ROOT run', true);
+    return r;
+  } },
   { name: 'lifesaver-escalation', evaluate(ctx) { return lifesaverEscalation(ctx.root); } },
   { name: 'noop-after-failure', evaluate(ctx) {
     const decision = noopAfterFailureDecision(ctx.cmd, ctx.root);
