@@ -103,6 +103,35 @@ def _landed_states() -> dict[str, list[str]]:
     return landed
 
 
+# Tight `X->Y` arrows (no spaces) are deliberate transition-pair claims in
+# prose/comments, as opposed to spaced ` -> ` narrative arrows. The `briefed`
+# ghost lived as exactly such a claim (`advance briefed->edited`) naming a
+_TIGHT_ARROW_RE = re.compile(r"\b([a-z_]+)->([a-z_]+)\b")
+_CHAIN_DOC_FILES = (
+    PROJECT_ROOT / "tools" / "HME" / "service" / "server" / "onboarding_chain.py",
+    DISPATCH_PY,
+)
+
+
+def _ghost_state_claims(states: set[str]) -> list[tuple[str, str, str]]:
+    """Tight-arrow transition claims naming a non-canonical state.
+    Returns (source, claim, offending_token)."""
+    out = []
+    for f in _CHAIN_DOC_FILES:
+        if not f.exists():
+            continue
+        try:
+            text = f.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        rel = str(f.relative_to(PROJECT_ROOT))
+        for m in _TIGHT_ARROW_RE.finditer(text):
+            for tok in (m.group(1), m.group(2)):
+                if tok not in states:
+                    out.append((rel, m.group(0), tok))
+    return out
+
+
 def main() -> int:
     verbose = "--verbose" in sys.argv
     states = _load_states()
@@ -120,18 +149,27 @@ def main() -> int:
         if later not in landed:
             dead.append((states[i], later))
 
-    if not dead:
+    ghosts = _ghost_state_claims(set(states))
+
+    if not dead and not ghosts:
         print(
             f"audit-onboarding-transitions: PASS "
-            f"({len(states) - 1} forward edge(s), every later state has a live advancer)"
+            f"({len(states) - 1} forward edge(s) advancer-backed, "
+            f"no ghost-state transition claims)"
         )
         return 0
 
-    print(f"audit-onboarding-transitions: FAIL ({len(dead)} dead transition(s))")
+    print(
+        f"audit-onboarding-transitions: FAIL "
+        f"({len(dead)} dead transition(s), {len(ghosts)} ghost-state claim(s))"
+    )
     for earlier, later in dead:
         print(f"  DEAD-EDGE: {earlier} -> {later}")
         print(f"    no _onb_advance_to/_onb_set_state/set_state lands '{later}'")
         print(f"    agents reaching '{earlier}' can never advance -- wire an advancer")
+    for src, claim, tok in ghosts:
+        print(f"  GHOST-STATE: {claim}  (in {src})")
+        print(f"    '{tok}' is not a canonical state -- prose claims a transition that cannot exist")
     return 1
 
 
