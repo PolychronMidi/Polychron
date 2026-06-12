@@ -72,6 +72,19 @@ verifier IDs, forbidden paths checked, and open risks.
    - Accepted route: host task-notification -> proxy `read_chain_driver` ->
      native `Read` tool_use with `hme_read_chain__...` ID. The current proof
      collector accepts only that causal ID shape for consult read proof.
+   - Host-execution limit + sanctioned fallback (TODO #18): the native
+     task-notification tool_use is emitted correctly but the Claude Code host
+     runs no tool loop on task-notification turns, so the synthetic `Read` is
+     never executed/persisted (recorded machine-readably as
+     `host_execution_status: "blocked-host-side"` in `causal-paths.json`). The
+     closest-to-intent delivery, authorized by the user, is
+     `consult_from_context.deliver_read_results_prompt`: after a consult it reads
+     the actual result-file CONTENT and delivers it as one ordinary user prompt
+     through the sanctioned cc-control FIFO bridge (`cc_control.js` wire protocol
+     `token\t<base64>\n`, replayed by `hme-claude.py`, shortcut key `rd`). This
+     delivers fetched file BYTES, never a `[HME_READ_CHAIN]` control token or
+     proof marker -- the retired marker-typing route stays forbidden by
+     `no-retired-consult-readchain-routes`.
 
 3. **Typed shortcut and route causal paths (done).**
    - Artifacts: `tools/HME/config/causal-paths.json`,
