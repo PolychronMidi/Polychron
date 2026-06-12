@@ -368,7 +368,7 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 - Dispatcher route contract: [`tools/HME/event_kernel/dispatcher-routes.json`](../tools/HME/event_kernel/dispatcher-routes.json) -- 8 hook-event routes, 6 observation events.
 - State-file registry: [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) -- 0 typed state files, 37 single-owner domains.
 - Phase evidence firewall: [`tools/HME/config/phase-evidence.json`](../tools/HME/config/phase-evidence.json) -- 2 phase proof rows, 5 closes classes, 6 non-proof bounds.
-- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 92 verifier names discovered from source.
+- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 93 verifier names discovered from source.
 
 Canonical destination summary:
 - `machine_policy_data` -> `beside_consumer`

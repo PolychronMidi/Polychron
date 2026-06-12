@@ -482,6 +482,40 @@ class ShellHookAuditVerifier(Verifier):
 
 
 @register
+class OnboardingTransitionsVerifier(Verifier):
+    """Delegates to tools/HME/scripts/audit-onboarding-transitions.py, which
+    walks the canonical onboarding state machine
+    (tools/HME/config/onboarding_states.json) and asserts every forward edge
+    state[i]->state[i+1] has a live advancer landing the later state. Advancers
+    are `_onb_advance_to`/`_onb_set_state` in shell hooks and `set_state(...)`
+    in onboarding_chain_dispatch.py.
+
+    Closes the exact trap a fresh agent hit: posttooluse_edit.sh's docstring
+    claimed it advanced briefed->edited, the body did neither, and nothing
+    walked the machine to notice the dead edge -- so every agent making a real
+    src/ edit stranded at `targeted`. A dead transition silently breaks the
+    whole walkthrough for newcomers; any one is a failure."""
+    name = "onboarding-transitions"
+    category = "code"
+    subtag = "structural-integrity"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_SCRIPTS_DIR, "audit-onboarding-transitions.py")
+        if not os.path.isfile(script):
+            return skipped(summary="audit script not found", details=[script])
+        rc, out, err = _run_subprocess([script])
+        text = (out or "") + (err or "")
+        if rc == 0:
+            return passed(summary="every onboarding forward edge has a live advancer", details=[])
+        dead = [ln.strip() for ln in text.splitlines() if "DEAD-EDGE" in ln]
+        count = len(dead) or 1
+        # A dead edge strands every newcomer at that state; gating.
+        score = max(0.0, 1.0 - 0.5 * count)
+        return failed(score=score, summary=f"{count} dead onboarding transition(s)", details=dead[:10])
+
+
+@register
 class ActivityEventsDocSyncVerifier(Verifier):
     """Telemetry events must stay registry-first.
 
