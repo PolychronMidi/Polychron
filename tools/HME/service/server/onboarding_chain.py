@@ -8,9 +8,9 @@ Linear state machine with silent prerequisite auto-chaining:
 
     boot            fresh session -- waiting for selftest
     selftest_ok     selftest passed -- waiting for evolve(focus='design')
-    targeted        target picked -- waiting for HME pre-edit briefing
-    briefed         KB briefing absorbed -- waiting for Edit(s) on target
-    edited          Edit done -- waiting for review(mode='forget')
+    targeted        target picked -- waiting for Edit(s) on a src/ file
+                    (pretooluse_edit.sh auto-briefs; no separate briefed state)
+    edited          src/ Edit landed -- waiting for review(mode='forget')
     reviewed        review clean -- waiting for npm run main
     piped           pipeline running in background -- waiting for verdict
     verified        STABLE/EVOLVED -- waiting for learn(title=, content=)
