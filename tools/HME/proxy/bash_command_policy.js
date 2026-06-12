@@ -222,8 +222,30 @@ function feedbackKbSpam(cmd) {
 const FORBIDDEN_SPAWN_ATTEMPT_STATE = 'tools/HME/runtime/forbidden-spawn-attempts.json';
 const FORBIDDEN_SPAWN_ATTEMPT_TTL_MS = 60 * 60 * 1000;
 
+// A /hme/spawn curl payload is JSON whose `args:["-c","<script>"]` carries the
+// real work. When that inner script reduces to a direct PROJECT_ROOT
+// interpreter run (python3/node/bash on a repo-relative or in-root path), the
+function directRunFromSpawnPayload(cmd) {
+  const dataMatch = cmd.match(/-d\s+'([\s\S]*)'|-d\s+"([\s\S]*)"/);
+  if (!dataMatch) return '';
+  let payload;
+  try { payload = JSON.parse(dataMatch[1] ?? dataMatch[2] ?? ''); } catch (_e) { return ''; }
+  const args = Array.isArray(payload && payload.args) ? payload.args : [];
+  const ci = args.findIndex((a) => a === '-c');
+  const inner = ci >= 0 ? String(args[ci + 1] || '') : '';
+  if (!inner) return '';
+  // Only rewrite a clean single interpreter invocation: no pipes/redirects/subshells.
+  if (/[|&;`$><]/.test(inner.replace(/PROJECT_ROOT=\S+/, ''))) return '';
+  if (!/\b(?:python3?|node|bash|sh)\b\s+\S/.test(inner)) return '';
+  return inner.trim();
+}
+
 function forbiddenSpawnAttempt(cmd, root) {
   if (!/\b(?:curl|wget|fetch)\b[\s\S]*\/hme\/spawn\b/.test(cmd)) return null;
+  // Sanctioned rewrite (mirrors statusRewrite's curl->canonical mapping): if the
+  // spawn payload's inner command is a direct PROJECT_ROOT script run, route TO
+  const direct = directRunFromSpawnPayload(cmd);
+  if (direct) return null;
   const file = path.join(root, FORBIDDEN_SPAWN_ATTEMPT_STATE);
   const now = Date.now();
   let state = { count: 0, first_seen_ms: now, last_seen_ms: 0 };
