@@ -9,10 +9,12 @@ the repo against an ISOLATED PROJECT_ROOT and asserts the shell-side state
 transitions actually happen.
 
 Mechanism: the hooks resolve PROJECT_ROOT from the env when `$PROJECT_ROOT/src`
-exists (helpers/safety/project_root.sh), and write onboarding state to
-`$PROJECT_ROOT/tmp/hme-onboarding.state`. We build a minimal isolated root
-(src/, .env, .git, tmp/), seed a state, feed the hook a realistic tool-event
-JSON on stdin, and read the state back.
+exists (helpers/safety/project_root.sh), source sibling helpers via
+`$PROJECT_ROOT/tools/HME/...`, and write onboarding state to
+`$PROJECT_ROOT/tmp/hme-onboarding.state`. We build an isolated root (src/,
+.git/, tmp/, real-tools symlink, real-.env + sandbox overrides), seed a state,
+feed the hook a realistic tool-event JSON on stdin, and read the state back.
+Code resolves to the real implementation; mutable state stays sandboxed.
 
 Cases:
   1. posttooluse_edit.sh: state=targeted + successful src/ edit  -> edited
