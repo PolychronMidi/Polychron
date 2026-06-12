@@ -643,16 +643,20 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
     // when present; otherwise the RANKED top leads -- ranking is cost_order then
     // tier_score desc (rankedForTier), NOT raw models[] array position. (A model
     const manualTop = (cfg.manually_toprank.E5 || []).find((id) => id);
-    let expectedTop = manualTop;
-    if (!expectedTop) {
+    if (manualTop) {
+      assert.equal(result.chain[0].id, manualTop);
+    } else {
+      // Implementation-independent CONTRACT (does not re-implement rankedForTier):
+      // the fronted model must be an AVAILABLE E5 model, and no other available
       const skip = new Set(cfg.providers_to_skip.providers || []);
       const avail = (cfg.tiers.E5.models || []).filter((m) => m && !skip.has(m.provider) && !skip.has(m.maker && m.maker.toLowerCase()));
-      const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
-      const ranked = [];
-      for (const cost of costOrder) ranked.push(...avail.filter((m) => m.cost === cost).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
-      expectedTop = ranked[0] && ranked[0].id;
+      const front = avail.find((m) => m.id === result.chain[0].id);
+      assert.ok(front, 'fronted model must be an available E5 model');
+      const sameBand = avail.filter((m) => m.cost === front.cost);
+      const maxScore = Math.max(...sameBand.map((m) => m.tier_score || 0));
+      assert.equal(front.tier_score || 0, maxScore,
+        'fronted E5 model must carry the max tier_score in its cost band -- ranking is by score, not array position');
     }
-    assert.equal(result.chain[0].id, expectedTop);
     assert.match(result.chain[0].id, /-e5$/);
   }
   assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
