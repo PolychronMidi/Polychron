@@ -11,3 +11,6 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 53
+#1 0_ Dynamic loop proof: build a session harness that drives a synthetic boot->graduated walkthrough against the REAL hooks/chain (not static scan), asserting each documented action lands the next state. This is the gap that let the targeted->edited trap pass every static check -- nothing ever ran the machine.
+#2 0_ Advancer-site discovery: make audit-onboarding-transitions.py DISCOVER advancer sites (any file calling _onb_advance_to/set_state) instead of scanning 3 hardcoded paths, so a new advancer in a new file/runtime cannot escape the dead-edge/ghost/unguarded checks.
+#3 0_ Label/count drift guard: assert STEP_LABELS N/M numbering + label count stay derived-from / consistent-with the canonical state list, so adding a state can't silently leave the "N/7" labels lying (same drift class as the briefed ghost, one layer up).
