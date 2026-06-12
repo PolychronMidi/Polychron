@@ -377,6 +377,81 @@ def write_native_read_proof(out_dir: Path, proof: dict[str, Any]) -> None:
     (out_dir / "_consult-native-read-proof.json").write_text(json.dumps(proof, indent=2) + "\n", encoding="utf-8")
 
 
+def _cc_control_fifo() -> Path:
+    return ROOT / "tmp" / "hme-cc-control.fifo"
+
+
+def _read_result_text(files: list[str], max_bytes: int = 200_000) -> str:
+    """Concatenate the actual CONTENT of completed consult-result files into a
+    single briefing. This delivers READ RESULTS (real file bytes the session can
+    reason about), not a control-token proof marker -- the distinction the
+    no-retired-consult-readchain-routes invariant draws."""
+    blocks: list[str] = []
+    budget = max_bytes
+    for f in files:
+        p = Path(f) if os.path.isabs(f) else ROOT / f
+        try:
+            body = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if budget <= 0:
+            blocks.append(f"--- {f} (omitted: briefing size budget reached) ---")
+            continue
+        if len(body) > budget:
+            body = body[:budget] + f"\n[...truncated at {budget} bytes...]"
+        budget -= len(body)
+        blocks.append(f"--- {f} ---\n{body}")
+    return "\n\n".join(blocks)
+
+
+def deliver_read_results_prompt(manifest: dict[str, Any], out_dir: Path, files: list[str]) -> bool:
+    """Closest-to-intent completion for the read-chain goal: after a consult
+    finishes, deliver the consult's READ RESULTS to the live session as an
+    ordinary user prompt via the sanctioned cc-control FIFO bridge (the same
+    mechanism shortcuts use: tools/HME/proxy/cc_control.js wire protocol
+    `token\\t<base64-prompt>\\n`, replayed by tools/HME/scripts/hme-claude.py).
+
+    This is NOT the retired control-token typing route: it never types
+    `[HME_READ_CHAIN] $prompt`, `readq!`, or any proof marker into input -- it
+    delivers the actual fetched file content as a normal briefing prompt.
+    Returns True if the bridge accepted the write, False if no bridge is
+    attached (ENXIO/ENOENT) -- absence of a bridge is not a failure."""
+    if os.environ.get("HME_CONSULT_DELIVER_READ_RESULTS", "1") != "1":
+        return False
+    body = _read_result_text(files)
+    if not body.strip():
+        return False
+    header = (
+        f"[consult {manifest['round']} complete] Read results delivered below "
+        f"({len(files)} file(s)). Review before reporting mesh conclusions.\n\n"
+    )
+    prompt = header + body
+    token = "rd"
+    suffix = base64.b64encode(prompt.encode("utf-8")).decode("ascii")
+    line = f"{token}\t{suffix}\n".encode("utf-8")
+    fifo = _cc_control_fifo()
+    try:
+        fd = os.open(str(fifo), os.O_WRONLY | os.O_NONBLOCK)
+    except OSError as exc:
+        if exc.errno in (errno.ENXIO, errno.ENOENT):
+            print("READ_RESULTS_NO_BRIDGE no cc-control FIFO reader attached", flush=True)
+            return False
+        raise
+    try:
+        os.write(fd, line)
+    except OSError as exc:
+        if exc.errno == errno.EPIPE:
+            return False
+        raise
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass  # silent-ok: pending review
+    print(f"READ_RESULTS_DELIVERED round={manifest['round']} files={len(files)} bytes={len(prompt)}", flush=True)
+    return True
+
+
 def prove_native_reads(manifest: dict[str, Any], out_dir: Path, files: list[str]) -> bool:
     timeout = int(os.environ.get("HME_CONSULT_NATIVE_READ_PROOF_TIMEOUT", "180"))
     session_id = _session_id()
