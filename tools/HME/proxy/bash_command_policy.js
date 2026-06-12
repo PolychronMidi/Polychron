@@ -7,6 +7,7 @@ const { mkdirHasMisplacedRootOnlyDir, mkdirHasMisplacedMetrics, rootOnlyDirMessa
 const { rawCommandRewrite } = require('./raw_command_rewrites');
 const { noopAfterFailureDecision, isNoopCommand, clearFailure } = require('./turn_failure_state');
 const { bashTodoDecision } = require('./todo_invariant_guard');
+const { surfaceForPath, reviewStatusForSurface, auditAutonomousAction } = require('./governance_status');
 
 const LOCK_NAME = 'run.lock';
 const I_TOOLS = '(review|learn|trace|evolve|status|hme|audit|why|policies)';
