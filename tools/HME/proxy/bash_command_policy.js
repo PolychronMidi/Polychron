@@ -355,6 +355,18 @@ const BASH_POLICIES = [
     },
   },
   { name: 'feedback-kb-spam', evaluate(ctx) { return feedbackKbSpam(ctx.cmd); } },
+  { name: 'governance-audit', evaluate(ctx) {
+    // AUDIT-ONLY, FAIL-OPEN: never denies. Records writes to review-owned
+    // control-plane surfaces against live review status (TODO #15 enforcement
+    let tgt;
+    try { tgt = controlPlaneWriteTarget(ctx.cmd, ctx.root); } catch (_e) { return null; }
+    if (!tgt) return null;
+    const surface = surfaceForPath(tgt, ctx.root);
+    if (!surface) return null;
+    const override = process.env.HME_GOVERNANCE_GATE_OK === '1' || /^\s*HME_GOVERNANCE_GATE_OK=1\b/.test(ctx.cmd);
+    const status = reviewStatusForSurface(surface, ctx.root);
+    return auditAutonomousAction({ command: ctx.cmd, relPath: tgt, surface, status, override }, ctx.root);
+  } },
   { name: 'log-first', evaluate(ctx) { return evaluateLogFirst(ctx.cmd, ctx.root); } },
   {
     name: 'pipeline-log-polling',
