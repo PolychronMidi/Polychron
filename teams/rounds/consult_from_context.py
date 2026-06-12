@@ -411,9 +411,9 @@ def deliver_read_results_prompt(manifest: dict[str, Any], out_dir: Path, files: 
     mechanism shortcuts use: tools/HME/proxy/cc_control.js wire protocol
     `token\\t<base64-prompt>\\n`, replayed by tools/HME/scripts/hme-claude.py).
 
-    This is NOT the retired control-token typing route: it never types
-    `[HME_READ_CHAIN] $prompt`, `readq!`, or any proof marker into input -- it
-    delivers the actual fetched file content as a normal briefing prompt.
+    This is NOT the retired control-token typing route: it never types a
+    read-chain control marker, a readq token, or any proof marker into input --
+    it delivers the actual fetched file content as a normal briefing prompt.
     Returns True if the bridge accepted the write, False if no bridge is
     attached (ENXIO/ENOENT) -- absence of a bridge is not a failure."""
     if os.environ.get("HME_CONSULT_DELIVER_READ_RESULTS", "1") != "1":
