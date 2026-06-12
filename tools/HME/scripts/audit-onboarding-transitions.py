@@ -25,9 +25,18 @@ with no mechanism to ever leave the earlier state. That is a trap.
 `boot` needs no inbound advancer (sessionstart arms it). Every other state
 must be landable.
 
+Three failure classes, all gated:
+  * DEAD-EDGE   -- a later state with no advancer landing it (the original trap).
+  * GHOST-STATE -- a tight-arrow `X->Y` prose claim naming a non-canonical
+    state (the `briefed->edited` docstring shape).
+  * UNGUARDED   -- a shell advancer to Y with no `_onb_state == <predecessor>`
+    guard nearby. _onb_advance_to is forward-only but does NOT block
+    skip-ahead, so an unguarded advancer can jump the machine past states
+    (a STABLE verdict reached pre-piped jumping straight to verified).
+
 Exit codes:
-  0 -- every forward edge has >=1 advancer that lands the later state
-  1 -- one or more dead transitions (later state never advanced-to)
+  0 -- machine fully covered, no ghost claims, every shell advancer guarded
+  1 -- one or more of the three failure classes present
 """
 from __future__ import annotations
 
