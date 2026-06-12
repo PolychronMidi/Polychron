@@ -26,5 +26,13 @@ if (!base) process.exit(0);
 fs.mkdirSync(path.join(root, "tmp"), { recursive: true });
 fs.appendFileSync(path.join(root, "tmp", "hme-turn-edits.txt"), `${base}\n`);
 ' 2>/dev/null || true
+# Onboarding: targeted -> edited the moment a src/ Edit lands successfully.
+# Canonical machine (onboarding_states.json) has no separate briefed state;
+_EDIT_FILE=$(_safe_jq "$INPUT" '.tool_input.file_path // .tool_input.path' '')
+_EDIT_ERR=$(_safe_jq "$INPUT" '.tool_response.is_error // .tool_result.is_error // false' 'false')
+if [ "$_EDIT_ERR" != "true" ] && echo "$_EDIT_FILE" | grep -qE '/Polychron/src/' \
+   && ! _onb_is_graduated && [ "$(_onb_state)" = "targeted" ]; then
+  _onb_advance_to edited
+fi
 _hme_check_errors_inline || true
 exit 0
