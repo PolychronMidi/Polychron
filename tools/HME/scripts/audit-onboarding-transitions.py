@@ -97,18 +97,21 @@ def _landed_states() -> dict[str, list[str]]:
                     for m in _SHELL_ADVANCE_RE.finditer(line):
                         _record(m.group(1), rel)
 
-    if DISPATCH_PY.exists():
-        try:
-            text = DISPATCH_PY.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            text = ""
-        rel = str(DISPATCH_PY.relative_to(PROJECT_ROOT))
-        for line in text.splitlines():
-            s = line.lstrip()
-            if s.startswith("#"):
+    if SERVER_DIR.exists():
+        for py in sorted(SERVER_DIR.glob("onboarding_chain*.py")):
+            try:
+                text = py.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
                 continue
-            for m in _PY_SET_STATE_RE.finditer(line):
-                _record(m.group(1), rel)
+            rel = str(py.relative_to(PROJECT_ROOT))
+            for line in text.splitlines():
+                s = line.lstrip()
+                if s.startswith("#"):
+                    continue
+                # The wrapper `def set_state(s): ... _oc.set_state(s)` re-exports
+                # the verb; it advances nothing concrete, so skip dynamic-arg
+                for m in _PY_SET_STATE_RE.finditer(line):
+                    _record(m.group(1), rel)
 
     return landed
 
