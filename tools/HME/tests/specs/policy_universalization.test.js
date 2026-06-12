@@ -74,6 +74,25 @@ test('shared Bash policy blocks hme spawn route consult bypass and escalates rep
   }
 });
 
+test('spawn payload that is a direct PROJECT_ROOT script run is rewritten to the canonical invocation, not denied', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-spawn-rw-'));
+  try {
+    const inner = 'PROJECT_ROOT=/x python3 teams/rounds/consult_from_context.py teams/runtime/c-ctx.md';
+    const command = `curl -sf -X POST http://127.0.0.1:9099/hme/spawn -d '${JSON.stringify({ name: 'x', cmd: 'bash', args: ['-c', inner], ttl_sec: 3600 })}'`;
+    const out = evaluateBashInput({ command }, { projectRoot: tmp });
+    // The forbidden transport is dropped; the canonical direct run is kept.
+    assert.equal(out.decision, 'allow');
+    assert.equal(out.changed, true);
+    assert.equal(out.input.command, inner);
+    assert.doesNotMatch(out.input.command, /curl|\/hme\/spawn/);
+    // A spawn payload whose inner command is NOT a clean direct run still denies.
+    const piped = `curl -sf -X POST http://127.0.0.1:9099/hme/spawn -d '${JSON.stringify({ args: ['-c', 'python3 x.py | tee out.txt'] })}'`;
+    assert.equal(evaluateBashInput({ command: piped }, { projectRoot: tmp }).decision, 'deny');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('shared Bash anti-wait only requires Claude run_in_background when host supports it', () => {
   const codex = evaluateBashInput({ command: 'npm run main' }, { projectRoot: root, supportsRunInBackground: false });
   assert.equal(codex.decision, 'allow');
