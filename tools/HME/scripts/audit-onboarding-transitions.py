@@ -13,10 +13,10 @@ state[i+1]) MUST have at least one advancer that lands the later state.
 Advancers come from two runtimes:
 
   * Shell hooks -- `_onb_advance_to <state>` / `_onb_set_state <state>` calls
-    under tools/HME/hooks/.
-  * Python chain dispatch -- `set_state("<state>")` calls in
-    onboarding_chain_dispatch.py (the `_advance` table) and the boot
-    auto-chain.
+    discovered under tools/HME/hooks/.
+  * Python chain -- `set_state("<state>")` calls discovered across any module
+    in the server package (dispatch table, helpers, boot auto-chain), not one
+    hardcoded path.
 
 An edge whose later state is never the argument of any advancer is a dead
 transition: documented, reachable by the gate that *blocks* before it, but
