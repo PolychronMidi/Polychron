@@ -1,0 +1,363 @@
+"""HME symbol, structure, and trace tools."""
+import os
+import logging
+
+from server import context as ctx
+from server.helpers import get_context_budget, validate_project_path, fmt_score, fmt_sim_score, BUDGET_LIMITS
+from . import _track
+from ._dispatch import dispatch
+from lang_registry import ext_to_lang
+from symbols import collect_all_symbols, get_type_hierarchy as _get_type_hierarchy, preview_rename as _preview_rename
+from structure import file_summary as _file_summary, module_map as _module_map, format_module_map as _format_module_map
+from analysis import get_dependency_graph as _get_dep_graph, find_similar_code as _find_similar, trace_cross_language as _trace_cross_lang
+
+logger = logging.getLogger("HME")
+
+_GLOBALS_DTS_PATH = "src/types/globals.d.ts"
+_GLOBALS_CACHE: list[str] | None = None
+
+
+def _get_architectural_globals() -> list[str]:
+    """Extract architectural (module-level) global names from globals.d.ts.
+    Filters to names >= 10 chars to skip utility functions (clamp, rf, m, etc.).
+    Results are cached for the server lifetime."""
+    global _GLOBALS_CACHE
+    if _GLOBALS_CACHE is not None:
+        return _GLOBALS_CACHE
+    import re as _re
+    dts_path = os.path.join(ctx.PROJECT_ROOT, _GLOBALS_DTS_PATH)
+    if not os.path.isfile(dts_path):
+        _GLOBALS_CACHE = []
+        return _GLOBALS_CACHE
+    names: list[str] = []
+    try:
+        with open(dts_path, encoding="utf-8") as _f:
+            for _line in _f:
+                m = _re.match(r"^declare var ([a-zA-Z_]\w+)\s*:", _line)
+                if m:
+                    name = m.group(1)
+                    if len(name) >= 10:  # architectural globals only
+                        names.append(name)
+    except Exception as _err1:
+        logger.debug(f'silent-except symbols.py:40: {type(_err1).__name__}: {_err1}')
+    _GLOBALS_CACHE = names
+    return _GLOBALS_CACHE
+
+
+def get_dependency_graph(file_path: str) -> str:
+    """Map import/require dependency graph for a file. Internal -- call via file_intel(path, mode='deps')."""
+    import re as _re
+    abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
+    if abs_path is None:
+        return f"Error: path '{file_path}' is outside the project root."
+    result = _get_dep_graph(abs_path, ctx.PROJECT_ROOT)
+
+    if "error" in result:
+        return f"Error: {result['error']}"
+
+    parts = [f"File: {result['file']}"]
+
+    if result["imports"]:
+        lines = []
+        for imp in result["imports"]:
+            resolved = imp["resolved"] or "(unresolved)"
+            lines.append(f"  {imp['raw']} -> {resolved}")
+        parts.append(f"Imports ({len(result['imports'])}):\n" + "\n".join(lines))
+    else:
+        parts.append("Imports: none")
+
+    if result["imported_by"]:
+        lines = [f"  {f}" for f in result["imported_by"]]
+        parts.append(f"Imported by ({len(result['imported_by'])}):\n" + "\n".join(lines))
+    else:
+        parts.append("Imported by: none")
+
+    # Referenced globals -- architectural globals (>=10 chars) referenced in this file.
+    # Require-based deps miss all globals; this surfaces the actual module dependencies.
+    if abs_path and os.path.isfile(abs_path):
+        try:
+            src = open(abs_path, encoding="utf-8").read()
+            arch_globals = _get_architectural_globals()
+            # Only report globals that appear as standalone identifiers (word boundary)
+            referenced = [g for g in arch_globals if _re.search(r'\b' + _re.escape(g) + r'\b', src)]
+            if referenced:
+                parts.append(f"Referenced Globals ({len(referenced)}):\n" +
+                              "\n".join(f"  {g}" for g in sorted(referenced)))
+        except Exception as _err2:
+            logger.debug(f'silent-except symbols.py:85: {type(_err2).__name__}: {_err2}')
+
+    return "\n\n".join(parts)
+
+
+def lookup_symbol(symbol_name: str, kind: str = "", language: str = "") -> str:
+    """Find where a symbol is defined by exact name match. Returns the file, line number, kind (global, function, class), and signature for each match. Use kind='global' to filter to IIFE globals only, or kind='function' for inner functions. For fuzzy/semantic symbol search, use search_symbols instead."""
+    ctx.ensure_ready_sync()
+    if not symbol_name.strip():
+        return "Error: symbol_name cannot be empty."
+    results = ctx.project_engine.lookup_symbol(symbol_name, kind=kind, language=language)
+    if not results:
+        status = ctx.project_engine.get_symbol_status()
+        if not status["indexed"]:
+            return "No symbol index found. Run index_symbols first."
+        return f"No symbols matching '{symbol_name}' found."
+
+    lines = []
+    for r in results:
+        sig = f" {r['signature']}" if r['signature'] else ""
+        lines.append(f"  [{r['kind']}] {r['name']}{sig}  ({r['file']}:{r['line']})")
+    return f"Found {len(results)} symbol(s):\n" + "\n".join(lines)
+
+
+def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
+    """Semantic search across the symbol index. Unlike lookup_symbol (exact match), this finds symbols whose names or signatures are semantically similar to the query. Use kind='global' to filter to IIFE globals, 'function' for inner functions. Returns ranked results with file locations, kinds, signatures, and relevance scores."""
+    ctx.ensure_ready_sync()
+    if not query or not query.strip():
+        return "Error: query cannot be empty. Pass a symbol name or description to search for."
+    top_k = max(1, min(50, top_k))
+    results = ctx.project_engine.search_symbols(query, top_k=top_k, kind=kind)
+    if not results:
+        status = ctx.project_engine.get_symbol_status()
+        if not status["indexed"]:
+            return "No symbol index found. Run index_symbols first."
+        return "No matching symbols found."
+
+    lines = []
+    for i, r in enumerate(results):
+        sig = f" {r['signature']}" if r['signature'] else ""
+        lines.append(
+            f"[{i+1}] [{r['kind']}] {r['name']}{sig}\n"
+            f"     {r['file']}:{r['line']} ({r['language']}, score: {fmt_sim_score(r['score'])})"
+        )
+    return "\n".join(lines)
+
+
+def get_file_summary(file_path: str) -> str:
+    """Structural overview of a file: line count, symbols, signatures. Internal -- call via file_intel(path, mode='summary')."""
+    abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
+    if abs_path is None:
+        return f"Error: path '{file_path}' is outside the project root."
+    result = _file_summary(abs_path)
+
+    if "error" in result:
+        return f"Error: {result['error']}"
+
+    parts = [f"File: {result['file']} ({result['lines']} lines)"]
+
+    if result["by_kind"]:
+        def _pl(n, w): return f"{n} {w}" if n == 1 else (f"{n} {w}es" if w.endswith(("s","sh","ch","x","z")) else f"{n} {w}s")
+        kind_str = ", ".join(_pl(v, k) for k, v in sorted(result["by_kind"].items(), key=lambda x: -x[1]))
+        parts.append(f"Symbols: {kind_str}")
+    else:
+        parts.append("Symbols: none (data file or unsupported pattern)")
+
+    if result["symbols"]:
+        by_kind: dict[str, list] = {}
+        for s in result["symbols"]:
+            by_kind.setdefault(s["kind"], []).append(s)
+
+        for kind, syms in sorted(by_kind.items()):
+            lines = []
+            for s in syms[:30]:
+                sig = f" {s['signature']}" if s['signature'] else ""
+                lines.append(f"    L{s['line']}: {s['name']}{sig}")
+            overflow = f"\n    ... and {len(syms) - 30} more" if len(syms) > 30 else ""
+            parts.append(f"  [{kind}]\n" + "\n".join(lines) + overflow)
+
+    return "\n".join(parts)
+
+
+def get_module_map(directory: str = "", max_depth: int = 3) -> str:
+    """Show the directory tree structure with line counts per file. Use to get a bird's-eye view of a subsystem's organization. Set directory='src/crossLayer' or just 'crossLayer' to scope to a subdirectory, or omit for the full project. max_depth controls how deep to recurse (default 3)."""
+    if directory:
+        target = os.path.join(ctx.PROJECT_ROOT, directory)
+        if not os.path.isdir(target):
+            target = os.path.join(ctx.PROJECT_ROOT, "src", directory)
+    else:
+        target = ctx.PROJECT_ROOT
+    if not os.path.isdir(target):
+        return f"Error: directory not found: {directory!r} (tried with and without 'src/' prefix)"
+
+    tree = _module_map(target, max_depth=max_depth)
+    formatted = _format_module_map(tree)
+    return formatted if formatted else "Empty directory or no code files found."
+
+
+
+# Re-exports -- hierarchy/trace extracted to sibling.
+from .symbols_hierarchy import type_hierarchy, cross_language_trace  # noqa: F401, E402
+
+def bulk_rename_preview(old_name: str, new_name: str, language: str = "") -> str:
+    """Preview what a symbol rename would change across the codebase WITHOUT making any modifications. Shows each occurrence categorized by type (definition, reference, import, string, comment) and whether it would be renamed or skipped. Use to assess rename safety and scope before committing to a refactor."""
+    if not old_name.strip():
+        return "Error: old_name cannot be empty."
+    if not new_name.strip():
+        return "Error: new_name cannot be empty."
+    results = _preview_rename(old_name, new_name, ctx.PROJECT_ROOT, language=language)
+    if not results:
+        return f"No occurrences of '{old_name}' found."
+
+    would_rename = [r for r in results if r["would_rename"]]
+    would_skip = [r for r in results if not r["would_rename"]]
+
+    by_cat: dict[str, list] = {}
+    for r in would_rename:
+        by_cat.setdefault(r["category"], []).append(r)
+
+    parts = [f"Rename '{old_name}' -> '{new_name}': {len(would_rename)} locations to rename, {len(would_skip)} to skip"]
+
+    for cat, entries in sorted(by_cat.items()):
+        parts.append(f"\n[{cat}] ({len(entries)})")
+        for e in entries[:20]:
+            parts.append(f"  {e['file']}:{e['line']}:{e['column']} - {e['text'][:100]}")
+        if len(entries) > 20:
+            parts.append(f"  ... and {len(entries) - 20} more")
+
+    if would_skip:
+        parts.append(f"\nSkipped ({len(would_skip)}, in strings/comments):")
+        for e in would_skip[:10]:
+            parts.append(f"  {e['file']}:{e['line']} [{e['category']}] - {e['text'][:80]}")
+
+    return "\n".join(parts)
+
+
+def get_function_body(function_name: str, file_path: str = "", language: str = "") -> str:
+    """Extract the complete source code of a named function. If file_path is given, searches only that file. Otherwise, looks up the function in the symbol index and extracts from the first matching file(s). Returns the function body with line numbers and kind (function, method, etc). Useful for reading a specific function without loading the entire file."""
+    ctx.ensure_ready_sync()
+    from chunker import get_function_body as _get_body
+
+    if file_path:
+        abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
+        if abs_path is None:
+            return f"Error: path '{file_path}' is outside the project root."
+        if not os.path.isfile(abs_path):
+            return f"File not found: {abs_path}"
+        try:
+            with open(abs_path, encoding="utf-8", errors="ignore") as _f:
+                content = _f.read()
+        except Exception as e:
+            return f"Error reading file: {e}"
+        lang = language if language else ext_to_lang(os.path.splitext(abs_path)[1])
+        result = _get_body(content, lang, function_name)
+        if result:
+            return f"{abs_path}:{result['start_line']}-{result['end_line']} [{result['kind']}]\n{result['content']}"
+        return f"Function '{function_name}' not found in {abs_path}"
+
+    results = ctx.project_engine.lookup_symbol(function_name, kind="", language=language)
+    if not results:
+        return f"Symbol '{function_name}' not found. Try index_symbols first."
+
+    parts = []
+    seen = set()
+    for sym in results[:5]:
+        if sym["file"] in seen:
+            continue
+        seen.add(sym["file"])
+        try:
+            with open(sym["file"], encoding="utf-8", errors="ignore") as _f:
+                content = _f.read()
+        except Exception as _err:
+            logger.debug(f"unnamed-except symbols.py:593: {type(_err).__name__}: {_err}")
+            continue
+        lang = language if language else ext_to_lang(os.path.splitext(sym["file"])[1])
+        result = _get_body(content, lang, function_name)
+        if result:
+            parts.append(f"{sym['file']}:{result['start_line']}-{result['end_line']} [{result['kind']}]\n{result['content']}")
+
+    if not parts:
+        locs = [f"  {s['file']}:{s['line']} [{s['kind']}]" for s in results[:5]]
+        return f"Found symbol but couldn't extract body:\n" + "\n".join(locs)
+
+    return "\n\n".join(parts)
+
+
+def l0_channel_map(channel: str = "") -> str:
+    """Map L0 channel producers and consumers. Shows which modules post to and read from
+    each L0 channel. If channel is given, shows detailed view for that channel. Otherwise
+    shows all channels with producer/consumer counts. Finds the invisible L0-mediated
+    dependency edges that find_callers and blast_radius miss."""
+    import re
+    ctx.ensure_ready_sync()
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+
+    post_pat = re.compile(r"""L0\.post\(\s*['"]([^'"]+)['"]""")
+    read_pats = [
+        re.compile(r"""L0\.getLast\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.query\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.findClosest\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.count\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.getBounds\(\s*['"]([^'"]+)['"]"""),
+    ]
+
+    # channel -> { producers: {file: [lines]}, consumers: {file: [lines]} }
+    channels: dict[str, dict] = {}
+
+    for dirpath, _, filenames in os.walk(src_root):
+        for fname in filenames:
+            if not fname.endswith(".js"):
+                continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                with open(fpath, encoding="utf-8", errors="ignore") as f:
+                    lines = f.readlines()
+            except Exception as _err:
+                logger.debug(f"unnamed-except symbols.py:636: {type(_err).__name__}: {_err}")
+                continue
+            rel = fpath.replace(ctx.PROJECT_ROOT + "/", "")
+            for i, line in enumerate(lines, 1):
+                for m_obj in post_pat.finditer(line):
+                    ch = m_obj.group(1)
+                    channels.setdefault(ch, {"producers": {}, "consumers": {}})
+                    channels[ch]["producers"].setdefault(rel, []).append(i)
+                for pat in read_pats:
+                    for m_obj in pat.finditer(line):
+                        ch = m_obj.group(1)
+                        channels.setdefault(ch, {"producers": {}, "consumers": {}})
+                        channels[ch]["consumers"].setdefault(rel, []).append(i)
+
+    if not channels:
+        return "No L0 channels found in src/."
+
+    if channel:
+        ch_data = channels.get(channel)
+        if not ch_data:
+            return f"Channel '{channel}' not found. Known channels: {', '.join(sorted(channels.keys()))}"
+        parts = [f"# L0 Channel: {channel}\n"]
+        parts.append(f"## Producers ({len(ch_data['producers'])} files)")
+        for f, lines in sorted(ch_data["producers"].items()):
+            parts.append(f"  {f}:{','.join(str(l) for l in lines)}")
+        parts.append(f"\n## Consumers ({len(ch_data['consumers'])} files)")
+        for f, lines in sorted(ch_data["consumers"].items()):
+            parts.append(f"  {f}:{','.join(str(l) for l in lines)}")
+        return "\n".join(parts)
+
+    # Summary view
+    parts = [f"# L0 Channel Map ({len(channels)} channels)\n"]
+    for ch in sorted(channels.keys()):
+        d = channels[ch]
+        p = len(d["producers"])
+        c = len(d["consumers"])
+        parts.append(f"  {ch}: {p} producer(s), {c} consumer(s)")
+    return "\n".join(parts)
+
+
+def file_intel(file_path: str, mode: str = "both") -> str:
+    """Unified file intelligence. Replaces get_file_summary + get_dependency_graph in one call.
+    mode='both' (default): structural overview AND dependency graph -- use before editing a file
+    you haven't read yet to understand its API surface and its position in the dependency tree.
+    mode='summary': line count, symbol kinds, all definitions with line numbers and signatures.
+    Use to quickly understand a file's API surface without reading the full source.
+    mode='deps': import/require dependency graph -- what the file imports (with resolved paths)
+    and which files import it. Use to assess refactor scope or understand load order.
+    Accepts relative or absolute paths."""
+    ctx.ensure_ready_sync()
+    _track("file_intel")
+    if not file_path.strip():
+        return "Error: file_path cannot be empty."
+    routed = dispatch(mode, {
+        "summary": lambda: get_file_summary(file_path),
+        "deps": lambda: get_dependency_graph(file_path),
+        "both": lambda: f"{get_file_summary(file_path)}\n\n\n\n{get_dependency_graph(file_path)}",
+    })
+    if routed is not None:
+        return routed
+    return f"Unknown mode '{mode}'. Use 'both', 'summary', or 'deps'."

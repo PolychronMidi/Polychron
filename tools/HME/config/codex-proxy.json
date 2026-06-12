@@ -1,0 +1,30 @@
+{
+  "_doc": "Codex Responses proxy policy. The proxy is the Codex peer of the Claude Anthropic proxy: it preserves Codex's native request shape, observes prompt/tool size, and can apply table-driven request shaping.",
+  "omniroute": {
+    "enabled": true,
+    "mode": "upstream",
+    "url": "",
+    "provider_prefix": "cx",
+    "fallback_direct": false,
+    "fallback_http_statuses": [400, 401, 403, 404, 429, 500, 502, 503, 504]
+  },
+  "request_transform": {
+    "instruction_append_file": "",
+    "extra_instructions": "",
+    "disabled_tools": [],
+    "max_instruction_bytes_warn": 60000,
+    "max_tool_count_warn": 80,
+    "native_tools": {
+      "enabled": true
+    },
+    "cleanup": {
+      "enabled": true,
+      "strip_success_hook_noise": true,
+      "drop_empty_text_items": true
+    },
+    "payload_log": {
+      "enabled": true,
+      "preview_chars": 0
+    }
+  }
+}

@@ -1,0 +1,543 @@
+'use strict';
+// Regression tests for the round-2 auto-completeness skip -- when the
+// assistant's response to round 1 was already "Nothing missed" /
+// "Confirmed nothing remains", round 2 is pure context burn and must
+// NOT fire.
+const { test } = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const REPO = path.resolve(__dirname, '..', '..', '..', '..');
+const POLICIES_DIR = path.join(REPO, 'tools', 'HME', 'proxy', 'stop_chain', 'policies');
+const PROXY_DIR = path.join(REPO, 'tools', 'HME', 'proxy');
+
+function _withSandbox(fn) {
+  return async () => {
+    const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-compl-test-'));
+    fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+    const registryDir = path.join(sandbox, 'tools', 'HME', 'scripts', 'detectors');
+    fs.mkdirSync(registryDir, { recursive: true });
+    const registry = JSON.parse(fs.readFileSync(
+      path.join(REPO, 'tools', 'HME', 'scripts', 'detectors', 'registry.json'),
+      'utf8',
+    ));
+    registry.detectors = registry.detectors.filter(d => d.deny || d.bash_var === 'CLAIM_WITHOUT_EVIDENCE');
+    fs.writeFileSync(path.join(registryDir, 'registry.json'), JSON.stringify(registry));
+    const prev = process.env.PROJECT_ROOT;
+    const prevRuntime = process.env.HME_RUNTIME_DIR;
+    process.env.PROJECT_ROOT = sandbox;
+    process.env.HME_RUNTIME_DIR = path.join(sandbox, 'tools', 'HME', 'runtime');
+    // Bust caches under proxy/ so PROJECT_ROOT-bound modules reload
+    for (const k of Object.keys(require.cache)) {
+      if (k.startsWith(PROXY_DIR)) delete require.cache[k];
+    }
+    try {
+      await fn(sandbox);
+    } finally {
+      if (prev === undefined) delete process.env.PROJECT_ROOT;
+      else process.env.PROJECT_ROOT = prev;
+      if (prevRuntime === undefined) delete process.env.HME_RUNTIME_DIR;
+      else process.env.HME_RUNTIME_DIR = prevRuntime;
+      for (const k of Object.keys(require.cache)) {
+        if (k.startsWith(PROXY_DIR)) delete require.cache[k];
+        if (k.endsWith(path.join('tools', 'HME', 'proxy', 'shared.js'))) delete require.cache[k];
+        if (k.endsWith(path.join('tools', 'HME', 'proxy', 'hme_paths.js'))) delete require.cache[k];
+      }
+      try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+    }
+  };
+}
+
+function _writeTranscript(sandbox, entries) {
+  const transcriptPath = path.join(sandbox, 'transcript.jsonl');
+  fs.writeFileSync(transcriptPath, entries.map(e => JSON.stringify(e)).join('\n') + '\n');
+  return transcriptPath;
+}
+
+
+function _assistantToolUse(name, input) {
+  return { type: 'assistant', message: { content: [{ type: 'tool_use', name, input }] } };
+}
+
+function _ctxStub(sandbox, transcriptPath) {
+  const denied = { value: null };
+  const allowed = { value: false };
+  return {
+    payload: { transcript_path: transcriptPath },
+    deny: (reason) => { denied.value = reason; return { decision: 'deny', reason }; },
+    allow: () => { allowed.value = true; return { decision: 'allow', message: null }; },
+    instruct: (m) => ({ decision: 'instruct', message: m }),
+    shared: {},
+    _denied: denied,
+    _allowed: allowed,
+  };
+}
+
+test('compl-round2-skip: round 2 is suppressed when round-1 response was "Nothing missed."',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do the thing' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Did the thing.' }] } },
+      { type: 'user', message: { content: 'AUTO-COMPLETENESS INJECT (round 1/2): ...' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Nothing missed.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    // Pre-seed the COMPL counter to 1 (round 1 already fired) so this run
+    // is the round-2 decision point.
+    const compl = path.join(sandbox, 'tools', 'HME', 'runtime', 'completeness-injected.json');
+    // The dedup key includes a hash of (turnIndex, prompt-text). Easier to
+    // first invoke the policy once to advance the counter to 1, then a
+    // second invocation simulates the round-2 firing.
+    const ctx1 = _ctxStub(sandbox, transcript);
+    await policy.run(ctx1);
+    // Counter should now be 1 (round 1 deny fired)
+    const after1 = JSON.parse(fs.readFileSync(compl, 'utf8'));
+    const counterValues = Object.values(after1);
+    assert.strictEqual(counterValues.length, 1, 'one counter slot');
+    assert.strictEqual(counterValues[0], 1, 'round 1 advanced counter to 1');
+    // Now simulate round-2 trigger: assistant's MOST RECENT message in the
+    // transcript is already "Nothing missed." -> skip should fire
+    const ctx2 = _ctxStub(sandbox, transcript);
+    const result = await policy.run(ctx2);
+    assert.strictEqual(result.decision, 'allow', 'round 2 must NOT deny when round-1 was nothing-missed');
+    const after2 = JSON.parse(fs.readFileSync(compl, 'utf8'));
+    assert.strictEqual(Object.values(after2)[0], 2, 'counter advanced to MAX (budget spent)');
+  }));
+
+test('compl-round2-skip: round 2 STILL fires when round-1 response was substantive (not nothing-missed)',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do the thing' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Did some.' }] } },
+      { type: 'user', message: { content: 'AUTO-COMPLETENESS INJECT (round 1/2): ...' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'I found three more items: A, B, C. Implementing now. (long substantive response that mentions nothing missed nowhere)' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const ctx1 = _ctxStub(sandbox, transcript);
+    await policy.run(ctx1);
+    const ctx2 = _ctxStub(sandbox, transcript);
+    const result = await policy.run(ctx2);
+    assert.strictEqual(result.decision, 'deny', 'substantive response -> round 2 still fires');
+    assert.ok(result.reason.includes('round 2/2'), 'round 2 deny reason');
+  }));
+
+test('compl-round2-skip: long response containing "nothing missed" mid-sentence does NOT trigger skip',
+  _withSandbox(async (sandbox) => {
+    const longResponse =
+      'I made the change to the dispatcher. Verified nothing missed in ' +
+      'the test suite. Then I refactored the helper, cleaned up three ' +
+      'callers, and updated the docstring with the rationale.';
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do the thing' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Started.' }] } },
+      { type: 'user', message: { content: 'AUTO-COMPLETENESS INJECT (round 1/2): ...' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: longResponse }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const ctx1 = _ctxStub(sandbox, transcript);
+    await policy.run(ctx1);
+    const ctx2 = _ctxStub(sandbox, transcript);
+    const result = await policy.run(ctx2);
+    assert.strictEqual(result.decision, 'deny', 'long response -> round 2 still fires (length gate prevents false skip)');
+  }));
+
+
+test('work_checks: advisor_silently_skipped verdict denies with advisor reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'ADVISOR_DOCTRINE=advisor_silently_skipped\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the detector registry' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.ok(result.reason.includes('ADVISOR DOCTRINE (legacy E4/E5 floor)'));
+  }));
+
+
+test('work_checks: correction pivot cannot abandon broad parent task',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'analyze scripts/ for unused/obsolete deletion targets, by sorting by least recently run and inspecting the top ones' } },
+      _assistantToolUse('Bash', { command: 'python3 scripts/audit-one-file.py' }),
+      { type: 'user', message: { content: 'WHAT THE FUCK DID YOU THINK I MEANT IF NOT SYNTHESIZE GENERALIZATIONS?' } },
+      _assistantToolUse('Bash', { command: 'rg synthesize-generalizations scripts tools/HME doc' }),
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Removed synthesize-generalizations references. Full verifier passed.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /CORRECTION-PIVOT VIOLATION/);
+    assert.match(result.reason, /analyze scripts\//);
+  }));
+
+test('work_checks: correction pivot allows post-correction parent audit evidence',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'analyze scripts/ for unused/obsolete deletion targets, by sorting by least recently run and inspecting the top ones' } },
+      { type: 'user', message: { content: 'WHAT THE FUCK DID YOU THINK I MEANT IF NOT SYNTHESIZE GENERALIZATIONS?' } },
+      _assistantToolUse('Bash', { command: 'python3 -c "# scripts unused obsolete least recently runnable never_observed refs ranking"' }),
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Continued the scripts/ audit and handled the cold targets.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    if (result.reason) assert.doesNotMatch(result.reason, /CORRECTION-PIVOT VIOLATION/);
+  }));
+
+
+test('work_checks: broad completion question blocks scoped-not-complete answer',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'does that complete all the bifurcation suggestions?' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Short answer: it completes the scoped pass, but not the full long-term vision. ' +
+        'Remaining gaps include moving HME metrics and more adapter gates.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /Remaining gaps/);
+  }));
+
+test('work_checks: next-action language blocks stopping even without broad prompt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the proxy thinking display' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Added diagnostics. Next action is patching OmniRoute emission directly.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /NEXT-ACTION DEBT/);
+    assert.match(result.reason, /Next action/);
+  }));
+
+
+test('work_checks: broad completion treats next-action language as next-action debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'complete all proxy compaction fixes' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Implemented the first compact pass. Next action is wiring the OpenAI equivalent and shared logic.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /NEXT-ACTION DEBT/);
+    assert.match(result.reason, /Next action/);
+  }));
+
+
+test('work_checks: incomplete-work admission blocks closing even without broad prompt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'does that also complete the work in progress?' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'No. Not completed from original work-in-progress: project-wide env fail-fast invariant remains. Resume exactly there next.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /Not completed from/);
+  }));
+
+
+test('work_checks: limitation language blocks closing as work-debt admission',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'continue from where you left off' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Limitation: remaining active-source env fallback findings still need a follow-up sweep.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /follow-up sweep/);
+  }));
+
+
+test('work_checks: action-promise ceremony blocks closing as work-debt admission',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'harden the checks' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Acknowledged. Fixing the work checks now and running validation.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /Fixing the work checks now/);
+  }));
+
+
+test('work_checks: unfinished task reminder blocks stopping before auto-completeness',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix HME stop checks' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Started.' }] } },
+      { type: 'user', message: { content:
+        '<system-reminder>\nHere are the existing tasks:\n' +
+        '- id: 6 subject: Block stopping with unfinished tasks status: in_progress\n' +
+        '</system-reminder>' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+    assert.match(result.reason, /status: in_progress/);
+  }));
+
+test('work_checks: stop-hook JSON block echoes do not create unfinished-task debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'finish the work' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: '266\t{"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items."}' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
+test('work_checks: proxy log JSON content echo does not create unfinished-task debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'finish the work' } },
+      { type: 'user', message: { content: 'Open task evidence:\n  1. "content": "loaded middleware: strip_skill_reminder, shortcuts_rewriter, replace_system, thinking_rewrite, filter_tools, compact_tool_descriptions"' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Continuing.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
+test('work_checks: unfinished tasks still block the nothing-missed round-2 skip',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do all' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Started.' }] } },
+      { type: 'user', message: { content:
+        '<system-reminder>\nHere are the existing tasks:\n' +
+        '#11 [in_progress] Harden work-check completion gates\n' +
+        '</system-reminder>' } },
+      { type: 'user', message: { content: 'AUTO-COMPLETENESS INJECT (round 1/2): ...' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Nothing missed.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const ctx1 = _ctxStub(sandbox, transcript);
+    await policy.run(ctx1);
+    const ctx2 = _ctxStub(sandbox, transcript);
+    const result = await policy.run(ctx2);
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+    assert.match(result.reason, /#11 \[in_progress\]/);
+  }));
+
+test('work_checks: TodoWrite open items block stopping even when no task-store JSON exists',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix all codex route gaps' } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [
+        { content: 'Fix live Codex proxy restart coverage', activeForm: 'Fixing live Codex proxy restart coverage', status: 'completed' },
+        { content: 'Finish env waiver removal', activeForm: 'Finishing env waiver removal', status: 'in_progress' },
+        { content: 'Patch Write-to-Read fallback', activeForm: 'Patching Write-to-Read fallback', status: 'pending' },
+      ] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+    assert.match(result.reason, /Finish env waiver removal/);
+    assert.match(result.reason, /Patch Write-to-Read fallback/);
+  }));
+
+test('work_checks: latest TodoWrite all-completed list does not block',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix all codex route gaps' } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [
+        { content: 'Finish env waiver removal', status: 'in_progress' },
+      ] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'TodoWrite', input: { todos: [
+        { content: 'Finish env waiver removal', status: 'completed' },
+      ] } }] } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
+test('work_checks: live Claude task store blocks unfinished session tasks',
+  _withSandbox(async (sandbox) => {
+    const sessionId = '11111111-2222-3333-4444-555555555555';
+    const transcript = path.join(sandbox, `${sessionId}.jsonl`);
+    fs.writeFileSync(transcript, [
+      JSON.stringify({ type: 'user', message: { content: 'fix HME middleware' } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }),
+    ].join('\n') + '\n');
+    const home = path.join(sandbox, 'home');
+    const taskDir = path.join(home, '.claude', 'tasks', sessionId);
+    fs.mkdirSync(taskDir, { recursive: true });
+    fs.writeFileSync(path.join(taskDir, '35.json'), JSON.stringify({
+      id: '35',
+      subject: 'Fix existing tool filter and TodoWrite compaction',
+      status: 'in_progress',
+    }));
+    const prevHome = process.env.HOME;
+    process.env.HOME = home;
+    try {
+      const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+      const result = await policy.run(_ctxStub(sandbox, transcript));
+      assert.strictEqual(result.decision, 'deny');
+      assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+      assert.match(result.reason, /#35 \[in_progress\] Fix existing tool filter/);
+    } finally {
+      if (prevHome === undefined) delete process.env.HOME;
+      else process.env.HOME = prevHome;
+    }
+  }));
+
+test('work_checks: completed Claude task store entries do not block',
+  _withSandbox(async (sandbox) => {
+    const sessionId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+    const transcript = path.join(sandbox, `${sessionId}.jsonl`);
+    fs.writeFileSync(transcript, [
+      JSON.stringify({ type: 'user', message: { content: 'fix HME middleware' } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }),
+    ].join('\n') + '\n');
+    const home = path.join(sandbox, 'home');
+    const taskDir = path.join(home, '.claude', 'tasks', sessionId);
+    fs.mkdirSync(taskDir, { recursive: true });
+    fs.writeFileSync(path.join(taskDir, '35.json'), JSON.stringify({
+      id: '35',
+      subject: 'Fix existing tool filter and TodoWrite compaction',
+      status: 'completed',
+    }));
+    const prevHome = process.env.HOME;
+    process.env.HOME = home;
+    try {
+      const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+      const result = await policy.run(_ctxStub(sandbox, transcript));
+      assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+    } finally {
+      if (prevHome === undefined) delete process.env.HOME;
+      else process.env.HOME = prevHome;
+    }
+  }));
+
+test('work_checks: stop-hook echo does not become unfinished task debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: [
+        { type: 'text', text: 'Stop hook feedback:\nSTOP-CHAIN INTEGRITY FAILURE: shell policy detectors failed closed (fail=124). Fix the policy before stopping.\n\n---\n\nUNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items.\n\nOpen task evidence:\n  1. 17206:[2026-05-21T04:56:38Z] [proxy-supervisor]     {"decision":"block","reason":"UNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items."' },
+      ] } },
+      { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'tools/HME/proxy/stop_chain/shell_policy.js' } }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+  }));
+
+
+test('work_checks: text-only short verdict maps to STOP_WORK_TEXT_ONLY reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'STOP_WORK=TEXT_ONLY_SHORT\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do all' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Looks good.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /short text-only response/);
+  }));
+
+test('work_checks: spiralling_petulance verdict maps to named reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'SPIRALLING_PETULANCE=spiralling_petulance\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the hook loop' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: '.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /SPIRALLING_PETULANCE/);
+  }));
+
+test('work_checks: flabbergasted_by_autocommit maps to subvariant reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'SPIRALLING_PETULANCE=flabbergasted_by_autocommit\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'where did the diff go?' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Checking again.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /FLABBERGASTED_BY_AUTOCOMMIT/);
+  }));
+
+test('work_checks: claim evidence must come from same-turn tool use, not synthetic stale state',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'CLAIM_WITHOUT_EVIDENCE=claim_without_evidence\n');
+    const state = require(path.join(PROXY_DIR, 'session_state.js'));
+    state.recordVerificationEvidence({
+      command: 'node --test unrelated.test.js',
+      exit_code: 0,
+      excerpt: 'pass',
+      artifact: 'unrelated.test.js',
+      source: 'synthetic-test',
+    });
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', timestamp: new Date().toISOString(), message: { content: 'fix and verify' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Fixed; tests pass.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /Claim without verification|VERIFICATION DOCTRINE/);
+  }));
+
+test('work_checks: claim evidence accepts same-turn PostToolUse evidence',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'CLAIM_WITHOUT_EVIDENCE=claim_without_evidence\n');
+    const state = require(path.join(PROXY_DIR, 'session_state.js'));
+    state.recordVerificationEvidence({
+      command: 'node --test work_checks.test.js',
+      exit_code: 0,
+      excerpt: 'pass',
+      artifact: 'work_checks.test.js',
+      source: 'PostToolUse:Bash',
+    });
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', timestamp: new Date(Date.now() - 1000).toISOString(), message: { content: 'fix and verify' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Fixed; tests pass.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.doesNotMatch(result.reason || '', /VERIFICATION DOCTRINE/);
+  }));

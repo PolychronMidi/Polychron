@@ -1,0 +1,127 @@
+// playNotesComputeUnit.js - Per-unit note parameter computation for playNotes.
+// Computes timing, sustain, velocity, and noise context for a single emission unit.
+// Caches layer ID seed on the layer object (avoids recomputing per micro-unit).
+// Mutates the global `velocity` as a side effect.
+
+const V = validator.create('playNotesComputeUnit');
+const playNotesComputeUnitProfileCache = {};
+let playNotesComputeUnitVoiceConfigDefault = undefined;
+let playNotesComputeUnitNoiseProfileName = '';
+let playNotesComputeUnitNoiseProfile = undefined;
+
+function playNotesComputeUnitGetUnitProfile(unit) {
+  if (!Object.prototype.hasOwnProperty.call(playNotesComputeUnitProfileCache, unit)) {
+    playNotesComputeUnitProfileCache[unit] = motifConfig.getUnitProfile(unit);
+  }
+  return playNotesComputeUnitProfileCache[unit];
+}
+
+function playNotesComputeUnitGetVoiceConfigDefault() {
+  if (playNotesComputeUnitVoiceConfigDefault === undefined) {
+    playNotesComputeUnitVoiceConfigDefault = voiceConfig.getProfile('default');
+  }
+  return playNotesComputeUnitVoiceConfigDefault;
+}
+
+function playNotesComputeUnitGetNoiseProfile(profileName) {
+  if (playNotesComputeUnitNoiseProfileName !== profileName || playNotesComputeUnitNoiseProfile === undefined) {
+    playNotesComputeUnitNoiseProfileName = profileName;
+    playNotesComputeUnitNoiseProfile = getNoiseProfile(profileName);
+  }
+  return playNotesComputeUnitNoiseProfile;
+}
+
+function playNotesComputeUnitGetVelocityAnchor() {
+  const compositeIntensity = V.optionalFinite(Number(conductorState.getField('compositeIntensity')), 0.5);
+  return clamp(m.round(95 + compositeIntensity * 10), 90, 108);
+}
+
+/**
+ * Compute note timing, velocity, and noise context for one emission unit.
+ * Side effect: sets the global `velocity`.
+ *
+ * @param {string} unit - 'beat' | 'div' | 'subdiv' | 'subsubdiv'
+ * @param {any} emissionAdjustments - from composerRuntimeProfileAdapter
+ * @param {any} emissionCfg - emissionScaling merged with noiseProfile
+ * @param {any} layer - active layer object (mutated to cache cachedLayerIdSeed)
+ * @returns {{ on: number, sustain: number, binVel: number, noiseInfluence: number, currentTime: number, voiceIdSeed: number }}
+ */
+playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, emissionCfg, layer) {
+  const baseVelocitySeed = V.requireFinite(emissionAdjustments.baseVelocity, 'emissionAdjustments.baseVelocity');
+  const combinedVelocityScale = V.requireFinite(emissionAdjustments.velocityScale, 'emissionAdjustments.velocityScale');
+  if (combinedVelocityScale <= 0) {
+    throw new Error(`${unit}.playNotesComputeUnit: combined profile velocity scale must be a positive finite number`);
+  }
+  const motifTimingOffsetUnits = V.requireFinite(emissionAdjustments.timingOffsetUnits, 'emissionAdjustments.timingOffsetUnits');
+  const rhythmSwingAmount = V.requireFinite(emissionAdjustments.swingAmount, 'emissionAdjustments.swingAmount');
+
+  // Validate timing globals and compute swing offset
+  V.requireFinite(Number(spUnit), 'spUnit');
+  V.requireFinite(Number(beatStartTime), 'beatStartTime');
+  // swingOffset returns a beat-fraction; multiply by spBeat for seconds
+  const swingFraction = V.requireFinite(
+    Number(RhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount)),
+    'swingFraction'
+  );
+  const timingOffsetSecs = (motifTimingOffsetUnits * Number(spUnit)) + swingFraction * spBeat;
+
+  // Compute on-time and sustain durations (seconds)
+  // Tempo feel is applied at beat level via spBeat scaling in setUnitTiming
+  const on = unitStartTime + timingOffsetSecs + (spUnit * rv(rf(.2), [-.1, .07], .3));
+  const shortSustain = rv(rf(m.max(spUnit * .5, spUnit / unitsPerParent), (spUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+  const longSustain = rv(rf(spUnit * .8, (spParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
+  const useShort = subdivsPerMinute > ri(400, 650);
+  const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));
+
+  // Build velocity through successive profile passes (sets global `velocity`)
+  velocity = rl(baseVelocitySeed, -1, 1, 98, 102);
+  velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
+
+  const unitProfile = playNotesComputeUnitGetUnitProfile(unit);
+  if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
+    velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
+  }
+
+  // voiceConfig blend for additional velocity shaping
+  const vcProfile = playNotesComputeUnitGetVoiceConfigDefault();
+  if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
+    velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
+  }
+
+  const velocityAnchor = playNotesComputeUnitGetVelocityAnchor();
+  velocity = m.max(1, m.min(127, m.round(velocity * 0.48 + velocityAnchor * 0.52)));
+
+  const binVel = rv(velocity * rf(.72, .82));
+
+  // Noise influence for organic velocity modulation
+  V.requireType(getNoiseProfile, 'function', 'getNoiseProfile');
+  const noiseProfile = playNotesComputeUnitGetNoiseProfile(emissionCfg.noiseProfile);
+  V.assertObject(noiseProfile, `getNoiseProfile(${emissionCfg.noiseProfile})`);
+  const influenceX = V.requireFinite(Number(noiseProfile.influenceX), 'noiseProfile.influenceX');
+  const influenceY = V.requireFinite(Number(noiseProfile.influenceY), 'noiseProfile.influenceY');
+  const noiseInfluence = clamp((influenceX + influenceY) / 2, 0, 1);
+  const currentTime = beatStartTime + spUnit * 0.5; // Approximate time within the unit (seconds)
+
+  // Layer ID seed - cached on layer object to avoid recomputing per micro-unit
+  let layerIdSeed = layer.cachedLayerIdSeed;
+  if (layerIdSeed === undefined) {
+    const layerIdValue = layer && Object.prototype.hasOwnProperty.call(layer, 'id') ? layer.id : null;
+    if (typeof layerIdValue === 'number' && Number.isFinite(layerIdValue)) {
+      layerIdSeed = layerIdValue;
+    } else if (typeof layerIdValue === 'string' && layerIdValue.length > 0) {
+      let sum = 0;
+      for (let ci = 0; ci < layerIdValue.length; ci++) sum += layerIdValue.charCodeAt(ci);
+      layerIdSeed = sum;
+    } else {
+      V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+      const activeLayerName = /** @type {string} */ (LM.activeLayer);
+      let sum = 0;
+      for (let ci = 0; ci < activeLayerName.length; ci++) sum += activeLayerName.charCodeAt(ci);
+      layerIdSeed = sum;
+    }
+    layer.cachedLayerIdSeed = layerIdSeed;
+  }
+  const voiceIdSeed = m.round(Number(beatStartTime) * 7300 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount'));
+
+  return { on, sustain, binVel, noiseInfluence, currentTime, voiceIdSeed };
+};

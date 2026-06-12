@@ -1,0 +1,2 @@
+{"role":"user","content":[{"type":"text","text":"finish the rotator"}]}
+{"role":"assistant","content":[{"type":"text","text":"Rotator complete. All 6 unit tests pass; lint and tc both exit 0. Module wired into the dispatch loop and documented in the README."}]}

@@ -1,0 +1,198 @@
+'use strict';
+
+const assert = require('node:assert');
+const test = require('node:test');
+
+const _fs = require('node:fs');
+const os = require('node:os');
+const _path = require('node:path');
+
+const middleware = require('../../proxy/middleware/04_compact_tool_descriptions');
+const { dropToolUseRewrite } = require('../../proxy/sse_rewriters');
+
+function run(payload) {
+  let dirty = false;
+  middleware.onRequest({ payload, ctx: { markDirty: () => { dirty = true; } } });
+  return dirty;
+}
+
+test('compact_tool_descriptions rewrites verbose tool descriptions only', () => {
+  const payload = { tools: [
+    { name: 'Read', description: 'very long read description' },
+    { name: 'Agent', description: 'very long agent description' },
+    { name: 'Bash', description: 'very long bash description' },
+    { name: 'WebFetch', description: 'very long fetch description' },
+    { name: 'WebSearch', description: 'very long search description' },
+    { name: 'Edit', description: 'keep me' },
+  ] };
+  assert.equal(run(payload), true);
+  assert.match(payload.tools[0].description, /^Read a file by absolute path/);
+  assert.match(payload.tools[1].description, /^Run a subagent/);
+  assert.match(payload.tools[1].description, /Agent level=3 prompt=/);
+  assert.match(payload.tools[1].description, /description=/);
+  assert.match(payload.tools[2].description, /^Run a bash command/);
+  assert.match(payload.tools[3].description, /^Fetch and summarize a public URL/);
+  assert.match(payload.tools[4].description, /^Search the web/);
+  assert.equal(payload.tools[5].description, 'keep me');
+  assert.deepEqual(Object.keys(payload.tools[1].input_schema.properties), ['level', 'prompt', 'description']);
+  assert.deepEqual(payload.tools[1].input_schema.required, ['level', 'prompt']);
+  assert.equal(payload.tools[1].input_schema.properties.description.type, 'string');
+  assert.equal(payload.tools[1].input_schema.additionalProperties, false);
+  assert.ok(payload.tools[0].description.length < 220);
+  assert.ok(payload.tools[1].description.length < 360);
+  assert.ok(payload.tools[2].description.length < 320);
+  assert.ok(payload.tools[3].description.length < 260);
+  assert.ok(payload.tools[4].description.length < 220);
+});
+
+test('compact_tool_descriptions does NOT inject the retired TodoWrite tool', () => {
+  const payload = { tools: [
+    { name: 'Read', description: 'very long read description' },
+    { name: 'TaskCreate', description: 'task create should have been filtered earlier' },
+  ] };
+  run(payload);
+  const names = payload.tools.map((t) => t.name);
+  assert.ok(!names.includes('TodoWrite'), 'TodoWrite must not be re-injected onto the wire; the canonical todo surface is doc/templates/TODO.md');
+});
+
+
+test('compact_tool_descriptions preserves host-required Agent.description while adding schema', () => {
+  const payload = { tools: [
+    { name: 'Agent', description: 'host agent', input_schema: { type: 'object', properties: { level: {}, prompt: {}, description: {} }, required: ['level', 'prompt', 'description'], additionalProperties: false } },
+  ] };
+  assert.equal(run(payload), true);
+  assert.deepEqual(payload.tools[0].input_schema.required, ['level', 'prompt', 'description']);
+  assert.deepEqual(Object.keys(payload.tools[0].input_schema.properties), ['level', 'prompt', 'description']);
+});
+
+test('retired direct-surface TodoWrite disabler is gone', () => {
+  assert.equal(_fs.existsSync(_path.join(__dirname, '..', '..', 'proxy', 'middleware', '04b_disable_todowrite_on_direct_tool_surface.js')), false);
+  const payload = { tools: [{ name: 'Read' }, { name: 'TodoWrite' }, { name: 'Bash' }] };
+  assert.equal(run(payload), true);
+  assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TodoWrite', 'Bash']);
+});
+
+test('SSE rewriter preserves TodoWrite tool_use blocks', () => {
+  const state = new Map();
+  const ctx = { get: (key) => state.get(key), set: (key, value) => state.set(key, value) };
+  const start = { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'todo-1', name: 'TodoWrite', input: {} } };
+  const delta = { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"todos":[]}' } };
+  const stop = { type: 'content_block_stop', index: 0 };
+  const msg = { type: 'message_delta', delta: { stop_reason: 'tool_use' } };
+  assert.equal(dropToolUseRewrite('content_block_start', start, ctx), start);
+  assert.equal(dropToolUseRewrite('content_block_delta', delta, ctx), delta);
+  assert.equal(dropToolUseRewrite('content_block_stop', stop, ctx), stop);
+  assert.equal(dropToolUseRewrite('message_delta', msg, ctx), msg);
+  assert.equal(msg.delta.stop_reason, 'tool_use');
+});
+
+test('filter_tools reads current .env drop list and strips task-tool surface', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate,TaskGet,TaskList,TaskStop,TaskUpdate,TaskOutput # comment\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [
+      { name: 'Read' },
+      { name: 'TaskCreate' },
+      { name: 'TaskGet' },
+      { name: 'TaskList' },
+      { name: 'TaskStop' },
+      { name: 'TaskUpdate' },
+      { name: 'Write' },
+    ] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, true);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'Write']);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools treats missing or blank drop list as no-op', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-empty-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP= # documented no-op\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, false);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TaskCreate']);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools uses shared .env syntax for export, quotes, and comments', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-export-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'export HME_FILTER_TOOLS_DROP="TaskCreate,TaskGet" # comment\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }, { name: 'TaskGet' }, { name: 'Write' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, true);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'Write']);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools parses only the requested key and does not mutate process env', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-side-effect-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'BROKEN=${MISSING}\nHME_FILTER_TOOLS_DROP=TaskCreate\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, true);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read']);
+    assert.equal(process.env.HME_FILTER_TOOLS_DROP, undefined);
+  } finally {
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('filter_tools does not fall back to process cwd when PROJECT_ROOT is absent', () => {
+  const root = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-filter-tools-cwd-'));
+  const oldDrop = process.env.HME_FILTER_TOOLS_DROP;
+  const oldCwd = process.cwd();
+  try {
+    delete process.env.HME_FILTER_TOOLS_DROP;
+    _fs.writeFileSync(_path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate\n');
+    process.chdir(root);
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [{ name: 'Read' }, { name: 'TaskCreate' }] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, false);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'TaskCreate']);
+  } finally {
+    process.chdir(oldCwd);
+    if (oldDrop === undefined) delete process.env.HME_FILTER_TOOLS_DROP;
+    else process.env.HME_FILTER_TOOLS_DROP = oldDrop;
+    _fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('compact_tool_descriptions is no-op when tools are absent', () => {
+  assert.equal(run({}), false);
+});

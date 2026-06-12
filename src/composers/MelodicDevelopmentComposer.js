@@ -1,0 +1,252 @@
+const V = validator.create('MelodicDevelopmentComposer');
+
+MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
+  constructor(name = 'major', root = 'C', intensity = 0.5, developmentBias = 0.7, opts = {}) {
+    V.assertNonEmptyString(name, 'name');
+    V.assertNonEmptyString(root, 'root');
+    V.requireFinite(intensity, 'intensity');
+    V.assertArray(allNotes, 'allNotes', true);
+    V.assertArray(allScales, 'allScales', true);
+    const resolvedRoot = root === 'random' ? allNotes[ri(allNotes.length - 1)] : root;
+    const resolvedName = name === 'random' ? allScales[ri(allScales.length - 1)] : name;
+    super(resolvedName, resolvedRoot);
+    this.baseIntensity = clamp(intensity, 0, 1); // Base intensity (scaled by phrase arc)
+    this.developmentBias = clamp(developmentBias, 0, 1);
+    this.motifPhase = 0;
+    this.measureCount = 0;
+    this.responseMode = false;
+    this.transpositionOffset = 0;
+    this.currentPhase = 0;
+    this.MelodicDevelopmentComposerLastBaseNotes = [];
+    this.MelodicDevelopmentComposerLastDevelopedNotes = [];
+    const inversionMode = (opts.inversionMode === undefined) ? 'diatonic' : String(opts.inversionMode).toLowerCase();
+    if (!['diatonic', 'chromatic'].includes(inversionMode)) {
+      throw new Error(`MelodicDevelopmentComposer: invalid inversionMode "${opts.inversionMode}" (expected diatonic|chromatic)`);
+    }
+    const inversionPivotMode = (opts.inversionPivotMode === undefined) ? 'first-note' : String(opts.inversionPivotMode).toLowerCase();
+    if (!['first-note', 'median', 'fixed-degree'].includes(inversionPivotMode)) {
+      throw new Error(`MelodicDevelopmentComposer: invalid inversionPivotMode "${opts.inversionPivotMode}" (expected first-note|median|fixed-degree)`);
+    }
+    this.inversionMode = inversionMode;
+    this.inversionPivotMode = inversionPivotMode;
+    this.inversionFixedDegree = Number.isFinite(Number(opts.inversionFixedDegree)) ? m.round(Number(opts.inversionFixedDegree)) : 0;
+    this.normalizeToScale = opts.normalizeToScale !== false;
+    this.useDegreeNoise = opts.useDegreeNoise !== false;
+    // Phrase-level coordination
+    if (opts.phraseArcManager !== undefined) {
+      if (!opts.phraseArcManager) {
+        throw new Error('MelodicDevelopmentComposer: invalid phraseArcManager provided (must implement getPhraseContext())');
+      }
+      V.requireType(opts.phraseArcManager.getPhraseContext, 'function', 'opts.phraseArcManager.getPhraseContext');
+      this.phraseArcManager = opts.phraseArcManager;
+    } else {
+      this.phraseArcManager = null;
+    }
+    this.arcScaling = opts.arcScaling !== false; // Whether to scale intensity with phrase arc (default: true)
+    // enable lightweight voice-leading scorer for selection delegation
+    this.enableVoiceLeading(new VoiceLeadingScore());
+
+    const preservesScale = !(this.inversionMode === 'chromatic' && this.normalizeToScale === false);
+    const mutatesPitchClasses = true;
+    this.setCapabilities({
+      preservesScale,
+      mutatesPitchClasses,
+      deterministic: false,
+      notesReflectOutputSet: preservesScale,
+      timeVaryingScaleContext: true
+    });
+  }
+
+  /**
+   * Get effective intensity scaled by phrase arc
+   */
+  get intensity() {
+    if (!this.arcScaling || !this.phraseArcManager) {
+      return this.baseIntensity;
+    }
+
+    const phraseContext = this.phraseArcManager.getPhraseContext();
+    // Scale intensity with dynamism (0.5-1.0 typically)
+    // Higher dynamism during climax = more aggressive development
+    return clamp(this.baseIntensity * phraseContext.dynamism * 1.5, 0, 1);
+  }
+
+  /**
+   * Set base intensity (will still be scaled by phrase arc)
+   */
+  set intensity(value) {
+    this.baseIntensity = clamp(value, 0, 1);
+  }
+
+  getNotes(octaveRange) {
+    // Prefer harmonicContext window scale when composer declares timeVaryingScaleContext
+    const hcScale = harmonicContext.getField('scale');
+    const effectiveScale = (this.hasCapability('timeVaryingScaleContext') && Array.isArray(hcScale) && hcScale.length > 0)
+      ? hcScale
+      : (Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : hcScale);
+    V.assertArray(effectiveScale, 'effectiveScale', true);
+    const { fitMidi } = scaleNormalization.createMidiFitter(effectiveScale, 'MelodicDevelopmentComposer.getNotes');
+
+    let baseNotes;
+    if (this.hasCapability('timeVaryingScaleContext') && Array.isArray(effectiveScale) && effectiveScale.length > 0) {
+      const prevNotes = this.notes;
+      try {
+        this.notes = effectiveScale;
+        baseNotes = super.getNotes(octaveRange);
+      } finally {
+        this.notes = prevNotes;
+      }
+    } else {
+      baseNotes = super.getNotes(octaveRange);
+    }
+
+    V.assertArray(baseNotes, 'baseNotes', true);
+    const normalizedBaseNotes = baseNotes.map((item) => {
+      const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+      V.requireFinite(midi, 'normalizedBaseNotes.midi');
+      return { item, midi };
+    });
+
+    this.measureCount++;
+    // -- Texture-phase coupling (#4) --
+    const basePhase = m.floor((this.measureCount - 1) / 2) % 4;
+    if (drumTextureCoupler) {
+      const texMetrics = drumTextureCoupler.getMetrics();
+      if (texMetrics.intensity > 0.3) {
+        const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
+        const flurryDom = texMetrics.flurryCount > texMetrics.burstCount;
+        if (burstDom) {
+          this.currentPhase = rf() < 0.6 ? 0 : 1;
+        } else if (flurryDom) {
+          this.currentPhase = 2;
+        } else {
+          this.currentPhase = 3;
+        }
+      } else {
+        this.currentPhase = basePhase;
+      }
+    } else {
+      this.currentPhase = basePhase;
+    }
+    let developedNotes = [...baseNotes];
+    const intensity = this.intensity;
+
+    // Build context for noise helper
+    const currentTime = beatStartTime;
+    const voiceId = (this.root ? this.root.charCodeAt(0) : 60) + this.measureCount;
+    const noiseContext = { currentTime, voiceId, phase: this.currentPhase };
+
+    switch (this.currentPhase) {
+      case 0:
+        // Scale-degree transposition (preserve scale membership)
+        let degreeOffset0 = intensity > 0.5 ? ri(-2, 2) : 0;
+        if (this.useDegreeNoise) {
+          degreeOffset0 = applyMelodicTranspositionNoise(degreeOffset0, noiseContext, { degree: true, scale: effectiveScale });
+        }
+        degreeOffset0 = clamp(m.round(degreeOffset0), -4, 4);
+        if (degreeOffset0 !== 0) {
+          developedNotes = normalizedBaseNotes.map(({ item, midi }) => {
+            const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset0, { clampToMidi: false });
+            const transposed = fitMidi(transposedRaw);
+            return (typeof item === 'number') ? transposed : Object.assign({}, item, { note: transposed });
+          });
+        }
+        break;
+      case 1:
+        // Scale-degree transposition scaled by intensity (larger steps than phase 0)
+        let degreeOffset1 = m.round(intensity * 3);
+        if (this.useDegreeNoise) {
+          degreeOffset1 = applyMelodicTranspositionNoise(degreeOffset1, noiseContext, { degree: true, scale: effectiveScale });
+        }
+        degreeOffset1 = clamp(m.round(degreeOffset1), -5, 5);
+        if (degreeOffset1 !== 0) {
+          developedNotes = normalizedBaseNotes.map(({ item, midi }) => {
+            const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset1, { clampToMidi: false });
+            const transposed = fitMidi(transposedRaw);
+            return (typeof item === 'number') ? transposed : Object.assign({}, item, { note: transposed });
+          });
+        }
+        break;
+      case 2:
+        if (intensity > 0.3) {
+          const theScale = effectiveScale;
+          V.assertArray(theScale, 'theScale', true);
+
+          let pivotSeed;
+          if (this.inversionPivotMode === 'median') {
+            const valid = normalizedBaseNotes.map(({ midi }) => midi).sort((a, b) => a - b);
+            if (valid.length === 0) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: no valid base notes for median pivot');
+            pivotSeed = valid[m.floor(valid.length / 2)];
+          } else {
+            const firstBase = baseNotes[0];
+            pivotSeed = (typeof firstBase === 'number') ? firstBase : (firstBase && typeof firstBase.note === 'number' ? firstBase.note : NaN);
+            V.requireFinite(pivotSeed, 'pivotSeed');
+          }
+
+          let noisyPivot = applyMelodicPivotNoise(pivotSeed, noiseContext);
+          if (this.inversionPivotMode === 'fixed-degree') {
+            const pInfo = midiToDegree(noisyPivot, theScale, { quantize: true });
+            const noisyPivotRaw = degreeToMidi(this.inversionFixedDegree, theScale, pInfo.octave, { clampToMidi: false });
+            noisyPivot = fitMidi(noisyPivotRaw);
+          }
+
+          if (this.inversionMode === 'chromatic') {
+            developedNotes = baseNotes.map((item) => {
+              const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+              V.requireFinite(midi, 'midi');
+              const inverted = clamp(m.round(2 * noisyPivot - midi), 0, 127);
+              const out = this.normalizeToScale ? fitMidi(inverted) : inverted;
+              return (typeof item === 'number') ? out : Object.assign({}, item, { note: out });
+            });
+          } else {
+            const pivotInfo = midiToDegree(noisyPivot, theScale, { quantize: true });
+            const pivotAbs = pivotInfo.absDegree;
+            developedNotes = baseNotes.map((item) => {
+              const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+              V.requireFinite(midi, 'midi');
+              const info = midiToDegree(midi, theScale, { quantize: true });
+              const invAbs = 2 * pivotAbs - info.absDegree;
+              const invMidiRaw = degreeToMidi(invAbs, theScale, 0, { clampToMidi: false });
+              const invMidi = fitMidi(invMidiRaw);
+              return (typeof item === 'number') ? invMidi : Object.assign({}, item, { note: invMidi });
+            });
+          }
+        }
+        break;
+      case 3:
+        if (intensity > 0.5) developedNotes = [...baseNotes].reverse();
+        break;
+    }
+
+    this.MelodicDevelopmentComposerLastBaseNotes = baseNotes;
+    this.MelodicDevelopmentComposerLastDevelopedNotes = developedNotes;
+    return developedNotes;
+  }
+
+  setintensity(intensity) {
+    this.baseIntensity = clamp(intensity, 0, 1);
+  }
+
+  resetMotifPhase() {
+    this.motifPhase = 0;
+    this.measureCount = 0;
+    this.responseMode = false;
+    this.transpositionOffset = 0;
+    this.currentPhase = 0;
+    this.MelodicDevelopmentComposerLastBaseNotes = [];
+    this.MelodicDevelopmentComposerLastDevelopedNotes = [];
+  }
+
+  /**
+   * Returns voicing intent that weights base notes and development transformations differently.
+   * @param {number[]} candidateNotes - Available MIDI notes
+   * @returns {{ candidateWeights: { [note: number]: number } } | null}
+   */
+  getVoicingIntent(candidateNotes = []) {
+    return melodicDevelopmentVoicingIntent(
+      candidateNotes, this.MelodicDevelopmentComposerLastBaseNotes, this.MelodicDevelopmentComposerLastDevelopedNotes,
+      this.developmentBias, this.intensity, this.currentPhase
+    );
+  }
+
+}

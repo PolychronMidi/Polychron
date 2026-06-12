@@ -1,0 +1,22 @@
+{
+  "name": "omniroute",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "omniroute": "^3.8.3"
+  },
+  "overrides": {
+    "dompurify": "^3.4.6",
+    "js-cookie": "^3.0.7",
+    "postcss": "^8.5.15",
+    "qs": "^6.15.2"
+  }
+}

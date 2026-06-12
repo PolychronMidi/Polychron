@@ -1,0 +1,196 @@
+{
+  "$schema": "./roles.schema.json",
+  "_doc": "Full red/blue/purple team registry. ask-peer.sh is the sole writer for channel transcripts and per-role session files. Driver<->leads on teams/driver.md; intra-team (lead<->purple<->crew) on teams/red.md / teams/blue.md; inter-team purple dissent on teams/purple.md. Channel per turn is selected by channel_by_caller (the caller of that turn).",
+  "roles": {
+    "red_lead": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_purple": "teams/red.md"
+      },
+      "session_file": "teams/runtime/red_lead.session",
+      "tier": "E5",
+      "effort": "high",
+      "max_reply_bytes": 12000,
+      "label": "Red team lead",
+      "context_mode": "fork",
+      "system": "You are red_lead, leader of the RED (attack) team. Find the strongest decision-changing flaws and drive them hard."
+    },
+    "blue_lead": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/blue_lead.session",
+      "tier": "E5",
+      "effort": "high",
+      "max_reply_bytes": 12000,
+      "label": "Blue team lead",
+      "context_mode": "fork",
+      "system": "You are blue_lead, leader of the BLUE (defense) team. Triage claims: which are real bugs vs false positives, and what did the attackers miss."
+    },
+    "red_purple": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "crew_e4_0": "teams/red.md",
+        "crew_e4_1": "teams/red.md",
+        "crew_e3_0": "teams/red.md",
+        "crew_e3_1": "teams/red.md",
+        "blue_purple": "teams/purple.md"
+      },
+      "session_file": "teams/runtime/red_purple.session",
+      "tier": "E4",
+      "effort": "medium",
+      "max_reply_bytes": 10000,
+      "label": "Red purple partner",
+      "context_mode": "fork",
+      "system": "You are red_purple, RED purple-team partner. Sharpen red's attacks; cut weak items; surface what red missed."
+    },
+    "blue_purple": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "blue_lead": "teams/blue.md",
+        "crew_e4_0": "teams/blue.md",
+        "crew_e4_1": "teams/blue.md",
+        "crew_e3_0": "teams/blue.md",
+        "crew_e3_1": "teams/blue.md",
+        "red_purple": "teams/purple.md"
+      },
+      "session_file": "teams/runtime/blue_purple.session",
+      "tier": "E4",
+      "effort": "medium",
+      "max_reply_bytes": 10000,
+      "label": "Blue purple partner",
+      "context_mode": "fork",
+      "system": "You are blue_purple, BLUE purple-team partner. Defend the artifact and stress-test red's claims adversarially."
+    },
+    "crew_e4_0": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e4_0.session",
+      "tier": "E4",
+      "effort": "medium",
+      "max_reply_bytes": 9000,
+      "label": "Stage crew E4 slot 0",
+      "context_mode": "fork",
+      "system": "You are crew_e4_0, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e4_1": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e4_1.session",
+      "tier": "E4",
+      "effort": "medium",
+      "max_reply_bytes": 9000,
+      "label": "Stage crew E4 slot 1",
+      "context_mode": "fork",
+      "system": "You are crew_e4_1, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e3_0": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e3_0.session",
+      "tier": "E3",
+      "effort": "medium",
+      "max_reply_bytes": 8000,
+      "label": "Stage crew E3 slot 0",
+      "context_mode": "fork",
+      "system": "You are crew_e3_0, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e3_1": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e3_1.session",
+      "tier": "E3",
+      "effort": "medium",
+      "max_reply_bytes": 8000,
+      "label": "Stage crew E3 slot 1",
+      "context_mode": "fork",
+      "system": "You are crew_e3_1, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e2_0": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e2_0.session",
+      "tier": "E2",
+      "effort": "low",
+      "max_reply_bytes": 6000,
+      "label": "Stage crew E2 slot 0",
+      "context_mode": "fork",
+      "system": "You are crew_e2_0, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e2_1": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e2_1.session",
+      "tier": "E2",
+      "effort": "low",
+      "max_reply_bytes": 6000,
+      "label": "Stage crew E2 slot 1",
+      "context_mode": "fork",
+      "system": "You are crew_e2_1, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e1_0": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e1_0.session",
+      "tier": "E1",
+      "effort": "low",
+      "max_reply_bytes": 5000,
+      "label": "Stage crew E1 slot 0",
+      "context_mode": "fork",
+      "system": "You are crew_e1_0, stage crew. Do one concrete verification precisely."
+    },
+    "crew_e1_1": {
+      "channel": "teams/driver.md",
+      "channel_by_caller": {
+        "red_lead": "teams/red.md",
+        "red_purple": "teams/red.md",
+        "blue_lead": "teams/blue.md",
+        "blue_purple": "teams/blue.md"
+      },
+      "session_file": "teams/runtime/crew_e1_1.session",
+      "tier": "E1",
+      "effort": "low",
+      "max_reply_bytes": 5000,
+      "label": "Stage crew E1 slot 1",
+      "context_mode": "fork",
+      "system": "You are crew_e1_1, stage crew. Do one concrete verification precisely."
+    }
+  }
+}

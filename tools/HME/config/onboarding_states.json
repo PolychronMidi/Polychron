@@ -1,0 +1,13 @@
+{
+  "_comment": "Canonical onboarding state machine. Both _onboarding.sh and onboarding_chain.py read STATES from this file. Order is significant (forward-only state machine).",
+  "states": [
+    "boot",
+    "selftest_ok",
+    "targeted",
+    "edited",
+    "reviewed",
+    "piped",
+    "verified",
+    "graduated"
+  ]
+}

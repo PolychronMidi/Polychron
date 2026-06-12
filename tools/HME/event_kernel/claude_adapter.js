@@ -1,0 +1,375 @@
+#!/usr/bin/env node
+'use strict';
+/** Claude Code adapter: host-specific envelope/rendering over shared kernel plumbing. */
+
+const fs = require('fs');
+const path = require('path');
+const { requireEnv } = require('../proxy/shared/load_env');
+const shortcutsConfig = require('../proxy/shortcuts_config');
+const { runHostAdapter, append } = require('./host_adapter_common');
+const { buildHostPayload, writeJsonAtomic } = require('./lifecycle_payload');
+const { claudeRelayFields, extractFirstJsonDocument } = require('./decision_normalizer');
+const { recordHookDecision } = require('./hook_decision_log');
+const timeTravel = require('./lifecycle_time_travel');
+const { maybeCompactTranscriptFile } = require('../proxy/transcript_compactor');
+
+function denyReason(stdout) {
+  try {
+    const obj = JSON.parse(stdout || '{}');
+    return obj && obj.decision === 'block' && typeof obj.reason === 'string' ? obj.reason : '';
+  } catch (_err) {
+    // silent-ok: malformed stdout has no machine-readable deny reason.
+    return '';
+  }
+}
+
+function summarizeStopBlockReason(reason) {
+  const text = String(reason || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const compact = text
+    .replace(/\s+---\s+\[\d+\/\d+\][\s\S]*$/u, '')
+    .replace(/\s+If the work is actually done[\s\S]*$/u, '')
+    .trim();
+  return compact.slice(0, 500);
+}
+
+function stageStopReminder(root, reason) {
+  if (!root || !reason) return;
+  const file = path.join(root, 'tmp', 'hme-stop-reminder.json');
+  const text = reason.replace(/^\s*Stop hook feedback:\s*/i, '').trim();
+  writeJsonAtomic(file, JSON.stringify({ ts: new Date().toISOString(), text }));
+}
+
+// Shrink the append-only transcript below Claude Code's ~30MB read limit at a
+// safe point. Stop/SessionStart are quiescent (model idle) and use the 24MB
+// high-water; midturn (PostToolUse) only fires in the emergency band near the
+function _resolveTranscriptPath(payload, root) {
+  if (payload && payload.transcript_path && fs.existsSync(payload.transcript_path)) return payload.transcript_path;
+  // SessionStart/PostToolUse hook inputs may omit transcript_path; resolve it
+  // from session_id the same way the Stop path does so all triggers work.
+  try {
+    const { transcriptForSession, claudeProjectsDir, newestJsonl } = require('./lifecycle_payload');
+    const dir = claudeProjectsDir(root);
+    if (!fs.existsSync(dir)) return '';
+    const sid = payload && payload.session_id;
+    return transcriptForSession(dir, sid) || newestJsonl(dir) || '';
+  } catch (_e) { return ''; }
+}
+
+function maybeCompactTranscript(root, body, trigger) {
+  try {
+    const payload = JSON.parse(body || '{}');
+    const transcriptPath = _resolveTranscriptPath(payload, root);
+    if (!transcriptPath) return;
+    let emit;
+    try { ({ emit } = require('../proxy/shared')); } catch (_e) { emit = undefined; }
+    const result = maybeCompactTranscriptFile({ transcriptPath, emit, trigger });
+    if (result && result.changedEntries > 0 && root) {
+      const ts = new Date().toISOString();
+      const before = Math.round((result.beforeBytes || 0) / 1048576);
+      const after = Math.round((result.afterBytes || 0) / 1048576);
+      append(path.join(root, 'log', 'hme.log'),
+        `${ts} INFO transcript-compactor (${trigger}): ${result.changedEntries} entr(ies) elided, ${before}MB -> ${after}MB tier=${result.tier || 0}`);
+    }
+  } catch (_err) { /* silent-ok: transcript compaction is best-effort */ }
+}
+
+function proxyDownBanner(port) {
+  return `[ALERT] LIFESAVER - HME PROXY OFFLINE - LOCAL EVENT KERNEL ACTIVE
+
+The HME proxy on 127.0.0.1:${port} is not responding. Claude hook events are
+running through the local event kernel fallback. Proxy-only request middleware is
+offline until the proxy restarts.
+
+Restart: node tools/HME/proxy/hme_proxy.js
+Check:   curl -sf http://127.0.0.1:${port}/health`;
+}
+
+function logHookError(root, event, message, kind = 'hook-runtime-error') {
+  try {
+    const base = root || requireEnv('PROJECT_ROOT');
+    if (!base || !message) return;
+    const ts = new Date().toISOString();
+    const clean = String(message || '').replace(/\s*\r?\n\s*/g, ' ');
+    const tail = JSON.stringify({ event: kind, message: clean, hook_event: event });
+    const errLog = path.join(base, 'log', 'hme-errors.log');
+    const hmeLog = path.join(base, 'log', 'hme.log');
+    fs.mkdirSync(path.dirname(errLog), { recursive: true });
+    fs.appendFileSync(errLog, `[${ts}] [${kind}] ${clean}  ${tail}\n`);
+    fs.appendFileSync(hmeLog, `${ts.replace('T', ' ').replace('Z', '')} ERROR ${kind}: ${clean}  ${tail}\n`);
+  } catch (_e) { /* best-effort lifesaver log */ }
+}
+
+function shouldLogHookStderr(stderr) {
+  const text = String(stderr || '').trim();
+  if (!text) return false;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.every((line) => /^ok$/i.test(line))) return false;
+  if (/^(?:Stop hook error:|MULTI-FLAG STOP)/i.test(text)) return true;
+  if (/\[proxy-supervisor\] CRASH LOOP DETECTED/i.test(text)) return !/\[observation-only/i.test(text);
+  if (/\[ALERT\] LIFESAVER - MID-TURN ERRORS DETECTED:/i.test(text)) return false;
+  if (/\[(autocommit|autocommit:proxy|proxy-supervisor|hme self-health|hook-output-validation)\]/i.test(text)) return false;
+  return /\b(error|failed|failure|exception|traceback|invalid|crash|denied|JSON validation failed)\b/i.test(text);
+}
+
+function _lifesaverBlock(event, message) {
+  const alert = `[ALERT] LIFESAVER: ${message}`;
+  if (event === 'PreToolUse' || event === 'PermissionRequest') {
+    return JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: event,
+        permissionDecision: 'deny',
+        permissionDecisionReason: alert,
+      },
+    });
+  }
+  if (event === 'Stop') return JSON.stringify({ ok: false, reason: alert });
+  if (event === 'UserPromptSubmit') {
+    return JSON.stringify({
+      decision: 'block',
+      reason: alert,
+      hookSpecificOutput: { hookEventName: event, additionalContext: alert },
+    });
+  }
+  // PostToolUse/SessionStart/Compact hooks cannot block with a root
+  // decision/reason shape. On validator failure, preserve the alert only through
+  return JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: alert } });
+}
+
+function _normalizeClaudeStdoutObject(event, parsed) {
+  const issues = [];
+  const repairs = [];
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { parsed: null, issues: ['stdout JSON root must be an object'], repairs };
+  }
+  const out = { ...parsed };
+  if (out.hookSpecificOutput && typeof out.hookSpecificOutput === 'object' && !Array.isArray(out.hookSpecificOutput)) {
+    out.hookSpecificOutput = { ...out.hookSpecificOutput };
+    // hookEventName is deterministic (it equals THIS event), so a missing or
+    // mismatched value is always repairable -- the adapter owns the field. It is
+    if (!out.hookSpecificOutput.hookEventName) {
+      out.hookSpecificOutput.hookEventName = event;
+      repairs.push('added missing hookSpecificOutput.hookEventName');
+    } else if (out.hookSpecificOutput.hookEventName !== event) {
+      repairs.push(`corrected hookSpecificOutput.hookEventName ${JSON.stringify(out.hookSpecificOutput.hookEventName)} -> ${event}`);
+      out.hookSpecificOutput.hookEventName = event;
+    }
+  }
+
+  if (event === 'UserPromptSubmit') {
+    if (out.decision === 'allow') {
+      delete out.decision;
+      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
+      issues.push('UserPromptSubmit root decision="allow" is not valid Claude hook JSON; stripped allow diagnostic fields');
+    } else if (out.decision && out.decision !== 'block') {
+      issues.push(`UserPromptSubmit root decision=${JSON.stringify(out.decision)} is not valid Claude hook JSON; stripped decision fields`);
+      delete out.decision;
+      if (Object.prototype.hasOwnProperty.call(out, 'reason')) delete out.reason;
+    } else if (!out.decision && Object.prototype.hasOwnProperty.call(out, 'reason')) {
+      issues.push('UserPromptSubmit root reason without decision="block" is not valid Claude hook JSON; stripped reason');
+      delete out.reason;
+    }
+    const hso = out.hookSpecificOutput;
+    if (hso && typeof hso === 'object' && !Array.isArray(hso) && hso.permissionDecision) {
+      if (hso.permissionDecisionReason && !hso.additionalContext) hso.additionalContext = hso.permissionDecisionReason;
+      delete hso.permissionDecision;
+      delete hso.permissionDecisionReason;
+      issues.push('UserPromptSubmit hookSpecificOutput contained PreToolUse permissionDecision fields; stripped before host relay');
+    }
+  }
+
+  if (event === 'Stop') {
+    if (typeof out.ok === 'boolean') {
+      if (out.ok === false && !(typeof out.reason === 'string' && out.reason.trim())) out.reason = 'Stop hook blocked without reason';
+      delete out.decision;
+      delete out.hookSpecificOutput;
+      return { parsed: { ok: out.ok, ...(out.reason ? { reason: String(out.reason) } : {}) }, issues, repairs };
+    }
+    if (out.hookSpecificOutput) {
+      const hso = out.hookSpecificOutput;
+      const reason = typeof hso.additionalContext === 'string' ? hso.additionalContext
+        : typeof hso.permissionDecisionReason === 'string' ? hso.permissionDecisionReason
+        : typeof out.reason === 'string' ? out.reason
+        : '';
+      if (reason && reason.trim()) {
+        issues.push('Stop hookSpecificOutput converted to host ok=false schema');
+        return { parsed: { ok: false, reason }, issues, repairs };
+      }
+      issues.push('Stop hookSpecificOutput had no reason; converted to ok=true no-decision');
+      return { parsed: { ok: true }, issues, repairs };
+    }
+    if (out.decision === 'block') {
+      const reason = typeof out.reason === 'string' && out.reason.trim() ? out.reason : '';
+      if (!reason) return { parsed: { ok: true }, issues, repairs };
+      issues.push('Stop decision=block converted to host ok=false schema');
+      return { parsed: { ok: false, reason }, issues, repairs };
+    }
+    if (typeof out.reason === 'string' && out.reason.trim()) {
+      issues.push('Stop reason without ok converted to host ok=false schema');
+      return { parsed: { ok: false, reason: out.reason }, issues, repairs };
+    }
+    return { parsed: { ok: true }, issues, repairs };
+  }
+
+  return { parsed: out, issues, repairs };
+}
+
+function validateClaudeStdout(event, stdout, root) {
+  const text = String(stdout || '').trim();
+  // Whitespace-only stdout (' ', '\n') is "no decision" -- it MUST relay as the
+  // empty string. Returning the raw whitespace makes the host parse ' ' as JSON
+  if (!text) return '';
+  let parsed;
+  try {
+    parsed = JSON.parse(extractFirstJsonDocument(text) || text);
+  } catch (err) {
+    const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
+    logHookError(root, event, message, 'hook-output-validation');
+    return _lifesaverBlock(event, message);
+  }
+  const normalized = _normalizeClaudeStdoutObject(event, parsed);
+  if (!normalized.parsed) {
+    const message = `Hook JSON output validation failed for Claude ${event}: ${normalized.issues.join('; ')}`;
+    logHookError(root, event, message, 'hook-output-validation');
+    return _lifesaverBlock(event, message);
+  }
+  if (normalized.issues.length) {
+    const message = `Hook JSON output validation failed for Claude ${event}: ${normalized.issues.join('; ')}`;
+    logHookError(root, event, message, 'hook-output-validation');
+    if (event === 'PreToolUse' || event === 'PermissionRequest') return _lifesaverBlock(event, message);
+    return JSON.stringify(normalized.parsed);
+  }
+  if (normalized.repairs && normalized.repairs.length) {
+    // Benign auto-repairs (e.g. a hook omitted hookEventName, which the adapter
+    // owns): the hook's intent is preserved, so relay the corrected JSON. Record
+    logHookError(root, event, `Hook output auto-repaired for Claude ${event}: ${normalized.repairs.join('; ')}`, 'hook-output-validation');
+  }
+  // Emit the canonical single-document serialization, NOT the raw stdout. The
+  // raw stdout can carry a trailing second JSON object or junk after the first
+  return JSON.stringify(normalized.parsed);
+}
+
+// Multi-step (local-session) shortcuts are defined in config/shortcuts.json and
+// loaded via shortcuts_config.js. They are NEVER wire messages: a step like
+// /compact is a Claude Code REPL-local command the proxy cannot run without
+function _isCcShortcut(body) {
+  try {
+    const payload = JSON.parse(body || '{}') || {};
+    const match = shortcutsConfig.multiStepMatch(payload.prompt);
+    if (!match) return null;
+    payload._hme_multistep_key = match.key;
+    payload._hme_multistep_prompt = match.prompt || '';
+    return payload;
+  } catch (_e) {
+    // silent-ok: malformed shortcut payload simply is not a shortcut.
+    return null;
+  }
+}
+
+function _ccControlFifo(root) {
+  return path.join(root || process.cwd(), 'tmp', 'hme-cc-control.fifo');
+}
+
+function _writeCcToken(root, key, prompt = '') {
+  const fifo = _ccControlFifo(root);
+  // Non-blocking open: if no wrapper is reading, open fails with ENXIO and we
+  // skip silently instead of hanging the hook.
+  let fd;
+  try {
+    fd = fs.openSync(fifo, fs.constants.O_WRONLY | fs.constants.O_NONBLOCK);
+    // silent-ok: cc FIFO is nonblocking; false tells caller no PTY bridge.
+  } catch (_e) {
+    return false;
+  }
+  const suffix = prompt ? `\t${Buffer.from(String(prompt), 'utf8').toString('base64')}` : '';
+  try { fs.writeSync(fd, `${key}${suffix}\n`); return true; }
+  catch (_e) { return false; }
+  finally { try { fs.closeSync(fd); } catch (_e2) { /* best effort */ } }
+}
+
+function _handleCcShortcut(result, body) {
+  const payload = _isCcShortcut(body);
+  if (!payload) return result;
+  const key = payload._hme_multistep_key;
+  const prompt = payload._hme_multistep_prompt || '';
+  const steps = shortcutsConfig.multiStepSteps(key, prompt) || [];
+  const reasonSteps = prompt ? (shortcutsConfig.multiStepSteps(key, '$prompt') || steps) : steps;
+  const delivered = _writeCcToken(payload._hme_project_root, key, prompt);
+  // Reason phrasing is shared with the PTY bridge's success-banner filter
+  // (tools/HME/scripts/hme-claude.py); both derive `<key> shortcut: dispatched
+  const reason = delivered
+    ? `${key} shortcut: dispatched ${reasonSteps.join(' -> ')} to the live session via the PTY bridge.`
+    : `${key} shortcut: no PTY bridge attached (launch Claude via scripts/hme-claude.py to enable it).`;
+  return {
+    ...result,
+    stdout: JSON.stringify({
+      decision: 'block',
+      reason,
+      hookSpecificOutput: { hookEventName: 'UserPromptSubmit', suppressOriginalPrompt: true },
+    }),
+    exit_code: 0,
+  };
+}
+
+function finalRelay(event, result, body = '{}') {
+  const fields = claudeRelayFields(event, result);
+  let payload = {};
+  try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
+  const root = payload._hme_project_root || requireEnv('PROJECT_ROOT');
+  const thread_id = timeTravel.threadId({ host: 'claude', event, payload });
+  timeTravel.checkpoint({ root, host: 'claude', event, payload, phase: 'relay:raw', values: { thread_id, raw_stdout: result.stdout || '', relay_stdout: fields.stdout || '', relay_stderr: fields.stderr || '', exit_code: fields.exit_code } });
+  fields.stdout = validateClaudeStdout(event, fields.stdout, root);
+  timeTravel.checkpoint({ root, host: 'claude', event, payload, phase: 'relay:validated', values: { thread_id, relay_stdout: fields.stdout || '', relay_stderr: fields.stderr || '', exit_code: fields.exit_code } });
+  if (shouldLogHookStderr(fields.stderr)) logHookError(root, event, fields.stderr.trim());
+  recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
+  if (fields.stdout) process.stdout.write(fields.stdout);
+  if (fields.stderr && fields.stderr.trim()) process.stderr.write(fields.stderr.endsWith('\n') ? fields.stderr : `${fields.stderr}\n`);
+  process.exit(fields.exit_code);
+}
+
+async function main() {
+  const event = process.argv[2] || 'unknown';
+  await runHostAdapter({
+    host: 'claude',
+    event,
+    rootEnvKeys: ['PROJECT_ROOT', 'CLAUDE_PROJECT_DIR'],
+    maintenanceStderr: ' ',
+    buildBody: ({ root, rawBody, cwd }) => buildHostPayload({ host: 'claude', event, root, rawBody, cwd, teamRole: process.env.HME_TEAM_ROLE }),
+    onDirectFallback: ({ result, root, port, event: ev, ts }) => {
+      writeJsonAtomic(path.join(root, 'tmp', 'hme-proxy-down.flag'), `[${ts}] [claude-adapter] proxy unreachable; ${ev} ran in direct mode\n`);
+      if (ev === 'SessionStart' || ev === 'UserPromptSubmit') {
+        const banner = proxyDownBanner(port);
+        result.stdout = result.stdout || JSON.stringify({ hookSpecificOutput: { hookEventName: ev, additionalContext: banner }, systemMessage: banner });
+      }
+      return result;
+    },
+    onProxyResult: ({ root, port, ts, event: ev }) => {
+      const flag = path.join(root, 'tmp', 'hme-proxy-down.flag');
+      if (!fs.existsSync(flag)) return;
+      try { fs.unlinkSync(flag); } catch (_err) { /* best effort */ }
+      append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [claude-adapter] proxy recovered on 127.0.0.1:${port} (event=${ev})`);
+    },
+    beforeFinalRelay: ({ event: ev, result, body, root }) => {
+      if (ev === 'UserPromptSubmit') return _handleCcShortcut(result, body);
+      // SessionStart (resume/continue load) and PostToolUse (mid-turn balloon)
+      // are the other points the ~30MB transcript limit can bite; Stop is the
+      if (ev === 'SessionStart') { maybeCompactTranscript(root, body, 'session_start'); return result; }
+      if (ev === 'PostToolUse') { maybeCompactTranscript(root, body, 'midturn'); return result; }
+      if (ev !== 'Stop') return result;
+      const reason = denyReason(result.stdout || '');
+      if (reason) stageStopReminder(root, reason);
+      maybeCompactTranscript(root, body, 'stop');
+      return result;
+    },
+    finalRelay,
+  });
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    process.stderr.write(`[claude_adapter] crash: ${err.stack || err.message}\n`);
+    process.exit(0);
+  });
+}
+
+module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout, shouldLogHookStderr, _isCcShortcut, _handleCcShortcut };

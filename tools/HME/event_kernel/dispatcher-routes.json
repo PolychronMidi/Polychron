@@ -1,0 +1,78 @@
+{
+  "_doc": "Declared and executable routing contract for event_kernel/dispatcher.js. Source of truth for non-derivable route facts: policyContext, strictMode, shell script maps, universal scripts, and human-readable handler summaries. dispatcher.js reads this through route_registry.js so policy contexts and hook script maps cannot drift from this file. The verify_coherence DispatcherRouteContractVerifier still diffs route names against dispatcher.js switch cases during the incremental migration.",
+  "routes": [
+    {
+      "event": "SessionStart",
+      "policyContext": null,
+      "strictMode": "strict-only",
+      "scripts": ["lifecycle/sessionstart.sh"],
+      "handler": "lifecycle/sessionstart.sh (strict-mode only)"
+    },
+    {
+      "event": "UserPromptSubmit",
+      "policyContext": null,
+      "strictMode": "always",
+      "scripts": ["lifecycle/userpromptsubmit.sh"],
+      "handler": "lifecycle/userpromptsubmit.sh"
+    },
+    {
+      "event": "Stop",
+      "policyContext": null,
+      "strictMode": "always",
+      "handlerKind": "stop_chain",
+      "handler": "proxy/stop_chain"
+    },
+    {
+      "event": "PreCompact",
+      "policyContext": null,
+      "strictMode": "strict-only",
+      "scripts": ["lifecycle/precompact.sh"],
+      "handler": "lifecycle/precompact.sh (strict-mode only)"
+    },
+    {
+      "event": "PostCompact",
+      "policyContext": null,
+      "strictMode": "strict-only",
+      "scripts": ["lifecycle/postcompact.sh"],
+      "handler": "lifecycle/postcompact.sh (strict-mode only)"
+    },
+    {
+      "event": "PreToolUse",
+      "policyContext": "PreToolUse",
+      "strictMode": "always",
+      "handler": "retry guard, pre-write check, unified policies, native pretool, pretooluse shell chain",
+      "hmePrimerScript": "pretooluse/pretooluse_hme_primer.sh",
+      "shellByTool": {
+        "Edit": ["pretooluse/pretooluse_edit.sh"],
+        "MultiEdit": ["pretooluse/pretooluse_edit.sh"],
+        "Update": ["pretooluse/pretooluse_edit.sh"],
+        "Write": ["pretooluse/pretooluse_write.sh"],
+        "Bash": ["pretooluse/pretooluse_bash.sh"],
+        "Read": ["pretooluse/pretooluse_read.sh"],
+        "Grep": ["pretooluse/pretooluse_grep.sh"]
+      }
+    },
+    {
+      "event": "PermissionRequest",
+      "policyContext": "PreToolUse",
+      "strictMode": "always",
+      "handler": "unified policies under the PreToolUse context (Codex approval prompts reuse PreToolUse policies)"
+    },
+    {
+      "event": "PostToolUse",
+      "policyContext": "PostToolUse",
+      "strictMode": "always",
+      "handler": "post-tool evidence, unified policies, native posttool, posttooluse shell chain",
+      "universalScripts": ["log-tool-call.sh"],
+      "shellByTool": {
+        "Bash": ["posttooluse/posttooluse_bash.sh", "posttooluse/posttooluse_pipeline_kb.sh"],
+        "Edit": ["posttooluse/posttooluse_edit.sh"],
+        "MultiEdit": ["posttooluse/posttooluse_edit.sh"],
+        "Update": ["posttooluse/posttooluse_edit.sh"],
+        "Write": ["posttooluse/posttooluse_edit.sh"],
+        "Read": ["posttooluse/posttooluse_read_kb.sh"]
+      }
+    }
+  ],
+  "observation_events": ["ChatHeaders", "ChatMessagesTransform", "ChatParams", "ChatSystemTransform", "ShellEnv", "TextComplete"]
+}

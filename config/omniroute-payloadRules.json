@@ -1,0 +1,28 @@
+{
+  "default": [
+    {
+      "models": [
+        {
+          "name": "cx/*"
+        },
+        {
+          "name": "codex/*"
+        },
+        {
+          "name": "openai/*"
+        }
+      ],
+      "params": {
+        "reasoning_effort": "xhigh",
+        "reasoning_summary": "detailed",
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "detailed"
+        }
+      }
+    }
+  ],
+  "override": [],
+  "filter": [],
+  "defaultRaw": []
+}
