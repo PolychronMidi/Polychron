@@ -640,9 +640,18 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
       'configured provider skip must suppress Anthropic/Claude fronting');
   } else {
     // Driver fronts the best E5-tier model. Prefer a configured manual top
-    // when present; otherwise the top-ranked E5 model leads. Either way it
+    // when present; otherwise the RANKED top leads -- ranking is cost_order then
+    // tier_score desc (rankedForTier), NOT raw models[] array position. (A model
     const manualTop = (cfg.manually_toprank.E5 || []).find((id) => id);
-    const expectedTop = manualTop || (cfg.tiers.E5.models[0] && cfg.tiers.E5.models[0].id);
+    let expectedTop = manualTop;
+    if (!expectedTop) {
+      const skip = new Set(cfg.providers_to_skip.providers || []);
+      const avail = (cfg.tiers.E5.models || []).filter((m) => m && !skip.has(m.provider) && !skip.has(m.maker && m.maker.toLowerCase()));
+      const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
+      const ranked = [];
+      for (const cost of costOrder) ranked.push(...avail.filter((m) => m.cost === cost).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
+      expectedTop = ranked[0] && ranked[0].id;
+    }
     assert.equal(result.chain[0].id, expectedTop);
     assert.match(result.chain[0].id, /-e5$/);
   }
