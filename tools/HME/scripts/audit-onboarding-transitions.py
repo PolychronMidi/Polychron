@@ -51,9 +51,10 @@ PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parents[3]
 
 STATES_JSON = PROJECT_ROOT / "tools" / "HME" / "config" / "onboarding_states.json"
 HOOKS_DIR = PROJECT_ROOT / "tools" / "HME" / "hooks"
-DISPATCH_PY = (
-    PROJECT_ROOT / "tools" / "HME" / "service" / "server" / "onboarding_chain_dispatch.py"
-)
+# Python chain advancers live across the server package, not one file:
+# onboarding_chain_dispatch.py (the _advance table) AND
+SERVER_DIR = PROJECT_ROOT / "tools" / "HME" / "service" / "server"
+DISPATCH_PY = SERVER_DIR / "onboarding_chain_dispatch.py"
 
 # Shell: `_onb_advance_to edited` / `_onb_set_state reviewed`.
 _SHELL_ADVANCE_RE = re.compile(r"_onb_(?:advance_to|set_state)\s+([a-z_]+)")
