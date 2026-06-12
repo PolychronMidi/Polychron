@@ -107,6 +107,10 @@ def _landed_states() -> dict[str, list[str]]:
 # prose/comments, as opposed to spaced ` -> ` narrative arrows. The `briefed`
 # ghost lived as exactly such a claim (`advance briefed->edited`) naming a
 _TIGHT_ARROW_RE = re.compile(r"\b([a-z_]+)->([a-z_]+)\b")
+# A shell advancer's predecessor-guard: `_onb_state)" = "reviewed"`.
+_STATE_GUARD_RE = re.compile(r"""_onb_state\)?["']?\s*=\s*["']([a-z_]+)["']""")
+# Window (lines) around an advance call to find its predecessor guard.
+_GUARD_WINDOW = 4
 _CHAIN_DOC_FILES = (
     PROJECT_ROOT / "tools" / "HME" / "service" / "server" / "onboarding_chain.py",
     DISPATCH_PY,
