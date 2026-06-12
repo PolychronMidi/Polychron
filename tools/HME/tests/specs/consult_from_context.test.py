@@ -223,6 +223,44 @@ class ConsultFromContextTests(unittest.TestCase):
             self.assertNotIn("HME_READ_CHAIN", decoded)
             self.assertNotIn("readq", decoded)
 
+    def test_deliver_read_results_survives_briefing_larger_than_pipe_buf(self):
+        # Regression: a briefing far exceeds PIPE_BUF (4096); a single
+        # non-blocking write would short-write/EAGAIN and truncate the base64,
+        import base64 as _b64
+        import os as _os
+        import threading as _th
+        manifest = {"round": "unit-big-deliver", "final_outputs": ["final.json"], "steps": [{"id": "final.json"}]}
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            marker = "ZZ_" + ("payload_" * 20000) + "_END"  # ~180KB unique content
+            (out / "final.json").write_text(json.dumps({"reply": marker}), encoding="utf-8")
+            fifo = Path(td) / "tmp" / "hme-cc-control.fifo"
+            fifo.parent.mkdir(parents=True, exist_ok=True)
+            _os.mkfifo(str(fifo))
+            captured = {}
+
+            def _reader():
+                with open(fifo, "rb") as fh:
+                    captured["data"] = fh.read()  # drain to EOF
+
+            t = _th.Thread(target=_reader)
+            t.start()
+            old_root = consult_from_context.ROOT
+            try:
+                consult_from_context.ROOT = Path(td)
+                ok = consult_from_context.deliver_read_results_prompt(manifest, out, [str(out / "final.json")])
+            finally:
+                consult_from_context.ROOT = old_root
+            t.join(timeout=10)
+            self.assertTrue(ok)
+            data = captured.get("data", b"")
+            token, _, b64 = data.partition(b"\t")
+            self.assertEqual(token, b"rd")
+            decoded = _b64.b64decode(b64.strip()).decode("utf-8")
+            # Full content round-trips: trailing END marker present, not truncated.
+            self.assertIn("_END", decoded)
+            self.assertIn(marker, decoded)
+
     def test_deliver_read_results_returns_false_without_bridge(self):
         manifest = {"round": "unit-no-bridge", "final_outputs": ["final.json"], "steps": [{"id": "final.json"}]}
         with tempfile.TemporaryDirectory() as td:
