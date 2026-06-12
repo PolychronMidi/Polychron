@@ -145,6 +145,42 @@ def _ghost_state_claims(states: set[str]) -> list[tuple[str, str, str]]:
     return out
 
 
+def _unguarded_advancers(states: list[str]) -> list[tuple[str, int, str]]:
+    """Shell `_onb_advance_to Y` calls lacking a nearby `_onb_state == <pred>`
+    guard. Returns (source, line_no, advanced_state). The predecessor is the
+    canonical state immediately before Y; its guard is what stops a
+    forward-only-but-skip-permitting advance from jumping the machine."""
+    out = []
+    idx = {s: i for i, s in enumerate(states)}
+    if not HOOKS_DIR.exists():
+        return out
+    for dp, dirs, names in os.walk(HOOKS_DIR):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for n in names:
+            if not n.endswith((".sh", ".bash")) or n == "_onboarding.sh":
+                continue
+            p = Path(dp) / n
+            try:
+                lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
+            except OSError:
+                continue
+            rel = str(p.relative_to(PROJECT_ROOT))
+            for i, line in enumerate(lines):
+                if line.lstrip().startswith("#"):
+                    continue
+                m = re.search(r"_onb_advance_to\s+([a-z_]+)", line)
+                if not m:
+                    continue
+                later = m.group(1)
+                pred_i = idx.get(later, 0) - 1
+                pred = states[pred_i] if pred_i >= 0 else None
+                window = "\n".join(lines[max(0, i - _GUARD_WINDOW): i + 1])
+                guards = set(_STATE_GUARD_RE.findall(window))
+                if pred is not None and pred not in guards:
+                    out.append((rel, i + 1, later))
+    return out
+
+
 def main() -> int:
     verbose = "--verbose" in sys.argv
     states = _load_states()
@@ -163,11 +199,12 @@ def main() -> int:
             dead.append((states[i], later))
 
     ghosts = _ghost_state_claims(set(states))
+    unguarded = _unguarded_advancers(states)
 
-    if not dead and not ghosts:
+    if not dead and not ghosts and not unguarded:
         print(
             f"audit-onboarding-transitions: PASS "
-            f"({len(states) - 1} forward edge(s) advancer-backed, "
+            f"({len(states) - 1} forward edge(s) advancer-backed, guarded, "
             f"no ghost-state transition claims)"
         )
         return 0
