@@ -74,6 +74,7 @@ module.exports = {
     if (Number.isFinite(pollCount) && pollCount >= 2) return ctx.deny(REASONS.ANTI_POLLING);
     if (v.IDLE_AFTER_BG === 'idle') return ctx.deny(REASONS.ANTI_IDLE);
     if (v.FABRICATION_CHECK === 'fabrication') return ctx.deny(REASONS.FABRICATION);
+    if (v.QUOTE_PROVENANCE === 'quote_fabrication') return ctx.deny(REASONS.QUOTE_PROVENANCE);
     if (v.PSYCHO_STOP === 'psycho') return ctx.deny(REASONS.PSYCHO_STOP);
     if (v.ACK_SKIP === 'ack_skip') return ctx.deny(REASONS.ACK_SKIP);
     if (v.ABANDON_CHECK === 'AGENT_FOR_KB') return ctx.deny(REASONS.PLAN_ABANDONMENT);
