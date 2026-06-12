@@ -129,6 +129,57 @@ test('maybeDriftAlert fires a rate-limited LIFESAVER only when a fitted estimate
   }
 });
 
+test('REGRESSION: a FITTED calibration drops the structural floor so the estimate tracks actual (no double-counted framing)', () => {
+  // The bug: structuralFloor = serializedBytes / perTok was applied even on the
+  // fitted path, double-counting JSON framing that perTok already absorbs -> a
+  const FIT = { perTok: 3.2, toolResultPerTok: 4.0, fitted: true };
+  const PRIOR = { perTok: 3.2, toolResultPerTok: 4.0 }; // same ratios, no fitted flag
+  // Framing-heavy payload: many small blocks with ids/keys so serialized bytes
+  // substantially exceed the content-leaf bytes.
+  const msgs = [];
+  for (let i = 0; i < 200; i += 1) {
+    msgs.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: `toolu_${'a'.repeat(24)}_${i}`, content: 'y'.repeat(400) }] });
+  }
+  const payload = { model: 'm', system: '', tools: [], messages: msgs };
+
+  const fittedEst = semanticTokenEstimate(payload, CAL_ENV, FIT);
+  const priorEst = semanticTokenEstimate(payload, CAL_ENV, PRIOR);
+  // Ground truth the fit targets: content buckets / fitted ratios (framing absorbed).
+  const { _tokenCharBuckets } = require('../../proxy/context_token_estimate');
+  // contentEstimate is what a fitted regression predicts; the fitted path must equal it.
+  const contentOnly = fittedEst; // fitted path returns contentEstimate by contract
+  // The prior path keeps the conservative serialized-byte floor, so for this
+  // framing-heavy payload it must be strictly LARGER than the fitted estimate.
+  assert.ok(priorEst > fittedEst, `prior keeps structural floor (${priorEst}) > fitted content estimate (${fittedEst})`);
+  // And the fitted estimate must not carry the framing inflation: it equals the
+  // pure content estimate (re-derive with the same ratios, no floor).
+  const buckets = require('../../proxy/context_token_estimate').payloadByteBuckets(payload);
+  const expected = Math.ceil(buckets.regular / FIT.perTok + buckets.toolResult / FIT.toolResultPerTok);
+  assert.equal(contentOnly, expected, 'fitted estimate is the content estimate with framing absorbed, no structural floor');
+  void _tokenCharBuckets;
+});
+
+test('REGRESSION: cache-read contaminated samples are rejected so they cannot flip a fit', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-calib-cache-'));
+  try {
+    // Anthropic usage.input_tokens excludes cache_read_input_tokens: huge bytes,
+    // tiny actual => implied bytes/token far outside the sane [1,8] band.
+    assert.equal(
+      recordSample({ reg: 150000, tr: 43000, actual: 2057, model: 'claude-opus-4-8', env: CAL_ENV, projectRoot: dir }),
+      null,
+      'cache-contaminated sample (bytes/token ~94) rejected',
+    );
+    assert.equal(loadCalibration(dir), null, 'nothing persisted from the contaminated sample');
+    // A sane-density sample of the same model still records.
+    const ok = recordSample({ reg: 90000, tr: 30000, actual: 40000, model: 'claude-opus-4-8', env: CAL_ENV, projectRoot: dir });
+    assert.notEqual(ok, undefined);
+    const data = loadCalibration(dir);
+    assert.ok(data && data.models && data.models['claude-opus-4-8'], 'sane sample persisted');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('END-TO-END: calibration flips the swap size-gate from pass to catch a real overflow', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-calib-'));
   // gpt-5.5-xhigh window is 480000. Build a tool-result-heavy payload that the
