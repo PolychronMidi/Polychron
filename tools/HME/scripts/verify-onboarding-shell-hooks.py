@@ -39,6 +39,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 EDIT_HOOK = REPO_ROOT / "tools" / "HME" / "hooks" / "posttooluse" / "posttooluse_edit.sh"
+BASH_HOOK = REPO_ROOT / "tools" / "HME" / "hooks" / "posttooluse" / "posttooluse_bash.sh"
 STATE_REL = Path("tmp") / "hme-onboarding.state"
 
 
