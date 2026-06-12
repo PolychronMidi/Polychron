@@ -98,6 +98,38 @@ def _edit_event(root: Path, *, is_error: bool) -> dict:
     }
 
 
+def _run_bash_hook(root: Path, event: dict) -> subprocess.CompletedProcess:
+    env = dict(os.environ)
+    env["PROJECT_ROOT"] = str(root)
+    env.pop("CLAUDE_PROJECT_DIR", None)
+    return subprocess.run(
+        ["bash", str(BASH_HOOK)],
+        input=json.dumps(event),
+        capture_output=True, text=True, env=env, cwd=str(root),
+    )
+
+
+def _bash_event(command: str, exit_code: int = 0) -> dict:
+    return {
+        "tool_input": {"command": command},
+        "tool_result": {"exit_code": exit_code},
+        "tool_response": {"exit_code": exit_code},
+    }
+
+
+def _bash_case(label: str, root: Path, seed: str, event: dict, expect: str) -> bool:
+    _seed_state(root, seed)
+    proc = _run_bash_hook(root, event)
+    got = _read_state(root)
+    ok = got == expect
+    print(f"  {'PASS' if ok else 'FAIL'}: {label} (seed={seed} -> {got}, expect {expect})")
+    if not ok:
+        print(f"    hook exit={proc.returncode}")
+        if proc.stderr.strip():
+            print(f"    stderr: {proc.stderr.strip()[:300]}")
+    return ok
+
+
 def _case(label: str, root: Path, seed: str, event: dict, expect: str) -> bool:
     _seed_state(root, seed)
     proc = _run_edit_hook(root, event)
