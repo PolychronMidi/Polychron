@@ -139,6 +139,10 @@ function recordSample({ reg, tr, actual, model = '', env = process.env, projectR
   if (!_enabled(env)) return null;
   if (!Number.isFinite(reg) || !Number.isFinite(tr) || !Number.isFinite(actual)) return null;
   if (actual < MIN_ACTUAL_TOKENS || (reg + tr) <= 0) return null;
+  // Cache-read contamination guard: on Anthropic, usage.input_tokens excludes
+  // cache_read_input_tokens while the byte buckets count the FULL (cached)
+  const impliedBytesPerTok = (reg + tr) / actual;
+  if (impliedBytesPerTok < MIN_BYTES_PER_TOK || impliedBytesPerTok > MAX_BYTES_PER_TOK) return null;
   try {
     const file = calibrationPath(projectRoot);
     const data = _normalizeData(loadCalibration(projectRoot));
