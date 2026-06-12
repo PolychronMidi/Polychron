@@ -266,6 +266,31 @@ function forbiddenSpawnAttempt(cmd, root) {
 const LIFESAVER_ESCALATION_STATE = 'tools/HME/runtime/lifesaver-escalation-since.ts';
 const LIFESAVER_ESCALATION_THRESHOLD_S = 300;
 
+// Distill the actual blocking line(s) so the escalation names the root cause
+// instead of pointing the agent at a multi-thousand-line log to paginate. The
+// newest distinct precommit/autocommit/error lines are what's keeping the
+const _ESCALATION_NOISE_RE = /\b(WARN|hook latency|universal_pulse|hook-latency|\[ALERT\] LIFESAVER:)\b/;
+const _ESCALATION_SIGNAL_RE = /(pre-commit validation blocked|generated docs stale|has a shebang but is not executable|SyntaxError|no-unused-vars|invariant failed|error)/i;
+
+function _recentBlockingLines(root, max = 3) {
+  let content = '';
+  try { content = fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8'); }
+  catch (_e) { return []; /* silent-ok: no log = nothing to distill */ }
+  const lines = content.split('\n').filter(Boolean);
+  const hits = [];
+  // Walk from newest backward; keep distinct first-180-char signatures.
+  const seen = new Set();
+  for (let i = lines.length - 1; i >= 0 && hits.length < max; i--) {
+    const ln = lines[i];
+    if (_ESCALATION_NOISE_RE.test(ln) || !_ESCALATION_SIGNAL_RE.test(ln)) continue;
+    const sig = ln.slice(0, 180);
+    if (seen.has(sig)) continue;
+    seen.add(sig);
+    hits.push(ln.length > 400 ? ln.slice(0, 400) + ' ...[truncated]' : ln);
+  }
+  return hits;
+}
+
 function lifesaverEscalation(root) {
   const file = path.join(root, LIFESAVER_ESCALATION_STATE);
   let firstSeen;
@@ -274,11 +299,16 @@ function lifesaverEscalation(root) {
   if (!Number.isFinite(firstSeen) || firstSeen <= 0) return null;
   const age = Math.floor(Date.now() / 1000) - firstSeen;
   if (age < LIFESAVER_ESCALATION_THRESHOLD_S) return null;
+  const blocking = _recentBlockingLines(root);
+  const rootCauseBlock = blocking.length
+    ? `\n\nMOST RECENT BLOCKING LINE(S) (newest first -- fix these):\n  ${blocking.join('\n  ')}`
+    : '';
   return deny(
     `LIFESAVER ESCALATION (Bash blocked): agent-origin errors in log/hme-errors.log have been firing without resolution for ${age}s ` +
     `(threshold ${LIFESAVER_ESCALATION_THRESHOLD_S}s). Diagnose and fix the root cause. Bash unblocks automatically on the next ` +
     `inline-check (PostToolUse) that finds no new agent-origin errors above the watermark. To unblock fast: address the issue, ` +
-    `then run any non-bash tool (Read/Grep/Edit) so the PostToolUse handler runs and clears the streak state.`,
+    `then run any non-bash tool (Read/Grep/Edit) so the PostToolUse handler runs and clears the streak state.` +
+    rootCauseBlock,
   );
 }
 
