@@ -91,6 +91,19 @@ class AuditDetectorTests(unittest.TestCase):
         r = _run_audit(REPO_ROOT)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_ghost_state_claim_fails(self):
+        # A tight-arrow prose claim naming a non-canonical state is the exact
+        # `briefed->edited` ghost shape -- must FAIL even with advancers intact.
+        _build_tree(self.root, with_edited_advancer=True)
+        server = self.root / "tools" / "HME" / "service" / "server"
+        (server / "onboarding_chain_dispatch.py").write_text(
+            _DISPATCH + "\n# advance briefed->edited on edit\n"
+        )
+        r = _run_audit(self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("GHOST-STATE", r.stdout)
+        self.assertIn("briefed", r.stdout)
+
 
 class VerifierGateTests(unittest.TestCase):
     def _verifier(self):
