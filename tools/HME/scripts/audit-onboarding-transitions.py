@@ -195,6 +195,61 @@ def _unguarded_advancers(states: list[str]) -> list[tuple[str, int, str]]:
     return out
 
 
+def _extract_step_labels() -> "list[tuple[str, int | None, int | None]]":
+    """Parse the STEP_LABELS dict from onboarding_chain.py in source order.
+    Returns [(state, n, m), ...] where n/m are None for unnumbered labels."""
+    out = []
+    if not _CHAIN_PY.exists():
+        return out
+    try:
+        text = _CHAIN_PY.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return out
+    # Scope to the STEP_LABELS = { ... } block to avoid matching other dicts.
+    start = text.find("STEP_LABELS")
+    if start < 0:
+        return out
+    end = text.find("\n}", start)
+    block = text[start: end if end > 0 else len(text)]
+    for line in block.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        mnum = _LABEL_RE.search(line)
+        if mnum:
+            out.append((mnum.group(1), int(mnum.group(2)), int(mnum.group(3))))
+            continue
+        many = _LABEL_ANY_RE.search(line)
+        if many and many.group(1) != "STEP_LABELS":
+            out.append((many.group(1), None, None))
+    return out
+
+
+def _label_drift(states: list[str]) -> list[str]:
+    """STEP_LABELS must cover every canonical state in order; numbered labels
+    must be sequential 1..K where K = count of non-graduated states and equals
+    every label's denominator M."""
+    labels = _extract_step_labels()
+    if not labels:
+        return ["STEP_LABELS not found or unparseable in onboarding_chain.py"]
+    problems = []
+    label_states = [s for s, _, _ in labels]
+    if label_states != states:
+        problems.append(
+            f"label order/coverage mismatch:\n"
+            f"    labels: {label_states}\n"
+            f"    states: {states}"
+        )
+        return problems  # ordering is the root issue; numbering checks would be noise
+    numbered = [(s, n, m) for s, n, m in labels if n is not None]
+    expected_total = len([s for s in states if s != "graduated"])
+    for i, (s, n, m) in enumerate(numbered, start=1):
+        if n != i:
+            problems.append(f"'{s}' has step number {n}, expected {i}")
+        if m != expected_total:
+            problems.append(f"'{s}' denominator {m}, expected {expected_total}")
+    return problems
+
+
 def main() -> int:
     verbose = "--verbose" in sys.argv
     states = _load_states()
