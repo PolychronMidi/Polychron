@@ -213,6 +213,74 @@ def _parse_all(transcript_path: str | Path) -> list[dict]:
     return events
 
 
+# Shared event-list helpers (consolidated from per-detector copies). These take
+# an already-parsed events list (unlike last_assistant_event above, which takes a
+def last_assistant_event_in(events: list) -> dict | None:
+    """The most recent assistant event in an events list, or None."""
+    last = None
+    for ev in events:
+        if is_assistant(ev):
+            last = ev
+    return last
+
+
+def last_assistant_text_in(events: list) -> str:
+    """Concatenated text blocks of the most recent assistant event."""
+    last = last_assistant_event_in(events)
+    if last is None:
+        return ""
+    parts = []
+    for block in event_content(last):
+        if isinstance(block, dict) and block.get("type") == "text":
+            t = block.get("text", "")
+            if isinstance(t, str):
+                parts.append(t)
+    return "\n".join(parts)
+
+
+def last_user_text_in(events: list) -> str:
+    """Concatenated text of the most recent user event (string or block forms)."""
+    last_u = None
+    for ev in events:
+        if is_user(ev):
+            last_u = ev
+    if last_u is None:
+        return ""
+    parts = []
+    for block in event_content(last_u):
+        if isinstance(block, dict) and block.get("type") == "text":
+            t = block.get("text", "")
+            if isinstance(t, str):
+                parts.append(t)
+        elif isinstance(block, str):
+            parts.append(block)
+    msg = last_u.get("message")
+    if isinstance(msg, dict):
+        c = msg.get("content")
+        if isinstance(c, str):
+            parts.append(c)
+        elif isinstance(c, list):
+            for block in c:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    t = block.get("text", "")
+                    if isinstance(t, str):
+                        parts.append(t)
+    return "\n".join(parts)
+
+
+def last_user_idx_str_content(events: list) -> int:
+    """Index of the most recent user event whose message.content is a plain
+    string (the changed-files detectors' real-user-prompt boundary)."""
+    last = -1
+    for i, ev in enumerate(events):
+        if ev.get("type") != "user":
+            continue
+        msg = ev.get("message")
+        if isinstance(msg, dict) and isinstance(msg.get("content"), str):
+            last = i
+    return last
+
+
 def is_real_user_prompt(event: dict) -> bool:
     """True for human prompts; false for tool_result user wrappers."""
     if not is_user(event):
