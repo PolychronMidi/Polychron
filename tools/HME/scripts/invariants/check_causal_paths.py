@@ -10,7 +10,11 @@ ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[4
 CONFIG = ROOT / "tools/HME/config/causal-paths.json"
 SHORTCUTS = ROOT / "tools/HME/config/shortcuts.json"
 REQUIRED = {"intent", "lane", "allowed_emitter", "forbidden_emitters", "proof_id_shape", "negative_controls"}
+# Optional fields a row MAY carry beyond REQUIRED (host-execution provenance for
+# lanes whose final step depends on host/client behavior outside proxy control).
+OPTIONAL = {"host_execution_status", "host_execution_evidence"}
 VALID_LANES = {"wire", "local-session", "host-task-notification"}
+VALID_HOST_EXEC = {"executed", "blocked-host-side", "not-applicable"}
 
 
 def _load(path: Path) -> dict:

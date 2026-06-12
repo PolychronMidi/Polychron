@@ -23,7 +23,9 @@
       "allowed_emitter": "tools/HME/proxy/read_chain_driver.js",
       "forbidden_emitters": ["tmp/hme-cc-control.fifo", "readq!", "submit_read_queue_to_pty", "local-session [HME_READ_CHAIN] expansion"],
       "proof_id_shape": "hme_read_chain__*",
-      "negative_controls": ["task-notification queue test consumes latest-consult-read-queue.json", "retired readq shortcut is absent"]
+      "negative_controls": ["task-notification queue test consumes latest-consult-read-queue.json", "retired readq shortcut is absent"],
+      "host_execution_status": "blocked-host-side",
+      "host_execution_evidence": "Proxy emit path is verified end-to-end (read_chain_e2e.test.js 5 tests: emitter ships a well-formed Read tool_use with hme_read_chain__ id, queue is consumed). The host does NOT run a tool-execution loop on task-notification turns, so the synthetic Read tool_use is never executed/persisted into the transcript and the chain dead-ends at index 0. No proxy change can force host tool execution on a non-agentic turn; closing this requires Claude Code host/client behavior change (TODO #18)."
     }
   }
 }
