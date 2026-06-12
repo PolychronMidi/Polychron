@@ -30,7 +30,13 @@ fs.appendFileSync(path.join(root, "tmp", "hme-turn-edits.txt"), `${base}\n`);
 # Canonical machine (onboarding_states.json) has no separate briefed state;
 _EDIT_FILE=$(_safe_jq "$INPUT" '.tool_input.file_path // .tool_input.path' '')
 _EDIT_ERR=$(_safe_jq "$INPUT" '.tool_response.is_error // .tool_result.is_error // false' 'false')
-if [ "$_EDIT_ERR" != "true" ] && echo "$_EDIT_FILE" | grep -qE '/Polychron/src/' \
+# Match the project's own src/ via $PROJECT_ROOT (portable) rather than a
+# hardcoded /Polychron/ fragment, so this fires in any clone -- and so the
+case "$_EDIT_FILE" in
+  "${PROJECT_ROOT}/src/"*) _EDIT_IN_SRC=1 ;;
+  *) _EDIT_IN_SRC=0 ;;
+esac
+if [ "$_EDIT_ERR" != "true" ] && [ "$_EDIT_IN_SRC" = "1" ] \
    && ! _onb_is_graduated && [ "$(_onb_state)" = "targeted" ]; then
   _onb_advance_to edited
 fi
