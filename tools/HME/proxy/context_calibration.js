@@ -119,9 +119,9 @@ function calibratedFactors(env = process.env, projectRoot = PROJECT_ROOT, model 
   const data = _normalizeData(loadCalibration(projectRoot));
   const key = _modelKey(model);
   const perModel = key && data.models[key] && data.models[key].factors;
-  if (perModel && perModel.fitted) return { perTok: perModel.perTok, toolResultPerTok: perModel.toolResultPerTok };
+  if (perModel && perModel.fitted) return { perTok: perModel.perTok, toolResultPerTok: perModel.toolResultPerTok, fitted: true };
   if (data.global.factors && data.global.factors.fitted) {
-    return { perTok: data.global.factors.perTok, toolResultPerTok: data.global.factors.toolResultPerTok };
+    return { perTok: data.global.factors.perTok, toolResultPerTok: data.global.factors.toolResultPerTok, fitted: true };
   }
   return priors;
 }
