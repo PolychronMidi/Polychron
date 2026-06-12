@@ -127,6 +127,12 @@ def main() -> int:
         if _is_short_confirm_invitation(user_text):
             print("ok")
             return 0
+        # A turn whose only user content is a system-reminder (or other injected
+        # wrapper) carries no real prompt to answer substantively -- a minimal
+        _prompt_only = re.sub(r"<system-reminder>.*?</system-reminder>", " ", user_text, flags=re.DOTALL)
+        if not _prompt_only.strip():
+            print("ok")
+            return 0
         print("TEXT_ONLY_SHORT")
         return 0
     print("ok")
