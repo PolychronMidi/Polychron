@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _base import emit_stats as _emit_stats, load_turn, transcript_arg  # noqa: E402
 from _phrase_lists import SCOPE_ESCAPE  # noqa: E402
 from _transcript import load_full_turn_with_user  # noqa: E402
+from _transcript import last_assistant_text_in as _last_assistant_text  # noqa: E402
 
 
 # Suppress when the agent CLAIMS to have fixed the same problem in the
@@ -62,38 +63,6 @@ def _is_assistant(event: dict) -> bool:
     if event.get("type") == "assistant":
         return True
     return event.get("role") == "assistant" and bool(event.get("content"))
-
-
-def _last_assistant_text(events: list) -> str:
-    last = None
-    for ev in events:
-        if _is_assistant(ev):
-            last = ev
-    if last is None:
-        return ""
-    content = []
-    msg = last.get("message")
-    if isinstance(msg, dict):
-        maybe = msg.get("content")
-        if isinstance(maybe, list):
-            content = maybe
-    if not content:
-        maybe = last.get("content")
-        if isinstance(maybe, list):
-            content = maybe
-    parts = []
-    for block in content:
-        if isinstance(block, dict) and block.get("type") == "text":
-            t = block.get("text", "")
-            if isinstance(t, str):
-                parts.append(t)
-    return "\n".join(parts)
-
-
-_ANY_HANDOFF_MARKER = re.compile(
-    r"^\s*(?:[-**]\s+\S|\d+[.)]\s+\S|\*\*[A-Z][^*]*\*\*\s*[:\-])",
-    re.MULTILINE,
-)
 
 
 
