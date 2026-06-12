@@ -366,6 +366,7 @@ moduleLifecycle.declare({
     getAdaptiveDominanceCaps,
     getSystemPairHotspotProfile,
     applyTrustBrakes,
+    computeUniversalTrustFloor,
   };
   },
 });
