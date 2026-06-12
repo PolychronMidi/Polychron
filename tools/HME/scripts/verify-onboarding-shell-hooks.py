@@ -81,10 +81,19 @@ def _edit_event(root: Path, *, is_error: bool) -> dict:
 
 def _case(label: str, root: Path, seed: str, event: dict, expect: str) -> bool:
     _seed_state(root, seed)
-    _run_edit_hook(root, event)
+    proc = _run_edit_hook(root, event)
     got = _read_state(root)
     ok = got == expect
     print(f"  {'PASS' if ok else 'FAIL'}: {label} (seed={seed} -> {got}, expect {expect})")
+    if not ok:
+        # Self-diagnosing: dump the hook's own view so a failure is actionable
+        # without hand-running the hook (which the interactive tmp-guard blocks).
+        print(f"    hook exit={proc.returncode}")
+        print(f"    edit_file={event.get('tool_input', {}).get('file_path')}")
+        if proc.stdout.strip():
+            print(f"    stdout: {proc.stdout.strip()[:300]}")
+        if proc.stderr.strip():
+            print(f"    stderr: {proc.stderr.strip()[:300]}")
     return ok
 
 
