@@ -8,7 +8,7 @@ drive it. The docstring claimed `posttooluse_edit.sh` advanced
 notice the dead edge. Every agent making a real src/ edit got stuck.
 
 Approach: the canonical state order lives in
-`config/onboarding_states.json`. Each adjacent forward edge (state[i] ->
+`tools/HME/config/onboarding_states.json`. Each adjacent forward edge (state[i] ->
 state[i+1]) MUST have at least one advancer that lands the later state.
 Advancers come from two runtimes:
 
