@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import (  # noqa: E402
     _parse_all, event_content, is_user, iter_tool_results, iter_tool_uses,
 )
+from _transcript import last_assistant_text_in as _last_assistant_text  # noqa: E402
 
 
 def _load_current_turn(transcript_path: str) -> list:
@@ -68,22 +69,6 @@ SELF_RESOLVE_RES = (
     re.compile(r"\bnot\s+a\s+real\s+(critical|fail|failure)\b[^.\n]{0,80}\b(background|long.running|self.resolv|in.flight)\b", re.IGNORECASE),
 )
 
-
-def _last_assistant_text(events: list) -> str:
-    last = None
-    for ev in events:
-        if (ev.get("type") == "assistant"
-                or (ev.get("role") == "assistant" and ev.get("content"))):
-            last = ev
-    if last is None:
-        return ""
-    parts = []
-    for block in event_content(last):
-        if isinstance(block, dict) and block.get("type") == "text":
-            t = block.get("text", "")
-            if isinstance(t, str):
-                parts.append(t)
-    return "\n".join(parts)
 
 
 def _has_self_resolve_rationale(text: str) -> bool:

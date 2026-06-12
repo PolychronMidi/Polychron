@@ -42,6 +42,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _transcript import load_turn_events, event_content  # noqa: E402
+from _transcript import last_assistant_text_in as _last_assistant_text  # noqa: E402
 
 
 _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
@@ -96,22 +97,6 @@ _STORY_BULLETS = (
     re.compile(r"^\s*[-*]\s*how\s+it\s+went\s*:", re.IGNORECASE | re.MULTILINE),
 )
 
-
-def _last_assistant_text(events: list) -> str:
-    last = None
-    for ev in events:
-        if (ev.get("type") == "assistant"
-                or (ev.get("role") == "assistant" and ev.get("content"))):
-            last = ev
-    if last is None:
-        return ""
-    parts = []
-    for block in event_content(last):
-        if isinstance(block, dict) and block.get("type") == "text":
-            t = block.get("text", "")
-            if isinstance(t, str):
-                parts.append(t)
-    return "\n".join(parts)
 
 
 def _read_tier_and_mode() -> tuple[str | None, str | None]:
