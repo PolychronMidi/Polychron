@@ -269,19 +269,20 @@ def main() -> int:
 
     ghosts = _ghost_state_claims(set(states))
     unguarded = _unguarded_advancers(states)
+    label_problems = _label_drift(states)
 
-    if not dead and not ghosts and not unguarded:
+    if not dead and not ghosts and not unguarded and not label_problems:
         print(
             f"audit-onboarding-transitions: PASS "
             f"({len(states) - 1} forward edge(s) advancer-backed, guarded, "
-            f"no ghost-state transition claims)"
+            f"no ghost claims, step labels coherent)"
         )
         return 0
 
     print(
         f"audit-onboarding-transitions: FAIL "
         f"({len(dead)} dead transition(s), {len(ghosts)} ghost-state claim(s), "
-        f"{len(unguarded)} unguarded advancer(s))"
+        f"{len(unguarded)} unguarded advancer(s), {len(label_problems)} label-drift issue(s))"
     )
     for earlier, later in dead:
         print(f"  DEAD-EDGE: {earlier} -> {later}")
@@ -293,6 +294,8 @@ def main() -> int:
     for src, line_no, later in unguarded:
         print(f"  UNGUARDED: _onb_advance_to {later}  ({src}:{line_no})")
         print(f"    no `_onb_state == <predecessor>` guard nearby -- can skip-ahead into '{later}'")
+    for problem in label_problems:
+        print(f"  LABEL-DRIFT: {problem}")
     return 1
 
 
