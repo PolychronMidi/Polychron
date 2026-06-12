@@ -537,6 +537,9 @@ def main(argv: list[str] | None = None) -> int:
     if ok:
         files = [rel(p) for p in relevant_output_paths(manifest, out_dir)]
         write_native_read_queue(manifest, out_dir)
+        # Closest-to-intent read delivery: hand the consult's actual READ RESULTS
+        # to the live session as an ordinary prompt via the sanctioned cc-control
+        deliver_read_results_prompt(manifest, out_dir, files)
         proof_ok = prove_native_reads(manifest, out_dir, files)
         write_completion(manifest, ctx, out_dir, ok)
     rc = progress.finish(f"{manifest['round']} consultation complete" if ok else f"{manifest['round']} consultation incomplete")
