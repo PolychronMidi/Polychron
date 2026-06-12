@@ -224,15 +224,16 @@ class ConsultFromContextTests(unittest.TestCase):
             self.assertNotIn("readq", decoded)
 
     def test_deliver_read_results_survives_briefing_larger_than_pipe_buf(self):
-        # Regression: a briefing far exceeds PIPE_BUF (4096); a single
-        # non-blocking write would short-write/EAGAIN and truncate the base64,
+        # Regression with a SLOW reader that forces the real failure mode. A
+        # kernel pipe buffer is ~64KB; the briefing here is ~270KB base64. If the
         import base64 as _b64
         import os as _os
         import threading as _th
+        import time as _time
         manifest = {"round": "unit-big-deliver", "final_outputs": ["final.json"], "steps": [{"id": "final.json"}]}
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
-            marker = "ZZ_" + ("payload_" * 20000) + "_END"  # ~180KB unique content
+            marker = "ZZ_" + ("payload_" * 30000) + "_END"  # ~270KB unique content, >> pipe buffer
             (out / "final.json").write_text(json.dumps({"reply": marker}), encoding="utf-8")
             fifo = Path(td) / "tmp" / "hme-cc-control.fifo"
             fifo.parent.mkdir(parents=True, exist_ok=True)
@@ -240,24 +241,55 @@ class ConsultFromContextTests(unittest.TestCase):
             captured = {}
 
             def _reader():
-                with open(fifo, "rb") as fh:
-                    captured["data"] = fh.read()  # drain to EOF
+                # Open read-only non-blocking, then drain in small slow chunks so
+                # the kernel pipe buffer saturates and the writer must block/retry.
+                rfd = _os.open(str(fifo), _os.O_RDONLY | _os.O_NONBLOCK)
+                chunks = []
+                idle = 0
+                try:
+                    while True:
+                        try:
+                            b = _os.read(rfd, 4096)
+                        except BlockingIOError:
+                            b = b""
+                        if b:
+                            chunks.append(b)
+                            idle = 0
+                        else:
+                            idle += 1
+                            if idle > 200:  # ~2s with no new bytes => writer done
+                                break
+                        _time.sleep(0.01)  # deliberately slow drain
+                finally:
+                    _os.close(rfd)
+                captured["data"] = b"".join(chunks)
 
             t = _th.Thread(target=_reader)
             t.start()
+            _time.sleep(0.05)  # let the reader open the FIFO first
             old_root = consult_from_context.ROOT
             try:
                 consult_from_context.ROOT = Path(td)
                 ok = consult_from_context.deliver_read_results_prompt(manifest, out, [str(out / "final.json")])
             finally:
                 consult_from_context.ROOT = old_root
-            t.join(timeout=10)
+            t.join(timeout=20)
             self.assertTrue(ok)
             data = captured.get("data", b"")
+            # Reconstruct the exact wire line the function should have written and
+            # assert EVERY byte arrived -- the discriminating check the old
+            expected_prompt = (
+                f"[consult {manifest['round']} complete] Read results delivered below "
+                f"(1 file(s)). Review before reporting mesh conclusions.\n\n"
+                f"--- {out / 'final.json'} ---\n"
+                + (out / "final.json").read_text(encoding="utf-8")
+            )
+            expected_line = b"rd\t" + _b64.b64encode(expected_prompt.encode("utf-8")) + b"\n"
+            self.assertEqual(len(data), len(expected_line), "every byte of the briefing must be delivered (drain loop)")
+            self.assertEqual(data, expected_line)
             token, _, b64 = data.partition(b"\t")
             self.assertEqual(token, b"rd")
             decoded = _b64.b64decode(b64.strip()).decode("utf-8")
-            # Full content round-trips: trailing END marker present, not truncated.
             self.assertIn("_END", decoded)
             self.assertIn(marker, decoded)
 
