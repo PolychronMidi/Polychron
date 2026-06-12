@@ -127,6 +127,19 @@
       "outage_link": null
     },
     {
+      "name": "quote_provenance",
+      "module": "quote_provenance",
+      "fires_when": "quote_fabrication",
+      "bash_var": "QUOTE_PROVENANCE",
+      "deny": false,
+      "category": "security",
+      "scope": "transcript",
+      "owning_invariant": "security and evidence-backed claims",
+      "fixture_path": "tools/HME/scripts/detectors/test_quote_provenance.py",
+      "why": "Blocks attributing a delimited quote to the user that appears in no real user prompt (fabricated user quotes).",
+      "outage_link": null
+    },
+    {
       "name": "early_stop",
       "module": "early_stop",
       "fires_when": "early_stop",
