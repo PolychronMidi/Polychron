@@ -7,6 +7,11 @@ verdict so a genuine defect would be caught, per the cross-exam's explicit deman
 """
 from __future__ import annotations
 
+from pathlib import Path as _Path  # noqa: E402
+import sys as _sys  # noqa: E402
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "_lib"))
+import specenv  # noqa: E402,F401  -- env parity for bare `python3 <spec>.test.py`
+
 import math
 import sys
 import types
