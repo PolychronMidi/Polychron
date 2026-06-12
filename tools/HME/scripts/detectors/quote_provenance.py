@@ -49,9 +49,9 @@ _BANNER_PREFIXES = (
 _ATTRIB_QUOTE_RE = re.compile(
     r"\b(?:you\s+(?:said|asked(?:\s+(?:me|for))?|wrote|told\s+me|claimed|stated|"
     r"put\s+it(?:\s+as)?)|your\s+(?:words|message|request|prompt)\s*(?:was|were|:)?|"
-    r"as\s+you\s+put\s+it)\b[^\"'“‘`]{0,40}"
-    r"(?:\"([^\"]{3,200})\"|“([^”]{3,200})”|"
-    r"'([^']{3,200})'|‘([^’]{3,200})’|`([^`]{3,200})`)",
+    r"as\s+you\s+put\s+it)\b[^\"'\u201c\u2018`]{0,40}"
+    r"(?:\"([^\"]{3,200})\"|\u201c([^\u201d]{3,200})\u201d|"
+    r"'([^']{3,200})'|\u2018([^\u2019]{3,200})\u2019|`([^`]{3,200})`)",
     re.IGNORECASE,
 )
 
@@ -60,8 +60,8 @@ def _norm(text: str) -> str:
     """Fold to a comparable form: lowercase, unify quotes/apostrophes, collapse
     to alphanumerics only (drops whitespace, punctuation, contraction marks)."""
     s = (text or "").lower()
-    s = s.replace("’", "'").replace("‘", "'")
-    s = s.replace("“", '"').replace("”", '"')
+    s = s.replace("\u2019", "'").replace("\u2018", "'")
+    s = s.replace("\u201c", '"').replace("\u201d", '"')
     return re.sub(r"[^a-z0-9]+", "", s)
 
 
