@@ -29,6 +29,7 @@ function readVerdicts() {
     ACK_SKIP: 'ok',
     ABANDON_CHECK: 'ok',
     FABRICATION_CHECK: 'ok',
+    QUOTE_PROVENANCE: 'ok',
     EARLY_STOP: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return verdicts;
