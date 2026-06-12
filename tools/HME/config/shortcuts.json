@@ -34,6 +34,11 @@
       "mode": "prefix",
       "steps": ["/compact", "$prompt"],
       "description": "Dynamic compact shortcut. A prompt like c&continue compacts the live Claude Code session, then types the text after c& as the next live prompt. The c& prefix is local-session only and never becomes an API message."
+    },
+    "rd": {
+      "lane": "local-session",
+      "steps": ["$prompt"],
+      "description": "Read-results delivery lane. After a mesh consult finishes, teams/rounds/consult_from_context.py deliver_read_results_prompt writes token 'rd' plus the base64 of the consult's actual READ RESULTS (real file content) to tmp/hme-cc-control.fifo; the PTY bridge replays that content as one ordinary user prompt into the live session. This delivers fetched file BYTES the session can reason about -- NOT a [HME_READ_CHAIN] control token or proof marker (those remain retired). $prompt carries the result briefing verbatim."
     }
   }
 }
