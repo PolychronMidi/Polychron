@@ -47,6 +47,9 @@ def _make_isolated_root() -> Path:
     (root / "src").mkdir()
     (root / "tmp").mkdir()
     (root / ".git").mkdir()
+    # The hooks source sibling helpers via `$PROJECT_ROOT/tools/HME/...`, so the
+    # sandbox needs the real tools/ tree. Symlink it: code resolves to the real
+    os.symlink(REPO_ROOT / "tools", root / "tools")
     metrics = root / "src" / "output" / "metrics"
     metrics.mkdir(parents=True)
     # The bootstrap runs under `set -u` and reads many HME_* knobs (HME_METRICS_DIR,
