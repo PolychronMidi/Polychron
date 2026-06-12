@@ -41,7 +41,9 @@ STATE_REL = Path("tmp") / "hme-onboarding.state"
 
 
 def _make_isolated_root() -> Path:
-    root = Path(tempfile.mkdtemp(prefix="hme-onb-shell-"))
+    # realpath: project_root.sh canonicalizes via `cd && pwd`, so /tmp symlinks
+    # (e.g. -> /private/tmp) would make the hook's resolved PROJECT_ROOT differ
+    root = Path(os.path.realpath(tempfile.mkdtemp(prefix="hme-onb-shell-")))
     (root / "src").mkdir()
     (root / "tmp").mkdir()
     (root / ".git").mkdir()
