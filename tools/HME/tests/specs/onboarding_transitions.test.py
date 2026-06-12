@@ -125,6 +125,21 @@ class AuditDetectorTests(unittest.TestCase):
         self.assertIn("UNGUARDED", r.stdout)
         self.assertIn("edited", r.stdout)
 
+    def test_advancer_in_non_dispatch_server_module_is_discovered(self):
+        # The python-side blind spot: an advancer living in a server module
+        # OTHER than onboarding_chain_dispatch.py (e.g. _helpers) must still be
+        _build_tree(self.root, with_edited_advancer=True)
+        server = self.root / "tools" / "HME" / "service" / "server"
+        # dispatch lands only selftest_ok; helpers lands targeted.
+        (server / "onboarding_chain_dispatch.py").write_text(
+            'def _advance():\n    set_state("selftest_ok")\n'
+        )
+        (server / "onboarding_chain_helpers.py").write_text(
+            'def _boot():\n    set_state("targeted")\n'
+        )
+        r = _run_audit(self.root)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
 
 class VerifierGateTests(unittest.TestCase):
     def _verifier(self):
