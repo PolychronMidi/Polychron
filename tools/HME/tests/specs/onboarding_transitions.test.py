@@ -114,6 +114,17 @@ class AuditDetectorTests(unittest.TestCase):
         self.assertIn("GHOST-STATE", r.stdout)
         self.assertIn("briefed", r.stdout)
 
+    def test_unguarded_advancer_fails(self):
+        # An advancer with no `_onb_state == <predecessor>` guard can skip-ahead
+        # into the later state -- the piped->verified bug shape. Must FAIL even
+        _build_tree(self.root, with_edited_advancer=True)
+        hooks = self.root / "tools" / "HME" / "hooks" / "posttooluse"
+        (hooks / "posttooluse_edit.sh").write_text(_HOOK_UNGUARDED)
+        r = _run_audit(self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("UNGUARDED", r.stdout)
+        self.assertIn("edited", r.stdout)
+
 
 class VerifierGateTests(unittest.TestCase):
     def _verifier(self):
