@@ -233,7 +233,10 @@ class ConsultFromContextTests(unittest.TestCase):
         manifest = {"round": "unit-big-deliver", "final_outputs": ["final.json"], "steps": [{"id": "final.json"}]}
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
-            marker = "ZZ_" + ("payload_" * 30000) + "_END"  # ~270KB unique content, >> pipe buffer
+            # Sized to force the failure mode WITHOUT hitting the function's
+            # 200_000-byte content cap: ~120KB body >> the ~64KB kernel pipe
+            # buffer (so a single write must block/retry) but < cap (so no
+            marker = "ZZ_" + ("payload_" * 15000) + "_END"  # ~120KB unique content
             (out / "final.json").write_text(json.dumps({"reply": marker}), encoding="utf-8")
             fifo = Path(td) / "tmp" / "hme-cc-control.fifo"
             fifo.parent.mkdir(parents=True, exist_ok=True)
