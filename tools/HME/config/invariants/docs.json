@@ -56,6 +56,19 @@
       "severity": "error"
     },
     {
+      "id": "generated-docs-fresh",
+      "description": "Generated sections of docs maintained by doc/infra must match live data. doc/infra/update.py --check exits nonzero and prints '<file> generated section is stale' when a generated block (e.g. the self-coherence-full.md model/provider summary) drifts from source. Previously only doc_infra.test.py caught this, and no runner executes Python specs -- so generated-doc drift was invisible to the battery.",
+      "type": "shell_output_empty",
+      "shell": "python3 doc/infra/update.py --check 2>&1",
+      "severity": "error",
+      "finding_label": "stale generated doc",
+      "success_detail": "generated docs current",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true
+    },
+    {
       "id": "antagonism-registry-covers-observed-pairs",
       "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted.",
       "type": "shell_output_empty",
