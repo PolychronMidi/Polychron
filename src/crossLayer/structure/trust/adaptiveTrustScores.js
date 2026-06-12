@@ -143,16 +143,8 @@ moduleLifecycle.declare({
       }
     }
     // trust ecosystem looks like, eliminating per-module floor additions.
-    if (scoreBySystem.size > 2) {
-      const adaptiveTrustScoresScores = [];
-      for (const s of scoreBySystem.values()) adaptiveTrustScoresScores.push(s.score);
-      const adaptiveTrustScoresMean = adaptiveTrustScoresScores.reduce((a, b) => a + b, 0) / adaptiveTrustScoresScores.length;
-      const adaptiveTrustScoresVariance = adaptiveTrustScoresScores.reduce((a, b) => a + (b - adaptiveTrustScoresMean) * (b - adaptiveTrustScoresMean), 0) / adaptiveTrustScoresScores.length;
-      const adaptiveTrustScoresStddev = m.sqrt(adaptiveTrustScoresVariance);
-      const adaptiveTrustScoresCoeff = clamp(0.30 + adaptiveTrustScoresStddev * 1.8, 0.30, 0.60);
-      const adaptiveTrustScoresUniversalFloor = m.max(0.05, adaptiveTrustScoresMean * adaptiveTrustScoresCoeff);
-      if (state.score < adaptiveTrustScoresUniversalFloor) state.score = adaptiveTrustScoresUniversalFloor;
-    }
+    const adaptiveTrustScoresUniversalFloor = adaptiveTrustScoresHelpers.computeUniversalTrustFloor(scoreBySystem);
+    if (state.score < adaptiveTrustScoresUniversalFloor) state.score = adaptiveTrustScoresUniversalFloor;
     const adaptiveCaps = getAdaptiveDominanceCaps(systemName, state.score);
     if (state.score > adaptiveCaps.scoreCeiling) {
       state.score = adaptiveCaps.scoreCeiling;
