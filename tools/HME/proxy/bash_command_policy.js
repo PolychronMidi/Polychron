@@ -44,6 +44,31 @@ function setCommandInput(input, command) {
   return input;
 }
 
+// Detect a Bash command that WRITES to a file (sed -i, > / >> redirect, tee, mv
+// destination). Returns the first repo-relative write target, or null. Used by
+function controlPlaneWriteTarget(cmd, root = PROJECT_ROOT) {
+  const text = String(cmd || '');
+  const tokens = shellWords(text);
+  const candidates = [];
+  // sed -i <... file>
+  const sedIdx = tokens.findIndex((t) => path.basename(t) === 'sed');
+  if (sedIdx >= 0 && tokens.slice(sedIdx + 1).some((t) => t === '-i' || t.startsWith('-i'))) {
+    for (const t of tokens.slice(sedIdx + 1)) if (!t.startsWith('-') && /[/.]/.test(t)) candidates.push(t);
+  }
+  // tee <file>, mv <src> <dest>
+  for (const verb of ['tee', 'mv']) {
+    const vi = tokens.findIndex((t) => path.basename(t) === verb);
+    if (vi >= 0) for (const t of tokens.slice(vi + 1)) if (!t.startsWith('-') && /[/.]/.test(t)) candidates.push(t);
+  }
+  // > file / >> file redirect targets
+  for (const m of text.matchAll(/>>?\s*([^\s|&;<>]+)/g)) candidates.push(m[1]);
+  for (const c of candidates) {
+    const rel = normalizeRel(c, root);
+    if (rel && !rel.startsWith('/') && !path.isAbsolute(rel)) return rel;
+  }
+  return null;
+}
+
 function readGuardsConfig(root = PROJECT_ROOT) {
   try { return JSON.parse(fs.readFileSync(path.join(root, 'tools/HME/config/context-guards.json'), 'utf8')); }
   catch (_e) { return null; }
