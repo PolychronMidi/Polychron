@@ -35,7 +35,17 @@ _DISPATCH = '''def _advance():
     set_state("targeted")
 '''
 
+# Guarded advancer: predecessor of `edited` is `targeted`, so a correct
+# advancer checks `_onb_state == targeted` before advancing (forward-only is
+# not enough -- the guard is what blocks skip-ahead).
 _HOOK_FULL = '''#!/usr/bin/env bash
+if [ "$(_onb_state)" = "targeted" ]; then
+  _onb_advance_to edited
+fi
+'''
+
+# Same advancer with the predecessor guard stripped -- the skip-ahead shape.
+_HOOK_UNGUARDED = '''#!/usr/bin/env bash
 _onb_advance_to edited
 '''
 
