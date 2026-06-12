@@ -95,6 +95,9 @@ function semanticTokenEstimate(payload, env = process.env, factors = null) {
   const { perTok, toolResultPerTok } = resolveFactors(env, factors);
   const buckets = payloadByteBuckets(payload);
   const contentEstimate = Math.ceil((buckets.regular / perTok) + (buckets.toolResult / toolResultPerTok));
+  // A FITTED calibration already maps content bytes -> actual tokens with framing
+  // overhead absorbed into perTok. Adding the serialized-byte structural floor on
+  if (factors && factors.fitted) return contentEstimate;
   // Conservative floor: the content-only walk skips JSON structural framing
   // (keys, braces, tool_use ids, type tags) that real tokenizers DO count.
   const structuralFloor = Math.ceil(_serializedBytesNoSignatures(payload) / perTok);
