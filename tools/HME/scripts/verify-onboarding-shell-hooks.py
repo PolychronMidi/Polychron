@@ -21,6 +21,9 @@ Cases:
   2. posttooluse_edit.sh: state=selftest_ok + src/ edit          -> unchanged
      (guard holds: only advances from the exact predecessor)
   3. posttooluse_edit.sh: state=targeted + FAILED edit (is_error) -> unchanged
+  4. posttooluse_bash.sh: state=reviewed + `npm run main`        -> piped
+  5. posttooluse_bash.sh: state=targeted + `npm run main`        -> unchanged
+     (guard holds: reviewed->piped only fires from the exact predecessor)
 
 Exit codes:
   0 -- all cases pass
