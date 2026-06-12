@@ -186,6 +186,56 @@ class ConsultFromContextTests(unittest.TestCase):
         self.assertFalse(proof["verified"])
         self.assertIn(str(Path(required[1])), [str(Path(m)) for m in proof["missing"]])
 
+    def test_deliver_read_results_writes_real_content_to_fifo_not_a_control_marker(self):
+        import base64 as _b64
+        import os as _os
+        import threading as _th
+        manifest = {"round": "unit-read-deliver", "final_outputs": ["final.json"], "steps": [{"id": "final.json"}]}
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            result_file = out / "final.json"
+            result_file.write_text(json.dumps({"reply": "RED_FINDING_42"}), encoding="utf-8")
+            fifo = Path(td) / "tmp" / "hme-cc-control.fifo"
+            fifo.parent.mkdir(parents=True, exist_ok=True)
+            _os.mkfifo(str(fifo))
+            captured = {}
+
+            def _reader():
+                with open(fifo, "rb") as fh:
+                    captured["line"] = fh.readline()
+
+            t = _th.Thread(target=_reader)
+            t.start()
+            old_root = consult_from_context.ROOT
+            try:
+                consult_from_context.ROOT = Path(td)
+                ok = consult_from_context.deliver_read_results_prompt(manifest, out, [str(result_file)])
+            finally:
+                consult_from_context.ROOT = old_root
+            t.join(timeout=5)
+            self.assertTrue(ok)
+            line = captured.get("line", b"")
+            token, _, b64 = line.partition(b"\t")
+            self.assertEqual(token, b"rd")
+            decoded = _b64.b64decode(b64.strip()).decode("utf-8")
+            # Delivers REAL read-result content, never a retired control marker.
+            self.assertIn("RED_FINDING_42", decoded)
+            self.assertNotIn("HME_READ_CHAIN", decoded)
+            self.assertNotIn("readq", decoded)
+
+    def test_deliver_read_results_returns_false_without_bridge(self):
+        manifest = {"round": "unit-no-bridge", "final_outputs": ["final.json"], "steps": [{"id": "final.json"}]}
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            (out / "final.json").write_text(json.dumps({"reply": "x"}), encoding="utf-8")
+            old_root = consult_from_context.ROOT
+            try:
+                consult_from_context.ROOT = Path(td)  # no tmp/hme-cc-control.fifo exists
+                ok = consult_from_context.deliver_read_results_prompt(manifest, out, [str(out / "final.json")])
+            finally:
+                consult_from_context.ROOT = old_root
+            self.assertFalse(ok)
+
     def test_runtime_consult_scripts_are_thin_wrappers(self):
         for script in (ROOT / "teams/runtime").glob("*consult.sh"):
             text = script.read_text(encoding="utf-8")
