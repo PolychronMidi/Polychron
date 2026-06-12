@@ -12,6 +12,16 @@ this file is implemented until the user marks it approved.
 
 ## Standing constraints
 
+## Phase 15 (done) -- Project boundary map + hot/cold path minimalism
+
+Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
+phase-evidence verification can bind plan claims to machine-readable artifacts.
+
+## Phase 16 (done) -- Phase-inference firewall
+
+Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
+phase-evidence verification can bind plan claims to machine-readable artifacts.
+
 ## Phase F2 (approved) -- Quote-provenance fabrication guard
 
 Source: mesh round `fabrication-guard-consult` (red/blue/purple, final synth).
