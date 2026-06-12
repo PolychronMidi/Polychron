@@ -50,10 +50,17 @@ function controlPlaneWriteTarget(cmd, root = PROJECT_ROOT) {
   const text = String(cmd || '');
   const tokens = shellWords(text);
   const candidates = [];
-  // sed -i <... file>
+  // sed -i <script> <file...> : skip flags AND the first positional (the script
+  // expression, e.g. s/a/b/) unless an -e/-f program flag supplied it instead.
   const sedIdx = tokens.findIndex((t) => path.basename(t) === 'sed');
   if (sedIdx >= 0 && tokens.slice(sedIdx + 1).some((t) => t === '-i' || t.startsWith('-i'))) {
-    for (const t of tokens.slice(sedIdx + 1)) if (!t.startsWith('-') && /[/.]/.test(t)) candidates.push(t);
+    let positional = 0; let programFlag = false;
+    for (const t of tokens.slice(sedIdx + 1)) {
+      if (t.startsWith('-')) { if (t === '-e' || t === '-f') programFlag = true; continue; }
+      positional += 1;
+      if (positional === 1 && !programFlag) continue; // the script expression, not a file
+      if (/[/.]/.test(t)) candidates.push(t);
+    }
   }
   // tee <file>, mv <src> <dest>
   for (const verb of ['tee', 'mv']) {
