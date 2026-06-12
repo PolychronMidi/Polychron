@@ -171,6 +171,14 @@ def main() -> int:
                 "failed edit does not advance",
                 root, "targeted", _edit_event(root, is_error=True), "targeted",
             ),
+            _bash_case(
+                "reviewed + npm run main advances to piped",
+                root, "reviewed", _bash_event("npm run main"), "piped",
+            ),
+            _bash_case(
+                "wrong predecessor (targeted) + npm run main does not advance",
+                root, "targeted", _bash_event("npm run main"), "targeted",
+            ),
         ]
     finally:
         shutil.rmtree(root, ignore_errors=True)
