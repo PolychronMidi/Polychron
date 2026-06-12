@@ -321,43 +321,49 @@ test('universal pulse does not watch obsolete hme-doctor heartbeat', () => {
 });
 
 
-test('governance-audit gate is fail-open and records writes to review-owned surfaces', () => {
+test('governance gate audits all owned writes and fail-closes only on definite pending', () => {
   const { surfaceForPath } = require('../../proxy/governance_status');
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-gov-audit-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-gov-gate-'));
   try {
-    // Minimal live-signal fixture: one brief owning one evidence path, empty ledger.
+    // Minimal live-signal fixture: one brief owning one evidence path.
     fs.mkdirSync(path.join(tmp, 'teams/rounds'), { recursive: true });
     fs.mkdirSync(path.join(tmp, 'teams/runtime'), { recursive: true });
     fs.writeFileSync(path.join(tmp, 'teams/rounds/review-briefs.json'), JSON.stringify({
       briefs: { 'ask-peer': { evidence: ['tools/HME/scripts/ask-peer.sh'] } },
     }));
-    fs.writeFileSync(path.join(tmp, 'teams/runtime/round-progress.jsonl'), '');
+    const ledger = path.join(tmp, 'teams/runtime/round-progress.jsonl');
+    const auditPath = path.join(tmp, 'tools/HME/runtime/governance-audit.jsonl');
+    const writeOwned = () => evaluateBashInput({ command: 'sed -i s/a/b/ tools/HME/scripts/ask-peer.sh' }, { projectRoot: tmp });
     assert.equal(surfaceForPath('tools/HME/scripts/ask-peer.sh', tmp), 'ask-peer');
 
-    // Write to an owned surface -> ALLOW (never denies) + one audit row, status pending.
-    const owned = evaluateBashInput({ command: 'sed -i s/a/b/ tools/HME/scripts/ask-peer.sh' }, { projectRoot: tmp });
-    assert.equal(owned.decision, 'allow');
-    const auditPath = path.join(tmp, 'tools/HME/runtime/governance-audit.jsonl');
-    const rows = fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].surface, 'ask-peer');
-    assert.equal(rows[0].status, 'pending');
-    assert.equal(rows[0].override, false);
+    // 1. Ledger present but no completed round -> status pending -> FAIL-CLOSED deny + a
+    fs.writeFileSync(ledger, '');
+    const pending = writeOwned();
+    assert.equal(pending.decision, 'deny');
+    assert.match(pending.reason, /GOVERNANCE GATE/);
+    assert.match(pending.reason, /ask-peer/);
+    let rows = fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    assert.equal(rows[rows.length - 1].status, 'pending');
 
-    // Write to an UNOWNED path -> allow + NO new audit row.
+    // 2. Override prefix -> allow even when pending, row flagged override:true.
+    const ov = evaluateBashInput({ command: 'HME_GOVERNANCE_GATE_OK=1 sed -i s/a/b/ tools/HME/scripts/ask-peer.sh' }, { projectRoot: tmp });
+    assert.equal(ov.decision, 'allow');
+    rows = fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    assert.equal(rows[rows.length - 1].override, true);
+
+    // 3. A completed review round for the surface -> status reviewed -> FAIL-OPEN allow.
+    fs.writeFileSync(ledger, JSON.stringify({ round: 'ask-peer-review', step: 'round', status: 'done' }) + '\n');
+    assert.equal(writeOwned().decision, 'allow');
+
+    // 4. Absent/unreadable ledger -> status unknown -> FAIL-OPEN allow (never wedges the
+    fs.rmSync(ledger, { force: true });
+    assert.equal(writeOwned().decision, 'allow');
+
+    // 5. Unowned path -> not gated, no audit row added.
+    const before = fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).length;
     const unowned = evaluateBashInput({ command: 'echo x > tools/HME/runtime/scratch.txt' }, { projectRoot: tmp });
     assert.equal(unowned.decision, 'allow');
-    assert.equal(fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).length, 1);
-
-    // Override marker -> row flagged override:true.
-    process.env.HME_GOVERNANCE_GATE_OK = '1';
-    try {
-      const ov = evaluateBashInput({ command: 'sed -i s/a/b/ tools/HME/scripts/ask-peer.sh' }, { projectRoot: tmp });
-      assert.equal(ov.decision, 'allow');
-    } finally { delete process.env.HME_GOVERNANCE_GATE_OK; }
-    const after = fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
-    assert.equal(after.length, 2);
-    assert.equal(after[1].override, true);
+    assert.equal(fs.readFileSync(auditPath, 'utf8').trim().split('\n').filter(Boolean).length, before);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
