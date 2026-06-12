@@ -245,7 +245,7 @@ function forbiddenSpawnAttempt(cmd, root) {
   // Sanctioned rewrite (mirrors statusRewrite's curl->canonical mapping): if the
   // spawn payload's inner command is a direct PROJECT_ROOT script run, route TO
   const direct = directRunFromSpawnPayload(cmd);
-  if (direct) return null;
+  if (direct) return { rewrite: direct };
   const file = path.join(root, FORBIDDEN_SPAWN_ATTEMPT_STATE);
   const now = Date.now();
   let state = { count: 0, first_seen_ms: now, last_seen_ms: 0 };
