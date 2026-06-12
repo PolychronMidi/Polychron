@@ -47,9 +47,9 @@ Tool-handler wiring (@chained decorator):
   output prepended to result. chain_exit advances state, appends status line.
 
 Gate hooks (external tools the chain decider can't reach from Python):
-  pretooluse_edit.sh   block Edit on /src/ when state earlier than briefed
+  pretooluse_edit.sh   auto-brief on /src/ Edit (no state gate before targeted)
   pretooluse_bash.sh   block npm-run-main when state earlier than reviewed
-  posttooluse_edit.sh  advance briefed->edited on src/ Edit success
+  posttooluse_edit.sh  advance targeted->edited on src/ Edit success
   posttooluse_bash.sh  advance reviewed->piped on npm launch; piped->verified
                        on STABLE/EVOLVED verdict
 
