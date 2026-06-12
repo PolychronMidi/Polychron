@@ -482,6 +482,41 @@ def full_repo_content_check() -> None:
             validate_path_content(path, mode, data, staged=True)
 
 
+def generated_docs_fresh_check() -> None:
+    """Fail the commit when a doc/infra generated section drifted from live
+    data. Cheap (one --check pass); previously only doc_infra.test.py caught
+    this and no runner executes Python specs."""
+    update = ROOT / "doc" / "infra" / "update.py"
+    if not update.is_file():
+        return
+    r = subprocess.run(
+        [sys.executable, str(update), "--check"],
+        cwd=str(ROOT), capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        detail = (r.stdout + r.stderr).strip().splitlines()
+        failures.append("generated docs stale: " + (detail[0] if detail else "doc/infra/update.py --check failed"))
+
+
+def python_spec_leg_check() -> None:
+    """Run the Python-spec leg (tools/HME/tests/run_py.py). Python specs have no
+    other runner -- run.js is JS-only -- so without this a Python regression can
+    land green. Gated to the full-sweep cadence (daily) since it spawns ~51
+    isolated specs; HME_PRECOMMIT_SKIP_PY=1 opts a single commit out."""
+    if os.environ.get("HME_PRECOMMIT_SKIP_PY") == "1":
+        return
+    runner = ROOT / "tools" / "HME" / "tests" / "run_py.py"
+    if not runner.is_file():
+        return
+    r = subprocess.run(
+        [sys.executable, str(runner)],
+        cwd=str(ROOT), capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        tail = (r.stdout + r.stderr).strip().splitlines()[-6:]
+        failures.append("python spec leg failed: " + " | ".join(tail[-3:]) if tail else "python spec leg failed")
+
+
 _FULL_SWEEP_STAMP = ROOT / "tools" / "HME" / "runtime" / "precommit-full-sweep.ts"
 _FULL_SWEEP_INTERVAL_SEC = 86400
 
