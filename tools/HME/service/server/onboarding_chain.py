@@ -135,7 +135,7 @@ STATES = _load_states()
 STEP_LABELS = {
     "boot":        f"1/7 boot check (run {_action_form('selftest')})",
     "selftest_ok": f"2/7 pick evolution target (run {_i_form('evolve', primer=True)})",
-    "targeted":    "3/7 edit target module (Edit tool -- briefing auto-chains)",
+    "targeted":    "3/7 edit target module (Edit any src/ file -- auto-advances on save)",
     "edited":      f"4/7 audit changes (run {_i_form('review', primer=True)})",
     "reviewed":    "5/7 run pipeline (Bash: npm run main)",
     "piped":       "6/7 await verdict (hooks advance automatically)",
