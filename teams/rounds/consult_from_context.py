@@ -438,16 +438,30 @@ def deliver_read_results_prompt(manifest: dict[str, Any], out_dir: Path, files: 
             return False
         raise
     try:
-        os.write(fd, line)
-    except OSError as exc:
-        if exc.errno == errno.EPIPE:
-            return False
-        raise
+        # The briefing far exceeds PIPE_BUF (4096), so a single non-blocking
+        # write can short-write or raise EAGAIN, truncating the base64 and
+        mv = memoryview(line)
+        sent = 0
+        deadline = time.time() + 30
+        while sent < len(mv):
+            try:
+                n = os.write(fd, mv[sent:])
+                sent += n
+            except OSError as exc:
+                if exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                    if time.time() > deadline:
+                        print("READ_RESULTS_TIMEOUT bridge not draining FIFO", flush=True)
+                        return False
+                    time.sleep(0.01)
+                    continue
+                if exc.errno == errno.EPIPE:
+                    return False  # reader vanished mid-write
+                raise
     finally:
         try:
             os.close(fd)
         except OSError:
-            pass  # silent-ok: pending review
+            pass  # silent-ok: pending review  # silent-ok: pending review
     print(f"READ_RESULTS_DELIVERED round={manifest['round']} files={len(files)} bytes={len(prompt)}", flush=True)
     return True
 
