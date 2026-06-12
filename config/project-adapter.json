@@ -1,0 +1,45 @@
+{
+  "project_id": "polychron",
+  "project_name": "Polychron",
+  "domain": "algorithmic-composition",
+  "source_roots": [
+    "src"
+  ],
+  "project_docs": [
+    "doc/composition.md",
+    "doc/composition-full.md"
+  ],
+  "primary_doc": "doc/composition.md",
+  "pipeline": {
+    "main": "npm run main",
+    "lint": "npm run lint",
+    "typecheck": "npm run tc",
+    "test": "npm test"
+  },
+  "artifacts": {
+    "output_dir": "src/output",
+    "metrics_dir": "src/output/metrics",
+    "pipeline_summary": "src/output/metrics/pipeline-summary.json",
+    "trace": "src/output/metrics/trace.jsonl",
+    "run_history": "src/output/metrics/run-history",
+    "current_run": "src/output/metrics/current-run.json"
+  },
+  "optional_artifacts": [
+    "src/output/metrics/feedback_graph.json",
+    "src/output/metrics/perceptual-report.json",
+    "src/output/metrics/snapshots/baseline"
+  ],
+  "capabilities": {
+    "pipeline_summary": true,
+    "trace": true,
+    "run_history": true,
+    "structured_events": true,
+    "audio_render": true,
+    "perceptual_analysis": true,
+    "feedback_graph": true
+  },
+  "health": {
+    "success_summary_field": "failed",
+    "success_value": 0
+  }
+}

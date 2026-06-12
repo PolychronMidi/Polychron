@@ -1,0 +1,180 @@
+{
+  "_comment": "proxy invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "proxy-fail-scan-exists",
+      "description": "FAIL-scan middleware must exist in the proxy (moved from log-tool-call.sh after the MCP decoupling -- log-tool-call.sh itself is now a stub)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/middleware/19_mcp_fail_scan.js",
+      "patterns": [
+        "FAIL",
+        "hme-errors\\.log"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "event-kernel-subprocesses-use-fs-ipc",
+      "description": "Event-kernel and Stop-chain subprocess boundaries must use filesystem IPC rather than live stdin pipes, so hook portability does not depend on a specific agent CLI or Node spawn input semantics.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py event-kernel-subprocesses-use-fs-ipc",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "no-foreign-proc-fd-poke",
+      "description": "No HME/teams/src source may reach into another process's /proc/<pid>/fd table or acquire a /dev/ptmx master fd to write into a foreign process. Cross-process control must use the sanctioned filesystem IPC (tmp/hme-cc-control.fifo) or the in-band read_chain, never raw fd injection -- which escapes the project-root work boundary by poking a foreign session's PTY and is invisible to every path guard.",
+      "born_from": "2026-06-09 consult PTY foreign-fd-poke subversion (work leaking outside ROOT into another worktree's bridge)",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-foreign-proc-fd-poke",
+      "severity": "error",
+      "finding_label": "foreign-fd-poke finding",
+      "success_detail": "no foreign /proc fd poking",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
+      "id": "no-retired-consult-readchain-routes",
+      "description": "Retired consult/read-chain control paths must not re-enter source or config: no FIFO/readq live input typing, no submit_read_queue_to_pty helper, no HME_CONSULT_READQ bridge prompt, and no local-session [HME_READ_CHAIN] $prompt bridge expansion. The only accepted consult read path is host task-notification -> proxy read_chain_driver -> native Read tool_use with hme_read_chain__ id.",
+      "born_from": "2026-06-10 input-field spam regression: consult proof typed [HME_READ_CHAIN] into the live REPL via readq/FIFO instead of letting proxy read_chain emit native Read tool_use blocks",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-retired-consult-readchain-routes",
+      "severity": "error",
+      "finding_label": "retired consult/read-chain route finding",
+      "success_detail": "no retired consult/read-chain control routes",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
+      "id": "causal-paths-valid",
+      "description": "Shortcut and proxy route causal paths must declare intent, lane, allowed emitter, forbidden emitters, proof ID shape, and negative controls. Wire shortcuts must not become local-session input, and local-session shortcuts must not become API payloads.",
+      "born_from": "2026-06-10 Phase Omega workstream 3: shortcut/route strings must become typed causal transitions with forbidden-path checks",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_causal_paths.py",
+      "severity": "error",
+      "finding_label": "causal path finding",
+      "success_detail": "causal path metadata valid",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
+      "id": "source-grep-rules-fully-enforced",
+      "description": "Every rule key defined in check_source_grep_invariant.py RULES must be referenced by an invariant shard, and every shard reference must name a real RULES key. Closes the recurring seam where a guard exists but observes nothing (orphan rule, silently inert ban) or a reference points at a guard that does not exist (dangling ref, enforces nothing). This is the meta-guard: it watches the watchers for the letter/intent gap.",
+      "born_from": "2026-06-09 recursive-seam lesson: letter observed != intent meant; bans must actually run",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_bijection.py",
+      "severity": "error",
+      "finding_label": "source-grep bijection finding",
+      "success_detail": "every RULES key enforced; every shard reference resolves",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
+      "id": "hme-py-no-fallback-infra-imports",
+      "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/service",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback. Silent ImportError swallowed behind `os.environ.get(...)` fallback hid the synthesis_proxy_route ENV bug for weeks. Infrastructure imports must fail loud at module load time."
+    },
+
+    {
+      "id": "overdrive-no-stale-mode6",
+      "description": "Active source must not retain stale OVERDRIVE_MODE=6 gates or helper names after mode 1 became canonical.",
+      "born_from": "2026-05-16 overdrive mode 6 retirement to canonical mode 1",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py overdrive-no-stale-mode6",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no stale mode-6 source findings",
+      "allow_exit_codes": [0],
+      "capture_stderr": true
+    },
+    {
+      "id": "hme-proxy-exists",
+      "description": "Phase 2 (inference proxy)  hme_proxy.js must exist so ANTHROPIC_BASE_URL routing is available",
+      "type": "file_exists",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "severity": "error"
+    },
+    {
+      "id": "hme-proxy-syntactic-node",
+      "description": "hme_proxy.js must parse as valid Node so starting the daemon never fails at syntax level",
+      "type": "shell_output_empty",
+      "shell": "node --check tools/HME/proxy/hme_proxy.js",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "proxy-jurisdiction-injection-wired",
+      "description": "Phase 2.1 jurisdiction injection must be wired in the proxy (distributed across hme_proxy.js / context.js / messages.js after the middleware refactor)",
+      "type": "pattern_in_file",
+      "path": "tools/HME/proxy/context.js",
+      "pattern": "bias-bounds-manifest|buildJurisdictionContext",
+      "severity": "error"
+    },
+    {
+      "id": "proxy-extended-injections",
+      "description": "Proxy must inject open hypotheses and semantic drift warnings alongside jurisdiction context (Phase 3.1/3.3 -- moved to context.js during the middleware split)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/context_jurisdiction.js",
+      "patterns": [
+        "loadOpenHypothesesMap",
+        "loadDriftMap",
+        "Open hypotheses"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "versions-single-source",
+      "description": "All three wire-version components (cli/proxy/worker) must read from tools/HME/config/versions.json  not hardcoded strings. Protects the three-way version check from typo-drift.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/scripts/hme-cli.js",
+      "patterns": [
+        "versions.json",
+        "CLI_VERSION"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "versions-file-exists",
+      "description": "tools/HME/config/versions.json is the single source of truth for cli/proxy/worker wire versions. Must be valid JSON with all three keys.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py versions-file-exists",
+      "severity": "error",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "proxy-version-endpoint",
+      "description": "Proxy route dispatcher must expose GET /version using PROXY_VERSION.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/hme_proxy_routes.js",
+      "patterns": [
+        "PROXY_VERSION",
+        "'/version'"
+      ],
+      "severity": "error",
+      "context": "hme_proxy.js declares PROXY_VERSION and passes it into hme_proxy_routes.js; the route dispatcher must expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version` -- a stale proxy between a new CLI and new worker is otherwise invisible."
+    }
+  ]
+}

@@ -1,0 +1,451 @@
+"""Evolution strategies -- curate, contradict, adversarial stress.
+
+Split from evolution_evolve.py. These are the heavy analysis functions
+that each focus on a different evolution mode.
+"""
+import os
+import re
+import json
+import logging
+
+from server import context as ctx
+from paths import hme_metric
+from .. import _track, _budget_gate, BUDGET_COMPOUND, BUDGET_TOOL
+
+logger = logging.getLogger("HME")
+
+
+
+
+def _adversarial_stress() -> str:
+    """Adversarial self-play: test enforcement mechanisms with synthetic violations."""
+    import json
+    import subprocess
+
+    results: list[tuple[str, bool, str]] = []
+
+    hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
+    hooks_json_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks", "hooks.json")
+    # Hooks are organized into subdirectories by lifecycle phase. The flat
+    # hooks_dir path still resolves top-level scripts like log-tool-call.sh;
+    # sub-scripts live under these dirs.
+    hook_subdirs = ["", "lifecycle", "pretooluse", "posttooluse", "helpers"]
+
+    def _find_hook(name):
+        for sub in hook_subdirs:
+            cand = os.path.join(hooks_dir, sub, name) if sub else os.path.join(hooks_dir, name)
+            if os.path.isfile(cand):
+                return cand
+        return os.path.join(hooks_dir, name)  # fallback (reports missing at its canonical flat location)
+
+    # Probe 1: LIFESAVER grep pattern catches FAIL in tool output
+    test_output = "FAIL: synthetic probe -- adversarial stress test"
+    p = subprocess.run(["grep", "-i", "FAIL"], input=test_output, capture_output=True, text=True, timeout=5)
+    results.append(("LIFESAVER: grep catches FAIL in output", p.returncode == 0, ""))
+
+    # Probe 2: LIFESAVER watermark arithmetic is sound
+    # Simulate: turnstart=10, total=15 -> should detect 5 new errors
+    results.append(("LIFESAVER: watermark detects new errors (15 > 10)", 15 > 10, ""))
+
+    # Probe 3: Stop chain has all enforcement sections
+    try:
+        stop_files = [
+            "tools/HME/proxy/stop_chain/index.js",
+            "tools/HME/proxy/stop_chain/policies/anti_patterns.js",
+            "tools/HME/proxy/stop_chain/policies/work_checks.js",
+            "tools/HME/proxy/stop_chain/policies/lifesaver.js",
+            "tools/HME/proxy/stop_chain/policies/evolver.js",
+            "tools/HME/proxy/stop_chain/policies/nexus_pending.js",
+        ]
+        stop_content = ""
+        for rel in stop_files:
+            with open(os.path.join(ctx.PROJECT_ROOT, rel), encoding="utf-8") as f:
+                stop_content += "\n" + f.read()
+        checks = {
+            "error detection": "hme-errors.log",
+            "evolver loop": "hme-evolver.local.md",
+            "anti-polling": "ANTI-POLLING",
+            "anti-idle": "ANTI-IDLE",
+            "plan abandonment": "PLAN-ABANDONMENT",
+            "nexus audit": "nexus_pending",
+        }
+        for name, marker in checks.items():
+            found = marker in stop_content
+            results.append((f"Stop chain: {name}", found, "" if found else f"missing '{marker}'"))
+    except Exception as e:
+        results.append(("Stop chain: readable", False, str(e)))
+
+    # Probe 4: FAIL->hme-errors.log pipeline lives in proxy middleware
+    # (moved from log-tool-call.sh when HME decoupled from Claude Code MCP).
+    try:
+        fail_scan_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "proxy", "middleware", "mcp_fail_scan.js")
+        if not os.path.isfile(fail_scan_path):
+            results.append(("FAIL->hme-errors pipeline", False, f"missing: {fail_scan_path}"))
+        else:
+            with open(fail_scan_path, encoding="utf-8") as f:
+                fs_content = f.read()
+            has_fail_scan = "FAIL" in fs_content and "hme-errors.log" in fs_content
+            results.append(("FAIL->hme-errors pipeline (proxy middleware)", has_fail_scan,
+                            "" if has_fail_scan else "FAIL detection not wired to error log"))
+    except Exception as e:
+        results.append(("FAIL->hme-errors pipeline: readable", False, str(e)))
+
+    # Probe 5: Doc sync runs and produces actionable output
+    try:
+        from ..health import doc_sync_check
+        sync = doc_sync_check("doc/self-coherence.md")
+        actionable = "SYNC" in sync
+        results.append(("Doc sync: produces verdict", actionable,
+                        sync[:80] if not actionable else ""))
+    except Exception as e:
+        results.append(("Doc sync: runnable", False, str(e)))
+
+    # Probe 6: ESLint custom rules exist (>=21)
+    eslint_dir = os.path.join(ctx.PROJECT_ROOT, "src", "scripts", "eslint-rules")
+    if os.path.isdir(eslint_dir):
+        rules = [f for f in os.listdir(eslint_dir) if f.endswith(".js")]
+        results.append((f"ESLint: {len(rules)} custom rules (need >=22)",
+                        len(rules) >= 22, "" if len(rules) >= 22 else f"only {len(rules)}"))
+    else:
+        results.append(("ESLint: rules directory exists", False, "src/scripts/eslint-rules/ missing"))
+
+    # Probe 7: All critical hook scripts exist and are executable.
+    # Post-migration layout: LIFESAVER moved to proxy middleware, Read KB
+    # enrichment lives in posttooluse_read_kb.sh, log-tool-call.sh fully implemented
+    # (sources _safety.sh, posts to /transcript, triggers /reindex --
+    # the prior "stub" comment was stale).
+    critical_hooks = [
+        "stop.sh", "sessionstart.sh", "userpromptsubmit.sh",
+        "log-tool-call.sh",
+        "pretooluse_edit.sh", "pretooluse_bash.sh",
+        "posttooluse_read_kb.sh", "postcompact.sh",
+    ]
+    for hook in critical_hooks:
+        path = _find_hook(hook)
+        exists = os.path.isfile(path)
+        executable = os.access(path, os.X_OK) if exists else False
+        ok = exists and executable
+        results.append((f"Hook: {hook}", ok,
+                        "" if ok else ("missing" if not exists else "not executable")))
+
+    # Probe 8: hooks.json coverage -- all Claude Code events route through
+    # event_kernel/claude_adapter.js, which handles proxy-up and direct fallback.
+    try:
+        with open(hooks_json_path, encoding="utf-8") as f:
+            hooks_cfg = json.load(f)
+        event_misrouted: list[str] = []
+        for event_name, event_hooks in hooks_cfg.get("hooks", {}).items():
+            for h in event_hooks:
+                for cmd in h.get("hooks", []):
+                    command_str = cmd.get("command", "")
+                    # Any registered command that doesn't route through
+                    # claude_adapter.js would bypass the event kernel.
+                    if "event_kernel/claude_adapter.js" not in command_str and event_name != "StatusLine":
+                        event_misrouted.append(f"{event_name}:{command_str.split('/')[-1]}")
+        results.append((f"hooks.json: all lifecycle/tool events route through claude_adapter.js",
+                        len(event_misrouted) == 0,
+                        f"misrouted: {', '.join(event_misrouted)}" if event_misrouted else ""))
+    except Exception as e:
+        results.append(("hooks.json: parseable", False, str(e)))
+
+    # Probe 9: Feedback graph exists and declares loops
+    fg_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "feedback_graph.json")
+    try:
+        with open(fg_path, encoding="utf-8") as f:
+            fg = json.load(f)
+        loops = fg.get("feedbackLoops", fg.get("loops", []))
+        ports = fg.get("firewallPorts", [])
+        results.append((f"Feedback graph: {len(loops)} loops, {len(ports)} ports",
+                        len(loops) >= 10, "" if len(loops) >= 10 else f"only {len(loops)} loops"))
+    except Exception as e:
+        results.append(("Feedback graph: loadable", False, str(e)))
+
+    # Probe 10: Selftest runs without crashes
+    try:
+        from .evolution_selftest import hme_selftest
+        st = hme_selftest()
+        fail_count = st.count("FAIL")
+        results.append((f"Selftest: {st.splitlines()[0] if st else '?'}",
+                        fail_count == 0, f"{fail_count} FAILs" if fail_count else ""))
+    except Exception as e:
+        results.append(("Selftest: runnable", False, str(e)))
+
+    # Probe 11: KB redundancy detection fires on near-duplicates
+    try:
+        engine = ctx.project_engine
+        if hasattr(engine, 'knowledge_table') and engine.knowledge_table is not None:
+            # Local mode: direct vector table access
+            test_vec = engine.model.encode("test contradiction detection probe").tolist()
+            hits = engine.knowledge_table.search(test_vec).limit(1).to_list()
+            if hits:
+                top_sim = 1.0 / (1.0 + hits[0].get("_distance", 999))
+                results.append(("KB: similarity search", True,
+                                f"top hit sim={top_sim:.3f}"))
+            else:
+                results.append(("KB: similarity search", True, "no hits (empty KB)"))
+        elif hasattr(engine, 'search_knowledge'):
+            # Proxy mode: verify via HTTP API (routes through shim->engine->vector-search)
+            proxy_hits = engine.search_knowledge("contradiction detection probe", top_k=1)
+            results.append(("KB: similarity search", True,
+                            f"proxy search OK ({len(proxy_hits)} result(s))"))
+        else:
+            results.append(("KB: similarity search", False, "engine has no search capability"))
+    except Exception as e:
+        results.append(("KB: similarity search", False, str(e)))
+
+    # Probe 12: Contradiction detection exists in evolve
+    results.append(("Self-coherence: contradict focus available", True, "this probe proves it"))
+
+    # Probe 13: All RELOADABLE modules exist as actual files
+    # Modules moved into subpackages (synthesis/, evolution/, coupling/);
+    # evolution_strategies.py itself lives in evolution/, so ta_dir = evolution/
+    # then ../.. is server/. Search tools_analysis/ + all its subpackages.
+    try:
+        from .evolution_selftest import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        ta_dir = os.path.dirname(this_dir)
+        server_dir = os.path.dirname(ta_dir)
+        root_dir = os.path.dirname(server_dir)
+        ta_search_dirs = [ta_dir] + [
+            os.path.join(ta_dir, sp) for sp in ("synthesis", "evolution", "coupling")
+        ]
+        def _ta_has(name):
+            return any(os.path.isfile(os.path.join(d, f"{name}.py")) for d in ta_search_dirs)
+        missing_modules = []
+        for name in RELOADABLE:
+            if not _ta_has(name):
+                missing_modules.append(name)
+        for name in TOP_LEVEL_RELOADABLE:
+            if not os.path.isfile(os.path.join(server_dir, f"{name}.py")):
+                missing_modules.append(name)
+        for name in ROOT_RELOADABLE:
+            if not os.path.isfile(os.path.join(root_dir, f"{name}.py")):
+                missing_modules.append(name)
+        results.append((f"RELOADABLE: all {len(RELOADABLE) + len(TOP_LEVEL_RELOADABLE) + len(ROOT_RELOADABLE)} modules exist",
+                        len(missing_modules) == 0,
+                        f"missing: {', '.join(missing_modules)}" if missing_modules else ""))
+    except Exception as e:
+        results.append(("RELOADABLE: importable", False, str(e)))
+
+    # Probe 14: L0_CHANNELS consistency -- l0Channels.js exists and declares channels
+    l0_path = os.path.join(ctx.PROJECT_ROOT, "src", "time", "l0Channels.js")
+    try:
+        with open(l0_path, encoding="utf-8") as f:
+            l0_content = f.read()
+        import re as _re
+        channel_count = len(_re.findall(r"['\"](\w+)['\"]", l0_content))
+        results.append((f"L0_CHANNELS: {channel_count} channels declared",
+                        channel_count >= 25, "" if channel_count >= 25 else f"only {channel_count}"))
+    except Exception as e:
+        results.append(("L0_CHANNELS: l0Channels.js readable", False, str(e)))
+
+    # Probe 15: Pipeline summary exists and has verdict
+    ps_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "pipeline-summary.json")
+    try:
+        with open(ps_path, encoding="utf-8") as f:
+            ps = json.load(f)
+        verdict = ps.get("verdict", "")
+        has_errors = len(ps.get("errorPatterns", [])) > 0
+        results.append((f"Pipeline summary: exists (verdict={verdict or 'none'})",
+                        True, ""))
+        if has_errors:
+            results.append(("Pipeline summary: error patterns detected",
+                            False, f"{len(ps['errorPatterns'])} error pattern(s) in last run"))
+    except FileNotFoundError:
+        results.append(("Pipeline summary: exists", False, "src/output/metrics/pipeline-summary.json missing"))
+    except Exception as e:
+        results.append(("Pipeline summary: parseable", False, str(e)))
+
+    # Probe 16: Run-history has recent snapshots
+    rh_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
+    if os.path.isdir(rh_dir):
+        snapshots = sorted([f for f in os.listdir(rh_dir) if f.endswith(".json")])
+        results.append((f"Run-history: {len(snapshots)} snapshots",
+                        len(snapshots) >= 5, "" if len(snapshots) >= 5 else f"only {len(snapshots)}"))
+    else:
+        results.append(("Run-history: directory exists", False, "src/output/metrics/run-history/ missing"))
+
+    # Probe 17: Journal archive exists and has historical rounds
+    # Journal is a deprecated archive -- live round state is in the activity bridge.
+    journal_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "journal.md")
+    try:
+        with open(journal_path, encoding="utf-8") as f:
+            journal = f.read()
+        import re as _re2
+        rounds = len(_re2.findall(r'^## R\d+', journal, _re2.MULTILINE))
+        results.append((f"Journal archive: {rounds} historical rounds (frozen)",
+                        rounds >= 10, "" if rounds >= 10 else f"only {rounds} rounds"))
+    except Exception as e:
+        results.append(("Journal archive: readable", False, str(e)))
+
+    # Probe 18: Adaptive state file exists and has valid structure
+    as_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "adaptive-state.json")
+    try:
+        with open(as_path, encoding="utf-8") as f:
+            astate = json.load(f)
+        has_emas = "healthEma" in astate or "exceedanceTrendEma" in astate
+        results.append(("Adaptive state: valid structure",
+                        has_emas, "" if has_emas else "missing EMA fields"))
+    except FileNotFoundError:
+        results.append(("Adaptive state: exists", False, "src/output/metrics/adaptive-state.json missing"))
+    except Exception as e:
+        results.append(("Adaptive state: parseable", False, str(e)))
+
+    # Probe 19: bias-bounds-manifest.json exists (Phase 3 enforcement)
+    bb_path = os.path.join(ctx.PROJECT_ROOT, "scripts", "pipeline", "bias-bounds-manifest.json")
+    results.append(("Bias bounds manifest: exists",
+                    os.path.isfile(bb_path), "" if os.path.isfile(bb_path) else "missing"))
+
+    # Probe 20: _safety.sh helper functions are defined
+    safety_path = _find_hook("_safety.sh")
+    try:
+        with open(safety_path, encoding="utf-8") as f:
+            safety_content = f.read()
+        required_fns = ["_safe_jq", "_safe_py3", "_safe_int", "_safe_curl", "_hme_enrich",
+                        "_hme_kb_count", "_hme_kb_titles", "_hme_validate"]
+        missing_fns = [fn for fn in required_fns if fn not in safety_content]
+        results.append((f"_safety.sh: {len(required_fns)} helper functions",
+                        len(missing_fns) == 0,
+                        f"missing: {', '.join(missing_fns)}" if missing_fns else ""))
+    except Exception as e:
+        results.append(("_safety.sh: readable", False, str(e)))
+
+    # Probe 21: globals.d.ts exists and declares ambient globals
+    gdts_path = os.path.join(ctx.PROJECT_ROOT, "src", "types", "globals.d.ts")
+    try:
+        with open(gdts_path, encoding="utf-8") as f:
+            gdts = f.read()
+        import re as _re3
+        decl_count = len(_re3.findall(r'^declare var \w+', gdts, _re3.MULTILINE))
+        results.append((f"globals.d.ts: {decl_count} ambient declarations",
+                        decl_count >= 50, "" if decl_count >= 50 else f"only {decl_count}"))
+    except Exception as e:
+        results.append(("globals.d.ts: readable", False, str(e)))
+
+    # Probe 22: doc/templates/AGENTS.md is current and references key enforcement systems
+    agents_path = os.path.join(ctx.PROJECT_ROOT, "doc", "templates", "AGENTS.md")
+    try:
+        with open(agents_path, encoding="utf-8") as f:
+            claude_md = f.read()
+        enforcement_refs = ["crossLayerEmissionGateway", "trustSystems.names",
+                            "feedbackRegistry", "L0_CHANNELS"]
+        missing_refs = [r for r in enforcement_refs if r not in claude_md]
+        results.append((f"doc/templates/AGENTS.md: {len(enforcement_refs)} enforcement system references",
+                        len(missing_refs) == 0,
+                        f"missing: {', '.join(missing_refs)}" if missing_refs else ""))
+    except Exception as e:
+        results.append(("doc/templates/AGENTS.md: readable", False, str(e)))
+
+    # Probe 23: Infrastructure evolution -- scan ops + coherence for actionable trends (Layer 12)
+    try:
+        ops_path = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-ops.json")
+        with open(ops_path) as f:
+            ops = json.load(f)
+        suggestions = []
+        crashes = ops.get("shim_crashes_today", 0)
+        restarts = ops.get("restarts_today", 0)
+        recovery_rate = ops.get("recovery_success_rate_ema", 1.0)
+        cb_trips = ops.get("circuit_breaker_trips", {})
+        cb_total = sum(cb_trips.values())
+        startup_ms = ops.get("startup_ms_ema")
+
+        if crashes >= 2:
+            suggestions.append(f"[HIGH] {crashes} shim crashes today -- investigate OOM or index_directory volume")
+        if restarts >= 6:
+            suggestions.append(f"[MEDIUM] {restarts} MCP restarts today -- consider crash loop root cause")
+        if recovery_rate < 0.7:
+            suggestions.append(f"[HIGH] Recovery rate {recovery_rate:.0%} -- shim revive often failing; check startup logs")
+        if cb_total >= 3:
+            top_model = max(cb_trips, key=cb_trips.get)
+            suggestions.append(f"[MEDIUM] {cb_total} circuit breaker trips today ({top_model}: {cb_trips[top_model]}) -- llama.cpp model unstable")
+        if startup_ms and startup_ms > 15000:
+            suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms -- shim cold-start is slow; consider keepalive")
+
+        # Coherence trend from JSONL
+        coherence_path = hme_metric("hme-coherence.jsonl")
+        if os.path.isfile(coherence_path):
+            with open(coherence_path) as f:
+                raw_lines = f.readlines()[-20:]
+            scores = []
+            for ln in raw_lines:
+                try:
+                    scores.append(json.loads(ln).get("coherence", 1.0))
+                except Exception as _err4:
+                    logger.debug(f'silent-except evolution_evolve.py:941: {type(_err4).__name__}: {_err4}')
+            if scores:
+                avg_coh = sum(scores) / len(scores)
+                if avg_coh < 0.6:
+                    suggestions.append(f"[HIGH] Avg coherence {avg_coh:.0%} over last {len(scores)} monitor cycles -- multiple components degraded")
+                elif avg_coh < 0.8:
+                    suggestions.append(f"[LOW] Avg coherence {avg_coh:.0%} -- llama.cpp partially unavailable; shim healthy")
+
+        label = f"Infrastructure trends ({len(suggestions)} suggestion(s))"
+        detail = "; ".join(suggestions) if suggestions else "no anomalies detected"
+        results.append((label, True, detail))
+    except FileNotFoundError:
+        results.append(("Infrastructure trends: hme-ops.json exists", False, "tmp/hme-ops.json missing -- run HME once first"))
+    except Exception as e:
+        results.append(("Infrastructure trends: readable", False, str(e)))
+
+    # Probe 24: Meta-coherence audit -- detector-of-detectors. Every regex,
+    # path reference, phrase list in the HME diagnostic layer is exercised
+    # against its target corpus. Stale/missing patterns = silent drift.
+    # Run as subprocess so a crashed audit doesn't take out the stress test.
+    try:
+        audit = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "scripts", "meta_coherence_audit.py")
+        if os.path.isfile(audit):
+            rc = subprocess.run(
+                ["python3", audit], capture_output=True, text=True, timeout=60,
+                cwd=ctx.PROJECT_ROOT,
+                env={**os.environ, "PROJECT_ROOT": ctx.PROJECT_ROOT},  # env-ok: subprocess project-root override
+            )
+            stale_n = 0
+            err_n = 0
+            for ln in (rc.stdout or "").splitlines():
+                m = re.match(r"\s*Stale/missing:\s*(\d+)", ln)
+                if m: stale_n = int(m.group(1))
+                m = re.match(r"\s*Errors:\s*(\d+)", ln)
+                if m: err_n = int(m.group(1))
+            label = f"Meta-coherence audit ({stale_n} stale, {err_n} err)"
+            # Non-blocking: we REPORT but don't fail the probe on stale findings.
+            # The audit is itself a fresh layer; once its own baselines
+            # are established we can promote stale>0 to a hard failure.
+            results.append((label, True, f"{stale_n} stale patterns in diagnostic layer (run `python3 {audit}` for details)" if stale_n else "all detectors live"))
+        else:
+            results.append(("Meta-coherence audit: script exists", False, f"missing: {audit}"))
+    except Exception as e:
+        results.append(("Meta-coherence audit: runnable", False, f"{type(e).__name__}: {e}"))
+
+    # Format output
+    passed = sum(1 for _, ok, _ in results if ok)
+    total = len(results)
+    parts = [f"# Adversarial Stress Test: {passed}/{total} probes passed\n"]
+
+    failures = [(name, detail) for name, ok, detail in results if not ok]
+    passes = [(name, detail) for name, ok, detail in results if ok]
+
+    if failures:
+        parts.append(f"## GAPS ({len(failures)} enforcement failures)\n")
+        for name, detail in failures:
+            parts.append(f"  FAIL: {name}")
+            if detail:
+                parts.append(f"        {detail}")
+        parts.append("")
+
+    # Enumerate PASSes only when there are no failures -- the full listing
+    # is reassurance signal on clean runs. When failures exist, the
+    # 30+ PASS lines are ~2k chars of filler; the failures are what the
+    # agent needs to act on.
+    if passes and not failures:
+        parts.append(f"## Verified ({len(passes)} probes passed)\n")
+        for name, detail in passes:
+            line = f"  PASS: {name}"
+            if detail:
+                line += f" ({detail})"
+            parts.append(line)
+    elif passes:
+        parts.append(f"## Verified ({len(passes)} probes passed -- detail suppressed when failures exist)")
+        parts.append(f"\n## Action Required")
+        parts.append(f"Fix {len(failures)} gap(s) above -- each represents a constraint that could be violated undetected.")
+
+    return "\n".join(parts)

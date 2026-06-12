@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "paths": {
+    "shortcut.rr": {
+      "intent": "request native read chain for default project briefing files",
+      "lane": "wire",
+      "allowed_emitter": "tools/HME/proxy/middleware/00a_shortcuts_rewriter.js",
+      "forbidden_emitters": ["tools/HME/scripts/hme-claude.py", "tmp/hme-cc-control.fifo", "readq!"],
+      "proof_id_shape": "hme_read_chain__*",
+      "negative_controls": ["rr must not match multi-step/local-session shortcuts", "no readq shortcut may exist"]
+    },
+    "shortcut.cc": {
+      "intent": "compact the live local Claude Code session then continue",
+      "lane": "local-session",
+      "allowed_emitter": "tools/HME/scripts/hme-claude.py",
+      "forbidden_emitters": ["tools/HME/proxy/middleware/00a_shortcuts_rewriter.js", "Anthropic API payload"],
+      "proof_id_shape": "/compact local REPL command, no API message",
+      "negative_controls": ["cc must not rewrite outbound Anthropic payloads"]
+    },
+    "consult.task-notification-read-chain": {
+      "intent": "read completed consult artifacts after task completion without typing control tokens into user input",
+      "lane": "host-task-notification",
+      "allowed_emitter": "tools/HME/proxy/read_chain_driver.js",
+      "forbidden_emitters": ["tmp/hme-cc-control.fifo", "readq!", "submit_read_queue_to_pty", "local-session [HME_READ_CHAIN] expansion"],
+      "proof_id_shape": "hme_read_chain__*",
+      "negative_controls": ["task-notification queue test consumes latest-consult-read-queue.json", "retired readq shortcut is absent"]
+    }
+  }
+}

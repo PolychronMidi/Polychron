@@ -1,0 +1,20 @@
+// variants/index.js - load all stutter variants (self-registering)
+require('./machineGun');
+require('./reverseVelocity');
+require('./octaveCascade');
+require('./rhythmicGrid');
+require('./stutterSwarm');
+require('./decayingBounce');
+require('./stutterTremolo');
+require('./ghostStutter');
+require('./stereoScatter');
+require('./harmonicShadow');
+require('./densityReactive');
+require('./echoTrail');
+require('./rhythmicDotted');
+require('./flickerStutter');
+require('./convergenceBurst');
+require('./tensionStutter');
+require('./directionalOscillation');
+require('./stereoWidthModulation');
+require('./alienArpeggio');

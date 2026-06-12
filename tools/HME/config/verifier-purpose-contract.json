@@ -1,0 +1,6 @@
+{
+  "description": "Purpose-contract fields every new HCI verifier must make explicit in code review or class metadata.",
+  "required_fields": ["invariant", "false_positive_policy", "sources_checked", "does_not_enforce"],
+  "enforcement": "Existing verifiers are documented by class docstrings; new verifier classes should add these metadata fields when the invariant is non-obvious. HCI warns on missing metadata for newly added classes once a phase adopts strict mode.",
+  "strict_mode_env": "HME_VERIFIER_PURPOSE_STRICT"
+}

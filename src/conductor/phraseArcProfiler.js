@@ -1,0 +1,117 @@
+// src/conductor/phraseArcProfiler.js
+// Pure arc profile helpers extracted from PhraseArcManager.
+// Provides breath profile, phase classification, and arc profile generation.
+
+moduleLifecycle.declare({
+  name: 'phraseArcProfiler',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  lazyDeps: ['conductorConfig', 'regimeClassifier'],
+  provides: ['phraseArcProfiler'],
+  init: (deps) => {
+  const V = deps.validator.create('phraseArcProfiler');
+
+  /**
+   * Get phrase breath parameters from conductorConfig with built-in fallback.
+   * @returns {Object} breath profile with registerRange, densityRange, independence, dynamism
+   */
+  function getBreathProfile() {
+    const bp = conductorConfig.getPhraseBreathParams();
+    if (bp && V.optionalType(bp, 'object')) {
+      return bp;
+    }
+    return {
+      registerRange: 12,
+      densityRange: { min: 0.85, max: 1.3 },
+      independence: {
+        archInner: 0.7,
+        archOuter: 0.3,
+        riseFallInner: 0.6,
+        riseFallOuter: 0.4,
+        buildResolveInner: 0.8,
+        buildResolveOuter: 0.3,
+        waveBase: 0.4,
+        waveAmplitude: 0.4
+      },
+      dynamism: {
+        archBase: 0.5,
+        archAmplitude: 0.5,
+        riseFallBase: 0.4,
+        riseFallAmplitude: 0.6,
+        buildResolveBase: 0.3,
+        buildResolveSlope: 0.7,
+        buildResolveEnd: 0.2,
+        waveBase: 0.5,
+        waveAmplitude: 0.5
+      }
+    };
+  }
+
+  /**
+   * Get phase label from normalized phrase position.
+   * @param {number} pos - 0-1
+   * @returns {string}
+   */
+  function getPhase(pos) {
+    if (pos < 0.25) return 'opening';
+    if (pos < 0.5) return 'development';
+    if (pos < 0.75) return 'climax';
+    return 'resolution';
+  }
+
+  /**
+   * Generate arc profile functions from PHRASES_ARC_CURVES global.
+   * Throws if the global is missing - arc curves must be centralized in config.
+   * @returns {Object.<string, {register:Function, density:Function, independence:Function, dynamism:Function}>}
+   */
+  // regime-responsive independence modulation on top of profile values.
+  const INDEPENDENCE_REGIME_MOD = { exploring: 0.20, evolving: 0.0, coherent: -0.10 };
+
+  function generateArcProfiles() {
+    if (!PHRASES_ARC_CURVES) {
+      throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined - ensure conductorConfig is loaded first');
+    }
+    const bp = getBreathProfile();
+    const ind = bp.independence;
+    const dyn = bp.dynamism;
+    // R29 E1: wire dormant phraseBreath.independence config into arc curves.
+    // Profile values provide per-arc-type base; regime modulation adapts dynamically.
+    const indFns = {
+      'arch': (pos) => V.optionalFinite(ind.archOuter, 0.3) + (V.optionalFinite(ind.archInner, 0.7) - V.optionalFinite(ind.archOuter, 0.3)) * m.sin(Number(pos) * m.PI),
+      'wave': (pos) => V.optionalFinite(ind.waveBase, 0.4) + V.optionalFinite(ind.waveAmplitude, 0.4) * m.sin(Number(pos) * m.PI * 2),
+      'rise-fall': (pos) => V.optionalFinite(ind.riseFallOuter, 0.4) + (V.optionalFinite(ind.riseFallInner, 0.6) - V.optionalFinite(ind.riseFallOuter, 0.4)) * Number(pos),
+      'build-resolve': (pos) => V.optionalFinite(ind.buildResolveOuter, 0.3) + (V.optionalFinite(ind.buildResolveInner, 0.8) - V.optionalFinite(ind.buildResolveOuter, 0.3)) * Number(pos)
+    };
+    // wire dormant phraseBreath.dynamism config into arc curves.
+    const dynFns = {
+      'arch': (pos) => V.optionalFinite(dyn.archBase, 0.5) + V.optionalFinite(dyn.archAmplitude, 0.40) * m.sin(Number(pos) * m.PI) + 0.20 * m.sin(Number(pos) * m.PI * 4),
+      'wave': (pos) => V.optionalFinite(dyn.waveBase, 0.5) + V.optionalFinite(dyn.waveAmplitude, 0.5) * m.sin(Number(pos) * m.PI * 4),
+      'rise-fall': (pos) => V.optionalFinite(dyn.riseFallBase, 0.4) + V.optionalFinite(dyn.riseFallAmplitude, 0.45) * Number(pos) + 0.20 * m.sin(Number(pos) * m.PI * 4),
+      'build-resolve': (pos) => V.optionalFinite(dyn.buildResolveBase, 0.3) + V.optionalFinite(dyn.buildResolveSlope, 0.55) * m.min(Number(pos), V.optionalFinite(dyn.buildResolveEnd, 0.2) + 0.8) + 0.20 * m.sin(Number(pos) * m.PI * 4)
+    };
+    /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function, spectralDensity: Function } }} */
+    const adapted = {};
+    for (const [key, curve] of Object.entries(PHRASES_ARC_CURVES)) {
+      const indFn = indFns[key];
+      const dynFn = dynFns[key];
+      adapted[key] = {
+        register: (pos) => (curve.register ? curve.register(pos) : 0),
+        density: (pos) => (curve.density ? curve.density(pos) : 1),
+        independence: indFn
+          ? (pos) => {
+            const base = indFn(pos);
+            const reg = regimeClassifier.getRegime();
+            const mod = V.optionalFinite(INDEPENDENCE_REGIME_MOD[reg], 0);
+            return clamp(base + mod, 0.05, 0.95);
+          }
+          : (pos) => (curve.independence ? curve.independence(pos) : 0.5),
+        dynamism: dynFn || ((pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0)),
+        spectralDensity: (pos) => (curve.spectralDensity ? curve.spectralDensity(pos) : 0.5)
+      };
+    }
+    return adapted;
+  }
+
+  return { getBreathProfile, getPhase, generateArcProfiles };
+  },
+});

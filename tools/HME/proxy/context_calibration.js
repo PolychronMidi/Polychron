@@ -1,0 +1,205 @@
+'use strict';
+
+// Estimator calibration feedback loop. The token estimator guesses bytes/token
+// with fixed priors; real tokenizers differ per content type, so the estimate
+
+const fs = require('fs');
+const path = require('path');
+const { PROJECT_ROOT } = require('./shared');
+const { resolveFactors } = require('./context_token_estimate');
+
+const REL = path.join('tools', 'HME', 'runtime', 'estimator-calibration.json');
+const MAX_SAMPLES = 300;
+const MIN_SAMPLES_TO_FIT = 24;
+// Sane bytes/token bounds: English prose ~4, dense JSON/tool output can reach
+// ~1.5; reject fits outside this as ill-conditioned noise.
+const MIN_BYTES_PER_TOK = 1.0;
+const MAX_BYTES_PER_TOK = 8.0;
+// Ignore tiny turns: too little signal, and they skew the fit toward framing
+// overhead rather than content density.
+const MIN_ACTUAL_TOKENS = 1000;
+
+function calibrationPath(projectRoot = PROJECT_ROOT) {
+  return path.join(projectRoot || process.cwd(), REL);
+}
+
+function _clamp(n) {
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(MAX_BYTES_PER_TOK, Math.max(MIN_BYTES_PER_TOK, n));
+}
+
+// Pure least-squares fit of actual_tokens ~= reg*x + tr*y (x,y = tokens/byte),
+// then invert to bytes/token. Falls back to `priors` when there is too little
+function fitFactors(samples, priors) {
+  const rows = (samples || []).filter(
+    (s) => s && Number.isFinite(s.reg) && Number.isFinite(s.tr) && Number.isFinite(s.actual)
+      && s.actual >= MIN_ACTUAL_TOKENS && (s.reg + s.tr) > 0,
+  );
+  if (rows.length < MIN_SAMPLES_TO_FIT) {
+    return { perTok: priors.perTok, toolResultPerTok: priors.toolResultPerTok, samples: rows.length, fitted: false };
+  }
+  let Srr = 0;
+  let Srt = 0;
+  let Stt = 0;
+  let Sra = 0;
+  let Sta = 0;
+  for (const s of rows) {
+    Srr += s.reg * s.reg;
+    Srt += s.reg * s.tr;
+    Stt += s.tr * s.tr;
+    Sra += s.reg * s.actual;
+    Sta += s.tr * s.actual;
+  }
+  const det = Srr * Stt - Srt * Srt;
+  // Relative conditioning guard: a near-singular system means the two buckets
+  // are collinear in this window (can't separate them) -> keep priors.
+  const scale = Srr * Stt;
+  if (!(scale > 0) || Math.abs(det) < 1e-6 * scale) {
+    return { perTok: priors.perTok, toolResultPerTok: priors.toolResultPerTok, samples: rows.length, fitted: false };
+  }
+  const x = (Sra * Stt - Sta * Srt) / det;
+  const y = (Srr * Sta - Srt * Sra) / det;
+  const perTok = _clamp(x > 0 ? 1 / x : 0);
+  const toolResultPerTok = _clamp(y > 0 ? 1 / y : 0);
+  // If either bucket inverted to an out-of-range / non-positive ratio, the fit
+  // is untrustworthy for that bucket; keep the corresponding prior.
+  return {
+    perTok: perTok || priors.perTok,
+    toolResultPerTok: toolResultPerTok || priors.toolResultPerTok,
+    samples: rows.length,
+    fitted: Boolean(perTok && toolResultPerTok),
+  };
+}
+
+let _cache = { mtimeMs: -1, data: null };
+
+function loadCalibration(projectRoot = PROJECT_ROOT) {
+  const file = calibrationPath(projectRoot);
+  let stat;
+  try { stat = fs.statSync(file); }
+  catch (_e) { _cache = { mtimeMs: -1, data: null }; return null; }
+  if (_cache.data && stat.mtimeMs === _cache.mtimeMs) return _cache.data;
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    _cache = { mtimeMs: stat.mtimeMs, data };
+    return data;
+  } catch (_e) {
+    // silent-ok: unreadable/corrupt calibration file -> null = recompute from priors.
+    return null;
+  }
+}
+
+function _enabled(env) {
+  return String((env || process.env).HME_PROXY_ESTIMATOR_CALIBRATION || '') === '1';
+}
+
+function _modelKey(model) {
+  return String(model || '').trim().toLowerCase();
+}
+
+// Normalize any persisted shape (incl. the legacy flat {samples,factors}) into
+// { global:{samples,factors}, models:{key:{samples,factors}} }. Different
+function _normalizeData(data) {
+  if (!data || typeof data !== 'object') return { global: { samples: [], factors: null }, models: {} };
+  if (data.global || data.models) {
+    return {
+      global: data.global && Array.isArray(data.global.samples) ? data.global : { samples: [], factors: null },
+      models: data.models && typeof data.models === 'object' ? data.models : {},
+    };
+  }
+  // Legacy flat structure -> treat as the global bucket.
+  return { global: { samples: Array.isArray(data.samples) ? data.samples : [], factors: data.factors || null }, models: {} };
+}
+
+// Effective factors for the estimator: per-model fit when available, else the
+// cross-model global fit, else env priors. Flag-gated for determinism.
+function calibratedFactors(env = process.env, projectRoot = PROJECT_ROOT, model = '') {
+  const priors = resolveFactors(env, null);
+  if (!_enabled(env)) return priors;
+  const data = _normalizeData(loadCalibration(projectRoot));
+  const key = _modelKey(model);
+  const perModel = key && data.models[key] && data.models[key].factors;
+  if (perModel && perModel.fitted) return { perTok: perModel.perTok, toolResultPerTok: perModel.toolResultPerTok, fitted: true };
+  if (data.global.factors && data.global.factors.fitted) {
+    return { perTok: data.global.factors.perTok, toolResultPerTok: data.global.factors.toolResultPerTok, fitted: true };
+  }
+  return priors;
+}
+
+function _pushFit(bucket, sample, priors) {
+  const samples = Array.isArray(bucket.samples) ? bucket.samples.slice() : [];
+  samples.push(sample);
+  while (samples.length > MAX_SAMPLES) samples.shift();
+  return { samples, factors: fitFactors(samples, priors) };
+}
+
+// Record one ground-truth sample into the global bucket and (if a model is
+// given) that model's bucket, re-fit both, persist. Best-effort: any failure
+function recordSample({ reg, tr, actual, model = '', env = process.env, projectRoot = PROJECT_ROOT } = {}) {
+  if (!_enabled(env)) return null;
+  if (!Number.isFinite(reg) || !Number.isFinite(tr) || !Number.isFinite(actual)) return null;
+  if (actual < MIN_ACTUAL_TOKENS || (reg + tr) <= 0) return null;
+  // Cache-read contamination guard: on Anthropic, usage.input_tokens excludes
+  // cache_read_input_tokens while the byte buckets count the FULL (cached)
+  const impliedBytesPerTok = (reg + tr) / actual;
+  if (impliedBytesPerTok < MIN_BYTES_PER_TOK || impliedBytesPerTok > MAX_BYTES_PER_TOK) return null;
+  try {
+    const file = calibrationPath(projectRoot);
+    const data = _normalizeData(loadCalibration(projectRoot));
+    const priors = resolveFactors(env, null);
+    const sample = { reg: Math.round(reg), tr: Math.round(tr), actual: Math.round(actual) };
+    data.global = _pushFit(data.global, sample, priors);
+    const key = _modelKey(model);
+    if (key) data.models[key] = _pushFit(data.models[key] || { samples: [] }, sample, priors);
+    data.updated = new Date().toISOString();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(data));
+    fs.renameSync(tmp, file);
+    _cache = { mtimeMs: -1, data: null };
+    return key && data.models[key].factors.fitted ? data.models[key].factors : data.global.factors;
+  } catch (_e) {
+    // silent-ok: best-effort calibration persist; in-memory factors still serve callers.
+    return null;
+  }
+}
+
+// Drift alert: once a route is fitted, the calibrated estimate should track
+// actual tokens. If it is still off by more than this fraction, the estimator
+// can no longer model current traffic (e.g. the provider's tokenizer changed) --
+const DRIFT_REL_THRESHOLD = 0.25;
+const DRIFT_ALERT_MIN_INTERVAL_MS = 300000;
+let _lastDriftAlertMs = 0;
+
+function driftAlertLine({ model, estimated, actual, rel, ts }) {
+  return `[${ts}] [hme-proxy] LIFESAVER -- estimator drift: ${model || 'unknown'} calibrated estimate ~${estimated} vs actual ${actual} input tokens (off ${(rel * 100).toFixed(0)}%) despite a fitted calibration. The size gate may mis-route; if persistent the provider tokenizer changed -- re-check HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST priors / per-model calibration.\n`;
+}
+
+function maybeDriftAlert({ model, estimated, actual, fitted, projectRoot = PROJECT_ROOT, now = Date.now() }) {
+  if (!fitted || !(actual > 0) || !Number.isFinite(estimated)) return false;
+  const rel = Math.abs(estimated - actual) / actual;
+  if (rel <= DRIFT_REL_THRESHOLD) return false;
+  if (now - _lastDriftAlertMs < DRIFT_ALERT_MIN_INTERVAL_MS) return false;
+  _lastDriftAlertMs = now;
+  try {
+    const log = path.join(projectRoot || PROJECT_ROOT, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    fs.appendFileSync(log, driftAlertLine({ model, estimated, actual, rel, ts: new Date().toISOString() }));
+    return true;
+  } catch (_e) {
+    // silent-ok: drift-alert append is best-effort telemetry; failure must not break est
+    return false;
+  }
+}
+
+module.exports = {
+  calibrationPath,
+  fitFactors,
+  loadCalibration,
+  calibratedFactors,
+  recordSample,
+  maybeDriftAlert,
+  driftAlertLine,
+  MIN_SAMPLES_TO_FIT,
+  DRIFT_REL_THRESHOLD,
+};

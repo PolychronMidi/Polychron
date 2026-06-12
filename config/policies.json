@@ -1,0 +1,6 @@
+{
+  "enabled": [],
+  "disabled": [
+    "block-mid-pipeline-write"
+  ]
+}

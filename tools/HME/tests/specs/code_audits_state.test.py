@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Smoke + class-shape tests for verify_coherence.code_audits_state."""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
+from helpers import assert_class_shape, smoke_run, with_project_root
+
+_PROJECT = Path(__file__).resolve().parents[4]
+_AUDIT = _PROJECT / "tools" / "HME" / "scripts" / "audit-state-file-ownership.py"
+
+# Assemble the redirect-write line from parts so THIS test file's own source
+# never matches the audit's `>> log/...` write regex (which would make the
+_ROGUE_BODY = "#!/usr/bin/env bash\necho boom " + (">" * 2) + " log/hme-errors.log\n"
+
+
+def _run_audit(project_root: Path = _PROJECT):
+    rc = subprocess.run(
+        ["python3", str(_AUDIT)],
+        capture_output=True, text=True, timeout=60,
+        env={**os.environ, "PROJECT_ROOT": str(project_root)},
+    )
+    return rc.returncode, rc.stdout
+
+
+def _write_minimal_state_registry(root: Path) -> None:
+    """Create the smallest PROJECT_ROOT fixture the ownership audit needs.
+
+    Negative-path tests must not write rogue hook files into the live checkout:
+    autocommit can observe and stage them mid-test before the finally-block runs.
+    """
+    cfg = root / "tools" / "HME" / "config"
+    cfg.mkdir(parents=True, exist_ok=True)
+    (cfg / "state-files.json").write_text(json.dumps({
+        "single_owner": [],
+        "multi_writer": [{
+            "path": "log/hme-errors.log",
+            "coordination": "test fixture append contract",
+            "writers": ["tools/HME/hooks/declared_writer.sh"],
+            "owner": "test fixture",
+            "readers": ["diagnostics"],
+            "retention": "test fixture",
+            "generated": True,
+            "committed": False,
+            "schema": "append-only text",
+            "repair": "run tools/HME/scripts/hme-doctor.py",
+        }],
+        "files": [],
+    }), encoding="utf-8")
+
+
+def _classes():
+    from verify_coherence.code_audits_state import (
+        StateFileOwnershipVerifier, ClaudeSettingsJsonVerifier,
+        HumanDeferredAuditVerifier, ProxyMiddlewareRegistryVerifier,
+        AdapterBoundaryRegistryVerifier, ToolMetadataFactoryVerifier,
+        GeneratedISurfaceVerifier, InterControllerCoherenceVerifier,
+        ShellHookAuditVerifier, ActivityEventsDocSyncVerifier,
+    )
+    return (StateFileOwnershipVerifier, ClaudeSettingsJsonVerifier, HumanDeferredAuditVerifier, ProxyMiddlewareRegistryVerifier, AdapterBoundaryRegistryVerifier, ToolMetadataFactoryVerifier, GeneratedISurfaceVerifier, InterControllerCoherenceVerifier, ShellHookAuditVerifier, ActivityEventsDocSyncVerifier)
+
+
+class CodeAuditsStateModuleTests(unittest.TestCase):
+    def test_class_shape(self):
+        def _run():
+            for cls in _classes():
+                assert_class_shape(self, cls)
+        with_project_root(_PROJECT, _run)
+
+    def test_smoke_run(self):
+        with_project_root(_PROJECT, lambda: smoke_run(self, _classes()))
+
+
+class StateOwnershipGateTests(unittest.TestCase):
+    """The gate must be able to FAIL -- a verifier that can only pass is a
+    coherence illusion. Asserts the audit is clean now and that an injected
+    undeclared writer of a shared state file trips drift (rc=1)."""
+
+    def test_clean_tree_passes(self):
+        rc, out = _run_audit()
+        self.assertEqual(rc, 0, f"expected clean audit, got rc={rc}\n{out}")
+
+    def test_undeclared_writer_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_minimal_state_registry(root)
+            rogue = root / "tools" / "HME" / "hooks" / "pretooluse" / "_gate_test_rogue.sh"
+            rogue.parent.mkdir(parents=True, exist_ok=True)
+            rogue.write_text(_ROGUE_BODY, encoding="utf-8")
+            rc, out = _run_audit(root)
+            self.assertEqual(rc, 1, f"undeclared writer must trip drift; got rc={rc}\n{out}")
+            self.assertIn("_gate_test_rogue.sh", out)
+
+    def test_disabled_dir_is_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_minimal_state_registry(root)
+            d = root / "tools" / "HME" / "hooks" / "pretooluse" / "bash" / "_disabled"
+            d.mkdir(parents=True, exist_ok=True)
+            rogue = d / "_gate_test_inert.sh"
+            rogue.write_text(_ROGUE_BODY, encoding="utf-8")
+            rc, out = _run_audit(root)
+            self.assertEqual(rc, 0, f"_disabled writers must be ignored; got rc={rc}\n{out}")
+
+
+if __name__ == "__main__":
+    unittest.main()

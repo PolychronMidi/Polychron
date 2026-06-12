@@ -1,0 +1,1662 @@
+// CONVENTIONS: see doc/self-coherence-full.md (Proxy module conventions) -- import from source files,
+// never from barrel index.js re-exports. This test asserts every import
+// resolves to a function; circular dependencies manifest as `undefined`.
+'use strict';
+
+const { test } = require('node:test');
+const assert = require('node:assert');
+const _fs = require('fs');
+const os = require('os');
+const _path = require('path');
+const { execFileSync } = require('child_process');
+
+const { sessionKey, PROJECT_ROOT } = require('../../proxy/shared');
+const { stripStaleToolResults } = require('../../proxy/conversation_graph');
+const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
+const { createContextBudget, contextWindowOverflowAlert } = require('../../proxy/hme_proxy_context_budget');
+const { mutateClaudeRequest, compactLargeInteractiveAnthropicPayload } = require('../../proxy/hme_proxy_request_mutation');
+const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
+const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId, roleFromPayload, swapWindowCheck } = require('../../proxy/overdrive_route');
+const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
+const { _jsonStats } = require('../../proxy/hme_proxy_response_trace');
+const { loadEnv, requireEnvInt } = require('../../proxy/shared/load_env');
+const { _contextTokenUsageFields, _extractUsageFromBody, normalizeOmniContextWindowSse, retryOmniContextWindowExceeded } = require('../../proxy/hme_proxy_anthropic_response');
+const { responseHasErrorEvent, maybeRunStopFallback } = require('../../proxy/hme_proxy_response_send');
+const { markRouteCooldown, loadModelRouteHealth, routeSkipReason } = require('../../proxy/contexts/failure_policy/model_route_health');
+const codexFallback = require('../../proxy/contexts/failure_policy/hme_proxy_codex');
+const { shellPolicy } = require('../../proxy/stop_chain/shell_policy');
+const { semanticTokenEstimate } = require('../../proxy/context_token_estimate');
+const { isPassthroughMode } = require('../../proxy/upstream');
+const { routeDecision } = require('../../proxy/model_route_resolver');
+const hmeDispatcher = require('../../proxy/hme_dispatcher');
+
+// Invariant: if a circular dependency causes any import to resolve as undefined,
+// fail fast before any test logic runs. Each entry is [name, value, expectedType].
+test('detector stats helper stays shared and path-derived', () => {
+  const base = _fs.readFileSync(_path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_base.py'), 'utf8');
+  const stats = _fs.readFileSync(_path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/_detector_stats.py'), 'utf8');
+  assert.match(base, /def emit_stats\(verdict: str, detail: str = ""\) -> None:/);
+  assert.match(base, /_emit_stats\(None, verdict, detail\)/);
+  assert.match(stats, /def _caller_detector_name\(\)/);
+  assert.match(stats, /detector = detector or _caller_detector_name\(\)/);
+  for (const rel of [
+    'tools/HME/scripts/detectors/early_stop.py',
+    'tools/HME/scripts/detectors/exhaust_check.py',
+    'tools/HME/scripts/detectors/scope_escape.py',
+    'tools/HME/scripts/detectors/scope_vs_shipped.py',
+    'tools/HME/scripts/detectors/evasion_intent.py',
+    'tools/HME/scripts/detectors/fabrication_check.py',
+    'tools/HME/scripts/detectors/psycho_stop.py',
+  ]) {
+    const text = _fs.readFileSync(_path.join(PROJECT_ROOT, rel), 'utf8');
+    assert.match(text, /from _base import emit_stats as _emit_stats, load_turn, transcript_arg/);
+    assert.doesNotMatch(text, /def _emit_stats/);
+    assert.doesNotMatch(text, /DETECTOR = detector|@DETECTOR/);
+  }
+});
+
+test('proxy bootstrap reads WORKER_PORT from supervisorChildren', () => {
+  const source = _fs.readFileSync(_path.join(PROJECT_ROOT, 'tools/HME/proxy/hme_proxy.js'), 'utf8');
+  assert.match(source, /require\('\.\/contexts\/lifecycle_bridge'\)\.supervisorChildren/);
+  const { supervisorChildren } = require('../../proxy/contexts/lifecycle_bridge');
+  assert.equal(typeof supervisorChildren.WORKER_PORT, 'number');
+  assert.ok(supervisorChildren.WORKER_PORT > 0);
+});
+
+test('no circular dependency nullifies imported bindings', () => {
+  const checks = [
+    ['sessionKey', sessionKey, 'function'],
+    ['stripStaleToolResults', stripStaleToolResults, 'function'],
+    ['shrinkForPassthrough', shrinkForPassthrough, 'function'],
+    ['createContextBudget', createContextBudget, 'function'],
+    ['mutateClaudeRequest', mutateClaudeRequest, 'function'],
+    ['compactLargeInteractiveAnthropicPayload', compactLargeInteractiveAnthropicPayload, 'function'],
+    ['handleLegacySwapResponse', handleLegacySwapResponse, 'function'],
+    ['writeAnthropicStopSse', writeAnthropicStopSse, 'function'],
+    ['effectiveMode', effectiveMode, 'function'],
+    ['buildMode1Chain', buildMode1Chain, 'function'],
+    ['applyOverdriveRoute', applyOverdriveRoute, 'function'],
+    ['upstreamModelId', upstreamModelId, 'function'],
+    ['roleFromPayload', roleFromPayload, 'function'],
+    ['reasoningTextFromData', reasoningTextFromData, 'function'],
+    ['providerReasoningToThinkingRewrite', providerReasoningToThinkingRewrite, 'function'],
+    ['_jsonStats', _jsonStats, 'function'],
+    ['loadEnv', loadEnv, 'function'],
+    ['requireEnvInt', requireEnvInt, 'function'],
+    ['_contextTokenUsageFields', _contextTokenUsageFields, 'function'],
+    ['_extractUsageFromBody', _extractUsageFromBody, 'function'],
+    ['normalizeOmniContextWindowSse', normalizeOmniContextWindowSse, 'function'],
+    ['retryOmniContextWindowExceeded', retryOmniContextWindowExceeded, 'function'],
+    ['responseHasErrorEvent', responseHasErrorEvent, 'function'],
+    ['markRouteCooldown', markRouteCooldown, 'function'],
+    ['loadModelRouteHealth', loadModelRouteHealth, 'function'],
+    ['routeSkipReason', routeSkipReason, 'function'],
+    ['shellPolicy', shellPolicy, 'function'],
+    ['codexFallback', codexFallback, 'object'],
+    ['isPassthroughMode', isPassthroughMode, 'function'],
+    ['routeDecision', routeDecision, 'function'],
+    ['hmeDispatcher', hmeDispatcher, 'object'],
+  ];
+  for (const [name, value, expect] of checks) {
+    assert.equal(typeof value, expect,
+      `${name} resolved as ${typeof value} instead of ${expect} -- circular dependency?`);
+  }
+});
+
+function quiet(fn) {
+  const orig = console.error;
+  console.error = () => {};
+  try { return fn(); } finally { console.error = orig; }
+}
+
+function preserveStatuslineAbsent() {
+  const runtimeDir = _path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = _path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = _fs.existsSync(statusline) ? _fs.readFileSync(statusline, 'utf8') : null;
+  try { _fs.unlinkSync(statusline); } catch { /* silent-ok: fixture absent */ }
+  return () => {
+    if (prevStatusline == null) {
+      try { _fs.unlinkSync(statusline); } catch { /* silent-ok: tempfile cleanup */ }
+    } else {
+      _fs.mkdirSync(runtimeDir, { recursive: true });
+      _fs.writeFileSync(statusline, prevStatusline);
+    }
+  };
+}
+
+function withStatuslineUnavailable(fn) {
+  const restore = preserveStatuslineAbsent();
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') return result.finally(restore);
+    restore();
+    return result;
+  } catch (err) {
+    restore();
+    throw err;
+  }
+}
+
+function fakeClientRes() {
+  const calls = { headers: [], writes: [], ended: false };
+  return {
+    calls,
+    writeHead(status, headers) { calls.headers.push({ status, headers }); },
+    write(chunk) { calls.writes.push(String(chunk)); },
+    end(chunk) { if (chunk) calls.writes.push(String(chunk)); calls.ended = true; },
+  };
+}
+
+test('detectors policy has 15s timeout and shell policies keep stage defaults', () => {
+  const tmp_dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-shell-policy-'));
+  const prior = process.env.PROJECT_ROOT;
+  process.env.PROJECT_ROOT = tmp_dir;
+  try {
+    assert.equal(shellPolicy('detectors').timeoutMs, 60001);
+    const detectors = require('../../proxy/stop_chain/policies/detectors');
+    assert.strictEqual(typeof detectors.run, 'function');
+    assert.equal(shellPolicy('post_hooks').timeoutMs, 30000);
+  } finally {
+    if (prior === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = prior;
+    _fs.rmSync(tmp_dir, { recursive: true, force: true });
+  }
+});
+
+
+test('detectors policy fails closed when Stop transcript_path is missing', async () => {
+  const detectors = require('../../proxy/stop_chain/policies/detectors');
+  const verdict = await detectors.run({ stdinJson: '{}', deny: (reason) => ({ decision: 'deny', reason }), allow: () => ({ decision: 'allow' }) });
+  assert.equal(verdict.decision, 'deny');
+  assert.match(verdict.reason, /missing Stop transcript_path/);
+});
+
+
+test('detectors policy propagates transcript failfast payload', async () => {
+  const detectors = require('../../proxy/stop_chain/policies/detectors');
+  const verdict = await detectors.run({ stdinJson: JSON.stringify({ _hme_transcript_error: 'TRANSCRIPT FAILFAST: missing transcript' }), deny: (reason) => ({ decision: 'deny', reason }), allow: () => ({ decision: 'allow' }) });
+  assert.equal(verdict.decision, 'deny');
+  assert.match(verdict.reason, /TRANSCRIPT FAILFAST/);
+});
+
+
+test('env loader reads root env only and invalid typed reads fail fast', () => {
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-env-contract-'));
+  const prior = { A: process.env.A, PORT: process.env.PORT };
+  try {
+    _fs.writeFileSync(_path.join(dir, '.env'), 'A=ok\nPORT=abc\n');
+    loadEnv(_path.join(dir, '.env'), { overwrite: true });
+    assert.equal(process.env.A, 'ok');
+    assert.throws(() => requireEnvInt('PORT'), /invalid integer environment key PORT/);
+  } finally {
+    for (const [key, value] of Object.entries(prior)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('context token usage parser extracts Anthropic JSON and SSE usage', () => {
+  assert.deepEqual(
+    _extractUsageFromBody({ 'content-type': 'application/json' }, Buffer.from(JSON.stringify({ usage: { input_tokens: 123, output_tokens: 45 } }))),
+    { input_tokens: 123, output_tokens: 45 },
+  );
+  const sse = [
+    'event: message_start',
+    'data: {"type":"message_start","message":{"usage":{"input_tokens":456,"output_tokens":0}}}',
+    '',
+    'event: message_delta',
+    'data: {"type":"message_delta","usage":{"output_tokens":78}}',
+    '',
+  ].join('\n');
+  assert.deepEqual(
+    _extractUsageFromBody({ 'content-type': 'text/event-stream' }, Buffer.from(sse)),
+    { input_tokens: 456, output_tokens: 78 },
+  );
+});
+
+test('OmniRoute context-window SSE stays an error event, not assistant text', () => {
+  const body = Buffer.from('event: error\ndata: {"type":"error","error":{"type":"invalid_request_error","message":"Your input exceeds the context window of this model. Please adjust your input and try again."}}\n\n');
+  const { outHeaders, outBuf } = normalizeOmniContextWindowSse({
+    isOmniRouteSwap: true,
+    status: 200,
+    outHeaders: { 'content-type': 'text/event-stream' },
+    outBuf: body,
+    swapModel: 'gpt-test',
+    anthropicTextSseBuffer() { throw new Error('must not fabricate assistant text'); },
+    log() {},
+  });
+  const text = outBuf.toString('utf8');
+  assert.match(text, /event: error/);
+  assert.match(text, /context_window_exceeded/);
+  assert.doesNotMatch(text, /event: message_start/);
+  assert.equal(outHeaders['x-hme-proxy-error'], 'context_window_exceeded');
+});
+
+test('responseHasErrorEvent detects SSE and JSON errors', () => {
+  assert.equal(responseHasErrorEvent(Buffer.from('event: error\ndata: {"error":{"type":"context_window_exceeded"}}\n\n')), true);
+  assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ type: 'error', error: { type: 'x' } }))), true);
+  assert.equal(responseHasErrorEvent(Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'ok' }] }))), false);
+});
+
+test('tool-result-heavy payload trips OmniRoute size gate before upstream 503/empty/context failure', () => withStatuslineUnavailable(() => {
+  const payload = {
+    model: 'claude-opus-4-8',
+    system: '',
+    tools: [],
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: 'start' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: _path.join(os.tmpdir(), 'huge.log') } }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'x'.repeat(830_000) }] },
+    ],
+  };
+  const env = {
+    HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '2.6',
+    HME_PROXY_TOOL_RESULT_BYTES_PER_TOKEN_EST: '1.8',
+    HME_OMNI_SWAP_FIT_FRACTION: '0.95',
+  };
+  const est = semanticTokenEstimate(payload, env);
+  assert.ok(est > 480000 * 0.95, `estimator must be conservative enough for captured 521k-token class, got ${est}`);
+  assert.equal(swapWindowCheck(payload, 'gpt-5.5-xhigh', env).exceeds, true);
+}));
+
+test('Stop fallback omits blank transcript_path so lifecycle resolver can fill it', () => {
+  let captured = null;
+  maybeRunStopFallback({
+    isAnthropic: true,
+    payload: { metadata: { user_id: JSON.stringify({ session_id: 'stop-fallback-session' }) }, messages: [{ role: 'user', content: 'hi' }] },
+    outBuf: Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'done' }] })),
+    lifecycleInactive: (event) => event === 'Stop',
+    runInlineFallback: (event, stdin) => { captured = { event, payload: JSON.parse(stdin) }; },
+  });
+  assert.equal(captured.event, 'Stop');
+  assert.equal(captured.payload.session_id, 'stop-fallback-session');
+  assert.equal(Object.prototype.hasOwnProperty.call(captured.payload, 'transcript_path'), false);
+});
+
+test('OmniRoute context-window overflow submits cc shortcut instead of bailing to another model', async () => {
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-context-cc-'));
+  let readFd = null;
+  try {
+    _fs.mkdirSync(_path.join(dir, 'tmp'), { recursive: true });
+    const fifo = _path.join(dir, 'tmp', 'hme-cc-control.fifo');
+    execFileSync('mkfifo', [fifo]);
+    // Open a non-blocking reader first so the proxy's O_WRONLY|O_NONBLOCK open
+    // succeeds (without a reader a non-blocking write-open returns ENXIO).
+    readFd = _fs.openSync(fifo, _fs.constants.O_RDONLY | _fs.constants.O_NONBLOCK);
+    let transportCalled = false;
+    const transport = { request() { transportCalled = true; throw new Error('must NOT retry on another model'); } };
+    const fullBody = Buffer.from('event: error\ndata: {"error":{"message":"input exceeds the context window"}}\n\n');
+    const result = await retryOmniContextWindowExceeded({
+      isOmniRouteSwap: true,
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      fullBody,
+      payload: { model: 'cx/gpt-a', stream: true, messages: [{ role: 'user', content: 'x' }] },
+      omniProvider: 'cx',
+      transport,
+      projectRoot: dir,
+      log() {},
+    });
+    assert.equal(result, null, 'returns null so the caller normalizes a clean context_window error');
+    assert.equal(transportCalled, false, 'must NOT issue an upstream retry to a different model');
+    let token = '';
+    const buf = Buffer.alloc(64);
+    for (let i = 0; i < 5 && !token; i++) {
+      try { const n = _fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) token = buf.slice(0, n).toString('utf8'); }
+      catch { /* EAGAIN on the non-blocking pipe; retry */ }
+    }
+    assert.match(token, /^cc!\n/, 'submits the interrupting cc shortcut so /compact does not queue behind generation');
+    const state = loadModelRouteHealth(dir);
+    assert.equal(state['cx/gpt-a'].reason, 'context_window_exceeded', 'still quarantines the overflowed route');
+  } finally {
+    if (readFd !== null) { try { _fs.closeSync(readFd); } catch { /* already closed */ } }
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('cc compact submission is single-flight so /compact -> continue can never overlap/reorder', () => {
+  const { submitCcCompactOnce, clearCcCompactInflight } = require('../../proxy/cc_control');
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-cc-single-'));
+  let readFd = null;
+  try {
+    _fs.mkdirSync(_path.join(dir, 'tmp'), { recursive: true });
+    const fifo = _path.join(dir, 'tmp', 'hme-cc-control.fifo');
+    execFileSync('mkfifo', [fifo]);
+    readFd = _fs.openSync(fifo, _fs.constants.O_RDONLY | _fs.constants.O_NONBLOCK);
+
+    const first = submitCcCompactOnce(dir);
+    assert.equal(first.submitted, true, 'first overflow submits one compact cycle');
+    const second = submitCcCompactOnce(dir);
+    assert.equal(second.submitted, false, 'a second overflow during the in-flight cycle is suppressed');
+    assert.equal(second.reason, 'inflight');
+
+    // Exactly ONE cc token reached the bridge -- never two overlapping cycles
+    // whose continue/compact steps could interleave into reverse order.
+    let bytes = '';
+    const buf = Buffer.alloc(64);
+    for (let i = 0; i < 5; i++) {
+      try { const n = _fs.readSync(readFd, buf, 0, buf.length, null); if (n > 0) bytes += buf.slice(0, n).toString('utf8'); }
+      catch { break; }
+    }
+    assert.equal(bytes, 'cc!\n', 'only one interrupting /compact -> continue cycle dispatched');
+
+    // Once the cycle visibly lands, the guard clears so a later genuine overflow re-fire
+    assert.equal(clearCcCompactInflight(dir), true);
+    assert.equal(clearCcCompactInflight(dir), false, 'idempotent clear');
+    assert.equal(submitCcCompactOnce(dir).submitted, true, 'fresh overflow after clear re-triggers compact');
+  } finally {
+    if (readFd !== null) { try { _fs.closeSync(readFd); } catch { /* closed */ } }
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('model route cooldown marks context-window quarantine and expires by time', () => {
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-route-health-'));
+  try {
+    const now = Date.parse('2026-05-22T00:00:00Z');
+    markRouteCooldown('cx/gpt-test', 'context_window_exceeded', { projectRoot: dir, ttlMs: 1000, now });
+    const state = loadModelRouteHealth(dir);
+    assert.equal(state['cx/gpt-test'].status, 'cooldown');
+    assert.equal(routeSkipReason('cx/gpt-test', state, {}, now + 500), 'context_window_exceeded');
+    assert.equal(routeSkipReason('cx/gpt-test', state, {}, now + 1500), '');
+  } finally {
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function _freshLifesaverInject() {
+  const modPath = require.resolve('../../proxy/middleware/22_lifesaver_inject');
+  delete require.cache[modPath];
+  return require('../../proxy/middleware/22_lifesaver_inject');
+}
+
+function _initGitRoot(dir) {
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.invalid'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+  _fs.writeFileSync(_path.join(dir, 'x.txt'), 'x');
+  execFileSync('git', ['add', 'x.txt'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '-m', 'init'], { cwd: dir, stdio: 'ignore' });
+  return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+}
+
+test('lifesaver proxy injection drops resolved stale-runtime lines', () => {
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-stale-drop-'));
+  try {
+    const head = _initGitRoot(dir);
+    _fs.mkdirSync(_path.join(dir, 'log'), { recursive: true });
+    _fs.mkdirSync(_path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = _path.join(dir, 'log/hme-errors.log');
+    _fs.writeFileSync(errLog, '');
+    _fs.writeFileSync(_path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: head }));
+    const mod = _freshLifesaverInject();
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    let dirtied = false;
+    const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
+    mod.onRequest({ payload, ctx }); // seed watermark
+    _fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL stale but already fixed\n');
+    mod.onRequest({ payload, ctx });
+    assert.equal(dirtied, false);
+    assert.equal(payload.messages[0].content, 'hi');
+  } finally {
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('lifesaver proxy injection keeps overdue unresolved stale-runtime lines actionable', () => {
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-stale-keep-'));
+  const oldGrace = process.env.HME_POST_COMMIT_STALE_GRACE_SEC;
+  try {
+    const head = _initGitRoot(dir);
+    _fs.mkdirSync(_path.join(dir, 'log'), { recursive: true });
+    _fs.mkdirSync(_path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = _path.join(dir, 'log/hme-errors.log');
+    _fs.writeFileSync(errLog, '');
+    _fs.writeFileSync(_path.join(dir, 'tools/HME/runtime/proxy-runtime.json'), JSON.stringify({ git_sha: 'oldsha' }));
+    _fs.writeFileSync(_path.join(dir, 'tools/HME/runtime/post-commit-stale-runtime.json'), JSON.stringify({ first_seen_epoch: 1, head_sha: head }));
+    process.env.HME_POST_COMMIT_STALE_GRACE_SEC = '0';
+    const mod = _freshLifesaverInject();
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    let dirtied = false;
+    const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
+    mod.onRequest({ payload, ctx }); // seed watermark
+    _fs.appendFileSync(errLog, '[2026-05-22T00:00:00Z] [stale_runtime] CRITICAL still stale\n');
+    mod.onRequest({ payload, ctx });
+    assert.equal(dirtied, true);
+    assert.match(payload.messages[0].content, /still stale/);
+  } finally {
+    if (oldGrace === undefined) delete process.env.HME_POST_COMMIT_STALE_GRACE_SEC;
+    else process.env.HME_POST_COMMIT_STALE_GRACE_SEC = oldGrace;
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('lifesaver proxy injection surfaces OpenCode stderr validation errors', () => {
+  const dir = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-opencode-stderr-lifesaver-'));
+  try {
+    _fs.mkdirSync(_path.join(dir, 'log'), { recursive: true });
+    _fs.mkdirSync(_path.join(dir, 'tools/HME/runtime'), { recursive: true });
+    const errLog = _path.join(dir, 'log/hme-errors.log');
+    _fs.writeFileSync(errLog, '');
+    const mod = _freshLifesaverInject();
+    const payload = { messages: [{ role: 'user', content: 'hi' }] };
+    let dirtied = false;
+    const ctx = { PROJECT_ROOT: dir, markDirty() { dirtied = true; }, emit() {} };
+    mod.onRequest({ payload, ctx }); // seed watermark
+    _fs.appendFileSync(errLog, '[opencode-stderr] ERROR Type validation error: message schema invalid while submitting\n');
+    mod.onRequest({ payload, ctx });
+    assert.equal(dirtied, true);
+    assert.match(payload.messages[0].content, /LIFESAVER -- unresolved errors/);
+    assert.match(payload.messages[0].content, /\[opencode-stderr\] ERROR Type validation error/);
+  } finally {
+    _fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('context token usage fields separate upstream headers from synthetic context signal', () => {
+  const row = _contextTokenUsageFields({
+    headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '2500' },
+    rateLimitHeaders: { 'content-type': 'application/json' },
+    status: 200,
+    payload: { model: 'gpt-test' },
+    outBody: Buffer.from('abcdefghij'),
+    outBuf: Buffer.from(JSON.stringify({ usage: { input_tokens: 4, output_tokens: 2 } })),
+    route: 'omni-context',
+    model: 'gpt-test',
+    thresholdBytes: 1000,
+    estimatedTokensFn: (bytes) => bytes / 2,
+    getLastInputTokensRemaining: () => null,
+    getLastInputTokensLimit: () => null,
+  });
+  assert.equal(row.header_input_tokens_source, 'none');
+  assert.equal(row.header_input_tokens_remaining, null);
+  assert.equal(row.context_signal_input_tokens_remaining, 2500);
+  assert.equal(row.estimated_input_tokens, 5);
+  assert.equal(row.usage_input_tokens, 4);
+  assert.equal(row.estimated_vs_usage_delta, 1);
+
+  const upstream = _contextTokenUsageFields({
+    headers: { 'content-type': 'application/json' },
+    rateLimitHeaders: { 'anthropic-ratelimit-input-tokens-limit': '20000', 'anthropic-ratelimit-input-tokens-remaining': '12345' },
+    status: 200,
+    payload: { model: 'claude-test' },
+    outBody: Buffer.from('abc'),
+    outBuf: Buffer.from('{}'),
+    route: 'direct',
+    thresholdBytes: 250000,
+  });
+  assert.equal(upstream.header_input_tokens_source, 'upstream');
+  assert.equal(upstream.header_input_tokens_limit, 20000);
+  assert.equal(upstream.header_input_tokens_remaining, 12345);
+  assert.equal(upstream.header_input_tokens_used, 7655);
+});
+
+function anthropicOnlyCfg() {
+  return {
+    providers_to_skip: { providers: [] },
+    ranking_rules: { cost_order: ['subscription', 'free', 'usage'] },
+    manually_toprank: { E5: ['claude-opus-4-7-max-e5'], driver: [''] },
+    team_role_models: {
+      driver: { source: 'manually_toprank', tier: 'E5' },
+      stage_crew: { source: 'ranking_rules', tier: 'role' },
+    },
+    tiers: { E5: { models: [
+      { id: 'claude-opus-4-7-max-e5', provider: 'anthropic', api_model: 'claude-opus-4-7', cost: 'subscription', tier_score: 9 },
+    ] } },
+  };
+}
+
+test('sessionKey prefers stable Anthropic metadata session id over content hash', () => {
+  const payload = {
+    metadata: {
+      user_id: JSON.stringify({ device_id: 'dev', session_id: 'real-session-id' }),
+    },
+    messages: [{ role: 'user', content: 'first prompt text' }],
+  };
+  assert.equal(sessionKey(payload), 'real-session-id');
+});
+
+test('overdrive route retires legacy modes and keeps only mode 1 active', () => {
+  for (const mode of ['0', '2', '3', '4', '5', '6', '', undefined]) {
+    assert.equal(effectiveMode({ OVERDRIVE_MODE: mode }), '0');
+  }
+  assert.equal(effectiveMode({ OVERDRIVE_MODE: '1' }), '1');
+});
+
+test('mode 1 chain builder preserves team-role tier routing', () => {
+  const cfg = {
+    ranking_rules: { cost_order: ['free', 'usage'] },
+    manually_toprank: { E5: ['manual-e5'] },
+    team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },
+    tiers: { E5: { models: [
+      { id: 'usage-e5', cost: 'usage', tier_score: 9 },
+      { id: 'manual-e5', cost: 'free', tier_score: 1 },
+      { id: 'free-e5', cost: 'free', tier_score: 5 },
+    ] } },
+  };
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, { HME_TEAM_ROLE: 'driver' }, cfg);
+  assert.equal(result.role, 'driver');
+  assert.equal(result.tier, 'E5');
+  assert.deepEqual(result.chain.map((m) => m.id), ['manual-e5', 'free-e5', 'usage-e5']);
+});
+
+test('Anthropic registry variants route with api_model instead of registry id', () => {
+  assert.equal(upstreamModelId({ id: 'claude-opus-4-7-max-e5', api_model: 'claude-opus-4-7' }), 'claude-opus-4-7');
+  assert.equal(upstreamModelId({ id: 'deepseek-v4-pro-go' }), 'deepseek-v4-pro');
+});
+
+test('mode 1 top-level requests default to driver E5 manual top rank', () => {
+  const cfg = {
+    ranking_rules: { cost_order: ['subscription', 'free'] },
+    manually_toprank: { E5: ['gpt-top-e5'], driver: ['manual-sonnet-e3'] },
+    team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },
+    tiers: {
+      E5: { models: [
+        { id: 'gpt-top-e5', provider: 'codex', cost: 'subscription', tier_score: 10 },
+        { id: 'ranked-opus-e5', provider: 'anthropic', api_model: 'claude-opus-4-7', cost: 'subscription', tier_score: 9 },
+      ] },
+      E3: { models: [
+        { id: 'manual-sonnet-e3', provider: 'anthropic', api_model: 'claude-sonnet-4-6', cost: 'subscription', tier_score: 1 },
+      ] },
+    },
+  };
+  // Pass an empty routeHealth so cooldowns persisted on disk from earlier
+  // sessions don't influence this pure-cfg unit test.
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg, { routeHealth: {} });
+  assert.equal(result.role, 'driver');
+  assert.equal(result.tier, 'E5');
+  assert.deepEqual(result.chain.map((m) => m.id), ['manual-sonnet-e3', 'gpt-top-e5', 'ranked-opus-e5']);
+});
+
+test('OmniRoute fallback helpers use api_model for Anthropic variants', () => {
+  assert.equal(
+    codexFallback.upstreamModelId({ id: 'claude-sonnet-4-6-high-e2', api_model: 'claude-sonnet-4-6' }),
+    'claude-sonnet-4-6',
+  );
+  assert.notEqual(
+    codexFallback.chainSignature([{ provider: 'anthropic', id: 'a', api_model: 'claude-sonnet-4-6' }]),
+    codexFallback.chainSignature([{ provider: 'anthropic', id: 'a', api_model: 'claude-haiku-4-5' }]),
+  );
+});
+
+test('non-streaming Anthropic JSON response with text is not blank', () => {
+  const stats = _jsonStats(JSON.stringify({
+    model: 'claude-sonnet-4-6',
+    type: 'message',
+    role: 'assistant',
+    content: [{ type: 'text', text: 'hello' }],
+    stop_reason: 'end_turn',
+  }));
+  assert.equal(stats.textChars, 5);
+  assert.equal(stats.textBlocks, 1);
+  assert.equal(stats.toolUseBlocks, 0);
+  assert.equal(stats.stopReason, 'end_turn');
+});
+
+test('non-streaming Anthropic JSON response with tool use is not blank', () => {
+  const stats = _jsonStats(JSON.stringify({
+    type: 'message',
+    role: 'assistant',
+    content: [{ type: 'tool_use', id: 'toolu_1', name: 'Read', input: {} }],
+    stop_reason: 'tool_use',
+  }));
+  assert.equal(stats.textChars, 0);
+  assert.equal(stats.toolUseBlocks, 1);
+  assert.equal(stats.stopReason, 'tool_use');
+});
+
+test('blank retry is disabled for max_tokens probes but NOT for manual top-rank chains', () => {
+  // manually_toprank only fronts the chain; blank retry still cascades.
+  assert.equal(
+    codexFallback.blankRetryDisabledReason({
+      payload: { max_tokens: 1 },
+      swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
+      env: {},
+    }),
+    'max_tokens_probe',
+  );
+  assert.equal(
+    codexFallback.blankRetryDisabledReason({
+      payload: { max_tokens: 200 },
+      swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
+      env: {},
+    }),
+    '',
+    'manual top-rank no longer cancels blank-retry cascade',
+  );
+});
+
+test('mode 1 real models.json driver override beats E5 manual fallback', () => {
+  const cfg = require('../../proxy/shared').loadModelsJson();
+  // Pass an empty routeHealth so on-disk credential cooldowns don't
+  // determine which model fronts the chain in this assertion.
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg, { routeHealth: {} });
+  assert.equal(result.role, 'driver');
+  const skipped = new Set(cfg.providers_to_skip.providers || []);
+  if (skipped.has('anthropic') || skipped.has('claude')) {
+    assert.notEqual(result.chain[0].provider, 'anthropic',
+      'configured provider skip must suppress Anthropic/Claude fronting');
+  } else {
+    // Driver fronts the best E5-tier model. Prefer a configured manual top
+    // when present; otherwise the top-ranked E5 model leads. Either way it
+    const manualTop = (cfg.manually_toprank.E5 || []).find((id) => id);
+    const expectedTop = manualTop || (cfg.tiers.E5.models[0] && cfg.tiers.E5.models[0].id);
+    assert.equal(result.chain[0].id, expectedTop);
+    assert.match(result.chain[0].id, /-e5$/);
+  }
+  assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
+});
+
+test('role detection ignores stale role text in system-reminder continuation context', () => {
+  const payload = {
+    model: 'claude-sonnet-4-6',
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: '<system-reminder>\nold transcript said You are Blue Lead\n</system-reminder>' }] },
+      { role: 'user', content: [{ type: 'text', text: 'restarted to see if sonnet only is being properly used now' }] },
+    ],
+  };
+  assert.equal(roleFromPayload(payload, {}), 'driver');
+});
+
+test('role detection still honors explicit live team lead prompts', () => {
+  assert.equal(roleFromPayload({ messages: [{ role: 'user', content: 'You are Blue Lead\nRun this check.' }] }, {}), 'blue_lead');
+});
+
+test('mode 1 same-chain fallback index advances even when chain has a manual top', () => withStatuslineUnavailable(() => quiet(() => {
+  // manually_toprank only fronts the chain; failover still progresses through it.
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
+  try {
+    const { chainSignature } = require('../../proxy/overdrive_route');
+    const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    _fs.mkdirSync(_path.join(tmp, 'tmp'), { recursive: true });
+    const probe = applyOverdriveRoute({
+      payload: { ...payload }, clientReq: { ...clientReq, headers: { ...clientReq.headers } }, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
+    });
+    _fs.writeFileSync(_path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(probe.swapChain), fail: 1, ts: Date.now() }));
+    const result = applyOverdriveRoute({
+      payload, clientReq, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
+    });
+    assert.equal(result.swapMeta.id, result.swapChain[1].id, 'fallback index 1 selects swapChain[1] of the effective Claude-primary chain');
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+})));
+
+test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch', () => withStatuslineUnavailable(() => quiet(() => {
+  // Stale signature mismatch resets idx=0; manual top fronting still applies.
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
+  try {
+    _fs.mkdirSync(_path.join(tmp, 'tmp'), { recursive: true });
+    _fs.writeFileSync(_path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 9, chain: 'old-chain', fail: 9, ts: Date.now() }));
+    const payload = { model: 'claude-sonnet-4-6', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' },
+      projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
+    });
+    assert.equal(result.applied, true);
+    // Claude-primary prepend uses the requested api_model when cfg has a match.
+    // anthropicOnlyCfg has only claude-opus-4-7-max-e5 (api_model='claude-opus-4-7'),
+    assert.equal(result.swapMeta.api_model || result.swapMeta.id, 'claude-sonnet-4-6');
+    assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+})));
+
+test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
+  const cfg = {
+    providers_to_skip: { providers: ['opencode-go'] },
+    ranking_rules: { cost_order: ['subscription', 'free'] },
+    manually_toprank: { E5: ['anthropic-top'] },
+    team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },
+    tiers: { E5: { models: [
+      { id: 'anthropic-top', provider: 'anthropic', cost: 'subscription', tier_score: 9 },
+      { id: 'opencode-skip', provider: 'opencode-go', cost: 'free', tier_score: 10 },
+      { id: 'codex-ok', provider: 'codex', cost: 'free', tier_score: 1 },
+    ] } },
+  };
+  const result = buildMode1Chain({ model: 'claude-opus-4-7', messages: [] }, { HME_TEAM_ROLE: 'driver' }, cfg);
+  assert.deepEqual(result.chain.map((m) => m.id), ['anthropic-top', 'codex-ok']);
+});
+
+test('mode 1 route health quarantine skips routes unless forced', () => {
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-route-health-'));
+  try {
+    _fs.mkdirSync(_path.join(tmp, 'tools', 'HME', 'runtime'), { recursive: true });
+    _fs.writeFileSync(_path.join(tmp, 'tools', 'HME', 'runtime', 'model-route-health.json'), JSON.stringify({
+      'kilo-gateway/kilo-auto/free': { status: 'blocked', reason: 'manual test' },
+    }));
+    const cfg = {
+      providers_to_skip: { providers: [] },
+      ranking_rules: { cost_order: ['free'] },
+      manually_toprank: { E5: [] },
+      team_role_models: { driver: { tier: 'E5', source: 'ranking_rules' } },
+      tiers: { E5: { models: [
+        { id: 'kilo-auto-free', provider: 'kilo-gateway', api_model: 'kilo-auto/free', cost: 'free', tier_score: 9 },
+        { id: 'step-free', provider: 'kilo-gateway', api_model: 'stepfun/step-3.5-flash:free', cost: 'free', tier_score: 5 },
+      ] } },
+    };
+    const payload = { model: 'claude-sonnet-4-6', messages: [] };
+    const normal = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver' }, cfg, { projectRoot: tmp });
+    const forced = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver', HME_FORCE_QUARANTINED_ROUTES: '1' }, cfg, { projectRoot: tmp });
+    assert.deepEqual(normal.chain.map((m) => m.id), ['step-free']);
+    assert.deepEqual(forced.chain.map((m) => m.id), ['kilo-auto-free', 'step-free']);
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () => quiet(() => {
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-claude-oauth-'));
+  try {
+    const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
+    });
+    assert.equal(result.applied, true);
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
+test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => quiet(() => {
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-thinking-'));
+  try {
+    const payload = {
+      model: 'claude-opus-4-7',
+      stream: true,
+      messages: [{ role: 'user', content: 'hi' }],
+      system: '',
+      tools: [],
+      thinking: { type: 'adaptive', display: 'summarized' },
+      output_config: { effort: 'high' },
+    };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
+    });
+    assert.equal(result.applied, true);
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinking'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'output_config'), false);
+    assert.doesNotMatch(result.outBody.toString('utf8'), /adaptive|output_config/);
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
+test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic models', () => quiet(() => {
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-effort-'));
+  try {
+    const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
+    });
+    assert.equal(result.applied, true);
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinkingLevel'), false);
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
+test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () => quiet(() => {
+  const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-'));
+  try {
+    const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct', 'x-api-key': 'direct-key' }, url: '/v1/messages' };
+    let strippedTools = false;
+    let strippedIdentity = false;
+    let contextPreflight = false;
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => { strippedTools = true; },
+      stripClaudeIdentity: () => { strippedIdentity = true; },
+      shrinkForContext: () => { contextPreflight = true; },
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      projectRoot: tmp,
+    });
+    assert.equal(result.applied, true);
+    assert.equal(result.isOmniRoute, true);
+    assert.equal(result.isLegacySwap, false);
+    assert.equal(strippedTools, true);
+    assert.equal(strippedIdentity, true);
+    assert.equal(contextPreflight, true);
+    assert.match(payload.model, /^[a-z-]+\//);
+    assert.match(clientReq.headers['x-hme-upstream'], /^http:\/\/127\.0\.0\.1:/);
+    assert.equal(clientReq.headers.authorization, undefined);
+    assert.equal(clientReq.headers['x-api-key'], undefined);
+  } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
+test('mode 1 provider override applies capability matrix request overrides', () => withStatuslineUnavailable(() => quiet(() => {
+  for (const provider of ['aihubmix', 'kilo-gateway']) {
+    const tmp = _fs.mkdtempSync(_path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
+    try {
+      const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+      const clientReq = { headers: { authorization: 'Bearer direct', 'x-api-key': 'direct' }, url: '/v1/messages' };
+      const result = applyOverdriveRoute({
+        payload,
+        clientReq,
+        clientRes: fakeClientRes(),
+        outBody: Buffer.from(JSON.stringify(payload)),
+        stripStaleToolResults: () => {},
+        stripClaudeIdentity: () => {},
+        shrinkForContext: () => {},
+        env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew', HME_OMNIROUTE_PROVIDER: provider },
+        projectRoot: tmp,
+      });
+      const routed = JSON.parse(result.outBody.toString('utf8'));
+      assert.equal(result.applied, true);
+      assert.equal(result.omniProvider, provider);
+      assert.equal(routed.non_stream, true);
+      assert.match(routed.model, new RegExp(`^${provider}/`));
+      assert.equal(clientReq.headers.authorization, undefined);
+      assert.equal(clientReq.headers['x-api-key'], undefined);
+    } finally { _fs.rmSync(tmp, { recursive: true, force: true }); }
+  }
+})));
+
+test('passthrough compaction keeps Claude payload coherent after shrinking', () => {
+  const logs = [];
+  const payload = { messages: [] };
+  for (let i = 0; i < 10; i += 1) payload.messages.push({ role: 'user', content: `message-${i} ${'x'.repeat(100)}` });
+  const changed = shrinkForPassthrough(payload, {
+    threshold: 1000,
+    keepMin: 3,
+    env: { HME_PROXY_LOCAL_SUMMARY: '1' },
+    log: (msg) => logs.push(msg),
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.equal(payload.messages[0].role, 'user');
+  assert.match(payload.messages[0].content, /^\(hme-proxy local-summary placeholder:/);
+  assert.ok(JSON.stringify(payload).length <= 1000);
+  assert.ok(logs.some((line) => line.includes('local-summary')));
+});
+
+
+
+test('passthrough microcompaction honors configured stale tool horizon', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 20; i += 1) {
+    const id = `tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
+  }
+  const telemetry = [];
+  const changed = shrinkForPassthrough(payload, {
+    threshold: 400000,
+    keepMin: 3,
+    maxToolResultAge: 4,
+    toolResultByteFloor: 1000,
+    env: {},
+    log: () => {},
+    telemetry: (row) => telemetry.push(row),
+    route: 'test-route',
+    model: 'test-model',
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(JSON.stringify(payload).length <= 400000);
+  assert.equal(telemetry.length, 1);
+  assert.equal(telemetry[0].event, 'context_compaction');
+  assert.equal(telemetry[0].route, 'test-route');
+  assert.equal(telemetry[0].model, 'test-model');
+  assert.equal(telemetry[0].stage, 'microcompact');
+  assert.equal(telemetry[0].messages_dropped, 0);
+  assert.ok(telemetry[0].stale_tool_results_elided > 0);
+  assert.ok(telemetry[0].before_bytes > telemetry[0].after_bytes);
+  assert.equal(telemetry[0].threshold_bytes, 400000);
+  assert.equal(telemetry[0].target_tokens, 0);
+  assert.equal(telemetry[0].before_tokens, 0);
+  assert.equal(telemetry[0].after_tokens, 0);
+  const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
+  assert.ok(results.slice(0, -2).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
+  assert.ok(results.slice(-2).every((b) => String(b.content).length === 20000));
+});
+
+test('microcompaction stop hook prevents below-target over-elision and reports token metrics', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 12; i += 1) {
+    const id = `target-stop-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
+  }
+  const telemetry = [];
+  const tokenEstimate = (p) => Math.ceil(JSON.stringify(p).length / 2);
+  const beforeTokens = tokenEstimate(payload);
+  const targetTokens = beforeTokens - 45_000;
+  const threshold = targetTokens * 2;
+  const changed = shrinkForPassthrough(payload, {
+    threshold,
+    keepMin: 3,
+    maxToolResultAge: 4,
+    toolResultByteFloor: 1000,
+    effectiveThreshold: () => ({ threshold, maxTier: 1, targetTokens, beforeTokens }),
+    microcompactStop: ({ payload: p }) => tokenEstimate(p) <= targetTokens,
+    tokenEstimator: tokenEstimate,
+    telemetry: (row) => telemetry.push(row),
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(changed < 10, `must stop before stripping the whole stale horizon, got ${changed}`);
+  assert.equal(telemetry.length, 1);
+  const afterTokens = tokenEstimate(payload);
+  assert.equal(telemetry[0].target_tokens, targetTokens);
+  assert.equal(telemetry[0].before_tokens, beforeTokens);
+  assert.equal(telemetry[0].after_tokens, afterTokens);
+  assert.ok(afterTokens <= targetTokens);
+  assert.ok(afterTokens > targetTokens - 15_000, `${afterTokens} overshot too far below ${targetTokens}`);
+});
+
+test('passthrough CVT near high-water refuses destructive message drops', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 20; i += 1) payload.messages.push({ role: 'user', content: `msg-${i} ${'x'.repeat(100)}` });
+  const before = JSON.stringify(payload);
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({
+      threshold: Buffer.byteLength(before, 'utf8') - 1,
+      maxTier: 1.02,
+      pressure: 0.01,
+      allowSummary: false,
+      allowMessageDrop: false,
+      keepMin: 3,
+    }),
+    env: {},
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.equal(changed, 0);
+  assert.equal(JSON.stringify(payload), before);
+});
+
+test('passthrough compaction drops oldest messages when microcompaction cannot hit threshold', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 10; i += 1) {
+    const id = `tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
+  }
+  const telemetry = [];
+  const changed = shrinkForPassthrough(payload, {
+    threshold: 1000,
+    keepMin: 3,
+    maxToolResultAge: 4,
+    toolResultByteFloor: 1000,
+    env: {},
+    log: () => {},
+    telemetry: (row) => telemetry.push(row),
+    route: 'drop-test',
+    model: 'drop-model',
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(JSON.stringify(payload).length <= 1000);
+  assert.ok(payload.messages.length <= 4);
+  assert.equal(telemetry.length, 1);
+  assert.equal(telemetry[0].event, 'context_compaction');
+  assert.equal(telemetry[0].route, 'drop-test');
+  assert.equal(telemetry[0].model, 'drop-model');
+  assert.equal(telemetry[0].stage, 'message_drop');
+  assert.ok(telemetry[0].messages_dropped > 0);
+  assert.ok(telemetry[0].before_messages > telemetry[0].after_messages);
+  assert.ok(telemetry[0].before_bytes > telemetry[0].after_bytes);
+});
+
+test('provider reasoning fields convert to Anthropic thinking events', () => {
+  const ctx = new Map();
+  const data = { type: 'response.reasoning_summary_text.delta', delta: { text: 'reasoned path' } };
+  assert.equal(reasoningTextFromData(data), 'reasoned path');
+  const out = providerReasoningToThinkingRewrite('response.reasoning_summary_text.delta', data, ctx);
+  assert.ok(Array.isArray(out.events));
+  assert.equal(out.events[0][0], 'content_block_start');
+  assert.equal(out.events[0][1].content_block.type, 'thinking');
+  assert.equal(out.events[1][0], 'content_block_delta');
+  assert.equal(out.events[1][1].delta.type, 'thinking_delta');
+  assert.equal(out.events[1][1].delta.thinking, 'reasoned path');
+});
+
+
+test('non-reasoning delta text is not converted to thinking', () => {
+  const data = { type: 'response.output_text.delta', delta: { text: 'visible answer' } };
+  assert.equal(reasoningTextFromData(data), '');
+  assert.equal(providerReasoningToThinkingRewrite('response.output_text.delta', data, new Map()), data);
+});
+
+
+test('legacy swap auth failure emits Anthropic stop SSE instead of surfacing 401', () => quiet(() => {
+  const clientRes = fakeClientRes();
+  let released = false;
+  assert.equal(handleLegacySwapResponse({ upstreamRes: { statusCode: 401 }, clientRes, wasStreaming: true, releaseOpusSlot: () => { released = true; }, model: 'test-model' }), true);
+  assert.equal(clientRes.calls.headers[0].status, 200);
+  assert.equal(clientRes.calls.ended, true);
+  assert.match(clientRes.calls.writes.join(''), /event: message_stop/);
+  assert.equal(released, false);
+}));
+
+test('stop SSE writer includes required Anthropic stream envelope', () => {
+  const clientRes = fakeClientRes();
+  writeAnthropicStopSse(clientRes, 'test-model');
+  const body = clientRes.calls.writes.join('');
+  assert.match(body, /event: message_start/);
+  assert.match(body, /event: message_delta/);
+  assert.match(body, /event: message_stop/);
+  assert.match(body, /"model":"test-model"/);
+});
+
+test('context budget compaction uses continuous exponential pressure from high-water to full', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '40';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '40';
+    process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '40000';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    // Legacy gear envs remain declared for compatibility but no longer create
+    // step-function behavior.
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    process.env.HME_PROXY_COMPACT_MAX_RELIEF_FRACTION = '0.05';
+    const budget = createContextBudget();
+    budget.setLastInputTokensLimit(1000);
+    const planFor = (chars) => budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(chars) }] });
+
+    let plan = planFor(750);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.pressure, 0);
+    assert.equal(plan.threshold, Infinity);
+
+    plan = planFor(830);
+    assert.ok(plan.pressure > 0 && plan.pressure < 0.08, `pressure=${plan.pressure}`);
+    assert.ok(plan.maxTier > 1 && plan.maxTier < 1.2, `severity=${plan.maxTier}`);
+    assert.equal(plan.allowSummary, false);
+    assert.equal(plan.allowMessageDrop, false);
+    assert.ok(plan.targetTokens >= 865, `targetTokens=${plan.targetTokens}`);
+    assert.ok(plan.keepMin >= 37, `keepMin=${plan.keepMin}`);
+    assert.ok(plan.maxToolResultAge >= 37, `age=${plan.maxToolResultAge}`);
+    assert.ok(plan.toolResultByteFloor >= 37000, `floor=${plan.toolResultByteFloor}`);
+
+    const mid = planFor(900);
+    assert.ok(mid.pressure > plan.pressure, `mid=${mid.pressure} early=${plan.pressure}`);
+    assert.equal(mid.allowSummary, true);
+    assert.equal(mid.allowMessageDrop, false);
+    assert.ok(mid.targetTokens < 930 && mid.targetTokens > 880, `target=${mid.targetTokens}`);
+
+    const late = planFor(950);
+    assert.ok(late.pressure > mid.pressure, `late=${late.pressure} mid=${mid.pressure}`);
+    assert.equal(late.allowSummary, true);
+    assert.equal(late.allowMessageDrop, true);
+    assert.ok(late.targetTokens > 900 && late.targetTokens <= 990, `late target=${late.targetTokens}`);
+    assert.ok(late.keepMin < mid.keepMin, `late keep=${late.keepMin} mid=${mid.keepMin}`);
+    assert.ok(late.toolResultByteFloor < mid.toolResultByteFloor, `late floor=${late.toolResultByteFloor} mid=${mid.toolResultByteFloor}`);
+    const overFull = planFor(1050);
+    assert.equal(overFull.allowMessageDrop, true);
+    assert.ok(overFull.targetTokens < 1000, `over-full target must be below max_input_tokens, got ${overFull.targetTokens}`);
+    assert.ok(overFull.targetTokens >= 900, `over-full target should not pin back near 80-85%, got ${overFull.targetTokens}`);
+    assert.deepEqual(late.compactionKnobBaselines, {
+      keepMin: 40,
+      staleToolKeepTurns: 40,
+      toolResultByteFloor: 40000,
+    });
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+test('compaction knobs scale continuously from env baselines without ratcheting', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '100';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '20';
+    process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '8000';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    process.env.HME_PROXY_COMPACT_MAX_RELIEF_FRACTION = '0.05';
+    const budget = createContextBudget();
+    budget.setLastInputTokensLimit(1000);
+
+    let plan = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(750) }] });
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.maxToolResultAge, undefined);
+    assert.equal(plan.keepMin, undefined);
+    assert.equal(plan.toolResultByteFloor, undefined);
+
+    const early = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(830) }] });
+    const mid = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(950) }] });
+    const late = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
+
+    assert.ok(early.keepMin > mid.keepMin && mid.keepMin > late.keepMin, `${early.keepMin}/${mid.keepMin}/${late.keepMin}`);
+    assert.ok(early.maxToolResultAge >= mid.maxToolResultAge && mid.maxToolResultAge > late.maxToolResultAge, `${early.maxToolResultAge}/${mid.maxToolResultAge}/${late.maxToolResultAge}`);
+    assert.ok(early.toolResultByteFloor > mid.toolResultByteFloor && mid.toolResultByteFloor > late.toolResultByteFloor, `${early.toolResultByteFloor}/${mid.toolResultByteFloor}/${late.toolResultByteFloor}`);
+    assert.ok(early.keepMin >= 95, `early keepMin=${early.keepMin}`);
+    assert.ok(late.keepMin <= 45, `late keepMin=${late.keepMin}`);
+
+    const again = budget.effectiveCompactThreshold({ messages: [{ role: 'user', content: 'x'.repeat(990) }] });
+    assert.equal(again.keepMin, late.keepMin);
+    assert.equal(again.maxToolResultAge, late.maxToolResultAge);
+    assert.equal(again.toolResultByteFloor, late.toolResultByteFloor);
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+test('live-style overflow payload compacts below gpt-5.5-xhigh context budget', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_ESTIMATOR_CALIBRATION = '0';
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '2.6';
+    process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.85';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '20';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '15';
+    process.env.HME_PROXY_COMPACT_TOOL_RESULT_BYTE_FLOOR = '15000';
+    process.env.HME_PROXY_COMPACT_BYTES = '4000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.85';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.95';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.85';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.95';
+    process.env.HME_PROXY_OMNI_LOCAL_SUMMARY = '0';
+    process.env.HME_OMO_PRUNING_BRIDGE = '0';
+    const budget = createContextBudget();
+    const payload = { model: 'cx/gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 80; i += 1) {
+      const id = `overflow-fixture-${i}`;
+      payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+      payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(25000) }] });
+    }
+    const beforeTokens = semanticTokenEstimate(payload, process.env);
+    assert.ok(beforeTokens > 480000, `fixture must start over-window, got ${beforeTokens}`);
+    const changed = budget.shrinkForContext(payload, 'gpt-5.5-xhigh');
+    const afterTokens = semanticTokenEstimate(payload, process.env);
+    assert.ok(changed > 0);
+    assert.ok(afterTokens < 480000, `post-compact estimate ${afterTokens} must fit gpt-5.5-xhigh`);
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+
+test('context-window overflow alert is a named self-origin LIFESAVER only when over budget', () => {
+  // Within budget -> no alert.
+  assert.equal(contextWindowOverflowAlert({ model: 'cx/gpt-5.5-high', usedTokens: 100, budget: 372000, afterBytes: 1000, ts: 'T' }), '');
+  // Over budget after compaction -> named LIFESAVER naming model, tokens, budget.
+  const line = contextWindowOverflowAlert({ model: 'cx/gpt-5.5-high', usedTokens: 404000, budget: 372000, afterBytes: 1050000, ts: '2026-05-31T00:00:00.000Z' });
+  assert.match(line, /\[hme-proxy\] LIFESAVER -- context budget/);
+  assert.match(line, /cx\/gpt-5\.5-high/);
+  assert.match(line, /404000 tokens/);
+  assert.match(line, /window 372000/);
+  // The [hme-proxy] tag must be classified self-origin (single source: self_origin.js).
+  assert.equal(require('../../proxy/self_origin').isSelfOriginSuppressed('[hme-proxy] LIFESAVER -- context budget'), true);
+});
+
+test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    const budget = createContextBudget();
+    const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+    const plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.threshold, Infinity);
+    const changed = budget.shrinkForPassthrough(payload);
+    assert.equal(changed, 0);
+    assert.equal(payload.messages.length, 1);
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+test('OmniRoute preflight ignores thinking signatures when deciding compaction pressure', () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '2.6';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '20';
+    process.env.HME_PROXY_COMPACT_BYTES = '4000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.99';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '1.10';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.95';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.99';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '1.10';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '200';
+    const budget = createContextBudget();
+    const payload = { model: 'gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 90; i += 1) {
+      payload.messages.push({
+        role: 'assistant',
+        content: [{ type: 'thinking', thinking: 'ok', signature: 's'.repeat(14000) }],
+      });
+    }
+    const before = JSON.stringify(payload);
+    assert.ok(before.length > 1_000_000);
+    assert.equal(budget.shrinkForContext(payload, 'gpt-5.5-xhigh'), 0);
+    assert.equal(JSON.stringify(payload), before);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
+test('request mutation does not pre-route compact normal OmniRoute Anthropic payloads', async () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.OVERDRIVE_MODE = '1';
+    process.env.HME_PROXY_FORCE_PASSTHROUGH = '0';
+    const payload = { model: 'claude-opus-4-7', messages: [] };
+    for (let i = 0; i < 80; i += 1) payload.messages.push({ role: i % 2 ? 'assistant' : 'user', content: [{ type: 'text', text: 'x'.repeat(70000) }] });
+    const before = JSON.stringify(payload);
+    assert.ok(before.length > 4_000_000);
+    const result = await mutateClaudeRequest({
+      payload,
+      outBody: Buffer.from(before, 'utf8'),
+      injected: false,
+      upstream: { provider: 'omniroute' },
+      clientReq: { url: '/v1/messages' },
+      isAnthropic: true,
+      isInteractivePath: true,
+      shrinkForPassthrough: () => { throw new Error('pre-route compaction should not run'); },
+      stripHmePrefixOutgoing: () => false,
+      injectHmeTools: async () => 0,
+      sanitizePayload: () => {},
+      injectStopReminderSystem: () => false,
+      lifecycleInactive: () => false,
+      runInlineFallback: () => {},
+      middleware: { runPipeline: async () => false },
+    });
+    assert.equal(result.passthrough, false);
+    assert.equal(JSON.stringify(payload), before);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
+test('request mutation rebuilds outBody when the early sanitize is the ONLY mutation (mesh-found security P1)', async () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.OVERDRIVE_MODE = '1';
+    process.env.HME_PROXY_FORCE_PASSTHROUGH = '0';
+    const payload = { model: 'claude-opus-4-7', messages: [{ role: 'user', content: 'SECRET=abc123 hello' }] };
+    const before = JSON.stringify(payload);
+    // Idempotent redactor: mutates + returns 1 the first time, 0 once already
+    // clean -- the exact shape that exposed the stale-wire-body bug.
+    const sanitizePayload = (p) => {
+      let changed = 0;
+      for (const m of p.messages || []) {
+        if (typeof m.content === 'string' && m.content.includes('SECRET=abc123')) {
+          m.content = m.content.replace('SECRET=abc123', 'SECRET=<redacted>');
+          changed = 1;
+        }
+      }
+      return changed;
+    };
+    const result = await mutateClaudeRequest({
+      payload,
+      outBody: Buffer.from(before, 'utf8'),
+      injected: false,
+      upstream: { provider: 'omniroute' },
+      clientReq: { url: '/v1/messages' },
+      isAnthropic: true,
+      isInteractivePath: false,
+      shrinkForPassthrough: () => 0,
+      stripHmePrefixOutgoing: () => false,
+      injectHmeTools: async () => 0,
+      sanitizePayload,
+      injectStopReminderSystem: () => false,
+      lifecycleInactive: () => false,
+      runInlineFallback: () => {},
+      middleware: { runPipeline: async () => false },
+    });
+    const wire = result.outBody.toString('utf8');
+    assert.doesNotMatch(wire, /SECRET=abc123/, 'the un-sanitized secret must NOT reach the wire body');
+    assert.match(wire, /SECRET=<redacted>/, 'outBody must carry the sanitized payload');
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+test('explicit compact byte cap does not force emergency tier below high-water', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_BYTES = '250000';
+    const budget = createContextBudget();
+    budget.setLastInputTokensLimit(272000);
+    const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+    const plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.threshold, Infinity);
+    assert.equal(budget.shrinkForPassthrough(payload), 0);
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () => withStatuslineUnavailable(() => {
+  const oldEnv = { ...process.env };
+  const logs = [];
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_TRACE = '1';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    const origError = console.error;
+    console.error = (msg) => logs.push(String(msg));
+    try {
+      const budget = createContextBudget();
+      const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+      const before = JSON.stringify(payload);
+      assert.equal(budget.shrinkForPassthrough(payload), 0);
+      assert.equal(JSON.stringify(payload), before);
+    } finally {
+      console.error = origError;
+    }
+    const logText = logs.join('\n');
+    assert.match(logText, /compact-decision model=gpt-5\.5-high/);
+    assert.match(logText, /pressure=0\.000/);
+    assert.match(logText, /severity=0\.00/);
+    assert.doesNotMatch(logText, /passthrough-compact decision|precompact|content elided|oldest message\(s\) dropped/);
+  } finally {
+    process.env = oldEnv;
+  }
+}));
+
+
+test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', async () => {
+  const oldEnv = { ...process.env };
+  const logs = [];
+  try {
+    process.env.OVERDRIVE_MODE = '0';
+    process.env.HME_PROXY_FORCE_PASSTHROUGH = '1';
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_TRACE = '1';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+    const before = JSON.stringify(payload);
+    const budget = createContextBudget();
+    const origError = console.error;
+    console.error = (msg) => logs.push(String(msg));
+    try {
+      const result = await mutateClaudeRequest({
+        payload,
+        outBody: Buffer.from(before, 'utf8'),
+        injected: false,
+        upstream: { provider: 'anthropic' },
+        clientReq: { url: '/v1/messages' },
+        isAnthropic: true,
+        isInteractivePath: true,
+        shrinkForPassthrough: budget.shrinkForPassthrough,
+        stripHmePrefixOutgoing: () => false,
+        injectHmeTools: async () => 0,
+        sanitizePayload: () => {},
+        injectStopReminderSystem: () => false,
+        lifecycleInactive: () => false,
+        runInlineFallback: () => {},
+        middleware: { runPipeline: async () => false },
+      });
+      assert.equal(result.passthrough, true);
+      assert.equal(result.outBody.toString('utf8'), before);
+      assert.equal(JSON.stringify(payload), before);
+    } finally {
+      console.error = origError;
+    }
+    const logText = logs.join('\n');
+    assert.match(logText, /compact-decision model=gpt-5\.5-high/);
+    assert.doesNotMatch(logText, /passthrough-compact decision|precompact|content elided|oldest message\(s\) dropped/);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
+test('request mutation transport-compacts giant interactive Anthropic payloads below provider failure size', async () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_INTERACTIVE_MAX_BYTES = '120000';
+    process.env.HME_PROXY_INTERACTIVE_KEEP_MIN = '8';
+    process.env.HME_PROXY_INTERACTIVE_STALE_TOOL_KEEP_TURNS = '4';
+    process.env.HME_PROXY_INTERACTIVE_TOOL_RESULT_FLOOR = '1024';
+    const payload = { model: 'gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 40; i += 1) {
+      payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id: `tu_${i}`, name: 'Read', input: {} }] });
+      payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: `tu_${i}`, content: 'x'.repeat(8000) }] });
+    }
+    const beforeBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    assert.ok(beforeBytes > 120000);
+    const changed = compactLargeInteractiveAnthropicPayload(payload);
+    const afterBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    assert.ok(changed > 0);
+    assert.ok(afterBytes <= 120000, `${afterBytes} should be <= transport threshold`);
+    assert.ok(payload.messages.length >= 8, 'keepMin should preserve a live tail');
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
+test('request mutation direct smoke header bypasses lifecycle UserPromptSubmit fallback', async () => {
+  let called = 0;
+  const payload = { model: 'claude-sonnet-4-20250514', messages: [{ role: 'user', content: 'direct smoke' }] };
+  const before = JSON.stringify(payload);
+  const result = await mutateClaudeRequest({
+    payload,
+    outBody: Buffer.from(before, 'utf8'),
+    injected: false,
+    upstream: { provider: 'anthropic' },
+    clientReq: { url: '/v1/messages', headers: { 'x-hme-smoke-direct': '1' } },
+    isAnthropic: true,
+    isInteractivePath: true,
+    shrinkForPassthrough: () => 0,
+    stripHmePrefixOutgoing: () => false,
+    injectHmeTools: async () => 0,
+    sanitizePayload: () => {},
+    injectStopReminderSystem: () => false,
+    lifecycleInactive: (event) => event === 'UserPromptSubmit',
+    runInlineFallback: () => { called += 1; },
+    middleware: { runPipeline: async () => false },
+  });
+  assert.equal(called, 0);
+  assert.match(result.outBody.toString('utf8'), /direct smoke/);
+});
+
+
+test('OmniRoute preflight does not let Claude statusline force target payload compaction', () => {
+  const oldEnv = { ...process.env };
+  const runtimeDir = _path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = _path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = _fs.existsSync(statusline) ? _fs.readFileSync(statusline, 'utf8') : null;
+  try {
+    _fs.mkdirSync(runtimeDir, { recursive: true });
+    _fs.writeFileSync(statusline, JSON.stringify({ context_window: { total_input_tokens: 999000, context_window_size: 1000000 } }));
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.95';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '4';
+    const budget = createContextBudget();
+    const payload = { model: 'gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 16; i += 1) payload.messages.push({ role: 'user', content: 'x'.repeat(12000) });
+    const before = JSON.stringify(payload);
+    assert.equal(budget.shrinkForContext(payload, 'gpt-5.5-xhigh'), 0);
+    assert.equal(JSON.stringify(payload), before);
+  } finally {
+    process.env = oldEnv;
+    if (prevStatusline == null) {
+      try { _fs.unlinkSync(statusline); } catch { /* silent-ok: tempfile cleanup */ }
+    } else {
+      _fs.writeFileSync(statusline, prevStatusline);
+    }
+  }
+});
+
+test('OmniRoute preflight uses target payload pressure when statusline usage is unavailable', () => {
+  const oldEnv = { ...process.env };
+  const runtimeDir = _path.join(PROJECT_ROOT, 'tools/HME/runtime');
+  const statusline = _path.join(runtimeDir, 'claude-statusline-raw.json');
+  const prevStatusline = _fs.existsSync(statusline) ? _fs.readFileSync(statusline, 'utf8') : null;
+  try {
+    try { _fs.unlinkSync(statusline); } catch { /* silent-ok: fixture absent */ }
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_CONTEXT_PREFLIGHT_FRACTION = '0.50';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.50';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '10';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '11';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.50';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS = '4';
+    const budget = createContextBudget();
+    const payload = { model: 'gpt-5.5-xhigh', messages: [] };
+    for (let i = 0; i < 8; i += 1) {
+      const id = `omni-statusline-free-${i}`;
+      payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+      payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(210000) }] });
+    }
+    const before = JSON.stringify(payload);
+    const beforeCount = payload.messages.length;
+    const changed = budget.shrinkForContext(payload, 'gpt-5.5-xhigh');
+    assert.ok(changed > 0);
+    assert.equal(payload.messages.length, beforeCount);
+    assert.ok(JSON.stringify(payload).length < before.length);
+  } finally {
+    process.env = oldEnv;
+    if (prevStatusline != null) _fs.writeFileSync(statusline, prevStatusline);
+  }
+});
+
+test('message dropping is disabled until destructive CVT/drop permission', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 20; i += 1) {
+    const id = `cvt-no-drop-tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(60000) }] });
+  }
+  const beforeCount = payload.messages.length;
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({ threshold: 1000, maxTier: 2, maxToolResultAge: 4, toolResultByteFloor: 50000 }),
+    keepMin: 3,
+    env: { HME_PROXY_LOCAL_SUMMARY: '0' },
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.equal(payload.messages.length, beforeCount);
+  assert.doesNotMatch(JSON.stringify(payload), /passthrough-compact: .*oldest message/);
+});
+
+test('over-budget statusline forceCompaction bypasses byte gate and trims even when outbound bytes are under threshold', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 6; i += 1) payload.messages.push({ role: 'user', content: `turn-${i}` });
+  const beforeCount = payload.messages.length;
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({ threshold: 1_000_000, maxTier: 3, allowMessageDrop: true, forceCompaction: true, keepMin: 2 }),
+    keepMin: 2,
+    env: { HME_PROXY_LOCAL_SUMMARY: '0' },
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(payload.messages.length < beforeCount);
+});
+
+
+test('high keepTurns prevents stale tool stripping in long GPT-5.5 sessions', () => {
+  const payload = { model: 'gpt-5.5-high', messages: [] };
+  for (let i = 0; i < 120; i += 1) {
+    const id = `kept-tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: `result-${i}` }] });
+  }
+  const before = JSON.stringify(payload);
+  assert.equal(stripStaleToolResults(payload, 200), 0);
+  assert.equal(JSON.stringify(payload), before);
+});
+
+test('microcompact-only CVT pressure elides stale lengthy tool results without summaries/drops', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 8; i += 1) {
+    const id = `cvt-micro-tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(60000) }] });
+  }
+  const beforeCount = payload.messages.length;
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({ threshold: 1000, maxTier: 1, maxToolResultAge: 4, toolResultByteFloor: 50000 }),
+    keepMin: 3,
+    env: { HME_PROXY_LOCAL_SUMMARY: '1' },
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.equal(payload.messages.length, beforeCount);
+  const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
+  assert.ok(results.slice(0, -2).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
+  assert.ok(results.slice(-2).every((b) => String(b.content).length === 60000));
+});

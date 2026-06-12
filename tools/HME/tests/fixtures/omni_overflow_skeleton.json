@@ -1,0 +1,4945 @@
+{
+"derived_from": "claude-200-interactive-payload (real OmniRoute over-window snapshot)",
+"note": "Structural skeleton only -- NO real content. Test reconstitutes a faithful payload.",
+"model": "gpt-5.5-xhigh",
+"system_bytes": 1379,
+"tools_count": 9,
+"tool_names": [
+"Agent",
+"Bash",
+"Edit",
+"Read",
+"TodoWrite"
+],
+"real_serialized_bytes": 1217137,
+"messages": [
+{
+"role": "user",
+"blocks": [
+{
+"t": "text",
+"n": 14935
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 372,
+"sig": 916
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 176
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 20996
+},
+{
+"t": "text",
+"n": 30
+},
+{
+"t": "text",
+"n": 246
+},
+{
+"t": "text",
+"n": 143
+},
+{
+"t": "text",
+"n": 347
+},
+{
+"t": "text",
+"n": 1
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 37664
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "TodoWrite",
+"in": 1349
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 167
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 158
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 447
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 62
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 110
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 494
+},
+{
+"t": "tool_result",
+"n": 771
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 176
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 404
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 443
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 171
+},
+{
+"t": "tool_result",
+"n": 174
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 87
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 232
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 71
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 217
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 29
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 357
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9109
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 230
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 89
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Agent",
+"in": 402
+},
+{
+"t": "tool_use",
+"name": "Agent",
+"in": 452
+},
+{
+"t": "tool_use",
+"name": "Agent",
+"in": 269
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 855
+},
+{
+"t": "tool_result",
+"n": 855
+},
+{
+"t": "tool_result",
+"n": 855
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 306
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 135
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 227
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9255
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1184
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 32
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 3220
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 778
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 12163
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 989
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 497
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 337
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2147
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 234
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 69
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 95
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 100
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 100
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 114
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 114
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 115
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 108
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5840
+},
+{
+"t": "tool_result",
+"n": 2923
+},
+{
+"t": "tool_result",
+"n": 588
+},
+{
+"t": "tool_result",
+"n": 10528
+},
+{
+"t": "tool_result",
+"n": 13497
+},
+{
+"t": "tool_result",
+"n": 728
+},
+{
+"t": "tool_result",
+"n": 1425
+},
+{
+"t": "tool_result",
+"n": 1518
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 186
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 92
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1850
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 243
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 658
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 279
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 620
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 97
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 611
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 9255
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 223
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 16435
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 10632
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 38
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 572
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 472
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2143
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1125
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 8073
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 866
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 200
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 252
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 31
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 263
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 14
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 213
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1314
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 2929
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 257
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 108
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 107
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 14
+},
+{
+"t": "tool_result",
+"n": 2401
+},
+{
+"t": "tool_result",
+"n": 691
+},
+{
+"t": "tool_result",
+"n": 768
+},
+{
+"t": "tool_result",
+"n": 630
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5440
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 936
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 506
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 367
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 940
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1461
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 174
+},
+{
+"t": "tool_result",
+"n": 170
+},
+{
+"t": "tool_result",
+"n": 168
+},
+{
+"t": "tool_result",
+"n": 174
+},
+{
+"t": "tool_result",
+"n": 174
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 364
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1215
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 342
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1069
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 447
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 174
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1214
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 97
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 744
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 553
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 276
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 4100
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 610
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 325
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 697
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2494
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 759
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 167
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 475
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 867
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 120
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2256
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 520
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3586
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 4690
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 106
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 8311
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 690
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 11727
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 15840
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5158
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 8549
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 654
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 27
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1597
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 139
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 300
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 275
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 104
+},
+{
+"t": "tool_result",
+"n": 1388
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 297
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1388
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 3494
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 6678
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5892
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 307
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 173
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 298
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5699
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1141
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 15663
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 97
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2194
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 254
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 97
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 255
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 449
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 248
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 100
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 252
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5405
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 3359
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 71
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 298
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 164
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 605
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 470
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 348
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 936
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 222
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 6
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 212
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 602
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 406
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 28892
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 387
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 26
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 1500
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 30
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 93
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 399
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 454
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 105
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 453
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1070
+},
+{
+"t": "tool_result",
+"n": 1110
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 113
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1232
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 290
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 168
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 865
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 627
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 288
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 59
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 556
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 1
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 1043
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 6
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 461
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 597
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 263
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 243
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 15923
+},
+{
+"t": "tool_result",
+"n": 2178
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 116
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9205
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 15044
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 123
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 11539
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 108
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 575
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3677
+},
+{
+"t": "tool_result",
+"n": 1682
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 916
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2388
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 107
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 98
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 105
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 93
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1799
+},
+{
+"t": "tool_result",
+"n": 4908
+},
+{
+"t": "tool_result",
+"n": 2902
+},
+{
+"t": "tool_result",
+"n": 3225
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 101
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 8139
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 275
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2801
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 106
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1224
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 282
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 8647
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 326
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5744
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 296
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 21142
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 633
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 443
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 532
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 215
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 247
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 704
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 124
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 14
+},
+{
+"t": "tool_result",
+"n": 448
+},
+{
+"t": "tool_result",
+"n": 8928
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 277
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 472
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 144
+},
+{
+"t": "tool_result",
+"n": 2025
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 115
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 826
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 120
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2845
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 99
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3301
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 286
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2128
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 310
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1769
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 125
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9465
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 127
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 4295
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 579
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1068
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 671
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3717
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 103
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2603
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 98
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 4492
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 3751
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1289
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 594
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 168
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 107
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 6455
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 795
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 568
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 107
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 4169
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 266
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2849
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 115
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3001
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 2838
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1373
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 278
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1420
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 526
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1534
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1696
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1534
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1052
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 499
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 124
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9397
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1140
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1534
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 905
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1534
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1296
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1534
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 904
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 185
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 677
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 444
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 268
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 284
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2076
+},
+{
+"t": "tool_result",
+"n": 118
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 316
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 199
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 276
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 99
+},
+{
+"t": "tool_result",
+"n": 308
+},
+{
+"t": "tool_result",
+"n": 31
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 312
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 14
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 738
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 532
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 1113
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 97
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 339
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2144
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 304
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 22130
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 93
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3120
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 105
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2823
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 298
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 17240
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 95
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 15538
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 328
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3500
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3918
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2045
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3269
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 95
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2137
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1912
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 155
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 79
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2083
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 247
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 155
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 93
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1482
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1038
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 157
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 81
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1873
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 96
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 932
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1603
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 31
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 96
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1169
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1918
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 157
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 96
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1988
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 377
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 179
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 103
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3496
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 328
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 179
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2614
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2197
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 750
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1822
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 157
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 87
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 96
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1571
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 305
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 157
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 87
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 96
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 847
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2197
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 750
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 78
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2197
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 750
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2197
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 702
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2197
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 702
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3269
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2197
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1466
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 32
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 381
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 329
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1524
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 31
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1058
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 460
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 31
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1058
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 112
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 4923
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 414
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 174
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 1479
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 31
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 118
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1135
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 304
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 211
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 327
+},
+{
+"t": "tool_result",
+"n": 6963
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 375
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 312
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 64
+},
+{
+"t": "tool_result",
+"n": 14
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 790
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 750
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 641
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 720
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 350
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 25988
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 126
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2600
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 293
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 8683
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 133
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 5780
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 135
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 524
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 111
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 10771
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 1138
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 298
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 6369
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 10
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 113
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 107
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 102
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 370
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9534
+},
+{
+"t": "tool_result",
+"n": 9855
+},
+{
+"t": "tool_result",
+"n": 2121
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 109
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 11555
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Read",
+"in": 108
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1072
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 414
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9956
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "text",
+"n": 16
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 95
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1472,
+"sig": 5160
+},
+{
+"t": "text",
+"n": 179
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 291
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 407
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 12187
+},
+{
+"t": "tool_result",
+"n": 5697
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 964
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1208,
+"sig": 6960
+},
+{
+"t": "text",
+"n": 193
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 919
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1165
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 2977,
+"sig": 20008
+},
+{
+"t": "text",
+"n": 1158
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 353
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 80
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1213,
+"sig": 5536
+},
+{
+"t": "text",
+"n": 162
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1312
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 155
+}
+]
+},
+{
+"role": "system",
+"blocks": [
+{
+"t": "str",
+"n": 94
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 263,
+"sig": 1608
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 363
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 208
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 742
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 59
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 270,
+"sig": 1132
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 350
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 79
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1064,
+"sig": 2236
+},
+{
+"t": "text",
+"n": 1838
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 82
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "str",
+"n": 49
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1780,
+"sig": 6280
+},
+{
+"t": "text",
+"n": 60
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 722
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 3972
+},
+{
+"t": "text",
+"n": 766
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1154,
+"sig": 7100
+},
+{
+"t": "text",
+"n": 62
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 913
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 2460
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1241,
+"sig": 5404
+},
+{
+"t": "text",
+"n": 245
+},
+{
+"t": "tool_use",
+"name": "Bash",
+"in": 859
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1744
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 1535,
+"sig": 10208
+},
+{
+"t": "text",
+"n": 857
+},
+{
+"t": "tool_use",
+"name": "Read",
+"in": 104
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 1959
+}
+]
+},
+{
+"role": "assistant",
+"blocks": [
+{
+"t": "thinking",
+"n": 3211,
+"sig": 18380
+},
+{
+"t": "text",
+"n": 582
+},
+{
+"t": "tool_use",
+"name": "Edit",
+"in": 1744
+}
+]
+},
+{
+"role": "user",
+"blocks": [
+{
+"t": "tool_result",
+"n": 9
+}
+]
+}
+]
+}

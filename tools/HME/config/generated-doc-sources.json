@@ -1,0 +1,15 @@
+{
+  "description": "Machine-truth sources that must project into doc/self-coherence-full.md via doc/infra/update_self_coherence.py.",
+  "sources": [
+    { "label": "Project boundary map", "path": "tools/HME/project_boundaries.json", "summary": "project_boundaries" },
+    { "label": "Mesh depth policy", "path": "teams/rounds/depth_policy.json", "summary": "depth_policy" },
+    { "label": "Model/provider registry", "path": "config/models.json", "summary": "models" },
+    { "label": "Service registry", "path": "tools/HME/config/services.json", "summary": "services" },
+    { "label": "Public i/ command registry", "path": "tools/HME/i_registry.json", "summary": "i_registry" },
+    { "label": "Adapter boundary registry", "path": "tools/HME/config/adapter-boundaries.json", "summary": "adapter_boundaries" },
+    { "label": "Dispatcher route contract", "path": "tools/HME/event_kernel/dispatcher-routes.json", "summary": "dispatcher_routes" },
+    { "label": "State-file registry", "path": "tools/HME/config/state-files.json", "summary": "state_files" },
+    { "label": "Phase evidence firewall", "path": "tools/HME/config/phase-evidence.json", "summary": "phase_evidence" },
+    { "label": "HCI verifier registry", "path": "tools/HME/scripts/verify_coherence/", "summary": "verifiers" }
+  ]
+}

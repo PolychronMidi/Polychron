@@ -1,0 +1,209 @@
+{
+  "_doc": "Review-brief DATA (not a doc, not committed prose): per-surface review framing the round runner composes into a peer review-request MESSAGE (sent via ask-peer into the red/blue/purple channel) with live source inlined fresh at dispatch. Edit here; never embed source. teams/rounds/review_brief.py composes + lints.",
+  "briefs": {
+    "hci-integrity": {
+      "title": "Context Capsule: review HCI integrity (can the score mislead?)",
+      "artifact": "The HME Coherence Index integrity machinery: verify_coherence/__main__.py run_engine score aggregation + static/runtime split + snapshot, verify_coherence/_base.py verdict semantics (skipped score 1.0, errored score 0.0, execute exception handling, walk_tracked_files skip logic, severity_for_status), verify_coherence/verifier_self_coverage.py (every verifier module needs a test or a waiver), and the verifier-skip.json / verifier_test_waivers.json config that decides what is scanned and what test-gaps are tolerated.",
+      "goal": "Find only decision-changing ways the HCI can be MISLEADING (reports green when a real problem exists), fail-OPEN (a verifier that should FAIL instead SKIPs or scores 1.0), STALE (snapshot/skip/waiver drift hides regressions), or NOISY (a WARN/SKIP that should be FAIL or vice versa, inflating the number). Cite the exact function/line. Do not report style or broad redesigns.",
+      "constraints": "SKIP scoring 1.0 (opt-out without docking) and ERROR scoring 0.0 (a crashed verifier docks) are intentional. execute() converting a thrown verifier to ERROR is intentional fail-closed. The static/runtime split is intentional (static blocks, runtime observes). Skip dirs/files and waivers exist to bound scope, but must not silently hide real coverage. Accept a finding only if it shows a concrete path where a genuine defect would NOT dock HCI. A clean grounded audit is a valid success.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, failure mode, contradictory evidence checked (which existing guard/test already covers it, or 'none found after checking'), one-line fix, severity, decision-impact, confidence. Prefer fail-open scoring, skip/waiver scope holes, snapshot staleness, and aggregation math bugs.",
+      "coverage_included": "run_engine, _kind_for, skipped, errored, execute, walk_tracked_files, severity_for_status, CORE_SKIP_DIRS, VerifierSelfCoverageVerifier, _registry_modules, _has_test, skip_files, skip_dirs",
+      "coverage_excluded": "the individual domain verifier modules' internals (docs/code_audits/etc.), the proxy, the event-kernel, and product src/",
+      "evidence": [
+        "tools/HME/scripts/verify_coherence/__main__.py",
+        "tools/HME/scripts/verify_coherence/_base.py",
+        "tools/HME/scripts/verify_coherence/verifier_self_coverage.py",
+        "tools/HME/config/verifier-skip.json",
+        "tools/HME/config/verifier_test_waivers.json"
+      ]
+    },
+    "ask-peer": {
+      "title": "Context Capsule: review ask-peer.sh (the team comms primitive)",
+      "artifact": "tools/HME/scripts/ask-peer.sh -- the single comms primitive every team member\nuses. Looks up a role in teams/roles.json, validates it, appends the caller turn\nto the role's channel (real-newline, structural-tag-neutralized, turn-atomic\ntail-capped, flock-serialized), forks the driver session (or, opt-in, resumes the\nrole thread), stream-caps raw stdout via a FIFO capper, parses reply/session, and\nappends peer turn or explicit peer-error.",
+      "goal": "Find DECISION-CHANGING security/correctness flaws that survive the current\nhardening. Only issues that change what we ship. Cite the function/block. The\nguard (team_dispatch_guard.py) is assumed correct; review ask-peer.sh itself.",
+      "constraints": "Usage model: single-driver, pull-only, sequential dispatch (NOT concurrent\nfan-out). Non-driver callers must arrive via the guard (HME_TEAM_DISPATCH_GUARD_OK=1).\nOnly forked peers are allowed; default re-forks the driver, HME_TEAM_RESUME_PEER_SESSIONS=1\nopts into per-role memory. Peers have full inherited context and full tool access;\nany tool filtering is centralized at the proxy via HME_FILTER_TOOLS_DROP, not\nask-peer. bash is set -euo pipefail. jq + python3 available.",
+      "rubric": "Classify each finding P0 (ship-blocker) / P1 (should-fix) / P2 (nice). For each:\nname the function/block, the exact failure, and the one-line fix. Reject vague\nstyle notes. Prefer injection/escaping, race, fail-open, and quota-evasion flaws.",
+      "coverage_included": "the full ask-peer.sh source below -- arg parsing, role lookup +\nvalidation, tier-drift check, non-driver dispatch block, FORCE_FAIL/FORCE_HANG,\nROLE_SYSTEM charter, valid_sid, resolve_driver_sid, cap_channel, append_exchange,\npeer launch MODE, FIFO stream raw cap, robust JSON parse, SID persistence, and\nreply byte-cap",
+      "coverage_excluded": "team_dispatch_guard.py, teams/roles.json contents, host_hook_entry.js\n(assume correct for this review)",
+      "evidence": [
+        "tools/HME/scripts/ask-peer.sh"
+      ]
+    },
+    "calibrated-audit": {
+      "title": "Context Capsule: review the calibrated claim-audit discipline",
+      "artifact": "The calibrated-audit review discipline added to the mesh: ask-peer.sh ROLE_SYSTEM\n(always-on compact core) and team_dispatch_guard.py (opt-in --claim-audit flag +\nCLAIM_AUDIT_ADDENDUM + _with_claim_audit), enabled per-round by\nteams/rounds/round_measured.sh when CLAIM_AUDIT=1.",
+      "goal": "Find decision-changing flaws in HOW the calibrated-audit discipline is wired: does\nthe addendum reach the peer only when opted in, can it corrupt the leashed message\nor capsule grounding, does the always-on charter core mislead routine reviews, and\ndoes any wording instruct a peer to SUPPRESS legitimate findings or depth (which\nwould violate the cost-control charter: calibration must reduce inflation, never\nabridge real work). Cite the exact line/block.",
+      "constraints": "The addendum is opt-in (high-impact reviews only); routine reviews must stay\nlightweight. Anti-inflation must default lower ONLY when uncertain and never when\nthere is executable evidence or a fail-open safety consequence. The discipline\nmust never tell a peer to hide a real defect or stop legitimate deep verification;\na real defect on an unguarded surface (no counter-path) must stay a real finding.\nReview only the evidence below unless you verify a fact with tools.",
+      "rubric": "Classify P0/P1/P2. For each finding: the exact line/block, the failure mode, and a\none-line fix. Reject style notes. Prefer wording that could suppress real findings,\nopt-in leakage into routine reviews, message/capsule corruption, and safety-caveat\ngaps.",
+      "coverage_included": "the ask-peer ROLE_SYSTEM calibrated-audit core line, and the guard\nCLAIM_AUDIT_ADDENDUM text, _with_claim_audit helper, the --claim-audit flag\nregistration, and the send-path apply line",
+      "coverage_excluded": "unrelated ask-peer/guard logic already reviewed in prior rounds, the\nproxy, and the event-kernel",
+      "evidence": [
+        "tools/HME/scripts/ask-peer.sh",
+        "tools/HME/scripts/team_dispatch_guard.py"
+      ]
+    },
+    "event-kernel-host-entry": {
+      "title": "Context Capsule: review event-kernel host entry/adapters",
+      "artifact": "tools/HME/event_kernel/host_hook_entry.js and tools/HME/event_kernel/host_adapter_common.js -- the host hook entrypoint and shared adapter plumbing that drain stdin, suppress lifecycle hooks for team peers, choose host adapters, relay lifecycle events through /hme/lifecycle, and fall back to direct event-kernel dispatch when the proxy is unavailable.",
+      "goal": "Find decision-changing correctness/safety flaws in the event-kernel host-entry path that could hang hooks, drop or corrupt hook decisions, leak peer lifecycle events into the driver lifecycle, fail open/closed incorrectly during proxy outages, or route a host event through the wrong adapter. Cite function/block + fix.",
+      "constraints": "This code runs inside host hook processes; it must be bounded, non-recursive, and valid for Claude/Codex/OpenCode. Team peers are driver forks with full context/tools but HME_TEAM_PEER=1 must suppress driver lifecycle hooks for their ephemeral `claude -p` sub-sessions without bypassing tool/permission policy hooks. Proxy-down fallback is intentional, but fallback must preserve valid host hook output. Avoid style findings and do not review dispatcher.js internals here except where host_adapter_common calls lifecycle.dispatch().",
+      "rubric": "Classify P0/P1/P2. For each finding: function/block, exact failure mode, one-line fix. Reject speculative host behavior without evidence. Prefer unbounded waits/buffers, env/root resolution, stale process state, stdin handling, proxy timeout/fallback, and peer lifecycle bypass bugs.",
+      "coverage_included": "full source for host_hook_entry.js including arg, eventFromArg, adapterForHost, shouldBypassPeerLifecycle, failSafeStdout, readStdinBounded, spawnSync timeout/killSignal, stdin forwarding, stdout/stderr relay, and exit status; full source for host_adapter_common.js including OversizeStdinError, _stdinTooLargeResult, readStdin, resolveRoot, append, maintenanceActive, postLifecycle response cap, _postLifecycleOrNull, and runHostAdapter",
+      "coverage_excluded": "dispatcher.js internals, host-specific adapter finalRelay normalization, hook shell scripts, proxy /hme/lifecycle route implementation, ask-peer.sh",
+      "evidence": [
+        "tools/HME/event_kernel/host_hook_entry.js",
+        "tools/HME/event_kernel/host_adapter_common.js"
+      ]
+    },
+    "guard": {
+      "title": "Context Capsule: review team_dispatch_guard.py",
+      "artifact": "tools/HME/scripts/team_dispatch_guard.py -- the leashed dispatch guard between\nthe team router and ask-peer.sh. Enforces depth cap, per-turn budget (flock\nreserve+refund), crew gate, leash, global concurrency bound, killpg-on-timeout,\ncontext/capsule grounding, and driver-session propagation for forked peers.",
+      "goal": "Find DECISION-CHANGING security/correctness flaws that survive the current\nhardening. Only issues that change what we should ship. Cite the function.",
+      "constraints": "Usage model today: single-driver, pull-only, sequential dispatch (NOT concurrent\nfan-out). Peers are driver forks with full inherited context and full tool access;\nif any tool filtering is wanted it is centralized at the proxy via\nHME_FILTER_TOOLS_DROP. The guard is the ONLY path from router to peer.",
+      "rubric": "Classify each finding P0 (ship-blocker) / P1 (should-fix) / P2 (nice). For each:\nname the function, the exact failure, and the one-line fix. Reject vague style notes.",
+      "coverage_included": "the full guard source below (reserve/refund/flock, _send/killpg,\n_infer_depth, _effective_tier, _load_budget, _load_capsule, _capsule_headings,\n_capsule_coverage_gaps, main flow)",
+      "coverage_excluded": "ask-peer.sh, team_agent_router.py (assume correct for this review)",
+      "evidence": [
+        "tools/HME/scripts/team_dispatch_guard.py"
+      ]
+    },
+    "pre-write-check": {
+      "title": "Context Capsule: review the pre-write gate (preWriteCheck)",
+      "artifact": "tools/HME/proxy/pre_write_check.js -- the load-bearing PreToolUse write gate.\npreWriteCheck orchestrates, in order: applyPatchDecision, _editShapeDecision,\ntodoWriteDecision, the JS policy chain (firstDeny/rewrites/errors), then\n_shellParityDecision, _editCurrentFileDecision, and _kbBugfixDecision, with a\nfail-open catch. _repeatDeny escalates repeated identical denies; toHookResponse\nrenders the host decision.",
+      "goal": "Find decision-changing correctness/safety flaws in the gate: an ordering that lets\na dangerous write slip the hard checks, a fail-open path that swallows a real deny,\na rewrite that is applied without re-validation, a _repeatDeny state write that can\ncorrupt, or a credential/secret pattern that can be bypassed. Cite the function +\nline. Per the cost-control charter, do NOT propose changes that merely add latency\nwithout improving safety/quality.",
+      "constraints": "This gate runs on every write-family tool call and must fail OPEN on policy/state\noutages (basic editing must not break) AFTER the hard-deny checks have run -- that\nfail-open is intentional, not a bug, unless you can show a hard check is skipped.\nHard denies (shape, patch, shell-parity, edit-current, credential) must run before\nany allow. Review only the evidence below unless you verify a fact with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing check/test may already cover it, or\n\"none found after checking\"), and a one-line fix. Reject style notes. Prefer\nordering/bypass, fail-open scope, rewrite re-validation, and state-write safety.",
+      "coverage_included": "full pre_write_check.js source below -- preWriteCheck, applyPatchDecision\nuse, _editShapeDecision, todoWriteDecision use, _shellParityDecision,\n_editCurrentFileDecision, _kbBugfixDecision, _repeatDeny, _permission,\n_runTddGate, _backgroundWarningDecision, and toHookResponse",
+      "coverage_excluded": "the imported modules' internals (edit_validation, apply_patch_gate,\ntodo_invariant_guard, policies registry) except where called here; the event-kernel\ndispatcher that invokes this gate",
+      "evidence": [
+        "tools/HME/proxy/pre_write_check.js"
+      ]
+    },
+    "proxy-filter-tools": {
+      "title": "Context Capsule: review proxy filter_tools middleware",
+      "artifact": "tools/HME/proxy/middleware/03_filter_tools.js -- central proxy middleware that\nremoves configured tool definitions from outgoing Anthropic payloads. The capsule\nalso includes tools/HME/proxy/shared/load_env.js because _projectDropList reuses\nits parseEnvFile helper for project .env syntax.",
+      "goal": "Find decision-changing correctness/safety flaws in the central tool-filter path\nthat could crash requests, leak project configuration across contexts, mutate the\nwrong tools, lose cache_control, or undermine the settled policy that ask-peer has\nno local tool-deny path and filtering is centralized here. Cite function + fix.",
+      "constraints": "Peers are driver forks with full inherited context and live tool access; any tool\nfiltering is centralized here via HME_FILTER_TOOLS_DROP. Empty/unset drop lists\nare documented as no-op. The middleware may run for current and replayed payloads;\nit must be deterministic, idempotent per payload, root-scoped when PROJECT_ROOT is\nprovided, avoid process.cwd fallback for project .env reads, and call ctx.markDirty()\nwhen payload.tools changes. Review only the source in evidence unless you verify\nextra facts with tools.",
+      "rubric": "Classify P0/P1/P2. For each finding: function/block, exact failure mode, one-line\nfix. Reject style comments and non-shipping preferences. Prefer config-loading,\ncache_control preservation, multi-project/session leakage, malformed tool shapes,\nand doc/code contract mismatches.",
+      "coverage_included": "full source for 03_filter_tools.js including _stripInlineComment,\n_projectDropList, _optionalProcessDropList, _dropSet, onRequest,\nHME_FILTER_TOOLS_DROP parsing, cache_control rescue, ctx.PROJECT_ROOT handling,\nand the imported load_env.js parseEnvFile helper",
+      "coverage_excluded": "unrelated proxy middleware, ask-peer.sh, team_dispatch_guard.py, and\nupstream Claude tool schema semantics beyond what appears in evidence",
+      "evidence": [
+        "tools/HME/proxy/middleware/03_filter_tools.js",
+        "tools/HME/proxy/shared/load_env.js"
+      ]
+    },
+    "proxy-request-mutation": {
+      "title": "Context Capsule: review the proxy request mutation path",
+      "artifact": "tools/HME/proxy/hme_proxy_request_mutation.js -- mutateClaudeRequest, the single\noutbound-request transform for Anthropic traffic. It applies a dynamic output-token\ncap (_dynamicOutputCap/applyExplicitOtpmCap), large-payload compaction\n(compactLargeInteractiveAnthropicPayload), strip/inject transforms, the middleware\npipeline, and a FINAL GUARANTEE sanitize on every Anthropic path. It tracks a\nbodyDirtied flag to decide whether to rebuild the outgoing buffer.",
+      "goal": "Find decision-changing correctness/safety flaws in the ORCHESTRATION here (not the\nimported helpers): a mutation that dirties the payload but is NOT re-serialized into\noutBody (stale wire body), an output cap that can compute wrong/negative, a\ncompaction/cap interaction that drops the buffer rebuild, or the FINAL GUARANTEE\nbeing skippable. Cite the function + line.",
+      "constraints": "outBody must reflect payload whenever any transform mutated it -- a missed rebuild\nsends the UN-mutated body upstream (e.g. an un-sanitized payload). The FINAL\nGUARANTEE sanitize runs on EVERY Anthropic path including passthrough. Helper\nfunctions (stripBoilerplate, injectHmeTools, middleware.runPipeline, sanitizePayload,\netc.) are imported and assumed correct -- review only how this file sequences and\nrebuilds around them. Review only the evidence below unless you verify with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing rebuild/guard already covers it, or\n\"none found after checking\"), and a one-line fix. Reject style notes. Prefer\nmissed-buffer-rebuild, cap math, and FINAL-GUARANTEE-bypass bugs.",
+      "coverage_included": "full hme_proxy_request_mutation.js source below -- _positiveNumber,\n_loadOutputRegistry, _modelOutputInfo, _estimatedInputTokens, _dynamicOutputCap,\n_anthropicTransportMaxBytes, compactLargeInteractiveAnthropicPayload,\napplyExplicitOtpmCap, and mutateClaudeRequest (including the bodyDirtiedByStrip\ntracking and the FINAL GUARANTEE block)",
+      "coverage_excluded": "the imported transform/inject/middleware helpers' internals and the proxy\ndispatch that calls mutateClaudeRequest (assumed correct here)",
+      "evidence": [
+        "tools/HME/proxy/hme_proxy_request_mutation.js"
+      ]
+    },
+    "round-runner": {
+      "title": "Context Capsule: review round_measured.sh (the mesh review harness)",
+      "artifact": "teams/rounds/round_measured.sh -- the sequential, capsule-grounded review-round\nrunner: snapshots/restores the team dashboard, preserves canonical team channels\nand peer sessions, resets only the dispatch budget, emits typed durable progress\nrecords, and dispatches BASELINE (blue_lead) then a MULTI-PEER chain\n(red_lead -> red_purple -> blue_purple) through team_dispatch_guard.py.",
+      "goal": "Find decision-changing correctness/safety flaws in the HARNESS that would corrupt\nresults, leak state across runs, mis-restore the dashboard, or mis-bound the\nround. Cite the block. ask-peer.sh and the guard are assumed correct here.",
+      "constraints": "Team policy: peers are driver forks with full inherited context and full tool\naccess; dispatch is strictly sequential (no fan-out). The harness writes only\nunder teams/ and tools/HME/runtime; it must leave the dashboard as it found it.\nbash is set -uo pipefail (note: not -e). PROJECT_ROOT is required.",
+      "rubric": "Classify P0/P1/P2. For each: block, exact failure, one-line fix. Reject style\nnotes. Prefer state-leak, trap/cleanup, quoting, and race/ordering bugs.",
+      "coverage_included": "the full harness source below -- PROJECT_ROOT handling, DASH\nsnapshot/restore trap, channel/session/budget reset, the gcap guard wrapper,\nreply extraction, and the baseline + multi-peer dispatch sequence",
+      "coverage_excluded": "ask-peer.sh, team_dispatch_guard.py, team_agent_router.py",
+      "evidence": [
+        "teams/rounds/round_measured.sh"
+      ]
+    },
+    "session-state": {
+      "title": "Context Capsule: review the session-state store",
+      "artifact": "tools/HME/proxy/session_state.js -- the per-session state store. readState/\nwriteState/update do a read-modify-write of runtime/session-state.json (with a\nlegacy mirror); normalize fills defaults and coerces array/object shapes;\nrecordPhase/recordWrite/recordRead/recordDetectorOutcome/recordVerificationEvidence\nappend bounded entries; recentVerificationEvidence filters by age.",
+      "goal": "Find decision-changing correctness/safety flaws: a write that can corrupt or lose\ndurable session state, a lost-update race in the read-modify-write `update`, a\ndurability gap (crash between write and rename, or no fsync), a normalize bypass\nthat persists wrong-shaped state, or a mirror write that can diverge. Cite the\nfunction + line.",
+      "constraints": "readState throws (fails closed) on a corrupt non-ENOENT file -- that is\nintentional, not a bug, unless you show it wedges a caller that should degrade.\nThe bounded arrays cap memory by design. The legacy mirror is best-effort. Review\nonly the evidence below unless you verify a fact with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing check/test may already cover it,\nor \"none found after checking\"), and a one-line fix. Reject style notes. Prefer\nread-modify-write races, durability (fsync/rename), and normalize/shape bugs.",
+      "coverage_included": "full session_state.js source below -- defaultState, normalize, readState,\nwriteState, update, _pushBounded, recordPhase, recordWrite, recordRead,\nrecordDetectorOutcome, recordVerificationEvidence, and recentVerificationEvidence",
+      "coverage_excluded": "the callers of these functions and the shared RUNTIME_DIR/PROJECT_ROOT\nmodule (assumed correct here)",
+      "evidence": [
+        "tools/HME/proxy/session_state.js"
+      ]
+    },
+    "state-registry": {
+      "title": "Context Capsule: review the typed state registry",
+      "artifact": "tools/HME/proxy/state_registry.js -- the typed registry all HME state files go\nthrough (register, read, write, append, reset, _writeAtomic, buildShapeSchema,\nregisterFromStateFiles, _loadStateFiles). Callers use it instead of raw\nfs.read/writeFileSync to avoid schema drift; it provides atomic writes and\noptional JSON schema validation.",
+      "goal": "Find decision-changing correctness/safety flaws: a write that can corrupt or\nhalf-write durable state, a schema bypass that lets a malformed value persist, a\nread that silently returns wrong-shaped data, an atomic-write race, or a jsonl\nround-trip that drops/duplicates records. Cite the function + line.",
+      "constraints": "read() intentionally degrades to a typed empty (null/[]/'') on a missing file or\nparse error -- that fail-soft is by design for optional state, unless you can show\nit masks a real corruption a caller will trust. _writeAtomic must be crash-safe\n(readers see old or new, never half). Schema validation only applies to json\nformat with a registered schema. Review only the evidence below unless you verify\na fact with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing check/test may already cover it,\nor \"none found after checking\"), and a one-line fix. Reject style notes. Prefer\natomic-write/durability, schema-bypass, and jsonl/parse round-trip bugs.",
+      "coverage_included": "full state_registry.js source below -- _absPath, _writeAtomic, register,\n_loadStateFiles, registerFromStateFiles, _entry, read, write, append, reset,\npaths, listRegistered, buildShapeSchema, and the module-load registrations",
+      "coverage_excluded": "the config/state-files.json contents and the individual callers; the\nverify_coherence state-file-ownership verifier (assumed correct here)",
+      "evidence": [
+        "tools/HME/proxy/state_registry.js"
+      ]
+    },
+    "stop-chain": {
+      "title": "Context Capsule: review the stop-chain evaluator",
+      "artifact": "tools/HME/proxy/stop_chain/index.js -- the Stop-hook policy evaluator. runStopChain\nruns an ordered policy list with first-deny-wins aggregation: mandatory policies\n(detectors, anti_patterns, work_checks) fail CLOSED (deny) on load/throw; optional\npolicies fail OPEN (allow) so diagnostics can't wedge the chain. It also has a\nsubagent escape, a cascade-break short-circuit, strict-only policy gating, unified-\nregistry disable, hot-reload of policy modules, trace, and a one-event-per-run\ncoherence ledger append.",
+      "goal": "Find decision-changing correctness/safety flaws: a path that lets a turn STOP when\na mandatory policy should have blocked it, a cascade-break/subagent escape that is\ntoo broad (silences real denies), a first-deny aggregation bug, a hot-reload cache\nbug, or an unbounded/again-throwing failure path. Cite the function + line.",
+      "constraints": "Mandatory policies MUST fail closed; optional policies MUST fail open (intentional,\nnot a bug, unless you show a mandatory check is skipped). The Stop protocol's only\nuser-visible channel is block-with-reason, so instruct messages fold into a block.\nTrace/telemetry/ledger writes are advisory and must never wedge the chain. Review\nonly the evidence below unless you verify a fact with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing check/test may already cover it, or\n\"none found after checking\"), and a one-line fix. Reject style notes. Prefer\nescape-too-broad, mandatory-skip, aggregation, and fail-open/closed scope bugs.",
+      "coverage_included": "full stop_chain/index.js source below -- _loadUnifiedConfig,\n_isPolicyEnabled, _policyNamesForMode, mandatoryPolicyFailure, appendTrace,\nresetTrace, logError, loadPolicy, _isCascadeBreakConditions, runStopChain, and the\nfirst-deny aggregation loop",
+      "coverage_excluded": "the individual policy modules under stop_chain/policies/, the telemetry\nmodule, and coherence_events (assumed correct here)",
+      "evidence": [
+        "tools/HME/proxy/stop_chain/index.js"
+      ]
+    },
+    "team-agent-router": {
+      "title": "Context Capsule: review team_agent_router.py",
+      "artifact": "tools/HME/scripts/team_agent_router.py -- routes a requested tier/caller to a\nteam role before team_dispatch_guard.py and ask-peer.sh deliver the handoff.",
+      "goal": "Find decision-changing correctness/security flaws in routing that would make the\nfork/full-tool mesh dispatch the wrong peer, silently under-route, or hide routing\nfailure. Cite functions/blocks.",
+      "constraints": "Team policy: peers are driver forks with full inherited context and full tool\naccess; tool filtering is centralized via HME_FILTER_TOOLS_DROP. Dispatch must be\nsequential/no fan-out. The router must be conservative: wrong-peer routing is\nworse than explicit denial.",
+      "rubric": "Classify P0/P1/P2. For each: exact function/block, failure, and one-line fix.\nReject style notes. Prefer fail-open, spoofing, tier/order, and stale-state bugs.",
+      "coverage_included": "full router source below -- registry load, tier parsing,\nrole filtering/selection, diagnostics, and main CLI behavior",
+      "coverage_excluded": "ask-peer.sh and team_dispatch_guard.py (assume current and correct)",
+      "evidence": [
+        "tools/HME/scripts/team_agent_router.py"
+      ]
+    },
+    "mesh-signal-discipline": {
+      "title": "Context Capsule: review mesh signal discipline",
+      "artifact": "The mesh signal path spanning team_dispatch_guard.py, ask-peer.sh, team_agent_router.py, review_brief.py, teams/roles.json, and round_measured.sh. This is the path that primes forked peer roles, routes/targets red-blue-purple dialogue, grounds review briefs in live evidence, writes team-channel messages, and constrains peer findings to decision-changing claims.",
+      "goal": "Find only decision-changing flaws that create context bloat, bypass team channels, route/prime the wrong role, inflate weak findings, suppress real findings, or misuse AUDIT-UNCERTAIN. Do not report generic code quality or broad architecture preferences.",
+      "constraints": "Peers are driver forks with full inherited context/tools; dispatch stays sequential; tool filtering remains centralized at the proxy. Review briefs are DATA composed into channel messages; do not rebuild capsule directories, coverage maps, score/eval demos, or duplicate trackers. A clean audit is successful if grounded. Any accepted finding must reduce bloat or make an existing contract enforceable.",
+      "rubric": "Classify P0/P1/P2. Accept only P0/P1 findings with grounded evidence for one of: context bloat, channel bypass, wrong-role/routing, weak-finding inflation, real-finding suppression, or AUDIT-UNCERTAIN misuse. For each: exact file/function/block, failure mode, contradictory evidence checked, one-line fix. Use AUDIT-UNCERTAIN only for genuine cross-role disagreement on load-bearing claims.",
+      "coverage_included": "_message_with_leash, _capsule_message, CLAIM_AUDIT_ADDENDUM, _with_claim_audit, explicit --target handling in team_dispatch_guard.py, ask-peer ROLE_SYSTEM and append_exchange, team_agent_router routing functions, review_brief compose/lint, teams/roles.json channel_by_caller, and round_measured.sh named-target dispatch/progress wrapper",
+      "coverage_excluded": "proxy middleware internals, product src/, unrelated verifier modules, and historical retired capsule/coverage-map/scoring tools",
+      "evidence": [
+        "tools/HME/scripts/team_dispatch_guard.py",
+        "tools/HME/scripts/ask-peer.sh",
+        "tools/HME/scripts/team_agent_router.py",
+        "teams/rounds/review_brief.py",
+        "teams/roles.json",
+        "teams/rounds/round_measured.sh"
+      ]
+    },
+    "tool-result-semantics": {
+      "title": "Context Capsule: review tool-result empty-marker semantics",
+      "artifact": "tools/HME/proxy/tool_result_semantics.js -- marks an EMPTY tool_result so the model\nnever sees a blank result it could misread. markEmptyResult appends [SUCCESS] (or\n[FAIL] when is_error) only when the result text is empty and no marker already\nexists; appendText handles string/array/null content shapes; hasMarker/textOfToolResult\ninspect content; emptyMarker picks the marker.",
+      "goal": "Find decision-changing correctness flaws: a non-empty result wrongly marked, an\nerror result marked [SUCCESS] (or vice versa), a double-marking on replay, or an\nappendText that corrupts the content shape a later reader expects. Cite the\nfunction + line.",
+      "constraints": "markEmptyResult must be idempotent (no stacking on replay) and must only fire on a\ngenuinely empty result. is_error on the toolResult must win the SUCCESS/FAIL choice.\ntextOfToolResult/blockText (imported) is assumed correct. Review only the evidence\nbelow unless you verify a fact with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing check already covers it, or \"none\nfound after checking\"), and a one-line fix. Reject style notes. A clean audit (no\ndecision-changing issue, with evidence) is a valid successful result.",
+      "coverage_included": "full tool_result_semantics.js source below -- textOfToolResult, appendText,\nhasMarker, emptyMarker, markEmptyResult, and the SUCCESS_EMPTY/FAIL_EMPTY constants",
+      "coverage_excluded": "the imported request_shape blockText helper and the middleware that calls\nmarkEmptyResult (assumed correct here)",
+      "evidence": [
+        "tools/HME/proxy/tool_result_semantics.js"
+      ]
+    },
+    "transcript-compactor": {
+      "title": "Context Capsule: review the transcript compactor",
+      "artifact": "tools/HME/proxy/transcript_compactor.js -- shrinks Claude Code's append-only .jsonl\ntranscript below the ~30MB read limit. compactTranscriptLines never drops a line\n(recent window + unparseable lines pass through byte-exact; only large tool_result/\ntoolUseResult/attachment values are elided to a marker). compactTranscriptFile is a\nguarded atomic rewrite: no-op under highWater, escalation tiers if still over the\nhard limit, and size+mtime rechecks before AND after the write to avoid clobbering\na concurrent Claude append. maybeCompactTranscriptFile is the best-effort entry.",
+      "goal": "Find decision-changing correctness/safety flaws: a path that DROPS or corrupts a\ntranscript line, an elision that changes the shape a later reader trusts, a\nconcurrent-write guard that can still clobber a live append, an escalation that\nfails to get under the hard limit, or a rewrite that loses data on crash. Cite the\nfunction + line.",
+      "constraints": "The transcript is Claude Code's own append-only file; the compactor must NEVER drop\na line or break JSONL framing, and must abort rather than clobber a concurrent\nappend. The recent-keep window must stay byte-exact (active task context). The\nwhole path is best-effort and must never throw out to the hook. Review only the\nevidence below unless you verify a fact with tools.",
+      "rubric": "Classify P0/P1/P2 with the claim-audit discipline. For each: function/line, exact\nfailure, contradictory evidence (which existing guard/test may already cover it, or\n\"none found after checking\"), and a one-line fix. Reject style notes. Prefer\nline-drop/framing, concurrent-write race, escalation correctness, and shape bugs.",
+      "coverage_included": "full transcript_compactor.js source below -- _marker, _serializedBytes,\n_elideValue, _elideToolResultContent, compactEntry, compactTranscriptLines,\ncompactTranscriptFile, and maybeCompactTranscriptFile",
+      "coverage_excluded": "the callers (the claude_adapter Stop/SessionStart/PostToolUse triggers)\nand Claude Code's transcript read internals (assumed as documented constants here)",
+      "evidence": [
+        "tools/HME/proxy/transcript_compactor.js"
+      ]
+    }
+  }
+}

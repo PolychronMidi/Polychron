@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "coverage": {
+    "minimum_nodes": 9,
+    "required_nodes": [
+      "source-grep-rules-fully-enforced",
+      "env-failfast-no-unclassified-fallbacks",
+      "artifact-lifecycle-valid",
+      "runtime-freshness-and-context-thermodynamics-valid",
+      "failure-alchemy-valid"
+    ]
+  },
+  "nodes": {
+    "source-grep-rules-fully-enforced": {
+      "intent": "ensure every source-grep rule is actually wired to an invariant shard",
+      "scope": ["tools/HME/scripts/invariants/check_source_grep_invariant.py", "tools/HME/config/invariants/*.json"],
+      "watched_class": "orphan or dangling source-grep guards",
+      "watcher_of": ["no-foreign-proc-fd-poke", "no-retired-consult-readchain-routes", "event-kernel-subprocesses-use-fs-ipc"],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["define a RULES key but never reference it", "reference a misspelled RULES key", "add a source grep ban with no invariant shard"],
+      "negative_control": "check_source_grep_bijection.py fires on synthetic orphan rule"
+    },
+    "env-failfast-no-unclassified-fallbacks": {
+      "intent": "prevent environment fallback drift from silently weakening fail-fast configuration semantics",
+      "scope": ["tools/HME/scripts/check-env-failfast.py", ".env.sha256", "tools/HME/config/invariants/core.json"],
+      "watched_class": "unclassified inline environment fallbacks and stale fallback waivers",
+      "watcher_of": ["runtime-freshness-and-context-thermodynamics-valid"],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["add a new os.environ fallback without waiver", "reuse a stale waiver hash", "hide fail-open config behind default strings"],
+      "negative_control": "synthetic unclassified env fallback makes check-env-failfast.py print an env fallback finding"
+    },
+    "no-retired-consult-readchain-routes": {
+      "intent": "block retired FIFO/readq/input-field consult read-chain routes",
+      "scope": ["teams/rounds", "tools/HME/config", "tools/HME/proxy", "tools/HME/scripts"],
+      "watched_class": "control-plane marker typed into live input instead of proxy-emitted Read tool_use",
+      "watcher_of": ["causal-paths-valid"],
+      "watched_by": ["source-grep-rules-fully-enforced", "invariant-topology-valid"],
+      "known_escape_vectors": ["reintroduce readq! FIFO write", "restore submit_read_queue_to_pty", "type [HME_READ_CHAIN] from local-session shortcut", "restore side-session proof prompt driver"],
+      "negative_control": "synthetic readq! source line is reported by check_source_grep_invariant.py no-retired-consult-readchain-routes"
+    },
+    "causal-paths-valid": {
+      "intent": "make shortcuts and proxy route transitions typed and lane-checked",
+      "scope": ["tools/HME/config/causal-paths.json", "tools/HME/config/shortcuts.json"],
+      "watched_class": "wire/local-session/host-task-notification lane confusion",
+      "watcher_of": ["no-retired-consult-readchain-routes"],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["wire shortcut declared only as string with no forbidden emitters", "local-session shortcut leaks into API payload"],
+      "negative_control": "readq key in multi-step shortcuts makes check_causal_paths.py fail"
+    },
+    "coherence-proof-schema-and-sample-valid": {
+      "intent": "ensure compact proof traces carry causal fields instead of prose-only claims",
+      "scope": ["tools/HME/config/coherence-proof.schema.json", "tools/HME/tests/fixtures/coherence-trace.sample.json"],
+      "watched_class": "unstructured proof claims with no causal path or verifier IDs",
+      "watcher_of": ["artifact-lifecycle-valid"],
+      "watched_by": ["invariant-topology-valid", "failure-alchemy-valid"],
+      "known_escape_vectors": ["claim success without proof_artifacts", "omit forbidden_paths_checked", "use prose provenance without causal_path_ids"],
+      "negative_control": "check_coherence_proof.py fails when required causal fields are removed"
+    },
+    "artifact-lifecycle-valid": {
+      "intent": "classify tracked artifacts and block runtime/proof/metric files from becoming unowned evidence",
+      "scope": ["tools/HME/config/artifact-lifecycle.json", "tools/HME/scripts/invariants/check_artifact_lifecycle.py"],
+      "watched_class": "unclassified tracked paths, unallowlisted runtime, and metrics without schema/freshness ownership",
+      "watcher_of": ["coherence-proof-schema-and-sample-valid", "runtime-freshness-and-context-thermodynamics-valid"],
+      "watched_by": ["invariant-topology-valid", "failure-alchemy-valid"],
+      "known_escape_vectors": ["commit new runtime proof without allowlist", "track generated files as source", "add metric proof without schema or freshness owner"],
+      "negative_control": "phase_omega_validators.test.py injects an unclassified tracked path and check_artifact_lifecycle.py reports it"
+    },
+    "runtime-freshness-and-context-thermodynamics-valid": {
+      "intent": "ensure runtime/context evidence is fresh, bounded, labeled, and cannot substitute stale task-output for current proof",
+      "scope": ["tools/HME/config/runtime-freshness.json", "tools/HME/scripts/invariants/check_runtime_freshness.py"],
+      "watched_class": "stale runtime proof, task-output polling, duplicate hook banners, and unlabeled historical logs",
+      "watcher_of": ["artifact-lifecycle-valid"],
+      "watched_by": ["env-failfast-no-unclassified-fallbacks", "invariant-topology-valid"],
+      "known_escape_vectors": ["cite stale task-output as current evidence", "hide current failures in historical logs", "omit freshness window for runtime metrics"],
+      "negative_control": "check_runtime_freshness.py fails when freshness windows or task-output guard metadata are removed"
+    },
+    "failure-alchemy-valid": {
+      "intent": "force every failure resolution into fix, regression test, invariant, or dead-mechanism deletion",
+      "scope": ["tools/HME/config/failure-alchemy.json", "tools/HME/scripts/invariants/check_failure_alchemy.py"],
+      "watched_class": "fake-green labels, broad-change repairs while red, and unresolved failures relabeled as history",
+      "watcher_of": ["coherence-proof-schema-and-sample-valid", "artifact-lifecycle-valid"],
+      "watched_by": ["invariant-topology-valid"],
+      "known_escape_vectors": ["label failures preexisting", "skip targeted test before broad suite", "treat deletion as success without replacement invariant"],
+      "negative_control": "phase_omega_validators.test.py removes required forbidden_labels and check_failure_alchemy.py reports it"
+    },
+    "invariant-topology-valid": {
+      "intent": "make the invariant watcher graph itself executable and thresholded",
+      "scope": ["tools/HME/config/invariant-topology.json", "tools/HME/scripts/invariants/check_invariant_topology.py"],
+      "watched_class": "decorative topology with missing coverage, unresolved watcher edges, or absent negative controls",
+      "watcher_of": ["source-grep-rules-fully-enforced", "env-failfast-no-unclassified-fallbacks", "artifact-lifecycle-valid", "runtime-freshness-and-context-thermodynamics-valid", "failure-alchemy-valid"],
+      "watched_by": [],
+      "known_escape_vectors": ["add a new required invariant without a topology node", "drop coverage below threshold", "reference an invariant id that no shard defines"],
+      "negative_control": "phase_omega_validators.test.py removes a required topology node and check_invariant_topology.py reports coverage failure"
+    }
+  }
+}

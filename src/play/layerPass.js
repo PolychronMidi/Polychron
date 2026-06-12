@@ -1,0 +1,131 @@
+// src/play/layerPass.js - Extracted layer pass loop for main.js
+
+moduleLifecycle.declare({
+  name: 'layerPass',
+  subsystem: 'play',
+  deps: ['conductorConfig', 'eventBus', 'regimeFade', 'regimeFx', 'regimePan', 'regimeVelocity', 'texturalMemoryAdvisor', 'timeStream', 'validator'],
+  lazyDeps: ['mainBootstrap', 'microUnitAttenuator'],
+  provides: ['layerPass'],
+  init: (deps) => {
+  const eventBus = deps.eventBus;
+  const conductorConfig = deps.conductorConfig;
+  const regimeFade = deps.regimeFade;
+  const regimeFx = deps.regimeFx;
+  const regimePan = deps.regimePan;
+  const regimeVelocity = deps.regimeVelocity;
+  const texturalMemoryAdvisor = deps.texturalMemoryAdvisor;
+  const timeStream = deps.timeStream;
+  const V = deps.validator.create('layerPass');
+
+  const selectLayerComposerForMeasure = (layerName, phraseFamily, composerCtx) => {
+    V.assertNonEmptyString(layerName, 'layerName');
+    V.assertNonEmptyString(phraseFamily, 'phraseFamily');
+    const peerLayerName = layerName === 'L1' ? 'L2' : (layerName === 'L2' ? 'L1' : null);
+    const previousComposer = (LM.layerComposers && LM.layerComposers[layerName] && V.optionalType(LM.layerComposers[layerName], 'object'))
+      ? LM.layerComposers[layerName]
+      : null;
+    const peerComposer = (peerLayerName && LM.layerComposers && LM.layerComposers[peerLayerName] && V.optionalType(LM.layerComposers[peerLayerName], 'object'))
+      ? LM.layerComposers[peerLayerName]
+      : null;
+
+    const nextComposer = FactoryManager.createRandomForLayer({
+      familyName: phraseFamily,
+      layerName,
+      previousComposer,
+      peerComposer,
+      extraConfig: { root: 'random' }
+    }, composerCtx);
+
+    LM.setComposerFor(layerName, nextComposer);
+
+    // Record composer family for texturalMemoryAdvisor variety tracking
+    texturalMemoryAdvisor.recordUsage(phraseFamily, mainBootstrap.requireFiniteNumber('sectionIndex', sectionIndex));
+
+    return nextComposer;
+  };
+
+  /**
+   * Run a full measure/beat/div/subdiv pass for a given layer.
+   * @param {string} layerId
+   * @param {string} phraseFamily
+   * @param {Object} opts
+   * @param {boolean} [opts.withConductorTick=false]
+   * @param {Object} deps
+   * @param {Object} deps.boot
+   * @param {Object} deps.composerCtx
+   */
+  function runLayerPass(layerId, phraseFamily, { withConductorTick = false } = {}, runDeps) {
+    const { boot, composerCtx } = runDeps;
+    timeStream.setBounds('measure', measuresPerPhrase);
+    let processedBeatCount = 0;
+
+    for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
+      timeStream.setPosition('measure', measureIndex);
+      eventBus.emit(eventCatalog.names.MEASURE_BOUNDARY, { measureIndex, measuresPerPhrase, layer: layerId });
+      measureCount++;
+      selectLayerComposerForMeasure(layerId, phraseFamily, composerCtx);
+      setUnitTiming('measure');
+
+      if (withConductorTick) {
+        // Advance conductor crossfade and self-regulation once per measure
+        conductorConfig.tickCrossfade();
+        conductorConfig.regulationTick();
+      }
+
+      let playProb, stutterProb;
+      timeStream.setBounds('beat', numerator);
+      const layerPassMeasureWallStart = Date.now();
+
+      // Conductor update is expensive (~147 function calls). The EMA smoothing
+      let measureConductorCtx = null;
+
+      for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
+        processedBeatCount++;
+        timeStream.setPosition('beat', beatIndex);
+        if (!measureConductorCtx) {
+          measureConductorCtx = mainBootstrap.getConductorProbabilities();
+        }
+        playProb = measureConductorCtx.playProb;
+        stutterProb = measureConductorCtx.stutterProb;
+
+        const beatResult = processBeat(layerId, playProb, stutterProb, boot);
+        playProb = beatResult.playProb;
+        stutterProb = beatResult.stutterProb;
+
+        timeStream.setBounds('div', divsPerBeat);
+        microUnitAttenuator.begin('div', divsPerBeat);
+        for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
+          timeStream.setPosition('div', divIndex);
+          setUnitTiming('div');
+          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); regimePan.tick('div'); regimeFade.tick('div'); regimeFx.tick('div'); regimeVelocity.tick('div'); }
+          timeStream.setBounds('subdiv', subdivsPerDiv);
+          microUnitAttenuator.begin('subdiv', subdivsPerDiv);
+          for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
+            timeStream.setPosition('subdiv', subdivIndex);
+            setUnitTiming('subdiv');
+            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); regimePan.tick('subdiv'); regimeFade.tick('subdiv'); regimeFx.tick('subdiv'); regimeVelocity.tick('subdiv'); }
+            timeStream.setBounds('subsubdiv', subsubsPerSub);
+            microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
+            for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
+              timeStream.setPosition('subsubdiv', subsubdivIndex);
+              setUnitTiming('subsubdiv');
+              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); regimePan.tick('subsubdiv'); regimeFade.tick('subsubdiv'); regimeFx.tick('subsubdiv'); regimeVelocity.tick('subsubdiv'); }
+            }
+            microUnitAttenuator.flush();
+          }
+          microUnitAttenuator.flush();
+        }
+        microUnitAttenuator.flush();
+      }
+      process.stderr.write('[main]     M' + measureIndex + ' done (' + ((Date.now() - layerPassMeasureWallStart) / 1000).toFixed(1) + 's)\n');
+    }
+
+    return processedBeatCount;
+  }
+
+  return {
+    runLayerPass,
+    selectLayerComposerForMeasure
+  };
+  },
+});

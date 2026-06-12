@@ -1,0 +1,248 @@
+"""Log-size, error-log, lifesaver-rate verifiers."""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+from ._base import (
+    ERROR,
+    FAIL,
+    METRICS_DIR,
+    PASS,
+    SKIP,
+    VerdictResult,
+    Verifier,
+    WARN,
+    _DOC_DIRS,
+    _HOOKS_DIR,
+    _PROJECT,
+    _SCRIPTS_DIR,
+    _SERVER_DIR,
+    _result,
+    _run_subprocess,
+    errored,
+    failed,
+    passed,
+    register,
+    skipped,
+    warned,
+)
+
+
+@register
+class LogSizeVerifier(Verifier):
+    """The key HME logs (hme-proxy.out, hme-errors.log,
+    hme-proxy-lifecycle.log, hme-activity.jsonl) are all append-only
+    and never rotate. Left unchecked they fill disk -- at which point
+    every log-writing hook silently fails (another silent-failure
+    class the autocommit hardening was meant to close).
+
+    WARN above 50MB per file, FAIL above 200MB. The thresholds are
+    generous -- noisy proxies can produce tens of MB per day, so an
+    unattended run hits 50MB in a few weeks and 200MB only after
+    months of neglect. Action on FAIL: truncate or rotate. A simple
+    `: > log/hme-proxy.out` is safe; the proxy reopens in append mode
+    next write."""
+    name = "log-size"
+    category = "state"
+    subtag = "performance"
+    weight = 1.0
+
+    WARN_BYTES = 50 * 1024 * 1024       # 50 MB
+    FAIL_BYTES = 200 * 1024 * 1024      # 200 MB
+
+    _WATCHED = (
+        "log/hme-proxy.out",
+        "log/hme-errors.log",
+        "log/hme-proxy-lifecycle.log",
+        "tools/HME/runtime/metrics/hme-activity.jsonl",
+    )
+
+    def run(self) -> VerdictResult:
+        warn_hits = []
+        fail_hits = []
+        for rel in self._WATCHED:
+            path = os.path.join(_PROJECT, rel)
+            if not os.path.isfile(path):
+                continue
+            try:
+                size = os.path.getsize(path)
+            except OSError as e:
+                # Unreadable -- still signals a problem worth surfacing,
+                # not silently skipping. Narrow catch.
+                warn_hits.append(f"{rel}: stat failed ({e})")
+                continue
+            mb = size / (1024 * 1024)
+            if size >= self.FAIL_BYTES:
+                fail_hits.append(f"{rel}: {mb:.1f} MB (>=200 MB)")
+            elif size >= self.WARN_BYTES:
+                warn_hits.append(f"{rel}: {mb:.1f} MB (>=50 MB)")
+
+        if fail_hits:
+            return failed(summary=f"{len(fail_hits)} log file(s) over 200 MB", details=fail_hits + warn_hits)
+        if warn_hits:
+            return warned(score=0.75, summary=f"{len(warn_hits)} log file(s) over 50 MB", details=warn_hits)
+        return passed(summary="all watched logs under 50 MB")
+
+
+@register
+class ErrorLogVerifier(Verifier):
+    """Open LIFESAVER errors should be zero or very few."""
+    name = "error-log"
+    category = "runtime"
+    subtag = "performance"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        log = os.path.join(_PROJECT, "log", "hme-errors.log")
+        if not os.path.isfile(log):
+            return passed(summary="no error log (clean)")
+        try:
+            with open(log) as f:
+                lines = [l for l in f if l.strip()]
+        except Exception as e:
+            return errored(summary=f"could not read error log: {e}")
+        watermark = os.path.join(_PROJECT, "tools", "HME", "runtime", "errors-lastread")
+        last = 0
+        if os.path.isfile(watermark):
+            try:
+                with open(watermark) as f:
+                    raw = f.read().strip()
+                if raw:
+                    last = int(raw)
+            except (OSError, ValueError, TypeError):
+                # Unreadable watermark, non-numeric content, or a bizarre
+                last = 0
+        unread = max(0, len(lines) - last)
+        if unread == 0:
+            return passed(summary=f"all {len(lines)} historical errors acknowledged")
+        score = max(0.0, 1.0 - unread / 10.0)
+        return _result(FAIL if unread > 5 else WARN, score,
+                       f"{unread} unacknowledged errors", lines[-min(5, unread):])
+
+
+
+# Verifiers -- TOPOLOGY category
+
+
+@register
+class LifesaverRateVerifier(Verifier):
+    """Scores LIFESAVER rate using multi-window recency:
+        acute  (last 1h):  strongest signal of current problem
+        medium (last 6h):  recent problem, possibly ongoing
+        recent (last 24h): historical residue, weakest signal
+    HCI reflects CURRENT health. Old events age out automatically and stop
+    dragging the score down once they fall past the acute window.
+    """
+    name = "lifesaver-rate"
+    category = "runtime"
+    subtag = "performance"
+    weight = 2.0
+
+    def run(self) -> VerdictResult:
+        data_path = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
+        if not os.path.isfile(data_path):
+            return skipped(summary="no effectiveness data yet -- run analyze-tool-effectiveness.py")
+        try:
+            with open(data_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return errored(summary=f"read error: {e}")
+        acute = data.get("lifesaver_acute_events", 0)
+        medium = data.get("lifesaver_medium_events", 0)
+        recent = data.get("lifesaver_recent_events", 0)
+        all_time = data.get("lifesaver_total_events", 0)
+        # Weighted penalty: acute worth 1.0, medium 0.3, recent 0.1 per event
+        weighted = acute * 1.0 + (medium - acute) * 0.3 + (recent - medium) * 0.1
+        score = max(0.0, 1.0 - weighted / 5.0)
+        summary = (
+            f"acute(1h)={acute} medium(6h)={medium} recent(24h)={recent} "
+            f"all-time={all_time}"
+        )
+        if acute >= 3:
+            return failed(score=score, summary=summary, details=["3+ LIFESAVER events in the last HOUR -- acute problem",
+                 "investigate log/hme-errors.log"])
+        if acute >= 1 or medium >= 5:
+            return warned(score=score, summary=summary, details=["recent LIFESAVER activity"])
+        if recent == 0:
+            return passed(summary=f"0 LIFESAVER events in last 24h (all-time: {all_time})")
+        return passed(score=score, summary=summary + " (no acute activity)")
+
+
+@register
+class PipelineBgScriptHealthVerifier(Verifier):
+    """Surfaces silent failures from main-pipeline.js's bg-spawn analytics.
+
+    Each background script (snapshot-holograph, analyze-tool-effectiveness,
+    etc.) writes its stderr to log/hme-bg-<name>.err -- truncated each round.
+    A non-empty file means the script crashed during the most recent pipeline
+    run. Until this verifier existed those errors went unread; the loop was
+    visible only as days-stale metrics that nobody traced back to the
+    originating spawn (the bug class fixed in the METRICS_DIR-undefined
+    sweep). This verifier closes that loop.
+
+    PASS:  no .err files OR all empty
+    WARN:  1-2 scripts with non-empty stderr (transient)
+    FAIL:  3+ scripts failing (substrate-wide regression)
+    """
+    name = "pipeline-bg-script-health"
+    category = "state"
+    subtag = "structural-integrity"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        log_dir = os.path.join(_PROJECT, "log")
+        if not os.path.isdir(log_dir):
+            return skipped(summary="log/ dir missing")
+        try:
+            err_files = [
+                f for f in os.listdir(log_dir)
+                if f.startswith("hme-bg-") and f.endswith(".err")
+            ]
+        except OSError as e:
+            return errored(summary=f"listdir failed: {e}")
+        if not err_files:
+            return skipped(summary="no hme-bg-*.err files yet -- pipeline hasn't run since hardening")
+        summary = os.path.join(_PROJECT, "src", "output", "metrics", "pipeline-summary.json")
+        summary_mtime = os.path.getmtime(summary) if os.path.isfile(summary) else 0
+        failing = []
+        for name in sorted(err_files):
+            path = os.path.join(log_dir, name)
+            try:
+                size = os.path.getsize(path)
+            except OSError:
+                continue
+            if size == 0:
+                continue
+            if summary_mtime and os.path.getmtime(path) < summary_mtime:
+                continue
+            script = name[len("hme-bg-"):-len(".err")]
+            content = ""
+            try:
+                with open(path, encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+            except OSError:
+                content = ""  # silent-ok: best-effort fs op
+            last_start = content.rfind(" start ")
+            segment = content[last_start:] if last_start >= 0 else content
+            if re.search(r"\bend\s+[^\n]*\s+exit=0\b", segment):
+                continue
+            snippet = segment[:400].strip().replace("\n", " | ")
+            failing.append((script, size, snippet))
+        total = len(err_files)
+        if not failing:
+            return passed(summary=f"{total}/{total} bg scripts ran clean")
+        score = max(0.0, 1.0 - len(failing) / max(total, 1))
+        details = [f"{s} ({sz}B): {snip[:160]}" for s, sz, snip in failing]
+        verdict = FAIL if len(failing) >= 3 else WARN
+        return _result(
+            verdict, score,
+            f"{len(failing)}/{total} bg scripts failed last pipeline run",
+            details,
+        )
+
+
