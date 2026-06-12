@@ -25,7 +25,7 @@ with no mechanism to ever leave the earlier state. That is a trap.
 `boot` needs no inbound advancer (sessionstart arms it). Every other state
 must be landable.
 
-Three failure classes, all gated:
+Four failure classes, all gated:
   * DEAD-EDGE   -- a later state with no advancer landing it (the original trap).
   * GHOST-STATE -- a tight-arrow `X->Y` prose claim naming a non-canonical
     state (the `briefed->edited` docstring shape).
@@ -33,6 +33,11 @@ Three failure classes, all gated:
     guard nearby. _onb_advance_to is forward-only but does NOT block
     skip-ahead, so an unguarded advancer can jump the machine past states
     (a STABLE verdict reached pre-piped jumping straight to verified).
+  * LABEL-DRIFT -- STEP_LABELS in onboarding_chain.py must cover every
+    canonical state, in order, with sequential N/M step numbers whose M equals
+    the count of numbered (non-graduated) states. Adding a state without
+    fixing the labels leaves "N/7" lying -- the briefed-ghost drift class, one
+    layer up in the user-facing step counter.
 
 Exit codes:
   0 -- machine fully covered, no ghost claims, every shell advancer guarded
