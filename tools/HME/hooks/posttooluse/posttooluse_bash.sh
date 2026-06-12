@@ -123,7 +123,9 @@ if echo "$CMD" | grep -q 'npm run main'; then
       _nexus_mark PIPELINE "$VERDICT"
       _nexus_clear_type COMMIT
       if [ "$VERDICT" = "STABLE" ] || [ "$VERDICT" = "EVOLVED" ]; then
-        if ! _onb_is_graduated; then
+        # Guard exact predecessor (mirrors the targeted->edited and
+        # reviewed->piped advancers). _onb_advance_to is forward-only but does
+        if ! _onb_is_graduated && [ "$(_onb_state)" = "piped" ]; then
           _onb_advance_to verified
         fi
         # Auto-suggest a KB entry: write a draft to tmp/ that the agent
