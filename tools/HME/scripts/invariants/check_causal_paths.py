@@ -44,9 +44,15 @@ def main() -> int:
             findings.append(f"{key}: row must be object")
             continue
         missing = sorted(REQUIRED - set(row))
-        extra = sorted(set(row) - REQUIRED)
+        extra = sorted(set(row) - REQUIRED - OPTIONAL)
         if missing:
             findings.append(f"{key}: missing {', '.join(missing)}")
+        hes = row.get("host_execution_status")
+        if hes is not None:
+            if hes not in VALID_HOST_EXEC:
+                findings.append(f"{key}: invalid host_execution_status {hes!r}")
+            if not _nonempty_str(row.get("host_execution_evidence")):
+                findings.append(f"{key}: host_execution_status requires nonempty host_execution_evidence")
         if extra:
             findings.append(f"{key}: extra {', '.join(extra)}")
         for field in ("intent", "allowed_emitter", "proof_id_shape"):
