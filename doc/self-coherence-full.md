@@ -361,14 +361,14 @@ Generated from machine-readable sources by `python3 doc/infra/update_self_cohere
 - Generated-source contract: [`tools/HME/config/generated-doc-sources.json`](../tools/HME/config/generated-doc-sources.json) -- 10 required source projections.
 - Project boundary map: [`tools/HME/project_boundaries.json`](../tools/HME/project_boundaries.json) -- 9 subsystem rows, 7 canonical destination classes.
 - Mesh depth policy: [`teams/rounds/depth_policy.json`](../teams/rounds/depth_policy.json) -- 6 depth profiles, 28 evidence gates.
-- Model/provider registry: [`config/models.json`](../config/models.json) -- 6 providers declared, 3 currently paused by `providers_to_skip`.
+- Model/provider registry: [`config/models.json`](../config/models.json) -- 6 providers declared, 1 currently paused by `providers_to_skip`.
 - Service registry: [`tools/HME/config/services.json`](../tools/HME/config/services.json) -- 8 service declarations.
 - Public i/ command registry: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json) -- 10 command shims, 0 script shims.
 - Adapter boundary registry: [`tools/HME/config/adapter-boundaries.json`](../tools/HME/config/adapter-boundaries.json) -- 7 boundary classes.
 - Dispatcher route contract: [`tools/HME/event_kernel/dispatcher-routes.json`](../tools/HME/event_kernel/dispatcher-routes.json) -- 8 hook-event routes, 6 observation events.
 - State-file registry: [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) -- 0 typed state files, 37 single-owner domains.
 - Phase evidence firewall: [`tools/HME/config/phase-evidence.json`](../tools/HME/config/phase-evidence.json) -- 2 phase proof rows, 5 closes classes, 6 non-proof bounds.
-- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 91 verifier names discovered from source.
+- HCI verifier registry: [`tools/HME/scripts/verify_coherence`](../tools/HME/scripts/verify_coherence) -- 92 verifier names discovered from source.
 
 Canonical destination summary:
 - `machine_policy_data` -> `beside_consumer`
