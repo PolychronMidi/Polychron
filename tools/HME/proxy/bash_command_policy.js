@@ -362,9 +362,9 @@ const BASH_POLICIES = [
     },
   },
   { name: 'feedback-kb-spam', evaluate(ctx) { return feedbackKbSpam(ctx.cmd); } },
-  { name: 'governance-audit', evaluate(ctx) {
-    // AUDIT-ONLY, FAIL-OPEN: never denies. Records writes to review-owned
-    // control-plane surfaces against live review status (TODO #15 enforcement
+  { name: 'governance-gate', evaluate(ctx) {
+    // FAIL-CLOSED on a DEFINITE signal only (user-signed-off enforcement, TODO
+    // #15). Writes to a review-owned control-plane surface are always audited.
     let tgt;
     try { tgt = controlPlaneWriteTarget(ctx.cmd, ctx.root); } catch (_e) { return null; }
     if (!tgt) return null;
@@ -372,7 +372,11 @@ const BASH_POLICIES = [
     if (!surface) return null;
     const override = process.env.HME_GOVERNANCE_GATE_OK === '1' || /^\s*HME_GOVERNANCE_GATE_OK=1\b/.test(ctx.cmd);
     const status = reviewStatusForSurface(surface, ctx.root);
-    return auditAutonomousAction({ command: ctx.cmd, relPath: tgt, surface, status, override }, ctx.root);
+    auditAutonomousAction({ command: ctx.cmd, relPath: tgt, surface, status, override }, ctx.root);
+    if (status === 'pending' && !override) {
+      return deny(`GOVERNANCE GATE: '${tgt}' is owned by review surface '${surface}', which has NO completed review round (status: pending). Autonomous writes to unreviewed control-plane surfaces are blocked. Get the surface reviewed (round-progress.jsonl round=...${surface}... done), or override deliberately with HME_GOVERNANCE_GATE_OK=1 prefixed on the command.`);
+    }
+    return null;
   } },
   { name: 'log-first', evaluate(ctx) { return evaluateLogFirst(ctx.cmd, ctx.root); } },
   {
