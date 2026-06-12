@@ -19,9 +19,13 @@ this file is implemented until the user marks it approved.
   mechanism deletion. No "preexisting" bucket.
 - Proof artifacts must be compact, machine-checkable, and link to files, hashes,
   verifier IDs, and runtime evidence. No giant narrative ledgers.
-- Control-plane tokens must not leak into user-visible input. Read-chain proof must
-  be proxy-emitted native Read tool_use blocks, not typed prompts, PTY pokes, or
-  FIFO/readq bridge text.
+- Control-plane tokens must not leak into user-visible input. Read-chain PROOF
+  (evidence that reads happened) must be proxy-emitted native Read tool_use
+  blocks, never typed control markers, PTY pokes, or FIFO/readq bridge text.
+  Delivering consult READ RESULTS (actual file content) to the session as an
+  ordinary prompt via the sanctioned cc-control FIFO bridge is permitted and is
+  NOT proof of a read -- it carries file bytes, never a `[HME_READ_CHAIN]` token
+  or proof marker.
 - Runtime health evidence must carry freshness windows. Stale log lines are history,
   not current proof.
 - Broad multi-file transformations are forbidden while the repo is red. Repair order
