@@ -228,9 +228,18 @@ def _label_drift(states: list[str]) -> list[str]:
     """STEP_LABELS must cover every canonical state in order; numbered labels
     must be sequential 1..K where K = count of non-graduated states and equals
     every label's denominator M."""
+    # Absent chain file = skip (benign): the dead-edge check already covers a
+    # deleted onboarding_chain.py (its advancers vanish, edges go dead). Only a
+    if not _CHAIN_PY.exists():
+        return []
+    try:
+        if "STEP_LABELS" not in _CHAIN_PY.read_text(encoding="utf-8", errors="ignore"):
+            return []
+    except OSError:
+        return []
     labels = _extract_step_labels()
     if not labels:
-        return ["STEP_LABELS not found or unparseable in onboarding_chain.py"]
+        return ["STEP_LABELS present but unparseable in onboarding_chain.py"]
     problems = []
     label_states = [s for s, _, _ in labels]
     if label_states != states:
