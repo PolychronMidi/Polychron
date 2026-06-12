@@ -1,9 +1,0 @@
-require('./utils');
-require('./conductor');
-require('./rhythm');
-require('./time');
-require('./composers');
-require('./fx');
-require('./crossLayer');
-require('./writer');
-require('./play');

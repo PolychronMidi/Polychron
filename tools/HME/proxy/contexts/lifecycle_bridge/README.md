@@ -1,6 +1,0 @@
-# lifecycle_bridge/
-
-Bounded-context fa?ade: maps Claude Code lifecycle events (PreToolUse,
-PostToolUse, SessionStart, Stop, UserPromptSubmit) into the portable
-event kernel. Public surface re-exported from `proxy/lifecycle_bridge.js`.
-See `doc/self-coherence-full.md#hme-proxy-bounded-contexts`.

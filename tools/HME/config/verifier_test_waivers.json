@@ -1,4 +1,0 @@
-{
-  "$comment": "Verifier modules that currently lack a dedicated test spec under tools/HME/tests/specs/. New verifier modules MUST ship with a test (or add themselves to this list with a justification). Entries are removed from this file when the test is added; the verifier flags stale waivers as a FAIL so the list cannot decay into a permanent escape hatch.",
-  "waivers": []
-}
