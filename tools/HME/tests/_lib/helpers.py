@@ -31,6 +31,15 @@ SCRIPTS = REPO_ROOT / "tools" / "HME" / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
+# Env parity at import time: verify_coherence and its tooling fail loud when
+# PROJECT_ROOT / HME_METRICS_DIR / METRICS_DIR / HME_IGNORE_* are absent. Every
+os.environ.setdefault("PROJECT_ROOT", str(REPO_ROOT))
+os.environ.setdefault("HME_METRICS_DIR", str(REPO_ROOT / "tools/HME/runtime/metrics"))
+os.environ.setdefault("METRICS_DIR", str(REPO_ROOT / "src/output/metrics"))
+os.environ.setdefault("HME_IGNORE_DIRS", "node_modules,.git,tmp,log,runtime")
+os.environ.setdefault("HME_IGNORE_FILES", "package-lock.json,pnpm-lock.yaml")
+os.environ.setdefault("HME_IGNORE_EXTS", ".log,.jsonl,.tmp")
+
 VALID_STATUSES = {"PASS", "WARN", "FAIL", "SKIP", "ERROR"}
 VALID_KINDS = {"static", "runtime"}
 
