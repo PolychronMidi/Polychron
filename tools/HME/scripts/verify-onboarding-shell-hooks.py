@@ -49,12 +49,18 @@ def _make_isolated_root() -> Path:
     (root / ".git").mkdir()
     metrics = root / "src" / "output" / "metrics"
     metrics.mkdir(parents=True)
-    # project_root.sh sources $root/.env; the bootstrap's _signals.sh requires
-    # HME_METRICS_DIR (unbound otherwise -> set -u crash). Provide the minimum
+    # The bootstrap runs under `set -u` and reads many HME_* knobs (HME_METRICS_DIR,
+    # HME_CURL_STREAK_WARN, ...). Rather than chase each one, inherit the real
+    base_env = ""
+    real_env = REPO_ROOT / ".env"
+    if real_env.is_file():
+        base_env = real_env.read_text(encoding="utf-8", errors="ignore")
     (root / ".env").write_text(
-        f'PROJECT_ROOT="{root}"\n'
-        f'HME_METRICS_DIR="{metrics}"\n'
-        f'METRICS_DIR="{metrics}"\n'
+        base_env
+        + f'\n# --- harness isolation overrides ---\n'
+        + f'export PROJECT_ROOT="{root}"\n'
+        + f'export HME_METRICS_DIR="{metrics}"\n'
+        + f'export METRICS_DIR="{metrics}"\n'
     )
     return root
 
