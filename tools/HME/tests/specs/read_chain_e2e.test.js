@@ -81,6 +81,15 @@ test('wired handler returns Anthropic SSE when payload.stream is true', () => {
   assert.match(res.body, /event: content_block_delta/);
   assert.match(res.body, /"type":"input_json_delta"/);
   assert.doesNotMatch(res.body.trimStart(), /^\{/);
+
+  // Regression: message_start must carry an OPEN message -- stop_reason/stop_sequence
+  // null there, terminal stop_reason only in message_delta. Locks the one real SSE
+  const startData = JSON.parse(res.body.split('\n').find((l) => l.startsWith('data: {"type":"message_start"')).slice('data: '.length));
+  assert.equal(startData.message.stop_reason, null, 'message_start.stop_reason must be null');
+  assert.equal(startData.message.stop_sequence, null, 'message_start.stop_sequence must be null');
+  assert.equal(startData.message.usage.output_tokens, 1, 'message_start.usage.output_tokens starts at 1');
+  const deltaLine = res.body.split('\n').find((l) => l.startsWith('data: {"type":"message_delta"'));
+  assert.match(deltaLine, /"stop_reason":"tool_use"/, 'terminal stop_reason resolves only in message_delta');
 });
 
 test('wired handler ignores ordinary requests (no false drive)', () => {
