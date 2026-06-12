@@ -40,8 +40,8 @@ Four failure classes, all gated:
     layer up in the user-facing step counter.
 
 Exit codes:
-  0 -- machine fully covered, no ghost claims, every shell advancer guarded
-  1 -- one or more of the three failure classes present
+  0 -- machine fully covered, no ghost claims, advancers guarded, labels coherent
+  1 -- one or more of the four failure classes present
 """
 from __future__ import annotations
 
