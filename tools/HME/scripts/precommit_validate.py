@@ -546,10 +546,12 @@ def main() -> int:
     failures.extend(self_protect_failures(ROOT, POLICY, HOOK_PATH, POST_COMMIT_HOOK_PATH, MARKER))
     if head_tree_empty() and tracked_paths():
         print("WARNING: HEAD tree is empty while index has tracked files (autocommit will self-repair with --no-verify)", file=sys.stderr)
+    generated_docs_fresh_check()  # cheap; every commit -- generated-doc drift is fast to detect
     if _due_for_full_sweep():
         full_env_failfast_check()
         full_python_compile_check()
         full_repo_content_check()
+        python_spec_leg_check()  # daily cadence: the Python-spec leg has no other runner
         if not failures:
             _mark_full_sweep_done()
     else:
