@@ -172,6 +172,20 @@ moduleLifecycle.declare({
     return profile;
   }
 
+  // Population-derived universal trust floor: lifts any system below a
+  // variance-scaled fraction of the ecosystem mean. Shared by registerOutcome
+  // and decayAll so the math has a single owner.
+  function computeUniversalTrustFloor(scoreBySystem) {
+    if (scoreBySystem.size <= 2) return 0.05;
+    const scores = [];
+    for (const s of scoreBySystem.values()) scores.push(s.score);
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const variance = scores.reduce((a, b) => a + (b - mean) * (b - mean), 0) / scores.length;
+    const stddev = m.sqrt(variance);
+    const coeff = clamp(0.30 + stddev * 1.8, 0.30, 0.60);
+    return m.max(0.05, mean * coeff);
+  }
+
   function getAdaptiveDominanceCaps(scoreBySystem, systemName, effectiveScore, trustCeiling, trustWeightMax) {
     const specificProfile = dominanceCapProfile[systemName];
     const profile = specificProfile || genericDominanceCapProfile;
