@@ -26,6 +26,16 @@
       "negative_controls": ["task-notification queue test consumes latest-consult-read-queue.json", "retired readq shortcut is absent"],
       "host_execution_status": "blocked-host-side",
       "host_execution_evidence": "Proxy emit path is verified end-to-end (read_chain_e2e.test.js 5 tests: emitter ships a well-formed Read tool_use with hme_read_chain__ id, queue is consumed). The host does NOT run a tool-execution loop on task-notification turns, so the synthetic Read tool_use is never executed/persisted into the transcript and the chain dead-ends at index 0. No proxy change can force host tool execution on a non-agentic turn; closing this requires Claude Code host/client behavior change (TODO #18)."
+    },
+    "consult.read-results-delivery": {
+      "intent": "deliver completed consult READ RESULTS (actual file content) to the live session as one ordinary user prompt after each consult, the closest-to-intent fallback for the host-blocked native read-chain (TODO #18)",
+      "lane": "local-session",
+      "allowed_emitter": "teams/rounds/consult_from_context.py:deliver_read_results_prompt",
+      "forbidden_emitters": ["[HME_READ_CHAIN] control marker", "readq!", "submit_read_queue_to_pty", "any proof marker typed as input"],
+      "proof_id_shape": "NOT A PROOF: delivers fetched file bytes via cc-control FIFO shortcut key 'rd'; carries content, never a read-proof token",
+      "negative_controls": ["deliver_read_results test asserts real RESULT content reaches the FIFO and no HME_READ_CHAIN/readq marker", "returns false when no bridge is attached", "PIPE_BUF drain-loop test: briefing larger than 4096 bytes is delivered untruncated"],
+      "host_execution_status": "not-applicable",
+      "host_execution_evidence": "This lane does not depend on host tool execution: it delivers result CONTENT as a normal prompt through the sanctioned cc-control FIFO bridge (cc_control.js wire protocol, replayed by hme-claude.py). It is explicitly NOT the retired control-token typing route and is not a substitute for native-Read proof."
     }
   }
 }
