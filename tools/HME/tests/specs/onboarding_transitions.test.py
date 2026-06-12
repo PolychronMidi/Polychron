@@ -140,6 +140,55 @@ class AuditDetectorTests(unittest.TestCase):
         r = _run_audit(self.root)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def _write_labels(self, body: str) -> None:
+        server = self.root / "tools" / "HME" / "service" / "server"
+        (server / "onboarding_chain.py").write_text(body)
+
+    def test_coherent_labels_pass(self):
+        # 4 states (boot,selftest_ok,targeted,edited): 3 numbered N/3 + graduated-
+        # less machine. Here all 4 are numbered 1..4 with denominator 4.
+        _build_tree(self.root, with_edited_advancer=True)
+        self._write_labels(
+            'STEP_LABELS = {\n'
+            '    "boot":        "1/4 a",\n'
+            '    "selftest_ok": "2/4 b",\n'
+            '    "targeted":    "3/4 c",\n'
+            '    "edited":      "4/4 d",\n'
+            '}\n'
+        )
+        r = _run_audit(self.root)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_label_denominator_drift_fails(self):
+        # Denominator says /7 but the machine has 4 numbered states -- the
+        # exact "N/7 lying after a state was added/removed" shape.
+        _build_tree(self.root, with_edited_advancer=True)
+        self._write_labels(
+            'STEP_LABELS = {\n'
+            '    "boot":        "1/7 a",\n'
+            '    "selftest_ok": "2/7 b",\n'
+            '    "targeted":    "3/7 c",\n'
+            '    "edited":      "4/7 d",\n'
+            '}\n'
+        )
+        r = _run_audit(self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("LABEL-DRIFT", r.stdout)
+
+    def test_label_missing_state_fails(self):
+        # A canonical state with no STEP_LABELS entry -- coverage gap.
+        _build_tree(self.root, with_edited_advancer=True)
+        self._write_labels(
+            'STEP_LABELS = {\n'
+            '    "boot":        "1/3 a",\n'
+            '    "selftest_ok": "2/3 b",\n'
+            '    "targeted":    "3/3 c",\n'
+            '}\n'
+        )
+        r = _run_audit(self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("LABEL-DRIFT", r.stdout)
+
 
 class VerifierGateTests(unittest.TestCase):
     def _verifier(self):
