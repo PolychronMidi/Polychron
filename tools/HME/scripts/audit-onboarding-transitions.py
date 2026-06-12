@@ -128,6 +128,11 @@ _CHAIN_DOC_FILES = (
     PROJECT_ROOT / "tools" / "HME" / "service" / "server" / "onboarding_chain.py",
     DISPATCH_PY,
 )
+_CHAIN_PY = SERVER_DIR / "onboarding_chain.py"
+# A STEP_LABELS entry: `"selftest_ok": f"2/7 pick ...`. Captures state + the
+# N/M step number when present (graduated has no number).
+_LABEL_RE = re.compile(r"""["']([a-z_]+)["']\s*:\s*f?["'](\d+)/(\d+)\b""")
+_LABEL_ANY_RE = re.compile(r"""["']([a-z_]+)["']\s*:\s*f?["']""")
 
 
 def _ghost_state_claims(states: set[str]) -> list[tuple[str, str, str]]:
