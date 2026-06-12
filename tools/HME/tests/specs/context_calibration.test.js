@@ -144,19 +144,14 @@ test('REGRESSION: a FITTED calibration drops the structural floor so the estimat
 
   const fittedEst = semanticTokenEstimate(payload, CAL_ENV, FIT);
   const priorEst = semanticTokenEstimate(payload, CAL_ENV, PRIOR);
-  // Ground truth the fit targets: content buckets / fitted ratios (framing absorbed).
-  const { _tokenCharBuckets } = require('../../proxy/context_token_estimate');
-  // contentEstimate is what a fitted regression predicts; the fitted path must equal it.
-  const contentOnly = fittedEst; // fitted path returns contentEstimate by contract
   // The prior path keeps the conservative serialized-byte floor, so for this
   // framing-heavy payload it must be strictly LARGER than the fitted estimate.
   assert.ok(priorEst > fittedEst, `prior keeps structural floor (${priorEst}) > fitted content estimate (${fittedEst})`);
-  // And the fitted estimate must not carry the framing inflation: it equals the
-  // pure content estimate (re-derive with the same ratios, no floor).
+  // The fitted estimate must NOT carry framing inflation: it equals the pure
+  // content estimate (same ratios, no structural floor).
   const buckets = require('../../proxy/context_token_estimate').payloadByteBuckets(payload);
   const expected = Math.ceil(buckets.regular / FIT.perTok + buckets.toolResult / FIT.toolResultPerTok);
-  assert.equal(contentOnly, expected, 'fitted estimate is the content estimate with framing absorbed, no structural floor');
-  void _tokenCharBuckets;
+  assert.equal(fittedEst, expected, 'fitted estimate is the content estimate with framing absorbed, no structural floor');
 });
 
 test('REGRESSION: cache-read contaminated samples are rejected so they cannot flip a fit', () => {
