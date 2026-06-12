@@ -47,8 +47,15 @@ def _make_isolated_root() -> Path:
     (root / "src").mkdir()
     (root / "tmp").mkdir()
     (root / ".git").mkdir()
-    # project_root.sh sources $root/.env when present; an empty file is fine.
-    (root / ".env").write_text(f'PROJECT_ROOT="{root}"\n')
+    metrics = root / "src" / "output" / "metrics"
+    metrics.mkdir(parents=True)
+    # project_root.sh sources $root/.env; the bootstrap's _signals.sh requires
+    # HME_METRICS_DIR (unbound otherwise -> set -u crash). Provide the minimum
+    (root / ".env").write_text(
+        f'PROJECT_ROOT="{root}"\n'
+        f'HME_METRICS_DIR="{metrics}"\n'
+        f'METRICS_DIR="{metrics}"\n'
+    )
     return root
 
 
