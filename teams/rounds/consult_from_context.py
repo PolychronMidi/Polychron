@@ -7,6 +7,8 @@ executor: no per-consult shell script should duplicate dispatch/progress logic.
 from __future__ import annotations
 
 import argparse
+import base64
+import errno
 import json
 import os
 import re
