@@ -87,6 +87,39 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
   }
 });
 
+test('lifesaver error-log injection suppresses resolved historical autocommit lines', () => {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-autocommit-resolved-'));
+  try {
+    fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(sandbox, 'src', 'seed.txt'), 'seed\n');
+    git(['init', '--quiet'], sandbox);
+    git(['config', 'user.email', 'test@example.invalid'], sandbox);
+    git(['config', 'user.name', 'HME Test'], sandbox);
+    git(['add', 'src/seed.txt'], sandbox);
+    git(['commit', '--quiet', '-m', 'initial'], sandbox);
+    fs.writeFileSync(
+      path.join(sandbox, 'log', 'hme-errors.log'),
+      '[2026-06-13T02:08:30Z] [autocommit] [owner:onRequest] git commit -a failed twice: stale failure\n',
+    );
+    fs.writeFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-lastread.proxy'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'autocommit.last-success'), '2026-06-13T02:46:27Z');
+
+    const modPath = path.join(repoRoot, 'tools/HME/proxy/middleware/22_lifesaver_inject.js');
+    delete require.cache[require.resolve(modPath)];
+    const lifesaver = require(modPath);
+    const payload = { messages: [{ role: 'user', content: 'n' }] };
+    let dirty = false;
+    lifesaver.onRequest({ payload, ctx: { PROJECT_ROOT: sandbox, markDirty() { dirty = true; }, emit() {} } });
+    assert.equal(dirty, false);
+    assert.doesNotMatch(JSON.stringify(payload), /stale failure/);
+    assert.equal(fs.readFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-lastread.proxy'), 'utf8'), '1');
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
 test('autocommit entrypoints enqueue through the shared single-owner helper', () => {
   const helper = fs.readFileSync(path.join(repoRoot, 'tools/HME/hooks/helpers/_autocommit.sh'), 'utf8');
   const stop = fs.readFileSync(path.join(repoRoot, 'tools/HME/hooks/lifecycle/stop/autocommit.sh'), 'utf8');
