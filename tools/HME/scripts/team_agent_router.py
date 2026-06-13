@@ -330,21 +330,18 @@ def main() -> int:
             }}))
             return 0
         registry_exists = bool(data.get("agents"))
-        if not registry_exists:
-            # Single-user / no-crew-registered case: native dispatch is the
-            # correct degradation, no alert needed.
-            print(json.dumps({"hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "allow",
-            }}))
-            return 0
+        updated = _native_input(tool_input, "hme_default_fork", routed=False)
+        reason = (
+            "No registered HME crew; applying default fork/bounds to raw Agent call."
+            if not registry_exists else
+            f"No available {request_tier} target for {caller or 'unknown'} "
+            f"({len(data['agents'])} agent(s) registered, none match). Applying default fork/bounds instead of native unbounded dispatch."
+        )
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "allow",
-            "additionalContext": (
-                f"No available {request_tier} target for {caller or 'unknown'} "
-                f"({len(data['agents'])} agent(s) registered, none match). Agent call will proceed natively."
-            ),
+            "updatedInput": updated,
+            "additionalContext": reason,
         }}))
         return 0
     updated = _native_input(tool_input, target)
