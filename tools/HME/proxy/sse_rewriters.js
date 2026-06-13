@@ -34,7 +34,8 @@ function dropToolUseRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Bash run_in_background -> /hme/spawn; avoids task-notification spam.
+// Bash run_in_background -> /hme/spawn for non-pipeline work; pipelines must
+// stay as native Bash run_in_background calls because /hme/spawn is disabled.
 
 const { serviceUrl } = require('./service_registry');
 const { evaluateBashInput } = require('./bash_command_policy');
