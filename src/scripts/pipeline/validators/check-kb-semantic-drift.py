@@ -27,9 +27,16 @@ import os
 import re
 import sys
 import time
+from pathlib import Path
 
-from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.environ["PROJECT_ROOT"]
+SCRIPT_DIR = Path(__file__).resolve().parent
+PIPELINE_HME_DIR = Path(PROJECT_ROOT) / "tools" / "HME" / "scripts" / "pipeline" / "hme"
+for _p in (SCRIPT_DIR, PIPELINE_HME_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path  # noqa: E402
 SIGNATURES_PATH = metric_path("kb-signatures.json")
 DRIFT_OUT = metric_path("hme-semantic-drift.json")
 DEP_GRAPH = metric_path("dependency-graph.json")

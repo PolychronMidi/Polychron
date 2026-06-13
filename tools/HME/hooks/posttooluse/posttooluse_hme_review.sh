@@ -12,8 +12,12 @@ if [ "$MODE" = "forget" ]; then
     # A clean forget-review means the audit step is complete. Repair missed
     # edit->edited advancement too (for sessions that edited before the edit
     if ! _onb_is_graduated; then
-      _onb_advance_to edited >/dev/null 2>&1 || true
-      _onb_advance_to reviewed >/dev/null 2>&1 || true
+      if [ "$(_onb_state)" = "targeted" ]; then
+        _onb_advance_to edited >/dev/null 2>&1 || true
+      fi
+      if [ "$(_onb_state)" = "edited" ]; then
+        _onb_advance_to reviewed >/dev/null 2>&1 || true
+      fi
     fi
   }
   # EDIT clear + REVIEW mark fired in BOTH proxy middleware and this hook

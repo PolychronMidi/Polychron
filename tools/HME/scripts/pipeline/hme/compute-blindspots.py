@@ -23,14 +23,17 @@ from collections import Counter
 from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[2]
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+SERVICE_DIR = SCRIPTS_DIR.parent / "service"
+for _p in (SCRIPTS_DIR, SERVICE_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
+from hme_env import ENV  # noqa: E402
 from hme_paths import PROJECT_ROOT, hme_metric  # noqa: E402
 
 ACTIVITY = hme_metric("hme-activity.jsonl")
 OUT = hme_metric("hme-blindspots.json")
-WINDOW = int(os.environ['HME_BLINDSPOT_WINDOW'])
+WINDOW = ENV.require_int("HME_BLINDSPOT_WINDOW")
 
 SUBSYSTEMS = ["utils", "conductor", "rhythm", "time", "composers",
               "fx", "crossLayer", "writer", "play"]
