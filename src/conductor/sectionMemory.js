@@ -63,12 +63,8 @@ moduleLifecycle.declare({
     sectionMemoryPrev.quality = quality;
   }
 
-  /**
-   * Seed the new section with attenuated state from the previous section.
-   * Call from main.js immediately after section reset + harmonicJourney.applyToContext().
-   * Only affects `currentDensity` (writable global) - other modules
-   * pick up the seeded density naturally through their EMA/recorder paths.
-   */
+  // Seed previous density after section reset; other modules consume it through EMA/reco
+  // Called after harmonicJourney.applyToContext() so the new section starts with narrati
   function seed() {
     if (!sectionMemoryPrev) return;
     // Blend previous density into the freshly-reset currentDensity
