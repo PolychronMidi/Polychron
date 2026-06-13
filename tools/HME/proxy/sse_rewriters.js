@@ -107,7 +107,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
 
     const input = _parseToolInput(state);
     let finalInput = input;
-    if (input && input.run_in_background === true && typeof input.command === 'string') {
+    if (input && input.run_in_background === true && typeof input.command === 'string' && !_isNativePipelineCommand(input.command)) {
       finalInput = {
         command: _buildSpawnCommand(input.command, input.description || ''),
         description: input.description || 'spawned via /hme/spawn',
