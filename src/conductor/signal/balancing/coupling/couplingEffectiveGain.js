@@ -19,11 +19,8 @@ moduleLifecycle.declare({
   const { NUDGEABLE_SET, BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN,
     VELOCITY_GAIN_BOOST } = couplingConstants;
 
-  /**
-   * Compute per-pair surface pressures and return adjusted target.
-   * Must be called before processGain since nonNudgeableHandOffPressure
-   * is consumed by gain escalation.
-   */
+  // Compute per-pair pressures before processGain, which consumes handoff pressure.
+  // Returns the adjusted target and pressure telemetry for gain escalation.
   function computeSurfacePressures(key, absCorr, p95, tailTelemetry, target0, setup, flags) {
     const nonNudgeableHandOffPressure = !flags.isNonNudgeablePair && setup.nonNudgeableTailPressure > 0 &&
         couplingConstants.sharesAnyAxis(key, setup.nonNudgeableAxes)
