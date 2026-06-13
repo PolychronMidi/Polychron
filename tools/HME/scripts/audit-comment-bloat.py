@@ -91,6 +91,13 @@ def _is_comment_line(stripped: str, ext: str) -> bool:
     return False
 
 
+def _is_block_comment_line(stripped: str, ext: str) -> bool:
+    """Block-comment lines inside /* ... */ (js/ts) or equivalent."""
+    if ext in (".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"):
+        return stripped.startswith("/*") or stripped.startswith("*") or stripped.startswith("*/")
+    return False
+
+
 def _is_annotation(stripped: str) -> bool:
     return any(stripped.startswith(p) for p in _ANNOTATION_PREFIXES)
 
