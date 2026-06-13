@@ -165,7 +165,7 @@ def _is_scannable_comment(
         return False
     if allowed_lines is not None and line_no not in allowed_lines:
         return False
-    return _is_comment_line(stripped, ext)
+    return _is_comment_line(stripped, ext) or _is_block_comment_line(stripped, ext)
 
 
 def _scan_file(path: str, ext: str) -> list:
