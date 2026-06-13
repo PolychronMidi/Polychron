@@ -68,10 +68,6 @@ function _emitHeldInput(state, index, input) {
   return events;
 }
 
-function _isNativePipelineCommand(command) {
-  return /^(npm run (main|snapshot)|node (?:src\/)?lab\/run)/.test(String(command || '').trimStart());
-}
-
 function runInBackgroundRewrite(eventName, data, ctx) {
   const holds = _holdToolInput(ctx, 'bash_hold', eventName, data, BASH_TOOL_NAMES);
 
@@ -88,22 +84,14 @@ function runInBackgroundRewrite(eventName, data, ctx) {
     return data;
   }
 
-  // On stop: parse accumulated input, rewrite if needed, emit [synthetic_delta, stop].
+  // On stop: emit the held Bash input (possibly mutated by earlier policies).
   if (eventName === 'content_block_stop' && data) {
     const state = holds.get(data.index);
     if (!state) return data;
     holds.delete(data.index);
 
     const input = _parseToolInput(state);
-    let finalInput = input;
-    if (input && input.run_in_background === true && typeof input.command === 'string' && !_isNativePipelineCommand(input.command)) {
-      finalInput = {
-        command: _buildSpawnCommand(input.command, input.description || ''),
-        description: input.description || 'spawned via /hme/spawn',
-      };
-    }
-
-    const events = _emitHeldInput(state, data.index, finalInput);
+    const events = _emitHeldInput(state, data.index, input);
     events.push(['content_block_stop', data]);
     return { events };
   }
