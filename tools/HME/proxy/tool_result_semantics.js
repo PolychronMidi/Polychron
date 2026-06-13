@@ -2,7 +2,7 @@
 
 const { blockText: _blockText } = require('./request_shape');
 
-const SUCCESS_EMPTY = '[SUCCESS]';
+const SUCCESS_EMPTY = '[NO_OUTPUT] tool returned no output';
 const FAIL_EMPTY = '[FAIL] tool errored with no error message body';
 const EDIT_SUCCESS = '[SUCCESS] edit applied';
 
