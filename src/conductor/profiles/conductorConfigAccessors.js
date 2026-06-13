@@ -26,12 +26,8 @@ conductorConfigAccessors = (deps) => {
     return dynamics.resolveField('energyWeights');
   }
 
-  /**
-   * Energy weights blended with profileAdaptation hints.
-   * Restraint hint pulls phrase back and elevates feedback reactivity;
-   * explosive hint amplifies phrase-arc energy;
-   * atmospheric hint softens pulse micro-oscillation.
-   */
+  // Blend energy weights with profile hints: restraint boosts feedback, explosive raises
+  // Atmospheric profile softens pulse micro-oscillation.
   function getHintBlendedEnergyWeights() {
     const base = dynamics.resolveField('energyWeights');
     const restrainedHint = clamp(signalReader.state('profileHintRestrained') ?? 0, 0, 1);
