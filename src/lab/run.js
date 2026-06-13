@@ -29,13 +29,12 @@ const INTERP = path.join(rootDir, 'src/scripts/fluidsynth-init.txt');
 
 fs.mkdirSync(labOutputDir, { recursive: true });
 
-/**
- * Create a temp working directory with symlinks to everything in rootDir
- * except output/, which gets its own fresh real directory.
- * The engine writes to output/ relative to cwd, so this isolates completely.
- */
+// Build an isolated cwd: root entries are symlinked, but output/ is a fresh directory.
+// The engine writes relative output paths, so each lab run stays self-contained.
 function createIsolatedWorkDir() {
-  const tmpWork = fs.mkdtempSync(path.join(os.tmpdir(), 'polychron-lab-'));
+  const tmpRoot = path.join(rootDir, 'tmp');
+  fs.mkdirSync(tmpRoot, { recursive: true });
+  const tmpWork = fs.mkdtempSync(path.join(tmpRoot, 'polychron-lab-'));
   for (const entry of fs.readdirSync(rootDir)) {
     if (entry === 'src' || entry === 'output') continue;
     fs.symlinkSync(path.join(rootDir, entry), path.join(tmpWork, entry));
