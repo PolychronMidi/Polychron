@@ -197,14 +197,14 @@ def _scan_file(path: str, ext: str) -> list:
             lines = f.readlines()
     except OSError:
         return findings
-    allowed_lines, blocked_lines = _comment_scan_sets(lines, ext)
+    allowed_lines, blocked_lines, block_comment_lines = _comment_scan_sets(lines, ext)
     block_start = None
     block_len = 0
     seen_first_block = False
     seen_non_blank_non_comment = False
     for i, raw in enumerate(lines, 1):
         s = raw.strip()
-        if _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines) and not _is_annotation(s):
+        if _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines, block_comment_lines) and not _is_annotation(s):
             if block_start is None:
                 block_start = i
                 block_len = 1
@@ -216,7 +216,7 @@ def _scan_file(path: str, ext: str) -> list:
                 if not top_exempt:
                     findings.append({"line": block_start, "block_len": block_len})
                 seen_first_block = True
-            if s and not _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines) and not _is_top_directive(s, ext):
+            if s and not _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines, block_comment_lines) and not _is_top_directive(s, ext):
                 seen_non_blank_non_comment = True
             block_start = None
             block_len = 0
@@ -235,11 +235,11 @@ def _scan_long_comment_lines(path: str, ext: str) -> list:
             lines = f.readlines()
     except OSError:
         return findings
-    allowed_lines, blocked_lines = _comment_scan_sets(lines, ext)
+    allowed_lines, blocked_lines, block_comment_lines = _comment_scan_sets(lines, ext)
     for i, raw in enumerate(lines, 1):
         line_no_nl = raw.rstrip("\n")
         stripped = line_no_nl.strip()
-        if not _is_scannable_comment(i, stripped, ext, allowed_lines, blocked_lines):
+        if not _is_scannable_comment(i, stripped, ext, allowed_lines, blocked_lines, block_comment_lines):
             continue
         if _is_directive(stripped):
             continue
