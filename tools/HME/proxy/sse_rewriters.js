@@ -34,26 +34,15 @@ function dropToolUseRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Bash run_in_background -> /hme/spawn for non-pipeline work; pipelines must
-// stay as native Bash run_in_background calls because /hme/spawn is disabled.
+// Hold Bash input deltas long enough for policy rewrites, then re-emit the
+// native Bash input unchanged unless another policy mutated it. /hme/spawn is
+// disabled project-wide; do not synthesize curl/spawn commands here.
 
-const { serviceUrl } = require('./service_registry');
 const { evaluateBashInput } = require('./bash_command_policy');
 const { slopStripRewrite } = require('./sse_slop_rewriter');
 
-const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);
 const _READ_TOOL_NAMES = new Set(['Read']);
-
-function _buildSpawnCommand(originalCmd, description) {
-  const payload = JSON.stringify({
-    name: (description || 'bg').replace(/[^\w-]/g, '_').slice(0, 24),
-    cmd: 'bash',
-    args: ['-c', originalCmd],
-    ttl_sec: 3600,
-  }).replace(/'/g, `'\\''`);
-  return `curl -sf -X POST ${SPAWN_URL} -H 'content-type: application/json' -d '${payload}'`;
-}
 
 function _holdToolInput(ctx, key, eventName, data, names) {
   let holds = ctx.get(key);
