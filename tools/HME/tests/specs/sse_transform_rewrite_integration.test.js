@@ -66,6 +66,21 @@ test('SseTransform rewrites unread Update tool_use to Read before Claude CLI see
   }
 });
 
+test('SseTransform preserves native Bash run_in_background instead of synthesizing disabled /hme/spawn', async () => {
+  purgeProxyModules();
+  const { runInBackgroundRewrite } = require('../../proxy/sse_rewriters');
+  const input = { command: 'npm run main', description: 'Run pipeline', run_in_background: true };
+  const raw = [
+    event('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_bash', name: 'Bash', input: {} } }),
+    event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: JSON.stringify(input) } }),
+    event('content_block_stop', { type: 'content_block_stop', index: 0 }),
+  ].join('');
+  const outText = await runSse(raw, [runInBackgroundRewrite]);
+  assert.doesNotMatch(outText, /\/hme\/spawn|curl -sf -X POST/);
+  const out = parseSse(outText);
+  assert.deepEqual(JSON.parse(out[1][1].delta.partial_json), input);
+});
+
 test('SseTransform applies caveman compression to provider reasoning converted to thinking', async () => {
   purgeProxyModules();
   const { providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
