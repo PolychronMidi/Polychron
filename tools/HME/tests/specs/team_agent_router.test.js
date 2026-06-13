@@ -66,6 +66,9 @@ test('Agent level input routes to native Agent shape', () => {
   assert.equal(out.updatedInput.subagent_type, 'general-purpose');
   assert.match(out.updatedInput.description, /^crew_e3_0 routed:/);
   assert.match(out.updatedInput.prompt, /You are crew_e3_0/);
+  assert.match(out.updatedInput.prompt, /default forked subagent context/);
+  assert.match(out.updatedInput.prompt, /do not spawn further Agent\/subagent tasks/);
+  assert.match(out.updatedInput.prompt, /do not use multi_tool_use\.parallel for Agent/);
   assert.match(out.updatedInput.prompt, /Original task:\nhi/);
 });
 
