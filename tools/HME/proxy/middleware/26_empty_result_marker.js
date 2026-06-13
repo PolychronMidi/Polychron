@@ -8,9 +8,9 @@ module.exports = {
   onToolResult({ toolUse, toolResult, ctx }) {
     const text = textOfToolResult(toolResult);
     if (text && text.trim().length > 0) return;
-    if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
+    if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]') || ctx.hasHmeFooter(toolResult, '[NO_OUTPUT]')) return;
     ctx.appendToResult(toolResult, emptyMarker(toolResult.is_error === true));
     ctx.markDirty();
-    ctx.emit({ event: 'empty_tool_result_marked', tool: toolUse.name, status: toolResult.is_error ? 'FAIL' : 'SUCCESS' });
+    ctx.emit({ event: 'empty_tool_result_marked', tool: toolUse.name, status: toolResult.is_error ? 'FAIL' : 'NO_OUTPUT' });
   },
 };
