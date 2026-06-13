@@ -55,11 +55,8 @@ moduleLifecycle.declare({
     );
   }
 
-  /**
-   * Derive streak thresholds from coherent regime duration.
-   * Longer coherent streaks -> lower streak threshold (faster response needed).
-   * Short coherent streaks -> higher threshold (more patience before boosting).
-   */
+  // Activation streak shrinks after long coherent runs, expands when coherence is brief.
+  // This balances fast recovery against patience before boosting.
   function getFloorActivationStreak() {
     // Base: 12 beats. Range: [6, 20].
     const coherentPressure = clamp((phaseFloorControllerCoherentStreakEma - 20) / 40, 0, 1);
