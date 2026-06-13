@@ -166,6 +166,8 @@ module.exports.autocommitFailureBannersLabelCurrentVsHistoricalByTimestamp = asy
     failure = readAutocommitFailure(root);
     assert.equal(failure.freshness.label, HISTORICAL_AUTOCOMMIT_LABEL);
     assert.match(failure.banner, /HISTORICAL_AUTOCOMMIT_ALERT/);
+    assert.match(failure.banner, /not a current blocker/);
+    assert.doesNotMatch(failure.banner, /FIX BEFORE ANYTHING ELSE/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
