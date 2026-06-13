@@ -253,13 +253,15 @@ def _tool_tier(tool_input: dict) -> Optional[str]:
     return TYPE_TIER.get(str(tool_input.get("subagent_type") or "general-purpose"), "E3")
 
 
-def _native_input(tool_input: dict, target: str) -> dict:
+def _native_input(tool_input: dict, target: str, *, routed: bool = True) -> dict:
     prompt = str(tool_input.get("prompt") or "")
     desc = str(tool_input.get("description") or prompt.splitlines()[0][:80] or "Agent task")
+    prefix = f"{target} routed" if routed else "HME default-fork bounded"
+    role_line = f"MODE=1 team-routed task. You are {target}." if routed else "MODE=1 HME default-fork task."
     return {
-        "description": f"{target} routed: {desc}"[:200],
+        "description": f"{prefix}: {desc}"[:200],
         "prompt": (
-            f"MODE=1 team-routed task. You are {target}.\n"
+            f"{role_line}\n"
             f"You are running in the HME default forked subagent context; do not replace it with a fresh/raw context.\n"
             f"Bounds: do not spawn further Agent/subagent tasks; do not use multi_tool_use.parallel for Agent; inspect at most 8 files unless explicitly told otherwise; return top findings only (max 1200 words).\n"
             f"Register/heartbeat via i/status team if not present.\n\n"
