@@ -35,7 +35,7 @@ moduleLifecycle.declare({
 
   // DERIVED THRESHOLDS (self-calibrating)
 
-  // Phase collapse threshold adapts to volatility: higher volatility gets earlier detect
+  // Phase collapse threshold adapts to volatility: higher volatility triggers earlier.
   // Stable low phase keeps a tighter trigger.
   function getCollapseThreshold() {
     return clamp(0.015 + phaseFloorControllerVolatilityEma * 0.5, 0.01, 0.04);
