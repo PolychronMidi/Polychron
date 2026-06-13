@@ -15,7 +15,7 @@ const SHORTCUT_RE = new RegExp(`^\\s*(${_SHORTCUT_ALT})\\s*$`);
 const _SHORTCUT_TAIL_RE = new RegExp(`(^|\\n)([ \\t]*)(${_SHORTCUT_ALT})([ \\t]*)$`, 'i');
 
 function _withoutSystemReminders(text) {
-  return String(text || '').replace(SYSTEM_REMINDER_RE, '').trim();
+  return String(text || '').replace(SYSTEM_REMINDER_RE, '').replace(INTERRUPT_ENVELOPE_RE, '').trim();
 }
 
 function _rewriteShortcutText(text, value) {
