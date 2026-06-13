@@ -36,6 +36,7 @@ if [ "$MODE" = "forget" ]; then
         _EDIT_COUNT_CLEARED=$(_nexus_count EDIT)
         _nexus_clear_type EDIT
         _nexus_mark REVIEW "$_EDIT_COUNT_CLEARED"
+        _review_clean_advance_onboarding
         ;;
       warnings)
         _nexus_clear_type REVIEW_CLI_FAILURE
