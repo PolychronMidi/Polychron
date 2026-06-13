@@ -11,8 +11,7 @@ test('state panel self-heals stale pipeline state through repair script', () => 
   assert.match(source, /repaired stale lock/);
 });
 
-test('state panel compares hot-reload head to current git head', () => {
-  assert.match(source, /loaded_head/);
-  assert.match(source, /rev-parse/);
-  assert.match(source, /stale/);
+test('state panel omits obsolete hot-reload metric under dual-slot live-live runtime', () => {
+  assert.doesNotMatch(source, /last hot-reload/);
+  assert.doesNotMatch(source, /loaded_head/);
 });
