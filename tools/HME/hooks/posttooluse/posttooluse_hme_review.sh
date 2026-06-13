@@ -87,11 +87,12 @@ if [ "$MODE" = "forget" ]; then
     _nexus_clear_type REVIEW_PARSE_FAILED
     _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
     echo "NEXUS: ${ISSUES_COUNT} review issue(s) found -- fix and re-run i/review mode=forget until 0." >&2
-  elif echo "$TOOL_RESULT" | grep -qE 'Found 0 issues total|^All clean$|review passed'; then
+  elif echo "$TOOL_RESULT" | grep -qE 'Found 0 issues total|^All clean$|review passed|Warnings: none found'; then
     # Legacy path: no marker, but an explicit zero-issues sentinel.
     _nexus_clear_type REVIEW_CLI_FAILURE
     _nexus_clear_type REVIEW_PARSE_FAILED
     _nexus_clear_type REVIEW_ISSUES
+    _review_clean_advance_onboarding
   else
     # No canonical marker, no legacy sentinel -- the server output has drifted
     _nexus_mark REVIEW_PARSE_FAILED "review output missing HME_REVIEW_VERDICT marker and all legacy sentinels -- sentinel list drifted from server emit"
