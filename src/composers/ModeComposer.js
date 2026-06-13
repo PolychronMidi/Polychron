@@ -1,16 +1,6 @@
 const V = validator.create('ModeComposer');
-/**
- * Composes notes from a specific mode (single static mode selection).
- *
- * DISTINCTION FROM ModalInterchangeComposer:
- * - ModeComposer: selects ONE mode and extracts its scale notes (melodic/scale-based)
- * - ModalInterchangeComposer: generates chord progressions that BORROW from parallel modes (harmonic/chord-based)
- *
- * Use ModeComposer for modal melodies (e.g., "play in dorian").
- * Use ModalInterchangeComposer for harmonic modal borrowing (e.g., "I-iv-V where iv is borrowed from parallel minor").
- *
- * @extends MeasureComposer
- */
+/** ModeComposer selects one mode for melodic/scale notes; modal interchange handles borrowed chords.
+ * @extends MeasureComposer */
 ModeComposer = class ModeComposer extends MeasureComposer {
   /**
    * @param {string} modeName - e.g., 'ionian', 'aeolian'
