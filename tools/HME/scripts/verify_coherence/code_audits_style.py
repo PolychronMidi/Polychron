@@ -366,7 +366,7 @@ class CommentBloatVerifier(Verifier):
         try:
             payload = json.loads(out)
         except Exception:
-            return errored(summary="could not parse audit output", details=[err[:500]])
+            return errored(summary=f"comment-bloat audit script crashed (rc={rc})", details=[err[:500] or out[:500]])
         fail_count = len(payload.get("fail", []))
         warn_count = len(payload.get("warn", []))
         long_count = len(payload.get("long_lines", []))
