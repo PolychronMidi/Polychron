@@ -66,7 +66,7 @@ function _autocommitLineResolved(line, projectRoot) {
   try {
     okTs = Date.parse(fs.readFileSync(path.join(projectRoot, 'tools/HME/runtime/autocommit.last-success'), 'utf8').trim());
   } catch (_e) { okTs = 0; }
-  if (Number.isFinite(okTs) && okTs > lineTs) return true;
+  if (lineTs && Number.isFinite(okTs) && okTs > lineTs) return true;
   // If no failure flag remains and the working tree is clean, the historical
   // autocommit line is resolved even if its log entry is still unread.
   try {
