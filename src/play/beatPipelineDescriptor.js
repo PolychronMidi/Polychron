@@ -74,11 +74,8 @@ moduleLifecycle.declare({
       produces: [] }
   ]);
 
-  /**
-   * Validate that STAGES is a valid topological ordering of its own dependency graph.
-   * Throws immediately if any stage appears before a declared dependency.
-   * Called once at boot by mainBootstrap.
-   */
+  // Validate STAGES as a topological order of its declared dependencies.
+  // Called once at boot; throws if a stage appears before a dependency.
   function assertTopologicalOrder() {
     const seen = new Set();
     for (let i = 0; i < STAGES.length; i++) {
