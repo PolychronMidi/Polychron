@@ -6,6 +6,7 @@ const { lastRealUserMessage, messageContentItems, messageText } = require('../re
 const { SHORTCUTS, TWO_STEP_SHORTCUTS } = require('../shortcuts_config');
 
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
+const INTERRUPT_ENVELOPE_RE = /^\s*\[Request interrupted by user[^\]]*\]\s*/i;
 // Derive the match alternation from both shortcut maps so the regex can never
 // drift out of sync with the keys it must match.
 const _SHORTCUT_KEYS = [...Object.keys(SHORTCUTS), ...Object.keys(TWO_STEP_SHORTCUTS)].sort((a, b) => b.length - a.length);
