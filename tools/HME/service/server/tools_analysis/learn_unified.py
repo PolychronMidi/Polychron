@@ -98,9 +98,19 @@ def learn(query: str = "", title: str = "", content: str = "",
     # Add action (title + content provided)
     if title and content:
         from server.tools_knowledge import add_knowledge as _ak
-        return _ak(title=title, content=content, category=category,
+        _ret = _ak(title=title, content=content, category=category,
                    tags=tags, scope=scope, related_to=related_to,
                    relation_type=relation_type, listening_notes=listening_notes)
+        # A manual add after a pipeline verdict fulfills the same learning step as
+        # accepting the auto-draft. Move the stale draft out of the pending lane so
+        try:
+            import os as _os
+            _draft_path = _os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-learn-draft.json")
+            if _os.path.isfile(_draft_path):
+                _os.replace(_draft_path, _draft_path + ".accepted")
+        except OSError:
+            pass  # silent-ok: status hint cleanup; KB add already succeeded
+        return _ret
 
     # Search action (query provided, or title without content = search)
     search_term = query or title
