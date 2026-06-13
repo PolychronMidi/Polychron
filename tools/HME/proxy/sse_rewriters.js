@@ -79,6 +79,10 @@ function _emitHeldInput(state, index, input) {
   return events;
 }
 
+function _isNativePipelineCommand(command) {
+  return /^(npm run (main|snapshot)|node (?:src\/)?lab\/run)/.test(String(command || '').trimStart());
+}
+
 function runInBackgroundRewrite(eventName, data, ctx) {
   const holds = _holdToolInput(ctx, 'bash_hold', eventName, data, BASH_TOOL_NAMES);
 
