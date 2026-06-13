@@ -213,7 +213,7 @@ def _scan_file(path: str, ext: str) -> list:
         return findings
     allowed_lines, blocked_lines, block_comment_lines = _comment_scan_sets(lines, ext)
     block_start = None
-    block_len = 0
+    block_lines = []
     seen_first_block = False
     seen_non_blank_non_comment = False
     for i, raw in enumerate(lines, 1):
@@ -221,22 +221,24 @@ def _scan_file(path: str, ext: str) -> list:
         if _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines, block_comment_lines) and not _is_annotation(s):
             if block_start is None:
                 block_start = i
-                block_len = 1
+                block_lines = [i]
             else:
-                block_len += 1
+                block_lines.append(i)
         else:
+            block_len = len(block_lines)
             if block_start is not None and block_len >= WARN_LINES:
                 top_exempt = (not seen_first_block) and (not seen_non_blank_non_comment) and block_len <= TOP_EXEMPT_MAX
-                if not top_exempt:
+                if not top_exempt and not _is_type_metadata_block(lines, block_lines, ext):
                     findings.append({"line": block_start, "block_len": block_len})
                 seen_first_block = True
             if s and not _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines, block_comment_lines) and not _is_top_directive(s, ext):
                 seen_non_blank_non_comment = True
             block_start = None
-            block_len = 0
+            block_lines = []
+    block_len = len(block_lines)
     if block_start is not None and block_len >= WARN_LINES:
         top_exempt = (not seen_first_block) and (not seen_non_blank_non_comment) and block_len <= TOP_EXEMPT_MAX
-        if not top_exempt:
+        if not top_exempt and not _is_type_metadata_block(lines, block_lines, ext):
             findings.append({"line": block_start, "block_len": block_len})
     return findings
 
