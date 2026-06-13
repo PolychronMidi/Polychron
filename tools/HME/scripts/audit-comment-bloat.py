@@ -146,12 +146,31 @@ def _shell_heredoc_lines(lines: list[str]) -> set[int]:
     return blocked
 
 
-def _comment_scan_sets(lines: list[str], ext: str) -> tuple[set[int] | None, set[int]]:
+def _js_block_comment_lines(lines: list[str], ext: str) -> set[int]:
+    if ext not in (".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"):
+        return set()
+    out = set()
+    in_block = False
+    for i, raw in enumerate(lines, 1):
+        stripped = raw.strip()
+        if not in_block and stripped.startswith("/*"):
+            out.add(i)
+            if "*/" not in stripped[stripped.find("/*") + 2:]:
+                in_block = True
+            continue
+        if in_block:
+            out.add(i)
+            if "*/" in stripped:
+                in_block = False
+    return out
+
+
+def _comment_scan_sets(lines: list[str], ext: str) -> tuple[set[int] | None, set[int], set[int]]:
     if ext == ".py":
-        return _python_full_line_comments(lines), set()
+        return _python_full_line_comments(lines), set(), set()
     if ext in (".sh", ".bash"):
-        return None, _shell_heredoc_lines(lines)
-    return None, set()
+        return None, _shell_heredoc_lines(lines), set()
+    return None, set(), _js_block_comment_lines(lines, ext)
 
 
 def _is_scannable_comment(
@@ -160,13 +179,13 @@ def _is_scannable_comment(
     ext: str,
     allowed_lines: set[int] | None,
     blocked_lines: set[int],
+    block_comment_lines: set[int],
 ) -> bool:
     if line_no in blocked_lines:
         return False
     if allowed_lines is not None and line_no not in allowed_lines:
         return False
-    return _is_comment_line(stripped, ext) or _is_block_comment_line(stripped, ext)
-
+    return _is_comment_line(stripped, ext) or line_no in block_comment_lines
 
 def _scan_file(path: str, ext: str) -> list:
     """Yield {line, block_len} for each comment block exceeding WARN_LINES.
