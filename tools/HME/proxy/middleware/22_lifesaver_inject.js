@@ -59,6 +59,31 @@ function _staleRuntimeResolvedOrGrace(projectRoot) {
   }
 }
 
+function _autocommitLineResolved(line, projectRoot) {
+  if (!/^\[autocommit\]/.test(String(line || '').replace(/^\[[0-9TZ:.-]+\]\s*/, ''))) return false;
+  const lineTs = _lineTimestampMs(line);
+  let okTs = 0;
+  try {
+    okTs = Date.parse(fs.readFileSync(path.join(projectRoot, 'tools/HME/runtime/autocommit.last-success'), 'utf8').trim());
+  } catch (_e) { okTs = 0; }
+  if (Number.isFinite(okTs) && okTs > lineTs) return true;
+  // If no failure flag remains and the working tree is clean, the historical
+  // autocommit line is resolved even if its log entry is still unread.
+  try {
+    if (!fs.existsSync(path.join(projectRoot, 'tools/HME/runtime/autocommit.fail'))) {
+      const status = execFileSync('git', ['-C', projectRoot, 'status', '--porcelain'], { encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      if (!status) return true;
+    }
+  } catch (_e) { /* unresolved on probe failure */ }
+  return false;
+}
+
+function _lineTimestampMs(line) {
+  const m = /^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\]/.exec(String(line || ''));
+  const t = m ? Date.parse(m[1]) : 0;
+  return Number.isFinite(t) ? t : 0;
+}
+
 function _isAgentActionable(line, projectRoot) {
   // tag-anchored regex matches at line start.
   const body = line.replace(/^\[[0-9TZ:.-]+\]\s*/, '');
