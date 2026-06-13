@@ -61,9 +61,10 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
     git(['config', 'user.name', 'HME Test'], sandbox);
     git(['add', 'src/seed.txt'], sandbox);
     git(['commit', '--quiet', '-m', 'initial'], sandbox);
+    const now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     fs.writeFileSync(
       path.join(sandbox, 'tools', 'HME', 'runtime', 'autocommit.fail'),
-      '[2026-05-15T00:00:00Z] [test] synthetic failure\n',
+      `[${now}] [test] synthetic failure\n`,
     );
 
     const script = path.join(repoRoot, 'tools', 'HME', 'hooks', 'lifecycle', 'userpromptsubmit.sh');
