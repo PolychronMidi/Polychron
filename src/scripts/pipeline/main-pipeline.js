@@ -27,6 +27,26 @@ process.env.HME_RUNTIME_DIR = HME_RUNTIME_DIR;
 process.env.HME_METRICS_DIR = HME_METRICS_DIR;
 process.env.METRICS_DIR = METRICS_DIR;
 
+{
+  const dotenv = path.join(PROJECT_ROOT, '.env');
+  const required = ['HME_BLINDSPOT_WINDOW', 'HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST'];
+  if (fs.existsSync(dotenv)) {
+    const raw = fs.readFileSync(dotenv, 'utf8');
+    for (const key of required) {
+      const re = new RegExp('^' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*=\\s*(.+?)(?:\\s+#.*)?$', 'm');
+      const m = raw.match(re);
+      if (m) process.env[key] = m[1].replace(/^["']|["']$/g, '');
+      if (!process.env[key]) process.env[key] = '';
+    }
+  }
+  // Validate minimal config to avoid silent downstream defaults.
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length) {
+    console.error('PIPELINE HALTED: required env keys missing from .env -- ' + missing.join(', '));
+    process.exit(1);
+  }
+}
+
 const MEASURE_TIMEOUT_SEC = 30;
 
 // step definitions
