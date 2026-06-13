@@ -226,6 +226,9 @@ function printSummary() {
 }
 
 function writeSummaryJSON(wallTime, extra) {
+  var failedCount = timings.filter(function (t) { return !t.ok; }).length;
+  var hasDetectedErrors = errorPatterns.length > 0;
+  var exitCode = (failedCount > 0 || hasDetectedErrors) ? 1 : 0;
   var summary = {
     generated: new Date().toISOString(),
     wallTimeSeconds: Number(wallTime),
@@ -240,9 +243,10 @@ function writeSummaryJSON(wallTime, extra) {
       };
     }),
     passed: timings.filter(function (t) { return t.ok; }).length,
-    failed: timings.filter(function (t) { return !t.ok; }).length,
+    failed: failedCount,
     skipped: timings.filter(function (t) { return t.status === 'SKIPPED'; }).length,
-    errorPatterns: errorPatterns.length > 0 ? errorPatterns : undefined
+    errorPatterns: hasDetectedErrors ? errorPatterns : undefined,
+    exitCode: exitCode
   };
   // Compute HCI inline so pipeline-summary.json always carries both the
   // music verdict AND the coherence index. Previously this was done by
