@@ -111,10 +111,13 @@ fi
 # Nexus: track pipeline verdicts
 if echo "$CMD" | grep -q 'npm run main'; then
   RESULT=$(_safe_jq "$INPUT" '.tool_response' '' | tail -c 500)
-  if echo "$RESULT" | grep -q 'Pipeline finished'; then
-    PROJECT="$PROJECT_ROOT"
+  EXIT_CODE_OK=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // 0' '0')
+  PROJECT="$PROJECT_ROOT"
+  PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/src/output/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
+  # Background Bash completion may not include the full `Pipeline finished` text
+  # in tool_response. Trust the canonical summary when the Bash exit code is 0.
+  if echo "$RESULT" | grep -q 'Pipeline finished' || { [ "$EXIT_CODE_OK" = "0" ] && [ "$PASSED" = "0" ]; }; then
     SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
-    PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/src/output/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
     FP="$PROJECT/src/output/metrics/fingerprint-comparison.json"
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
     WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/src/output/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
