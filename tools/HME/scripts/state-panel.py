@@ -274,34 +274,7 @@ def main(argv):
             marker = "." if status == "PASS" else "!"
             out.append(f"  agent-loop {marker}      {status}  score={score:.2f}  (i/status mode=agent-loop for detail)")
 
-    # 9. Last hot-reload -- auto-reload fires on .py edits under
-    reload_marker = os.path.join(PROJECT_ROOT, "tools", "HME", "runtime", "last-reload.json")
-    reload_info = _read_json(reload_marker)
-    if reload_info:
-        try:
-            age_s = time.time() - reload_info.get("ts", 0)
-            trigger = reload_info.get("trigger", "?")
-            human_age = (
-                f"{int(age_s)}s ago" if age_s < 60 else
-                f"{int(age_s/60)}m ago" if age_s < 3600 else
-                f"{age_s/3600:.1f}h ago"
-            )
-            loaded = str(reload_info.get("loaded_head") or "")[:8]
-            try:
-                current = subprocess.check_output(
-                    ["git", "-C", PROJECT_ROOT, "rev-parse", "HEAD"],
-                    text=True, stderr=subprocess.DEVNULL, timeout=2,
-                ).strip()[:8]
-            # silent-ok: bad optional telemetry row skipped; result stays explicit.
-            except Exception:
-                current = ""
-            stale = " stale" if loaded and current and loaded != current else ""
-            suffix = f" head={loaded}->{current}{stale}" if loaded or current else ""
-            out.append(f"  last hot-reload    {human_age}  ({trigger}){suffix}")
-        except (OSError, TypeError):
-            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
-
-    # 10. Pending KB draft -- visibility for the auto-suggest after
+    # 9. Pending KB draft -- visibility for the auto-suggest after
     draft_path = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json")
     if os.path.isfile(draft_path):
         try:
