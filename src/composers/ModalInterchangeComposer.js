@@ -1,16 +1,6 @@
 const V = validator.create('ModalInterchangeComposer');
-/**
- * Generates chord progressions with modal borrowing from parallel modes.
- *
- * DISTINCTION FROM ModeComposer:
- * - ModalInterchangeComposer: generates chord progressions that BORROW from parallel modes (harmonic/chord-based)
- * - ModeComposer: selects ONE mode and extracts its scale notes (melodic/scale-based)
- *
- * Use ModalInterchangeComposer for harmonic modal color (e.g., borrowing iv from parallel minor in a major key).
- * Use ModeComposer for modal melodies (e.g., playing in dorian mode).
- *
- * @extends ChordComposer
- */
+/** ModalInterchangeComposer borrows parallel-mode chords for harmonic color; ModeComposer handles melodies.
+ * @extends ChordComposer */
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25, opts = {}) {
     V.assertNonEmptyString(key, 'key');
