@@ -22,12 +22,8 @@ moduleLifecycle.declare({
   const FLICKER_FLAT_THRESHOLD = 1.05;
   const STREAK_TRIGGER = 6; // beats before a hint activates
 
-  /**
-   * Update streaks and compute hints. Called each beat via registerRecorder.
-   * Reads signalTelemetry trend to modulate streak growth - rising trends
-   * dampen density-low streaks (system recovering), falling trends amplify them.
-   * Skips streak accumulation during anomalies (transient spikes).
-   */
+  // Update profile hints each recorder beat, using trend to modulate streak growth.
+  // Anomalies skip accumulation so transient spikes do not activate hints.
   function update() {
     // Anomalies are transient - don't let them build toward sustained-signal hints
     if (signalTelemetry.isAnomalyDetected()) return;
