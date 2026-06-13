@@ -54,8 +54,8 @@ mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 1, 'empty string content triggers append');
 assert(ctx._appends[0].startsWith('[NO_OUTPUT]'), 'append carries [NO_OUTPUT] for non-error empty body');
 assert(ctx._emits.length === 1 && ctx._emits[0].event === 'empty_tool_result_marked'
-       && ctx._emits[0].status === 'SUCCESS',
-       'emits status=SUCCESS event');
+       && ctx._emits[0].status === 'NO_OUTPUT',
+       'emits status=NO_OUTPUT event');
 
 // Case 2: whitespace-only content -> [NO_OUTPUT] appended.
 r = { content: '   \n  ' };
