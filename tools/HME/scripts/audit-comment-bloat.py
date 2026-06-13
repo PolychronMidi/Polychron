@@ -257,7 +257,7 @@ def _scan_long_comment_lines(path: str, ext: str) -> list:
         stripped = line_no_nl.strip()
         if not _is_scannable_comment(i, stripped, ext, allowed_lines, blocked_lines, block_comment_lines):
             continue
-        if _is_directive(stripped):
+        if _is_directive(stripped) or _is_type_metadata_line(stripped, ext):
             continue
         if len(line_no_nl) >= LONG_LINE_CHARS:
             findings.append({"line": i, "line_len": len(line_no_nl)})
