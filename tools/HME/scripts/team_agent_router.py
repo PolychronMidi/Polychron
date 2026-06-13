@@ -260,7 +260,9 @@ def _native_input(tool_input: dict, target: str) -> dict:
         "description": f"{target} routed: {desc}"[:200],
         "prompt": (
             f"MODE=1 team-routed task. You are {target}.\n"
-            f"Register/heartbeat via i/status team if not present. Do not fork further subagents.\n\n"
+            f"You are running in the HME default forked subagent context; do not replace it with a fresh/raw context.\n"
+            f"Bounds: do not spawn further Agent/subagent tasks; do not use multi_tool_use.parallel for Agent; inspect at most 8 files unless explicitly told otherwise; return top findings only (max 1200 words).\n"
+            f"Register/heartbeat via i/status team if not present.\n\n"
             f"Original task:\n{prompt}"
         ),
         "subagent_type": "general-purpose",
