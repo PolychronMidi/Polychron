@@ -90,17 +90,19 @@ test('legacy subagent_type still routes invisibly through tier defaults', () => 
   assert.match(out.updatedInput.description, /^crew_e3_0 routed:/);
 });
 
-test('empty registry silent-allows native dispatch (no alarm)', () => {
+test('empty registry still applies HME default fork/bounds to raw Agent', () => {
   const root = projectWithDashboard({});
   const r = runRouter(root, { tool_name: 'Agent', input: { level: 3, prompt: 'hi' } });
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout).hookSpecificOutput;
   assert.equal(out.permissionDecision, 'allow');
-  assert.strictEqual(out.additionalContext, undefined);
-  assert.strictEqual(out.updatedInput, undefined);
+  assert.match(out.additionalContext, /No registered HME crew/);
+  assert.match(out.updatedInput.description, /^HME default-fork bounded:/);
+  assert.match(out.updatedInput.prompt, /MODE=1 HME default-fork task/);
+  assert.match(out.updatedInput.prompt, /default forked subagent context/);
 });
 
-test('non-empty registry with no matching tier surfaces helpful diagnostic', () => {
+test('non-empty registry with no matching tier applies default fork/bounds instead of native unbounded dispatch', () => {
   const root = projectWithDashboard({
     driver: { status: 'registered', tier: 'E5', ctx_used_pct: 5 },
   });
@@ -109,6 +111,9 @@ test('non-empty registry with no matching tier surfaces helpful diagnostic', () 
   const out = JSON.parse(r.stdout).hookSpecificOutput;
   assert.equal(out.permissionDecision, 'allow');
   assert.match(out.additionalContext, /1 agent\(s\) registered, none match/);
+  assert.match(out.additionalContext, /Applying default fork\/bounds/);
+  assert.match(out.updatedInput.description, /^HME default-fork bounded:/);
+  assert.match(out.updatedInput.prompt, /default forked subagent context/);
 });
 
 test('blocked E1/E2 crew stays blocked even with stray case/whitespace caller', () => {
