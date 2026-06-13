@@ -86,19 +86,24 @@ if [ -f "$_AC_FAIL_FLAG" ]; then
   if [ "$_AC_AGE" -gt "$_AC_WINDOW_SEC" ]; then
     _AC_LABEL="HISTORICAL_AUTOCOMMIT_ALERT"
   fi
-  _AC_BANNER="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
+  if [ "$_AC_LABEL" = "CURRENT_AUTOCOMMIT_BLOCKER" ]; then
+    _AC_HEAD="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE"
+    _AC_GUIDANCE="The autocommit helper left this flag behind. Last attempt did not
+succeed, which means working-tree changes have NOT been committed.
+Diagnose: check git status in the project root; read log/hme-errors.log;
+inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
+Fix the root cause. Do not silence the alert -- the flag clears automatically
+on the next successful proxy autocommit."
+  else
+    _AC_HEAD="LIFESAVER historical autocommit failure (not a current blocker)"
+    _AC_GUIDANCE="Historical autocommit failure record only. Do not stop on this line unless current git status/precommit still fail; a newer successful autocommit supersedes it."
+  fi
+  _AC_BANNER="$_AC_HEAD
 [$_AC_LABEL] timestamp=$_AC_TS age_sec=$_AC_AGE window_sec=$_AC_WINDOW_SEC
 
 $_AC_FLAG_BODY
 
-The autocommit helper left this flag behind. Last attempt did not
-succeed, which means working-tree changes have NOT been committed.
-Diagnose: check git status in the project root; read log/hme-errors.log;
-inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
-Freshness label distinguishes a current blocker from historical alert text;
-do not cite stale historical autocommit text as current proof.
-Fix the root cause. Do not silence the alert -- the flag clears automatically
-on the next successful proxy autocommit."
+$_AC_GUIDANCE"
   echo "" >&2
   echo "$_AC_BANNER" >&2
   jq -n --arg banner "$_AC_BANNER" \
