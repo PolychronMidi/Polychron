@@ -47,24 +47,24 @@ function makeCtx() {
   };
 }
 
-// Case 1: empty string content (no error) -> [SUCCESS] appended.
+// Case 1: empty string content (no error) -> [NO_OUTPUT] appended.
 let r = { content: '' };
 let ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 1, 'empty string content triggers append');
-assert(ctx._appends[0].startsWith('[SUCCESS]'), 'append carries [SUCCESS] for non-error empty body');
+assert(ctx._appends[0].startsWith('[NO_OUTPUT]'), 'append carries [NO_OUTPUT] for non-error empty body');
 assert(ctx._emits.length === 1 && ctx._emits[0].event === 'empty_tool_result_marked'
        && ctx._emits[0].status === 'SUCCESS',
        'emits status=SUCCESS event');
 
-// Case 2: whitespace-only content -> [SUCCESS] appended.
+// Case 2: whitespace-only content -> [NO_OUTPUT] appended.
 r = { content: '   \n  ' };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 1, 'whitespace-only content triggers append');
-assert(ctx._appends[0].startsWith('[SUCCESS]'), 'whitespace-only -> [SUCCESS]');
+assert(ctx._appends[0].startsWith('[NO_OUTPUT]'), 'whitespace-only -> [NO_OUTPUT]');
 
-// Case 3: empty array content -> [SUCCESS] appended.
+// Case 3: empty array content -> [NO_OUTPUT] appended.
 r = { content: [] };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
@@ -85,10 +85,10 @@ assert(ctx._appends[0].startsWith('[FAIL]'), 'is_error empty body -> [FAIL]');
 assert(ctx._emits[0].status === 'FAIL', 'emits status=FAIL for is_error');
 
 // Case 6: idempotency -- already-marked SUCCESS result is a no-op.
-r = { content: '[SUCCESS]' };
+r = { content: '[NO_OUTPUT]' };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
-assert(ctx._appends.length === 0, '[SUCCESS]-marked result is idempotent');
+assert(ctx._appends.length === 0, '[NO_OUTPUT]-marked result is idempotent');
 
 // Case 7: idempotency -- already-marked FAIL result is a no-op.
 r = { content: '[FAIL] tool errored with no error message body' };
