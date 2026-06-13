@@ -8,6 +8,14 @@ MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[
 [ -z "$MODE" ] && MODE="digest"
 
 if [ "$MODE" = "forget" ]; then
+  _review_clean_advance_onboarding() {
+    # A clean forget-review means the audit step is complete. Repair missed
+    # edit->edited advancement too (for sessions that edited before the edit
+    if ! _onb_is_graduated; then
+      _onb_advance_to edited >/dev/null 2>&1 || true
+      _onb_advance_to reviewed >/dev/null 2>&1 || true
+    fi
+  }
   # EDIT clear + REVIEW mark fired in BOTH proxy middleware and this hook
   TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
   if echo "$TOOL_RESULT" | grep -q '^hme-cli:'; then
