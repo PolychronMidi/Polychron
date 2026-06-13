@@ -55,7 +55,17 @@ for _pre in "${SCRIPT_DIR}/bash/pre/"*.sh; do
 done
 
 # silent-ok: helper failure falls through to blocked/unready probe path.
-_POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/bash_command_policy'); const raw=JSON.parse(fs.readFileSync(0,'utf8')||'{}'); const out=p.toHookResponse(p.evaluateBashInput(raw.tool_input||{}, {projectRoot:process.env.PROJECT_ROOT, supportsRunInBackground:(raw._hme_host==='claude'||(raw.tool_input&&raw.tool_input.run_in_background===true))})); if(out) process.stdout.write(out);" 2>/dev/null || true)
+_POLICY_RC=0
+_POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/bash_command_policy'); const raw=JSON.parse(fs.readFileSync(0,'utf8')||'{}'); const out=p.toHookResponse(p.evaluateBashInput(raw.tool_input||{}, {projectRoot:process.env.PROJECT_ROOT, supportsRunInBackground:(raw._hme_host==='claude'||(raw.tool_input&&raw.tool_input.run_in_background===true))})); if(out) process.stdout.write(out);" 2>/dev/null) || _POLICY_RC=$?
+if [ "${_POLICY_RC:-0}" -ne 0 ]; then
+  _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+  _log="${PROJECT_ROOT}/log/hme-errors.log"
+  mkdir -p "$(dirname "$_log")" 2>/dev/null
+  printf '[%s] [pretooluse_bash] Bash unified policy evaluator crashed (rc=%d); denying command. Investigate bash_command_policy.js logs.\n' "$_ts" "$_POLICY_RC" >> "$_log" 2>/dev/null || true
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"BLOCKED: Bash policy evaluator crashed (rc='"$_POLICY_RC"'). Cannot allow unvalidated command -- fix bash_command_policy.js or runtime."}}'
+  exit 0
+fi
+
 if [ -n "$_POLICY_OUT" ]; then
   case "$_POLICY_OUT" in
     *'"permissionDecision":"allow"'*)
