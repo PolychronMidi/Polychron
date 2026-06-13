@@ -121,13 +121,8 @@ moduleLifecycle.declare({
     return /** @type {'parallel' | 'complementary' | 'independent'} */ (arcTypeByLayer[layer] || arcType);
   }
 
-  /**
-   * Auto-select arc type based on intent, section position, and regime.
-   * R73 E2: Added regime-awareness. Coherent regime favors parallel arcs
-   * (unified layers), exploring favors complementary (layer contrast),
-   * evolving favors independent (maximum differentiation). Regime input
-   * blends with intent-based selection rather than overriding it.
-   */
+  // Auto-select arc type from intent/section/regime, blending regime rather than overrid
+  // Coherent favors parallel; exploring complementary; evolving independent.
   function autoSelectArcType() {
     const intent = sectionIntentCurves.getLastIntent();
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
