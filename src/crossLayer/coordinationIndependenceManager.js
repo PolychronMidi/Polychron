@@ -163,14 +163,8 @@ moduleLifecycle.declare({
     return clamp(raw, 0.05, 0.95);
   }
 
-  /**
-   * Read channelStateField rollup and derive a small coordination bias.
-   * Deep antagonism in the emission ecology => push dial targets UP
-   * (module pairs should coordinate harder to compensate for writer-level
-   * disagreement). Deep cooperation => pull dial targets DOWN (the ecology
-   * is tight; loosen coordination for variety).
-   * Bounded to +/-0.06 so it biases without overriding CIM's primary logic.
-   */
+  // Derive a small coordination bias from channel ecology: antagonism tightens, cooperat
+  // Bounded to +/-0.06 so it nudges rather than overriding CIM's main logic.
   function _substrateCoordinationBias() {
     const rollup = channelStateField.getRollup();
     const coop = V.optionalFinite(rollup.meanCooperation, 0);
