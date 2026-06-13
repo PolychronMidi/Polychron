@@ -18,7 +18,7 @@ function appendText(toolResult, text) {
 
 function hasMarker(toolResult) {
   const text = textOfToolResult(toolResult);
-  return text.includes('[SUCCESS]') || text.includes('[FAIL]');
+  return text.includes('[SUCCESS]') || text.includes('[FAIL]') || text.includes('[NO_OUTPUT]');
 }
 
 function emptyMarker(isError = false) {
