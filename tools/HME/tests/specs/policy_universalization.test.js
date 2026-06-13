@@ -93,6 +93,25 @@ test('spawn payload that is a direct PROJECT_ROOT script run is rewritten to the
   }
 });
 
+test('unified policy blocks Agent hidden inside multi_tool_use.parallel', async () => {
+  const registry = require('../../policies/registry');
+  const config = require('../../policies/config');
+  registry.loadBuiltins();
+  const policies = registry.matchingFor('PreToolUse', 'multi_tool_use.parallel', config);
+  assert.ok(policies.some((p) => p.name === 'block-nested-agent-in-multi-tool'));
+  const aggregate = await registry.runChain(policies, {
+    toolName: 'multi_tool_use.parallel',
+    toolInput: { tool_uses: [{ recipient_name: 'functions.Agent', parameters: { level: 3, prompt: 'fan out' } }] },
+    deny: registry.deny,
+    instruct: registry.instruct,
+    allow: registry.allow,
+    rewrite: registry.rewrite,
+    params: {},
+  });
+  assert.equal(aggregate.firstDeny.policy, 'block-nested-agent-in-multi-tool');
+  assert.match(aggregate.firstDeny.reason, /bypasses HME's raw Agent fork\/context router/);
+});
+
 test('shared Bash anti-wait only requires Claude run_in_background when host supports it', () => {
   const codex = evaluateBashInput({ command: 'npm run main' }, { projectRoot: root, supportsRunInBackground: false });
   assert.equal(codex.decision, 'allow');
