@@ -331,7 +331,7 @@ test('conversation graph scrub removes orphan pairs and preserves non-empty turn
   ] };
   assert.equal(scrubOrphanToolPairs(payload), 2);
   assert.equal(sanitizeMessages(payload), 1);
-  assert.match(payload.messages[0].content[0].text, /SUCCESS|stripped/);
+  assert.match(payload.messages[0].content[0].text, /NO_OUTPUT|stripped/);
   assert.equal(toGraph(payload)[0].blocks[0].kind, 'text');
 });
 
