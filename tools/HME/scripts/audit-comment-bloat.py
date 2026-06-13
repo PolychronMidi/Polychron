@@ -187,6 +187,20 @@ def _is_scannable_comment(
         return False
     return _is_comment_line(stripped, ext) or line_no in block_comment_lines
 
+
+def _is_type_metadata_block(lines: list[str], block_lines: list[int], ext: str) -> bool:
+    if ext not in (".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs") or not block_lines:
+        return False
+    text = "\n".join(lines[i - 1].strip() for i in block_lines)
+    return any(tag in text for tag in ("@typedef", "@param", "@returns", "@return", "@type", "@property"))
+
+
+def _is_type_metadata_line(stripped: str, ext: str) -> bool:
+    if ext not in (".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"):
+        return False
+    return any(tag in stripped for tag in ("@typedef", "@param", "@returns", "@return", "@type", "@property"))
+
+
 def _scan_file(path: str, ext: str) -> list:
     """Yield {line, block_len} for each comment block exceeding WARN_LINES.
     The first comment block at file top (after any shebang) is exempt
