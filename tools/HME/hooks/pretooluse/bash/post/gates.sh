@@ -23,10 +23,7 @@ if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
   if _onb_before "reviewed"; then
     # Recovery path: the review hook may have marked NEXUS clean but missed
     # onboarding advancement (e.g. sessions edited before the edit hook was
-    if _nexus_has REVIEW \
-       && ! _nexus_has REVIEW_ISSUES \
-       && ! _nexus_has REVIEW_CLI_FAILURE \
-       && ! _nexus_has REVIEW_PARSE_FAILED; then
+    if _review_is_newer_than_failures; then
       _onb_advance_to edited >/dev/null 2>&1 || true
       _onb_advance_to reviewed >/dev/null 2>&1 || true
     fi
