@@ -237,16 +237,8 @@ moduleLifecycle.declare({
   }
 
 
-  /**
-   * Verify that the two registries have a sane number of entries.
-   * This is run after modules have had a chance to register themselves, so it
-   * must be called manually by the caller (main.js uses it immediately after
-   * conductorIntelligence.initialize()).
-   *
-    * The thresholds are intentionally conservative; the real goal is to catch
-    * catastrophic mis-loads (e.g. entire subsystem index.js omitted) while still
-    * enforcing fail-fast behavior. Any threshold violation throws immediately.
-   */
+  // Verify registry populations after module registration, before main.js proceeds.
+  // Conservative thresholds catch catastrophic subsystem mis-loads fail-fast.
   function assertRegistryPopulation() {
     const ciCounts = conductorIntelligence.getCounts();
     const ciModuleCount = conductorIntelligence.getModuleCount();
