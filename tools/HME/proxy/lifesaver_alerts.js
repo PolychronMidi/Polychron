@@ -54,19 +54,23 @@ function readAutocommitFailure(root) {
     body = `Autocommit fail flag exists but is unreadable: ${err.message}`;
   }
   const freshness = _autocommitFreshness(root, flagPath, body);
-  const banner = `[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
+  const header = freshness.current
+    ? '[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE'
+    : 'LIFESAVER historical autocommit failure (not a current blocker)';
+  const guidance = freshness.current
+    ? `The autocommit helper left this flag behind. Last attempt did not
+succeed, which means working-tree changes have NOT been committed.
+Diagnose: check git status in the project root; read log/hme-errors.log;
+inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
+Fix the root cause. Do not silence the alert -- the flag clears automatically
+on the next successful autocommit.`
+    : `Historical autocommit failure record only. Do not stop on this line unless current git status/precommit still fail; a newer successful autocommit supersedes it.`;
+  const banner = `${header}
 [${freshness.label}] timestamp=${freshness.timestamp || 'unknown'} age_sec=${freshness.age_sec == null ? 'unknown' : freshness.age_sec} window_sec=${freshness.window_sec}
 
 ${body}
 
-The autocommit helper left this flag behind. Last attempt did not
-succeed, which means working-tree changes have NOT been committed.
-Diagnose: check git status in the project root; read log/hme-errors.log;
-inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
-Freshness label distinguishes a current blocker from historical alert text;
-do not cite stale historical autocommit text as current proof.
-Fix the root cause. Do not silence the alert -- the flag clears automatically
-on the next successful autocommit.`;
+${guidance}`;
   return { flagPath, body, banner, freshness };
 }
 
