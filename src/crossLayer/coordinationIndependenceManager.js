@@ -177,11 +177,8 @@ moduleLifecycle.declare({
     return (coop / 0.2) * -0.06;                 // 0..+0.2 => 0..-0.06
   }
 
-  /**
-   * Main tick: update dial targets and ease dials toward targets.
-   * Phase-gated: only adjust during stabilized system phase.
-   * Self-interference detection: revert on health drop.
-   */
+  // Main tick updates targets and eases dials only during stabilized system phase.
+  // Self-interference detection reverts on health drop.
   function tick() {
     tickCount++;
     if (tickCount % TICK_INTERVAL !== 0) return;
