@@ -57,6 +57,7 @@ if [ "$MODE" = "forget" ]; then
           _EDIT_COUNT_CLEARED=$(_nexus_count EDIT)
           _nexus_clear_type EDIT
           _nexus_mark REVIEW "$_EDIT_COUNT_CLEARED"
+          _review_clean_advance_onboarding
           echo "NEXUS: review warnings are all scaffolding reminders (no actionable defects); EDIT cleared." >&2
         elif [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then  # silent-ok: optional fallback path.
           _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
