@@ -26,6 +26,10 @@ const base = path.basename(String(file)).replace(/\.[^.]*$/, "");
 if (!base) process.exit(0);
 fs.mkdirSync(path.join(root, "tmp"), { recursive: true });
 fs.appendFileSync(path.join(root, "tmp", "hme-turn-edits.txt"), `${base}\n`);
+if (!isError) {
+  const rel = path.relative(root, String(file)).replace(/\\/g, "/");
+  invalidators.appendInvalidator({ key: invalidators.classifyPath(rel), path: rel, source: "posttooluse_edit" });
+}
 ' 2>/dev/null || true
 # Onboarding: targeted -> edited the moment a src/ Edit lands successfully.
 # Canonical machine (onboarding_states.json) has no separate briefed state;
