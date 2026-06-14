@@ -82,6 +82,7 @@ module.exports = {
     if (v.ACK_SKIP === 'ack_skip') return ctx.deny(REASONS.ACK_SKIP);
     if (v.ABANDON_CHECK === 'AGENT_FOR_KB') return ctx.deny(REASONS.PLAN_ABANDONMENT);
     if (v.EARLY_STOP === 'early_stop') return ctx.deny(REASONS.EARLY_STOP);
+    if (v.TASK_NOTIFICATION_TRUTH_GATE === 'task_notification_mishandled') return ctx.deny(REASONS.TASK_NOTIFICATION_MISHANDLED);
 
     return ctx.allow();
   },
