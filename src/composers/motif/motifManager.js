@@ -100,11 +100,8 @@ class MotifManagerClass {
     motifSpreader.spreadSubunits({ layer, unit: 'subdiv', parentIndex: absDivIdx, count: Number(sPerDiv), bucketKey: 'subdivMotifs', parentBucketKey: 'divMotifs', profile });
   }
 
-  /**
-   * Plan subsubdiv-level motifs for the current subdiv.
-   * Derives from subdivMotifs bucket at the absolute subdiv index.
-   * Call from setUnitTiming('subdiv').
-   */
+  // Plan subsubdiv motifs from subdivMotifs at the absolute subdiv index.
+  // Called from setUnitTiming('subdiv').
   static planSubsubdivs(layer, absSubdivIdx, ssPerSub) {
     if (!Number.isFinite(Number(ssPerSub)) || Number(ssPerSub) <= 0) throw new Error('motifManager: ssPerSub must be finite positive');
     MotifManagerClass.motifManagerResetChildVM(layer, 'subsubdiv');
