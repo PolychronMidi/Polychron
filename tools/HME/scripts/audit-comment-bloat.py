@@ -40,6 +40,8 @@ import os
 import re
 import sys
 import tokenize
+import hashlib
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _env_loader import load_env, require_env  # noqa: E402
