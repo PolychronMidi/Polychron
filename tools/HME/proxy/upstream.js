@@ -87,6 +87,16 @@ function _currentBackoffMs() {
 
 function isPassthroughMode() {
   if (process.env.HME_PROXY_FORCE_PASSTHROUGH === '1') return true;
+  // In Anthropic-free OVERDRIVE_MODE, passthrough leaks Claude Code's local
+  // bearer token to api.anthropic.com and immediately creates 401 spam. A valve
+  if (process.env.OVERDRIVE_MODE === '1') {
+    if (_valveTripped) {
+      _valveTripped = false;
+      _clearPersistedValveState();
+      console.error('[hme-proxy] MODE=1: cleared inherited emergency passthrough valve');
+    }
+    return false;
+  }
   if (!_valveTripped) return false;
   // Auto-clear after backoff; next failure re-trips at the next level.
   const elapsed = Date.now() - _valveTrippedAt;
