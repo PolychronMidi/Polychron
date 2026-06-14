@@ -250,13 +250,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
     return voiceLeadingAnalyzeQuality(this, noteSequence);
   }
 
-  /**
-   * Update scorer configuration at runtime. Accepts any subset of:
-   * - weights: { smoothMotion, voiceRange, leapRecovery, voiceCrossing, parallelMotion }
-   * - commonToneWeight
-   * - contraryMotionPreference
-   * - registers
-   */
+  // Runtime config update accepts weights, commonToneWeight, contraryMotionPreference, a
+  // Values are validated/clamped before mutating the scorer.
   updateConfig(cfg = {}) {
     const V = validator.create('VoiceLeadingScore');
     V.assertPlainObject(cfg, 'updateConfig.cfg');
