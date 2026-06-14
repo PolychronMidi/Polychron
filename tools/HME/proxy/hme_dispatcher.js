@@ -210,23 +210,8 @@ async function _callAnthropic(payload, upstreamOpts) {
   });
 }
 
-/**
- * If the initial Anthropic response contains HME_* tool_uses, dispatch them,
- * continue the conversation until no HME_* remain, and return the final
- * (buffered) response bytes for forwarding to Claude Code.
- *
- * Returns:
- *   { finalBody, finalHeaders, finalStatus, loops }
- *   or null if no HME_* tool_uses were present (caller should forward the
- *   original response unchanged).
- *
- * Params:
- *   initialResponseBuf -- Buffer of the first response body (SSE or JSON)
- *   initialHeaders, initialStatus -- from the first response
- *   originalPayload -- the request payload we just sent (messages so far)
- *   upstreamOpts -- {host, port, tls, path, method, headers} for continuation
- *   isStreaming -- whether the original request had stream:true (affects parsing)
- */
+// Dispatch any HME_* tool uses in the first upstream response, then continue until none 
+// Returns final response metadata or null when the caller should forward the original re
 async function maybeHandleHme(initialResponseBuf, initialHeaders, initialStatus,
                                originalPayload, upstreamOpts, isStreaming) {
   const parseFn = isStreaming ? parseSseResponse : parseJsonResponse;
