@@ -12,6 +12,7 @@ printf '%s' "$INPUT" | node -e '
 const fs = require("fs");
 const path = require("path");
 const root = process.env.PROJECT_ROOT;
+const invalidators = require(path.join(root, "tools/HME/proxy/claim_invalidators"));
 let env = {};
 try { env = JSON.parse(fs.readFileSync(0, "utf8") || "{}"); } catch (_err) { process.exit(0); }
 const response = env.tool_response || env.tool_result || {};
