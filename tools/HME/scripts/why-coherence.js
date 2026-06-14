@@ -251,6 +251,23 @@ function runFreshness() {
   console.log(`proof_capsules=${capsules.length} decayed=${decayed.length}`);
 }
 
+function runClaim() {
+  const claimGraph = require('../proxy/claim_graph');
+  const id = arg('claim', process.argv.slice(2).find((a) => !a.startsWith('mode=')) || '');
+  const g = claimGraph.loadGraph();
+  console.log('mode=claim');
+  if (!id) { console.log(`claims=${Object.keys(g.nodes || {}).filter((k) => (g.nodes[k] || {}).kind === 'claim').length}`); return; }
+  const explanation = claimGraph.explainClaim(g, id) || claimGraph.explainClaim(g, `claim:${id}`);
+  if (!explanation) { console.log(`claim ${id}: not found`); return; }
+  console.log(`claim=${explanation.claim_id}`);
+  console.log(`rule_origin=${explanation.rule_origin || '?'}`);
+  console.log(`birthing_bug=${explanation.birthing_bug || '?'}`);
+  console.log(`preserving_tests=${(explanation.preserving_tests || []).join(',') || '?'}`);
+  console.log(`retirement_condition=${explanation.retirement_condition || '?'}`);
+  console.log(`breakage_risk=${explanation.breakage_risk || '?'}`);
+  console.log(`edges=${explanation.incoming.length + explanation.outgoing.length}`);
+}
+
 const m = mode();
 if (m === 'debt') runDebt();
 else if (m === 'mesh') runMesh();
