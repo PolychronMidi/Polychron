@@ -109,15 +109,8 @@ function _setResult(toolResult, text) {
 module.exports = {
   name: 'memory_redirect',
 
-  /**
-   * onRequest fires BEFORE the tool dispatches. We scan the outgoing
-   * Anthropic request for any tool_use blocks targeting memory and
-   * proactively cancel them by replacing them with a tool_result that
-   * surfaces the block message. Belt-and-suspenders with the pretooluse
-   * shell hooks: if the hook fails to fire (skipDangerousModePermissionPrompt
-   * has suppressed it in the past), this catches the attempt at the
-   * transport layer.
-   */
+  // Pre-dispatch guard: replace memory-targeting tool_use blocks with block tool_results
+  // This backs up shell hooks when host permission prompts are suppressed.
   async onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.messages)) return;
     for (const msg of payload.messages) {
