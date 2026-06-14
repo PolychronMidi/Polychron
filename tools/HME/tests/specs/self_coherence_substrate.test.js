@@ -9,6 +9,10 @@ const claims = require('../../proxy/coherence_claims');
 const quality = require('../../proxy/tool_response_quality');
 const { evaluateForkProof } = require('../../proxy/agent_fork_proof');
 const kb = require('../../proxy/kb_semantic_checksum');
+const graph = require('../../proxy/claim_graph');
+const { evaluateClaims } = require('../../proxy/coherence_gate');
+const { splitScores } = require('../../proxy/hci_split');
+const { splitVerdict } = require('../../proxy/pipeline_verdict_split');
 
 function sampleClaim(overrides = {}) {
   return {
