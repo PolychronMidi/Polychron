@@ -27,10 +27,8 @@ class MotifManagerClass {
 
   // Hierarchical planning API (new) -
 
-  /**
-   * Plan the full measure-level hierarchy (measure + beat motifs).
-   * Call once per measure from setUnitTiming('measure').
-   */
+  // Plan the full measure hierarchy once per setUnitTiming('measure').
+  // Builds measure and beat motifs together.
   static planMeasure(layer, composer) {
     if (!layer) throw new Error('motifManager.planMeasure: no layer');
     if (!composer) throw new Error('motifManager.planMeasure: no composer');
