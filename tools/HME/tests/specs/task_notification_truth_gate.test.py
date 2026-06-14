@@ -80,6 +80,25 @@ class TaskNotificationTruthGateTests(unittest.TestCase):
         ])
         self.assertEqual(verdict, "ok")
 
+    def test_detector_stats_expands_template_metrics_env(self):
+        with tempfile.TemporaryDirectory(dir=str(ROOT / "tmp")) as td:
+            code = (
+                "import sys;"
+                f"sys.path.insert(0, {str(ROOT / 'tools/HME/scripts/detectors')!r});"
+                "from _detector_stats import emit_stats;"
+                "emit_stats('task_notification_truth_gate', 'ok', 'env_path_test')"
+            )
+            env = {
+                **os.environ,
+                "PROJECT_ROOT": td,
+                "HME_RUNTIME_DIR": "${PROJECT_ROOT}/tools/HME/runtime",
+                "HME_METRICS_DIR": "${HME_RUNTIME_DIR}/metrics",
+            }
+            out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=10, env=env)
+            self.assertEqual(out.returncode, 0, msg=out.stderr or out.stdout)
+            self.assertTrue(Path(td, "tools/HME/runtime/metrics/detector-stats.jsonl").exists())
+            self.assertFalse(Path(td, "${HME_RUNTIME_DIR}").exists())
+
 
 if __name__ == "__main__":
     os.environ.setdefault("PROJECT_ROOT", str(ROOT))
