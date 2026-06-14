@@ -61,3 +61,20 @@ test('comment-bloat audit exempts JSDoc type metadata blocks and long type lines
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('comment-bloat audit --claim emits a schema-shaped claim file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-comment-bloat-'));
+  const claimFile = path.join(repo, 'tools/HME/runtime/claims/comment-bloat.fail-count.zero.json');
+  try {
+    const file = path.join(dir, 'clean.js');
+    fs.writeFileSync(file, 'const a = 1;\n// short rationale\n');
+    runOn(file, ['--claim']);
+    const claim = JSON.parse(fs.readFileSync(claimFile, 'utf8'));
+    assert.equal(claim.claim_id, 'comment-bloat.fail-count.zero');
+    assert.equal(claim.status, 'pass');
+    assert.match(claim.evidence_hash, /^sha256:[a-f0-9]{64}$/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(claimFile, { force: true });
+  }
+});
