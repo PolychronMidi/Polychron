@@ -1,9 +1,6 @@
 const V = validator.create('intervalComposer');
-/**
- * intervalComposer: Select scale degree subsets from any scale/mode/chord.
- * Universal utility for any composer that needs to choose which scale positions to use.
- * Works with scales, modes, chords, or any note array.
- */
+// intervalComposer selects scale-degree subsets for scales, modes, chords, or note array
+// Shared utility for composers that choose usable scale positions.
 intervalComposer = {
   /**
    * Select which scale degrees to use as a subset of the full scale.
