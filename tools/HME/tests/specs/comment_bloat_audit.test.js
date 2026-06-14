@@ -8,6 +8,7 @@ const { spawnSync } = require('node:child_process');
 
 const repo = path.resolve(__dirname, '..', '..', '..', '..');
 const script = path.join(repo, 'tools/HME/scripts/audit-comment-bloat.py');
+const claims = require('../../proxy/coherence_claims');
 
 function runOn(file, extraArgs = []) {
   const env = { ...process.env, PROJECT_ROOT: repo, COMMENT_BLOAT_WARN: '3', COMMENT_BLOAT_FAIL: '5', COMMENT_BLOAT_LONG_LINE: '90' };
