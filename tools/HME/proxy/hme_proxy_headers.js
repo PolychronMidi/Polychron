@@ -31,6 +31,7 @@ function injectLoopbackOauth(upstreamHeaders, clientReq) {
 
 function prepareUpstreamHeaders({ clientReq, upstream, outBody, isAnthropic, isOmniRouteSwap }) {
   const upstreamHeaders = { ...clientReq.headers };
+  const isPreflightSmoke = upstreamHeaders['x-hme-preflight-smoke'] === '1';
   delete upstreamHeaders.host;
   delete upstreamHeaders['content-length'];
   delete upstreamHeaders['x-hme-upstream'];
