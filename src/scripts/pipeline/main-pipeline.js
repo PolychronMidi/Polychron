@@ -496,6 +496,10 @@ function main() {
   } catch (_e) { /* fingerprint not produced -- leave verdict UNKNOWN */ }
 
   writeSummaryJSON(wallTime, { verdict: verdict });
+  run('backfill-kb-semantic-index', 'node tools/HME/scripts/backfill-kb-semantic-index.js', false);
+  run('emit-runtime-claims', 'node tools/HME/scripts/emit-runtime-claims.js', false);
+  run('check-coherence-claims', 'node tools/HME/scripts/check-coherence-claims.js', false);
+  writeSummaryJSON(wallTime, { verdict: verdict });
 
   // Re-read summary to pick up hci (computed inside writeSummaryJSON)
   var hci = null;
