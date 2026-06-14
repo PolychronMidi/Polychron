@@ -136,7 +136,6 @@ function applyOutboundContextGate({
     // Local preflight refusal -- NOT an upstream failure, so the caller must not
     // touch recordUpstreamFailure (that arms the emergency circuit breaker).
     const reason = `UPSTREAM_PREFLIGHT_OVER_WINDOW: est ${verdict.tokens} input tokens > route budget ${verdict.budget} for ${verdict.model}; compaction and reroute exhausted. Refusing to ship a known-over-window request.`;
-    const isPreflightSmoke = clientReq && clientReq.headers && clientReq.headers['x-hme-preflight-smoke'] === '1';
     if (!isPreflightSmoke) {
       let compactResult = null;
       try {
