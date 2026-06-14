@@ -444,8 +444,14 @@ function compactTranscriptFile(filePath, opts = {}) {
 // high-water override from env, then runs the guarded atomic compaction. Pure
 // best-effort: any failure returns a reason and never throws.
 function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, emit, trigger = 'stop' } = {}) {
-  if (env.HME_TRANSCRIPT_COMPACT === '0') return { ok: true, reason: 'disabled', changedEntries: 0 };
   if (!transcriptPath || typeof transcriptPath !== 'string') return { ok: false, reason: 'no_path', changedEntries: 0 };
+  let sidecars = { ok: true, changedFiles: 0, scannedFiles: 0, beforeBytes: 0, afterBytes: 0, failures: [] };
+  const sidecarOpts = _sidecarOptsFromEnv(env, trigger);
+  if (sidecarOpts) {
+    try { sidecars = compactToolResultSidecars(transcriptPath, sidecarOpts); }
+    catch (err) { sidecars = { ok: false, changedFiles: 0, scannedFiles: 0, beforeBytes: 0, afterBytes: 0, failures: [{ file: 'scan', reason: err && err.message ? err.message : String(err) }] }; }
+  }
+  if (env.HME_TRANSCRIPT_COMPACT === '0') return { ok: true, reason: 'disabled', changedEntries: 0, sidecars };
   // Mid-turn (PostToolUse) is NOT a quiescent point -- Claude may append the
   // next entry imminently -- so it only fires in the genuine emergency band
   let highWaterBytes;
@@ -463,6 +469,7 @@ function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, em
     // silent-ok: failure is recorded in result.reason and surfaced via the transcript_co
     result = { ok: false, reason: `threw:${err && err.message}`, changedEntries: 0 };
   }
+  result.sidecars = sidecars;
   if (result.changedEntries > 0) {
     const before = Math.round((result.beforeBytes || 0) / 1048576);
     const after = Math.round((result.afterBytes || 0) / 1048576);
@@ -473,6 +480,15 @@ function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, em
       try {
         emit({ event: 'transcript_compaction', trigger, changed_entries: result.changedEntries, before_mb: before, after_mb: after, tier: result.tier || 0 });
       } catch (_e) { /* silent-ok: telemetry must never break the hook path */ }
+    }
+  }
+  if (sidecars.changedFiles > 0) {
+    const before = Math.round((sidecars.beforeBytes || 0) / 1048576);
+    const after = Math.round((sidecars.afterBytes || 0) / 1048576);
+    if (typeof log === 'function') log(`[hme] transcript-sidecar-compactor (${trigger}): ${sidecars.changedFiles} file(s), ${before}MB -> ${after}MB (${transcriptPath})`);
+    if (typeof emit === 'function') {
+      try { emit({ event: 'transcript_sidecar_compaction', trigger, changed_files: sidecars.changedFiles, before_mb: before, after_mb: after }); }
+      catch (_e) { /* silent-ok: telemetry must never break hook path */ }
     }
   }
   return result;
