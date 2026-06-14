@@ -201,6 +201,37 @@ function main() {
     },
   };
 
+  const hciSplit = splitScores({
+    phase: process.env.HME_HCI_PHASE || 'maintenance',
+    verifier: report.score !== null ? report.score : violationPenalty,
+    behavior: readCoverage !== null ? readCoverage : 1,
+    tooling: 1,
+    temporal: 1,
+  });
+  report.hci_split = {
+    phase: hciSplit.phase,
+    verifier: Number(hciSplit.verifier.toFixed(4)),
+    behavior: Number(hciSplit.behavior.toFixed(4)),
+    tooling: Number(hciSplit.tooling.toFixed(4)),
+    temporal: Number(hciSplit.temporal.toFixed(4)),
+    composite: Number(hciSplit.composite.toFixed(4)),
+    weights: hciSplit.weights,
+  };
+  try {
+    const claimHash = evidenceHash(report);
+    writeClaim(claimForSplit(hciSplit, {
+      claim_id: 'hci.coherence-score.current',
+      producer: 'compute-coherence-score.js',
+      evidence_uri: 'repo://src/output/metrics/hme-coherence.json',
+      evidence_hash: claimHash,
+      generated_at: report.meta.timestamp,
+      repair: 'inspect HCI split component rather than treating composite as a single truth',
+      tests: ['self_coherence_substrate.test.js'],
+    }));
+  } catch (e) {
+    report.meta.claim_write_error = e && e.message ? e.message : String(e);
+  }
+
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n');
 
