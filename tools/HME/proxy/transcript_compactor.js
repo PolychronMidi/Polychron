@@ -172,7 +172,7 @@ function compactTranscriptLines(rawLines, opts = {}) {
     let entry;
     try { entry = JSON.parse(line); }
     catch (_e) { out[i] = line; continue; }
-    const saved = compactEntry(entry, byteFloor);
+    const saved = compactEntry(entry, byteFloor, opts);
     if (saved > 0) {
       out[i] = JSON.stringify(entry);
       changedEntries += 1;
