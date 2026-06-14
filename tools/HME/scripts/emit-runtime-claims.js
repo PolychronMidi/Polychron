@@ -174,7 +174,7 @@ function emitMetaAuditClaim() {
 }
 
 function main() {
-  const emitted = [emitPipelineClaim(), emitToolQualityClaim(), emitAgentForkClaim(), emitKbSemanticClaim(), emitMetaAuditClaim()];
+  const emitted = [emitHciClaim(), emitPipelineClaim(), emitToolQualityClaim(), emitAgentForkClaim(), emitKbSemanticClaim(), emitMetaAuditClaim()];
   console.log(JSON.stringify({ emitted }, null, 2));
 }
 
