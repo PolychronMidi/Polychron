@@ -252,7 +252,7 @@ function _staleRuntime(line, root) {
   };
 }
 
-const RESOLVERS = [_observationOrSelf, _autocommitResolved, _upstreamContextWindow, _outboundPreflightOverWindow, _upstreamTransient200ApiError, _upstreamNoCredentialsForSkippedProvider, _shufflerAutoHeal, _staleRuntime];
+const RESOLVERS = [_observationOrSelf, _autocommitResolved, _upstreamContextWindow, _outboundPreflightOverWindow, _upstreamTransient200ApiError, _upstreamNoCredentialsForSkippedProvider, _upstreamInvalidBearerPreflightSmoke, _shufflerAutoHeal, _staleRuntime];
 
 function resolveLine(root, line) {
   for (const r of RESOLVERS) {
