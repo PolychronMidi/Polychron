@@ -91,6 +91,18 @@ test('incident registry can suppress resolver-proven transient upstream 200 api_
   }
 });
 
+test('incident registry suppresses no-credentials lines for currently skipped providers', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-no-creds-'));
+  try {
+    fs.mkdirSync(path.join(root, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'config/models.json'), JSON.stringify({ providers_to_skip: { providers: ['opencode-go'] } }));
+    const line = '[T] UPSTREAM_400_INTERACTIVE: omniroute 400 invalid_request_error [interactive]: No credentials for provider: opencode-go (request_id=?, snapshot=tmp/payload.json)';
+    assert.equal(incidents.unresolvedLines(root, [line]).length, 0);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('incident registry suppresses stale slot outage after live slots converge', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-runtime-converged-'));
   try {
