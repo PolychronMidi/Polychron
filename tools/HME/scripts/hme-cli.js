@@ -176,17 +176,8 @@ function logFallback(message) {
   } catch (_) { /* best-effort */ }
 }
 
-/**
- * Direct-lance fallback for read-only KB tools. Spawns
- * `python3 tools/HME/service/direct_lance.py` with the appropriate subcommand
- * and parses the JSON output. Returns null when:
- *   - the tool is not a read-only KB query (mutating tools require the worker)
- *   - lancedb is not installed (Python ImportError surfaces as empty output)
- *   - the lance shard doesn't exist
- *
- * Caller treats null as "fallback unavailable" and surfaces the original
- * worker-down error.
- */
+// Direct-Lance fallback for read-only KB tools when the worker is unavailable.
+// Returns null for mutating tools, missing lancedb/shard, or unavailable fallback.
 function _tryDirectLance(tool, args) {
   return new Promise((resolve) => {
     const projectRoot = PROJECT_ROOT;
