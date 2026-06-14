@@ -152,9 +152,9 @@ async function mutateClaudeRequest({
     emit({ event: 'unparsed_tool_call_recovered', session: sessionKey(payload) });
     outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
+  const omniTarget = upstream && upstream.provider === 'omniroute';
   if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     let compacted = 0;
-    const omniTarget = upstream && upstream.provider === 'omniroute';
     if (passthrough) compacted += shrinkForPassthrough(payload);
     if (!omniTarget) compacted += compactLargeInteractiveAnthropicPayload(payload);
     const capped = omniTarget ? false : applyExplicitOtpmCap(payload);
