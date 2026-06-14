@@ -95,6 +95,7 @@ function recordFailureSideEffects({
     coolingDown,
     projectRoot,
   });
+  if (isPreflightSmoke) return;
   emit({
     event: 'upstream_error',
     session: sessionForTelemetry,
