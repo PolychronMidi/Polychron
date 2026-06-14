@@ -112,11 +112,8 @@ moduleLifecycle.declare({
   /** Increment section stutter counter. Called per stutter invocation. */
   function incSectionCount() { sectionStutterCount++; }
 
-  /**
-   * Select a variant for this beat. Called from StutterManager.prepareBeat.
-   * Weighted random selection. Returns the chosen variant function or null
-   * (null = use default stutterNotes).
-   */
+  // Select a weighted variant for this beat from StutterManager.prepareBeat.
+  // Returns a variant function or null to fall back to stutterNotes.
   function selectForBeat() {
     if (beatIndex === lastBeat) return activeVariant;
     lastBeat = beatIndex;
