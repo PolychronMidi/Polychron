@@ -79,3 +79,35 @@ test('KB semantic checksum marks referenced file or symbol edits stale', () => {
   assert.equal(kb.isPossiblyStale(entry, [{ symbol: 'foo' }]).stale, true);
   assert.equal(kb.isPossiblyStale(entry, [{ path: 'src/b.js' }]).stale, false);
 });
+
+test('coherence gate rejects stale-current claims', () => {
+  const claim = sampleClaim();
+  const result = evaluateClaims([claim], [{ key: 'tracked_code_edit', subject_uri: 'repo://src/a.js', ts: '2026-06-13T00:01:00Z' }]);
+  assert.equal(result.ok, false);
+  assert.equal(result.failures[0].reason, 'stale_claim_presented_current');
+});
+
+test('HCI split weights maintenance differently from composition', () => {
+  const maintenance = splitScores({ phase: 'maintenance', verifier: 1, behavior: 0.2, tooling: 1, temporal: 1 });
+  const composition = splitScores({ phase: 'composition', verifier: 1, behavior: 0.2, tooling: 1, temporal: 1 });
+  assert.ok(maintenance.composite > composition.composite);
+  assert.equal(maintenance.phase, 'maintenance');
+});
+
+test('pipeline verdict split exposes diagnostic failures hidden by STABLE', () => {
+  const verdict = splitVerdict({ verdict: 'STABLE', errorPatterns: [{ label: 'diagnostic', errors: ['boom'] }] });
+  assert.equal(verdict.behavioral_verdict, 'STABLE');
+  assert.equal(verdict.diagnostic_verdict, 'FAIL');
+  assert.match(verdict.exit_policy, /fail unless/);
+});
+
+test('claim graph links file, verifier, test, and repair evidence', () => {
+  const g = graph.createGraph();
+  graph.addNode(g, 'file:comment-bloat', 'file');
+  graph.addNode(g, 'verifier:comment-bloat', 'verifier');
+  graph.addNode(g, 'test:comment-bloat', 'test');
+  graph.addEdge(g, 'file:comment-bloat', 'measured_by', 'verifier:comment-bloat');
+  graph.addEdge(g, 'test:comment-bloat', 'preserves', 'verifier:comment-bloat');
+  const explanation = graph.explain(g, 'verifier:comment-bloat');
+  assert.equal(explanation.incoming.length, 2);
+});
