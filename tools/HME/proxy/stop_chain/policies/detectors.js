@@ -8,7 +8,23 @@ const { PROJECT_ROOT } = require('../../shared');
 
 const RUN_ALL = path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'detectors', 'run_all.py');
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+const REGISTRY_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'detectors', 'registry.json');
 const DETECTOR_TIMEOUT_MS = 15_000; // run_all.py p95 ~471ms; 15s is 30x headroom
+
+function detectorKeyMap() {
+  try {
+    const registry = JSON.parse(fs.readFileSync(REGISTRY_FILE, 'utf8')).detectors || [];
+    const out = {};
+    for (const d of registry) {
+      if (!d || !d.bash_var) continue;
+      out[String(d.bash_var).toLowerCase()] = String(d.bash_var);
+      if (d.name) out[String(d.name).toLowerCase()] = String(d.bash_var);
+    }
+    return out;
+  } catch (_e) {
+    return {};
+  }
+}
 
 function runAllDetectors(transcriptPath) {
   return new Promise((resolve) => {
