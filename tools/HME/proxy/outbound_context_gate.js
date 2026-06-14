@@ -28,32 +28,52 @@ function pickLargerRoute(swapChain, tokens, currentModelId, budgetFor = inputBud
   return null;
 }
 
+function _freshStatuslineUsage(env, projectRoot, deps) {
+  const reader = deps.statuslineUsage || statuslineUsage;
+  const sl = reader(env, projectRoot);
+  const used = Number(sl && sl.used || 0);
+  return used > 0 ? { used, size: Number(sl.size || 0), modelId: String(sl.modelId || '') } : null;
+}
+
+function _effectiveTokens(payload, env, modelId, projectRoot, deps) {
+  const estimate = deps.estimate || estimateInputTokens;
+  const semantic = estimate(payload, env, modelId);
+  // The live Claude statusline is the only ground-truth count we have for the
+  // assembled conversation. The semantic estimator is deliberately conservative,
+  const sl = deps.estimate && !deps.statuslineUsage ? null : _freshStatuslineUsage(env, projectRoot, deps);
+  if (sl && sl.used > 0) {
+    return { tokens: sl.used, source: 'statusline', semanticTokens: semantic, statuslineTokens: sl.used, statuslineModel: sl.modelId };
+  }
+  return { tokens: semantic, source: 'semantic', semanticTokens: semantic, statuslineTokens: 0, statuslineModel: '' };
+}
+
 // Core gate. Mutates `payload` in place when it compacts. Returns a verdict:
 //   { ok: true, action: 'fit'|'compacted'|'rerouted', model, tokens, budget, reroute? }
-function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env, deps = {} }) {
+function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env, projectRoot = PROJECT_ROOT, deps = {} }) {
   const compact = deps.compact || compactLargeInteractiveAnthropicPayload;
-  const estimate = deps.estimate || estimateInputTokens;
   const budgetFor = deps.inputBudgetFor || inputBudgetFor;
 
   const budget = budgetFor(modelId);
-  let tokens = estimate(payload, env, modelId);
+  let pressure = _effectiveTokens(payload, env, modelId, projectRoot, deps);
+  let tokens = pressure.tokens;
   if (budget <= 0 || tokens <= budget) {
-    return { ok: true, action: 'fit', model: modelId, tokens, budget };
+    return { ok: true, action: 'fit', model: modelId, tokens, budget, ...pressure };
   }
   // Tier 1: compact again to fit (cheapest; preserves the chosen model).
   try { compact(payload); } catch (_e) { /* silent-ok: compaction best-effort */ }
-  tokens = estimate(payload, env, modelId);
+  pressure = _effectiveTokens(payload, env, modelId, projectRoot, deps);
+  tokens = pressure.tokens;
   if (tokens <= budget) {
-    return { ok: true, action: 'compacted', model: modelId, tokens, budget };
+    return { ok: true, action: 'compacted', model: modelId, tokens, budget, ...pressure };
   }
   // Tier 2: reroute to a larger-context route in the swap chain.
   const larger = pickLargerRoute(swapChain, tokens, modelId, budgetFor);
   if (larger) {
     const newId = larger.api_model || larger.id;
-    return { ok: true, action: 'rerouted', model: newId, reroute: larger, tokens, budget: budgetFor(newId) };
+    return { ok: true, action: 'rerouted', model: newId, reroute: larger, tokens, budget: budgetFor(newId), ...pressure };
   }
   // Tier 3: fail locally with an actionable reason. Never ship over-window.
-  return { ok: false, action: 'over_window', model: modelId, tokens, budget };
+  return { ok: false, action: 'over_window', model: modelId, tokens, budget, ...pressure };
 }
 
 // Caller-facing wrapper: run the gate against a request about to go upstream.
