@@ -17,11 +17,8 @@ moduleLifecycle.declare({
     mixolydian: 'major', aeolian: 'minor', locrian: 'minor', major: 'major', minor: 'minor'
   };
 
-  /**
-   * Pivot chord ranking by scale degree in the TARGET key.
-   * ii (1) best - sets up V; IV (3) subdominant; vi (5) relative; I (0) tonic.
-   * Higher rank = better pivot for establishing the new key.
-   */
+  // Pivot ranking by target-key degree: ii sets up V best; IV/vi/I follow.
+  // Higher rank establishes the new key more strongly.
   const PIVOT_RANK = { 1: 5, 3: 4, 5: 3, 0: 2, 2: 1, 4: 0, 6: 0 };
 
   /**
