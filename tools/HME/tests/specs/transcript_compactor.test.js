@@ -9,6 +9,7 @@ const {
   compactEntry,
   compactTranscriptLines,
   compactTranscriptFile,
+  compactToolResultSidecars,
   maybeCompactTranscriptFile,
 } = require('../../proxy/transcript_compactor');
 
