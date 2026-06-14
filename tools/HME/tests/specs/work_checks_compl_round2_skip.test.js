@@ -177,6 +177,18 @@ test('work_checks: task-notification truth verdict denies with named reason',
   }));
 
 
+test('anti_patterns: task-notification truth verdict denies outside strict work_checks',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'TASK_NOTIFICATION_TRUTH_GATE=task_notification_mishandled\n');
+    const policy = require(path.join(POLICIES_DIR, 'anti_patterns.js'));
+    const result = await policy.run(_ctxStub(sandbox, path.join(sandbox, 'transcript.jsonl')));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /TASK-NOTIFICATION TRUTH GATE/);
+  }));
+
+
 test('work_checks: correction pivot cannot abandon broad parent task',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
