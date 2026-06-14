@@ -66,13 +66,18 @@ function gitChangedInvalidators(root = PROJECT_ROOT, opts = {}) {
   } catch (_e) {
     try { out = cp.execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').map((l) => l.slice(3)).join('\n'); } catch (__e) { out = ''; }
   }
-  return out.split('\n').map((s) => s.trim()).filter(Boolean).map((rel) => normalizeInvalidator({
-    key: _classifyPath(rel),
-    path: rel,
-    subject_uri: _repoUri(rel),
-    source: 'git_worktree',
-    detail: `changed since ${since}`,
-  }));
+  return out.split('\n').map((s) => s.trim()).filter(Boolean).map((rel) => {
+    let ts = new Date().toISOString();
+    try { ts = fs.statSync(path.join(root, rel)).mtime.toISOString(); } catch (_e) {}
+    return normalizeInvalidator({
+      key: _classifyPath(rel),
+      path: rel,
+      subject_uri: _repoUri(rel),
+      ts,
+      source: 'git_worktree',
+      detail: `changed since ${since}`,
+    });
+  });
 }
 
 function runtimeInvalidators(root = PROJECT_ROOT) {
