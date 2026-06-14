@@ -10,7 +10,7 @@ function arg(name, fallback = '') {
   return hit ? hit.slice(name.length + 1) : fallback;
 }
 
-const MODES = ['proof', 'debt', 'mesh', 'resolve', 'metabolize', 'coherence-field', 'proof-capsules', 'causal-braid', 'immune', 'policy-genome', 'freshness'];
+const MODES = ['proof', 'debt', 'mesh', 'resolve', 'metabolize', 'coherence-field', 'proof-capsules', 'causal-braid', 'immune', 'policy-genome', 'freshness', 'claim'];
 
 function mode() {
   const m = arg('mode', process.argv[2] || 'proof');

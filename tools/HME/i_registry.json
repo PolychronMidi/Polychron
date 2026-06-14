@@ -53,6 +53,7 @@
         "mesh",
         "resolve",
         "metabolize",
+        "claim",
         "fractal-shape",
         "architecture-snapshot",
         "search (auto on multi-word)"
