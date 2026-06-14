@@ -6,8 +6,10 @@ const path = require('path');
 const { emit, PROJECT_ROOT } = require('../../shared');
 const { recordUpstreamFailure } = require('../upstream_dispatch');
 
-function recordEscapeHatch({ isInteractivePath, coolingDown, errMsg, isOmniRouteSwap }) {
-  if (isInteractivePath && !coolingDown && process.env.OVERDRIVE_MODE !== '1') {
+function recordEscapeHatch({ isInteractivePath, coolingDown, errMsg, isOmniRouteSwap, isPreflightSmoke = false }) {
+  if (isPreflightSmoke) {
+    console.error('preflight smoke failure -- NOT tripping escape hatch or surfacing LIFESAVER');
+  } else if (isInteractivePath && !coolingDown && process.env.OVERDRIVE_MODE !== '1') {
     recordUpstreamFailure(errMsg);
   } else if (isInteractivePath) {
     console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${_hmeRequireEnv('OVERDRIVE_MODE')}, _isOmniRouteSwap=${isOmniRouteSwap}) -- passthrough blocked`);
