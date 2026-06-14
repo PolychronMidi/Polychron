@@ -1,5 +1,5 @@
 # File Format Rules: 1 todo item per line. Each line must start with one of the following todo status codes:
-5_ default status upon creation,
+0_ default status upon creation,
 1_ in progress,
 2_ revisit (default is in 10 minutes, or whenever all todos in list completed, move to top of list as status 0_). Specify minutes by appending like "2_60",
 3_ major block via architechtural design, scope, or low confidence/high risk needing explicit confirmation,
