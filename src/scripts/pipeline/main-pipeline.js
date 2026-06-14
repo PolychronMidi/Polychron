@@ -249,8 +249,11 @@ function writeSummaryJSON(wallTime, extra) {
     failed: failedCount,
     skipped: timings.filter(function (t) { return t.status === 'SKIPPED'; }).length,
     errorPatterns: hasDetectedErrors ? errorPatterns : undefined,
+    diagnostic_failures: hasDetectedErrors ? errorPatterns : [],
+    self_coherence_failures: [],
     exitCode: exitCode
   };
+  Object.assign(summary, splitVerdict(summary));
   // Compute HCI inline so pipeline-summary.json always carries both the
   // music verdict AND the coherence index. Previously this was done by
   // posttooluse_bash.sh, which meant non-Claude invocations produced an
