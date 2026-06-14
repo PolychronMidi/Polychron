@@ -8,7 +8,6 @@ const { emit, PROJECT_ROOT } = require('./shared');
 const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./hme_proxy_request_mutation');
 const { submitCcCompactOnce } = require('./cc_control');
 const { inputBudgetFor, estimateTokens, statuslineUsage } = require('./context_pressure');
-const { detectAutocompactRequest } = require('./request_recovery_guards');
 
 // Estimate the final outbound input size of `payload` (post-mutation) via the
 // shared conservative pressure model -- one estimator for every gate.
