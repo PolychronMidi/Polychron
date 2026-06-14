@@ -342,6 +342,7 @@ def main() -> int:
     request_tier = _tool_tier(tool_input)
     proof = tool_input.get("_hme_fork_proof") if isinstance(tool_input.get("_hme_fork_proof"), dict) else None
     if request_tier is None:
+        _write_launch_audit({"decision": "deny", "caller": caller, "requested_tier": None, "target": None, "fork_proof_status": "present" if proof else "missing", "reason": "invalid_level"})
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
