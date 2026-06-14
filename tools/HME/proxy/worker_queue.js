@@ -20,11 +20,8 @@ function _ensure(dir) {
   try { fs.mkdirSync(dir, { recursive: true }); } catch (_e) { /* best-effort */ }
 }
 
-/**
- * Drop a job file atomically. Returns the jobId for waitForResult.
- * Endpoints currently honored by the worker watcher: 'enrich',
- * 'enrich_prompt', 'audit'. Unknown endpoints get an `error` result.
- */
+// Drop a job file atomically and return its jobId for waitForResult.
+// Worker watcher handles enrich/enrich_prompt/audit; unknown endpoints return error resu
 function dropJob(endpoint, body, queueDir = QUEUE_DIR) {
   const endpointDir = path.join(queueDir, endpoint);
   _ensure(endpointDir);
