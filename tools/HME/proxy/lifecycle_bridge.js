@@ -45,19 +45,8 @@ function lifecycleInactive(event) {
   return (Date.now() - last) > _LIFECYCLE_FRESH_MS;
 }
 
-/**
- * Run an inline fallback dispatch and echo any captured stderr to the
- * proxy's own stderr so the user sees hook banners (sessionstart
- * orientation, LIFESAVER, etc.). Without this the stderr is silently
- * swallowed into dispatchEvent's return value and lost.
- *
- * Parity with /hme/lifecycle: both paths surface full stdout/stderr to
- * the proxy's stderr so banners (LIFESAVER, NEXUS, AUTO-COMPLETENESS)
- * land in the same place regardless of which path fired. The inline
- * path used to truncate stdout to 200 chars -- banners that grew past
- * that limit vanished for inline fires while remaining visible for
- * /hme/lifecycle fires.
- */
+// Inline fallback relays dispatcher stdout/stderr to proxy stderr so hook banners stay v
+// This matches /hme/lifecycle and avoids the old 200-char inline truncation.
 function _normalizeInlinePayload(event, stdinJson, opts = {}) {
   const root = opts.root || PROJECT_ROOT;
   try {
