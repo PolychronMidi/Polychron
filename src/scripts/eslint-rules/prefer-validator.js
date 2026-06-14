@@ -53,11 +53,8 @@ module.exports = {
       return null;
     }
 
-    /**
-     * Returns the type-string if the node is a typeof==='type' check,
-     * possibly wrapped in an &&-chain with Number.isFinite, optionalFinite,
-     * or a null-guard (x && ...). Returns null otherwise.
-     */
+    // Return the typeof string from direct checks or safe && wrappers.
+    // Supports Number.isFinite, optionalFinite, and x && null guards.
     function extractTypeofType(node) {
       // Direct: typeof x === 'type'
       const direct = getTypeofPositiveType(node);
