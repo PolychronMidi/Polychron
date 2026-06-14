@@ -44,7 +44,13 @@ function _upstreamContextWindow(line, root) {
   if (!payload) return { resolved: false, kind: 'upstream_context_window', reason: 'snapshot not readable', snapshot: snapshotRel };
   const { evaluateOutbound } = require('./outbound_context_gate');
   const model = String(payload.model || '').includes('/') ? String(payload.model).split('/').slice(1).join('/') : String(payload.model || '');
-  const verdict = evaluateOutbound({ payload: JSON.parse(JSON.stringify(payload)), modelId: model, swapChain: [] });
+  const verdict = evaluateOutbound({
+    payload: JSON.parse(JSON.stringify(payload)),
+    modelId: model,
+    swapChain: [],
+    projectRoot: root,
+    deps: { statuslineUsage: () => ({ used: 0, size: 0, modelId: '' }) },
+  });
   return {
     resolved: verdict && verdict.ok === false && verdict.action === 'over_window',
     kind: 'upstream_context_window',
