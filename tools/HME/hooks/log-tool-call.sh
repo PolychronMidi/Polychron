@@ -109,6 +109,24 @@ LOG_FILE="$PROJECT_ROOT/log/session-transcript.jsonl"
 HME_LOG="$PROJECT_ROOT/log/hme.log"
 mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
 echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null  # silent-ok: optional fallback path.
+# Keep the local HME tool transcript below Claude's on-disk transcript ceiling.
+# It is append-only noise for recall, not an immutable audit log; preserve the tail
+_CAP_MB="${HME_SESSION_TRANSCRIPT_MAX_MB:-28}"
+case "$_CAP_MB" in ''|*[!0-9]*) _CAP_MB=28 ;; esac
+_CAP_BYTES=$((_CAP_MB * 1024 * 1024))
+_SIZE=$(stat -c %s "$LOG_FILE" 2>/dev/null || echo 0)
+if [ "$_SIZE" -gt "$_CAP_BYTES" ] 2>/dev/null; then
+  _LOCKDIR="$PROJECT_ROOT/tools/HME/runtime/session-transcript-cap.lock"
+  if mkdir "$_LOCKDIR" 2>/dev/null; then
+    _TMP="$LOG_FILE.tail.$$"
+    if tail -c "$_CAP_BYTES" "$LOG_FILE" 2>/dev/null | sed '1d' > "$_TMP" && [ -s "$_TMP" ]; then
+      mv "$_TMP" "$LOG_FILE" 2>/dev/null || rm -f "$_TMP" 2>/dev/null
+    else
+      rm -f "$_TMP" 2>/dev/null
+    fi
+    rmdir "$_LOCKDIR" 2>/dev/null
+  fi
+fi
 TOOL_LOG_LINE=$(echo "$TOOL_INPUT" | head -c 120 | tr '\n' ' ')
 printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "$TOOL_LOG_LINE" >> "$HME_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 
