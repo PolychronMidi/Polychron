@@ -84,3 +84,31 @@ test('size gate never falls back direct to a provider listed in providers_to_ski
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('empty overdrive chain refuses locally instead of falling back to uncredentialed default provider', () => {
+  const cfg = {
+    providers_to_skip: { providers: ['anthropic', 'claude', 'opencode-go'] },
+    ranking_rules: { cost_order: ['free'] },
+    team_role_models: { driver: { tier: 'E5', source: 'ranking_rules' } },
+    manually_toprank: { E5: [] },
+    tiers: { E5: { models: [
+      { id: 'deepseek-v4-pro', api_model: 'deepseek-v4-pro', provider: 'opencode-go', cost: 'free', tier_score: 10 },
+    ] } },
+  };
+  const payload = { model: 'claude-sonnet-4-6', system: '', tools: [], stream: true, messages: SMALL.messages };
+  const clientReq = { headers: {}, url: '/v1/messages' };
+  let status = 0;
+  let body = '';
+  const clientRes = { writeHead(code) { status = code; }, end(text) { body = String(text || ''); } };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-empty-chain-'));
+  const result = applyOverdriveRoute({ payload, clientReq, clientRes, outBody: Buffer.from('{}'), env: { ...ENV, OVERDRIVE_MODE: '1' }, cfg, projectRoot: root });
+  try {
+    assert.equal(result.ended, true);
+    assert.equal(status, 503);
+    assert.match(body, /no_route_available/);
+    assert.equal(clientReq.headers['x-hme-upstream'], undefined);
+    assert.equal(payload.model, 'claude-sonnet-4-6');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
