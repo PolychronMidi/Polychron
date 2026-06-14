@@ -31,6 +31,8 @@ NOISE_RE = re.compile(
     r"\b(strip(?:ped)?\s+(?:notice|message|msg|content|context)|"
     r"no\s+(?:new\s+req(?:uest)?\s+text|actionable\s+content)|"
     r"empty\s*/\s*stripped|stripped\s+by\s+hme|"
+    r"only\s+see\s+(?:a\s+)?(?:placeh?older|plachldr)|"
+    r"paste\s+(?:the\s+)?(?:actual\s+)?(?:req(?:uest)?|text)\b|"
     r"wait(?:ing|n)?\s+(?:for|4)\s+(?:completion|compltn)|"
     r"await(?:ing)?\s+(?:completion|compltn)|"
     r"still\s+(?:running|runnn?g|wait(?:ing|n)))\b",
