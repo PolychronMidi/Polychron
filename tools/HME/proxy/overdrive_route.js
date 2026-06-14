@@ -299,12 +299,20 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     }
   }
   console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
-  if (result.swapChain.length > 0) {
-    const idx = selectedIndex(result.swapChain, projectRoot);
-    result.swapModel = upstreamModelId(result.swapChain[idx]);
-    result.omniProvider = omniProviderForConfigProvider(result.swapChain[idx].provider || '', env);
-    result.swapMeta = result.swapChain[idx];
+  if (result.swapChain.length === 0) {
+    const message = `OVERDRIVE_MODE=1 has no available non-skipped route for ${payload.model}; refusing local request instead of falling back to an uncredentialed default provider.`;
+    console.error(`[hme-proxy] no-route: ${message}`);
+    if (clientRes && typeof clientRes.writeHead === 'function' && typeof clientRes.end === 'function') {
+      clientRes.writeHead(503, { 'Content-Type': 'application/json' });
+      clientRes.end(JSON.stringify({ type: 'error', error: { type: 'no_route_available', message } }));
+      result.ended = true;
+    }
+    return result;
   }
+  const idx = selectedIndex(result.swapChain, projectRoot);
+  result.swapModel = upstreamModelId(result.swapChain[idx]);
+  result.omniProvider = omniProviderForConfigProvider(result.swapChain[idx].provider || '', env);
+  result.swapMeta = result.swapChain[idx];
   result.swapModel = upstreamModelId(result.swapModel);
   if (env.HME_OMNIROUTE_PROVIDER) {
     const forcedProvider = String(env.HME_OMNIROUTE_PROVIDER).replace(/_/g, '-').toLowerCase();
