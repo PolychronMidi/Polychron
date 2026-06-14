@@ -67,10 +67,7 @@ function _toEnvelope(method, reqPath, body) {
   return null;
 }
 
-/**
- * Drop-in for `_worker_http.workerRequest`. Returns
- * {status, json, raw, error}.
- */
+// Drop-in for `_worker_http.workerRequest`; returns {status, json, raw, error}.
 async function workerRequest(method, reqPath, body, timeoutMs = 30_000) {
   const env = _toEnvelope(method, reqPath, body);
   if (env === null) {
