@@ -77,6 +77,22 @@ test('fail-open: unknown budget (0) never blocks', () => {
   assert.equal(v.action, 'fit');
 });
 
+test('fresh statusline truth prevents conservative-estimator false over-window', () => {
+  const v = evaluateOutbound({
+    payload: mkPayload(), modelId: 'gpt-5.5-xhigh', swapChain: [],
+    deps: {
+      estimate: () => 352200,
+      inputBudgetFor: () => 352000,
+      compact: () => { throw new Error('must not compact'); },
+      statuslineUsage: () => ({ used: 200000, size: 1000000, modelId: 'claude-opus-4-8[1m]' }),
+    },
+  });
+  assert.equal(v.ok, true);
+  assert.equal(v.action, 'fit');
+  assert.equal(v.tokens, 200000);
+  assert.equal(v.source, 'statusline');
+});
+
 test('pickLargerRoute skips the current model and undersized routes', () => {
   const chain = [{ id: 'cur' }, { id: 'alsosmall' }, { id: 'big' }];
   const budgets = { cur: 1000, alsosmall: 2000, big: 50000 };
