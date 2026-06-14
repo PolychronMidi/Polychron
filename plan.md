@@ -1,106 +1,232 @@
 # Plan
 
-Driver + peers confer here; durable, user-approvable proposals land here. Nothing in
-this file is implemented until the user marks it approved.
-
 ## Status legend
 
-- proposed: drafted from conferral, awaiting user decision
+- proposed: drafted, awaiting user decision
 - approved: user approved; safe to implement
 - denied: user rejected; do not implement
 - done: implemented + verified
 
-## Standing constraints
+## Proposed: HME as a self-coherence field substrate
 
-## Phase 15 (done) -- Project boundary map + hot/cold path minimalism
+North star: every HME surface should answer, at all times:
 
-Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
-phase-evidence verification can bind plan claims to machine-readable artifacts.
+- What is true?
+- How do we know?
+- Is it current?
+- What changed since last proof?
+- What should happen next?
+- What would make this claim stale?
 
-## Phase 16 (done) -- Phase-inference firewall
+A tool, verifier, alert, score, warning, or KB entry that cannot answer those questions is not self-coherent.
 
-Evidence is tracked in `tools/HME/config/phase-evidence.json`; this anchor remains so
-phase-evidence verification can bind plan claims to machine-readable artifacts.
+### 1. Claim atoms below file-level state
 
-## Phase F2 (approved) -- Quote-provenance fabrication guard
+Every invariant, alert, warning, score, and status line should emit a structured claim record:
 
-Source: mesh round `fabrication-guard-consult` (red/blue/purple, final synth).
-The failure this addresses: an agent fabricating user-attributed quotes that were
-never said (literal "fdua" class), asserting them with confidence, and acting on
-them. Existing `fabrication_check.py` cannot catch it (closed phrase table for
-constancy claims; the fabrication referent is a string attributed to the user,
-not a phrase). The build is one new external-check detector; everything else stays
-a soft AGENTS.md rule because it is genuinely unenforceable.
+```json
+{
+  "claim": "comment-bloat FAIL count is zero",
+  "owner": "audit-comment-bloat.py",
+  "evidence": "latest audit JSON path + timestamp",
+  "scope": ["src", "tools/HME"],
+  "freshness": "valid until next tracked code/comment edit",
+  "repair": "manual condense block to <=2 lines preserving intent",
+  "regression_tests": ["comment_bloat_audit.test.js"],
+  "retirement_condition": "policy removed from AGENTS.md"
+}
+```
 
-### Build: `quote_provenance` detector
+Goal: prevent stale claims, stale alerts, stale goals, and stale status from masquerading as current truth.
 
-- **File:** `tools/HME/scripts/detectors/quote_provenance.py`, sibling of
-  `fabrication_check.py`, reusing `_transcript` helpers.
-- **Signal:** in the final assistant text, an attributed + delimited quote whose
-  span is absent from the real-user-prompt corpus is a fabrication.
-  - Parse the RAW assistant text (NOT `strip_quoted` -- the whole signal lives
-    inside quoted spans the house infra otherwise discards).
-  - Attribution gate: only 2nd-person-subject verbs (`you said/asked/wrote/told
-    me`, `your words/message/request`, `as you put it`) followed by a delimited
-    quote. Never bare `said`, never undelimited prose.
-  - Corpus: ALL real user turns via `is_real_user_prompt` (not just the last),
-    with system-banner prefixes stripped (`[ALERT]`, `<task-notification>`,
-    `Note:`) so an agent cannot quote injected banner text and escape.
-  - Normalize for compare: lowercase, collapse whitespace, fold curly quotes and
-    apostrophe contractions, compare alnum-only forms; min quote length 3 to
-    avoid firing on `'a'`/`'y'` shortcut letters.
-  - Per-span blame: deny on ANY unmatched attributed span; the verdict detail
-    must name the offending span verbatim so the agent can correct.
-  - HARD-DENY, no `(verified)`-style waiver (that escape in `fabrication_check`
-    is provably game-able). Provenance is objective, needs no epistemic escape.
-  - Skip the detector's own self-edit turn (mirror an existing
-    `_is_self_reference_turn`-style guard) so writing test quotes into this file
-    does not self-trip.
-- **Verdict:** `DECLARED_VERDICTS = {"ok", "quote_fabrication"}`. Honesty
-  ("I don't know", "I can't quote where that came from") contains no attributed
-  delimited quote and therefore never fires.
-- **Three-point registration (the real wiring cost both peers undercounted):**
-  1. `tools/HME/scripts/detectors/registry.json` -- new entry with
-     `name/module/fires_when/bash_var/deny/category/scope/owning_invariant/
-     fixture_path/why` (deny: true, category: security, scope: transcript).
-  2. The module exposes `DECLARED_VERDICTS` (run_all `_check_declared_verdicts`
-     fails closed on drift).
-  3. `tools/HME/proxy/stop_chain/policies/anti_patterns.js` -- add
-     `QUOTE_PROVENANCE` to `readVerdicts()` defaults, a `REASONS` entry, and a
-     `if (v.QUOTE_PROVENANCE === 'quote_fabrication') return ctx.deny(...)` line.
-- **Negative controls (`test_quote_provenance.py`):**
-  - real-quote-of-user -> ok
-  - fabricated attributed quote -> quote_fabrication
-  - paraphrase, no delimited quote -> ok
-  - tool-output quote (no user attribution) -> ok
-  - quote of an injected `[ALERT]`/`<task-notification>` banner -> quote_fabrication
-  - apostrophe/case/whitespace variance of a real user span -> ok
+### 2. Currentness protocol
 
-### Explicit non-goals (kept as soft AGENTS.md rules -- unenforceable)
+Every status, alert, verdict, and score must carry:
 
-- Invented causal stories ("over-window", "primer", "degraded gen"): no source
-  string to diff against.
-- Garble / nonsense-token self-halt: no mechanical boundary between garble and a
-  real sha/identifier/non-English token. Rejected entirely, not deferred.
-- `(verified)`-style self-disclosed waivers: game-able.
-- "Acting on" fabrication in general: only specific consequences (repeated
-  `/hme/spawn`) are catchable, and already have guards.
+- `generated_at`
+- `source_file_or_command`
+- `invalidated_by`
+- `last_success_after_last_failure?`
 
-### Residual risk (no mechanism removes)
+Examples:
 
-An agent that paraphrases a fabrication without a delimited attributed quote
-("you wanted X" when the user never did) emits no quotable span and passes every
-guard. The detector floor catches the literal delimited-quote class ("fdua")
-deterministically; the unbounded-paraphrase class stays a model-behavior limit.
+- Autocommit alert is current only if failure timestamp is newer than last successful autocommit.
+- Pipeline verdict is current only if summary timestamp is newer than the last relevant source edit.
+- HCI score is current only if verifier snapshot timestamp is newer than the last verifier-affecting edit.
+- Comment-bloat audit is current only if audit timestamp is newer than the last tracked code/comment edit.
+- Agent output is current only if produced with fork-context proof.
 
-### Remaining refinements
+### 3. Tool-response intelligence
 
+Every HME/tool response should self-rate:
 
-### Global acceptance criteria for the shipped subset
+- `10/10`: concise, current, actionable, bounded, no stale warnings, no context bloat
+- `8/10`: correct but noisy or missing next action
+- `5/10`: useful data but too much output, stale state, or ambiguous success
+- `0/10`: misleading, stale, false success, or context attack
 
-- `quote_provenance.py` passes its negative-control suite (all six cases).
-- Detector registered in all three wiring points; `run_all.py` declared-verdict
-  check and the full detector chain stay green.
-- Invariant battery stays green; Python spec leg (`run_py.py`) stays green.
-- No new false-positive on legitimate paraphrase, tool-output quoting, or the
-  detector's own self-edit turn.
+Record low-quality responses:
+
+```json
+{
+  "tool": "i/status state",
+  "rating": 8,
+  "defect": "showed obsolete hot-reload metric",
+  "repair_status": "fixed",
+  "regression": "state_panel_freshness_contract.test.js"
+}
+```
+
+HCI should ingest tool-response quality. Noisy tools lower self-coherence.
+
+### 4. Agent ecology and fork-context proof
+
+Every subagent launch must carry fork-context proof:
+
+```json
+{
+  "agent_request_id": "...",
+  "source_session_tokens": 350000,
+  "agent_context_tokens": 340000,
+  "fork_delta": "bounded task prompt + HME routing prelude only",
+  "raw_context_fresh": false,
+  "nested_agent_allowed": false,
+  "max_files": 8,
+  "max_words": 900
+}
+```
+
+Block or reroute subagent starts when:
+
+```text
+agent_context_tokens / parent_context_tokens < configured_ratio
+```
+
+Prompt text is not proof. OmniRoute/token telemetry is proof.
+
+### 5. Comment coherence instead of blind line counting
+
+Keep line-count gates but classify semantic kind:
+
+- type metadata: exempt
+- generated docs: exempt if marked generated
+- directives: exempt when narrow and tool-consumed
+- 1-2 line rationale: ok
+- 3-4 line prose: warn
+- 5+ line prose: fail
+- 90+ char prose: long
+
+Every exemption must explain why it is not bloat.
+
+Comment scoring should consider:
+
+- Does this say something the code cannot?
+- Does it name intent, invariant, or danger?
+- Is it stale relative to code?
+- Can it be shortened without losing meaning?
+
+### 6. Pipeline verdict split
+
+Pipeline summaries must separate:
+
+```json
+{
+  "behavioral_verdict": "STABLE",
+  "diagnostic_verdict": "PASS|WARN|FAIL",
+  "self_coherence_verdict": "PASS|WARN|FAIL",
+  "exit_policy": "fail if diagnostic/self_coherence fail unless explicitly allowlisted"
+}
+```
+
+A musical STABLE verdict must not hide diagnostic or self-coherence failures.
+
+### 7. HCI split-brain fix
+
+Split HCI into distinct scores:
+
+- `HCI-Verifier`: are HME invariants and verifiers healthy?
+- `HCI-Behavior`: did the agent read before writing and avoid coherence violations?
+- `HCI-Tooling`: were tool responses bounded/current/actionable?
+- `HCI-Temporal`: are claims fresh relative to invalidators?
+- `HCI-Composite`: phase-weighted aggregate
+
+Add phase awareness:
+
+```text
+phase=maintenance | composition | audit | exploration | repair
+```
+
+Maintenance sessions with many deliberate edits should not be interpreted like composition sessions.
+
+### 8. KB semantic checksums
+
+Every KB entry should include:
+
+- source files
+- symbols
+- tests
+- decision date
+- supersession condition
+- confidence
+
+If code changes, relevant KB entries become possibly stale automatically.
+
+### 9. Claim graph
+
+Represent HME as a graph:
+
+```text
+file -> verifier -> policy -> test -> KB entry -> alert -> repair
+```
+
+`i/why mode=claim <thing>` should answer:
+
+- Why does this rule exist?
+- What bug birthed it?
+- What tests preserve it?
+- What can retire it?
+- What breaks if removed?
+
+### 10. Verifier self-doubt
+
+Every verifier periodically answers:
+
+- Am I still measuring the intended thing?
+- Am I blind to a known bypass?
+- Am I producing false positives?
+- Am I producing false negatives?
+- Is my output actionable?
+- Is my failure mode fail-loud?
+- Can I be gamed by ceremony?
+
+Meta-rule:
+
+- every warning has proof of usefulness
+- every rule has a death condition
+- every repair has a regression
+- every regression has lineage
+- every lineage has purpose
+- every purpose has currentness proof
+
+## Build sequence
+
+1. Add `tools/HME/schemas/coherence-claim.schema.json`.
+2. Upgrade HCI verifier output to include claim/evidence/freshness/repair/retirement fields.
+3. Add shared currentness helpers: `isCurrent(claim, invalidators)`.
+4. Add tool-response rating ledger for HME tool outputs rated below 10/10.
+5. Add Agent fork-proof check using actual context-token ratio, not prompt text.
+6. Split pipeline verdict into behavioral/diagnostic/self-coherence verdicts.
+7. Upgrade comment coherence classification to distinguish prose/type/generated/directive/rationale/stale-doc.
+8. Add HCI phase awareness.
+9. Add claim graph explorer: `i/why mode=claim <thing>`.
+10. Add verifier self-doubt audit.
+
+## Acceptance criteria
+
+- No stale alert can present itself as current without a freshness proof.
+- No tool response rated below 10/10 disappears without a logged defect or explicit waiver.
+- No subagent can launch without fork-context proof or bounded task shape.
+- Pipeline STABLE cannot hide diagnostic or self-coherence failures.
+- HCI reports verifier health separately from agent behavior and temporal freshness.
+- Comment-bloat policy distinguishes semantic metadata from prose bloat.
+- Each new rule has a regression test and a retirement condition.
