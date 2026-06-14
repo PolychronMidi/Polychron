@@ -1,13 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../../proxy/shared/load_env.js');
-/**
- * Block writes/edits to src/ while a pipeline is running (tmp/run.lock
- * exists). The pipeline's behavior is being measured against the code
- * state at launch; mid-run src changes invalidate that. JS port of the
- * gate at the top of pretooluse_write.sh + pretooluse_edit.sh.
- *
- * Bash counterpart remains for direct-mode (proxy down) defense-in-depth.
- */
+// Block src writes while a pipeline is running because it measures launch-time code.
+// JS policy mirrors write/edit bash gates for proxy and direct-mode defense-in-depth.
 
 const fs = require('fs');
 const path = require('path');
