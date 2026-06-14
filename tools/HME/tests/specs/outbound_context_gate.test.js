@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { evaluateOutbound, pickLargerRoute, applyOutboundContextGate } = require('../../proxy/outbound_context_gate');
+const { evaluateOutbound, pickLargerRoute, applyOutboundContextGate, effectiveInputBudgetForPayload } = require('../../proxy/outbound_context_gate');
+const { prepareUpstreamHeaders, shouldInjectLoopbackOauth } = require('../../proxy/hme_proxy_headers');
 
 // A payload whose estimated input tokens we control via an injected estimate fn,
 // so the test is deterministic and independent of live models.json.
