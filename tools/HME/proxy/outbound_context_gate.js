@@ -29,6 +29,25 @@ function pickLargerRoute(swapChain, tokens, currentModelId, budgetFor = inputBud
   return null;
 }
 
+function _positiveNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function effectiveInputBudgetForPayload(payload, modelId, budgetFor = inputBudgetFor, env = process.env) {
+  const staticBudget = _positiveNumber(budgetFor(modelId));
+  let info = null;
+  try { info = modelOutputInfo(modelId); } catch (_e) { info = null; }
+  const context = _positiveNumber(info && info.context);
+  if (!context) return staticBudget;
+  const requestedOutput = _positiveNumber(payload && payload.max_tokens)
+    || _positiveNumber(info && info.maxOutput);
+  if (!requestedOutput) return staticBudget || context;
+  const reserve = _positiveNumber(env && env.HME_OUTBOUND_CONTEXT_RESERVE_TOKENS);
+  const dynamicBudget = Math.max(1, context - requestedOutput - reserve);
+  return Math.max(staticBudget, dynamicBudget);
+}
+
 function _freshStatuslineUsage(env, projectRoot, deps) {
   const reader = deps.statuslineUsage || statuslineUsage;
   const sl = reader(env, projectRoot);
