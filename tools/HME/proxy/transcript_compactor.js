@@ -36,6 +36,13 @@ const EMERGENCY_TIERS = [
   { keepRecent: 80, byteFloor: 1024 },
   { keepRecent: 80, byteFloor: 256 },
 ];
+const AGGRESSIVE_TIERS = [
+  { keepRecent: 80, byteFloor: 2048, elideAssistantPayload: true },
+  { keepRecent: 80, byteFloor: 1024, elideAssistantPayload: true },
+  { keepRecent: 80, byteFloor: 256, elideAssistantPayload: true },
+  { keepRecent: 80, byteFloor: 256, elideAssistantPayload: true, elideText: true },
+  { keepRecent: 80, byteFloor: 0, skeletonize: true },
+];
 
 function _marker(originalBytes) {
   return `(content elided by hme-proxy transcript-compactor: original was ${originalBytes}B; full output remains in the wire history the model already consumed)`;
