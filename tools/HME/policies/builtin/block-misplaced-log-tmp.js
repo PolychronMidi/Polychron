@@ -1,13 +1,8 @@
 'use strict';
 const { PROJECT_ROOT } = require('../../proxy/shared');
 const { isMisplacedRootOnlyDir, rootOnlyDirMessage } = require('../../proxy/path_policy');
-/**
- * Block writes to misplaced log/ or tmp/ subdirectories. log/ and tmp/
- * exist ONLY at the project root; nested variants under src/ or
- * tools/HME/ etc. are bugs (often from BASH_SOURCE-relative path math
- * that landed in a wrong root). JS port of the bash gate in
- * pretooluse_write.sh.
- */
+// Block writes to nested log/tmp directories; only PROJECT_ROOT/log and /tmp are valid.
+// Mirrors the write-hook guard against path-resolution bugs.
 
 module.exports = {
   name: 'block-misplaced-log-tmp',
