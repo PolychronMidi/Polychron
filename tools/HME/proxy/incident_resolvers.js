@@ -117,6 +117,39 @@ function _upstreamTransient200ApiError(line, root) {
   };
 }
 
+function _providersToSkip(root) {
+  const cfg = _readJson(path.join(root, 'config', 'models.json')) || {};
+  const raw = cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
+    ? cfg.providers_to_skip.providers : [];
+  const out = new Set();
+  for (const entry of raw.flatMap((v) => String(v).split(','))) {
+    const p = entry.trim().toLowerCase().replace(/_/g, '-');
+    if (!p) continue;
+    out.add(p);
+    if (p === 'anthropic') out.add('claude');
+    if (p === 'claude') out.add('anthropic');
+  }
+  return out;
+}
+
+function _upstreamNoCredentialsForSkippedProvider(line, root) {
+  if (!/UPSTREAM_400_INTERACTIVE:\s*omniroute 400 invalid_request_error \[interactive\]:\s*No credentials for provider:/i.test(line)) return null;
+  const provider = String((/No credentials for provider:\s*([^\s)]+)/i.exec(line) || [])[1] || '').toLowerCase().replace(/_/g, '-');
+  const skipped = _providersToSkip(root).has(provider);
+  return {
+    resolved: skipped,
+    kind: 'upstream_no_credentials_for_skipped_provider',
+    resolver: 'providers_to_skip + overdrive no-route local refusal',
+    proof: { provider, skipped },
+    reason: skipped
+      ? 'the uncredentialed provider is currently paused/skipped and routing now refuses empty chains locally instead of falling back to it'
+      : 'the uncredentialed provider is not in providers_to_skip, so credentials or routing still need repair',
+    invariant: 'a skipped/uncredentialed provider must never be selected as the fallback route',
+    runtimeState: `provider=${provider || '?'} skipped=${skipped}`,
+    recurrenceTest: 'tools/HME/tests/specs/incident_registry.test.js; tools/HME/tests/specs/overdrive_size_gate.test.js',
+  };
+}
+
 function _slotHealthSummary(root) {
   const out = {};
   for (const slot of ['a', 'b']) {
