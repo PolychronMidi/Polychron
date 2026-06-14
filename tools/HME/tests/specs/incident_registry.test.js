@@ -58,6 +58,25 @@ test('incident registry can suppress resolver-proven historical lines', () => {
   }
 });
 
+test('incident registry suppresses resolved outbound preflight over-window lines', () => {
+  const oldPath = process.env.HME_STATUSLINE_PATH;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-outbound-preflight-'));
+  try {
+    fs.mkdirSync(path.join(root, 'tools/HME/runtime'), { recursive: true });
+    const statusline = path.join(root, 'tools/HME/runtime/claude-statusline-raw.json');
+    fs.writeFileSync(statusline, JSON.stringify({
+      model: { id: 'gpt-5.5-xhigh' },
+      context_window: { context_window_size: 1000000, current_usage: { input_tokens: 200000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+    }));
+    process.env.HME_STATUSLINE_PATH = statusline;
+    const line = '[T] [outbound-gate] UPSTREAM_PREFLIGHT_OVER_WINDOW: est 481604 input tokens > route budget 480000 for gpt-5.5-xhigh; compaction and reroute exhausted. Refusing to ship a known-over-window request. cc_compact=inflight';
+    assert.equal(incidents.unresolvedLines(root, [line]).length, 0);
+  } finally {
+    if (oldPath == null) delete process.env.HME_STATUSLINE_PATH; else process.env.HME_STATUSLINE_PATH = oldPath;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('incident registry can suppress resolver-proven transient upstream 200 api_error lines', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-incident-upstream-200-'));
   try {
