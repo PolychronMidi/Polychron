@@ -1,11 +1,6 @@
 const V = validator.create('MotifComposer');
-/**
- * MotifComposer: factory for short motifs that fit a scale and optionally use voice-leading.
- * Features:
- *  - developFromComposer: optional composer with getNotes() to seed motif pitches
- *  - measureComposer: optional MeasureComposer to select notes with voice-leading hooks
- * Usage: new MotifComposer(opts).generate({ length, scaleComposer })
- */
+// MotifComposer builds short scale-fitting motifs, optionally seeded by another composer
+// Voice-leading can route through MeasureComposer hooks during generation.
 MotifComposer = class MotifComposer {
   /**
    * @param {{
