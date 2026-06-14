@@ -11,6 +11,7 @@ function isLoopbackRequest(clientReq) {
 
 function shouldInjectLoopbackOauth({ clientReq, upstreamHeaders, isAnthropic, isOmniRouteSwap }) {
   if (!isAnthropic || isOmniRouteSwap || upstreamHeaders.authorization || upstreamHeaders['x-api-key']) return false;
+  if (upstreamHeaders['x-hme-preflight-smoke'] === '1') return false;
   return isLoopbackRequest(clientReq);
 }
 
