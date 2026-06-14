@@ -213,15 +213,8 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
   })));
 }
 
-/**
- * Run a chain of hooks for a single event. Each hook receives the SAME
- * stdin payload. Outputs concatenate; the first non-zero exit_code is
- * preserved (but remaining hooks still run -- mirrors Claude Code's default
- * hook-chain behavior where later hooks don't depend on earlier exit codes).
- *
- * Exception: hook output containing `{"decision":"block"...}` halts the
- * chain -- a blocking decision from any hook supersedes later hooks.
- */
+// Run hook chains with shared stdin; outputs concatenate and first nonzero exit wins.
+// Blocking decision JSON halts the chain because it supersedes later hooks.
 async function runChain(scripts, stdinJson, timeoutMs = 30_000, eventName = 'hook') {
   let combinedStdout = '';
   let combinedStderr = '';
