@@ -49,7 +49,7 @@ test('incident registry can suppress resolver-proven historical lines', () => {
     fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
     fs.writeFileSync(path.join(root, 'tmp/payload.json'), JSON.stringify({
       model: 'cx/gpt-5.5-xhigh', system: '', tools: [],
-      messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(900000) }] }],
+      messages: [{ role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(1200000) }] }],
     }));
     const line = '[T] UPSTREAM_200_INTERACTIVE: omniroute 200 api_error [interactive]: input exceeds the context window (snapshot=tmp/payload.json)';
     assert.equal(incidents.unresolvedLines(root, [line]).length, 0);
