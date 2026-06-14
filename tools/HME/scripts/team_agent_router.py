@@ -380,6 +380,7 @@ def main() -> int:
         }}))
         return 0
     updated = _native_input(tool_input, target)
+    _write_launch_audit({"decision": "allow", "caller": caller, "requested_tier": request_tier, "target": target, "fork_proof_status": "present" if proof else "router_bounded_default", "reason": "team_routed_bounds"})
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "allow",
