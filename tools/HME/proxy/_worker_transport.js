@@ -1,28 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
-/**
- * Transport router for proxy -> worker dispatch. Picks between HTTP
- * (`_worker_http.js`) and filesystem queue (`_worker_fs.js`) based on
- * `HME_WORKER_TRANSPORT` env var:
- *
- *   http     (default)  -- legacy localhost HTTP path
- *   hybrid              -- FS for endpoints worker_queue.py covers
- *                         (POST /tool/*, /enrich, /enrich_prompt,
- *                         /audit); HTTP for everything else (light
- *                         endpoints + endpoints worker_queue doesn't
- *                         handle). RECOMMENDED when running with the
- *                         worker_queue watcher active (which it is by
- *                         default -- worker.py:main() starts it).
- *
- * Pure-FS mode isn't offered: `worker_queue.py` only handles a subset
- * of the worker's HTTP endpoints, so paths like /tools/list, /health,
- * /version MUST go through HTTP regardless. Hybrid mode encapsulates
- * that fact so callers don't need to know.
- *
- * The MCP wire spec is unaffected: Claude Code still talks HTTP/SSE
- * to /mcp/* on the proxy. This router governs only the INTERNAL
- * proxy <-> worker leg.
- */
+// Proxy->worker transport router: HTTP by default, hybrid FS queue for queue-backed POST
+// MCP wire stays HTTP/SSE; this only chooses the internal proxy-worker leg.
 
 const httpBackend = require('./_worker_http');
 const fsBackend = require('./_worker_fs');
