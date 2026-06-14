@@ -170,6 +170,53 @@ test('preflight smoke ignores statusline and returns local 400 without lifesaver
   }
 });
 
+test('preflight smoke that fits terminates locally before upstream auth', () => {
+  const clientRes = {
+    statusCode: 0,
+    headers: null,
+    body: 'unset',
+    writeHead(code, headers) { this.statusCode = code; this.headers = headers; },
+    end(body) { this.body = body == null ? '' : String(body); },
+  };
+  const verdict = applyOutboundContextGate({
+    payload: { model: 'lfm-2.5-1.2b-instruct-openrouter-free', max_tokens: 16, messages: [{ role: 'user', content: 'ok' }] },
+    isAnthropic: true,
+    isInteractivePath: true,
+    isOmniRouteSwap: false,
+    swapModel: 'lfm-2.5-1.2b-instruct-openrouter-free',
+    swapChain: [{ id: 'lfm-2.5-1.2b-instruct-openrouter-free' }],
+    outBody: Buffer.from('{}'),
+    sessionForTelemetry: 'smoke-fit',
+    clientRes,
+    clientReq: { headers: { 'x-hme-preflight-smoke': '1' } },
+    compactSubmitter: () => { throw new Error('must not compact'); },
+  });
+  assert.equal(verdict.ended, true);
+  assert.equal(clientRes.statusCode, 204);
+  assert.equal(clientRes.body, '');
+});
+
+test('preflight smoke headers never promote fake auth to Claude OAuth', () => {
+  const clientReq = {
+    headers: {
+      authorization: 'Bearer hme-preflight',
+      'x-hme-preflight-smoke': '1',
+      host: '127.0.0.1:1',
+    },
+    socket: { remoteAddress: '127.0.0.1' },
+  };
+  const headers = prepareUpstreamHeaders({
+    clientReq,
+    upstream: { host: 'api.anthropic.com' },
+    outBody: Buffer.from('{}'),
+    isAnthropic: true,
+    isOmniRouteSwap: false,
+  });
+  assert.equal(headers.authorization, 'Bearer hme-preflight');
+  assert.equal(headers['anthropic-beta'], undefined);
+  assert.equal(shouldInjectLoopbackOauth({ clientReq, upstreamHeaders: { 'x-hme-preflight-smoke': '1' }, isAnthropic: true, isOmniRouteSwap: false }), false);
+});
+
 test('interactive over-window refusal returns local 400 and triggers live cc compact once', () => {
   const oldBytesPerTok = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
   const originalAppend = fs.appendFileSync;
