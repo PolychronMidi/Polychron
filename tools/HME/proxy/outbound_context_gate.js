@@ -89,10 +89,10 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
     return { ok: true, action: 'compacted', model: modelId, tokens, budget, ...pressure };
   }
   // Tier 2: reroute to a larger-context route in the swap chain.
-  const larger = pickLargerRoute(swapChain, tokens, modelId, budgetFor);
+  const larger = pickLargerRoute(swapChain, tokens, modelId, budgetFor, budgetForPayload, payload, env);
   if (larger) {
     const newId = larger.api_model || larger.id;
-    return { ok: true, action: 'rerouted', model: newId, reroute: larger, tokens, budget: budgetFor(newId), ...pressure };
+    return { ok: true, action: 'rerouted', model: newId, reroute: larger, tokens, budget: budgetForPayload(payload, newId, budgetFor, env), ...pressure };
   }
   // Tier 3: fail locally with an actionable reason. Never ship over-window.
   return { ok: false, action: 'over_window', model: modelId, tokens, budget, ...pressure };
