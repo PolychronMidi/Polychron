@@ -74,8 +74,59 @@ test('comment-bloat audit --claim emits a schema-shaped claim file', () => {
     assert.equal(claim.claim_id, 'comment-bloat.fail-count.zero');
     assert.equal(claim.status, 'pass');
     assert.match(claim.evidence_hash, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(claims.validateClaim(claim).ok, true);
+    assert.equal(claim.freshness_proof.evidence_hash, claim.evidence_hash);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(claimFile, { force: true });
   }
+});
+
+test('comment-bloat generated marker exempts generated prose blocks only', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-comment-bloat-'));
+  try {
+    const generated = path.join(dir, 'generated.js');
+    fs.writeFileSync(generated, [
+      'const a = 1;',
+      '/**',
+      ' * @generated',
+      ' * generated detail one',
+      ' * generated detail two',
+      ' * generated detail three',
+      ' * generated detail four',
+      ' */',
+      '',
+    ].join('\n'));
+    assert.equal(runOn(generated).fail.length, 0);
+    const prose = path.join(dir, 'prose.js');
+    fs.writeFileSync(prose, fs.readFileSync(generated, 'utf8').replace(' * @generated\n', ''));
+    assert.equal(runOn(prose).fail.length, 1);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('comment-bloat claim becomes stale after scoped edit and current after rerun', () => {
+  const oldClaim = {
+    schema_version: claims.CLAIM_SCHEMA_VERSION,
+    claim_id: 'comment-bloat.fail-count.zero',
+    subject_uri: 'repo://tools/HME/scripts/audit-comment-bloat.py',
+    producer: 'audit-comment-bloat.py',
+    producer_version: 'git:test',
+    status: 'pass',
+    severity: 'info',
+    confidence: 1,
+    evidence_uri: 'repo://runtime/hme-claims/comment-bloat.json',
+    evidence_hash: claims.evidenceHash({ fail: 0 }),
+    scope: ['repo://src', 'repo://tools/HME'],
+    invalidator_keys: ['tracked_code_edit', 'verifier_edit'],
+    generated_at: '2026-06-13T00:00:00Z',
+    expires_at: null,
+    freshness_proof: { kind: 'audit_run', generated_at: '2026-06-13T00:00:00Z', evidence_hash: claims.evidenceHash({ fail: 0 }) },
+    repair: 'manual condensation',
+    tests: ['comment_bloat_audit.test.js'],
+    retirement_condition: 'policy retired',
+    supersedes: [],
+  };
+  assert.equal(claims.isCurrent(oldClaim, [{ key: 'tracked_code_edit', subject_uri: 'repo://src/a.js', ts: '2026-06-13T00:01:00Z' }]).current, false);
+  const refreshed = { ...oldClaim, generated_at: '2026-06-13T00:02:00Z', freshness_proof: { ...oldClaim.freshness_proof, generated_at: '2026-06-13T00:02:00Z' } };
+  assert.equal(claims.isCurrent(refreshed, [{ key: 'tracked_code_edit', subject_uri: 'repo://src/a.js', ts: '2026-06-13T00:01:00Z' }]).current, true);
 });
