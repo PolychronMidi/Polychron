@@ -26,7 +26,7 @@ moduleLifecycle.declare({
    *
    * Fields consumed by conductorState.getField(name):
    *   sectionPhase         - tempoFeelEngine, main.js
-   *   compositeIntensity   - harmonicVelocityMonitor, main.js (x2), playNotes, processBeat
+   *   compositeIntensity   - harmonicVelocityMonitor, main.js, playNotes, processBeat
    *   phrasePosition       - textureBlender
    *   phrasePhase          - textureBlender
    *   key                  - main.js

@@ -5,7 +5,7 @@ const marks = new Array(15); // 15 boundaries for 14 stages
 
 /**
  * Process one beat for the given layer. Handles setup, cross-layer orchestration,
- * post-beat recording, and trust-score updates. Returns final probabilities for micro-unit loop.
+ * post-beat recording, and trust updates. Returns final micro-unit probabilities.
  *
  * @param {string} layer - 'L1' or 'L2'
  * @param {number} playProbIn - initial play probability for this beat

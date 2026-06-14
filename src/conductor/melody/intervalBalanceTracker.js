@@ -96,7 +96,7 @@ moduleLifecycle.declare({
 
   /**
    * Get interval selection biases to escape ruts and maintain balance.
-   * Combines rut-escape biases with corrective leap/step balance (~40% leaps / 60% steps).
+   * Combines rut-escape biases with leap/step balance (~40% / ~60%).
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ stepBias: number, leapBias: number }}

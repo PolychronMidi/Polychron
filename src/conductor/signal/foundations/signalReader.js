@@ -76,8 +76,8 @@ moduleLifecycle.declare({
 
   /**
    * Query recent explainabilityBus events by type.
-   * Load-order note: explainabilityBus is registered in crossLayer (loads after conductor).
-   * This call is safe at runtime (beat-processing time) but must NOT be invoked at module
+   * explainabilityBus is registered in crossLayer, after conductor load.
+   * Safe at beat-processing runtime, but not during module initialization.
    * load time - the global will not yet exist.
    * @param {string} type - event type to filter on
    * @param {number} [limit=10]

@@ -55,7 +55,7 @@ moduleLifecycle.declare({
    *  stutterProb: number,
    *  cadenceSuggested: boolean,
    *  phaseConfidence: number,
-   *  intent?: { densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number },
+   *  intent?: { densityTarget, dissonanceTarget, interactionTarget, entropyTarget },
    *  entropyScale?: number
    * }} context
    */

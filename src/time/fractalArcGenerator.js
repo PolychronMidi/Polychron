@@ -9,7 +9,7 @@
  * multi-scale envelope shaping.
  *
  * API:
- *   fractalArcGenerator.intensity(level)  - 0..1  (level = 0 section, 1 phrase, 2 measure)
+ *   fractalArcGenerator.intensity(level)  - 0..1; level 0/1/2 = section/phrase/measure
  *   fractalArcGenerator.composite()       - blended 0..1 across all scales
  *   fractalArcGenerator.reset()
  */

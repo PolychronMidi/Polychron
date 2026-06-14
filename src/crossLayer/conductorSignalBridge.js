@@ -46,7 +46,7 @@ moduleLifecycle.declare({
   /**
    * Refresh cached signals from the conductor pipeline.
    * Called each beat via registered recorder - ctx carries the current beat's values.
-   * compositeIntensity comes from ctx (computed by globalConductorUpdate before recorders run).
+   * compositeIntensity comes from ctx after globalConductorUpdate and before recorders.
    * sectionPhase is read directly from harmonicContext (stable for the entire section).
    * @param {{ absTime: number, compositeIntensity: number, currentDensity: number, harmonicRhythm: number }} ctx
    */

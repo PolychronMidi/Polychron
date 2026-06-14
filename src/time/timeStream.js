@@ -24,7 +24,7 @@ moduleLifecycle.declare({
 
   // Position updates
 
-  /** Set current index at a structural level. Called by main/layerPass as loops iterate. */
+  /** Set current index at a structural level as main/layerPass loops iterate. */
   function setPosition(level, index) {
     V.assertInSet(level, LEVEL_SET, 'level');
     pos[level] = V.requireFinite(index, 'index');
@@ -64,7 +64,7 @@ moduleLifecycle.declare({
 
   /**
    * Overall progress through the composition as a single 0..1 value.
-   * Computed as a weighted nested fraction: section + phrase/sections + measure/(sections*phrases) + ...
+   * Weighted nested fraction: section + phrase/sections + measure/(sections*phrases) + ...
    */
   function globalProgress() {
     if (bounds.section <= 0) return 0;

@@ -18,7 +18,7 @@ moduleLifecycle.declare({
 
   /**
    * Build journey stops for sections 1..totalSections-1 (origin stop not included).
-   * Resolution sections bias toward returning home; other sections pick from phase-appropriate moves.
+   * Resolution biases home; other sections choose phase-appropriate moves.
    * @param {number} totalSections
    * @param {string} originKey
    * @param {string} originMode

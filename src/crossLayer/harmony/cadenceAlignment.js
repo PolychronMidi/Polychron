@@ -105,7 +105,7 @@ moduleLifecycle.declare({
 
   /**
    * Apply cadence alignment: when both layers at high tension, bias toward resolution.
-   * Returns a cadence bias modifier that can be fed to cadenceAdvisor or chord selection.
+   * Returns a cadence bias modifier for cadenceAdvisor or chord selection.
    * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} ourTension - this layer's current tension

@@ -25,7 +25,7 @@ const composerCtx = {
 
   /**
    * Context-aware family selection hook: biases family weights by structural phase.
-   * Called from factoryFamilies.resolvePhraseFamilyOrFail when no explicit family is requested.
+   * Called when no explicit family is requested.
    * @param {{availableFamilies: string[], sectionIndex: number|null, phraseIndex: number|null}} info
    * @returns {string|null} family name or null for default weighted random
    */

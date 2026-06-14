@@ -95,7 +95,7 @@ moduleLifecycle.declare({
     /** @type {Record<string, number>} */
     prevPairAbsR: {},
 
-    /** Section reset: dampen rather than wipe. Preserves cross-section energy learning. */
+    /** Section reset dampens rather than wipes, preserving cross-section energy learning. */
     reset() {
       S.totalEnergyEma *= 0.90;
       S.prevTotalEnergy *= 0.90;

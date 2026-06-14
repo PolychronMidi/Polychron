@@ -143,7 +143,7 @@ moduleLifecycle.declare({
   }
 
   /**
-   * Get interaction density over the rolling window. 0 = no interactions, 1 = every system firing every beat.
+   * Rolling interaction density: 0 = none, 1 = every system fires every beat.
    * @returns {number} normalized density 0-1
    */
   function getDensity() {

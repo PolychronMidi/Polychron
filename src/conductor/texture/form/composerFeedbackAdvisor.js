@@ -22,7 +22,7 @@ moduleLifecycle.declare({
    *   fatigueSignal: number,
    *   varietyPressure: number,
    *   thematicStatus: string,
-   *   profileHints: { restrainedHint: number, explosiveHint: number, atmosphericHint: number },
+   *   profileHints: { restrainedHint, explosiveHint, atmosphericHint },
    *   currentRegime: string
    * }} ComposerQualitySnapshot
    */

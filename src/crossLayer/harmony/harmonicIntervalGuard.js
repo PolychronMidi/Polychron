@@ -51,7 +51,7 @@ moduleLifecycle.declare({
   }
 
   /**
-   * Measure current dissonance level from recent cross-layer intervals (0=consonant, 1=dissonant).
+   * Measure recent cross-layer dissonance, from 0 consonant to 1 dissonant.
    * @returns {number}
    */
   function getDissonanceLevel() {

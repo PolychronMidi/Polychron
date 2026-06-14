@@ -55,7 +55,7 @@ moduleLifecycle.declare({
 
   /**
    * Get duration envelope bias for temporal shaping (cached per beat).
-   * Accelerating - gently resist (boost longer durations); decelerating - gently resist (boost shorter).
+   * Gently resists acceleration with longer durations, deceleration with shorter ones.
    * @param {Object} [opts]
    * @param {string} [opts.layer]
    * @returns {{ durationBias: number, flickerMod: number }}

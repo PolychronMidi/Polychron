@@ -36,7 +36,7 @@ moduleLifecycle.declare({
 
   /**
    * Compare harmonic velocity to the current energy arc.
-   * Returns a mismatch score: positive = harmony too fast for energy, negative = too slow.
+   * Mismatch score: positive means harmony too fast for energy; negative too slow.
    * @returns {{ mismatch: number, diagnosis: string }}
    */
   function diagnoseEnergyMatch() {

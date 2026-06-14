@@ -57,7 +57,7 @@ moduleLifecycle.declare({
 
   /**
    * Suggest a phrase-length adjustment.
-   * Continuously accelerating - suggest lengthening; continuously expanding - suggest shortening.
+   * Continuous acceleration suggests lengthening; expansion suggests shortening.
    * @returns {{ adjustment: number, suggestion: string }}
    */
   function suggestAdjustment() {

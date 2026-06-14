@@ -71,7 +71,7 @@ moduleLifecycle.declare({
   }
 
   /**
-   * Core entropy computation (runs at most once per beat via entropyRegulatorMeasureCache).
+   * Core entropy computation, cached at most once per beat.
    * @private
    * @returns {number} combined 0-1
    */

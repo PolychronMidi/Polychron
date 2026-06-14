@@ -62,7 +62,7 @@ moduleLifecycle.declare({
   }
 
   /**
-   * Detect metric displacement and hemiola between layers (cached per beat for default window).
+   * Detect metric displacement/hemiola between layers, cached per beat.
    * @param {number} [windowSeconds]
    * @returns {{ displacementRatio: number, hemiola: boolean, phaseOffset: number, intentional: boolean }}
    */
@@ -86,7 +86,7 @@ moduleLifecycle.declare({
   conductorIntelligence.registerFlickerModifier('interLayerRhythmAnalyzer', () => interLayerRhythmAnalyzer.getFlickerModifier(), 0.9, 1.2);
 
   /**
-   * R30 E4: Density bias from rhythmic complementarity -- new rhythmic-to-density pathway.
+   * R30 E4: density bias from rhythmic complementarity.
    * Complementary layers (independent, interlocking) support richer texture;
    * in-phase layers (redundant) need less density.
    * Continuous ramp on complementarity: 0->0.96, 0.5->1.0, 1->1.04.

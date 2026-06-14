@@ -54,7 +54,7 @@ PhraseArcManager = class PhraseArcManager {
 
   /**
    * Get phrase context using current global state.
-   * Result is cached per beat (keyed on beatCount) since globals don't change within a beat.
+   * Cached per beat because globals do not change within a beat.
    * @returns {{ position: number, phase: string, measureInPhrase: number, phraseNumber: number, registerBias: number, densityMultiplier: number, voiceIndependence: number, dynamism: number, spectralDensity: number, atBoundary: boolean, atStart: boolean, atEnd: boolean }}
    */
   getPhraseContext() {
