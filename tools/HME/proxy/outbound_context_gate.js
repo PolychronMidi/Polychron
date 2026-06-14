@@ -74,7 +74,8 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
   const compact = deps.compact || compactLargeInteractiveAnthropicPayload;
   const budgetFor = deps.inputBudgetFor || inputBudgetFor;
 
-  const budget = budgetFor(modelId);
+  const budgetForPayload = deps.inputBudgetForPayload || effectiveInputBudgetForPayload;
+  const budget = budgetForPayload(payload, modelId, budgetFor, env);
   let pressure = _effectiveTokens(payload, env, modelId, projectRoot, deps);
   let tokens = pressure.tokens;
   if (budget <= 0 || tokens <= budget) {
