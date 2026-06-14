@@ -1,41 +1,6 @@
 'use strict';
-/**
- * HME event-kernel dispatcher.
- *
- * This is the single source of truth for hook/lifecycle routing. Agent-CLI
- * adapters and the inference proxy call this module instead of maintaining
- * their own Event -> script tables.
- *
- * Current adapters:
- *   - Claude Code hooks: event_kernel/claude_adapter.js -> /hme/lifecycle -> this file
- *   - Codex hooks: event_kernel/codex_adapter.js -> /hme/lifecycle -> this file
- *   - Proxy-down direct mode: host adapter -> this file
- *
- * Dispatch surface:
- *   SessionStart      -> sessionstart.sh
- *   UserPromptSubmit  -> userpromptsubmit.sh
- *   Stop              -> proxy stop_chain
- *   PreToolUse        -> routed by tool_name to native handlers or shell hooks
- *   PermissionRequest -> shared policy gate for Codex approval prompts
- *   PostToolUse       -> log-tool-call.sh + native handlers or shell hooks
- *   PreCompact        -> precompact.sh
- *   PostCompact       -> postcompact.sh
- *
- * Direct shell wrappers covered by the routing contract:
- *   pretooluse_bash.sh, pretooluse_edit.sh, pretooluse_grep.sh,
- *   pretooluse_hme_primer.sh, pretooluse_read.sh, pretooluse_write.sh,
- *   posttooluse_bash.sh, posttooluse_edit.sh, posttooluse_pipeline_kb.sh,
- *   posttooluse_read_kb.sh.
- *
- * Non-derivable route facts (which policy context an event evaluates) live in
- * dispatcher-routes.json, the declared routing contract. `policyContext(event)`
- * reads it so PermissionRequest's reuse of the PreToolUse policy context is an
- * explicit, auditable fact rather than a hardcoded string. The
- * DispatcherRouteContractVerifier diffs that file against the switch below.
- *
- * `dispatchEvent(eventName, stdinJson)` returns `{stdout, stderr, exit_code}`.
- * Adapters translate that into their host CLI protocol.
- */
+// Canonical event-kernel dispatcher for lifecycle, tool, compact, and policy events.
+// Host adapters call this module; route facts live in dispatcher-routes.json.
 
 const path = require('path');
 const fs = require('fs');
