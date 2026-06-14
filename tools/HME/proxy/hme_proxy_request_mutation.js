@@ -154,11 +154,10 @@ async function mutateClaudeRequest({
   }
   if (isAnthropic && isInteractivePath && payload && Array.isArray(payload.messages)) {
     let compacted = 0;
+    const omniTarget = upstream && upstream.provider === 'omniroute';
     if (passthrough) compacted += shrinkForPassthrough(payload);
-    compacted += compactLargeInteractiveAnthropicPayload(payload);
-    // Always evaluate the cap (it mutates payload); rebuild the outgoing buffer if
-    // any compaction OR the cap dirtied the payload -- otherwise a passthrough-mode
-    const capped = applyExplicitOtpmCap(payload);
+    if (!omniTarget) compacted += compactLargeInteractiveAnthropicPayload(payload);
+    const capped = omniTarget ? false : applyExplicitOtpmCap(payload);
     if (compacted > 0 || capped) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
   }
 
