@@ -29,7 +29,7 @@
  * @property {string} [tonic] - Tonic key
  */
 
-// Voice-leading optimizer scores smooth motion, range, crossings, parallels, and leap re
+// Voice-leading optimizer scores smooth motion, range, crossings, parallels, and leap recovery.
 // Weighted soft constraints produce a total penalty score.
 VoiceLeadingScore = class VoiceLeadingScore {
   constructor(config = {}) {
