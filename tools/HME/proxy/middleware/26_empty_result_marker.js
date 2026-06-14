@@ -1,6 +1,8 @@
 'use strict';
 
 const { emptyMarker, textOfToolResult } = require('../tool_result_semantics');
+const quality = require('../tool_response_quality');
+const invalidators = require('../claim_invalidators');
 
 module.exports = {
   name: 'empty_result_marker',
