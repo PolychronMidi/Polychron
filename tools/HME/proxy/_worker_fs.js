@@ -1,43 +1,6 @@
 'use strict';
-/**
- * Filesystem-IPC client to the Python worker -- drop-in replacement for
- * `_worker_http.js`'s `workerRequest` with the same {status, json, raw,
- * error} return shape.
- *
- * Talks to the EXISTING worker-side queue watcher in
- * `tools/HME/service/worker_queue.py`, which is already started by
- * `worker.py:main()`. Wire shape is dictated by worker_queue.py:
- *
- *   request:  tmp/hme-worker-queue/<endpoint>/<jobId>.json
- *             body = {jobId, endpoint, body, ts}
- *   result:   tmp/hme-worker-results/<jobId>.json
- *             body = handler-specific (e.g. {ok, result} for tool calls)
- *
- * Why filesystem IPC vs HTTP for worker dispatch:
- *   - No socket lifecycle: TCP connection state, half-open sockets,
- *     ECONNRESET races all go away
- *   - SIGKILL-survivable on the WORKER side: if worker dies mid-call,
- *     the job file stays in queue/ and the next worker boot's watcher
- *     picks it up (worker_queue.py polls indefinitely)
- *   - Audit trail: every call leaves a result file (caller unlinks)
- *   - Atomic-rename writes: never see partial reads
- *
- * MCP wire spec is preserved at the boundary: Claude Code still talks
- * HTTP/SSE to `/mcp/*`. This module governs only the INTERNAL proxy <->
- * worker leg, invoked via the transport router when
- * `HME_WORKER_TRANSPORT=filesystem|hybrid`.
- *
- * Endpoint mapping (HTTP path -> worker_queue endpoint):
- *   POST /tool/<name>     -> endpoint="tool", body={name, args}
- *   POST /enrich          -> endpoint="enrich"
- *   POST /enrich_prompt   -> endpoint="enrich_prompt"
- *   POST /audit           -> endpoint="audit"
- *
- * Endpoints NOT supported by worker_queue.py (and thus NOT FS-eligible):
- *   GET /tools/list, GET /health, GET /version, GET /transcript, etc.
- * The router (`_worker_transport.js`) keeps those on HTTP regardless of
- * the configured mode.
- */
+// Filesystem IPC worker client mirroring workerRequest's {status,json,raw,error} shape.
+// Only queue-backed POST endpoints use FS; HTTP remains for health/tools/version/transcr
 
 const fs = require('fs');
 const path = require('path');
