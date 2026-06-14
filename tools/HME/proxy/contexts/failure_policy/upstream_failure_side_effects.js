@@ -78,7 +78,8 @@ function recordFailureSideEffects({
   sessionForTelemetry,
   projectRoot = PROJECT_ROOT,
 }) {
-  recordEscapeHatch({ isInteractivePath, coolingDown, errMsg, isOmniRouteSwap });
+  const isPreflightSmoke = Boolean(clientReq && clientReq.headers && clientReq.headers['x-hme-preflight-smoke'] === '1');
+  recordEscapeHatch({ isInteractivePath, coolingDown, errMsg, isOmniRouteSwap, isPreflightSmoke });
   snapshotFailure({
     status,
     headers,
