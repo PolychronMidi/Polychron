@@ -44,6 +44,15 @@ const AGGRESSIVE_TIERS = [
   { keepRecent: 80, byteFloor: 0, skeletonize: true },
 ];
 
+// Claude Code also persists large command outputs in sibling
+// <session>/tool-results/* files. Those sidecars are not the JSONL transcript,
+const SIDECAR_DEFAULTS = {
+  maxBytes: 8 * 1024,
+  headBytes: 1024,
+  tailBytes: 1024,
+  scanProject: true,
+};
+
 function _marker(originalBytes) {
   return `(content elided by hme-proxy transcript-compactor: original was ${originalBytes}B; full output remains in the wire history the model already consumed)`;
 }
