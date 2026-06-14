@@ -7,8 +7,11 @@ _hme_self_tag_re() {
   local _src="${PROJECT_ROOT}/tools/HME/proxy/self_origin.js"
   local _cache="${PROJECT_ROOT}/tools/HME/runtime/self-suppressed-tag-re.txt"
   if [ -f "$_cache" ] && [ "$_cache" -nt "$_src" ]; then
-    cat "$_cache"
-    return 0
+    local _cached
+    _cached="$(cat "$_cache" 2>/dev/null || true)"
+    case "$_cached" in
+      '^\['*) printf '%s\n' "$_cached"; return 0 ;;
+    esac
   fi
   local _re
   # silent-ok: if node/self_origin is unavailable the classifier fails SAFE to
