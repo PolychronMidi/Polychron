@@ -1,6 +1,6 @@
 'use strict';
 // Filesystem IPC client for HME worker jobs: atomic queue files plus result polling.
-// HTTP remains for compatibility; queue timeouts return null so callers choose degradati
+// HTTP stays for compatibility; queue timeouts return null so callers pick fallback.
 
 const fs = require('fs');
 const path = require('path');
