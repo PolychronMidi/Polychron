@@ -115,7 +115,7 @@ test('preflight smoke over-window returns local 400 without lifesaver noise', ()
       compactSubmitter: () => { compactCalls += 1; return { submitted: true, reason: 'submitted' }; },
     });
     assert.equal(verdict.ended, true);
-    assert.equal(clientRes.statusCode, 413);
+    assert.equal(clientRes.statusCode, 400);
     assert.match(clientRes.body, /UPSTREAM_PREFLIGHT_OVER_WINDOW/);
     assert.equal(writes.some(([, data]) => data.includes('[outbound-gate]')), false);
     assert.equal(compactCalls, 0, 'preflight smoke must not drive live cc shortcut');
@@ -161,7 +161,7 @@ test('interactive over-window refusal triggers live cc compact once', () => {
       },
     });
     assert.equal(verdict.ended, true);
-    assert.equal(clientRes.statusCode, 413);
+    assert.equal(clientRes.statusCode, 400);
     assert.equal(compactCalls, 1, 'real interactive over-window must deploy the cc shortcut');
     assert.ok(writes.some((line) => line.includes('cc_compact=submitted')));
   } finally {
