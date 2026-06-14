@@ -48,11 +48,8 @@ function _waitForResult(jobId, timeoutMs) {
   });
 }
 
-/**
- * Translate an HTTP-style (method, path, body) into a worker_queue
- * envelope. Returns null if the endpoint isn't FS-eligible -- caller
- * (the router) interprets null as "fall back to HTTP".
- */
+// Translate HTTP-style (method,path,body) to a worker_queue envelope.
+// Returns null when the router must fall back to HTTP.
 function _toEnvelope(method, reqPath, body) {
   if (method === 'POST' && reqPath.startsWith('/tool/')) {
     const name = decodeURIComponent(reqPath.slice('/tool/'.length));
