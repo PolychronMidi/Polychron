@@ -588,6 +588,10 @@ function main() {
     fs.writeFileSync(warmSentinel, String(Math.floor(Date.now() / 1000)));
   } catch (_we) { /* best-effort -- warm reprime is advisory */ }
 
+  try {
+    var finalSummary = JSON.parse(fs.readFileSync(path.join(METRICS_DIR, 'pipeline-summary.json'), 'utf8'));
+    if (finalSummary.diagnostic_verdict === 'FAIL' || finalSummary.self_coherence_verdict === 'FAIL') process.exitCode = 1;
+  } catch (_exitPolicyError) { process.exitCode = process.exitCode || 1; }
   console.log('Pipeline finished in ' + wallTime + 's');
 }
 
