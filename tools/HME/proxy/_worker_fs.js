@@ -1,6 +1,6 @@
 'use strict';
 // Filesystem IPC worker client mirroring workerRequest's {status,json,raw,error} shape.
-// Only queue-backed POST endpoints use FS; HTTP remains for health/tools/version/transcr
+// Queue-backed POST endpoints use FS; health/tools/version/transcript stay on HTTP.
 
 const fs = require('fs');
 const path = require('path');
@@ -18,13 +18,8 @@ function _atomicWrite(target, content) {
   fs.renameSync(tmp, target);
 }
 
-/**
- * Wait for results/<jobId>.json to appear, with timeout. Returns
- * parsed contents on success, or null on timeout. Polls every 25ms
- * for the first second, then 100ms thereafter -- fast enough that p99
- * dispatch latency stays under the per-tool work cost while keeping
- * idle CPU low.
- */
+// Wait for results/<jobId>.json and return parsed JSON, or null on timeout.
+// Poll 25ms for the first second, then 100ms to keep idle CPU low.
 function _waitForResult(jobId, timeoutMs) {
   const resultPath = path.join(RESULTS_DIR, `${jobId}.json`);
   const start = Date.now();
