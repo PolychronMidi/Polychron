@@ -131,7 +131,10 @@ function recordWaiver(entry, opts = {}) {
 function aggregateTooling(rowsOrFile = DEFAULT_LEDGER, opts = {}) {
   const rows = Array.isArray(rowsOrFile) ? rowsOrFile : readLedger(rowsOrFile);
   const threshold = Number.isFinite(opts.threshold) ? opts.threshold : 7;
-  const open = rows.filter((r) => shouldLog(r, threshold) && !isWaiverActive(r));
+  const waiverRows = opts.waivers || readLedger(opts.waiverFile || DEFAULT_WAIVER_LEDGER);
+  const activeWaivers = waiverRows.filter((w) => isWaiverActive(w));
+  const waived = (row) => activeWaivers.some((w) => (w.tool === row.tool || w.tool === '*') && (w.defect_class === row.defect_class || w.defect_class === '*'));
+  const open = rows.filter((r) => shouldLog(r, threshold) && !isWaiverActive(r) && !waived(r));
   const by_class = {};
   const by_tool = {};
   for (const row of open) {
