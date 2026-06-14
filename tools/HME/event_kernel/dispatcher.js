@@ -335,11 +335,8 @@ function _opencodeTextCompleteDecision(stdinJson) {
   return null;
 }
 
-/**
- * Parse tool_name from a pretooluse/posttooluse payload. Claude Code passes
- * `{tool_name: "Edit", tool_input: {...}}` for pretooluse and a similar shape
- * with `tool_response` added for posttooluse. Fall back to '' on parse error.
- */
+// Parse tool_name from pre/post-tool payloads.
+// Fall back to empty string on malformed JSON.
 function _toolName(stdinJson) {
   try {
     const d = JSON.parse(stdinJson);
