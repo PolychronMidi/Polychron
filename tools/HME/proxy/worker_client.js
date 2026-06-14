@@ -1,21 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('./shared/load_env.js');
-/**
- * Thin HTTP client for the worker's RAG/validate/enrich endpoints.
- * Used by enrichment middleware that wants semantic-search signal beyond
- * the static JSON maps.
- *
- * Failure policy: enrichment is non-fatal (tools must always flow) so calls
- * resolve null rather than rejecting. BUT silent-null-forever is a worse
- * failure mode than loud -- a quiet 100% drop rate masquerades as "no KB
- * matches found." So we log every transport failure to stderr (captured by
- * log/hme-proxy.out) AND track a rolling failure counter; once it crosses
- * a streak threshold, we surface a warning so the next tool call has a hint
- * that the worker is dead.
- *
- * Per-process LRU cache amortizes the 80-100ms semantic-search cost across
- * repeated calls within a session.
- */
+// Worker RAG/validate/enrich client with non-fatal enrichment and loud transport telemet
+// Null responses never fail tools; repeated drops log to hme-errors and reuse an LRU cac
 
 const fs = require('fs');
 const path = require('path');
