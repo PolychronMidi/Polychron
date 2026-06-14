@@ -344,11 +344,8 @@ function _toolName(stdinJson) {
   } catch (_) { return ''; }
 }
 
-/**
- * Main entry point. Dispatches a Claude Code lifecycle event to the
- * appropriate hook chain, returning the response shape the forwarder
- * relays to Claude's plugin machinery.
- */
+// Main entry point: dispatch eventName/stdinJson and return the forwarder response shape
+// Host adapters relay this stdout/stderr/exit_code to their plugin protocol.
 async function dispatchEvent(eventName, stdinJson) {
   const empty = stdinJson || '{}';
   if (shouldSkipForNestedHooks(eventName, empty)) return { stdout: '', stderr: ' ', exit_code: 0 };
