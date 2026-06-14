@@ -307,11 +307,8 @@ moduleLifecycle.declare({
   function getActive() { return activeVariant; }
   function getActiveName() { return activeVariantName; }
 
-  /**
-   * Check the pattern gate for the current step. Returns true if the step
-   * should emit, false if silenced. When no pattern is active, always returns
-   * true (falls through to probabilistic gating).
-   */
+  // Check current pattern step: true emits, false silences.
+  // With no active pattern, fall through to probabilistic gating.
   function patternGate() {
     if (!activePattern) return true;
     const idx = patternStepIndex % activePattern.length;
