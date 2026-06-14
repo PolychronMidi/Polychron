@@ -1,5 +1,5 @@
 const V = validator.create('ModalInterchangeComposer');
-/** ModalInterchangeComposer borrows parallel-mode chords for harmonic color; ModeComposer handles melodies.
+/** ModalInterchange borrows parallel-mode chords; ModeComposer handles melodies.
  * @extends ChordComposer */
 ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer {
   constructor(key = 'C', primaryMode = 'major', borrowProbability = 0.25, opts = {}) {

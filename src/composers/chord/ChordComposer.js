@@ -24,7 +24,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
   }
 
   /**
-   * Returns voicing intent: weights chord tones (PCs in current chord) higher than non-chord tones.
+   * Returns voicing intent weighting chord tones above non-chord tones.
    * @param {number[]} candidateNotes - Available MIDI notes
    * @returns {{ candidateWeights: { [note: number]: number } } | null}
    */

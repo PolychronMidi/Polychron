@@ -29,7 +29,7 @@
  * @property {string} [tonic] - Tonic key
  */
 
-// Voice-leading optimizer scores smooth motion, range, crossings, parallels, and leap recovery.
+// Voice-leading optimizer scores motion, range, crossings, parallels, and leap recovery.
 // Weighted soft constraints produce a total penalty score.
 VoiceLeadingScore = class VoiceLeadingScore {
   constructor(config = {}) {
@@ -130,7 +130,7 @@ VoiceLeadingScore = class VoiceLeadingScore {
   }
 
   /**
-   * Scores leap recovery: leaps should be followed by stepwise motion in opposite direction.
+   * Leap recovery: leaps should resolve by opposite stepwise motion.
    * @private
    * @param {number} currentInterval - Current semitone distance
    * @param {number} prevInterval - Previous semitone distance

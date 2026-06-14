@@ -1,6 +1,6 @@
 /**
  * Resolve a scale to ordered pitch classes (0-11).
- * Accepts note names or numeric pitch classes and falls back to harmonicContext when omitted.
+ * Accepts note names or pitch classes; falls back to harmonicContext.
  * @param {Array<string|number>|null} scale
  * @returns {number[]}
  */

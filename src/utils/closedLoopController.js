@@ -26,7 +26,7 @@ closedLoopController = (() => {
    *   getError: () => number,
    *   getAmplitude: () => number,
    *   getPhase: () => number,
-   *   getMetrics: () => { bias: number, error: number, observed: number, target: number, amplitude: number, phase: number },
+   *   getMetrics: () => { bias, error, observed, target, amplitude, phase },
    *   reset: () => void,
    *   refresh: () => void,
    *   name: string

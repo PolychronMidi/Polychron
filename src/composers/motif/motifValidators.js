@@ -44,7 +44,7 @@ motifValidators = {
 
   /**
    * Ensure that scaleNotes' pitch classes are compatible with a developer's note feed.
-   * Throws a descriptive error on mismatch (keeps original MotifComposer error message for compatibility).
+   * Throws descriptive mismatch errors compatible with MotifComposer.
    * @param {Array} scaleNotes
    * @param {Object} developer
    * @param {{ mode?: 'auto'|'strictGlobal'|'localWindow', windowScale?: Array<string|number>|null, context?: Object }} [opts]

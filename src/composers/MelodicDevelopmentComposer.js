@@ -238,7 +238,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
   }
 
   /**
-   * Returns voicing intent that weights base notes and development transformations differently.
+   * Returns voicing intent weighting base notes vs development transforms.
    * @param {number[]} candidateNotes - Available MIDI notes
    * @returns {{ candidateWeights: { [note: number]: number } } | null}
    */

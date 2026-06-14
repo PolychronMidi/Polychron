@@ -1,12 +1,12 @@
 // VoiceManager.js - Centralized voice count selection and multi-voice coordination
 
 /**
- * Coordinates voice selection using VOICES config, composer note pools, and voice leading.
+ * Coordinates voice selection from VOICES config, composer pools, and voice leading.
  * Manages per-voice history and calls voiceRegistry for joint optimization.
  *
  * **Voicing Intent Pattern:**
  * VoiceManager accepts optional voicing intent from composers via the `opts` parameter.
- * Composers implement `getVoicingIntent(candidateNotes)` to express their domain-specific
+ * Composers implement getVoicingIntent(candidateNotes) for domain-specific intent.
  * preferences (e.g., chord tones, tension curves, melodic development phases).
  *
  * Expected return shape:
@@ -14,13 +14,13 @@
  * {
  *   candidateWeights: { [note: number]: number },  // weight per candidate (0-1+ scale)
  *   registerBias?: 'higher' | 'lower',             // optional register preference
- *   voiceCountMultiplier?: number                  // optional voice count scaling (default 1.0)
+ *   voiceCountMultiplier?: number                  // voice count scale, default 1.0
  * }
  * ```
  *
- * The voicing intent is passed through to VoiceLeadingScore and voiceRegistry, which combine
- * it with voice leading cost functions (smooth motion, leap recovery, etc.) to make the final
- * selection. This separation allows composers to define *what* notes fit their harmonic/melodic
+ * VoiceLeadingScore and voiceRegistry combine this intent with cost functions.
+ * This keeps composer intent separate from final selection mechanics.
+ * Composers define what fits; voice leading decides which voices carry it.
  * logic while the voice module handles *how* to select voices smoothly.
  *
  * @class

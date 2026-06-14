@@ -271,7 +271,7 @@ MeasureComposer = class MeasureComposer {
 
   /**
    * Returns voicing intent for candidate notes based on this composer's pitch-class set.
-   * Subclasses can override to add domain-specific logic (tension curves, development phases, etc.).
+   * Subclasses may add domain-specific logic such as tension curves or phases.
    * @param {number[]} candidateNotes - Available MIDI notes to weight
    * @returns {{ candidateWeights: { [note: number]: number }, registerBias?: string, voiceCountMultiplier?: number } | null}
    *   - candidateWeights: map of note - weight (higher = more preferred)

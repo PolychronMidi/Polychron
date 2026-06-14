@@ -1,5 +1,5 @@
 const V = validator.create('ModeComposer');
-/** ModeComposer selects one mode for melodic/scale notes; modal interchange handles borrowed chords.
+/** ModeComposer selects one mode for melodic notes; modal interchange handles borrowed chords.
  * @extends MeasureComposer */
 ModeComposer = class ModeComposer extends MeasureComposer {
   /**

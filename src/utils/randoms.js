@@ -103,7 +103,7 @@ ri=randomInt=(min1=1,max1,min2,max2)=>{
 };
 
 /**
- * Random Limited Change: Random value from inclusive range, with limited change per iteration.
+ * Random limited change: inclusive range with bounded per-iteration movement.
  * @param {number} currentValue - Current value.
  * @param {number} minChange - Minimum change amount.
  * @param {number} maxChange - Maximum change amount.
@@ -187,7 +187,7 @@ rv=randomVariation=(value,boostRange=[.05,.10],frequency=.05,deboostRange=boostR
 };
 
 /**
- * Normalize Weights: Any sized list of weights with any values are normalized to fit inclusive range.
+ * Normalize any weight list to fit the inclusive range.
  * @param {number[]} weights - Array of weight values.
  * @param {number} min - Minimum output value.
  * @param {number} max - Maximum output value.

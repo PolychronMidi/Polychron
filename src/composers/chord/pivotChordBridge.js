@@ -36,7 +36,7 @@ moduleLifecycle.declare({
 
   /**
    * Normalize a Tonal chord string to root pitch class + basic quality for comparison.
-   * Strips extensions (7ths, 9ths) so 'Cmaj7' and 'C' both become { root: 'C', quality: 'Major' }.
+   * Strips extensions so Cmaj7 and C share {root:'C', quality:'Major'}.
    * @param {string} chordStr
    * @returns {{ root: string, quality: string }|null}
    */
@@ -47,7 +47,7 @@ moduleLifecycle.declare({
   };
 
   /**
-   * Find pivot chords shared between two keys (chords whose root and triad quality match).
+   * Find pivot chords shared by two keys with matching root and triad quality.
    * Results sorted by musical usefulness as a modulation pivot in the TARGET key.
    * @param {string} fromKey
    * @param {string} fromMode
@@ -97,7 +97,7 @@ moduleLifecycle.declare({
 
   /**
    * Generate a bridge progression that modulates from one key/mode to another.
-   * Uses pivot chords when available (closely related keys), dominant approach otherwise.
+   * Uses pivot chords for close keys, dominant approach otherwise.
    *
    * With pivot:   [outgoing I] - [pivot chord] - [target V] - [target I]
    * Without pivot: [outgoing I] - [outgoing IV] - [target V] - [target I]

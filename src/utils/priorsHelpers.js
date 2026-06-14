@@ -3,8 +3,8 @@
 
 priorsHelpers = (() => {
   /**
-   * Resolve the current phrase phase from opts, phraseContext, or sharedPhraseArcManager.
-   * Full version - checks opts.phase - opts.phraseContext.phase - FactoryManager fallback.
+   * Resolve current phrase phase from opts, phraseContext, or sharedPhraseArcManager.
+   * Full version: opts.phase, phraseContext.phase, then FactoryManager fallback.
    * @param {Object} [opts]
    * @returns {string}
    */

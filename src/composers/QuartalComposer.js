@@ -63,7 +63,7 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
   /**
    * Build quartal/quintal voicings from the scale.
    * Starts from a scale degree and stacks P4 (5 semitones) or P5 (7 semitones),
-   * snapping each resulting pitch to the nearest scale tone for diatonic quartal voicings.
+   * snapping each pitch to the nearest scale tone for diatonic quartal voicings.
    * @param {number[]|null} [octaveRange]
    * @returns {{note: number}[]}
    */

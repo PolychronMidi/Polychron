@@ -133,7 +133,7 @@ Motif = class Motif {
   }
 
   /**
-   * Apply a small development chain: transpose, optional inversion, optional reverse, optional scaling.
+   * Apply development chain: transpose, optional inversion/reverse/scaling.
    * @param {{transposeBy?:number,invertPivot?:number|false,reverse?:boolean,scale?:number}} [options]
    * @returns {this}
    */
