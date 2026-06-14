@@ -24,7 +24,7 @@ test('oversized payload exceeds a small-window swap model (gpt-5.5-xhigh)', () =
 
 test('same oversized payload still FITS a big-window model (claude-opus-4-8)', () => {
   const wc = swapWindowCheck(BIG, 'claude-opus-4-8', ENV);
-  assert.equal(wc.budget, 1000000);
+  assert.equal(wc.budget, 872000);
   assert.equal(wc.exceeds, false, 'must not gate when the target has room');
 });
 
