@@ -128,7 +128,7 @@ test('pickLargerRoute skips the current model and undersized routes', () => {
   assert.equal(pick.id, 'big');
 });
 
-test('preflight smoke over-window returns local 400 without lifesaver noise', () => {
+test('preflight smoke ignores statusline and returns local 400 without lifesaver noise', () => {
   const oldBytesPerTok = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
   const oldMaxBytes = process.env.HME_PROXY_INTERACTIVE_MAX_BYTES;
   const originalAppend = fs.appendFileSync;
