@@ -93,11 +93,8 @@ class MotifManagerClass {
     motifSpreader.spreadDivs({ layer, divsPerBeat: dpb, beats, composer, parentBucket: effectiveParentBucket });
   }
 
-  /**
-   * Plan subdiv-level motifs for the current div.
-   * Derives from divMotifs bucket at the absolute div index.
-   * Call from setUnitTiming('div').
-   */
+  // Plan subdiv motifs from divMotifs at the absolute div index.
+  // Called from setUnitTiming('div').
   static planSubdivs(layer, absDivIdx, sPerDiv) {
     if (!Number.isFinite(Number(sPerDiv)) || Number(sPerDiv) <= 0) throw new Error('motifManager: sPerDiv must be finite positive');
     MotifManagerClass.motifManagerResetChildVM(layer, 'subdiv');
