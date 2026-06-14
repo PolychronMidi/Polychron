@@ -183,6 +183,7 @@ function createClaudeHandler(deps) {
         payload, isAnthropic, isInteractivePath: _isInteractivePath,
         isOmniRouteSwap: _isOmniRouteSwap, swapModel: _swapModel, swapChain: _swapChain,
         outBody, sessionForTelemetry: _sessionForTelemetry, clientRes, clientReq,
+        projectRoot: PROJECT_ROOT,
       });
       if (_obGate.ended) return;
       outBody = _obGate.outBody;
