@@ -40,7 +40,7 @@ function claimForSplit(scores, fields = {}) {
   return {
     schema_version: '1.0.0',
     claim_id: fields.claim_id || 'hci.split.current',
-    subject_uri: fields.subject_uri || 'repo://tools/HME/scripts/verify-coherence.py',
+    subject_uri: fields.subject_uri || 'repo://tools/HME/proxy/hci_split.js',
     producer: fields.producer || 'hci_split.js',
     producer_version: fields.producer_version || 'git:unknown',
     status: scores.composite >= 0.8 ? 'pass' : 'warn',
