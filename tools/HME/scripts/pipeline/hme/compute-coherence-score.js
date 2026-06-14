@@ -225,6 +225,7 @@ function main() {
       evidence_uri: 'repo://src/output/metrics/hme-coherence.json',
       evidence_hash: claimHash,
       generated_at: report.meta.timestamp,
+      scope: ['repo://src/output/metrics/hme-coherence.json', 'repo://tools/HME/scripts/pipeline/hme/compute-coherence-score.js'],
       repair: 'inspect HCI split component rather than treating composite as a single truth',
       tests: ['self_coherence_substrate.test.js'],
     }));
