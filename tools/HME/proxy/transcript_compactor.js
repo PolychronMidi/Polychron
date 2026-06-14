@@ -94,7 +94,7 @@ function _skeletonContentBlock(block) {
       content: _elideValue(block.content || '', _serializedBytes(block.content || '')),
     };
   }
-  if (block.type === 'thinking') return { type: 'thinking', thinking: _marker(_serializedBytes(block)) };
+  if (block.type === 'thinking') return { type: 'thinking', thinking: _marker(_serializedBytes(block)), signature: _marker(_serializedBytes(block.signature || '')) };
   if (block.type === 'text') return { type: 'text', text: _marker(_serializedBytes(block.text || block)) };
   return { type: block.type || 'text', text: _marker(_serializedBytes(block)) };
 }
