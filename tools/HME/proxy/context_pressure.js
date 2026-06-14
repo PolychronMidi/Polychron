@@ -41,14 +41,15 @@ function statuslineUsage(env = process.env, projectRoot = PROJECT_ROOT) {
   }
 }
 
-// Canonical model input budget = the full context window, 0 when unknown
-// (callers MUST treat 0 as "do not gate" / fail open). This is the one resolver;
+// Canonical model INPUT budget, 0 when unknown (callers MUST treat 0 as
+// "do not gate" / fail open). Prefer the registry's sanitized max_input_tokens:
+// full context_length includes output/reserved tokens and can ship payloads that
 function inputBudgetFor(modelId) {
   const { modelOutputInfo } = require('./hme_proxy_request_mutation');
   const info = modelOutputInfo(modelId);
-  if (info.context > 0) return info.context;
-  if (info.maxInput > 0 && info.maxOutput > 0) return info.maxInput + info.maxOutput;
   if (info.maxInput > 0) return info.maxInput;
+  if (info.context > 0 && info.maxOutput > 0) return Math.max(1, info.context - info.maxOutput);
+  if (info.context > 0) return info.context;
   return 0;
 }
 
