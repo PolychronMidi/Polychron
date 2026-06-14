@@ -6,7 +6,7 @@ const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
 const { loadEnv } = require('./shared/load_env');
 
-loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
+loadEnv(path.join(PROJECT_ROOT, '.env'));
 
 const _cfg = require('./infra/hme_config').load();
 const DEFAULT_UPSTREAM_HOST = _cfg.proxy.upstreamHost;
