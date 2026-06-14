@@ -1,39 +1,5 @@
-'use strict';
-/**
- * Unified hook-time policy registry. Adapted from FailproofAI's framework
- * (their `BuiltinPolicyDefinition` shape + scoped config + first-deny-
- * wins evaluator), narrowed to Polychron's enforcement layers 7-11
- * (PreToolUse / PostToolUse / Stop / proxy middleware).
- *
- * Design intent: every hook-time rule shares the same registration shape
- * (`{name, description, category, defaultEnabled, decisionClass,
- * match: {events, tools}, fn(ctx), params?}`) and the same enable/disable contract. Discovery is
- * unified (`i/policies list`); configuration is unified (scoped JSON
- * files); per-layer dispatchers (stop_chain, pretooluse_bash, middleware)
- * consult this registry to decide whether to run a given policy.
- *
- * Out of scope: ESLint rules, HCI verifiers, boot validators, runtime
- * invariants. Those have load-bearing timing properties incompatible with
- * hook-time evaluation; see the meta-registry roadmap (step 2 of the
- * unification plan) for the cross-layer discovery story.
- *
- * Decision shape (matches stop_chain conventions):
- *   ctx.deny(reason)        -> block, first-deny-wins
- *   ctx.instruct(message)   -> accumulate as additionalContext (where supported)
- *   ctx.allow(message?)     -> continue silently (or with optional message)
- *
- * Match semantics:
- *   - `events: ['PreToolUse']`        -> fires only on PreToolUse hook
- *   - `events: ['PreToolUse','PostToolUse']` -> fires on both
- *   - `tools: ['Bash']`               -> restricts to Bash tool calls
- *   - `tools: ['Edit','Write','MultiEdit']` -> fires on any of those
- *   - `tools` omitted                 -> all tools
- *
- * Loading:
- *   - Built-in policies live in tools/HME/policies/builtin/*.js
- *   - Custom policies are loaded from `customPoliciesPath` in config
- *   - Underscore-prefixed files (e.g. `_helpers.js`) are skipped
- */
+// Unified hook-time policy registry with FailproofAI-style definitions and first-deny wins.
+// Builtins/custom policies share discovery, config enablement, matching, and chain execution.
 
 const fs = require('fs');
 const path = require('path');
@@ -194,11 +160,8 @@ function genomeInput(policy) {
   };
 }
 
-/**
- * Return policies matching an event + tool, with config-aware enable/disable.
- * `event` is one of 'PreToolUse', 'PostToolUse', 'Stop', etc. `tool` is
- * the tool name when applicable (or empty for hook-level events like Stop).
- */
+// Return policies matching event+tool, with config-aware enable/disable.
+// Empty tool means hook-level events such as Stop.
 function matchingFor(event, tool, configResolver) {
   validateConfigNames(configResolver);
   const out = [];
@@ -216,11 +179,8 @@ function matchingFor(event, tool, configResolver) {
   return out;
 }
 
-/**
- * Run a chain of policies for a single event. Returns aggregated result
- * with first-deny semantics (subsequent policies still execute for side
- * effects, matching the stop_chain/index.js model).
- */
+// Run a policy chain for one event with first-deny semantics.
+// Later policies still execute for side effects, matching stop_chain.
 async function runChain(policies, ctx) {
   let firstDeny = null;
   const instructs = [];

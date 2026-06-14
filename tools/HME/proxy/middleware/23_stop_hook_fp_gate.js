@@ -1,35 +1,5 @@
-'use strict';
-/**
- * Stop-hook false-positive gate.
- *
- * When the prior user message contains a stop-hook payload marker
- * (Stop hook feedback / AUTO-COMPLETENESS / EXHAUST / advisor doctrine
- * / etc.), append an instruction at the END of that message forcing the
- * agent to emit a structured decision marker as the first line of its
- * reply:
- *
- *   `[FP-CHECK: yes]` -- the flag is a false positive against the
- *                        agent's prior turn. Reply is JUST the marker.
- *   `[FP-CHECK: no]`  -- the flag is legitimate. Marker on its own
- *                        line, then substantive work addressing it.
- *
- * The companion SSE rewriter (`stopHookFpGateStripRewrite` in
- * sse_rewriters.js) detects the marker in the streamed response and
- * routes:
- *   - `yes` -> truncate the response to a single `.` and drop all
- *             subsequent content events. Saves next-turn context burn
- *             from carrying ceremony forward in transcript.
- *   - `no`  -> strip the marker line, pass through the rest verbatim.
- *
- * Why a structured marker rather than text-pattern detection: prose
- * detection has misclassification risk in both directions. The
- * structured marker forces the agent to make the call explicitly,
- * eliminating the bypass-explanation dance entirely.
- *
- * Cache-safe: like lifesaver_inject, this appends to the LAST USER
- * MESSAGE (not payload.system), so the system+tools cache prefix
- * stays stable across turns.
- */
+// Stop-hook false-positive gate asks the model for an explicit [FP-CHECK: yes|no] marker.
+// The SSE companion strips or truncates by marker so hook UI ceremony does not persist.
 
 const fs = require('fs');
 const path = require('path');

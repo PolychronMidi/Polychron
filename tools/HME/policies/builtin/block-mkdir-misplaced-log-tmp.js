@@ -5,12 +5,8 @@ const {
   mkdirHasMisplacedRootOnlyDir,
   rootOnlyDirMessage,
 } = require('../../proxy/path_policy');
-/**
- * Block `mkdir <path-with-/log-or-/tmp-/>` outside the project root.
- * Bash analog of the file-write block-misplaced-log-tmp policy, but for
- * Bash mkdir commands instead of Write/Edit. JS port of the gate in
- * blackbox_guards.sh.
- */
+// Block mkdir of log/tmp roots outside PROJECT_ROOT.
+// Bash analog of file-write misplaced-log-tmp policy.
 
 module.exports = {
   name: 'block-mkdir-misplaced-log-tmp',

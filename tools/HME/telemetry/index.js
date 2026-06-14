@@ -63,15 +63,8 @@ function _append(channel, line) {
   }
 }
 
-/**
- * Single emission entry. category gates the channel; event + fields form
- * the payload. ts auto-stamped if not provided.
- *
- *   record('info',  'edit_tracked',        { file: '/x.js' })
- *   record('error', 'proxy_unreachable',   { url, reason })
- *   record('metric','hook_latency',        { hook: 'stop', duration_ms: 117 })
- *   record('audit', 'nexus_cleared',       { type: 'EDIT', removed: 5, caller })
- */
+// Single telemetry emission entry: category gates channel; event+fields form payload.
+// ts is auto-stamped; debug events print only when TELEMETRY_DEBUG=1.
 function record(category, event, fields) {
   if (DISABLED.has(category)) return;
   if (category === 'debug') {
