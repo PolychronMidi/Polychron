@@ -177,7 +177,7 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('Codex structured git marks empty success explicitly', () => {
+test('Codex structured git marks empty no-output explicitly', () => {
   const root = _withSandbox('codex-structured-git-');
   const env = {
     ...process.env,
