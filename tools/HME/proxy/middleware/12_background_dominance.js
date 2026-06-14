@@ -1,39 +1,6 @@
 'use strict';
-/**
- * Background-task dominance.
- *
- * When Claude Code's Bash tool auto-backgrounds a long-running command
- * (default 120s timeout), the tool_result is a synthetic stub of the form
- *   "Command running in background with ID: <taskId>. Output is being
- *    written to: <host-tmpdir>/claude-<uid>/-*\/<session>/tasks/<taskId>.output"
- * and the real output lands in that file later. Downstream consumers
- * (both the *model* on subsequent turns AND local posttooluse hooks)
- * see only the stub -- which is useless: no markers, no verdicts, no
- * actual command output. Three concrete breakages we've hit:
- *   1. NEXUS: `i/review mode=forget` stubs never carry the
- *      `HME_REVIEW_VERDICT` marker -> EDIT entries accumulate forever.
- *   2. `i/status` and friends return stubs the model can't reason about.
- *   3. Any structured-output command loses its structure to the stub.
- *
- * This middleware dominates the result path on the *model's* side: when
- * it sees a Bash stub, it waits (with timeout) for the task-output file
- * to complete, then REPLACES the stub content with the real output.
- * The model's next turn sees the actual command output, not the stub.
- *
- * Limitations:
- *   - Local posttooluse hooks still see the stub (they fire before the
- *     proxy rewrites). That's handled by a short opportunistic wait in
- *     posttooluse_hme_review.sh directly. Two layers, complementary.
- *   - Dedup in the pipeline (`_processed`) means we get exactly one
- *     shot per task. If the task hasn't finished within POLL_TIMEOUT_MS
- *     we give up and annotate the stub. In practice, most HME commands
- *     finish within 60s on warm GPUs.
- *
- * Scope: only acts on commands matching DOMINATE_CMD_RE -- the `i/*`
- * wrappers and project scripts whose output is structured and consumed
- * downstream. Generic long builds / test runs fall through so the proxy
- * doesn't block the API response waiting on a 10-minute compile.
- */
+// Replace selected background Bash stubs with completed task output for model-visible turns.
+// Scoped to structured HME/project commands; generic long builds keep their stub.
 
 const fs = require('fs');
 const path = require('path');

@@ -1,30 +1,7 @@
 'use strict';
 const { parseEnvFile: _parseEnvFile } = require('../shared/load_env.js');
-/**
- * Drop tool definitions you never use from the request before it reaches
- * Anthropic. The `tools` array is ~60KB on every request -- bigger than
- * the system prompt -- and most projects don't need all 26 default tools
- * Claude Code ships (Google Drive MCP, CronCreate/List/Delete, Monitor,
- * RemoteTrigger, EnterWorktree/ExitWorktree, WebFetch, WebSearch, etc.).
- *
- * Removing a tool means the agent literally cannot call it. This is a
- * STRUCTURAL cut, not behavioral conditioning -- verify your workflow
- * doesn't need a tool before adding it to the filter list.
- *
- * Load order (NN_ prefix): AFTER dump_system (so dumps capture the raw
- * tool list for inspection) and BEFORE HME's injection middleware.
- *
- * Configuration via .env:
- *   HME_FILTER_TOOLS_DROP=tool1,tool2,...   comma-separated tool names
- *                                            to remove from payload.tools
- *
- * Empty / unset -> no-op (zero cost).
- *
- * Tool names match exactly (case-sensitive) against the `name` field in
- * each tool definition. To see the current tool surface:
- *   HME_DUMP_SYSTEM_PROMPT=1 in .env, restart proxy, fire any request,
- *   read tmp/claude-full-payload.json and look at the `tools[].name` list.
- */
+// Drops configured tool definitions before Anthropic so unavailable tools cannot be called.
+// Env: HME_FILTER_TOOLS_DROP=tool1,tool2,...; unset is a no-op.
 
 const fs = require('fs');
 const path = require('path');

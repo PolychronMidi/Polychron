@@ -1,34 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
-/**
- * Persistent-Map helper for middleware modules. Wraps an in-memory Map
- * with append-only JSONL persistence + periodic compaction. Same pattern
- * as the `_processed` dedup in middleware/index.js, lifted here so the
- * five cache-shaped middleware modules (context_budget._pending,
- * dominance_prefetch._cache, grep_glob_neighborhood._explored,
- * read_context._callerCache) can opt into warm-start performance after
- * proxy restart.
- *
- * Why warm-start matters: cold caches mean the first ~50-200 calls per
- * module after a proxy bounce pay full latency. Persisted caches avoid
- * that. The cost is one fs.appendFileSync per `set` (best-effort,
- * suppressed on failure).
- *
- * Distinction from `_processed` dedup: `_processed` is correctness-
- * critical (its absence re-fired onToolResult on historical events,
- * silently corrupting nexus EDIT state). The 5 caches here are
- * performance-only -- losing them costs latency, not correctness.
- *
- * Usage:
- *   const PersistentMap = require('./_persistent_map');
- *   const cache = new PersistentMap('tmp/hme-mw-cache-foo.jsonl', { cap: 5000 });
- *   cache.set('key', someObject);
- *   const v = cache.get('key');
- *
- * Schema: each line is JSON `{k: <key>, v: <value>, ts: <epoch-ms>}`.
- * Latest-wins on duplicate keys (LRU touch). Compact threshold default
- * 4MB; rewrites the file from current Map state.
- */
+// Persistent Map with append-only JSONL, LRU touch, and periodic compaction for warm caches.
+// Used for performance-only middleware caches; correctness-critical dedup remains elsewhere.
 
 const fs = require('fs');
 const path = require('path');
