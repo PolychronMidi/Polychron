@@ -182,7 +182,7 @@ test('END-TO-END: calibration flips the swap size-gate from pass to catch a real
   const env = { ...CAL_ENV, HME_OMNI_SWAP_FIT_FRACTION: '0.95' };
   try {
     const payload = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [
-      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(820000) }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'x'.repeat(520000) }] },
     ] };
     // With priors only (no calibration data yet): the gate's verdict.
     const before = swapWindowCheck(payload, 'gpt-5.5-xhigh', env, dir);
