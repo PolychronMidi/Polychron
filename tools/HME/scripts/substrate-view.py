@@ -15,6 +15,7 @@ Modes:
   mode=patterns     Arc II matched patterns
   mode=diff         delta vs previous round (requires hme-arc-timeseries.jsonl)
   mode=invariants   browse invariants.json registry (filter=<substring>)
+  mode=claims       runtime coherence claims current/stale/evidence/repair
 """
 from __future__ import annotations
 import json
