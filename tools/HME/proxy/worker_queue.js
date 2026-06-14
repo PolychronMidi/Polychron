@@ -21,7 +21,7 @@ function _ensure(dir) {
 }
 
 // Drop a job file atomically and return its jobId for waitForResult.
-// Worker watcher handles enrich/enrich_prompt/audit; unknown endpoints return error resu
+// Worker watcher handles known endpoints; unknown endpoints return error results.
 function dropJob(endpoint, body, queueDir = QUEUE_DIR) {
   const endpointDir = path.join(queueDir, endpoint);
   _ensure(endpointDir);
@@ -36,14 +36,8 @@ function dropJob(endpoint, body, queueDir = QUEUE_DIR) {
   return jobId;
 }
 
-/**
- * Poll the results directory for a job's response. Returns the parsed
- * JSON on success, null on timeout. Deletes the result file when read.
- *
- * Polling interval defaults to 50ms -- fast enough for sub-second jobs,
- * cheap enough to not pin a CPU. For long-running jobs callers can
- * raise pollMs.
- */
+// Poll for a job result, delete it when read, and return parsed JSON or null on timeout.
+// Default 50ms poll cadence is cheap for sub-second jobs; callers can raise pollMs.
 async function waitForResult(jobId, timeoutMs = 10_000, pollMs = 50, resultsDir = RESULTS_DIR) {
   const resultFile = path.join(resultsDir, `${jobId}.json`);
   const start = Date.now();
@@ -65,9 +59,7 @@ async function waitForResult(jobId, timeoutMs = 10_000, pollMs = 50, resultsDir 
   return null;
 }
 
-/**
- * Drop + wait composition. Most callers use this directly.
- */
+// Drop + wait composition for callers that do not need the raw jobId.
 async function call(endpoint, body, opts = {}) {
   const timeoutMs = opts.timeoutMs || 10_000;
   const pollMs    = opts.pollMs    || 50;
