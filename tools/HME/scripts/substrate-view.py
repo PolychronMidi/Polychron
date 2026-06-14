@@ -230,6 +230,35 @@ def _load_invariant_doc(path: str, seen: set[str] | None = None) -> dict:
     return data
 
 
+def claims_view():
+    report = _load("tools/HME/runtime/coherence-gate-report.json") or {}
+    claims_dir = os.path.join(PROJECT_ROOT, "tools", "HME", "runtime", "claims")
+    lines = [
+        f"Claims: ok={report.get('ok', '?')} count={report.get('claim_count', 0)} invalidators={report.get('invalidator_count', 0)} failures={len(report.get('failures') or [])}",
+    ]
+    states = {s.get("claim_id"): s for s in (report.get("states") or [])}
+    if os.path.isdir(claims_dir):
+        for name in sorted(os.listdir(claims_dir)):
+            if not name.endswith(".json"):
+                continue
+            try:
+                c = _load(os.path.join("tools/HME/runtime/claims", name)) or {}
+            except Exception:
+                c = {}
+            cid = c.get("claim_id", name)
+            st = states.get(cid, {})
+            state = st.get("state", "unknown")
+            cur = st.get("currentness", {}).get("reason", "?") if isinstance(st.get("currentness"), dict) else "?"
+            lines.append(f"  {cid}: {state}/{c.get('status', '?')} reason={cur}")
+            lines.append(f"    generated_at={c.get('generated_at', '?')} evidence_uri={c.get('evidence_uri', '?')}")
+            lines.append(f"    evidence_hash={c.get('evidence_hash', '?')} repair={c.get('repair', '?')[:100]}")
+    if report.get("failures"):
+        lines.append("Failures:")
+        for f in (report.get("failures") or [])[:10]:
+            lines.append(f"  {f.get('claim_id') or f.get('file') or '?'}: {f.get('reason')}")
+    return "\n".join(lines)
+
+
 def invariants_view(filt: str = ""):
     inv_path = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "invariants.json")
     try:
