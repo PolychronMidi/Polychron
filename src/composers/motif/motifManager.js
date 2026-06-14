@@ -74,11 +74,8 @@ class MotifManagerClass {
     }
   }
 
-  /**
-   * Plan div-level motifs for the current measure.
-   * Derives from beat motifs when available, delegating to motifSpreader.spreadDivs.
-   * Call once per beat-cycle from setUnitTiming('beat').
-   */
+  // Plan div motifs once per beat-cycle, deriving from beat motifs when available.
+  // Delegates actual spreading to motifSpreader.spreadDivs.
   static planDivs(layer, dpb, beats, composer) {
     const absBeat = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
     const parentBucket = (layer.beatMotifs && Array.isArray(layer.beatMotifs[absBeat]))
