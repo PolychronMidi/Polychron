@@ -107,7 +107,7 @@ function applyOutboundContextGate({
       emit({ event: 'outbound_gate_over_window', session: sessionForTelemetry, model: verdict.model, tokens: verdict.tokens, budget: verdict.budget });
       emit({ event: 'outbound_gate_compact_requested', session: sessionForTelemetry, model: verdict.model, delivered: Boolean(compactResult && compactResult.submitted), reason: compactResult && compactResult.reason, error: compactResult && compactResult.error });
     }
-    clientRes.writeHead(413, { 'Content-Type': 'application/json' });
+    clientRes.writeHead(400, { 'Content-Type': 'application/json' });
     clientRes.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: reason } }));
     return { ended: true, outBody: nextOutBody, swapModel: nextSwapModel };
   }
