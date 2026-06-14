@@ -126,7 +126,7 @@ test('preflight smoke over-window returns local 400 without lifesaver noise', ()
   }
 });
 
-test('interactive over-window refusal triggers live cc compact once', () => {
+test('interactive over-window refusal returns local 400 and triggers live cc compact once', () => {
   const oldBytesPerTok = process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST;
   const originalAppend = fs.appendFileSync;
   const writes = [];
