@@ -161,6 +161,22 @@ test('work_checks: advisor_silently_skipped verdict denies with advisor reason',
   }));
 
 
+test('work_checks: task-notification truth verdict denies with named reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'TASK_NOTIFICATION_TRUTH_GATE=task_notification_mishandled\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: '<task-notification><task-id>x</task-id><status>completed</status><summary>done exit code 0</summary></task-notification>' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Only see placeholder.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /TASK-NOTIFICATION TRUTH GATE/);
+  }));
+
+
 test('work_checks: correction pivot cannot abandon broad parent task',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
