@@ -72,12 +72,15 @@ function runAllDetectors(transcriptPath) {
 
 function parseVerdicts(stdout) {
   const verdicts = {};
+  const keyMap = detectorKeyMap();
   for (const line of stdout.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const eq = trimmed.indexOf('=');
     if (eq < 1) continue;
-    verdicts[trimmed.slice(0, eq)] = trimmed.slice(eq + 1);
+    const rawKey = trimmed.slice(0, eq);
+    const key = keyMap[String(rawKey).toLowerCase()] || rawKey;
+    verdicts[key] = trimmed.slice(eq + 1);
   }
   return verdicts;
 }
