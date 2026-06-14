@@ -155,7 +155,12 @@ function applyOutboundContextGate({
     clientRes.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: reason } }));
     return { ended: true, outBody: nextOutBody, swapModel: nextSwapModel };
   }
+  if (isPreflightSmoke) {
+    clientRes.writeHead(204, { 'X-HME-Preflight-Smoke': 'ok' });
+    clientRes.end();
+    return { ended: true, outBody: nextOutBody, swapModel: nextSwapModel };
+  }
   return { ended: false, outBody: nextOutBody, swapModel: nextSwapModel };
 }
 
-module.exports = { evaluateOutbound, applyOutboundContextGate, inputBudgetFor, estimateInputTokens, pickLargerRoute };
+module.exports = { evaluateOutbound, applyOutboundContextGate, inputBudgetFor, estimateInputTokens, pickLargerRoute, effectiveInputBudgetForPayload };
