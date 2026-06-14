@@ -65,6 +65,26 @@ function emit(claim) {
   return claim.claim_id;
 }
 
+function emitHciClaim() {
+  const hci = readJson('src/output/metrics/hme-coherence.json', {});
+  const split = hci.hci_split || {};
+  const score = typeof split.composite === 'number' ? split.composite : (typeof hci.score === 'number' ? hci.score : 1);
+  return emit(makeClaim({
+    claim_id: 'hci.coherence-score.current',
+    subject_uri: 'repo://src/output/metrics/hme-coherence.json',
+    producer: 'emit-runtime-claims.js',
+    status: score >= 0.8 ? 'pass' : 'warn',
+    severity: score >= 0.8 ? 'info' : 'warn',
+    confidence: 0.85,
+    evidence: { score: hci.score, hci_split: split, meta: hci.meta || null },
+    scope: ['repo://src/output/metrics/hme-coherence.json', 'repo://tools/HME/scripts/pipeline/hme/compute-coherence-score.js'],
+    invalidator_keys: ['pipeline_run', 'verifier_edit', 'tracked_code_edit', 'tool_response_defect'],
+    repair: 'inspect HCI split component rather than treating composite as a single truth',
+    tests: ['self_coherence_substrate.test.js'],
+    metadata: { birthing_bug: 'single HCI composite hid verifier/behavior/tooling/temporal split-brain' },
+  }));
+}
+
 function emitPipelineClaim() {
   const summary = readJson('src/output/metrics/pipeline-summary.json', {});
   const verdict = splitVerdict(summary || {});
