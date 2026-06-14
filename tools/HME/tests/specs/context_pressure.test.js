@@ -19,10 +19,10 @@ test('inputBudgetFor resolves the model input budget and 0 for unknown (fail ope
 test('contextPressure is the single used-vs-budget reading; null fraction when budget unknown', () => {
   const env = { HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4' };
   const known = contextPressure({ payload: BIG, modelId: 'gpt-5.5-xhigh', env });
-  assert.equal(known.budget, 480000);
+  assert.equal(known.budget, 352000);
   assert.ok(known.usedTokens > 0);
-  assert.ok(known.fraction > 0 && known.fraction === known.usedTokens / 480000);
-  assert.equal(known.headroom, Math.max(0, 480000 - known.usedTokens));
+  assert.ok(known.fraction > 0 && known.fraction === known.usedTokens / 352000);
+  assert.equal(known.headroom, Math.max(0, 352000 - known.usedTokens));
 
   const unknown = contextPressure({ payload: BIG, modelId: 'no-such-model-zzz', env });
   assert.equal(unknown.budget, 0);
