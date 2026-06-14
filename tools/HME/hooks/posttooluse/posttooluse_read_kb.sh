@@ -6,6 +6,7 @@ source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
 # PostToolUse: Read -- silent KB brief injection for src/ and tools/HME/ files.
 
 INPUT=$(cat)
+printf '%s' "$INPUT" | node "$PROJECT_ROOT/tools/HME/scripts/read-chain-transcript-bridge.js" 2>/dev/null || true
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 [ -z "$FILE" ] && exit 0
 
