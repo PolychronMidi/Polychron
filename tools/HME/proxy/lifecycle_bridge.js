@@ -81,15 +81,8 @@ async function runInlineFallback(event, stdinJson) {
   }
 }
 
-/**
- * Lifecycle bridge route. The forwarder script POSTs here with:
- *   - query ?event=<EventName>
- *   - body = the Claude Code hook stdin JSON payload
- * We dispatch to the appropriate bash hook chain and respond with JSON:
- *   {stdout: "...", stderr: "...", exit_code: <int>}
- * The forwarder script relays each field back to Claude Code's plugin
- * machinery, preserving block decisions, banners, and exit codes.
- */
+// Lifecycle route accepts forwarder POSTs (?event=..., body=hook stdin JSON).
+// It dispatches the hook chain and returns stdout/stderr/exit_code for Claude to relay.
 function handleLifecycleRoute(clientReq, clientRes) {
   const json = (status, body) => {
     clientRes.writeHead(status, { 'Content-Type': 'application/json' });
