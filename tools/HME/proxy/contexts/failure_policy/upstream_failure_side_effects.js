@@ -48,7 +48,8 @@ function snapshotFailure({
       }, null, 2));
     } catch (_e) { /* best-effort */ }
     console.error(`payload snapshotted to ${outFile}`);
-    const suppressLifesaver = coolingDown || pathLabel === 'sub-pipeline';
+    const suppressLifesaver = coolingDown || pathLabel === 'sub-pipeline'
+      || (clientReq && clientReq.headers && clientReq.headers['x-hme-preflight-smoke'] === '1');
     if (!suppressLifesaver) {
       const errLog = path.join(projectRoot, 'log', 'hme-errors.log');
       fs.appendFileSync(errLog,
