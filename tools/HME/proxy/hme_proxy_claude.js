@@ -2,7 +2,7 @@
 const http = require('http');
 const https = require('https');
 
-const { sessionKey } = require('./shared');
+const { sessionKey, PROJECT_ROOT } = require('./shared');
 const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./contexts/upstream_dispatch');
