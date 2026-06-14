@@ -40,7 +40,7 @@ function prepareUpstreamHeaders({ clientReq, upstream, outBody, isAnthropic, isO
 
   if (isAnthropic) delete upstreamHeaders['accept-encoding'];
 
-  if (isAnthropic && typeof upstreamHeaders.authorization === 'string'
+  if (!isPreflightSmoke && isAnthropic && typeof upstreamHeaders.authorization === 'string'
       && upstreamHeaders.authorization.startsWith('Bearer ')) {
     if (!upstreamHeaders['anthropic-beta']) upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
   }
