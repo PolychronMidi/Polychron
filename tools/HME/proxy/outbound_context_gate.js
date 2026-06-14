@@ -58,7 +58,7 @@ function evaluateOutbound({ payload, modelId, swapChain = [], env = process.env,
 
 // Caller-facing wrapper: run the gate against a request about to go upstream.
 // Mutates `payload` in place (compaction/reroute) and, on an unrecoverable
-// over-window verdict, writes the 413 refusal to `clientRes`. Returns
+// over-window verdict, writes a local invalid_request refusal to `clientRes`.
 function applyOutboundContextGate({
   payload, isAnthropic, isInteractivePath, isOmniRouteSwap,
   swapModel, swapChain, outBody, sessionForTelemetry, clientRes, clientReq,
