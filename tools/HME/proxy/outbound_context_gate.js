@@ -112,7 +112,11 @@ function applyOutboundContextGate({
     return { ended: false, outBody: nextOutBody, swapModel: nextSwapModel };
   }
   const gateModel = isOmniRouteSwap ? swapModel : (payload.model || '');
-  const verdict = evaluateOutbound({ payload, modelId: gateModel, swapChain });
+  const isPreflightSmoke = clientReq && clientReq.headers && clientReq.headers['x-hme-preflight-smoke'] === '1';
+  const evalDeps = isPreflightSmoke
+    ? { statuslineUsage: () => ({ used: 0, size: 0, modelId: '' }) }
+    : {};
+  const verdict = evaluateOutbound({ payload, modelId: gateModel, swapChain, projectRoot, deps: evalDeps });
   if (verdict.action === 'compacted') {
     nextOutBody = Buffer.from(JSON.stringify(payload), 'utf8');
     emit({ event: 'outbound_gate_compacted', session: sessionForTelemetry, model: gateModel, tokens: verdict.tokens, budget: verdict.budget });
