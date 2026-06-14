@@ -62,9 +62,56 @@ function _elideToolResultContent(block, byteFloor) {
   return true;
 }
 
+function _elideBlockField(block, key, byteFloor) {
+  if (!block || !Object.prototype.hasOwnProperty.call(block, key)) return 0;
+  const size = _serializedBytes(block[key]);
+  if (size <= byteFloor) return 0;
+  block[key] = _elideValue(block[key], size);
+  return size;
+}
+
+function _skeletonContentBlock(block) {
+  if (!block || typeof block !== 'object') return { type: 'text', text: _marker(0) };
+  if (block.type === 'tool_use') {
+    return {
+      type: 'tool_use',
+      ...(block.id ? { id: block.id } : {}),
+      ...(block.name ? { name: block.name } : {}),
+      input: _elideValue(block.input || {}, _serializedBytes(block.input || {})),
+    };
+  }
+  if (block.type === 'tool_result') {
+    return {
+      type: 'tool_result',
+      ...(block.tool_use_id ? { tool_use_id: block.tool_use_id } : {}),
+      content: _elideValue(block.content || '', _serializedBytes(block.content || '')),
+    };
+  }
+  if (block.type === 'thinking') return { type: 'thinking', thinking: _marker(_serializedBytes(block)) };
+  if (block.type === 'text') return { type: 'text', text: _marker(_serializedBytes(block.text || block)) };
+  return { type: block.type || 'text', text: _marker(_serializedBytes(block)) };
+}
+
+function _skeletonizeEntry(entry) {
+  const before = _serializedBytes(entry);
+  const message = entry.message && typeof entry.message === 'object' ? entry.message : null;
+  const content = message && Array.isArray(message.content) ? message.content.map(_skeletonContentBlock) : undefined;
+  const next = {
+    ...(Object.prototype.hasOwnProperty.call(entry, 'uuid') ? { uuid: entry.uuid } : {}),
+    ...(Object.prototype.hasOwnProperty.call(entry, 'parentUuid') ? { parentUuid: entry.parentUuid } : {}),
+    ...(Object.prototype.hasOwnProperty.call(entry, 'type') ? { type: entry.type } : {}),
+    ...(Object.prototype.hasOwnProperty.call(entry, 'timestamp') ? { timestamp: entry.timestamp } : {}),
+  };
+  if (message) next.message = { ...(message.role ? { role: message.role } : {}), ...(content ? { content } : {}) };
+  for (const key of Object.keys(entry)) delete entry[key];
+  Object.assign(entry, next);
+  return Math.max(0, before - _serializedBytes(entry));
+}
+
 // Compact a single parsed transcript entry in place. Returns bytes reclaimed.
-function compactEntry(entry, byteFloor) {
+function compactEntry(entry, byteFloor, opts = {}) {
   if (!entry || typeof entry !== 'object') return 0;
+  if (opts.skeletonize) return _skeletonizeEntry(entry);
   let saved = 0;
 
   // Top-level toolUseResult: the raw duplicate of the tool output. The
@@ -92,6 +139,13 @@ function compactEntry(entry, byteFloor) {
   if (Array.isArray(content)) {
     for (const block of content) {
       if (_elideToolResultContent(block, byteFloor)) saved += 1;
+      if (!opts.elideAssistantPayload || !block) continue;
+      if (block.type === 'tool_use') saved += _elideBlockField(block, 'input', byteFloor);
+      if (block.type === 'thinking') {
+        saved += _elideBlockField(block, 'thinking', byteFloor);
+        saved += _elideBlockField(block, 'signature', byteFloor);
+      }
+      if (block.type === 'text' && opts.elideText) saved += _elideBlockField(block, 'text', byteFloor);
     }
   }
   return saved;
