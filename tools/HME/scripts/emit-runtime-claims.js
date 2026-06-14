@@ -180,4 +180,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { makeClaim, emitPipelineClaim, emitToolQualityClaim, emitAgentForkClaim, emitKbSemanticClaim, emitMetaAuditClaim };
+module.exports = { makeClaim, emitHciClaim, emitPipelineClaim, emitToolQualityClaim, emitAgentForkClaim, emitKbSemanticClaim, emitMetaAuditClaim };
