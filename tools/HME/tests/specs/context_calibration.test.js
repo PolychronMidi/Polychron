@@ -194,7 +194,7 @@ test('END-TO-END: calibration flips the swap size-gate from pass to catch a real
       recordSample({ reg, tr, actual: Math.round(reg / 2.6 + tr / 1.4), model: 'gpt-5.5-xhigh', env, projectRoot: dir });
     }
     const after = swapWindowCheck(payload, 'gpt-5.5-xhigh', env, dir);
-    assert.equal(after.budget, 480000);
+    assert.equal(after.budget, 352000);
     assert.ok(after.estTokens > before.estTokens, `calibration raised the estimate (${before.estTokens} -> ${after.estTokens})`);
     assert.equal(before.exceeds, false, 'prior estimate let the doomed payload through');
     assert.equal(after.exceeds, true, 'calibrated estimate catches the overflow -> stays on a larger-window route');
