@@ -52,4 +52,4 @@ function prepareUpstreamHeaders({ clientReq, upstream, outBody, isAnthropic, isO
   return upstreamHeaders;
 }
 
-module.exports = { prepareUpstreamHeaders };
+module.exports = { prepareUpstreamHeaders, shouldInjectLoopbackOauth };
