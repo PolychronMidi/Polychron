@@ -11,55 +11,5 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 54
-5_ Inventory every HME status, alert, score, warning, KB entry, pipeline verdict, tool response surface, and subagent result surface that needs claim/currentness fields.
-5_ Define canonical coherence claim schema at `tools/HME/schemas/coherence-claim.schema.json` with schema_version, claim_id, subject_uri, producer, status, severity, confidence, evidence_uri, evidence_hash, scope, invalidator_keys, generated_at, expires_at, repair, tests, retirement_condition, and supersedes.
-5_ Add schema validation unit tests that reject malformed claims, missing freshness proof, missing repair path, and invalid status/severity values.
-5_ Add claim writer helper that validates before writing and stores bounded evidence references rather than raw large payloads.
-5_ Add claim reader helper that rejects stale schema versions and returns typed current/stale/invalid states.
-5_ Add invalidator registry with normalized keys for tracked_code_edit, verifier_edit, policy_edit, test_edit, kb_source_edit, pipeline_run, tool_response_defect, and agent_launch.
-5_ Add invalidator scope matcher that marks unknown relevant invalidators stale by default instead of current.
-5_ Add `isCurrent(claim, invalidators)` helper with tests for current, stale, expired, superseded, and unknown-invalidated claims.
-5_ Add CI/HME gate that fails on schema-invalid claims, stale-current claims, missing freshness proof, or missing repair path.
-5_ Implement MVP vertical slice using comment-bloat: audit emits schema-valid claim with evidence hash and tracked-code invalidators.
-5_ Add comment-bloat status surface that displays current vs stale claim state with generated_at and evidence_uri.
-5_ Add test where touching a scoped JS file invalidates the comment-bloat claim until audit reruns.
-5_ Add test where rerunning comment-bloat refreshes the stale claim to current.
-5_ Add negative fixture for prose JS block comment failing at 5+ lines.
-5_ Add negative fixture for long prose comment failing at 90+ chars.
-5_ Add positive fixture proving JSDoc type metadata is exempt from prose-bloat classification.
-5_ Add positive fixture proving generated comment blocks are exempt only with generated markers.
-5_ Add stale-comment fixture where prose comment fails when claim graph shows referenced code drift.
-5_ Migrate one HCI verifier to emit claim/evidence/freshness/repair/retirement fields.
-5_ Split HCI output into HCI-Verifier, HCI-Behavior, HCI-Tooling, HCI-Temporal, and HCI-Composite.
-5_ Add HCI phase field with maintenance, composition, audit, exploration, and repair phases.
-5_ Add phase-aware HCI scoring so edit-heavy maintenance sessions do not look like composition incoherence.
-5_ Split pipeline summary into behavioral_verdict, diagnostic_verdict, self_coherence_verdict, and exit_policy.
-5_ Add pipeline negative fixture where STABLE plus diagnostic failure marks diagnostic verdict FAIL or exits nonzero.
-5_ Add pipeline negative fixture where STABLE plus self-coherence failure marks self_coherence verdict FAIL or exits nonzero.
-5_ Add allowlist structure for nonfatal pipeline steps with owner, reason, expiry, and regression test.
-5_ Define tool-response rating taxonomy with contract violation classes, owner, reproduction, repair_status, waiver_expires_at, and regression link.
-5_ Add tool-response ledger that records contract-violating and below-threshold responses without logging every minor 8/10 event.
-5_ Add expiring waiver ledger for below-threshold tool responses with owner, reason, expiry, evidence, and regression link.
-5_ Add HCI-Tooling aggregator that ingests tool-response ledger defects.
-5_ Define OmniRoute/token telemetry source for parent/session context token counts and agent context token counts.
-5_ Add fail-closed behavior when Agent fork-proof token telemetry is missing or stale.
-5_ Add Agent fork-proof check using context-token ratio and bounded prompt metadata.
-5_ Add test blocking nested Agent calls inside multi-tool wrappers.
-5_ Add test blocking or rerouting subagent launch when fork-context ratio is below configured threshold.
-5_ Add emergency Agent allowlist schema with owner, expiry, reason, and audit trail.
-5_ Add KB semantic checksum fields for source files, symbols, tests, decision date, supersession condition, confidence, and evidence_hash.
-5_ Add KB stale detection when referenced source files or symbols change.
-5_ Add KB stale test where editing a referenced source symbol marks the KB entry possibly stale.
-5_ Add claim graph storage/indexing for file, verifier, policy, test, KB entry, alert, and repair nodes.
-5_ Add claim graph edge writer for producer/evidence/test/repair/invalidator relationships.
-5_ Add `i/why mode=claim <thing>` explorer showing rule origin, birthing bug, preserving tests, retirement condition, and breakage risk.
-5_ Add verifier self-doubt audit requiring each verifier to answer intent fit, bypass blindness, false positive risk, false negative risk, actionability, fail-loud mode, and ceremony-gaming risk.
-5_ Add meta-rule audit proving every warning has usefulness proof, every rule has death condition, every repair has regression, every regression has lineage, and every lineage has purpose/currentness proof.
-5_ Add evidence data-minimization rules for hashes, URIs, timestamps, bounded excerpts, and retention limits.
-5_ Add telemetry data-minimization rules so token telemetry stores counts and route metadata, not raw request payloads.
-5_ Add secret-redaction check before claim evidence capture.
-5_ Add claim graph storage cap and retention policy to prevent the substrate becoming context/storage bloat.
-5_ Add documentation for the self-coherence field substrate MVP, build sequence, and acceptance criteria.
-5_ Run focused schema/currentness/comment-bloat/tool-ledger/agent-fork tests after initial implementation.
-5_ Run HME selftest after claim substrate MVP lands.
-5_ Run `npm run main` after pipeline verdict split and HCI changes are complete.
+
+#18 0_ prove read-chain through actual host/Claude Code transcript path, not only proxy HTTP: task-notification must lead to native Read tool_use/tool_result rows with hme_read_chain__ provenance. BLOCKED (re-verified 2026-06-11): latest-consult-read-queue.json shows consumed:true at 22:47 (proxy read_chain_driver consumed the queue), yet JSON-structured parsing of the 3 most recent host transcripts found 0 tool_use rows named Read with hme_read_chain__ ids and 0 matching tool_result rows -- the 200+ text hits are grep/transcript echoes, not structured tool rows. Proxy emit path is well-formed (read_chain.js buildReadToolUseMessage sets stop_reason:'tool_use' with a proper content_block_start/input_json_delta/content_block_stop SSE), so the gap is host-side: the Claude Code client is not executing/persisting the synthetic Read tool_use from a non-streaming or streamed proxy response on the task-notification turn. Subagent deep-audit (level 4) confirmed host-side limitation, not a proxy defect: queue is provably consumed only after clientRes.end ships the synthetic Read tool_use on the task-notification turn, yet the host runs no tool-execution loop on that turn (no execute, no persist, no follow-up tool_result), so the chain dead-ends at index 0; no proxy change can force the host to run a tool on a turn it does not treat as agentic. The two real (non-causal) SSE-correctness defects the audit surfaced ARE now fixed + regression-locked: read_chain.js toAnthropicSse message_start now carries an OPEN message (stop_reason/stop_sequence null, usage.output_tokens 1; terminal stop_reason only in message_delta), asserted in read_chain_e2e.test.js (5 tests pass). Completion of the host-execution proof requires host/client behavior investigation without FIFO/readq, /hme/spawn, or task-output polling.
