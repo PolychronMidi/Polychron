@@ -1,0 +1,9 @@
+[
+  {
+    "scope": "diagnostic",
+    "owner": "hme-pipeline",
+    "reason": "compute-musical-correlation emits its own FATAL warning string when rolling correlation is below threshold; this remains surfaced as a diagnostic claim while musical-correlation calibration is repaired.",
+    "expires_at": "2026-06-21T00:00:00Z",
+    "regression": "compute-musical-correlation.js"
+  }
+]
