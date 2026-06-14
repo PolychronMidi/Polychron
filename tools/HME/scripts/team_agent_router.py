@@ -371,6 +371,7 @@ def main() -> int:
             f"No available {request_tier} target for {caller or 'unknown'} "
             f"({len(data['agents'])} agent(s) registered, none match). Applying default fork/bounds instead of native unbounded dispatch."
         )
+        _write_launch_audit({"decision": "allow", "caller": caller, "requested_tier": request_tier, "target": "hme_default_fork", "fork_proof_status": "present" if proof else "router_bounded_default", "reason": "default_fork_bounds"})
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "allow",
