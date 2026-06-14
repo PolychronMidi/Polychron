@@ -29,6 +29,36 @@ _CREW_ROLE_RE = re.compile(r"^crew_e([1-5])_\d+$")
 _ALLOWED_STAGE_CREW_SPAWN_TIERS = frozenset({"E3", "E4"})
 _BLOCKED_STAGE_CREW_SPAWN_TIERS = frozenset({"E1", "E2"})
 _VALID_TIERS = frozenset({"E1", "E2", "E3", "E4", "E5"})
+AUDIT_LOG = PROJECT / "tools" / "HME" / "runtime" / "agent-launch-audit.jsonl"
+AUDIT_SUMMARY = PROJECT / "tools" / "HME" / "runtime" / "agent-launch-audit-summary.json"
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _write_launch_audit(row: dict) -> None:
+    try:
+        AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
+        row = {"ts": _now(), **row}
+        with AUDIT_LOG.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+        rows = []
+        try:
+            rows = [json.loads(line) for line in AUDIT_LOG.read_text(encoding="utf-8").splitlines() if line.strip()]
+        except (OSError, json.JSONDecodeError):
+            rows = [row]
+        summary = {
+            "generated_at": _now(),
+            "launches": len(rows),
+            "denied": sum(1 for r in rows if r.get("decision") == "deny"),
+            "rerouted": sum(1 for r in rows if r.get("decision") == "reroute"),
+            "missing_proof": sum(1 for r in rows if r.get("fork_proof_status") == "missing"),
+            "allowed_with_router_fallback": sum(1 for r in rows if r.get("fork_proof_status") == "router_bounded_default"),
+        }
+        AUDIT_SUMMARY.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass  # silent-ok: pending review
 
 
 def _load() -> dict:
