@@ -107,4 +107,4 @@ function collectInvalidators(root = PROJECT_ROOT, opts = {}) {
   ];
 }
 
-module.exports = { DEFAULT_INVALIDATOR_LOG, normalizeInvalidator, appendInvalidator, readInvalidators, gitChangedInvalidators, runtimeInvalidators, collectInvalidators };
+module.exports = { DEFAULT_INVALIDATOR_LOG, classifyPath: _classifyPath, normalizeInvalidator, appendInvalidator, readInvalidators, gitChangedInvalidators, runtimeInvalidators, collectInvalidators };
