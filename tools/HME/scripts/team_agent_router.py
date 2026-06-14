@@ -353,6 +353,7 @@ def main() -> int:
     if target is None:
         data = _load()
         if _is_blocked_stage_crew(caller, data):
+            _write_launch_audit({"decision": "deny", "caller": caller, "requested_tier": request_tier, "target": None, "fork_proof_status": "present" if proof else "missing", "reason": "blocked_stage_crew"})
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
