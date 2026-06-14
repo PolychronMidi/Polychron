@@ -13,11 +13,8 @@ flipBinCrossfadeWindow = [0, 0];
 const lastConsumedByLayer = {};
 // Per-layer flipBin state lives in LM.perLayerState (restored on activate)
 
-/**
- * Emit pitch bend glides and volume crossfades for a binaural shift.
- * bendDuration and maxVol are passed in (pre-computed once in the scheduler,
- * stored in L0) so L1 and L2 emit byte-identical events into their buffers.
- */
+// Emit pitch-bend glides and volume crossfades for one shared binaural shift.
+// bendDuration/maxVol are precomputed so L1/L2 write byte-identical buffers.
 function emitShiftEvents(shiftSyncSec, shiftFlip, bendDuration, maxVol) {
   // Pitch bend glide completes within the crossfade window, not over the full
   const bendSteps = 5;
