@@ -9,9 +9,9 @@ const { spawnSync } = require('node:child_process');
 const repo = path.resolve(__dirname, '..', '..', '..', '..');
 const script = path.join(repo, 'tools/HME/scripts/audit-comment-bloat.py');
 
-function runOn(file) {
+function runOn(file, extraArgs = []) {
   const env = { ...process.env, PROJECT_ROOT: repo, COMMENT_BLOAT_WARN: '3', COMMENT_BLOAT_FAIL: '5', COMMENT_BLOAT_LONG_LINE: '90' };
-  const r = spawnSync('python3', [script, '--json', '--files', file], { cwd: repo, env, encoding: 'utf8' });
+  const r = spawnSync('python3', [script, '--json', ...extraArgs, '--files', file], { cwd: repo, env, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   return JSON.parse(r.stdout);
 }
