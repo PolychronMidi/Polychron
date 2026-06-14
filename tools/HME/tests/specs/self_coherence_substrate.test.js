@@ -7,12 +7,13 @@ const path = require('node:path');
 
 const claims = require('../../proxy/coherence_claims');
 const quality = require('../../proxy/tool_response_quality');
-const { evaluateForkProof } = require('../../proxy/agent_fork_proof');
+const { TELEMETRY_SOURCE, evaluateForkProof, evaluateAgentLaunch } = require('../../proxy/agent_fork_proof');
 const kb = require('../../proxy/kb_semantic_checksum');
 const graph = require('../../proxy/claim_graph');
+const audits = require('../../proxy/coherence_audits');
 const { evaluateClaims } = require('../../proxy/coherence_gate');
-const { splitScores } = require('../../proxy/hci_split');
-const { splitVerdict } = require('../../proxy/pipeline_verdict_split');
+const { splitScores, toolingScoreFromLedger } = require('../../proxy/hci_split');
+const { splitVerdict, activeAllowlist } = require('../../proxy/pipeline_verdict_split');
 
 function sampleClaim(overrides = {}) {
   const evidence_hash = claims.evidenceHash({ fail: 0 });
