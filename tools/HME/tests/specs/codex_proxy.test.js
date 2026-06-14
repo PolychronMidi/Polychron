@@ -472,7 +472,7 @@ test('Codex proxy returns 502 after exhausting OmniRoute retries (no silent dire
   }
 });
 
-test('Codex Responses proxy injects autocommit fail flags into instructions', async () => {
+test('Codex Responses proxy injects historical autocommit fail flags without current-blocker wording', async () => {
   const sandbox = withSandbox();
   const flagDir = path.join(sandbox, 'tools', 'HME', 'runtime');
   fs.mkdirSync(flagDir, { recursive: true });
@@ -527,7 +527,8 @@ test('Codex Responses proxy injects autocommit fail flags into instructions', as
       stream: false,
     });
     assert.strictEqual(response.status, 200);
-    assert.match(upstreamBody, /LIFESAVER - AUTOCOMMIT FAILED/);
+    assert.match(upstreamBody, /LIFESAVER historical autocommit failure/);
+    assert.doesNotMatch(upstreamBody, /LIFESAVER - AUTOCOMMIT FAILED/);
     assert.match(upstreamBody, /synthetic autocommit failure/);
   } catch (err) {
     const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');

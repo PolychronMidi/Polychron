@@ -189,7 +189,7 @@ test('Codex structured git marks empty no-output explicitly', () => {
     path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'git', '--json',
   ], { env, input: JSON.stringify({ args: ['status', '--short'] }), encoding: 'utf8' });
   assert.equal(res.status, 0, res.stderr);
-  assert.match(res.stdout, /\[SUCCESS\]/);
+  assert.match(res.stdout, /\[NO_OUTPUT\]/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
