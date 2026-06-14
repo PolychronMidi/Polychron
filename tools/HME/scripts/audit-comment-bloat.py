@@ -236,7 +236,7 @@ def _scan_file(path: str, ext: str) -> list:
             block_len = len(block_lines)
             if block_start is not None and block_len >= WARN_LINES:
                 top_exempt = (not seen_first_block) and (not seen_non_blank_non_comment) and block_len <= TOP_EXEMPT_MAX
-                if not top_exempt and not _is_type_metadata_block(lines, block_lines, ext):
+                if not top_exempt and not _is_type_metadata_block(lines, block_lines, ext) and not _is_generated_block(lines, block_lines):
                     findings.append({"line": block_start, "block_len": block_len})
                 seen_first_block = True
             if s and not _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines, block_comment_lines) and not _is_top_directive(s, ext):
