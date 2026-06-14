@@ -150,6 +150,40 @@ function _upstreamNoCredentialsForSkippedProvider(line, root) {
   };
 }
 
+function _upstreamInvalidBearerPreflightSmoke(line, root) {
+  if (!/UPSTREAM_401_INTERACTIVE:\s*anthropic 401 authentication_error \[interactive\]:\s*Invalid bearer token/i.test(line)
+      && !/PROXY_EMERGENCY:.*anthropic 401 authentication_error \[interactive\]: Invalid bearer token/i.test(line)) return null;
+  const m = /snapshot=([^\s)]+)/.exec(line);
+  const snapshotRel = m && m[1] ? m[1] : '';
+  const headerFile = snapshotRel ? path.join(root, snapshotRel).replace(/\.json$/, '.request-headers.json') : '';
+  const headers = headerFile ? (_readJson(headerFile) || {}) : {};
+  const incoming = headers.incoming_headers || {};
+  const outgoing = headers.outgoing_headers || {};
+  const preflight = incoming['x-hme-preflight-smoke'] === '1' || outgoing['x-hme-preflight-smoke'] === '1'
+    || /Bearer\s+hme-preflight/i.test(String(incoming.authorization || outgoing.authorization || ''));
+  const liveSource = (() => {
+    try { return fs.readFileSync(path.join(root, 'tools/HME/proxy/outbound_context_gate.js'), 'utf8'); } catch (_e) { return ''; }
+  })();
+  const localTerminationPresent = liveSource.includes("X-HME-Preflight-Smoke')") || liveSource.includes('X-HME-Preflight-Smoke');
+  const headerGuardPresent = (() => {
+    try { return fs.readFileSync(path.join(root, 'tools/HME/proxy/hme_proxy_headers.js'), 'utf8').includes('isPreflightSmoke'); } catch (_e) { return false; }
+  })();
+  const resolved = Boolean(preflight && localTerminationPresent && headerGuardPresent);
+  return {
+    resolved,
+    kind: 'upstream_invalid_bearer_preflight_smoke',
+    resolver: 'preflight smoke is now terminated locally before upstream auth',
+    snapshot: snapshotRel,
+    proof: { preflight, localTerminationPresent, headerGuardPresent },
+    reason: resolved
+      ? 'historical invalid bearer came from the slot preflight smoke token; current code returns local smoke responses instead of forwarding that fake credential'
+      : 'not proven to be a preflight-smoke invalid bearer or current local smoke termination is absent',
+    invariant: 'slot preflight smoke must never hit real Anthropic authentication',
+    runtimeState: `snapshot=${snapshotRel || '(none)'} preflight=${preflight}`,
+    recurrenceTest: 'tools/HME/tests/specs/outbound_context_gate.test.js; tools/HME/tests/specs/polychron_restart_contract.test.js',
+  };
+}
+
 function _slotHealthSummary(root) {
   const out = {};
   for (const slot of ['a', 'b']) {
