@@ -253,6 +253,10 @@ function writeSummaryJSON(wallTime, extra) {
     self_coherence_failures: [],
     exitCode: exitCode
   };
+  try {
+    var allowFile = path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'pipeline-allowlist.json');
+    if (fs.existsSync(allowFile)) summary.allowlist = JSON.parse(fs.readFileSync(allowFile, 'utf8'));
+  } catch (_allowlistError) { summary.allowlist = []; }
   Object.assign(summary, splitVerdict(summary));
   // Compute HCI inline so pipeline-summary.json always carries both the
   // music verdict AND the coherence index. Previously this was done by
