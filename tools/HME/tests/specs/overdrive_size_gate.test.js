@@ -11,8 +11,8 @@ const { applyOverdriveRoute, swapWindowCheck } = require('../../proxy/overdrive_
 const NO_STATUSLINE = path.join(os.tmpdir(), 'hme-size-gate-no-statusline');
 const ENV = { HME_OMNI_SWAP_FIT_FRACTION: '0.95', HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST: '4', HME_STATUSLINE_PATH: NO_STATUSLINE };
 
-// ~520K input tokens (2.08M chars / 4): over cx/gpt-5.5-xhigh's 480K context
-// window, well under Opus-4-8's 1M context window.
+// ~520K input tokens (2.08M chars / 4): over cx/gpt-5.5-xhigh's 352K
+// input budget, well under Opus-4-8's 872K input budget.
 const BIG = { system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(2_080_000) }] };
 const SMALL = { system: '', tools: [], messages: [{ role: 'user', content: 'hello world' }] };
 
