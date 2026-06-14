@@ -70,6 +70,143 @@ function _elideValue(value, originalBytes) {
   return { _hme_elided: true, original_bytes: originalBytes, note: _marker(originalBytes) };
 }
 
+function _sidecarMarker(filePath, originalBytes, headBytes, tailBytes) {
+  return Buffer.from([
+    '[HME persisted tool-output sidecar elided]',
+    `Original bytes: ${originalBytes}`,
+    `Path: ${filePath}`,
+    `Kept first ${headBytes} bytes and last ${tailBytes} bytes; middle omitted to keep Claude session files below the host byte ceiling.`,
+    '',
+    '--- BEGIN KEPT HEAD ---',
+    '',
+  ].join('\n'), 'utf8');
+}
+
+function _positiveInt(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+function compactToolResultSidecarFile(filePath, opts = {}) {
+  const maxBytes = _positiveInt(opts.maxBytes, SIDECAR_DEFAULTS.maxBytes);
+  let stat;
+  try { stat = fs.statSync(filePath); }
+  catch (_e) { return { ok: false, reason: 'missing', changed: false, beforeBytes: 0, afterBytes: 0 }; }
+  if (!stat.isFile()) return { ok: true, reason: 'not_file', changed: false, beforeBytes: stat.size, afterBytes: stat.size };
+  if (stat.size <= maxBytes) return { ok: true, reason: 'under_max', changed: false, beforeBytes: stat.size, afterBytes: stat.size };
+  const headBytes = Math.min(_positiveInt(opts.headBytes, SIDECAR_DEFAULTS.headBytes), maxBytes);
+  const tailBytes = Math.min(_positiveInt(opts.tailBytes, SIDECAR_DEFAULTS.tailBytes), maxBytes);
+  let fd;
+  let head = Buffer.alloc(0);
+  let tail = Buffer.alloc(0);
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const hbuf = Buffer.alloc(Math.min(headBytes, stat.size));
+    const hn = fs.readSync(fd, hbuf, 0, hbuf.length, 0);
+    head = hbuf.subarray(0, hn);
+    const tlen = Math.min(tailBytes, stat.size);
+    const tbuf = Buffer.alloc(tlen);
+    const tn = fs.readSync(fd, tbuf, 0, tlen, Math.max(0, stat.size - tlen));
+    tail = tbuf.subarray(0, tn);
+  } catch (_e) {
+    return { ok: false, reason: 'unreadable', changed: false, beforeBytes: stat.size, afterBytes: stat.size };
+  } finally {
+    if (fd !== undefined) { try { fs.closeSync(fd); } catch (_e) { /* best effort */ } }
+  }
+  const body = Buffer.concat([
+    _sidecarMarker(filePath, stat.size, head.length, tail.length),
+    head,
+    Buffer.from('\n--- MIDDLE OMITTED BY HME SIDECAR CAP ---\n\n--- BEGIN KEPT TAIL ---\n', 'utf8'),
+    tail,
+    Buffer.from('\n--- END HME SIDECAR CAP ---\n', 'utf8'),
+  ]);
+  const tmp = path.join(path.dirname(filePath), `.hme-sidecar-compact-${process.pid}-${path.basename(filePath)}.tmp`);
+  try {
+    const recheck = fs.statSync(filePath);
+    if (recheck.size !== stat.size || recheck.mtimeMs !== stat.mtimeMs) return { ok: false, reason: 'concurrent_write', changed: false, beforeBytes: stat.size, afterBytes: stat.size };
+    const wfd = fs.openSync(tmp, 'w');
+    try {
+      fs.writeSync(wfd, body);
+      fs.fsyncSync(wfd);
+    } finally {
+      fs.closeSync(wfd);
+    }
+    const finalCheck = fs.statSync(filePath);
+    if (finalCheck.size !== stat.size || finalCheck.mtimeMs !== stat.mtimeMs) {
+      try { fs.unlinkSync(tmp); } catch (_e) { /* best effort */ }
+      return { ok: false, reason: 'concurrent_write', changed: false, beforeBytes: stat.size, afterBytes: stat.size };
+    }
+    fs.renameSync(tmp, filePath);
+    let dfd;
+    try { dfd = fs.openSync(path.dirname(filePath), 'r'); fs.fsyncSync(dfd); }
+    catch (_e) { /* best-effort dir fsync */ }
+    finally { if (dfd !== undefined) fs.closeSync(dfd); }
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch (_e) { /* best effort */ }
+    return { ok: false, reason: `write_failed:${err.message}`, changed: false, beforeBytes: stat.size, afterBytes: stat.size };
+  }
+  return { ok: true, reason: 'compacted', changed: true, beforeBytes: stat.size, afterBytes: body.length };
+}
+
+function _toolResultDirsForTranscript(transcriptPath, opts = {}) {
+  if (!transcriptPath || typeof transcriptPath !== 'string') return [];
+  const projectDir = path.dirname(transcriptPath);
+  const sessionId = path.basename(transcriptPath, '.jsonl');
+  const dirs = [];
+  const add = (d) => { if (d && fs.existsSync(d) && fs.statSync(d).isDirectory() && !dirs.includes(d)) dirs.push(d); };
+  try { add(path.join(projectDir, sessionId, 'tool-results')); } catch (_e) { /* best effort */ }
+  if (opts.scanProject !== false) {
+    try {
+      for (const name of fs.readdirSync(projectDir)) add(path.join(projectDir, name, 'tool-results'));
+    } catch (_e) { /* best effort */ }
+  }
+  return dirs;
+}
+
+function compactToolResultSidecars(transcriptPath, opts = {}) {
+  const dirs = _toolResultDirsForTranscript(transcriptPath, opts);
+  const result = { ok: true, changedFiles: 0, scannedFiles: 0, beforeBytes: 0, afterBytes: 0, failures: [] };
+  for (const dir of dirs) {
+    let names;
+    try { names = fs.readdirSync(dir); }
+    catch (_e) { continue; }
+    for (const name of names) {
+      const file = path.join(dir, name);
+      let st;
+      try { st = fs.statSync(file); }
+      catch (_e) { continue; }
+      if (!st.isFile()) continue;
+      result.scannedFiles += 1;
+      if (st.size <= _positiveInt(opts.maxBytes, SIDECAR_DEFAULTS.maxBytes)) continue;
+      const one = compactToolResultSidecarFile(file, opts);
+      if (!one.ok) {
+        result.ok = false;
+        result.failures.push({ file, reason: one.reason });
+        continue;
+      }
+      if (one.changed) {
+        result.changedFiles += 1;
+        result.beforeBytes += one.beforeBytes;
+        result.afterBytes += one.afterBytes;
+      }
+    }
+  }
+  return result;
+}
+
+function _sidecarOptsFromEnv(env = process.env, trigger = 'stop') {
+  if (env.HME_TRANSCRIPT_SIDECAR_COMPACT === '0') return null;
+  const maxKb = Number(env.HME_TRANSCRIPT_SIDECAR_MAX_KB);
+  const headKb = Number(env.HME_TRANSCRIPT_SIDECAR_HEAD_KB);
+  const tailKb = Number(env.HME_TRANSCRIPT_SIDECAR_TAIL_KB);
+  return {
+    maxBytes: Number.isFinite(maxKb) && maxKb > 0 ? Math.floor(maxKb * 1024) : SIDECAR_DEFAULTS.maxBytes,
+    headBytes: Number.isFinite(headKb) && headKb > 0 ? Math.floor(headKb * 1024) : SIDECAR_DEFAULTS.headBytes,
+    tailBytes: Number.isFinite(tailKb) && tailKb > 0 ? Math.floor(tailKb * 1024) : SIDECAR_DEFAULTS.tailBytes,
+    scanProject: trigger === 'midturn' ? env.HME_TRANSCRIPT_SIDECAR_SCAN_PROJECT !== '0' : env.HME_TRANSCRIPT_SIDECAR_SCAN_PROJECT !== '0',
+  };
+}
+
 function _elideToolResultContent(block, byteFloor) {
   if (!block || block.type !== 'tool_result') return false;
   const size = _serializedBytes(block.content);
