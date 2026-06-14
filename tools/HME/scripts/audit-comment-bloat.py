@@ -204,6 +204,11 @@ def _is_type_metadata_line(stripped: str, ext: str) -> bool:
     return any(tag in stripped for tag in ("@typedef", "@param", "@returns", "@return", "@type", "@property"))
 
 
+def _is_generated_block(lines: list[str], block_lines: list[int]) -> bool:
+    text = "\n".join(lines[i - 1].strip().lower() for i in block_lines)
+    return any(tag in text for tag in ("@generated", "auto-generated", "generated file", "do not edit"))
+
+
 def _scan_file(path: str, ext: str) -> list:
     """Yield {line, block_len} for each comment block exceeding WARN_LINES.
     The first comment block at file top (after any shebang) is exempt
