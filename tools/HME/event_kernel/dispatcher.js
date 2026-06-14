@@ -138,11 +138,8 @@ const NATIVE_PRETOOL = nativeHooks.preToolHandlers;
 const NATIVE_POSTTOOL = nativeHooks.postToolHandlers;
 const OPENCODE_OBSERVATION_EVENTS = routeRegistry.observationEvents();
 
-/**
- * Invoke a single bash hook with the given stdin payload. Returns a Promise
- * resolving to {stdout, stderr, exit_code}. Never throws -- errors become
- * exit_code=-1 with an error message on stderr.
- */
+// Finish one bash hook invocation and return {stdout, stderr, exit_code}.
+// Hook errors are recorded instead of thrown.
 function _finishHook(eventName, scriptPath, startedAt, result) {
   const code = result.exit_code ?? 0;
   appendHookExec({
