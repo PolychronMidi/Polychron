@@ -150,17 +150,56 @@ function _upstreamNoCredentialsForSkippedProvider(line, root) {
   };
 }
 
-function _upstreamInvalidBearerPreflightSmoke(line, root) {
-  if (!/UPSTREAM_401_INTERACTIVE:\s*anthropic 401 authentication_error \[interactive\]:\s*Invalid bearer token/i.test(line)
-      && !/PROXY_EMERGENCY:.*anthropic 401 authentication_error \[interactive\]: Invalid bearer token/i.test(line)) return null;
-  const m = /snapshot=([^\s)]+)/.exec(line);
-  const snapshotRel = m && m[1] ? m[1] : '';
+function _looseLineTimestampMs(line) {
+  const m = /^\[([^\]]+)\]/.exec(String(line || ''));
+  if (!m) return 0;
+  const raw = m[1];
+  const direct = Date.parse(raw);
+  if (Number.isFinite(direct)) return direct;
+  const dashed = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/.exec(raw);
+  if (!dashed) return 0;
+  const normalized = `${dashed[1]}T${dashed[2]}:${dashed[3]}:${dashed[4]}.${dashed[5]}Z`;
+  const parsed = Date.parse(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function _preflightProofForSnapshot(root, snapshotRel) {
   const headerFile = snapshotRel ? path.join(root, snapshotRel).replace(/\.json$/, '.request-headers.json') : '';
   const headers = headerFile ? (_readJson(headerFile) || {}) : {};
   const incoming = headers.incoming_headers || {};
   const outgoing = headers.outgoing_headers || {};
-  const preflight = incoming['x-hme-preflight-smoke'] === '1' || outgoing['x-hme-preflight-smoke'] === '1'
-    || /Bearer\s+hme-preflight/i.test(String(incoming.authorization || outgoing.authorization || ''));
+  return Boolean(incoming['x-hme-preflight-smoke'] === '1' || outgoing['x-hme-preflight-smoke'] === '1'
+    || /Bearer\s+hme-preflight/i.test(String(incoming.authorization || outgoing.authorization || '')));
+}
+
+function _nearbyPreflightInvalidBearer(root, line) {
+  const ts = _looseLineTimestampMs(line);
+  if (!ts) return { preflight: false, snapshot: '', diffMs: null };
+  let lines = [];
+  try { lines = fs.readFileSync(path.join(root, 'log', 'hme-errors.log'), 'utf8').split('\n').filter(Boolean); } catch (_e) { return { preflight: false, snapshot: '', diffMs: null }; }
+  let best = { preflight: false, snapshot: '', diffMs: null };
+  for (const other of lines) {
+    if (!/UPSTREAM_401_INTERACTIVE:\s*anthropic 401 authentication_error \[interactive\]:\s*Invalid bearer token/i.test(other)) continue;
+    const m = /snapshot=([^\s)]+)/.exec(other);
+    const snapshot = m && m[1] ? m[1] : '';
+    if (!snapshot || !_preflightProofForSnapshot(root, snapshot)) continue;
+    const ots = _looseLineTimestampMs(other);
+    const diff = ots ? Math.abs(ots - ts) : 0;
+    if (ots && diff > 15000) continue;
+    if (!best.preflight || diff < Number(best.diffMs || Infinity)) best = { preflight: true, snapshot, diffMs: diff };
+  }
+  return best;
+}
+
+function _upstreamInvalidBearerPreflightSmoke(line, root) {
+  const isUpstream401 = /UPSTREAM_401_INTERACTIVE:\s*anthropic 401 authentication_error \[interactive\]:\s*Invalid bearer token/i.test(line);
+  const isEmergency401 = /PROXY_EMERGENCY:.*anthropic 401 authentication_error \[interactive\]: Invalid bearer token/i.test(line);
+  if (!isUpstream401 && !isEmergency401) return null;
+  const m = /snapshot=([^\s)]+)/.exec(line);
+  const snapshotRel = m && m[1] ? m[1] : '';
+  const nearby = snapshotRel ? { preflight: _preflightProofForSnapshot(root, snapshotRel), snapshot: snapshotRel, diffMs: 0 }
+    : _nearbyPreflightInvalidBearer(root, line);
+  const preflight = Boolean(nearby.preflight);
   const liveSource = (() => {
     try { return fs.readFileSync(path.join(root, 'tools/HME/proxy/outbound_context_gate.js'), 'utf8'); } catch (_e) { return ''; }
   })();
@@ -173,13 +212,13 @@ function _upstreamInvalidBearerPreflightSmoke(line, root) {
     resolved,
     kind: 'upstream_invalid_bearer_preflight_smoke',
     resolver: 'preflight smoke is now terminated locally before upstream auth',
-    snapshot: snapshotRel,
-    proof: { preflight, localTerminationPresent, headerGuardPresent },
+    snapshot: snapshotRel || nearby.snapshot,
+    proof: { preflight, localTerminationPresent, headerGuardPresent, nearby },
     reason: resolved
       ? 'historical invalid bearer came from the slot preflight smoke token; current code returns local smoke responses instead of forwarding that fake credential'
       : 'not proven to be a preflight-smoke invalid bearer or current local smoke termination is absent',
     invariant: 'slot preflight smoke must never hit real Anthropic authentication',
-    runtimeState: `snapshot=${snapshotRel || '(none)'} preflight=${preflight}`,
+    runtimeState: `snapshot=${snapshotRel || nearby.snapshot || '(none)'} preflight=${preflight}`,
     recurrenceTest: 'tools/HME/tests/specs/outbound_context_gate.test.js; tools/HME/tests/specs/polychron_restart_contract.test.js',
   };
 }
