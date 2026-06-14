@@ -18,28 +18,78 @@ North star: every HME surface should answer, at all times:
 - What should happen next?
 - What would make this claim stale?
 
-A tool, verifier, alert, score, warning, or KB entry that cannot answer those questions is not self-coherent.
+A tool, verifier, alert, score, warning, KB entry, or subagent result that cannot answer those questions is not self-coherent.
 
-### 1. Claim atoms below file-level state
+## MVP vertical slice
 
-Every invariant, alert, warning, score, and status line should emit a structured claim record:
+Before broad migration, prove the smallest complete loop:
+
+1. One producer emits a schema-valid claim.
+2. One status surface consumes and displays it.
+3. One relevant file edit invalidates it.
+4. One rerun refreshes it.
+5. CI proves both current and stale cases.
+
+The first slice should use comment-bloat because it has clear evidence, invalidators, repair action, and recent regressions.
+
+Acceptance for the MVP slice:
+
+- claim schema rejects malformed claims
+- comment-bloat producer emits claim with evidence hash and invalidators
+- status surface shows current vs stale state correctly
+- touching a scoped source file marks the claim stale
+- rerunning the audit refreshes the claim
+- tests cover current, stale, and malformed claim cases
+
+## 1. Claim atoms below file-level state
+
+Every invariant, alert, warning, score, and status line should emit a structured claim record.
+
+Required fields:
 
 ```json
 {
-  "claim": "comment-bloat FAIL count is zero",
-  "owner": "audit-comment-bloat.py",
-  "evidence": "latest audit JSON path + timestamp",
-  "scope": ["src", "tools/HME"],
-  "freshness": "valid until next tracked code/comment edit",
-  "repair": "manual condense block to <=2 lines preserving intent",
+  "schema_version": "1.0.0",
+  "claim_id": "comment-bloat.fail-count.zero",
+  "subject_uri": "repo://tools/HME/scripts/audit-comment-bloat.py",
+  "producer": "audit-comment-bloat.py",
+  "producer_version": "git:<sha>",
+  "status": "pass|warn|fail|error|stale|unknown",
+  "severity": "info|warn|blocker",
+  "confidence": 0.98,
+  "evidence_uri": "repo://runtime/hme-claims/comment-bloat.json",
+  "evidence_hash": "sha256:...",
+  "scope": ["repo://src", "repo://tools/HME"],
+  "invalidator_keys": ["tracked_code_edit", "verifier_edit"],
+  "generated_at": "2026-06-13T00:00:00Z",
+  "expires_at": null,
+  "repair": "manually condense prose comments to <=2 intent-preserving lines",
   "regression_tests": ["comment_bloat_audit.test.js"],
-  "retirement_condition": "policy removed from AGENTS.md"
+  "retirement_condition": "comment-bloat policy removed from AGENTS.md",
+  "supersedes": []
 }
 ```
 
 Goal: prevent stale claims, stale alerts, stale goals, and stale status from masquerading as current truth.
 
-### 2. Currentness protocol
+## 2. Invalidator registry and currentness protocol
+
+Currentness is a join between a claim and normalized invalidator events.
+
+Required invalidator registry entries:
+
+| key | scope | default effect |
+| --- | --- | --- |
+| `tracked_code_edit` | repo file paths | stale matching code/comment claims |
+| `verifier_edit` | verifier source paths | stale claims produced by that verifier |
+| `policy_edit` | policy source paths | stale policy/tool-surface claims |
+| `test_edit` | test source paths | stale claims whose proof depends on tests |
+| `kb_source_edit` | KB source file/symbol paths | stale related KB entries |
+| `pipeline_run` | pipeline summary path | refresh pipeline verdict claims |
+| `tool_response_defect` | tool/session id | stale tool-quality aggregate claims |
+| `agent_launch` | agent request id | refresh or fail fork-proof claims |
+
+Unknown relevant invalidators must make a claim stale rather than current.
 
 Every status, alert, verdict, and score must carry:
 
@@ -56,30 +106,43 @@ Examples:
 - Comment-bloat audit is current only if audit timestamp is newer than the last tracked code/comment edit.
 - Agent output is current only if produced with fork-context proof.
 
-### 3. Tool-response intelligence
+## 3. Tool-response intelligence
 
-Every HME/tool response should self-rate:
+HME should not log every mildly imperfect response. It should log contract violations and below-threshold responses.
+
+Ratings:
 
 - `10/10`: concise, current, actionable, bounded, no stale warnings, no context bloat
 - `8/10`: correct but noisy or missing next action
 - `5/10`: useful data but too much output, stale state, or ambiguous success
 - `0/10`: misleading, stale, false success, or context attack
 
-Record low-quality responses:
+Logging policy:
+
+- Always log contract violations.
+- Log ratings below the configured threshold.
+- Aggregate minor recurring `8/10` defects instead of spamming one event per response.
+- Every logged defect needs owner, reproduction, repair status, and waiver expiry.
+
+Record shape:
 
 ```json
 {
   "tool": "i/status state",
   "rating": 8,
+  "defect_class": "stale_advisory",
   "defect": "showed obsolete hot-reload metric",
+  "owner": "state-panel.py",
+  "reproduction": "i/status state after dual-slot runtime enabled",
   "repair_status": "fixed",
+  "waiver_expires_at": null,
   "regression": "state_panel_freshness_contract.test.js"
 }
 ```
 
 HCI should ingest tool-response quality. Noisy tools lower self-coherence.
 
-### 4. Agent ecology and fork-context proof
+## 4. Agent ecology and fork-context proof
 
 Every subagent launch must carry fork-context proof:
 
@@ -92,7 +155,8 @@ Every subagent launch must carry fork-context proof:
   "raw_context_fresh": false,
   "nested_agent_allowed": false,
   "max_files": 8,
-  "max_words": 900
+  "max_words": 900,
+  "telemetry_generated_at": "2026-06-13T00:00:00Z"
 }
 ```
 
@@ -102,9 +166,14 @@ Block or reroute subagent starts when:
 agent_context_tokens / parent_context_tokens < configured_ratio
 ```
 
-Prompt text is not proof. OmniRoute/token telemetry is proof.
+Failure behavior:
 
-### 5. Comment coherence instead of blind line counting
+- Missing or stale token telemetry fails closed or reroutes with one terse actionable error.
+- Prompt text never counts as proof.
+- Emergency allowlists require owner, expiry, reason, and audit trail.
+- Nested Agent calls inside multi-tool wrappers remain blocked.
+
+## 5. Comment coherence instead of blind line counting
 
 Keep line-count gates but classify semantic kind:
 
@@ -125,7 +194,15 @@ Comment scoring should consider:
 - Is it stale relative to code?
 - Can it be shortened without losing meaning?
 
-### 6. Pipeline verdict split
+Required negative fixtures:
+
+- prose `/* ... */` block fails at 5+ lines
+- JSDoc type metadata is exempt
+- long prose comment fails
+- generated block is exempt only with generated marker
+- stale prose comment fails when claim graph shows code drift
+
+## 6. Pipeline verdict split
 
 Pipeline summaries must separate:
 
@@ -140,7 +217,13 @@ Pipeline summaries must separate:
 
 A musical STABLE verdict must not hide diagnostic or self-coherence failures.
 
-### 7. HCI split-brain fix
+Required negative fixtures:
+
+- `STABLE` plus diagnostic failure exits nonzero or marks diagnostic verdict FAIL.
+- `STABLE` plus self-coherence failure exits nonzero or marks self-coherence verdict FAIL.
+- allowlisted nonfatal step includes owner, reason, expiry, and test.
+
+## 7. HCI split-brain fix
 
 Split HCI into distinct scores:
 
@@ -158,7 +241,7 @@ phase=maintenance | composition | audit | exploration | repair
 
 Maintenance sessions with many deliberate edits should not be interpreted like composition sessions.
 
-### 8. KB semantic checksums
+## 8. KB semantic checksums
 
 Every KB entry should include:
 
@@ -168,10 +251,27 @@ Every KB entry should include:
 - decision date
 - supersession condition
 - confidence
+- evidence hash
 
 If code changes, relevant KB entries become possibly stale automatically.
 
-### 9. Claim graph
+Required negative fixture:
+
+- editing a source symbol referenced by a KB entry marks that entry possibly stale until refreshed or superseded.
+
+## 9. Evidence and telemetry data minimization
+
+The self-coherence substrate must not become a privacy, storage, or context-bloat source.
+
+Rules:
+
+- Store hashes, URIs, timestamps, and bounded excerpts instead of raw prompts or large logs.
+- Redact secrets before evidence capture.
+- Retain large evidence by path with size caps and expiry.
+- Token telemetry stores counts and route metadata, not raw request payloads.
+- Claim graph edges store identifiers, not full transcript text.
+
+## 10. Claim graph
 
 Represent HME as a graph:
 
@@ -187,7 +287,7 @@ file -> verifier -> policy -> test -> KB entry -> alert -> repair
 - What can retire it?
 - What breaks if removed?
 
-### 10. Verifier self-doubt
+## 11. Verifier self-doubt
 
 Every verifier periodically answers:
 
@@ -208,25 +308,48 @@ Meta-rule:
 - every lineage has purpose
 - every purpose has currentness proof
 
-## Build sequence
+## Reordered build sequence
 
-1. Add `tools/HME/schemas/coherence-claim.schema.json`.
-2. Upgrade HCI verifier output to include claim/evidence/freshness/repair/retirement fields.
-3. Add shared currentness helpers: `isCurrent(claim, invalidators)`.
-4. Add tool-response rating ledger for HME tool outputs rated below 10/10.
-5. Add Agent fork-proof check using actual context-token ratio, not prompt text.
-6. Split pipeline verdict into behavioral/diagnostic/self-coherence verdicts.
-7. Upgrade comment coherence classification to distinguish prose/type/generated/directive/rationale/stale-doc.
-8. Add HCI phase awareness.
-9. Add claim graph explorer: `i/why mode=claim <thing>`.
-10. Add verifier self-doubt audit.
+1. Inventory existing HME statuses, alerts, scores, warnings, KB entries, and verdicts.
+2. Add `tools/HME/schemas/coherence-claim.schema.json`.
+3. Add claim writer/reader helpers and schema validation tests.
+4. Add invalidator registry and currentness helper: `isCurrent(claim, invalidators)`.
+5. Add CI/HME gate for schema-invalid claims, stale-current claims, missing freshness proof, and missing repair path.
+6. Implement MVP vertical slice for comment-bloat claims.
+7. Add status surface for current vs stale claim state.
+8. Migrate one HCI verifier to claim output.
+9. Split HCI into Verifier, Behavior, Tooling, Temporal, and Composite scores.
+10. Add phase awareness for HCI scoring.
+11. Split pipeline verdict into behavioral, diagnostic, and self-coherence verdicts.
+12. Upgrade comment coherence classification fixtures and policy wiring.
+13. Add tool-response rating ledger plus expiring waiver ledger for contract violations and below-threshold responses.
+14. Define OmniRoute/token telemetry source and fail-closed behavior.
+15. Add Agent fork-proof check using actual context-token ratio.
+16. Add KB semantic checksum fields and stale-on-source-edit detection.
+17. Add claim graph storage/indexing.
+18. Add claim graph explorer: `i/why mode=claim <thing>`.
+19. Add verifier self-doubt audit.
+20. Add meta-rule audit for usefulness proof, repair regression, lineage, purpose, and currentness proof.
+21. Add data minimization audits for claim/evidence/token telemetry.
 
 ## Acceptance criteria
 
 - No stale alert can present itself as current without a freshness proof.
-- No tool response rated below 10/10 disappears without a logged defect or explicit waiver.
+- No contract-violating or below-threshold tool response disappears without a logged defect or explicit expiring waiver.
 - No subagent can launch without fork-context proof or bounded task shape.
+- Missing fork telemetry fails closed or reroutes with one actionable error.
 - Pipeline STABLE cannot hide diagnostic or self-coherence failures.
-- HCI reports verifier health separately from agent behavior and temporal freshness.
+- HCI reports verifier health separately from agent behavior, tooling quality, and temporal freshness.
 - Comment-bloat policy distinguishes semantic metadata from prose bloat.
+- KB entries become possibly stale when referenced source files/symbols change.
+- Claim schema rejects malformed claims.
+- Evidence stores hashes/URIs/bounded excerpts, not raw prompts or secrets.
 - Each new rule has a regression test and a retirement condition.
+
+## Phase 15 (done) -- Project boundary map + hot/cold path minimalism
+
+Historical evidence anchor retained for `tools/HME/config/phase-evidence.json`; it is not part of the proposed self-coherence field substrate work.
+
+## Phase 16 (done) -- Phase-inference firewall
+
+Historical evidence anchor retained for `tools/HME/config/phase-evidence.json`; it is not part of the proposed self-coherence field substrate work.

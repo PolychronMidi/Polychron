@@ -42,11 +42,12 @@ import sys
 import tokenize
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _env_loader import load_env, require_env  # noqa: E402
 from loc_ignore import load_patterns, is_exempt  # noqa: E402
 
-_PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
+load_env()
+
+_PROJECT = require_env("PROJECT_ROOT")
 _DEFAULT_ROOTS = [
     os.path.join(_PROJECT, "src"),
     os.path.join(_PROJECT, "scripts"),
@@ -55,9 +56,9 @@ _DEFAULT_ROOTS = [
 _SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", "output"}
 _EXTS = {".py", ".sh", ".js", ".ts"}
 
-WARN_LINES = int(os.environ.get('COMMENT_BLOAT_WARN', '3'))
-FAIL_LINES = int(os.environ.get('COMMENT_BLOAT_FAIL', '5'))
-LONG_LINE_CHARS = int(os.environ.get('COMMENT_BLOAT_LONG_LINE', '90'))
+WARN_LINES = int(require_env('COMMENT_BLOAT_WARN'))
+FAIL_LINES = int(require_env('COMMENT_BLOAT_FAIL'))
+LONG_LINE_CHARS = int(require_env('COMMENT_BLOAT_LONG_LINE'))
 # File-top header exemption: every file gets ONE comment block at the
 TOP_EXEMPT_MAX = 30
 
