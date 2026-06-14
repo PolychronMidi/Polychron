@@ -324,13 +324,41 @@ def main(argv: list) -> int:
                     warn_findings.append(entry)
             for f in _scan_long_comment_lines(path, ext):
                 long_line_findings.append({"path": rel, "line": f["line"], "line_len": f["line_len"]})
+    payload = {
+        "thresholds": {"warn": WARN_LINES, "fail": FAIL_LINES, "long_line_chars": LONG_LINE_CHARS},
+        "warn": warn_findings,
+        "fail": fail_findings,
+        "long_lines": long_line_findings,
+    }
+    if "--claim" in argv:
+        evidence = json.dumps(payload, sort_keys=True)
+        claim = {
+            "schema_version": "1.0.0",
+            "claim_id": "comment-bloat.fail-count.zero",
+            "subject_uri": "repo://tools/HME/scripts/audit-comment-bloat.py",
+            "producer": "audit-comment-bloat.py",
+            "producer_version": os.environ.get("GIT_COMMIT", "git:unknown"),
+            "status": "pass" if not fail_findings and not long_line_findings else "fail",
+            "severity": "info" if not fail_findings and not long_line_findings else "blocker",
+            "confidence": 1.0,
+            "evidence_uri": "repo://runtime/hme-claims/comment-bloat.json",
+            "evidence_hash": "sha256:" + hashlib.sha256(evidence.encode()).hexdigest(),
+            "scope": ["repo://src", "repo://tools/HME"],
+            "invalidator_keys": ["tracked_code_edit", "verifier_edit"],
+            "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "expires_at": None,
+            "repair": "manually condense prose comments to <=2 intent-preserving lines",
+            "regression_tests": ["comment_bloat_audit.test.js", "self_coherence_substrate.test.js"],
+            "retirement_condition": "comment-bloat policy retired",
+            "supersedes": [],
+        }
+        out_dir = os.path.join(_PROJECT, "tools", "HME", "runtime", "claims")
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, "comment-bloat.fail-count.zero.json"), "w", encoding="utf-8") as f:
+            json.dump(claim, f, indent=2)
+            f.write("\n")
     if as_json:
-        print(json.dumps({
-            "thresholds": {"warn": WARN_LINES, "fail": FAIL_LINES, "long_line_chars": LONG_LINE_CHARS},
-            "warn": warn_findings,
-            "fail": fail_findings,
-            "long_lines": long_line_findings,
-        }, indent=2))
+        print(json.dumps(payload, indent=2))
     else:
         print(f"audit-comment-bloat: WARN >= {WARN_LINES} lines, FAIL >= {FAIL_LINES} lines, LONG_LINE >= {LONG_LINE_CHARS} chars")
         print(f"  FAIL: {len(fail_findings)}")
