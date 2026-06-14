@@ -58,6 +58,28 @@ function _upstreamContextWindow(line, root) {
   };
 }
 
+function _outboundPreflightOverWindow(line, root) {
+  if (!/UPSTREAM_PREFLIGHT_OVER_WINDOW/i.test(line)) return null;
+  const budget = Number((/route budget\s+(\d+)/i.exec(line) || [])[1] || 0);
+  const model = String((/\bfor\s+([^;\s]+)/i.exec(line) || [])[1] || '');
+  let statusline = { used: 0, size: 0, modelId: '' };
+  try { statusline = require('./context_pressure').statuslineUsage(process.env, root); } catch (_e) { /* resolver proof falls through below */ }
+  const used = Number(statusline && statusline.used || 0);
+  const resolved = Boolean(budget > 0 && used > 0 && used <= budget);
+  return {
+    resolved,
+    kind: 'outbound_preflight_over_window',
+    resolver: 'current Claude statusline usage <= refused route budget',
+    proof: { model, budget, statuslineUsed: used, statuslineModel: statusline.modelId || '', statuslineSize: statusline.size || 0 },
+    reason: resolved
+      ? 'the live session is now under the route budget that was previously refused'
+      : 'live statusline does not prove the session is back under the refused route budget',
+    invariant: 'outbound payload stays within the target route context budget before shipping',
+    runtimeState: `model=${model || '?'} refusedBudget=${budget || '?'} currentStatuslineUsed=${used || '?'}`,
+    recurrenceTest: 'tools/HME/tests/specs/outbound_context_gate.test.js; tools/HME/tests/specs/incident_registry.test.js',
+  };
+}
+
 function _upstreamTransient200ApiError(line, root) {
   if (!/UPSTREAM_200_INTERACTIVE:\s*omniroute 200 api_error \[interactive\]/i.test(line)) return null;
   if (/context window/i.test(line)) return null;
