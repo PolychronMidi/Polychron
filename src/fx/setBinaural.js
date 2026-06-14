@@ -1,10 +1,5 @@
-/**
- * Manages binaural beat pitch shifts and volume crossfades.
- * L0 channel 'binaural' / layer 'shared' is the single source of truth.
- * Both L1 and L2 consume from it independently, so they always emit the same
- * shift at the same wall-clock second regardless of which layer initiated.
- * @returns {void}
- */
+// Manages binaural pitch shifts/crossfades through shared L0 'binaural' events.
+// L1/L2 consume independently but emit the same shift at the same wall-clock second.
 
 const V = validator.create('setBinaural');
 
