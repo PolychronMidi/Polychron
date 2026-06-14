@@ -277,6 +277,30 @@ function writeSummaryJSON(wallTime, extra) {
   } catch (e) {
     console.error('  HCI compute failed: ' + (e && e.message ? e.message : e));
   }
+  try {
+    var toolingLedger = aggregateTooling();
+    var verifierScore = typeof summary.hci === 'number' ? summary.hci / 100 : 1;
+    var behaviorScore = failedCount === 0 ? 1 : 0;
+    var hciSplit = splitScores({
+      phase: process.env.HME_HCI_PHASE || 'maintenance',
+      verifier: verifierScore,
+      behavior: behaviorScore,
+      tooling_ledger: toolingLedger,
+      temporal: 1,
+    });
+    summary.hci_phase = hciSplit.phase;
+    summary.hci_components = {
+      verifier: Number(hciSplit.verifier.toFixed(4)),
+      behavior: Number(hciSplit.behavior.toFixed(4)),
+      tooling: Number(hciSplit.tooling.toFixed(4)),
+      temporal: Number(hciSplit.temporal.toFixed(4)),
+      composite: Number(hciSplit.composite.toFixed(4)),
+      weights: hciSplit.weights,
+      tooling_ledger: toolingLedger,
+    };
+    if (toolingLedger.total_defects > 0) summary.self_coherence_failures.push({ kind: 'tool_response_quality', count: toolingLedger.total_defects });
+    Object.assign(summary, splitVerdict(summary));
+  } catch (_hciSplitError) { /* best-effort split; raw hci remains */ }
   // R17 #3+#7: Enrich summary with rebalance cost + per-override fire sparklines
   // from legacy-override-history.jsonl. i/status and downstream tools can read
   // these directly without scanning the activity log or trace.
