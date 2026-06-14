@@ -8,6 +8,8 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, clamp, metricPath } = require('./utils');
+const { evidenceHash, writeClaim } = require('../../../proxy/coherence_claims');
+const { splitScores, claimForSplit } = require('../../../proxy/hci_split');
 
 const ACTIVITY = metricPath('hme-activity.jsonl');
 const VIOLATIONS = metricPath('hme-violations.json');
