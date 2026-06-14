@@ -48,7 +48,11 @@ def emit_stats(detector: str | None, verdict: str, detail: str) -> None:
     root = _resolve_project_root()
     if not root:
         return
-    out_path = os.path.join(os.environ.get("HME_METRICS_DIR") or os.path.join(root, "tools", "HME", "runtime", "metrics"), "detector-stats.jsonl")
+    try:
+        from hme_paths import hme_metric  # shared env-ref expansion + root confinement
+        out_path = str(hme_metric("detector-stats.jsonl"))
+    except Exception:
+        out_path = os.path.join(root, "tools", "HME", "runtime", "metrics", "detector-stats.jsonl")
     try:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "a", encoding="utf-8") as f:
