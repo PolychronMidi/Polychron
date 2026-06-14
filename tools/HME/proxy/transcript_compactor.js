@@ -221,9 +221,15 @@ function compactTranscriptFile(filePath, opts = {}) {
   let result = compactTranscriptLines(rawLines, opts);
   let tier = 0;
   const baseKeep = Number.isFinite(opts.keepRecent) ? opts.keepRecent : DEFAULTS.keepRecent;
+  let aggressiveTier = 0;
   for (const emergency of EMERGENCY_TIERS) {
     if (result.afterBytes <= hardLimitBytes) break;
     result = compactTranscriptLines(rawLines, { ...emergency, keepRecent: baseKeep });
+  }
+  for (const aggressive of AGGRESSIVE_TIERS) {
+    if (result.afterBytes <= hardLimitBytes) break;
+    result = compactTranscriptLines(rawLines, { ...aggressive, keepRecent: baseKeep });
+    aggressiveTier += 1;
   }
   while (result.afterBytes > hardLimitBytes && tier < ESCALATION_TIERS.length) {
     const nextTier = ESCALATION_TIERS[tier];
