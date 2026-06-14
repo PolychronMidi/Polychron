@@ -66,6 +66,13 @@ class TaskNotificationTruthGateTests(unittest.TestCase):
         ])
         self.assertEqual(verdict, "task_notification_mishandled")
 
+    def test_completed_notification_blocks_placeholder_request_reply(self):
+        verdict = run_case([
+            user(note("bfrh1cj9k", "completed", 'Background command "Run full JS HME suite" completed (exit code 0)')),
+            assistant("Only see plachldr. Paste actl req/text want - do"),
+        ])
+        self.assertEqual(verdict, "task_notification_mishandled")
+
     def test_completed_notification_passes_when_answer_uses_status_facts(self):
         verdict = run_case([
             user(note("bzo1f4mfu", "completed", 'Background command "Run final JS" completed (exit code 0)')),
