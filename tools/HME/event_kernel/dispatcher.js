@@ -232,16 +232,8 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000, eventName = 'hoo
   return { stdout: combinedStdout, stderr: combinedStderr, exit_code: firstNonZeroCode };
 }
 
-/**
- * Unified policy registry adapter. Loads the registry lazily so a missing
- * policies/ directory or syntax error in a builtin can never break the
- * proxy's request path. Returns { stdout, stderr, exit_code } in the same
- * shape as runChain so callers can treat both paths identically; returns
- * null when no policy fired a deny (caller falls through to bash chain).
- *
- * First-deny-wins: aggregated decision is whichever JS policy fired first.
- * Subsequent policies still run for side effects (matches stop_chain).
- */
+// Unified policy adapter returns runChain-shaped output or null when no policy fires.
+// First-deny wins; later policies still run for side effects like stop_chain.
 function _failClosedPolicyError(message, eventName) {
   return {
     stdout: renderPolicyFailure(message, eventName),
