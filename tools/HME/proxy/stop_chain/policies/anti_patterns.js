@@ -64,6 +64,8 @@ const REASONS = {
     'PLAN-ABANDONMENT DETECTED: You spawned an Agent for KB/HME work. Subagents for KB work are the abandoning-plans antipattern (KB entry 524061657661). The gate clears once the task is completed with the HME tools directly: search_knowledge, compact_knowledge, remove_knowledge, list_knowledge, memory_dream, kb_health.',
   EARLY_STOP:
     'EARLY-STOP DETECTED: This is an open-ended HME/tooling round ("do all", "anything missing", "keep going", "improve X", "push further", or similar). Your final text enumerated remaining gaps but you stopped without executing through them. The user has explicitly asked you to skip the "anything missing? / do all" ceremony -- KB entry dae793e748f9 documents the protocol. The gate stays closed while enumerated gaps are left unexecuted; it clears once you land the highest-leverage items in this same turn, or once the remaining items are genuinely low-leverage polish, need an architectural decision the user owns, or need machine access you do not have. Narrow-scope user prompts ("rename foo to bar") explicitly override this -- if you believe the user\'s intent was bounded, say so explicitly in text and continue with what you can do within that bound.',
+  TASK_NOTIFICATION_MISHANDLED:
+    'TASK-NOTIFICATION TRUTH GATE: The latest user event was a host task-notification, but final text treated it as empty/stripped/no-content or claimed the task was still waiting/running after the notification already gave completed/failed status. Answer from the notification facts: task id, status, exit code/summary, and next repair step if failed.',
 };
 
 module.exports = {
