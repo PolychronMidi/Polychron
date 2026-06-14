@@ -279,4 +279,5 @@ else if (m === 'causal-braid') runCausalBraid();
 else if (m === 'immune') runImmune();
 else if (m === 'policy-genome') runPolicyGenome();
 else if (m === 'freshness') runFreshness();
+else if (m === 'claim') runClaim();
 else runProof();
