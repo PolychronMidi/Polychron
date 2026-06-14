@@ -11,7 +11,7 @@ Example:
 #1 5_ make todo template with rules so agents can simply fill out below. A set auto-archives to `log/todo/set<number>.md` once no item is still in progress (none at 0_/1_/2_) and at least one item is 5_; the non-5_ items (3_/4_/4f_) carry forward into the next set with their codes preserved
 
 ### Todo - Set 54
-0_ Inventory every HME status, alert, score, warning, KB entry, pipeline verdict, tool response surface, and subagent result surface that needs claim/currentness fields.
+1_ Inventory every HME status, alert, score, warning, KB entry, pipeline verdict, tool response surface, and subagent result surface that needs claim/currentness fields.
 0_ Define canonical coherence claim schema at `tools/HME/schemas/coherence-claim.schema.json` with schema_version, claim_id, subject_uri, producer, status, severity, confidence, evidence_uri, evidence_hash, scope, invalidator_keys, generated_at, expires_at, repair, tests, retirement_condition, and supersedes.
 0_ Add schema validation unit tests that reject malformed claims, missing freshness proof, missing repair path, and invalid status/severity values.
 0_ Add claim writer helper that validates before writing and stores bounded evidence references rather than raw large payloads.
