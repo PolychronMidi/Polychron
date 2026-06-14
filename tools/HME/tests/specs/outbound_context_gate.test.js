@@ -94,6 +94,33 @@ test('fresh statusline truth prevents conservative-estimator false over-window',
   assert.equal(v.source, 'statusline');
 });
 
+test('dynamic budget uses requested output instead of full max-output reserve', () => {
+  const budget = effectiveInputBudgetForPayload(
+    { max_tokens: 16 },
+    'small',
+    () => 352000,
+    {},
+  );
+  // Unknown model metadata in this injected call falls back to the static budget;
+  // full integration is below using real gpt-5.5 registry metadata.
+  assert.equal(budget, 352000);
+
+  const v = evaluateOutbound({
+    payload: { model: 'gpt-5.5-xhigh', max_tokens: 16, messages: [{ role: 'user', content: 'x' }] },
+    modelId: 'gpt-5.5-xhigh',
+    swapChain: [],
+    deps: {
+      estimate: () => 352895,
+      inputBudgetFor: () => 352000,
+      compact: () => { throw new Error('must not compact'); },
+      statuslineUsage: () => ({ used: 0, size: 0, modelId: '' }),
+    },
+  });
+  assert.equal(v.ok, true);
+  assert.equal(v.action, 'fit');
+  assert.ok(v.budget > 352895, `dynamic budget ${v.budget} should hold requested small-output payload`);
+});
+
 test('pickLargerRoute skips the current model and undersized routes', () => {
   const chain = [{ id: 'cur' }, { id: 'alsosmall' }, { id: 'big' }];
   const budgets = { cur: 1000, alsosmall: 2000, big: 50000 };
