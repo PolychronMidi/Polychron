@@ -66,7 +66,7 @@ function isPossiblyStale(entry, invalidators = []) {
         return { stale: true, reason: 'symbol_changed', invalidator: inv };
       }
     }
-    if (inv.supersedes === entry.id || (entry.supersession_condition && inv.reason && String(inv.reason).includes(entry.supersession_condition))) {
+    if ((entry.id && inv.supersedes === entry.id) || (entry.supersession_condition && inv.reason && String(inv.reason).includes(entry.supersession_condition))) {
       return { stale: true, reason: 'supersession_condition_met', invalidator: inv };
     }
   }
