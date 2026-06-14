@@ -496,9 +496,12 @@ function maybeCompactTranscriptFile({ transcriptPath, env = process.env, log, em
 
 module.exports = {
   DEFAULTS,
+  SIDECAR_DEFAULTS,
   compactEntry,
   compactTranscriptLines,
   compactTranscriptFile,
+  compactToolResultSidecarFile,
+  compactToolResultSidecars,
   maybeCompactTranscriptFile,
   _marker,
 };
