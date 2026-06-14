@@ -129,12 +129,8 @@ _writeStatus();
 const _spinTimer = setInterval(_writeStatus, 500);
 _spinTimer.unref();
 
-/**
- * Normalize a single line for the persistent log:
- * - Strip ANSI escapes
- * - Replace absolute repo paths with relative ones
- * - Shorten node_modules references
- */
+// Normalize persistent-log lines: strip ANSI, relativize repo paths, and shorten node_mo
+// Runtime stdout/stderr stays unchanged; only the saved log is compacted.
 function normalizeForLog(line) {
   let s = String(line || '');
   s = stripAnsi(s);
