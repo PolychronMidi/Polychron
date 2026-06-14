@@ -31,6 +31,7 @@ function readVerdicts() {
     FABRICATION_CHECK: 'ok',
     QUOTE_PROVENANCE: 'ok',
     EARLY_STOP: 'ok',
+    TASK_NOTIFICATION_TRUTH_GATE: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return verdicts;
   let text = '';
