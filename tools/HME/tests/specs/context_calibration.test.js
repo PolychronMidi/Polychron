@@ -177,8 +177,8 @@ test('REGRESSION: cache-read contaminated samples are rejected so they cannot fl
 
 test('END-TO-END: calibration flips the swap size-gate from pass to catch a real overflow', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-calib-'));
-  // gpt-5.5-xhigh window is 480000. Build a tool-result-heavy payload that the
-  // PRIOR estimate (loose) says fits, but whose TRUE token density (learned from
+  // gpt-5.5-xhigh input budget is 352000. Build a tool-result-heavy payload that
+  // the PRIOR estimate (loose) says fits, but whose TRUE token density (learned from
   const env = { ...CAL_ENV, HME_OMNI_SWAP_FIT_FRACTION: '0.95' };
   try {
     const payload = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [
