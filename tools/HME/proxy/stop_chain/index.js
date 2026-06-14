@@ -165,10 +165,8 @@ function loadPolicy(name) {
   return require(policyPath);
 }
 
-/**
- * Run the Stop chain. Returns the event-kernel response shape:
- *   { stdout: <decision-json or empty>, stderr: <accumulated>, exit_code: 0 }
- */
+// Run the Stop chain and return event-kernel stdout/stderr/exit_code.
+// stdout carries the decision JSON when a policy blocks or instructs.
 // Cascade-break: when the prior user message is a stop-hook deny payload
 function _isCascadeBreakConditions(stdinJson) {
   let payload;

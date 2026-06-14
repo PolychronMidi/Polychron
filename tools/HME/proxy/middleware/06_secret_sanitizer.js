@@ -1,36 +1,6 @@
 'use strict';
-/**
- * Secret sanitizer -- scrub credential-like patterns from tool output before
- * the model sees it. Pattern catalog adapted from FailproofAI's
- * sanitize-{api-keys,jwt,bearer-tokens,private-key-content,connection-strings}
- * built-ins. Each match is replaced with a stable marker (`<REDACTED:type>`)
- * so the agent knows a value was scrubbed without seeing the value itself.
- *
- * Why this exists: a single `cat .env`, `printenv`, `git config --list`,
- * `npm config get`, or `env` can leak tokens into the model's context. Once
- * in context, the agent can echo them back, paste them into other tools,
- * commit them, or include them in error reports. Sanitization at the
- * tool_result boundary is the cheapest, most reliable mitigation -- far
- * better than relying on training data to suppress leakage.
- *
- * Ordering: runs BEFORE bash_enrichment (which appends [err] footers) and
- * BEFORE every context-injection / KB-summary middleware. The sanitizer
- * sits at the head of post_tool_trace so no other middleware ever sees
- * the unredacted text. Numeric NN_ prefix encodes load order.
- *
- * Trade-offs taken explicitly:
- *   - We REGEX-MATCH on output text. Real shell sessions can produce
- *     base64ish strings that aren't secrets (build-tool hashes, base64
- *     test fixtures, image data). False positives produce harmless
- *     `<REDACTED>` substitutions; under-detection is the worse failure.
- *     Bias toward false positives.
- *   - The patterns are intentionally narrow at the prefix layer (`sk-`,
- *     `Bearer `, `eyJ` for JWT, `-----BEGIN`) so generic random base64
- *     stays untouched.
- *   - Patterns are pre-compiled at module load (FailproofAI calls this
- *     out as a perf nicety; matches our pattern of hot-path-cheap
- *     middleware).
- */
+// Scrub credential-like tool output to <REDACTED:type> before model/context injection.
+// Runs early, biases toward false positives, and precompiles narrow secret patterns.
 
 const { blockText } = require('../request_shape');
 

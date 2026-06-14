@@ -21,11 +21,8 @@ const HELPERS_DIR  = path.join(PROJECT_ROOT, 'tools/HME/hooks/helpers');
 const STAGE_DIR    = path.join(PROJECT_ROOT, 'tools/HME/hooks/lifecycle/stop');
 const DETECTORS_DIR = path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors');
 
-/**
- * Create a policy that delegates to a bash stage script.
- * `parseDecision`: optional override for stdout-parsing logic. Default
- * detects `{"decision":"block",...}` JSON anywhere in stdout.
- */
+// Create a policy that delegates to a bash stage script.
+// parseDecision may override stdout parsing; default detects block JSON.
 function shellPolicy(stageName, opts = {}) {
   const defaultTimeout = stageName === 'detectors' ? 60_001 : 30_000;
   const { timeoutMs = defaultTimeout, parseDecision = defaultParseDecision, failClosed = false } = opts;
