@@ -466,6 +466,20 @@
       "outage_link": null
     },
     {
+      "name": "task_notification_truth_gate",
+      "module": "task_notification_truth_gate",
+      "fires_when": "task_notification_mishandled",
+      "bash_var": "TASK_NOTIFICATION_TRUTH_GATE",
+      "deny": true,
+      "reason_key": "TASK_NOTIFICATION_MISHANDLED",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "host task notifications are control-plane facts, not empty user prompts",
+      "fixture_path": "tools/HME/tests/specs/task_notification_truth_gate.test.py",
+      "why": "Blocks stale/boilerplate replies that ignore completed/failed background task notifications.",
+      "outage_link": "user-reported task-notification mishandling, 2026-06-14"
+    },
+    {
       "name": "boyscout_clean",
       "module": "boyscout_clean",
       "fires_when": "comment_bloat",
