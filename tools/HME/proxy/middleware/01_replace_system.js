@@ -1,35 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
-/**
- * Wholesale-replace Claude Code's default system prompt with a project-
- * curated one. More robust than surgical pruning: we don't depend on
- * knowing or tracking Claude Code's prompt structure across releases --
- * Anthropic can rephrase, restructure, or rename their sections and our
- * replacement still ships exactly what we wrote.
- *
- * Config file: doc/templates/canonical-system-prompt.md
- *   - Plain text (markdown allowed; Anthropic doesn't parse it).
- *   - Replaces ALL of payload.system with this content as a single
- *     text block. To preserve Claude Code's identity preamble, etc.,
- *     copy the relevant excerpts into your file -- that's the point of
- *     ownership.
- *   - File missing or empty -> middleware no-ops (Claude Code's prompt
- *     ships unmodified).
- *
- * Env gate:
- *   HME_REPLACE_SYSTEM_PROMPT=1   enable replacement
- *   HME_REPLACE_SYSTEM_PROMPT=0   no-op even if the file exists (default)
- *
- * Cache stability: Anthropic's prompt cache hashes the system content.
- * Our replacement is deterministic (same file -> same output), so cache
- * hits work normally. If you edit the canonical file, the next request
- * misses cache once, then re-hits.
- *
- * Load order (NN_ prefix): AFTER dump_system (so dumps still capture
- * Claude Code's original prompt for inspection) and BEFORE every other
- * middleware (so HME's status/jurisdiction/lifesaver injections append
- * to OUR canonical prompt, not Claude Code's discarded one).
- */
+// Replaces Claude Code's system prompt with doc/templates/canonical-system-prompt.md when enabled.
+// Deterministic cached content keeps prompt-cache behavior stable; missing/disabled is a no-op.
 
 const fs = require('fs');
 const path = require('path');
