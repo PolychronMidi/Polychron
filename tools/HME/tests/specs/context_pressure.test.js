@@ -11,8 +11,8 @@ const { recordSample, MIN_SAMPLES_TO_FIT } = require('../../proxy/context_calibr
 
 const BIG = { model: 'cx/gpt-5.5-xhigh', system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(200000) }] };
 
-test('inputBudgetFor resolves the model context window and 0 for unknown (fail open)', () => {
-  assert.equal(inputBudgetFor('gpt-5.5-xhigh'), 480000);
+test('inputBudgetFor resolves the model input budget and 0 for unknown (fail open)', () => {
+  assert.equal(inputBudgetFor('gpt-5.5-xhigh'), 352000);
   assert.equal(inputBudgetFor('no-such-model-zzz'), 0);
 });
 
