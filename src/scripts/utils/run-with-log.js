@@ -1,5 +1,5 @@
 /**
- * Run a command and stream stdout/stderr to a log file while mirroring it to the console.
+ * Run a command, log stdout/stderr, and mirror output to the console.
  * Usage: node src/scripts/utils/run-with-log.js <logFile> <command> [args...]
  * @module src/scripts/utils/run-with-log
  */

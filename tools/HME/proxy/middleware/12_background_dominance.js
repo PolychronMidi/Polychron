@@ -1,5 +1,5 @@
 'use strict';
-// Replace selected background Bash stubs with completed task output for model-visible turns.
+// Replace selected background Bash stubs with completed task output.
 // Scoped to structured HME/project commands; generic long builds keep their stub.
 
 const fs = require('fs');

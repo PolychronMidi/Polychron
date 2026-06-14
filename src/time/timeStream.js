@@ -64,7 +64,7 @@ moduleLifecycle.declare({
 
   /**
    * Overall progress through the composition as a single 0..1 value.
-   * Weighted nested fraction: section + phrase/sections + measure/(sections*phrases) + ...
+   * Weighted nested fraction across section, phrase, measure, and smaller levels.
    */
   function globalProgress() {
     if (bounds.section <= 0) return 0;

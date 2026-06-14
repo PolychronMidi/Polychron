@@ -1,6 +1,6 @@
 'use strict';
 const { parseEnvFile: _parseEnvFile } = require('../shared/load_env.js');
-// Drops configured tool definitions before Anthropic so unavailable tools cannot be called.
+// Drops configured tool definitions before Anthropic to make tools unavailable.
 // Env: HME_FILTER_TOOLS_DROP=tool1,tool2,...; unset is a no-op.
 
 const fs = require('fs');

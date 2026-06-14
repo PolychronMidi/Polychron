@@ -8,8 +8,8 @@
  *
  * Schema:
  *   {
- *     "enabled":  ["policy-name", ...]   // explicit enable, overrides defaultEnabled=false
- *     "disabled": ["policy-name", ...]   // explicit disable, overrides defaultEnabled=true
+ *     "enabled":  ["policy-name", ...]   // overrides defaultEnabled=false
+ *     "disabled": ["policy-name", ...]   // overrides defaultEnabled=true
  *     "params":   { "policy-name": { "key": value, ... } }  // per-policy param override
  *     "customPoliciesPath": "path/to/dir-or-file.js"        // load user policies
  *   }

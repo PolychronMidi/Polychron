@@ -52,7 +52,7 @@ moduleLifecycle.declare({
    * @param {string} patternName - Name of pattern generator (must be registered in rhythmRegistry)
    * @param {number} [phaseOffset] - Optional explicit phase offset; uses stored phase if omitted
    * @returns {Array} rotated rhythm pattern
-   * @throws {Error} if length invalid, patternName not found, or offset calculation fails
+   * @throws {Error} if length, patternName, or offset calculation is invalid
    */
   function generate(length, patternName, phaseOffset = undefined) {
     V.requireFinite(length, 'length');

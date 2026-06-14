@@ -24,7 +24,7 @@
  *     # scrubbed text to stdout. Equivalent to onToolResult with
  *     # filter=secret_sanitizer + a synthetic toolUse/toolResult shape.
  *
- * Input shape for onToolResult: {toolUse: {name, input, id}, toolResult: {content, tool_use_id}}
+ * onToolResult input: {toolUse:{name,input,id}, toolResult:{content,tool_use_id}}
  * Output shape: same JSON, with content possibly mutated by registered middleware.
  *
  * Process boundary: stdin capped at 4MB, exit 0 on chain crash (callers

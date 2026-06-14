@@ -1,7 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
-// Replaces Claude Code's system prompt with doc/templates/canonical-system-prompt.md when enabled.
-// Deterministic cached content keeps prompt-cache behavior stable; missing/disabled is a no-op.
+// Replaces Claude Code system prompt with canonical-system-prompt.md when enabled.
+// Deterministic cached content keeps prompt-cache behavior stable; disabled is no-op.
 
 const fs = require('fs');
 const path = require('path');

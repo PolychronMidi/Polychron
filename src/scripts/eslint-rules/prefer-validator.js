@@ -36,7 +36,7 @@ module.exports = {
     }
 
     /**
-     * Returns the type-string from a `typeof x === 'type'` or `'type' === typeof x` binary node,
+     * Returns the type string from a direct typeof equality node,
      * or null if the node isn't that pattern.
      */
     function getTypeofPositiveType(node) {

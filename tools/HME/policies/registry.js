@@ -1,5 +1,5 @@
-// Unified hook-time policy registry with FailproofAI-style definitions and first-deny wins.
-// Builtins/custom policies share discovery, config enablement, matching, and chain execution.
+// Unified hook-time policy registry with first-deny wins.
+// Builtins/custom policies share discovery, config, matching, and execution.
 
 const fs = require('fs');
 const path = require('path');

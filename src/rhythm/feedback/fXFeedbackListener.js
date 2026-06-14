@@ -121,8 +121,8 @@ moduleLifecycle.declare({
 
   /**
    * Adjust rhythm weights directly (when rhythms patterns are dynamic)
-   * This now factors in per-method `fXFeedbackListenerFxIntensityScore` (from `biasRhythmMethods`) so
-   * methods like `euclid`/`onsets` are favored at high FX intensity while `random`/`binary`
+   * Factors in per-method fXFeedbackListenerFxIntensityScore from biasRhythmMethods, so
+   * euclid/onsets win at high FX intensity while random/binary stay less likely.
    * are favored at low intensity. The original complexity-based tweak is preserved and
    * combined with the method multiplier for predictable, low-risk behavior changes.
    * @param {Object} rhythmsObj - the rhythms lookup with weights

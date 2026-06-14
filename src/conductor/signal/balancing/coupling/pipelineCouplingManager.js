@@ -195,7 +195,7 @@ moduleLifecycle.declare({
     return pipelineCouplingManagerCache.couplingGates;
   }
 
-  /** Raw Math.abs(r) per pair key; use outside firewall instead of snap.couplingMatrix. */
+  /** Raw Math.abs(r) per pair key; use outside snap.couplingMatrix firewall. */
   function getCouplingPressures() {
     return pipelineCouplingManagerCache.rawPairAbsValues ?? {};
   }

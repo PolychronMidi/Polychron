@@ -1,6 +1,6 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
-// Force adaptive thinking display to summarized when enabled; adaptive mode rejects budget_tokens.
+// Force adaptive thinking display to summarized; adaptive mode rejects budget_tokens.
 // Env: HME_PROXY_FORCE_THINKING=1, HME_PROXY_THINKING_DISPLAY=summarized|omitted.
 
 const ENABLED = process.env.HME_PROXY_FORCE_THINKING === '1';

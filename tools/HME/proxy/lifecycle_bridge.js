@@ -45,7 +45,7 @@ function lifecycleInactive(event) {
   return (Date.now() - last) > _LIFECYCLE_FRESH_MS;
 }
 
-// Inline fallback relays dispatcher stdout/stderr to proxy stderr so hook banners stay visible.
+// Inline fallback relays dispatcher stdout/stderr so hook banners stay visible.
 // This matches /hme/lifecycle and avoids the old 200-char inline truncation.
 function _normalizeInlinePayload(event, stdinJson, opts = {}) {
   const root = opts.root || PROJECT_ROOT;

@@ -4,14 +4,14 @@
  * `i/policies` CLI -- discover and configure unified hook-time policies.
  *
  * Subcommands:
- *   list                       List every registered policy with status (en/dis/default).
+ *   list                       List policies with status.
  *   show <name>                Detailed view of one policy.
- *   enable <name>              Add to project-shared config/policies.json `enabled` list.
- *   disable <name>              Add to project-shared config/policies.json `disabled` list.
+ *   enable <name>              Add policy to config/policies.json enabled list.
+ *   disable <name>             Add policy to config/policies.json disabled list.
  *   reset <name>               Remove name from both lists (revert to defaultEnabled).
  *   paths                      Print the config-scope file paths.
  *   check                      Validate registered policy names referenced by config.
- *   eval <name>                Run a single policy against stdin JSON ({toolInput,...}); print decision.
+ *   eval <name>                Run one policy against stdin JSON; print decision.
  *
  * Config writes go to the PROJECT-shared `config/policies.json` by default.
  * Pass `--scope=local` to write to `config/policies.local.json` (gitignored).

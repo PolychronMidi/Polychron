@@ -1,4 +1,4 @@
-// Stop-hook false-positive gate asks the model for an explicit [FP-CHECK: yes|no] marker.
+// Stop-hook FP gate asks the model for explicit [FP-CHECK: yes|no].
 // The SSE companion strips or truncates by marker so hook UI ceremony does not persist.
 
 const fs = require('fs');

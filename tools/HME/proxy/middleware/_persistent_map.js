@@ -1,7 +1,7 @@
 'use strict';
 const { requireEnv: _hmeRequireEnv } = require('../shared/load_env.js');
-// Persistent Map with append-only JSONL, LRU touch, and periodic compaction for warm caches.
-// Used for performance-only middleware caches; correctness-critical dedup remains elsewhere.
+// Persistent Map: append-only JSONL, LRU touch, periodic compaction.
+// Used for performance caches; correctness-critical dedup remains elsewhere.
 
 const fs = require('fs');
 const path = require('path');
