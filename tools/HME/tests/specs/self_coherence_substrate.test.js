@@ -15,6 +15,7 @@ const { splitScores } = require('../../proxy/hci_split');
 const { splitVerdict } = require('../../proxy/pipeline_verdict_split');
 
 function sampleClaim(overrides = {}) {
+  const evidence_hash = claims.evidenceHash({ fail: 0 });
   return {
     schema_version: claims.CLAIM_SCHEMA_VERSION,
     claim_id: 'comment-bloat.fail-count.zero',
@@ -25,13 +26,14 @@ function sampleClaim(overrides = {}) {
     severity: 'info',
     confidence: 1,
     evidence_uri: 'repo://runtime/hme-claims/comment-bloat.json',
-    evidence_hash: claims.evidenceHash({ fail: 0 }),
+    evidence_hash,
     scope: ['repo://src', 'repo://tools/HME'],
     invalidator_keys: ['tracked_code_edit', 'verifier_edit'],
     generated_at: '2026-06-13T00:00:00Z',
     expires_at: null,
+    freshness_proof: { kind: 'audit_run', generated_at: '2026-06-13T00:00:00Z', evidence_hash },
     repair: 'manual condensation',
-    regression_tests: ['comment_bloat_audit.test.js'],
+    tests: ['comment_bloat_audit.test.js'],
     retirement_condition: 'policy retired',
     supersedes: [],
     ...overrides,

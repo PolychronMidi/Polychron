@@ -347,8 +347,13 @@ def main(argv: list) -> int:
             "invalidator_keys": ["tracked_code_edit", "verifier_edit"],
             "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "expires_at": None,
+            "freshness_proof": {
+                "kind": "audit_run",
+                "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "evidence_hash": "sha256:" + hashlib.sha256(evidence.encode()).hexdigest(),
+            },
             "repair": "manually condense prose comments to <=2 intent-preserving lines",
-            "regression_tests": ["comment_bloat_audit.test.js", "self_coherence_substrate.test.js"],
+            "tests": ["comment_bloat_audit.test.js", "self_coherence_substrate.test.js"],
             "retirement_condition": "comment-bloat policy retired",
             "supersedes": [],
         }

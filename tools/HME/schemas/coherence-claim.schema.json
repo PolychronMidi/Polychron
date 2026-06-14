@@ -18,8 +18,9 @@
     "scope",
     "invalidator_keys",
     "generated_at",
+    "freshness_proof",
     "repair",
-    "regression_tests",
+    "tests",
     "retirement_condition"
   ],
   "properties": {
@@ -31,16 +32,28 @@
     "status": { "enum": ["pass", "warn", "fail", "error", "stale", "unknown"] },
     "severity": { "enum": ["info", "warn", "blocker"] },
     "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-    "evidence_uri": { "type": "string", "minLength": 1 },
+    "evidence_uri": { "type": "string", "minLength": 1, "not": { "pattern": "(^/[t]mp/|^file://|\\.jsonl$)" } },
     "evidence_hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" },
     "scope": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
     "invalidator_keys": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
     "generated_at": { "type": "string", "format": "date-time" },
     "expires_at": { "type": ["string", "null"], "format": "date-time" },
+    "freshness_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "generated_at", "evidence_hash"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "evidence_hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" },
+        "invalidator_snapshot_hash": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" }
+      }
+    },
     "repair": { "type": "string", "minLength": 1 },
-    "regression_tests": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "tests": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
     "retirement_condition": { "type": "string", "minLength": 1 },
     "supersedes": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "superseded_by": { "type": ["string", "null"] },
     "metadata": { "type": "object", "additionalProperties": true }
   }
 }
