@@ -87,13 +87,16 @@ test('compactTranscriptLines byte counts include newline separators', () => {
   assert.equal(r.afterBytes, Buffer.byteLength(r.lines.join('\n'), 'utf8'));
 });
 
-test('hard-limit emergency does not shrink a byte-safe recent window', () => {
+test('hard-limit pass compacts old assistant payload before shrinking a safe recent window', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-tc-'));
   try {
     const f = path.join(dir, 't.jsonl');
     const old = [];
     for (let i = 0; i < 40; i += 1) {
-      old.push(JSON.stringify({ uuid: `old${i}`, type: 'assistant', message: { role: 'assistant', content: [{ type: 'tool_use', id: `oldcall${i}`, name: 'Bash', input: { command: 'x'.repeat(3000) } }] } }));
+      old.push(JSON.stringify({ uuid: `old${i}`, type: 'assistant', message: { role: 'assistant', content: [
+        { type: 'thinking', thinking: 'r'.repeat(5000), signature: 's'.repeat(5000) },
+        { type: 'tool_use', id: `oldcall${i}`, name: 'Bash', input: { command: 'x'.repeat(3000) } },
+      ] } }));
     }
     const recent = [];
     for (let i = 0; i < 80; i += 1) recent.push(JSON.stringify({ uuid: `new${i}`, type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'ok' }] } }));
@@ -102,9 +105,15 @@ test('hard-limit emergency does not shrink a byte-safe recent window', () => {
     const recentBytes = Buffer.byteLength(recent.join('\n'), 'utf8');
     assert.ok(recentBytes <= 50000, 'fixture recent window fits hard limit');
     const r = compactTranscriptFile(f, { highWaterBytes: 1, hardLimitBytes: 50000, keepRecent: 80, byteFloor: 4096 });
-    assert.equal(r.ok, false);
-    assert.equal(r.reason, 'hard_limit_requires_old_line_emergency');
-    assert.equal(fs.readFileSync(f, 'utf8'), before, 'emergency leaves transcript untouched for coordinated handling');
+    assert.equal(r.ok, true);
+    assert.equal(r.reason, 'compacted');
+    assert.ok(r.afterBytes <= 50000, `compacted below hard limit: ${r.afterBytes}`);
+    const after = fs.readFileSync(f, 'utf8');
+    assert.ok(Buffer.byteLength(after, 'utf8') < Buffer.byteLength(before, 'utf8'));
+    const rows = after.split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    assert.equal(rows.length, 120, 'no line dropped');
+    assert.equal(rows.at(-1).message.content[0].text, 'ok', 'recent window remains byte-exact');
+    assert.match(JSON.stringify(rows[0]), /transcript-compactor/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
