@@ -29,12 +29,8 @@
  * @property {string} [tonic] - Tonic key
  */
 
-/**
- * Voice leading cost function optimizer.
- * Implements soft constraints for smooth voice motion, voice range limits,
- * and leap recovery rules using weighted penalty scoring.
- * @class
- */
+// Voice-leading optimizer scores smooth motion, range, crossings, parallels, and leap re
+// Weighted soft constraints produce a total penalty score.
 VoiceLeadingScore = class VoiceLeadingScore {
   constructor(config = {}) {
     const V = validator.create('VoiceLeadingScore');
