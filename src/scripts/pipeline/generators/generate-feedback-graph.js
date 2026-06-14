@@ -140,13 +140,8 @@ function loadExistingGraph() {
 
 // -Merge logic -
 
-/**
- * Merge source-scanned loops with existing JSON annotations.
- * - Existing entries: preserve all manual annotations, update sourceDomain/targetDomain
- *   from source if the existing values look like raw domain identifiers.
- * - New entries: scaffold with TODO placeholders.
- * - Conceptual entries: preserve verbatim (no source registration expected).
- */
+// Merge source-scanned loops with curated JSON annotations; conceptual loops stay verbat
+// Existing source entries keep manual annotations; new entries get TODO scaffolds.
 function isAutoScaffold(loop) {
   return loop &&
     loop.sourceDomain === 'TODO' &&
