@@ -1,38 +1,6 @@
 'use strict';
-/**
- * Filesystem-IPC client for the HME worker.
- *
- * Architectural intent (lesson #1 -- make the proxy/worker accelerators,
- * not single points of failure): callers can address the worker via
- * filesystem queue files instead of synchronous HTTP. The HTTP path
- * remains for backward compatibility; the queue path lets callers
- * proceed even when the worker is hung (CPU saturated, GIL hang) or
- * temporarily down.
- *
- * Contract:
- *   - Caller writes a job file to tmp/hme-worker-queue/<endpoint>/<jobId>.json
- *     atomically (tmp + rename). Body shape: {jobId, endpoint, body, ts}.
- *   - Worker tail-follows tmp/hme-worker-queue/, processes each job,
- *     writes the response to tmp/hme-worker-results/<jobId>.json
- *     atomically. Worker also unlinks the consumed job file.
- *   - Caller polls tmp/hme-worker-results/ for the matching jobId, with
- *     a configurable timeout. Successful reads delete the result file
- *     to keep the directory bounded.
- *
- * Use cases beyond proxy middleware:
- *   - i/* CLIs that want enrichment without booting the proxy.
- *   - Test harnesses that want deterministic worker invocations.
- *   - Future remote-trigger scenarios where the worker may not be
- *     reachable over HTTP but is process-local.
- *
- * Failure semantics:
- *   - dropJob always succeeds if the filesystem is writable. Returns jobId.
- *   - waitForResult returns null on timeout (caller decides degradation).
- *   - call() composes drop + wait with a single timeout.
- *
- * No retries here -- that's a caller policy. A failed call returns null;
- * caller can retry, fall back, or surface to the user.
- */
+// Filesystem IPC client for HME worker jobs: atomic queue files plus result polling.
+// HTTP remains for compatibility; queue timeouts return null so callers choose degradati
 
 const fs = require('fs');
 const path = require('path');
