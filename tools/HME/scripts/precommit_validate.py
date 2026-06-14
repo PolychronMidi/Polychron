@@ -541,6 +541,26 @@ def _mark_full_sweep_done() -> None:
         pass  # silent-ok: pending review
 
 
+def coherence_claim_gate_check() -> None:
+    if os.environ.get("HME_PRECOMMIT_SKIP_CLAIMS") == "1":
+        return
+    gate = ROOT / "tools" / "HME" / "scripts" / "check-coherence-claims.js"
+    emit = ROOT / "tools" / "HME" / "scripts" / "emit-runtime-claims.js"
+    if not gate.is_file() or not emit.is_file():
+        return
+    env = os.environ.copy()
+    env["PROJECT_ROOT"] = str(ROOT)
+    r = subprocess.run(["node", str(emit)], cwd=str(ROOT), capture_output=True, text=True, env=env)
+    if r.returncode != 0:
+        tail = (r.stdout + r.stderr).strip().splitlines()[-4:]
+        failures.append("runtime coherence claim emission failed: " + " | ".join(tail))
+        return
+    r = subprocess.run(["node", str(gate)], cwd=str(ROOT), capture_output=True, text=True, env=env)
+    if r.returncode != 0:
+        tail = (r.stdout + r.stderr).strip().splitlines()[-6:]
+        failures.append("runtime coherence claim gate failed: " + " | ".join(tail))
+
+
 def main() -> int:
     load_env_secrets()
     failures.extend(self_protect_failures(ROOT, POLICY, HOOK_PATH, POST_COMMIT_HOOK_PATH, MARKER))
