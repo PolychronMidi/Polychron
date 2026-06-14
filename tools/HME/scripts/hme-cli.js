@@ -1,44 +1,7 @@
 #!/usr/bin/env node
 const { requireEnv: _hmeRequireEnv } = require('../proxy/shared/load_env.js');
-/**
- * HME CLI dispatcher -- invokes a worker tool over HTTP.
- *
- * Usage:
- *   node tools/HME/scripts/hme-cli.js <tool-name> [flags...]
- *
- * Via shell wrappers in `i/` (the intended entry point):
- *   i/review  mode=forget
- *   i/learn   query="coupling targets"
- *   i/trace   target=coupling mode=impact section=3
- *   i/evolve  focus=boundaries
- *   i/status
- *   i/hme     <any-tool-name> key=value ...   # generic dispatcher
- *
- * Flag forms (all equivalent where applicable):
- *   key=value       -> {"key":"value"}
- *   --key value     -> {"key":"value"}
- *   --key=value     -> {"key":"value"}
- *   --flag          -> {"flag":true}
- *
- * Values that look numeric (integers or floats) are auto-converted.
- * "true"/"false" become booleans. JSON values ([...]/{...}) are parsed as JSON.
- * Everything else stays a string.
- *
- * To force a value to stay a string (bypass all coercion), prefix with `str:`:
- *   i/learn title=str:42          -> {"title": "42"}  (string, not int)
- *   i/learn tags=str:[a,b]        -> {"tags": "[a,b]"} (string, not parsed JSON)
- * The `str:` prefix is stripped before the value is sent.
- *
- * The worker endpoint is POST http://127.0.0.1:<port>/tool/<name> with the flag
- * map as the JSON body. Returns {ok:true, result:"..."} on success; the result
- * is printed to stdout. Non-200 or {ok:false} responses print to stderr and
- * exit 1.
- *
- * Environment:
- *   HME_WORKER_PORT  Worker port
- *   HME_CLI_HOST     Worker host override
- *   HME_CLI_TIMEOUT_MS  Per-request timeout (default 120000)
- */
+// HME CLI dispatcher: parse i/* flags and POST them to worker /tool/<name>.
+// Supports key=value, --key value, --key=value, booleans, JSON, numeric coercion, and st
 
 'use strict';
 
