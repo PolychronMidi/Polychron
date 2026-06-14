@@ -340,6 +340,7 @@ def main() -> int:
     tool_input = _tool_input(payload)
     caller = str(payload.get("_hme_team_role") or os.environ.get("HME_TEAM_ROLE") or "").strip().lower()
     request_tier = _tool_tier(tool_input)
+    proof = tool_input.get("_hme_fork_proof") if isinstance(tool_input.get("_hme_fork_proof"), dict) else None
     if request_tier is None:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
