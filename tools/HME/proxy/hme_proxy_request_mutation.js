@@ -217,7 +217,7 @@ async function mutateClaudeRequest({
         emit({ event: 'stop_reminder_inject', session });
         bodyDirtiedByStrip = true;
       }
-      if (shouldInject()) {
+      if (!omniTarget && shouldInject()) {
         const statusBlock = consumeStatusContext(session);
         if (statusBlock) {
           const injectedStatus = injectIntoLastUserMessage(payload, statusBlock.trim(), 'HME Session Status (proxy-injected)');
