@@ -323,3 +323,51 @@ test('maybeCompactTranscriptFile emits a transcript_compaction telemetry event',
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('compactToolResultSidecars caps Claude persisted tool-result sidecars automatically', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-sidecar-'));
+  try {
+    const project = path.join(dir, 'proj');
+    const sid = 'session-a';
+    const sidecarDir = path.join(project, sid, 'tool-results');
+    fs.mkdirSync(sidecarDir, { recursive: true });
+    const transcript = path.join(project, `${sid}.jsonl`);
+    fs.writeFileSync(transcript, '{}\n');
+    const big = path.join(sidecarDir, 'big.txt');
+    const small = path.join(sidecarDir, 'small.txt');
+    fs.writeFileSync(big, 'A'.repeat(20000));
+    fs.writeFileSync(small, 'ok');
+    const r = compactToolResultSidecars(transcript, { maxBytes: 4096, headBytes: 512, tailBytes: 512, scanProject: false });
+    assert.equal(r.ok, true);
+    assert.equal(r.changedFiles, 1);
+    assert.ok(fs.statSync(big).size < 4096, 'large sidecar is replaced with a small stub');
+    assert.equal(fs.readFileSync(small, 'utf8'), 'ok', 'small sidecar untouched');
+    assert.match(fs.readFileSync(big, 'utf8'), /persisted tool-output sidecar elided/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('maybeCompactTranscriptFile runs sidecar compaction even when JSONL is under high-water', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-sidecar-auto-'));
+  try {
+    const project = path.join(dir, 'proj');
+    const sid = 'session-b';
+    const sidecarDir = path.join(project, sid, 'tool-results');
+    fs.mkdirSync(sidecarDir, { recursive: true });
+    const transcript = path.join(project, `${sid}.jsonl`);
+    fs.writeFileSync(transcript, '{}\n');
+    const big = path.join(sidecarDir, 'big.txt');
+    fs.writeFileSync(big, 'B'.repeat(20000));
+    const r = maybeCompactTranscriptFile({
+      transcriptPath: transcript,
+      env: { HME_TRANSCRIPT_SIDECAR_MAX_KB: '4', HME_TRANSCRIPT_SIDECAR_HEAD_KB: '1', HME_TRANSCRIPT_SIDECAR_TAIL_KB: '1' },
+      trigger: 'stop',
+    });
+    assert.equal(r.reason, 'under_high_water');
+    assert.equal(r.sidecars.changedFiles, 1);
+    assert.ok(fs.statSync(big).size < 4096, 'sidecar compaction is not gated by JSONL high-water');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
