@@ -305,6 +305,7 @@ MODES = {
     "efficacy": efficacy_view,
     "patterns": patterns_view,
     "diff": diff_view,
+    "claims": claims_view,
     "invariants": invariants_view,
 }
 
