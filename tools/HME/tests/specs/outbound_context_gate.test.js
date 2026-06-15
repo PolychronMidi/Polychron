@@ -94,6 +94,26 @@ test('fresh statusline truth prevents conservative-estimator false over-window',
   assert.equal(v.source, 'statusline');
 });
 
+test('statusline from another session cannot force outbound over-window', () => {
+  const v = evaluateOutbound({
+    payload: { model: 'gpt-5.5-xhigh', max_tokens: 64000, messages: [{ role: 'user', content: 'x' }] },
+    modelId: 'gpt-5.5-xhigh',
+    swapChain: [],
+    deps: {
+      expectedSessionId: 'this-session',
+      estimate: () => 398025,
+      inputBudgetFor: () => 416000,
+      compact: () => { throw new Error('must not compact'); },
+      statuslineUsage: () => ({ used: 432653, size: 1000000, modelId: 'claude-opus-4-8[1m]', sessionId: 'other-session' }),
+    },
+  });
+  assert.equal(v.ok, true);
+  assert.equal(v.action, 'fit');
+  assert.equal(v.source, 'semantic');
+  assert.equal(v.tokens, 398025);
+  assert.equal(v.budget, 416000);
+});
+
 test('dynamic budget uses requested output instead of full max-output reserve', () => {
   const budget = effectiveInputBudgetForPayload(
     { max_tokens: 16 },
