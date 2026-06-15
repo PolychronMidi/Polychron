@@ -327,8 +327,9 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   // Size gate: if the request won't fit the selected swap model, first try a
   // larger-window NON-skipped chain model; only fall back to the requested Claude
   // model DIRECT when Claude is NOT in providers_to_skip. A paused Claude must
-  const _wc = swapWindowCheck(payload, result.swapModel, env);
-  const _wcTrace = `src=${_wc.source} semantic=${_wc.semanticTokens || 0} statusline=${_wc.statuslineTokens || 0}`;
+  const expectedSessionId = String((clientReq && clientReq.headers && clientReq.headers['x-claude-code-session-id']) || payloadSessionId(payload) || '').trim();
+  const _wc = swapWindowCheck(payload, result.swapModel, env, projectRoot, expectedSessionId);
+  const _wcTrace = `src=${_wc.source} semantic=${_wc.semanticTokens || 0} statusline=${_wc.statuslineTokens || 0} statusline_session=${_wc.statuslineSessionId || ''} expected_session=${expectedSessionId || ''}`;
   if (_wc.exceeds) {
     const fit = largestFittingChainModel(result.swapChain, _wc.estTokens, _wc.fitFraction, env);
     if (fit && upstreamModelId(fit.model) !== result.swapModel) {
