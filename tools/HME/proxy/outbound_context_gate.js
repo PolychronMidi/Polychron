@@ -52,7 +52,11 @@ function _freshStatuslineUsage(env, projectRoot, deps) {
   const reader = deps.statuslineUsage || statuslineUsage;
   const sl = reader(env, projectRoot);
   const used = Number(sl && sl.used || 0);
-  return used > 0 ? { used, size: Number(sl.size || 0), modelId: String(sl.modelId || '') } : null;
+  if (used <= 0) return null;
+  const expected = String(deps.expectedSessionId || '').trim();
+  const actual = String(sl && sl.sessionId || '').trim();
+  if (expected && actual !== expected) return null;
+  return { used, size: Number(sl.size || 0), modelId: String(sl.modelId || ''), sessionId: actual };
 }
 
 function _effectiveTokens(payload, env, modelId, projectRoot, deps) {
