@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { emit, PROJECT_ROOT } = require('./shared');
+const { emit, PROJECT_ROOT, payloadSessionId } = require('./shared');
 const { compactLargeInteractiveAnthropicPayload, modelOutputInfo } = require('./hme_proxy_request_mutation');
 const { submitCcCompactOnce } = require('./cc_control');
 const { inputBudgetFor, estimateTokens, statuslineUsage } = require('./context_pressure');
