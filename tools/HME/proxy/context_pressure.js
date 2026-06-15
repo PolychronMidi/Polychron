@@ -69,19 +69,30 @@ function estimateTokens(payload, env = process.env, projectRoot = PROJECT_ROOT, 
 // Unified pressure reading against a target model window.
 //   { usedTokens, budget, source, semanticTokens, statuslineTokens, fraction, headroom }
 // preferStatusline: when true and the statusline truth file is fresh with real
-function contextPressure({ payload, modelId, env = process.env, projectRoot = PROJECT_ROOT, preferStatusline = false } = {}) {
+function _statuslineMatchesSession(sl, expectedSessionId = '') {
+  const expected = String(expectedSessionId || '').trim();
+  if (!expected) return true;
+  const actual = String(sl && sl.sessionId || '').trim();
+  return actual && actual === expected;
+}
+
+function contextPressure({ payload, modelId, env = process.env, projectRoot = PROJECT_ROOT, preferStatusline = false, expectedSessionId = '' } = {}) {
   const budget = inputBudgetFor(modelId);
   const semanticTokens = estimateTokens(payload, env, projectRoot, modelId);
-  const sl = preferStatusline ? statuslineUsage(env, projectRoot) : { used: 0, size: 0, modelId: '' };
+  const sl = preferStatusline ? statuslineUsage(env, projectRoot) : { used: 0, size: 0, modelId: '', sessionId: '' };
   const statuslineTokens = sl.used || 0;
-  const usedTokens = preferStatusline && statuslineTokens > 0 ? statuslineTokens : semanticTokens;
-  const source = preferStatusline && statuslineTokens > 0 ? 'statusline' : 'semantic';
+  const statuslineTrusted = preferStatusline && statuslineTokens > 0 && _statuslineMatchesSession(sl, expectedSessionId);
+  const usedTokens = statuslineTrusted ? statuslineTokens : semanticTokens;
+  const source = statuslineTrusted ? 'statusline' : 'semantic';
   const known = budget > 0;
   return {
     usedTokens,
     semanticTokens,
     statuslineTokens,
     statuslineModel: sl.modelId || '',
+    statuslineSessionId: sl.sessionId || '',
+    expectedSessionId: String(expectedSessionId || ''),
+    statuslineTrusted,
     budget,
     source,
     fraction: known ? usedTokens / budget : null,
