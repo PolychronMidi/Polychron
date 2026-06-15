@@ -38,7 +38,7 @@ function statuslineUsage(env = process.env, projectRoot = PROJECT_ROOT) {
     const sessionId = String((data && data.session_id) || '');
     return { used, size, modelId, sessionId };
   } catch (_e) {
-    return { used: 0, size: 0, modelId: '' };  // silent-ok: absent/corrupt statusline = no ground truth
+    return { used: 0, size: 0, modelId: '', sessionId: '' };  // silent-ok: absent/corrupt statusline = no ground truth
   }
 }
 
