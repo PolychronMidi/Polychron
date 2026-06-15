@@ -2,7 +2,7 @@
 
 const _fs = require('fs');
 const _path = require('path');
-const { PROJECT_ROOT, loadModelsJson } = require('./shared');
+const { PROJECT_ROOT, loadModelsJson, payloadSessionId } = require('./shared');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, providerRequestOverrides, firstLegacyChatCandidate,
 } = require('./omniroute_protocol');
