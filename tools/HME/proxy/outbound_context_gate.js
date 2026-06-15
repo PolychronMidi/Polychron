@@ -66,9 +66,9 @@ function _effectiveTokens(payload, env, modelId, projectRoot, deps) {
   // assembled conversation. The semantic estimator is deliberately conservative,
   const sl = deps.estimate && !deps.statuslineUsage ? null : _freshStatuslineUsage(env, projectRoot, deps);
   if (sl && sl.used > 0) {
-    return { tokens: sl.used, source: 'statusline', semanticTokens: semantic, statuslineTokens: sl.used, statuslineModel: sl.modelId };
+    return { tokens: sl.used, source: 'statusline', semanticTokens: semantic, statuslineTokens: sl.used, statuslineModel: sl.modelId, statuslineSessionId: sl.sessionId || '' };
   }
-  return { tokens: semantic, source: 'semantic', semanticTokens: semantic, statuslineTokens: 0, statuslineModel: '' };
+  return { tokens: semantic, source: 'semantic', semanticTokens: semantic, statuslineTokens: 0, statuslineModel: '', statuslineSessionId: '' };
 }
 
 // Core gate. Mutates `payload` in place when it compacts. Returns a verdict:
