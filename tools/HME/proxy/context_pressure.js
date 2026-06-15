@@ -25,7 +25,7 @@ function statuslineUsage(env = process.env, projectRoot = PROJECT_ROOT) {
   try {
     const file = _statuslineFile(env, projectRoot);
     const stat = fs.statSync(file);
-    if ((Date.now() - stat.mtimeMs) > _STATUSLINE_STALE_MS) return { used: 0, size: 0, modelId: '' };
+    if ((Date.now() - stat.mtimeMs) > _STATUSLINE_STALE_MS) return { used: 0, size: 0, modelId: '', sessionId: '' };
     const data = JSON.parse(fs.readFileSync(file, 'utf8'));
     const ctx = (data && data.context_window) || {};
     const usage = ctx.current_usage || {};
