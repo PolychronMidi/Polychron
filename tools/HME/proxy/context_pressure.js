@@ -35,7 +35,8 @@ function statuslineUsage(env = process.env, projectRoot = PROJECT_ROOT) {
       || positiveNumber(ctx.total_input_tokens);
     const size = positiveNumber(ctx.context_window_size);
     const modelId = String((data && data.model && (data.model.id || data.model.api_model)) || '');
-    return { used, size, modelId };
+    const sessionId = String((data && data.session_id) || '');
+    return { used, size, modelId, sessionId };
   } catch (_e) {
     return { used: 0, size: 0, modelId: '' };  // silent-ok: absent/corrupt statusline = no ground truth
   }
