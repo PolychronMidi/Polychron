@@ -17,14 +17,14 @@ const {
 
 // swapWindowCheck: does the request's estimated input exceed the swap model's
 // input cap (with HME_OMNI_SWAP_FIT_FRACTION headroom)? budget 0 => unknown => no gate.
-function swapWindowCheck(payload, swapModel, env = process.env, projectRoot = PROJECT_ROOT) {
+function swapWindowCheck(payload, swapModel, env = process.env, projectRoot = PROJECT_ROOT, expectedSessionId = '') {
   const fitFraction = Number(env.HME_OMNI_SWAP_FIT_FRACTION || '0.95');
   const { contextPressure } = require('./context_pressure');
-  // Ground the swap decision in real statusline usage when available so the gate
-  // does not false-bail a turn that genuinely fits (the user's symptom: never went
-  const { usedTokens: estTokens, budget, source, semanticTokens, statuslineTokens, statuslineModel } = contextPressure({ payload, modelId: swapModel, env, projectRoot, preferStatusline: true });
+  // Ground the swap decision in real statusline usage only when it belongs to
+  // this request's Claude session; a global statusline file from another live
+  const { usedTokens: estTokens, budget, source, semanticTokens, statuslineTokens, statuslineModel, statuslineSessionId, statuslineTrusted } = contextPressure({ payload, modelId: swapModel, env, projectRoot, preferStatusline: true, expectedSessionId });
   const exceeds = budget > 0 && fitFraction > 0 && estTokens > budget * fitFraction;
-  return { exceeds, estTokens, budget, fitFraction, source, semanticTokens, statuslineTokens, statuslineModel };
+  return { exceeds, estTokens, budget, fitFraction, source, semanticTokens, statuslineTokens, statuslineModel, statuslineSessionId, expectedSessionId, statuslineTrusted };
 }
 
 // Largest-window chain model whose window holds estTokens (with fit headroom).
