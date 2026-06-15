@@ -60,6 +60,29 @@ test('fresh statusline usage grounds swap size gate and prevents false semantic 
   }
 });
 
+test('statusline from another session does not trip swap size gate', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-size-statusline-mismatch-'));
+  const statusline = path.join(dir, 'statusline.json');
+  fs.writeFileSync(statusline, JSON.stringify({
+    session_id: 'other-session',
+    model: { id: 'claude-opus-4-8[1m]' },
+    context_window: {
+      context_window_size: 1000000,
+      current_usage: { input_tokens: 432653, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+    },
+  }));
+  try {
+    const payload = { system: '', tools: [], messages: [{ role: 'user', content: 'x'.repeat(1000) }] };
+    const wc = swapWindowCheck(payload, 'gpt-5.5-xhigh', { ...ENV, HME_STATUSLINE_PATH: statusline }, dir, 'this-session');
+    assert.equal(wc.source, 'semantic');
+    assert.equal(wc.statuslineTokens, 432653);
+    assert.equal(wc.statuslineTrusted, false);
+    assert.equal(wc.exceeds, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('size gate never falls back direct to a provider listed in providers_to_skip', () => {
   const cfg = {
     providers_to_skip: { providers: ['anthropic', 'claude'] },
