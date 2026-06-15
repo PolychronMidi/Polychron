@@ -117,9 +117,10 @@ function applyOutboundContextGate({
   }
   const gateModel = isOmniRouteSwap ? swapModel : (payload.model || '');
   const isPreflightSmoke = clientReq && clientReq.headers && clientReq.headers['x-hme-preflight-smoke'] === '1';
+  const expectedSessionId = String((clientReq && clientReq.headers && clientReq.headers['x-claude-code-session-id']) || payloadSessionId(payload) || '').trim();
   const evalDeps = isPreflightSmoke
-    ? { statuslineUsage: () => ({ used: 0, size: 0, modelId: '' }) }
-    : {};
+    ? { statuslineUsage: () => ({ used: 0, size: 0, modelId: '', sessionId: '' }) }
+    : { expectedSessionId };
   const verdict = evaluateOutbound({ payload, modelId: gateModel, swapChain, projectRoot, deps: evalDeps });
   if (verdict.action === 'compacted') {
     nextOutBody = Buffer.from(JSON.stringify(payload), 'utf8');
