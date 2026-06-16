@@ -75,6 +75,7 @@ def run_engine() -> dict:
             print(f"[trace] {v.name} done in {time.time()-_t0:.2f}s", file=sys.stderr, flush=True)
         kind = _kind_for(v)
         results[v.name] = {
+            "name": v.name,
             "category": v.category,
             "kind": kind,
             "subtag": getattr(v, "subtag", "") or "",
