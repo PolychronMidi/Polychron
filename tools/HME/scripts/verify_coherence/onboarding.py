@@ -55,6 +55,8 @@ class StatesSyncVerifier(Verifier):
 
 @register
 class OnboardingFlowVerifier(Verifier):
+    """Ensure onboarding flow tests still pass across the state machine."""
+
     name = "onboarding-flow"
     category = "state"
     subtag = "structural-integrity"
