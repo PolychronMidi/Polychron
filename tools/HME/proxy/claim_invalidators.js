@@ -64,6 +64,7 @@ function gitChangedInvalidators(root = PROJECT_ROOT, opts = {}) {
   try {
     out = cp.execFileSync('git', ['-C', root, 'diff', '--name-only', since, '--'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   } catch (_e) {
+    // silent-ok: diff can fail against an absent object; porcelain fallback still surfac
     try { out = cp.execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').map((l) => l.slice(3)).join('\n'); } catch (__e) { out = ''; }
   }
   return out.split('\n').map((s) => s.trim()).filter(Boolean).map((rel) => {
