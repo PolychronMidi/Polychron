@@ -184,8 +184,22 @@ def _persist_snapshot(report: dict) -> None:
         snapshot = {
             "ts": int(time.time()),
             "hci": report.get("hci"),
+            "static_hci": report.get("static_hci"),
+            "runtime_hci": report.get("runtime_hci"),
+            "verifier_count": report.get("verifier_count"),
+            "categories": report.get("categories") or {},
+            "kinds": report.get("kinds") or {},
             "verifiers": {
-                name: {"status": info.get("status"), "score": info.get("score")}
+                name: {
+                    "name": info.get("name") or name,
+                    "category": info.get("category"),
+                    "kind": info.get("kind"),
+                    "subtag": info.get("subtag"),
+                    "weight": info.get("weight"),
+                    "status": info.get("status"),
+                    "score": info.get("score"),
+                    "summary": info.get("summary", "snapshot"),
+                }
                 for name, info in (report.get("verifiers") or {}).items()
             },
         }
