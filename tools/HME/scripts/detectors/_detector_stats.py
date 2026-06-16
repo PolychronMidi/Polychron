@@ -52,6 +52,7 @@ def emit_stats(detector: str | None, verdict: str, detail: str) -> None:
         from hme_paths import hme_metric  # shared env-ref expansion + root confinement
         out_path = str(hme_metric("detector-stats.jsonl"))
     except Exception:
+        # silent-ok: hme_paths import can fail in isolated detector runs; fallback remain
         out_path = os.path.join(root, "tools", "HME", "runtime", "metrics", "detector-stats.jsonl")
     try:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
