@@ -144,6 +144,8 @@ class AutocommitHealthVerifier(Verifier):
 
 @register
 class ShimHealthVerifier(Verifier):
+    """Ensure the worker health endpoint is reachable during runtime checks."""
+
     name = "worker-health"
     category = "runtime"
     subtag = "structural-integrity"
