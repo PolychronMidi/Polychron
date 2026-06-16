@@ -275,7 +275,7 @@ flowchart LR
     tools__HME__policies["HME/policies/<br/><i>Single registration + configuration surface for every hook-time rule</i>"]
     tools__HME__proxy["HME/proxy/<br/><i>Authoritative MITM proxy between Claude Code and the Anthropic API. It owns c...</i>"]
     tools__HME__runtime["HME/runtime/"]
-    tools__HME__schemas["HME/schemas/"]
+    tools__HME__schemas["HME/schemas/<br/><i>JSON schemas for HME runtime and coherence artifacts. Keep schemas small and ...</i>"]
     tools__HME__scripts["HME/scripts/<br/><i>HME scripts: verifiers, audits, builders, agents, dashboards.</i>"]
     tools__HME__service["HME/service/<br/><i>HME runtime service (worker, daemons, analysis): one long-lived process per k...</i>"]
     tools__HME__systemd["HME/systemd/<br/><i>systemd unit files for running HME service components as user/system services.</i>"]
