@@ -14,6 +14,7 @@ function _decodeQueue(b64) {
     const arr = JSON.parse(Buffer.from(String(b64 || ''), 'base64').toString('utf8'));
     return Array.isArray(arr) ? arr.map(String) : [];
   } catch (_e) {
+    // silent-ok: malformed/expired queue id simply means no read-chain continuation.
     return [];
   }
 }
