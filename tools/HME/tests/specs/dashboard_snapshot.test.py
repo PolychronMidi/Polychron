@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_lib"))
 import specenv  # noqa: F401
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 SCRIPT = ROOT / "tools" / "HME" / "scripts" / "build-dashboard.py"
 
 
