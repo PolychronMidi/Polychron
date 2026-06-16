@@ -258,6 +258,7 @@ def _find_sources(text: str, base_dir: Path) -> list[Path]:
             .replace('$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)', str(base_dir))
             .replace("${_HME_HELPERS_DIR}", str(REPO_ROOT / "tools/HME/hooks/helpers"))
             .replace("${_HME_SAFETY_DIR}", str(REPO_ROOT / "tools/HME/hooks/helpers/safety"))
+            .replace("${_HBOOT_DIR}", str(REPO_ROOT / "tools/HME/hooks/helpers"))
             .replace("${_STOP_DIR}", str(REPO_ROOT / "tools/HME/hooks/lifecycle"))
             .replace('"$_HME_ENV_FILE"', str(ENV_FILE))
             .replace("${PROJECT_ROOT:" + "-}", str(REPO_ROOT))

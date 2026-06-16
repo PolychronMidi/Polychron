@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
+if (!process.env.PROJECT_ROOT) throw new Error('PROJECT_ROOT is required');
+const PROJECT_ROOT = process.env.PROJECT_ROOT;
 const MARKER = 'hme_read_chain';
 
 function readStdin() {

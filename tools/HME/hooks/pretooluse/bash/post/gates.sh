@@ -6,18 +6,22 @@ TRIMMED_CHECK=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
 _nexus_latest_ts() {
   local type="$1"
   _nexus_ensure
+  # silent-ok: absent nexus entries are represented by empty output.
   grep -oE "${type}:[0-9]+:" "$_NEXUS_FILE" 2>/dev/null | tail -1 | cut -d: -f2
+}
+_is_uint() {
+  case "${1:-}" in ''|*[!0-9]*) return 1 ;; *) return 0 ;; esac
 }
 _review_is_newer_than_failures() {
   local r issue parse cli maxfail
   r=$(_nexus_latest_ts REVIEW); issue=$(_nexus_latest_ts REVIEW_ISSUES)
   parse=$(_nexus_latest_ts REVIEW_PARSE_FAILED); cli=$(_nexus_latest_ts REVIEW_CLI_FAILURE)
-  [ -n "$r" ] || return 1
+  _is_uint "$r" || return 1
   maxfail=0
-  [ -n "$issue" ] && [ "$issue" -gt "$maxfail" ] 2>/dev/null && maxfail="$issue"
-  [ -n "$parse" ] && [ "$parse" -gt "$maxfail" ] 2>/dev/null && maxfail="$parse"
-  [ -n "$cli" ] && [ "$cli" -gt "$maxfail" ] 2>/dev/null && maxfail="$cli"
-  [ "$r" -gt "$maxfail" ] 2>/dev/null
+  _is_uint "$issue" && [ "$issue" -gt "$maxfail" ] && maxfail="$issue"
+  _is_uint "$parse" && [ "$parse" -gt "$maxfail" ] && maxfail="$parse"
+  _is_uint "$cli" && [ "$cli" -gt "$maxfail" ] && maxfail="$cli"
+  [ "$r" -gt "$maxfail" ]
 }
 if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
   if _onb_before "reviewed"; then

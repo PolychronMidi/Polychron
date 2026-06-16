@@ -42,6 +42,12 @@
       "kind": "adapter-boundary",
       "owner": "todo-engine",
       "reason": "LIFESAVER runtime alerts enter the unified TODO engine as status-0 todos here."
+    },
+    {
+      "path": "tools/HME/scripts/read-chain-transcript-bridge.js",
+      "kind": "adapter-boundary",
+      "owner": "read-chain",
+      "reason": "PostToolUse Read events bridge native Claude transcript rows into consult read-chain proof state."
     }
   ]
 }
