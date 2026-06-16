@@ -203,8 +203,8 @@ def _load_template() -> str:
 
 
 
-def build() -> int:
-    data = _collect_data()
+def build(*, refresh_verifiers: bool = False) -> int:
+    data = _collect_data(refresh_verifiers=refresh_verifiers)
     html = (
         _load_template()
         .replace("__DATA__", json.dumps(data, default=str))
