@@ -107,8 +107,25 @@ def _load_holograph_series() -> dict:
     return {"samples": samples}
 
 
-def _load_current_verifiers() -> dict:
-    """Run verify-coherence.py --json to get the current verifier state."""
+def _load_verifier_snapshot(max_age_sec: float | None = None) -> dict:
+    """Load the latest verifier snapshot when it is fresh and structurally useful."""
+    if max_age_sec is None:
+        max_age_sec = float(os.environ.get("HME_DASHBOARD_VERIFIER_MAX_AGE_SEC", "3600"))
+    path = os.path.join(_PROJECT, "src", "output", "metrics", "hci-verifier-snapshot.json")
+    snap = _safe_load(path)
+    if not snap:
+        return {}
+    ts = snap.get("ts")
+    if not isinstance(ts, (int, float)) or time.time() - ts > max_age_sec:
+        return {}
+    if not snap.get("categories") or not snap.get("verifiers"):
+        return {}
+    snap["source"] = "hci-verifier-snapshot"
+    return snap
+
+
+def _run_current_verifiers() -> dict:
+    """Run verify-coherence.py --json for an explicit dashboard refresh."""
     script = os.path.join(_PROJECT, "tools", "HME", "scripts", "verify-coherence.py")
     try:
         rc = subprocess.run(
@@ -116,10 +133,22 @@ def _load_current_verifiers() -> dict:
             capture_output=True, text=True, timeout=90,
             env={**os.environ, "PROJECT_ROOT": _PROJECT},
         )
-        return json.loads(rc.stdout)
+        out = json.loads(rc.stdout)
+        if isinstance(out, dict):
+            out["source"] = "verify-coherence.py --json"
+        return out
     except Exception as e:
         sys.stderr.write(f"verifier fetch failed: {e}\n")
         return {}
+
+
+def _load_current_verifiers(*, refresh: bool = False) -> dict:
+    """Use the latest HCI snapshot by default; run the full verifier only on request."""
+    if not refresh:
+        snap = _load_verifier_snapshot()
+        if snap:
+            return snap
+    return _run_current_verifiers()
 
 
 def _aggregate_hook_latency() -> dict:
