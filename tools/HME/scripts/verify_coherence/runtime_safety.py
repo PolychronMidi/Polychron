@@ -116,6 +116,8 @@ class LifesaverIntegrityVerifier(Verifier):
 
 @register
 class LifesaverHeartbeatVerifier(Verifier):
+    """Ensure the canonical LIFESAVER heartbeat is fresh enough to trust hooks."""
+
     name = "lifesaver-heartbeat"
     category = "runtime"
     subtag = "structural-integrity"
