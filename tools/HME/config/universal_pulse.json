@@ -55,7 +55,7 @@
         "stop_chain:autocommit": 2600,
         "stop_chain:holograph": 2200,
         "detectors": 700,
-        "pretooluse_edit": 700,
+        "pretooluse_edit": 900,
         "pretooluse_bash": 700,
         "universal-pulse-supervisor": 1500,
         "proxy-supervisor": 7000
