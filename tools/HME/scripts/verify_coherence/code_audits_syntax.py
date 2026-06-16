@@ -82,6 +82,8 @@ class ShellUndefinedVarsVerifier(Verifier):
 
 @register
 class PythonSyntaxVerifier(Verifier):
+    """Ensure HME Python service files parse before runtime use."""
+
     name = "python-syntax"
     category = "code"
     subtag = "structural-integrity"
