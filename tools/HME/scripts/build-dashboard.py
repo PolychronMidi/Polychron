@@ -225,7 +225,8 @@ def build(*, refresh_verifiers: bool = False) -> int:
 
 
 def main(argv: list) -> int:
-    rc = build()
+    refresh_verifiers = "--refresh-verifiers" in argv
+    rc = build(refresh_verifiers=refresh_verifiers)
     if rc != 0:
         return rc
     if "--open" in argv:
