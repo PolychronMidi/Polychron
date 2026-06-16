@@ -114,6 +114,7 @@ echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null  # silent-ok: optional fallback path.
 _CAP_MB="${HME_SESSION_TRANSCRIPT_MAX_MB:-28}"
 case "$_CAP_MB" in ''|*[!0-9]*) _CAP_MB=28 ;; esac
 _CAP_BYTES=$((_CAP_MB * 1024 * 1024))
+# silent-ok: missing transcript file counts as size 0; cap enforcement is best-effort.
 _SIZE=$(stat -c %s "$LOG_FILE" 2>/dev/null || echo 0)
 if [ "$_SIZE" -gt "$_CAP_BYTES" ] 2>/dev/null; then
   _LOCKDIR="$PROJECT_ROOT/tools/HME/runtime/session-transcript-cap.lock"
