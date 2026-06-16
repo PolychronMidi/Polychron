@@ -34,6 +34,8 @@ from ._base import (
 
 @register
 class DocDriftVerifier(Verifier):
+    """Ensure canonical docs do not retain legacy tool references."""
+
     name = "doc-drift"
     category = "doc"
     subtag = "drift-detection"
