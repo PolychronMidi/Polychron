@@ -22,6 +22,7 @@ function detectorKeyMap() {
     }
     return out;
   } catch (_e) {
+    // silent-ok: missing registry disables alias expansion only; raw detector keys still
     return {};
   }
 }
