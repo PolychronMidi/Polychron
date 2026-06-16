@@ -329,6 +329,8 @@ _DISPATCHER_FOR = {
     HOOKS_DIR / "helpers" / "safety":      _SAFETY_SH,
     HOOKS_DIR / "lifecycle" / "stop":      _SAFETY_SH,
     HOOKS_DIR / "pretooluse" / "bash":     HOOKS_DIR / "pretooluse" / "pretooluse_bash.sh",
+    HOOKS_DIR / "pretooluse" / "bash" / "pre":  HOOKS_DIR / "pretooluse" / "pretooluse_bash.sh",
+    HOOKS_DIR / "pretooluse" / "bash" / "post": HOOKS_DIR / "pretooluse" / "pretooluse_bash.sh",
 }
 
 # Vars set by JS-side dispatcher wrappers BEFORE sourcing a sub-file.
