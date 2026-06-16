@@ -71,24 +71,49 @@ def _extract_rules() -> list:
     return rules
 
 
+_RECENT_WINDOW_SEC = float(os.environ.get("HME_MEMETIC_DRIFT_WINDOW_SEC", 24 * 60 * 60))
+_TS_RE = re.compile(r"^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z\]")
+
+
+def _recent_error_lines(path: str) -> list[str]:
+    """Return hme-errors lines inside the drift window.
+
+    H16 is an adaptation signal: historical scar tissue should remain in logs
+    without keeping the current HCI permanently below 100.
+    """
+    cutoff = time.time() - _RECENT_WINDOW_SEC
+    rows: list[str] = []
+    with open(path) as f:
+        for line in f:
+            match = _TS_RE.match(line)
+            if not match:
+                continue
+            try:
+                ts = datetime.fromisoformat(match.group(1)).replace(tzinfo=timezone.utc).timestamp()
+            except ValueError:
+                continue
+            if ts >= cutoff:
+                rows.append(line)
+    return rows
+
+
 def _violation_count() -> dict:
-    """Count violation signals in error log + git log (last 200 commits)."""
+    """Count violation signals in recent error log + recent git messages."""
     counts = {rule: 0 for rule in _VIOLATION_SIGNALS}
-    # Error log
+    # Error log -- bounded to the recent adaptation window, not all-time history.
     err_log = os.path.join(_PROJECT, "log", "hme-errors.log")
     if os.path.isfile(err_log):
         try:
-            with open(err_log) as f:
-                text = f.read().lower()
+            text = "".join(_recent_error_lines(err_log)).lower()
             for rule, patterns in _VIOLATION_SIGNALS.items():
                 for pat in patterns:
                     counts[rule] += len(re.findall(pat, text, re.IGNORECASE))
         except Exception:
             pass  # silent-ok: diagnostic; failure non-fatal
-    # Git log (commit messages)
+    # Git log (commit messages) -- same recent window as error-log evidence.
     try:
         rc = subprocess.run(
-            ["git", "-C", _PROJECT, "log", "--oneline", "-200"],
+            ["git", "-C", _PROJECT, "log", f"--since={int(_RECENT_WINDOW_SEC)} seconds ago", "--oneline", "-200"],
             capture_output=True, text=True, timeout=5,
         )
         git_text = rc.stdout.lower()
