@@ -20,6 +20,8 @@ from ._base import (
 
 @register
 class CanonicalPrecommitHookVerifier(Verifier):
+    """Ensure installed git hooks and hygiene policy match canonical assets."""
+
     name = "canonical-precommit-hook"
     category = "repo-hygiene"
     subtag = "secret-prevention"
