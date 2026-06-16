@@ -230,6 +230,7 @@ function main() {
       tests: ['self_coherence_substrate.test.js'],
     }));
   } catch (e) {
+    // Surface claim-write failure in the report metadata; pipeline output still writes.
     report.meta.claim_write_error = e && e.message ? e.message : String(e);
   }
 
