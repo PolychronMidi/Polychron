@@ -33,6 +33,7 @@ embeds all data as JSON + uses plotly.js via CDN.
 
 Usage:
     python3 tools/HME/scripts/build-dashboard.py
+    python3 tools/HME/scripts/build-dashboard.py --refresh-verifiers  # run full HCI JSON instead of using fresh snapshot
     python3 tools/HME/scripts/build-dashboard.py --open  # xdg-open after write
 """
 import glob
