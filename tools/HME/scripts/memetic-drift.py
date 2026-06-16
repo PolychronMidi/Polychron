@@ -126,6 +126,7 @@ def _violation_count() -> dict:
 
 
 def analyze() -> dict:
+    generated_at = time.time()
     rules = _extract_rules()
     violations = _violation_count()
     most_violated = sorted(violations.items(), key=lambda x: -x[1])[:10]
@@ -143,7 +144,10 @@ def analyze() -> dict:
             })
 
     return {
-        "generated_at": time.time(),
+        "generated_at": generated_at,
+        "evidence_scope": "recent",
+        "window_sec": _RECENT_WINDOW_SEC,
+        "cutoff_ts": generated_at - _RECENT_WINDOW_SEC,
         "claude_md_rule_count": len(rules),
         "rules_sample": rules[:10],
         "violation_counts": violations,
