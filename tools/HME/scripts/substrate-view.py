@@ -245,6 +245,7 @@ def claims_view():
             try:
                 c = _load(os.path.join("tools/HME/runtime/claims", name)) or {}
             except Exception:
+                # silent-ok: unreadable claim is shown as unknown in this advisory status
                 c = {}
             cid = c.get("claim_id", name)
             st = states.get(cid, {})
