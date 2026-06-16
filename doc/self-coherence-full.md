@@ -1271,6 +1271,9 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`estimator_calibration`** [activity] -- Proxy recorded a token-estimator calibration sample comparing estimated vs actual input tokens.
 - **`outbound_gate_compact_requested`** [activity] -- Outbound context gate requested a live-session compact cycle after an over-window verdict.
 - **`transcript_compaction`** [activity] -- Transcript compactor rewrote an oversized session transcript file to reclaim context budget.
+- **`swap_size_gate_direct`** [activity] -- MODE=1 size gate kept an over-window request on the direct Claude route when no swap model fit.
+- **`swap_size_gate_skipped_primary`** [activity] -- MODE=1 size gate routed to the largest non-skipped swap model because the requested primary was paused.
+- **`transcript_sidecar_compaction`** [activity] -- Transcript compactor rewrote oversized tool-result sidecar files to reclaim context budget.
 
 ### Proxy request mutation
 
@@ -1351,6 +1354,7 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`upstream_stream_timeout_retry`** [activity] -- The proxy retried an upstream stream after a timeout-class failure.
 - **`web_tool_call`** [activity] -- The agent invoked a WebSearch or WebFetch tool.
 - **`web_tool_failure`** [activity] -- Web tool enrichment observed a repeated failure for a target.
+- **`policy_deny`** [activity] -- Policy middleware denied a tool payload and recorded the responsible policy.
 
 ### Universal hook
 

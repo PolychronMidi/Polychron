@@ -1496,6 +1496,57 @@
         "omo_bridge"
       ],
       "summary": "Native and universal shadow decisions diverged by kind or reason code."
+    },
+    {
+      "name": "policy_deny",
+      "category": "Tool / proxy lifecycle",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "policy"
+      ],
+      "summary": "Policy middleware denied a tool payload and recorded the responsible policy."
+    },
+    {
+      "name": "swap_size_gate_direct",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "routing",
+        "context"
+      ],
+      "summary": "MODE=1 size gate kept an over-window request on the direct Claude route when no swap model fit."
+    },
+    {
+      "name": "swap_size_gate_skipped_primary",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "routing",
+        "context"
+      ],
+      "summary": "MODE=1 size gate routed to the largest non-skipped swap model because the requested primary was paused."
+    },
+    {
+      "name": "transcript_sidecar_compaction",
+      "category": "Proxy / routing",
+      "streams": [
+        "activity"
+      ],
+      "groups": [
+        "proxy",
+        "context",
+        "compaction"
+      ],
+      "summary": "Transcript compactor rewrote oversized tool-result sidecar files to reclaim context budget."
     }
   ]
 }

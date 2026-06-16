@@ -68,6 +68,8 @@ flowchart LR
     root --> log
     src["src/<br/><i>Polychron composition engine source: composers, conductor, cross-layer, fx, w...</i>"]
     root --> src
+    teams["teams/<br/><i>Bounded point-to-point team channels and role registry.</i>"]
+    root --> teams
     tools["tools/<br/><i>Project tooling: HME (hierarchical meta-evolution), csv_maestro, bin/.</i>"]
     root --> tools
 ```
@@ -90,7 +92,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     doc["doc/"]
-    doc__infra["infra/<br/><i>Tools that keep docs up to date without hand-maintained drift.</i>"]
+    doc__infra["infra/<br/><i>Tools that keep docs up to date without hand-maintained drift. This README is...</i>"]
     doc__templates["templates/"]
     doc__theory["theory/<br/><i>> The literature of Polychron. Not how the system works -- what the system *m...</i>"]
     doc --> doc__infra
@@ -238,6 +240,17 @@ flowchart LR
     src__conductor__signal__balancing__coupling --> src__conductor__signal__balancing__coupling__homeostasis
 ```
 
+### `teams/`
+
+```mermaid
+flowchart LR
+    teams["teams/<br/><i>Bounded point-to-point team channels and role registry.</i>"]
+    teams__rounds["rounds/<br/><i>Durable review-round runners for the team mesh.</i>"]
+    teams__runtime["runtime/<br/><i>Ignored, regenerated team runtime state.</i>"]
+    teams --> teams__rounds
+    teams --> teams__runtime
+```
+
 ### `tools/`
 
 ```mermaid
@@ -262,6 +275,7 @@ flowchart LR
     tools__HME__policies["HME/policies/<br/><i>Single registration + configuration surface for every hook-time rule</i>"]
     tools__HME__proxy["HME/proxy/<br/><i>Authoritative MITM proxy between Claude Code and the Anthropic API. It owns c...</i>"]
     tools__HME__runtime["HME/runtime/"]
+    tools__HME__schemas["HME/schemas/"]
     tools__HME__scripts["HME/scripts/<br/><i>HME scripts: verifiers, audits, builders, agents, dashboards.</i>"]
     tools__HME__service["HME/service/<br/><i>HME runtime service (worker, daemons, analysis): one long-lived process per k...</i>"]
     tools__HME__systemd["HME/systemd/<br/><i>systemd unit files for running HME service components as user/system services.</i>"]
@@ -284,7 +298,7 @@ flowchart LR
     tools__HME__opencode__plugin["HME/opencode/plugin/<br/><i>OpenCode CLI plugin entrypoints that relay host lifecycle events into the HME...</i>"]
     tools__HME__policies__builtin["HME/policies/builtin/<br/><i>Built-in HME policy implementations (read/write/bash gates).</i>"]
     tools__HME__policies__examples["HME/policies/examples/<br/><i>Example HME policy stubs for reference / starter templates.</i>"]
-    tools__HME__proxy__contexts["HME/proxy/contexts/<br/><i>Each subdirectory in `contexts/` is the **single façade** for a bounded</i>"]
+    tools__HME__proxy__contexts["HME/proxy/contexts/<br/><i>Each subdirectory in `contexts/` is the **single fa?ade** for a bounded</i>"]
     tools__HME__proxy__infra["HME/proxy/infra/<br/><i>Foundational infrastructure for the HME proxy: filesystem paths, config</i>"]
     tools__HME__proxy__mcp_server["HME/proxy/mcp_server/<br/><i>In-process MCP (Model Context Protocol) server, hosted by `hme_proxy.js`</i>"]
     tools__HME__proxy__middleware["HME/proxy/middleware/<br/><i>Per-tool enrichment and side-effect modules. The proxy's `messages.js` pipeli...</i>"]
@@ -316,10 +330,10 @@ flowchart LR
     tools__HME__hooks__lifecycle__stop["HME/hooks/lifecycle/stop/<br/><i>Stop-event sub-hooks that compose the Stop lifecycle pipeline.</i>"]
     tools__HME__hooks__pretooluse__bash["HME/hooks/pretooluse/bash/<br/><i>`pretooluse_bash.sh` auto-loads gates by phase via `bash/<phase>/*.sh`:</i>"]
     tools__HME__proxy__contexts__failure_policy["HME/proxy/contexts/failure_policy/<br/><i>Failure-policy bounded context: classify upstream failures and select a recov...</i>"]
-    tools__HME__proxy__contexts__lifecycle_bridge["HME/proxy/contexts/lifecycle_bridge/<br/><i>Bounded-context façade: maps Claude Code lifecycle events (PreToolUse,</i>"]
-    tools__HME__proxy__contexts__request_mutation["HME/proxy/contexts/request_mutation/<br/><i>Bounded-context façade: transforms the inbound client request before</i>"]
-    tools__HME__proxy__contexts__response_transform["HME/proxy/contexts/response_transform/<br/><i>Bounded-context façade: buffers and rewrites the upstream response</i>"]
-    tools__HME__proxy__contexts__upstream_dispatch["HME/proxy/contexts/upstream_dispatch/<br/><i>Bounded-context façade: resolves upstream + sends the request (OmniRoute</i>"]
+    tools__HME__proxy__contexts__lifecycle_bridge["HME/proxy/contexts/lifecycle_bridge/<br/><i>Bounded-context fa?ade: maps Claude Code lifecycle events (PreToolUse,</i>"]
+    tools__HME__proxy__contexts__request_mutation["HME/proxy/contexts/request_mutation/<br/><i>Bounded-context fa?ade: transforms the inbound client request before</i>"]
+    tools__HME__proxy__contexts__response_transform["HME/proxy/contexts/response_transform/<br/><i>Bounded-context fa?ade: buffers and rewrites the upstream response</i>"]
+    tools__HME__proxy__contexts__upstream_dispatch["HME/proxy/contexts/upstream_dispatch/<br/><i>Bounded-context fa?ade: resolves upstream + sends the request (OmniRoute</i>"]
     tools__HME__proxy__stop_chain__policies["HME/proxy/stop_chain/policies/<br/><i>Stop-chain policy modules (per-condition allow/deny/defer).</i>"]
     tools__HME__scripts__detectors__fixtures["HME/scripts/detectors/fixtures/<br/><i>Static transcript fixtures used by the detector test suite.</i>"]
     tools__HME__scripts__pipeline__hme["HME/scripts/pipeline/hme/<br/><i>HME-specific pipeline stages: match-patterns, scoring, write-out.</i>"]
@@ -363,6 +377,7 @@ flowchart LR
     tools__HME --> tools__HME__policies
     tools__HME --> tools__HME__proxy
     tools__HME --> tools__HME__runtime
+    tools__HME --> tools__HME__schemas
     tools__HME --> tools__HME__scripts
     tools__HME --> tools__HME__service
     tools__HME --> tools__HME__systemd
