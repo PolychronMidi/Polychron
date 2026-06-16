@@ -125,7 +125,7 @@ if [ "$_SIZE" -gt "$_CAP_BYTES" ] 2>/dev/null; then
     else
       rm -f "$_TMP" 2>/dev/null
     fi
-    rmdir "$_LOCKDIR" 2>/dev/null
+    rmdir "$_LOCKDIR" 2>/dev/null  # silent-ok: lock cleanup may already be gone after concurrent capper.
   fi
 fi
 TOOL_LOG_LINE=$(echo "$TOOL_INPUT" | head -c 120 | tr '\n' ' ')
