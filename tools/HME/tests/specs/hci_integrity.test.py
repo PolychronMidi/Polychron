@@ -31,6 +31,27 @@ def _fake(name, weight=1.0):
     return types.SimpleNamespace(name=name, weight=weight)
 
 
+class _StaticFakeVerifier:
+    name = "fake-static"
+    category = "code"
+    subtag = "unit"
+    weight = 1.0
+
+    def execute(self):
+        return VerdictResult(PASS, 1.0, "ok", [])
+
+
+class EngineReportShapeTests(unittest.TestCase):
+    def test_verifier_entries_include_their_own_name(self):
+        old = engine.REGISTRY
+        try:
+            engine.REGISTRY = [_StaticFakeVerifier()]
+            report = engine.run_engine()
+        finally:
+            engine.REGISTRY = old
+        self.assertEqual(report["verifiers"]["fake-static"]["name"], "fake-static")
+
+
 class PreflightRegistryTests(unittest.TestCase):
     def test_duplicate_names_fail_closed(self):
         reg = [_fake("a"), _fake("b"), _fake("a")]
