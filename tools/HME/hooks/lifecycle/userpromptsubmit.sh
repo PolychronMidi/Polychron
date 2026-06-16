@@ -77,6 +77,7 @@ if [ -f "$_AC_FAIL_FLAG" ]; then
     _AC_TS_EPOCH=$(date -u -d "$_AC_TS" +%s 2>/dev/null || echo 0)
   fi
   if [ "$_AC_TS_EPOCH" = "0" ]; then
+    # silent-ok: absent/unreadable flag mtime falls back to epoch 0 for historical-alert 
     _AC_TS_EPOCH=$(stat -c %Y "$_AC_FAIL_FLAG" 2>/dev/null || echo 0)
     _AC_TS=$(date -u -d "@$_AC_TS_EPOCH" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   fi
