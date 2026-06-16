@@ -109,6 +109,7 @@ function compactToolResultSidecarFile(filePath, opts = {}) {
     const tn = fs.readSync(fd, tbuf, 0, tlen, Math.max(0, stat.size - tlen));
     tail = tbuf.subarray(0, tn);
   } catch (_e) {
+    // silent-ok: unreadable sidecar is reported in the returned compaction result.
     return { ok: false, reason: 'unreadable', changed: false, beforeBytes: stat.size, afterBytes: stat.size };
   } finally {
     if (fd !== undefined) { try { fs.closeSync(fd); } catch (_e) { /* best effort */ } }
