@@ -177,10 +177,10 @@ def _aggregate_hook_latency() -> dict:
     return result
 
 
-def _collect_data() -> dict:
+def _collect_data(*, refresh_verifiers: bool = False) -> dict:
     return {
         "holograph": _load_holograph_series(),
-        "verifiers": _load_current_verifiers(),
+        "verifiers": _load_current_verifiers(refresh=refresh_verifiers),
         "effectiveness": _safe_load(os.path.join(_METRICS, "hme-tool-effectiveness.json")),
         "trajectory": _safe_load(os.path.join(_METRICS, "hme-trajectory.json")),
         "coupling": _safe_load(os.path.join(_METRICS, "hme-coupling.json")),
