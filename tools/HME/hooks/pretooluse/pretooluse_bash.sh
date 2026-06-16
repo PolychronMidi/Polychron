@@ -61,6 +61,7 @@ if [ "${_POLICY_RC:-0}" -ne 0 ]; then
   _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   _log="${PROJECT_ROOT}/log/hme-errors.log"
   mkdir -p "$(dirname "$_log")" 2>/dev/null
+  # silent-ok: if diagnostic append fails, the deny response below still fail-closes the 
   printf '[%s] [pretooluse_bash] Bash unified policy evaluator crashed (rc=%d); denying command. Investigate bash_command_policy.js logs.\n' "$_ts" "$_POLICY_RC" >> "$_log" 2>/dev/null || true
   printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"BLOCKED: Bash policy evaluator crashed (rc='"$_POLICY_RC"'). Cannot allow unvalidated command -- fix bash_command_policy.js or runtime."}}'
   exit 0
