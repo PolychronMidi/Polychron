@@ -51,7 +51,7 @@
       "hook_thresholds": {
         "stop": 900,
         "sessionstart": 2500,
-        "userpromptsubmit": 700,
+        "userpromptsubmit": 1500,
         "stop_chain:autocommit": 2600,
         "stop_chain:holograph": 2200,
         "detectors": 700,
