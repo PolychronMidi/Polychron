@@ -218,7 +218,7 @@ def build(*, refresh_verifiers: bool = False) -> int:
     print(f"Dashboard: {_OUTPUT}")
     print(f"  size: {size:,} bytes")
     print(f"  holograph samples: {len(data['holograph'].get('samples', []))}")
-    print(f"  verifiers: {(data['verifiers'] or {}).get('verifier_count', 0)}")
+    print(f"  verifiers: {(data['verifiers'] or {}).get('verifier_count', 0)} ({(data['verifiers'] or {}).get('source', 'unknown')})")
     print(f"  hook-latency hooks: {len(data['hook_latency'])}")
     print(f"  coupling nodes: {(data['coupling'] or {}).get('node_count', 0)}")
     return 0
