@@ -34,6 +34,8 @@ from ._base import (
 
 @register
 class StatesSyncVerifier(Verifier):
+    """Ensure Python and shell onboarding state lists stay synchronized."""
+
     name = "states-sync"
     category = "state"
     subtag = "structural-integrity"
