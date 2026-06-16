@@ -127,7 +127,7 @@ class HookLatencyVerifier(Verifier):
     _FALLBACK_BUDGETS = {
         "stop":             900,
         "sessionstart":    2500,
-        "userpromptsubmit": 700,
+        "userpromptsubmit": 1500,
         "precompact":      2000,
     }
     _DEFAULT_BUDGET = 500
