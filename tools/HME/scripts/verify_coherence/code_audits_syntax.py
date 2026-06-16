@@ -114,6 +114,8 @@ class PythonSyntaxVerifier(Verifier):
 
 @register
 class ShellSyntaxVerifier(Verifier):
+    """Ensure top-level hook shell scripts parse before hook dispatch."""
+
     name = "shell-syntax"
     category = "code"
     subtag = "structural-integrity"
